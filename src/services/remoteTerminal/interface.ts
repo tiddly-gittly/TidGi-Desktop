@@ -1,10 +1,6 @@
-import { RemoteTerminalChannel } from "@/constants/channels";
-import { ProxyPropertyType } from "electron-ipc-cat/common";
-import type {
-  TerminalSessionInfo,
-  TerminalFollowResult,
-  TerminalOutputChunk,
-} from "memeloop-node/src/terminal/types.js";
+import { RemoteTerminalChannel } from '@/constants/channels';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { TerminalFollowResult, TerminalOutputChunk, TerminalSessionInfo } from 'memeloop-node/src/terminal/types.js';
 
 export interface IRemoteTerminalService {
   /**

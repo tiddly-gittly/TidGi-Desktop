@@ -1,19 +1,11 @@
-import { injectable } from "inversify";
-import { nanoid } from "nanoid";
-import { BehaviorSubject } from "rxjs";
+import { injectable } from 'inversify';
+import { nanoid } from 'nanoid';
+import { BehaviorSubject } from 'rxjs';
 
-import { container } from "@services/container";
-import type {
-  IDatabaseService,
-  ISettingFile,
-} from "@services/database/interface";
-import serviceIdentifier from "@services/serviceIdentifier";
-import type {
-  IToolApprovalRequest,
-  IToolPermissionEntry,
-  IToolPermissionsService,
-  ToolApprovalDecision,
-} from "./interface";
+import { container } from '@services/container';
+import type { IDatabaseService, ISettingFile } from '@services/database/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IToolApprovalRequest, IToolPermissionEntry, IToolPermissionsService, ToolApprovalDecision } from './interface';
 
 @injectable()
 export class ToolPermissions implements IToolPermissionsService {
@@ -30,25 +22,25 @@ export class ToolPermissions implements IToolPermissionsService {
   }
 
   private getStorageKey(
-    listType: "blacklist" | "whitelist",
+    listType: 'blacklist' | 'whitelist',
   ): keyof ISettingFile {
-    return listType === "blacklist"
-      ? "toolPermissions.blacklist"
-      : "toolPermissions.whitelist";
+    return listType === 'blacklist'
+      ? 'toolPermissions.blacklist'
+      : 'toolPermissions.whitelist';
   }
 
   public async getPermissions(): Promise<IToolPermissionEntry[]> {
     const blacklist = (this.databaseService.getSetting(
-      this.getStorageKey("blacklist"),
+      this.getStorageKey('blacklist'),
     ) ?? []) as IToolPermissionEntry[];
     const whitelist = (this.databaseService.getSetting(
-      this.getStorageKey("whitelist"),
+      this.getStorageKey('whitelist'),
     ) ?? []) as IToolPermissionEntry[];
     return [...blacklist, ...whitelist];
   }
 
   public async addPermission(
-    entry: Omit<IToolPermissionEntry, "addedAt">,
+    entry: Omit<IToolPermissionEntry, 'addedAt'>,
   ): Promise<void> {
     const key = this.getStorageKey(entry.listType);
     const existing = (this.databaseService.getSetting(key) ??
@@ -72,7 +64,7 @@ export class ToolPermissions implements IToolPermissionsService {
 
   public async removePermission(
     toolName: string,
-    listType: "blacklist" | "whitelist",
+    listType: 'blacklist' | 'whitelist',
   ): Promise<void> {
     const key = this.getStorageKey(listType);
     const existing = (this.databaseService.getSetting(key) ??
@@ -81,7 +73,7 @@ export class ToolPermissions implements IToolPermissionsService {
     await this.databaseService.setSetting(key, filtered);
   }
 
-  public async clearList(listType: "blacklist" | "whitelist"): Promise<void> {
+  public async clearList(listType: 'blacklist' | 'whitelist'): Promise<void> {
     const key = this.getStorageKey(listType);
     await this.databaseService.setSetting(key, []);
   }
@@ -91,13 +83,13 @@ export class ToolPermissions implements IToolPermissionsService {
     parameters?: Record<string, unknown>,
   ): Promise<boolean> {
     const blacklist = (this.databaseService.getSetting(
-      this.getStorageKey("blacklist"),
+      this.getStorageKey('blacklist'),
     ) ?? []) as IToolPermissionEntry[];
     const whitelist = (this.databaseService.getSetting(
-      this.getStorageKey("whitelist"),
+      this.getStorageKey('whitelist'),
     ) ?? []) as IToolPermissionEntry[];
 
-    const parametersString = parameters ? JSON.stringify(parameters) : "";
+    const parametersString = parameters ? JSON.stringify(parameters) : '';
 
     for (const entry of blacklist) {
       if (entry.toolName === toolName) {
@@ -128,7 +120,7 @@ export class ToolPermissions implements IToolPermissionsService {
   }
 
   public async requestApproval(
-    request: Omit<IToolApprovalRequest, "id" | "requestedAt">,
+    request: Omit<IToolApprovalRequest, 'id' | 'requestedAt'>,
   ): Promise<ToolApprovalDecision> {
     const fullRequest: IToolApprovalRequest = {
       ...request,
@@ -138,7 +130,7 @@ export class ToolPermissions implements IToolPermissionsService {
 
     const sessionKey = `${request.toolName}:${request.parameters}`;
     if (this.sessionApprovals.has(sessionKey)) {
-      return "allow-session";
+      return 'allow-session';
     }
 
     return new Promise<ToolApprovalDecision>((resolve) => {
@@ -162,13 +154,13 @@ export class ToolPermissions implements IToolPermissionsService {
     if (request) {
       const sessionKey = `${request.toolName}:${request.parameters}`;
 
-      if (decision === "allow-session") {
+      if (decision === 'allow-session') {
         this.sessionApprovals.add(sessionKey);
-      } else if (decision === "allow-always") {
+      } else if (decision === 'allow-always') {
         await this.addPermission({
           toolName: request.toolName,
-          listType: "whitelist",
-          note: "Auto-added from approval dialog",
+          listType: 'whitelist',
+          note: 'Auto-added from approval dialog',
         });
       }
     }
