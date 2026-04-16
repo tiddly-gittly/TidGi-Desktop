@@ -21,10 +21,12 @@ function getMostRecentScenarioName(): string | undefined {
   try {
     const entries = fs.readdirSync(testArtifactsDir, { withFileTypes: true });
     const scenarioDirs = entries
-      .filter(entry => entry.isDirectory())
-      .map(entry => ({
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => ({
         name: entry.name,
-        time: fs.statSync(path.join(testArtifactsDir, entry.name)).mtime.getTime(),
+        time: fs
+          .statSync(path.join(testArtifactsDir, entry.name))
+          .mtime.getTime(),
       }))
       .sort((a, b) => b.time - a.time);
 
@@ -35,31 +37,48 @@ function getMostRecentScenarioName(): string | undefined {
   }
 }
 
+const cliArguments = process.argv.slice(2);
+const scenarioArgument = cliArguments.find(
+  (argument) => !argument.startsWith('--'),
+);
+const useDevMcpMode = cliArguments.includes('--dev-mcp');
+const remoteDebuggingPortArgument = cliArguments.find((argument) => argument.startsWith('--remote-debugging-port='));
 const appPath = getPackedAppPath();
 
 // Get scenario name from command line argument or detect most recent
-const scenarioName = process.argv[2] || getMostRecentScenarioName();
+const scenarioName = scenarioArgument || getMostRecentScenarioName();
 
 if (scenarioName) {
   console.log('Starting TidGi E2E app with scenario:', scenarioName);
 } else {
-  console.log('Starting TidGi E2E app without scenario (using legacy userData-test)');
+  console.log(
+    'Starting TidGi E2E app without scenario (using legacy userData-test)',
+  );
 }
-console.log('App path:', appPath);
+console.log('App path:', useDevMcpMode ? 'pnpm run start:dev:mcp' : appPath);
 
 const environment = Object.assign({}, process.env, {
-  NODE_ENV: 'test',
+  NODE_ENV: useDevMcpMode ? 'development' : 'test',
   LANG: process.env.LANG || 'zh-Hans.UTF-8',
   LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
   LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
+  ...(useDevMcpMode ? { E2E_TEST: 'true' } : {}),
 });
 
 // Pass scenario name as argument to the app if available
-const args = scenarioName ? [`--test-scenario=${scenarioName}`] : [];
+const appArguments = scenarioName ? [`--test-scenario=${scenarioName}`] : [];
+const remoteDebuggingArgument = remoteDebuggingPortArgument || '--remote-debugging-port=9222';
+const executablePath = useDevMcpMode ? 'pnpm' : appPath;
+const args = useDevMcpMode
+  ? ['run', 'start:dev:mcp', '--', ...appArguments, remoteDebuggingArgument]
+  : appArguments;
 
-const child = spawn(appPath, args, { env: environment, stdio: 'inherit' });
-child.on('exit', code => process.exit(code ?? 0));
-child.on('error', error => {
+const child = spawn(executablePath, args, {
+  env: environment,
+  stdio: 'inherit',
+});
+child.on('exit', (code) => process.exit(code ?? 0));
+child.on('error', (error) => {
   console.error('Failed to start TidGi app:', error);
   process.exit(1);
 });
