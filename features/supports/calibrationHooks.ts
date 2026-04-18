@@ -7,7 +7,7 @@
  */
 
 import { After, Before } from '@cucumber/cucumber';
-import { setCalibrationResult } from './e2eCalibration';
+import { setCalibrationResult } from './calibration';
 
 let smokeStartTime: number | null = null;
 

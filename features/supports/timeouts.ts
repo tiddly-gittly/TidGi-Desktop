@@ -1,5 +1,5 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getPerformanceMultiplier, isCalibrated } from './e2eCalibration';
+import { getPerformanceMultiplier, isCalibrated } from './calibration';
 
 const isCI = Boolean(process.env.CI);
 
