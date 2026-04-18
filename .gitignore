@@ -77,6 +77,3 @@ tsconfig.test.json.tsbuildinfo
 /test-artifacts
 /test-artifacts-ci
 test-artifacts-ci.zip
-
-# E2E calibration data (machine-specific)
-.e2e-calibration.json
