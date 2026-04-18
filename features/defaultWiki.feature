@@ -96,3 +96,26 @@ Feature: TidGi Default Wiki
     Then I wait for tiddler "Index" to be updated by watch-fs
     # The content check will automatically wait for IPC to sync
     And I should see "Content after moving workspace" in the browser view content
+    # Move it back to original location for cleanup
+    # Clear test-id markers to ensure we're waiting for fresh logs from second restart
+    When I clear test-id markers from logs
+    And I switch to "editWorkspace" window
+    And I wait for the page to load completely
+    # Accordion is still expanded from the first move — do NOT click it again (that would collapse it)
+    When I prepare to select directory in dialog "wiki-test"
+    And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
+    Then I wait for log markers:
+      | description                            | marker                                   |
+      | workspace moved back to wiki-test      | [test-id-WORKSPACE_MOVED:                |
+      | workspace restarted after move back    | [test-id-WORKSPACE_RESTARTED_AFTER_MOVE: |
+      | watch-fs stabilized after restart back | [test-id-WATCH_FS_STABILIZED]            |
+      | SSE ready after restart back           | [test-id-SSE_READY]                      |
+      | view loaded after restart back         | [test-id-VIEW_LOADED]                    |
+    Then file "wiki/tiddlywiki.info" should exist in "wiki-test"
+    # Switch to main window and wait for view to be ready
+    Then I switch to "main" window
+    # Verify the wiki still works after moving back
+    When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Content after moving back"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # The content check will automatically wait for IPC to sync
+    And I should see "Content after moving back" in the browser view content

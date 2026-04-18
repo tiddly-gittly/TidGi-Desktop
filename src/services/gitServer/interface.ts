@@ -71,7 +71,7 @@ export interface IGitServerService {
    * Exposed so TiddlyWiki plugins can run arbitrary git commands without
    * needing TidGi Desktop code changes.
    * @param workspaceId workspace ID
-  * @param gitArguments git command arguments (e.g. ['fetch', 'bundle.file', 'master:mobile-incoming'])
+   * @param gitArguments git command arguments (e.g. ['fetch', 'bundle.file', 'master:mobile-incoming'])
    * @returns { exitCode, stdout, stderr }
    */
   runGitCommand(workspaceId: string, gitArguments: string[]): Promise<{ exitCode: number | null; stdout: string; stderr: string }>;
