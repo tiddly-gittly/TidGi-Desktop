@@ -1180,17 +1180,39 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
   const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
-    // Wait for wiki worker services to be ready before attempting restart.
-    // WorkerServicesReady is emitted by the wiki worker on all startup paths
-    // (including restartWorkspaceViewService used at initial app launch), unlike
-    // WIKI_WORKER_STARTED which is only written on the direct startWiki() path,
-    // and unlike VIEW_LOADED which requires the view to be activated first.
-    await waitForLogMarker(this, 'test-id-WorkerServicesReady', 'wiki worker services not ready before restart attempt');
+    // Only wait for wiki worker services if the wiki is currently running
+    // If the wiki hasn't been started yet (e.g., workspace not clicked), skip this wait
+    const isWikiRunning = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+      if (!mainWindow) return false;
+      const result = await mainWindow.webContents.executeJavaScript(`
+        (async () => {
+          try {
+            if (!window.service || !window.service.wiki || !window.service.wiki.getWorker) return false;
+            const worker = window.service.wiki.getWorker(${JSON.stringify(workspaceId)});
+            return !!worker;
+          } catch {
+            return false;
+          }
+        })();
+      `) as Promise<boolean>;
+      return result;
+    }, targetWorkspaceId);
 
-    // Only wait for watch-fs if it was enabled before the update
-    // If it was disabled, wiki is ready immediately without watch-fs markers
-    if (watchFsCurrentlyEnabled) {
-      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', LOG_MARKER_WAIT_TIMEOUT);
+    if (isWikiRunning) {
+      // Wait for wiki worker services to be ready before attempting restart.
+      // WorkerServicesReady is emitted by the wiki worker on all startup paths
+      // (including restartWorkspaceViewService used at initial app launch), unlike
+      // WIKI_WORKER_STARTED which is only written on the direct startWiki() path,
+      // and unlike VIEW_LOADED which requires the view to be activated first.
+      await waitForLogMarker(this, 'test-id-WorkerServicesReady', 'wiki worker services not ready before restart attempt');
+
+      // Only wait for watch-fs if it was enabled before the update
+      // If it was disabled, wiki is ready immediately without watch-fs markers
+      if (watchFsCurrentlyEnabled) {
+        await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', LOG_MARKER_WAIT_TIMEOUT);
+      }
     }
 
     // Restart the wiki using the runtime-resolved workspace ID
