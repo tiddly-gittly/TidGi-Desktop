@@ -18,15 +18,15 @@
 /** How many ms the reference machine takes (measured empirically on GH Actions). */
 const REFERENCE_DURATION_MS = 120;
 
-/** Absolute lower bound: never scale below 1.8 on local dev boxes (1.0 on CI).
+/** Absolute lower bound: never scale below 2.0 on local dev boxes (1.0 on CI).
  *
  * Even on fast hardware, local dev runs face more disk-I/O and memory contention
  * than the CI reference runner (other processes, antivirus scans, long test suites
  * that exhaust system resources after many scenarios, etc.).
- * A 1.8× floor gives an 80 % timing cushion without requiring any measured data.
+ * A 2.0× floor gives a 100% timing cushion without requiring any measured data.
  * CI machines keep 1.0 because they are dedicated runners with known performance.
  */
-const MIN_MULTIPLIER = 1.8;
+const MIN_MULTIPLIER = 2.0;
 
 /**
  * Upper bound: don't let very slow machines wait more than ~3× the reference
