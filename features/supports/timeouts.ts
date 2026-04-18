@@ -1,14 +1,30 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getCpuPerformanceMultiplier } from './cpuBenchmark';
+import { getPerformanceMultiplier, isCalibrated } from './e2eCalibration';
 
 const isCI = Boolean(process.env.CI);
 
-const performanceMultiplier = isCI ? 1.0 : getCpuPerformanceMultiplier();
+/**
+ * Get the performance multiplier.
+ * CI always uses 1.0×, local dev uses calibrated multiplier.
+ */
+function getMultiplier(): number {
+  if (isCI) return 1.0;
 
+  const multiplier = getPerformanceMultiplier();
+
+  // Log warning if calibration hasn't run yet
+  if (!isCalibrated()) {
+    console.warn('[Timeout Config] Using fallback multiplier - calibration not yet performed');
+  }
+
+  return multiplier;
+}
+
+const performanceMultiplier = getMultiplier();
 const BASE_TIMEOUT = 25000;
 
 /**
- * Cucumber global timeout budget per step/hook, scaled by CPU performance.
+ * Cucumber global timeout budget per step/hook, scaled by E2E performance.
  * Fast machines get tight timeouts (fast bug detection), slow machines get room they need.
  */
 export const CUCUMBER_GLOBAL_TIMEOUT = Math.round(BASE_TIMEOUT * performanceMultiplier);
