@@ -1,17 +1,14 @@
+import fs from 'fs';
+import path from 'path';
+
 /**
  * E2E performance calibration to determine dynamic timeout multiplier.
  *
  * Why this exists: E2E tests involve CPU, I/O, Electron startup, and rendering.
  * A pure CPU benchmark doesn't capture the full performance picture. Instead,
- * we use the @smoke scenario as a calibration test and measure its actual
- * duration against a known baseline from CI.
- *
- * Calibration design:
- *   - @smoke scenario runs first (alphabetically or via tag ordering)
- *   - Hooks measure its duration automatically
- *   - Calculate multiplier = actual / reference
- *   - Apply this multiplier to all subsequent test timeouts
- *   - No MIN_MULTIPLIER hack - pure measurement-based scaling
+ * each `pnpm test:e2e` run first measures a representative smoke scenario and
+ * writes the result to a temporary calibration file. The main E2E run then
+ * reads that file before loading timeout constants.
  */
 
 /** Reference duration for smoke test on GitHub Actions (measured empirically). */
@@ -23,27 +20,64 @@ const REFERENCE_SMOKE_DURATION_MS = 8000; // ~8s on CI
  */
 const MAX_MULTIPLIER = 5.0;
 
-/**
- * Cached multiplier from smoke test run.
- */
+const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
+
+type CalibrationRecord = {
+  measuredMs: number;
+  multiplier: number;
+  recordedAt: number;
+};
+
 let cachedMultiplier: number | null = null;
 
-/**
- * Set the calibration result from the smoke test run.
- * Called automatically by calibrationHooks.ts after @smoke scenario completes.
- */
-export function setCalibrationResult(actualDurationMs: number): void {
+function readCalibrationRecord(): CalibrationRecord | null {
+  try {
+    if (!fs.existsSync(CALIBRATION_FILE)) {
+      return null;
+    }
+
+    const parsed = JSON.parse(fs.readFileSync(CALIBRATION_FILE, 'utf-8')) as Partial<CalibrationRecord>;
+    if (typeof parsed.multiplier !== 'number' || typeof parsed.measuredMs !== 'number') {
+      return null;
+    }
+
+    return {
+      measuredMs: parsed.measuredMs,
+      multiplier: parsed.multiplier,
+      recordedAt: typeof parsed.recordedAt === 'number' ? parsed.recordedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeCalibrationResult(actualDurationMs: number): number {
   const raw = actualDurationMs / REFERENCE_SMOKE_DURATION_MS;
   const multiplier = Math.min(MAX_MULTIPLIER, Math.max(1.0, raw));
 
-  cachedMultiplier = multiplier;
+  fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
+  fs.writeFileSync(
+    CALIBRATION_FILE,
+    JSON.stringify(
+      {
+        measuredMs: actualDurationMs,
+        multiplier,
+        recordedAt: Date.now(),
+      } satisfies CalibrationRecord,
+      null,
+      2,
+    ),
+    'utf-8',
+  );
 
-  console.log(
-    `[E2E Calibration] Smoke test took ${actualDurationMs}ms (reference: ${REFERENCE_SMOKE_DURATION_MS}ms)`,
-  );
-  console.log(
-    `[E2E Calibration] Performance multiplier: ${multiplier.toFixed(2)}× (capped at ${MAX_MULTIPLIER}×)`,
-  );
+  return multiplier;
+}
+
+/**
+ * Load calibration result that was computed before cucumber started.
+ */
+export function setCalibrationResult(actualDurationMs: number): void {
+  cachedMultiplier = writeCalibrationResult(actualDurationMs);
 }
 
 /**
@@ -55,13 +89,18 @@ export function getPerformanceMultiplier(): number {
     return cachedMultiplier;
   }
 
-  // Fallback: conservative multiplier if smoke test hasn't run yet
-  // This happens when timeouts.ts is loaded before smoke test runs
+  const record = readCalibrationRecord();
+  if (record) {
+    cachedMultiplier = record.multiplier;
+    return cachedMultiplier;
+  }
+
+  // Fallback if calibration preflight did not run.
   console.warn(
-    '[E2E Calibration] Smoke test not yet run, using fallback multiplier 3.0×',
+    '[E2E Calibration] Calibration file not found, using fallback multiplier 3.0×',
   );
   console.warn(
-    '[E2E Calibration] Timeouts will be recalculated after @smoke scenario completes',
+    '[E2E Calibration] Expected preflight calibration to run before cucumber startup',
   );
   return 3.0;
 }

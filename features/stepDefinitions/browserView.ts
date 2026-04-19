@@ -1,7 +1,7 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
-import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { HEAVY_OPERATION_TIMEOUT } from '../supports/timeouts';
 import {
   clickElement,
   clickElementWithText,
@@ -149,7 +149,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
   // Use a longer retry window because WebContentsView creation is async and can take
   // several seconds after workspace activation. Each attempt is fast (< 10ms) when the
   // view doesn't exist yet, so we need many more attempts to cover the full wait budget.
-  const longRetryAttempts = Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / BROWSER_VIEW_RETRY_DELAY_MS);
+  const longRetryAttempts = Math.floor((HEAVY_OPERATION_TIMEOUT - 4000) / BROWSER_VIEW_RETRY_DELAY_MS);
 
   await backOff(
     async () => {
@@ -176,7 +176,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     }
     throw new Error(
       `Browser view is not loaded or visible after ${longRetryAttempts} attempts ` +
-        `(budget: ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s). ${diagnostics}`,
+        `(budget: ${Math.round(HEAVY_OPERATION_TIMEOUT / 1000)}s). ${diagnostics}`,
     );
   });
 });

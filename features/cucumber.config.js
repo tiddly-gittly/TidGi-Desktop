@@ -15,4 +15,17 @@ module.exports = {
     // NOT via the 'timeout' config option here (which is for Cucumber's own operations)
     // Parallel disabled: Electron instances compete for CPU, making steps slower not faster.
   },
+  calibration: {
+    require: [
+      'ts-node/register',
+      'features/supports/**/!(*.test).ts',
+      'features/stepDefinitions/**/*.ts',
+    ],
+    requireModule: ['ts-node/register'],
+    format: ['progress'],
+    formatOptions: {
+      snippetInterface: 'async-await',
+    },
+    paths: ['features/smoke.feature'],
+  },
 };
