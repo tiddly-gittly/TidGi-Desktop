@@ -485,6 +485,23 @@ export class Window implements IWindowService {
 
           // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
           await this.tidgiMiniWindowMenubar.showWindow();
+          // Wait until the OS actually marks the window as visible (needed in E2E tests where
+          // BrowserWindow.show() is asynchronous with respect to isVisible() returning true)
+          if (isTest) {
+            const win = this.tidgiMiniWindowMenubar.window;
+            if (win) {
+              await new Promise<void>((resolve) => {
+                const check = () => {
+                  if (win.isVisible()) {
+                    resolve();
+                  } else {
+                    setTimeout(check, 50);
+                  }
+                };
+                check();
+              });
+            }
+          }
           logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
         }
         return;
