@@ -162,6 +162,7 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
                           color='error'
                           onClick={handleDelete}
                           disabled={status.status === 'generating'}
+                          data-testid={`delete-embeddings-button-${workspaceId}`}
                         >
                           {t('Preference.SearchEmbeddingDelete')}
                         </Button>
