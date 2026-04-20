@@ -85,6 +85,10 @@ export function setCalibrationResult(actualDurationMs: number): void {
  * Returns calibrated value if smoke test has run, otherwise returns a conservative fallback.
  */
 export function getPerformanceMultiplier(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
+    return MAX_MULTIPLIER;
+  }
+
   if (cachedMultiplier !== null) {
     return cachedMultiplier;
   }
@@ -109,5 +113,5 @@ export function getPerformanceMultiplier(): number {
  * Check if calibration has been performed.
  */
 export function isCalibrated(): boolean {
-  return cachedMultiplier !== null;
+  return cachedMultiplier !== null || readCalibrationRecord() !== null;
 }
