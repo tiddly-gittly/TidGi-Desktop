@@ -138,26 +138,31 @@ export class ApplicationWorld {
       const windowDimensions = checkWindowDimension(windowName);
       try {
         const electronWindowInfo = await this.app.evaluate(
-          async ({ BrowserWindow }, size: { width: number; height: number }) => {
+          async ({ BrowserWindow }, args: { size: { width: number; height: number }; titleHint: string }) => {
             const allWindows = BrowserWindow.getAllWindows();
-            const tidgiMiniWindow = allWindows.find(win => {
+            // First try: match by title hint (BrowserWindow.title, set in WindowProperties)
+            const byTitle = allWindows.find(win => win.getTitle().includes(args.titleHint));
+            if (byTitle) return { id: byTitle.id };
+            // Second try: match by dimensions
+            const bySize = allWindows.find(win => {
               const bounds = win.getBounds();
-              return bounds.width === size.width && bounds.height === size.height;
+              return bounds.width === args.size.width && bounds.height === args.size.height;
             });
-            return tidgiMiniWindow ? { id: tidgiMiniWindow.id } : null;
+            return bySize ? { id: bySize.id } : null;
           },
-          windowDimensions,
+          { size: windowDimensions, titleHint: 'Mini Window' },
         );
 
         if (electronWindowInfo) {
-          // Found by dimensions, now match with Playwright page
-          const allWindows = pages.filter(page => !page.isClosed());
-          for (const page of allWindows) {
+          // Match Playwright page by comparing its underlying BrowserWindow ID.
+          // Title matching is unreliable because the mini window loads the same index.html
+          // as the main window, and document.title may not yet reflect the window type.
+          const nonClosedPages = pages.filter(page => !page.isClosed());
+          for (const page of nonClosedPages) {
             try {
-              // Try to match by checking if this page belongs to the found electron window
-              // For now, use title as fallback verification
-              const title = await page.title();
-              if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+              const bw = await this.app!.browserWindow(page);
+              const bwId = await bw.evaluate((win: Electron.BrowserWindow) => win.id);
+              if (bwId === electronWindowInfo.id) {
                 return page;
               }
             } catch {
@@ -169,7 +174,7 @@ export class ApplicationWorld {
         // If Electron API fails, fallback to title matching
       }
 
-      // Fallback: Match by window title
+      // Fallback: Match by window title (covers cases where title IS set by the React app)
       const allWindows = pages.filter(page => !page.isClosed());
       for (const page of allWindows) {
         try {
