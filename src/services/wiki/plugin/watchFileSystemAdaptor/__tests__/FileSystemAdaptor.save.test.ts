@@ -15,6 +15,9 @@ vi.mock('@services/wiki/wikiWorker/services', () => ({
     get: vi.fn(),
     getWorkspacesAsList: vi.fn(),
   },
+  git: {
+    notifyFileChange: vi.fn(),
+  },
 }));
 
 // Mock TiddlyWiki global
