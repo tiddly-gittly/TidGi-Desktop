@@ -87,6 +87,13 @@ export interface IGitServerService {
   writeTempGitFile(workspaceId: string, fileName: string, data: Uint8Array): Promise<string>;
 
   /**
+   * Merge the mobile-incoming branch into main after a mobile push completes.
+   * This remains public because the TiddlyWiki-side mobile sync route calls it directly.
+   * @param workspaceId workspace ID
+   */
+  mergeAfterPush(workspaceId: string): Promise<void>;
+
+  /**
    * Delete a file from the workspace's .git directory.
    * @param workspaceId workspace ID
    * @param fileName file name inside .git/
@@ -106,6 +113,7 @@ export const GitServerServiceIPCDescriptor = {
     generateFullArchive: ProxyPropertyType.Function,
     runGitCommand: ProxyPropertyType.Function,
     writeTempGitFile: ProxyPropertyType.Function,
+    mergeAfterPush: ProxyPropertyType.Function,
     deleteTempGitFile: ProxyPropertyType.Function,
   },
 };

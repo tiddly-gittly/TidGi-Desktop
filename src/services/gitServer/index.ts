@@ -12,7 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { GitHTTPResponseChunk, IGitServerService } from './interface';
-import { DESKTOP_GIT_IDENTITY, runGit, runGitCollectStdout } from './mergeUtilities';
+import { DESKTOP_GIT_IDENTITY, mergeMobileIncomingIfExists, runGit, runGitCollectStdout } from './mergeUtilities';
 
 const ALLOWED_GIT_SERVICES = new Set(['git-upload-pack', 'git-receive-pack']);
 
@@ -311,6 +311,14 @@ export class GitServerService implements IGitServerService {
       throw new Error(`Workspace ${workspaceId} not found`);
     }
     return await runGit(gitArguments, repoPath);
+  }
+
+  public async mergeAfterPush(workspaceId: string): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    await mergeMobileIncomingIfExists(repoPath);
   }
 
   public async writeTempGitFile(workspaceId: string, fileName: string, data: Uint8Array): Promise<string> {
