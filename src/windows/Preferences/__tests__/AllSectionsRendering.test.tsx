@@ -246,13 +246,6 @@ describe('Preferences - All Sections Rendering', () => {
     expect(screen.getByText('Preference.ReceivePreReleaseUpdates')).toBeInTheDocument();
   });
 
-  // ─── Friend Links section ───────────────────────────────────────
-
-  it('should render FriendLinks section', async () => {
-    await renderAllSections();
-    expect(screen.getByText('Preference.FriendLinks')).toBeInTheDocument();
-  });
-
   // ─── Miscellaneous section ──────────────────────────────────────
 
   it('should render Miscellaneous section', async () => {

@@ -50,6 +50,13 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
   // Subjects for subscription updates
   private statusSubjects: Map<string, BehaviorSubject<EmbeddingStatus>> = new Map();
 
+  private toSqliteRowId(value: number): number {
+    if (!Number.isInteger(value)) {
+      throw new Error(`Expected integer sqlite rowid, received: ${String(value)}`);
+    }
+    return value;
+  }
+
   public async initialize(): Promise<void> {
     try {
       await this.initializeDatabase();
@@ -452,7 +459,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
               // Store vector in sqlite-vec table using the auto-generated ID
               try {
-                await this.storeEmbeddingVector(savedEntity.id, embeddingArray, dimensions);
+                await this.storeEmbeddingVector(this.toSqliteRowId(savedEntity.id), embeddingArray, dimensions);
                 chunkSuccessCount++;
               } catch (vectorError) {
                 // If vector storage fails, clean up the metadata record to avoid orphans
@@ -471,7 +478,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
                 // Retry the entire operation (metadata + vector) after reinitialization
                 const retryEntity = this.embeddingRepository!.create(embeddingRecord);
                 const retrySavedEntity = await this.embeddingRepository!.save(retryEntity);
-                await this.storeEmbeddingVector(retrySavedEntity.id, embeddingArray, dimensions);
+                await this.storeEmbeddingVector(this.toSqliteRowId(retrySavedEntity.id), embeddingArray, dimensions);
 
                 logger.info(`Successfully saved embedding for "${noteTitle}" chunk ${index + 1} after database reinitialization`);
                 chunkSuccessCount++;

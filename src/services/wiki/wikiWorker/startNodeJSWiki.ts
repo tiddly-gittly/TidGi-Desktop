@@ -6,14 +6,13 @@ import { onWorkerServicesReady } from './servicesReady';
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import type { TidgiService } from '@/types/tidgi-tw';
-import { DARK_LIGHT_CHANGE_ACTIONS_TAG } from '@services/theme/interface';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import type { Server } from 'node:http';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { IWidgetEvent, TiddlyWiki } from 'tiddlywiki';
+import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
@@ -52,7 +51,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     }
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
-      void native.logFor(workspace.name, 'debug', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
+      void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
       const textDecoder = new TextDecoder();
       intercept(
         (newStdOut: string | Uint8Array) => {
@@ -241,11 +240,6 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         nodeServer.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
         });
-        // Similar to how updateActiveWikiTheme calls WikiChannel.invokeActionsByTag
-        // TODO: now working, can't change theme to dark on start.
-        wikiInstance.rootWidget.invokeActionsByTag(DARK_LIGHT_CHANGE_ACTIONS_TAG, new Event('TidGi-invokeActionByTag') as unknown as IWidgetEvent, {
-          'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
-        });
         nodeServer.on('listening', function() {
           observer.next({
             type: 'control',
@@ -260,7 +254,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       });
       wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
       // after setWikiInstance, ipc server routes will start serving content
-      ipcServerRoutes.setConfig({ readOnlyMode });
+      ipcServerRoutes.setConfig({ readOnlyMode, shouldUseDarkColors });
       ipcServerRoutes.setHomePath(homePath);
       ipcServerRoutes.setWikiInstance(wikiInstance);
       ipcServerRoutes.setSubWikiPaths(subWikis.map(subWiki => subWiki.wikiFolderLocation));

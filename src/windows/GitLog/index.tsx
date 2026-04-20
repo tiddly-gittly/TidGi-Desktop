@@ -48,10 +48,21 @@ export default function GitHistory(): React.JSX.Element {
   }
 
   const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, setLastChangeType, hasMore, loadMore, setSearchParams } = useGitLogData(workspaceID);
-  const { selectedCommit, setSelectedCommit } = useCommitDetails();
+  const {
+    selectedCommit,
+    selectedCommitHashes,
+    commitSelectionAnchorHash,
+    setSelectedCommit,
+    setSelectedCommitHashes,
+    setCommitSelectionAnchorHash,
+  } = useCommitDetails();
   const {
     selectedFile,
     setSelectedFile,
+    selectedFiles,
+    setSelectedFiles,
+    fileSelectionAnchor,
+    setFileSelectionAnchor,
     viewMode,
     setViewMode,
     shouldSelectFirst,
@@ -103,13 +114,142 @@ export default function GitHistory(): React.JSX.Element {
     entries,
     setShouldSelectFirst,
     setSelectedCommit,
+    setSelectedCommitHashes,
+    setCommitSelectionAnchorHash,
     lastChangeType,
     setLastChangeType,
     selectedCommit,
     setSearchParams,
     setCurrentSearchParameters,
     setSelectedFile,
+    setSelectedFiles,
+    setFileSelectionAnchor,
   });
+
+  const clearFileSelection = useCallback(() => {
+    setSelectedFile(null);
+    setSelectedFiles([]);
+    setFileSelectionAnchor(null);
+  }, [setFileSelectionAnchor, setSelectedFile, setSelectedFiles]);
+
+  const handleCommitClick = useCallback((entry: typeof entries[number], event: React.MouseEvent) => {
+    const entryIndex = entries.findIndex((currentEntry) => currentEntry.hash === entry.hash);
+    if (entryIndex < 0) return;
+
+    if (event.shiftKey) {
+      const anchorHash = commitSelectionAnchorHash ?? selectedCommit?.hash ?? entry.hash;
+      const anchorIndex = entries.findIndex((currentEntry) => currentEntry.hash === anchorHash);
+      const rangeStart = anchorIndex >= 0 ? Math.min(anchorIndex, entryIndex) : entryIndex;
+      const rangeEnd = anchorIndex >= 0 ? Math.max(anchorIndex, entryIndex) : entryIndex;
+      const nextHashes = entries.slice(rangeStart, rangeEnd + 1).map((currentEntry) => currentEntry.hash);
+      setSelectedCommitHashes(nextHashes);
+      setSelectedCommit(entry);
+      if (commitSelectionAnchorHash === null) {
+        setCommitSelectionAnchorHash(anchorHash);
+      }
+      clearFileSelection();
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey) {
+      const isAlreadySelected = selectedCommitHashes.includes(entry.hash);
+      const nextHashes = isAlreadySelected
+        ? selectedCommitHashes.filter((hash) => hash !== entry.hash)
+        : [...selectedCommitHashes, entry.hash];
+      setSelectedCommitHashes(nextHashes);
+
+      if (isAlreadySelected) {
+        if (nextHashes.length === 0) {
+          setSelectedCommit(undefined);
+          setCommitSelectionAnchorHash(null);
+        } else {
+          const fallbackCommit = entries.find((currentEntry) => currentEntry.hash === nextHashes[nextHashes.length - 1]);
+          setSelectedCommit(fallbackCommit);
+        }
+      } else {
+        setSelectedCommit(entry);
+        setCommitSelectionAnchorHash(entry.hash);
+      }
+
+      clearFileSelection();
+      return;
+    }
+
+    setSelectedCommit(entry);
+    setSelectedCommitHashes([entry.hash]);
+    setCommitSelectionAnchorHash(entry.hash);
+    clearFileSelection();
+  }, [
+    clearFileSelection,
+    commitSelectionAnchorHash,
+    entries,
+    selectedCommit?.hash,
+    selectedCommitHashes,
+    setCommitSelectionAnchorHash,
+    setSelectedCommit,
+    setSelectedCommitHashes,
+  ]);
+
+  const handleFileSelect = useCallback((filePath: string | null, event?: React.MouseEvent) => {
+    if (!filePath) {
+      clearFileSelection();
+      return;
+    }
+
+    const filePaths = selectedCommit?.files?.map((file) => file.path) ?? [];
+    const fileIndex = filePaths.indexOf(filePath);
+    if (fileIndex < 0) return;
+
+    if (event?.shiftKey) {
+      const anchorPath = fileSelectionAnchor ?? selectedFile ?? filePath;
+      const anchorIndex = filePaths.indexOf(anchorPath);
+      const rangeStart = anchorIndex >= 0 ? Math.min(anchorIndex, fileIndex) : fileIndex;
+      const rangeEnd = anchorIndex >= 0 ? Math.max(anchorIndex, fileIndex) : fileIndex;
+      const nextPaths = filePaths.slice(rangeStart, rangeEnd + 1);
+      setSelectedFiles(nextPaths);
+      setSelectedFile(filePath);
+      if (fileSelectionAnchor === null) {
+        setFileSelectionAnchor(anchorPath);
+      }
+      return;
+    }
+
+    if (event?.ctrlKey || event?.metaKey) {
+      const isAlreadySelected = selectedFiles.includes(filePath);
+      const nextPaths = isAlreadySelected
+        ? selectedFiles.filter((path) => path !== filePath)
+        : [...selectedFiles, filePath];
+      setSelectedFiles(nextPaths);
+
+      if (isAlreadySelected) {
+        setSelectedFile(nextPaths[nextPaths.length - 1] ?? null);
+        if (nextPaths.length === 0) {
+          setFileSelectionAnchor(null);
+        }
+      } else {
+        setSelectedFile(filePath);
+        setFileSelectionAnchor(filePath);
+      }
+      return;
+    }
+
+    setSelectedFile(filePath);
+    setSelectedFiles([filePath]);
+    setFileSelectionAnchor(filePath);
+  }, [clearFileSelection, fileSelectionAnchor, selectedCommit?.files, selectedFile, selectedFiles, setFileSelectionAnchor, setSelectedFile, setSelectedFiles]);
+
+  const handleFileActionSuccess = useCallback((affectedPaths: string[] = []) => {
+    if (affectedPaths.length === 0) {
+      clearFileSelection();
+      return;
+    }
+
+    setSelectedFiles((previous) => previous.filter((path) => !affectedPaths.includes(path)));
+    setSelectedFile((previous) => previous && affectedPaths.includes(previous) ? null : previous);
+    setFileSelectionAnchor((previous) => previous && affectedPaths.includes(previous) ? null : previous);
+  }, [clearFileSelection, setFileSelectionAnchor, setSelectedFile, setSelectedFiles]);
+
+  const selectedCommits = entries.filter((entry) => selectedCommitHashes.includes(entry.hash));
 
   const { isRowLoaded, loadMoreRows } = useInfiniteScroll({
     hasMore,
@@ -173,13 +313,10 @@ export default function GitHistory(): React.JSX.Element {
                   loading={loading}
                   loadingMore={loadingMore}
                   hasMore={hasMore}
-                  selectedCommit={selectedCommit}
+                  selectedCommitHashes={selectedCommitHashes}
                   currentSearchParameters={currentSearchParameters}
                   onSearch={handleSearch}
-                  onSelectCommit={(entry) => {
-                    setSelectedCommit(entry);
-                    setSelectedFile(null);
-                  }}
+                  onSelectCommit={handleCommitClick}
                   onSyncClick={handleSyncClick}
                   isRowLoaded={isRowLoaded}
                   loadMoreRows={loadMoreRows}
@@ -192,6 +329,8 @@ export default function GitHistory(): React.JSX.Element {
                   theme={gitLogTheme}
                   onSelectCommit={(entry) => {
                     setSelectedCommit(entry);
+                    setSelectedCommitHashes([entry.hash]);
+                    setCommitSelectionAnchorHash(entry.hash);
                     setSelectedFile(null);
                   }}
                   renderTooltip={renderTooltip}
@@ -205,10 +344,12 @@ export default function GitHistory(): React.JSX.Element {
               <DetailsPanelWrapper>
                 <CommitDetailsPanel
                   commit={selectedCommit ?? null}
+                  selectedCommits={selectedCommits}
                   workspaceID={workspaceInfo.id}
                   showSnackbar={showSnackbar}
-                  onFileSelect={setSelectedFile}
+                  onFileSelect={handleFileSelect}
                   selectedFile={selectedFile}
+                  selectedFiles={selectedFiles}
                   onCommitSuccess={handleCommitSuccess}
                   onRevertSuccess={handleRevertSuccess}
                   onUndoSuccess={handleUndoSuccess}
@@ -236,12 +377,9 @@ export default function GitHistory(): React.JSX.Element {
               <FileDiffPanel
                 commitHash={selectedCommit?.hash || ''}
                 filePath={selectedFile}
+                selectedFiles={selectedFiles}
                 workspaceID={workspaceInfo.id}
-                onDiscardSuccess={() => {
-                  setSelectedFile(null);
-                  // Trigger git log refresh after discard
-                  setShouldSelectFirst(true);
-                }}
+                onDiscardSuccess={handleFileActionSuccess}
                 showSnackbar={showSnackbar}
               />
             )

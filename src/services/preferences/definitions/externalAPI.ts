@@ -14,5 +14,50 @@ export const externalAPISection: ISectionDefinition = {
       ns: 'agent',
       handler: 'externalAPI.configure',
     },
+    { type: 'divider' },
+    // Model selection items (complex dropdowns rendered by CustomSectionComponent)
+    {
+      type: 'custom',
+      componentId: 'externalAPI.defaultAIModel',
+      titleKey: 'Preference.DefaultAIModelSelection',
+      descriptionKey: 'Preference.DefaultAIModelSelectionDescription',
+    },
+    {
+      type: 'custom',
+      componentId: 'externalAPI.defaultEmbeddingModel',
+      titleKey: 'Preference.DefaultEmbeddingModelSelection',
+      descriptionKey: 'Preference.DefaultEmbeddingModelSelectionDescription',
+    },
+    {
+      type: 'custom',
+      componentId: 'externalAPI.defaultSpeechModel',
+      titleKey: 'Preference.DefaultSpeechModelSelection',
+      descriptionKey: 'Preference.DefaultSpeechModelSelectionDescription',
+    },
+    {
+      type: 'custom',
+      componentId: 'externalAPI.defaultImageModel',
+      titleKey: 'Preference.DefaultImageGenerationModelSelection',
+      descriptionKey: 'Preference.DefaultImageGenerationModelSelectionDescription',
+    },
+    {
+      type: 'custom',
+      componentId: 'externalAPI.defaultTranscriptionsModel',
+      titleKey: 'Preference.DefaultTranscriptionsModelSelection',
+      descriptionKey: 'Preference.DefaultTranscriptionsModelSelectionDescription',
+    },
+    {
+      type: 'custom',
+      componentId: 'externalAPI.defaultFreeModel',
+      titleKey: 'Preference.DefaultFreeModelSelection',
+      descriptionKey: 'Preference.DefaultFreeModelSelectionDescription',
+    },
+    {
+      type: 'custom',
+      componentId: 'externalAPI.modelParameters',
+      titleKey: 'Preference.ModelParameters',
+      descriptionKey: 'Preference.ModelParametersDescription',
+      ns: 'agent',
+    },
   ],
 };

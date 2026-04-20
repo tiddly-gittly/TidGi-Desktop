@@ -4,7 +4,6 @@ import { aiAgentSection } from './aiAgent';
 import { developersSection } from './developers';
 import { downloadsSection } from './downloads';
 import { externalAPISection } from './externalAPI';
-import { friendLinksSection } from './friendLinks';
 import { generalSection } from './general';
 import { languagesSection } from './languages';
 import { miscSection } from './misc';
@@ -12,7 +11,6 @@ import { networkSection } from './network';
 import { notificationsSection } from './notifications';
 import { performanceSection } from './performance';
 import { privacySection } from './privacy';
-import { searchSection } from './search';
 import { syncSection } from './sync';
 import { systemSection } from './system';
 import { tidgiMiniWindowSection } from './tidgiMiniWindow';
@@ -38,7 +36,6 @@ export const allSections: ISectionDefinition[] = [
   syncSection,
   externalAPISection,
   aiAgentSection,
-  searchSection,
   notificationsSection,
   systemSection,
   languagesSection,
@@ -48,7 +45,6 @@ export const allSections: ISectionDefinition[] = [
   privacySection,
   performanceSection,
   updatesSection,
-  friendLinksSection,
   miscSection,
 ];
 

@@ -12,6 +12,10 @@ interface ISnackbarState {
 interface IUseGitHistoryStateReturn {
   selectedFile: string | null;
   setSelectedFile: Dispatch<SetStateAction<string | null>>;
+  selectedFiles: string[];
+  setSelectedFiles: Dispatch<SetStateAction<string[]>>;
+  fileSelectionAnchor: string | null;
+  setFileSelectionAnchor: Dispatch<SetStateAction<string | null>>;
   viewMode: 'current' | 'all';
   setViewMode: Dispatch<SetStateAction<'current' | 'all'>>;
   shouldSelectFirst: boolean;
@@ -26,6 +30,8 @@ interface IUseGitHistoryStateReturn {
 
 export function useGitHistoryState(): IUseGitHistoryStateReturn {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [fileSelectionAnchor, setFileSelectionAnchor] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [currentSearchParameters, setCurrentSearchParameters] = useState<ISearchParameters>({
@@ -44,6 +50,10 @@ export function useGitHistoryState(): IUseGitHistoryStateReturn {
   return {
     selectedFile,
     setSelectedFile,
+    selectedFiles,
+    setSelectedFiles,
+    fileSelectionAnchor,
+    setFileSelectionAnchor,
     viewMode,
     setViewMode,
     shouldSelectFirst,
@@ -101,12 +111,16 @@ interface IUseCommitSelectionProps {
   entries: GitLogEntry[];
   setShouldSelectFirst: (value: boolean) => void;
   setSelectedCommit: (commit: GitLogEntry | undefined) => void;
+  setSelectedCommitHashes: (hashes: string[]) => void;
+  setCommitSelectionAnchorHash: (hash: string | null) => void;
   lastChangeType: string | null;
   setLastChangeType: (value: string | null) => void;
   selectedCommit: GitLogEntry | undefined;
   setSearchParams: (parameters: ISearchParameters) => void;
   setCurrentSearchParameters: (parameters: ISearchParameters) => void;
   setSelectedFile: (value: string | null) => void;
+  setSelectedFiles: (value: string[]) => void;
+  setFileSelectionAnchor: (value: string | null) => void;
 }
 
 export function useCommitSelection({
@@ -114,12 +128,16 @@ export function useCommitSelection({
   entries,
   setShouldSelectFirst,
   setSelectedCommit,
+  setSelectedCommitHashes,
+  setCommitSelectionAnchorHash,
   lastChangeType,
   setLastChangeType,
   selectedCommit,
   setSearchParams,
   setCurrentSearchParameters,
   setSelectedFile,
+  setSelectedFiles,
+  setFileSelectionAnchor,
 }: IUseCommitSelectionProps): IUseCommitSelectionReturn {
   // Track if we've already processed the current change type
   const lastProcessedChangeReference = useRef<string | null>(null);
@@ -133,17 +151,21 @@ export function useCommitSelection({
       const uncommittedEntry = entries.find((entry) => entry.hash === '');
       if (uncommittedEntry) {
         setSelectedCommit(uncommittedEntry);
+        setSelectedCommitHashes([uncommittedEntry.hash]);
+        setCommitSelectionAnchorHash(uncommittedEntry.hash);
         hasInitialSelectionReference.current = true;
       } else {
         // If no uncommitted changes, select the first commit
         const firstCommit = entries[0];
         if (firstCommit) {
           setSelectedCommit(firstCommit);
+          setSelectedCommitHashes([firstCommit.hash]);
+          setCommitSelectionAnchorHash(firstCommit.hash);
           hasInitialSelectionReference.current = true;
         }
       }
     }
-  }, [entries, selectedCommit, setSelectedCommit]);
+  }, [entries, selectedCommit, setCommitSelectionAnchorHash, setSelectedCommit, setSelectedCommitHashes]);
 
   // Auto-select first commit after successful manual commit
   useEffect(() => {
@@ -152,10 +174,12 @@ export function useCommitSelection({
       const firstCommit = entries.find((entry) => entry.hash !== '');
       if (firstCommit) {
         setSelectedCommit(firstCommit);
+        setSelectedCommitHashes([firstCommit.hash]);
+        setCommitSelectionAnchorHash(firstCommit.hash);
         setShouldSelectFirst(false);
       }
     }
-  }, [shouldSelectFirst, entries, setSelectedCommit, setShouldSelectFirst]);
+  }, [shouldSelectFirst, entries, setCommitSelectionAnchorHash, setSelectedCommit, setSelectedCommitHashes, setShouldSelectFirst]);
 
   // Maintain selection across refreshes by hash
   useEffect(() => {
@@ -169,6 +193,7 @@ export function useCommitSelection({
           // Update to the new entry object to get fresh data
           void window.service.native.log('debug', '[test-id-selection-maintained]', { hash: stillExists.hash, message: stillExists.message });
           setSelectedCommit(stillExists);
+          setSelectedCommitHashes([stillExists.hash]);
         }
       } else if (selectedCommit.hash === '') {
         // If selected uncommitted changes no longer exist (e.g., after commit)
@@ -181,10 +206,12 @@ export function useCommitSelection({
             newMessage: firstCommit.message,
           });
           setSelectedCommit(firstCommit);
+          setSelectedCommitHashes([firstCommit.hash]);
+          setCommitSelectionAnchorHash(firstCommit.hash);
         }
       }
     }
-  }, [entries, selectedCommit, shouldSelectFirst, setSelectedCommit]);
+  }, [entries, selectedCommit, setCommitSelectionAnchorHash, setSelectedCommit, setSelectedCommitHashes, shouldSelectFirst]);
 
   // Handle post-operation selection based on lastChangeType
   useEffect(() => {
@@ -199,6 +226,8 @@ export function useCommitSelection({
         if (firstCommit && (!selectedCommit || firstCommit.hash !== selectedCommit.hash)) {
           void window.service.native.log('debug', '[test-id-revert-auto-select]', { hash: firstCommit.hash, message: firstCommit.message });
           setSelectedCommit(firstCommit);
+          setSelectedCommitHashes([firstCommit.hash]);
+          setCommitSelectionAnchorHash(firstCommit.hash);
           lastProcessedChangeReference.current = lastChangeType;
         }
       } else if (lastChangeType === 'undo' && entries.length > 0) {
@@ -207,11 +236,13 @@ export function useCommitSelection({
         if (uncommittedEntry) {
           void window.service.native.log('debug', '[test-id-undo-auto-select]', { message: 'Selected uncommitted changes' });
           setSelectedCommit(uncommittedEntry);
+          setSelectedCommitHashes([uncommittedEntry.hash]);
+          setCommitSelectionAnchorHash(uncommittedEntry.hash);
           lastProcessedChangeReference.current = lastChangeType;
         }
       }
     }
-  }, [lastChangeType, entries, setSelectedCommit, selectedCommit]);
+  }, [entries, lastChangeType, selectedCommit, setCommitSelectionAnchorHash, setSelectedCommit, setSelectedCommitHashes]);
 
   const handleCommitSuccess = useCallback(() => {
     // Don't set shouldSelectFirst - let the maintain selection logic handle it
@@ -244,9 +275,22 @@ export function useCommitSelection({
       setCurrentSearchParameters(parameters);
       // Reset selection when searching
       setSelectedCommit(undefined);
+      setSelectedCommitHashes([]);
+      setCommitSelectionAnchorHash(null);
       setSelectedFile(null);
+      setSelectedFiles([]);
+      setFileSelectionAnchor(null);
     },
-    [setSearchParams, setCurrentSearchParameters, setSelectedCommit, setSelectedFile],
+    [
+      setCommitSelectionAnchorHash,
+      setCurrentSearchParameters,
+      setFileSelectionAnchor,
+      setSearchParams,
+      setSelectedCommit,
+      setSelectedCommitHashes,
+      setSelectedFile,
+      setSelectedFiles,
+    ],
   );
 
   return { handleCommitSuccess, handleRevertSuccess, handleUndoSuccess, handleSearch };

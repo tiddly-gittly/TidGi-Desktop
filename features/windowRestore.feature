@@ -8,12 +8,10 @@ Feature: TidGi Main Window Reopen
     And I configure tidgi mini window and disable runOnBackground
     When I launch the TidGi application
     And I wait for the page to load completely
-    # Wait for the wiki worker to fully start before any scenario steps run.
-    # "the browser view should be loaded and visible" is unreliable in the test environment
-    # because TiddlyWiki startup can exceed the 21-second step timeout.
-    # Using log markers gives a deterministic signal that the wiki is ready.
-    Then I wait for "wiki worker started" log marker "[test-id-WIKI_WORKER_STARTED]"
-    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
+    # Wait for workspace to be fully created (git init + git add can be slow)
+    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
+    # Wait for the wiki browser view to be ready before any scenario steps run.
+    Then the browser view should be loaded and visible
     And I confirm the "main" window browser view is positioned within visible window bounds
 
   @wiki @window-restore

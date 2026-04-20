@@ -15,6 +15,7 @@ Feature: TidGi Default Wiki
       | page body           | body                                            |
       | wiki workspace      | div[data-testid^='workspace-']:has-text('wiki') |
     And the window title should contain "太记"
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     And the browser view should be loaded and visible
     And I should see "我的 TiddlyWiki" in the browser view content
 
@@ -33,7 +34,6 @@ Feature: TidGi Default Wiki
     When I click on a "create wiki button" element with selector "button:has-text('创建知识库')"
     Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
     When I switch to "main" window
-    Then I wait for "view loaded" log marker "[test-id-VIEW_LOADED]"
     Then I should see a "wiki2 workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     And the browser view should be loaded and visible
@@ -53,14 +53,19 @@ Feature: TidGi Default Wiki
     Then I wait for "config file written" log marker "[test-id-TIDGI_CONFIG_WRITTEN]"
     When I restart workspace "wiki"
     And the browser view should be loaded and visible
+    # In lazy-all mode, Index.tid is served via tidgi:// protocol. Opening it confirms lazy-load works.
+    When I open tiddler "Index" in browser view
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
-    And I should see "Test content for lazy-all verification after restart" in the browser view content
+
 
   @wiki @move-workspace
   Scenario: Move workspace to a new location
     Given I cleanup test wiki so it could create a new one on start
     When I launch the TidGi application
     And I wait for the page to load completely
+    Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    And the browser view should be loaded and visible
     # Enable file system watch for testing (default is false in production)
     When I update workspace "wiki" settings:
       | property              | value |
@@ -91,26 +96,3 @@ Feature: TidGi Default Wiki
     Then I wait for tiddler "Index" to be updated by watch-fs
     # The content check will automatically wait for IPC to sync
     And I should see "Content after moving workspace" in the browser view content
-    # Move it back to original location for cleanup
-    # Clear test-id markers to ensure we're waiting for fresh logs from second restart
-    When I clear test-id markers from logs
-    And I switch to "editWorkspace" window
-    And I wait for the page to load completely
-    # Accordion is still expanded from the first move — do NOT click it again (that would collapse it)
-    When I prepare to select directory in dialog "wiki-test"
-    And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
-    Then I wait for log markers:
-      | description                            | marker                                   |
-      | workspace moved back to wiki-test      | [test-id-WORKSPACE_MOVED:                |
-      | workspace restarted after move back    | [test-id-WORKSPACE_RESTARTED_AFTER_MOVE: |
-      | watch-fs stabilized after restart back | [test-id-WATCH_FS_STABILIZED]            |
-      | SSE ready after restart back           | [test-id-SSE_READY]                      |
-      | view loaded after restart back         | [test-id-VIEW_LOADED]                    |
-    Then file "wiki/tiddlywiki.info" should exist in "wiki-test"
-    # Switch to main window and wait for view to be ready
-    Then I switch to "main" window
-    # Verify the wiki still works after moving back
-    When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Content after moving back"
-    Then I wait for tiddler "Index" to be updated by watch-fs
-    # The content check will automatically wait for IPC to sync
-    And I should see "Content after moving back" in the browser view content

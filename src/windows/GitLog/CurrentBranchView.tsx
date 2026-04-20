@@ -2,7 +2,6 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import type React from 'react';
-import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { List as VirtualList } from 'react-window';
 import { useInfiniteLoader } from 'react-window-infinite-loader';
@@ -17,10 +16,10 @@ interface ICurrentBranchViewProps {
   loading: boolean;
   loadingMore: boolean;
   hasMore: boolean;
-  selectedCommit: GitLogEntry | undefined;
+  selectedCommitHashes: string[];
   currentSearchParameters: ISearchParameters;
   onSearch: (parameters: ISearchParameters) => void;
-  onSelectCommit: (entry: GitLogEntry) => void;
+  onSelectCommit: (entry: GitLogEntry, event: React.MouseEvent) => void;
   onSyncClick: () => Promise<void>;
   isRowLoaded: (index: number) => boolean;
   loadMoreRows: (startIndex: number, stopIndex: number) => Promise<void>;
@@ -31,7 +30,7 @@ export function CurrentBranchView({
   loading,
   loadingMore,
   hasMore,
-  selectedCommit,
+  selectedCommitHashes,
   currentSearchParameters,
   onSearch,
   onSelectCommit,
@@ -46,13 +45,6 @@ export function CurrentBranchView({
     loadMoreRows,
     rowCount: hasMore ? entries.length + 1 : entries.length,
   });
-
-  const handleRowSelect = useCallback(
-    (entry: GitLogEntry) => {
-      onSelectCommit(entry);
-    },
-    [onSelectCommit],
-  );
 
   return (
     <>
@@ -71,7 +63,7 @@ export function CurrentBranchView({
               if (!entry) return <div style={style} />;
 
               const commitDate = new Date(entry.committerDate);
-              const isSelected = selectedCommit?.hash === entry.hash;
+              const isSelected = selectedCommitHashes.includes(entry.hash);
 
               return (
                 <div style={style}>
@@ -79,8 +71,8 @@ export function CurrentBranchView({
                     commit={entry}
                     selected={isSelected}
                     commitDate={commitDate}
-                    onSelect={() => {
-                      handleRowSelect(entry);
+                    onSelect={(event) => {
+                      onSelectCommit(entry, event);
                     }}
                     onSyncClick={onSyncClick}
                   />

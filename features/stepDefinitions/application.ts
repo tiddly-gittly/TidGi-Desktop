@@ -1,4 +1,4 @@
-import { AfterStep, setWorldConstructor, Status, When } from '@cucumber/cucumber';
+import { AfterStep, Given, setWorldConstructor, Status, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
@@ -76,6 +76,7 @@ export class ApplicationWorld {
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
   providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
+  launchEnvOverrides: Record<string, string> = {};
 
   // Helper method to check if window is visible
   async isWindowVisible(page: Page): Promise<boolean> {
@@ -137,26 +138,31 @@ export class ApplicationWorld {
       const windowDimensions = checkWindowDimension(windowName);
       try {
         const electronWindowInfo = await this.app.evaluate(
-          async ({ BrowserWindow }, size: { width: number; height: number }) => {
+          async ({ BrowserWindow }, searchParameters: { size: { width: number; height: number }; titleHint: string }) => {
             const allWindows = BrowserWindow.getAllWindows();
-            const tidgiMiniWindow = allWindows.find(win => {
+            // First try: match by title hint (BrowserWindow.title, set in WindowProperties)
+            const byTitle = allWindows.find(win => win.getTitle().includes(searchParameters.titleHint));
+            if (byTitle) return { id: byTitle.id };
+            // Second try: match by dimensions
+            const bySize = allWindows.find(win => {
               const bounds = win.getBounds();
-              return bounds.width === size.width && bounds.height === size.height;
+              return bounds.width === searchParameters.size.width && bounds.height === searchParameters.size.height;
             });
-            return tidgiMiniWindow ? { id: tidgiMiniWindow.id } : null;
+            return bySize ? { id: bySize.id } : null;
           },
-          windowDimensions,
+          { size: windowDimensions, titleHint: 'Mini Window' },
         );
 
         if (electronWindowInfo) {
-          // Found by dimensions, now match with Playwright page
-          const allWindows = pages.filter(page => !page.isClosed());
-          for (const page of allWindows) {
+          // Match Playwright page by comparing its underlying BrowserWindow ID.
+          // Title matching is unreliable because the mini window loads the same index.html
+          // as the main window, and document.title may not yet reflect the window type.
+          const nonClosedPages = pages.filter(page => !page.isClosed());
+          for (const page of nonClosedPages) {
             try {
-              // Try to match by checking if this page belongs to the found electron window
-              // For now, use title as fallback verification
-              const title = await page.title();
-              if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+              const bw = await this.app.browserWindow(page);
+              const bwId = await bw.evaluate((win: Electron.BrowserWindow) => win.id);
+              if (bwId === electronWindowInfo.id) {
                 return page;
               }
             } catch {
@@ -168,7 +174,7 @@ export class ApplicationWorld {
         // If Electron API fails, fallback to title matching
       }
 
-      // Fallback: Match by window title
+      // Fallback: Match by window title (covers cases where title IS set by the React app)
       const allWindows = pages.filter(page => !page.isClosed());
       for (const page of allWindows) {
         try {
@@ -264,6 +270,7 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
     ],
     env: {
       ...process.env,
+      ...world.launchEnvOverrides,
       NODE_ENV: 'test',
       E2E_TEST: 'true',
       LANG: process.env.LANG || 'zh-Hans.UTF-8',
@@ -285,6 +292,13 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
   world.mainWindow = openedWindows[0];
   world.currentWindow = world.mainWindow;
 }
+
+Given('I mock system palette as {string}', function(this: ApplicationWorld, palette: string) {
+  if (palette !== 'dark' && palette !== 'light') {
+    throw new Error(`Unsupported palette mock value: ${palette}. Use "dark" or "light".`);
+  }
+  this.launchEnvOverrides.TIDGI_E2E_MOCK_SYSTEM_PALETTE = palette;
+});
 
 async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   // If launch is still in progress, wait it settle before closing.

@@ -1,7 +1,7 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
-import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { HEAVY_OPERATION_TIMEOUT } from '../supports/timeouts';
 import {
   clickElement,
   clickElementWithText,
@@ -24,17 +24,68 @@ const BACKOFF_OPTIONS = {
 };
 
 const BROWSER_VIEW_RETRY_DELAY_MS = 100;
-/**
- * Each retry iteration takes roughly BROWSER_VIEW_RETRY_DELAY_MS (backoff delay)
- * PLUS the executeInBrowserView timeout (~2000ms worst case for heavy TiddlyWiki pages).
- * Account for both when calculating how many attempts fit within the Cucumber step
- * timeout budget, leaving 4s margin for catch-block diagnostics and Cucumber overhead.
- */
-const ESTIMATED_PER_ATTEMPT_MS = BROWSER_VIEW_RETRY_DELAY_MS + 2000; // delay + executeJavaScript timeout
-const BROWSER_VIEW_RETRY_ATTEMPTS = Math.max(
-  8,
-  Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / ESTIMATED_PER_ATTEMPT_MS),
-);
+
+type BrowserViewBackgroundMode = 'dark' | 'light';
+
+function parseRgbColor(backgroundColor: string): { red: number; green: number; blue: number } | undefined {
+  const match = backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+  if (!match) {
+    return undefined;
+  }
+  return {
+    red: Number(match[1]),
+    green: Number(match[2]),
+    blue: Number(match[3]),
+  };
+}
+
+async function assertBrowserViewBodyBackground(
+  world: ApplicationWorld,
+  expectedMode: BrowserViewBackgroundMode,
+): Promise<void> {
+  if (!world.app) {
+    throw new Error('Application not launched');
+  }
+
+  const colorInfo = await executeTiddlyWikiCode<{ backgroundColor: string; paletteTitle: string }>(
+    world.app,
+    `(function() {
+      const backgroundColor = window.getComputedStyle(document.body).backgroundColor || '';
+      let paletteTitle = '';
+      try {
+        if (typeof $tw !== 'undefined' && $tw.wiki) {
+          paletteTitle = $tw.wiki.getTiddlerText('$:/palette', '') || '';
+        }
+      } catch {
+        paletteTitle = '';
+      }
+      return { backgroundColor, paletteTitle };
+    })()`,
+    world.currentWindow,
+    200,
+  );
+
+  if (!colorInfo) {
+    throw new Error('Failed to read browser view background color');
+  }
+
+  const rgb = parseRgbColor(colorInfo.backgroundColor);
+  if (!rgb) {
+    throw new Error(`Unexpected background color format: ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+  }
+
+  const { red, green, blue } = rgb;
+  const isDark = red < 128 && green < 128 && blue < 128;
+  const isLight = red > 200 && green > 200 && blue > 200;
+
+  if (expectedMode === 'dark' && !isDark) {
+    throw new Error(`Expected dark background in browser view, got ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+  }
+
+  if (expectedMode === 'light' && !isLight) {
+    throw new Error(`Expected light background in browser view, got ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+  }
+}
 
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
   if (!this.app) {
@@ -95,6 +146,11 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     throw new Error('No current window available');
   }
 
+  // Use a longer retry window because WebContentsView creation is async and can take
+  // several seconds after workspace activation. Each attempt is fast (< 10ms) when the
+  // view doesn't exist yet, so we need many more attempts to cover the full wait budget.
+  const longRetryAttempts = Math.floor((HEAVY_OPERATION_TIMEOUT - 4000) / BROWSER_VIEW_RETRY_DELAY_MS);
+
   await backOff(
     async () => {
       const content = await getTextContent(this.app!, this.currentWindow);
@@ -104,7 +160,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     },
     {
       ...BACKOFF_OPTIONS,
-      numOfAttempts: BROWSER_VIEW_RETRY_ATTEMPTS,
+      numOfAttempts: longRetryAttempts,
       startingDelay: BROWSER_VIEW_RETRY_DELAY_MS,
       maxDelay: BROWSER_VIEW_RETRY_DELAY_MS,
     },
@@ -119,8 +175,8 @@ Then('the browser view should be loaded and visible', async function(this: Appli
       diagnostics = `diagnostics failed: ${String(diagError)}`;
     }
     throw new Error(
-      `Browser view is not loaded or visible after ${BROWSER_VIEW_RETRY_ATTEMPTS} attempts ` +
-        `(~${Math.round((BROWSER_VIEW_RETRY_ATTEMPTS * ESTIMATED_PER_ATTEMPT_MS) / 1000)}s / ${Math.round(CUCUMBER_GLOBAL_TIMEOUT / 1000)}s budget). ${diagnostics}`,
+      `Browser view is not loaded or visible after ${longRetryAttempts} attempts ` +
+        `(budget: ${Math.round(HEAVY_OPERATION_TIMEOUT / 1000)}s). ${diagnostics}`,
     );
   });
 });
@@ -521,4 +577,19 @@ Then('image {string} should be loaded in browser view', async function(this: App
   ).catch(() => {
     throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
   });
+});
+
+Then('browser view body background should be dark', async function(this: ApplicationWorld) {
+  await assertBrowserViewBodyBackground(this, 'dark');
+});
+
+Then('browser view body background should be light', async function(this: ApplicationWorld) {
+  await assertBrowserViewBodyBackground(this, 'light');
+});
+
+Then('browser view body background should be {string}', async function(this: ApplicationWorld, mode: string) {
+  if (mode !== 'dark' && mode !== 'light') {
+    throw new Error(`Unsupported browser view background mode: ${mode}. Use "dark" or "light".`);
+  }
+  await assertBrowserViewBodyBackground(this, mode);
 });

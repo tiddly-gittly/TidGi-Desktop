@@ -1,46 +1,64 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
+import { getPerformanceMultiplier, isCalibrated } from './calibration';
 
 const isCI = Boolean(process.env.CI);
-const isMac = process.platform === 'darwin';
 
 /**
- * Cucumber global timeout budget per step/hook.
- * Keep macOS equal to CI for local parity on slower Electron startup.
+ * Get the performance multiplier.
+ * CI always uses 1.0×, local dev uses calibrated multiplier.
  */
-export const CUCUMBER_GLOBAL_TIMEOUT = (isCI || isMac) ? 25000 : 25000;
+function getMultiplier(): number {
+  if (isCI) return 1.0;
 
-console.log('[Timeout Config] Setting global timeout to:', CUCUMBER_GLOBAL_TIMEOUT, 'ms (CI:', isCI, ', macOS:', isMac, ')');
+  const multiplier = getPerformanceMultiplier();
+
+  // Log warning if calibration hasn't run yet
+  if (!isCalibrated()) {
+    console.warn('[Timeout Config] Using fallback multiplier - calibration not yet performed');
+  }
+
+  return multiplier;
+}
+
+const performanceMultiplier = getMultiplier();
+const BASE_TIMEOUT = 25000;
+const HEAVY_OPERATION_MULTIPLIER = 1.6;
+
+/**
+ * Cucumber global timeout budget per step/hook, scaled by E2E performance.
+ * Fast machines get tight timeouts (fast bug detection), slow machines get room they need.
+ */
+export const CUCUMBER_GLOBAL_TIMEOUT = Math.round(BASE_TIMEOUT * performanceMultiplier);
+export const HEAVY_OPERATION_TIMEOUT = Math.round(CUCUMBER_GLOBAL_TIMEOUT * HEAVY_OPERATION_MULTIPLIER);
+
+console.log(
+  `[Timeout Config] multiplier=${performanceMultiplier.toFixed(2)}×  step budget=${CUCUMBER_GLOBAL_TIMEOUT} ms  (CI=${isCI})`,
+);
+console.log(
+  `[Timeout Config] heavy budget=${HEAVY_OPERATION_TIMEOUT} ms`,
+);
 
 setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
 
 /**
- * Centralized timeout configuration for E2E tests
- *
- * IMPORTANT: Most steps should NOT specify custom timeouts!
- * CucumberJS global timeout is configured in cucumber.config.js:
- * - Local: 5 seconds
- * - CI: 10 seconds (exactly 2x local)
- *
- * Only special operations (like complex browser view UI interactions) should
- * specify custom timeouts at the step level, with clear comments explaining why.
- *
- * If an operation times out, it indicates a performance issue that should be fixed,
- * not a timeout that should be increased.
- */
-
-/**
- * Timeout for Playwright waitForSelector and similar operations
- * These are internal timeouts for finding elements, not Cucumber step timeouts
+ * Timeout for Playwright waitForSelector and similar operations.
+ * Internal timeouts for finding elements, not Cucumber step timeouts.
  */
 export const PLAYWRIGHT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 /**
- * Shorter timeout for operations that should be very fast
+ * Shorter timeout for operations that should be very fast.
  */
-export const PLAYWRIGHT_SHORT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT - 5000;
+export const PLAYWRIGHT_SHORT_TIMEOUT = Math.max(5000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
 
 /**
- * Timeout for waiting log markers
- * Internal wait should be shorter than step timeout to allow proper error reporting
+ * Timeout for waiting log markers.
+ * Internal wait should be shorter than step timeout to allow proper error reporting.
  */
-export const LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT - 5000;
+export const LOG_MARKER_WAIT_TIMEOUT = Math.max(5000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
+export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = Math.max(10000, HEAVY_OPERATION_TIMEOUT - 5000);
+
+/**
+ * Number of retry attempts for UI operations, scaled by performance.
+ */
+export const UI_RETRY_ATTEMPTS = Math.max(3, Math.round(10 * performanceMultiplier));

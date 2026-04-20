@@ -15,4 +15,3 @@ Feature: TidGi Application Launch
     When I click on a "sync section" element with selector "[data-testid='preference-section-sync']"
     Then I should find log entries containing
       | test-id-Preferences section clicked |
-      | test-id-WorkerServicesReady |

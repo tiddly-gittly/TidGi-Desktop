@@ -240,3 +240,53 @@ Feature: Git Log Window
     Then I wait for "git sync completed" log marker "[test-id-git-sync-complete]"
     # Verify the file was pushed to the remote repository
     And the remote repository "{tmpDir}/remote-gitlog-sync.git" should contain file "tiddlers/SyncButtonTest.tid"
+
+  @git
+  Scenario: Git Log multi-select commits with Ctrl and undo both
+    # Create first tiddler and commit it
+    When I create file "{tmpDir}/wiki/tiddlers/新条目 0.tid" with content:
+      """
+      created: 20250420070000000
+      modified: 20250420070000000
+      title: 新条目 0
+      tags: MultiSelectTest
+
+      First tiddler for multi-select undo test.
+      """
+    Then I wait for tiddler "新条目 0" to be added by watch-fs
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
+    # Create second tiddler and commit it
+    When I create file "{tmpDir}/wiki/tiddlers/新条目 1.tid" with content:
+      """
+      created: 20250420070000000
+      modified: 20250420070000000
+      title: 新条目 1
+      tags: MultiSelectTest
+
+      Second tiddler for multi-select undo test.
+      """
+    Then I wait for tiddler "新条目 1" to be added by watch-fs
+    When I clear log lines containing "[test-id-git-commit-complete]"
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
+    # Open Git Log window
+    When I click menu "同步和备份 > 查看历史备份"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
+    # Click the commit containing 新条目 1 to select it
+    When I click on a "commit row with 新条目 1" element with selector "[data-testid^='commit-row-']:has-text('新条目 1')"
+    # Ctrl-click the commit containing 新条目 0 to add it to selection
+    When I ctrl-click on a "commit row with 新条目 0" element with selector "[data-testid^='commit-row-']:has-text('新条目 0')"
+    # Switch to Actions tab and verify undo button shows count of 2
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
+    Then I should see a "undo button with count 2" element with selector "[data-testid='undo-commit-button']:has-text('(2)')"
+    # Clear markers and undo both commits
+    When I clear log lines containing "[test-id-git-log-refreshed]"
+    When I click on a "undo button" element with selector "[data-testid='undo-commit-button']"
+    Then I wait for "git log refreshed after undo" log marker "[test-id-git-log-refreshed]"
+    # Both commits should be gone; uncommitted changes should appear
+    Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
+    Then I should not see a "commit with 新条目 1" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('新条目 1')"
+    Then I should not see a "commit with 新条目 0" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('新条目 0')"

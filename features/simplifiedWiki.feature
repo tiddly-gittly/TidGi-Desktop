@@ -10,6 +10,8 @@ Feature: Simplified Main Wiki Workspace
   @wiki @simplified-main-wiki
   Scenario: Convert default wiki to simplified structure
     And I wait for the page to load completely
+    # Wait for workspace to be created and persisted before closing (git-init can take a few seconds)
+    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
     Then file "wiki/tiddlywiki.info" should exist in "wiki-test"
     And I close the TidGi application
     When I flatten default wiki to simplified root structure
@@ -17,15 +19,15 @@ Feature: Simplified Main Wiki Workspace
     And I launch the TidGi application
     And I wait for the page to load completely
     And I switch to "main" window
-    Then file "wiki/tidgi.config.json" should exist in "wiki-test"
     # Prevent Log has Found 0 existing wiki workspaces
-    Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    When I click on a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    Then I should see a "default workspace" element with selector "div[data-testid^='workspace-']"
+    When I click on a "default workspace" element with selector "div[data-testid^='workspace-']"
+    # tidgi.config.json is written asynchronously after wiki loads
+    And the browser view should be loaded and visible
+    Then file "wiki/tidgi.config.json" should exist in "wiki-test"
     And file "wiki/tidgi.config.json" should contain JSON with:
       | jsonPath | value |
       | $.name   | wiki  |
-    # Should wait until real wiki content loaded, like side bar tab caption
-    And the browser view should be loaded and visible
     And I should see "最近" in the browser view content
     When I open tiddler "TiddlyWikiIconBlue.png" in browser view
     Then image "TiddlyWikiIconBlue.png" should be loaded in browser view

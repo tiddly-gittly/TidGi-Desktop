@@ -5,13 +5,6 @@ import { getWikiTestRootPath } from '../supports/paths';
 import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
-const UI_BACKOFF_OPTIONS = {
-  numOfAttempts: 15,
-  startingDelay: 200,
-  timeMultiple: 1,
-  maxDelay: 200,
-};
-
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
 });
@@ -55,31 +48,25 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 });
 
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  await backOff(
-    async () => {
-      let currentWindow = this.currentWindow;
-      if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-        currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_SHORT_TIMEOUT });
-        this.mainWindow = this.mainWindow ?? currentWindow;
-        this.currentWindow = currentWindow;
-      }
-      if (!currentWindow) {
-        throw new Error('No current window is available');
-      }
+  let currentWindow = this.currentWindow;
+  if ((!currentWindow || currentWindow.isClosed()) && this.app) {
+    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    this.mainWindow = this.mainWindow ?? currentWindow;
+    this.currentWindow = currentWindow;
+  }
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
 
-      const element = await currentWindow.$(selector);
-      if (!element) {
-        throw new Error('Element not found yet');
-      }
-      const isVisible = await element.isVisible();
-      if (!isVisible) {
-        throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
-      }
-    },
-    UI_BACKOFF_OPTIONS,
-  ).catch((error: unknown) => {
+  try {
+    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    const isVisible = await currentWindow.isVisible(selector);
+    if (!isVisible) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    }
+  } catch (error) {
     throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
-  });
+  }
 });
 
 Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
@@ -238,6 +225,23 @@ When('I click on {string} elements with selectors:', async function(this: Applic
 
   if (errors.length > 0) {
     throw new Error(`Failed to click elements:\n${errors.join('\n')}`);
+  }
+});
+
+When('I ctrl-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const targetWindow = await this.getWindow('current');
+  if (!targetWindow) {
+    throw new Error(`Window "current" is not available`);
+  }
+  try {
+    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    const isVisible = await targetWindow.isVisible(selector);
+    if (!isVisible) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    }
+    await targetWindow.click(selector, { modifiers: ['Control'] });
+  } catch (error) {
+    throw new Error(`Failed to ctrl-click ${elementComment} with selector "${selector}": ${error as Error}`);
   }
 });
 

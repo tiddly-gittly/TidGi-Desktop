@@ -86,28 +86,14 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I type "在 wiki 工作区创建一个名为 Machine Learning Basics 的笔记，内容是：机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
-    # Step 2: Open preferences and navigate to Search section to generate embeddings
-    When I click on a "settings button" element with selector "#open-preferences-button"
-    When I switch to "preferences" window
-    When I click on a "search section" element with selector "[data-testid='preference-section-search']"
-    # Wait for workspace list to load
-    # The Search.tsx renders workspace cards with name, status, and buttons
-    And I should see a "wiki workspace card" element with selector "*:has-text('wiki')"
-    # Click the generate button - use button text "生成" instead of data-testid
-    # The button shows "生成" for initial generation, "更新嵌入" after generation
-    When I click on a "generate button with text" element with selector "button:has-text('生成')"
-    # Verify generation completed with detailed status information
-    # Should show: workspace name, embedding count, note count, last updated time and action buttons
-    Then I should see "workspace name in status and embedding count status and embedding word and last updated label and update button after generation and delete button after generation" elements with selectors:
-      | element description              | selector                        |
-      | workspace name in status         | *:has-text('wiki')              |
-      | embedding count status           | *:has-text('个笔记')            |
-      | embedding word                   | *:has-text('嵌入')              |
-      | last updated label               | *:has-text('最后更新')          |
-      | update button after generation   | button:has-text('更新嵌入')     |
-      | delete button after generation   | button:has-text('删除')         |
-    # Close preferences
-    When I close "preferences" window
+    # Step 2: Open workspace settings and navigate to Search/Embedding section to generate embeddings
+    When I open edit workspace window for workspace with name "wiki"
+    And I switch to "editWorkspace" window
+    When I click on a "search section" element with selector "[data-testid='workspace-section-search']"
+    When I click on a "generate embeddings button" element with selector "[data-testid^='generate-embeddings-button-']"
+    Then I should see a "delete embeddings button after generation" element with selector "[data-testid^='delete-embeddings-button-']"
+    # Close workspace settings
+    When I close "editWorkspace" window
     And I switch to "main" window
     # Step 3: Perform vector search and verify results match agent workflow
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"

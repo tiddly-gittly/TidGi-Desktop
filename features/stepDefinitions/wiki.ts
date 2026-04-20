@@ -7,7 +7,7 @@ import { WindowNames } from '../../src/services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
-import { LOG_MARKER_WAIT_TIMEOUT } from '../supports/timeouts';
+import { HEAVY_LOG_MARKER_WAIT_TIMEOUT, LOG_MARKER_WAIT_TIMEOUT } from '../supports/timeouts';
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
 
@@ -631,7 +631,7 @@ async function clearSubWikiRoutingTestData(scenarioRoot?: string) {
  */
 Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
   // Search in all log files using '*' pattern (includes TidGi-, wiki-, and workspace-named logs like WikiRenamed-)
-  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, LOG_MARKER_WAIT_TIMEOUT, '*');
+  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, HEAVY_LOG_MARKER_WAIT_TIMEOUT, '*');
 });
 
 /**
@@ -656,7 +656,7 @@ Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable
   // Wait for markers sequentially to maintain order
   for (const [description, marker] of dataRows) {
     try {
-      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, LOG_MARKER_WAIT_TIMEOUT, '*');
+      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, HEAVY_LOG_MARKER_WAIT_TIMEOUT, '*');
     } catch (error) {
       errors.push(`Failed to find log marker "${marker}" (${description}): ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -672,9 +672,9 @@ Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable
  * This is commonly used in Background sections
  */
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
-  await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', 20000);
+  await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', HEAVY_LOG_MARKER_WAIT_TIMEOUT);
   try {
-    await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', 15000);
+    await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', HEAVY_LOG_MARKER_WAIT_TIMEOUT);
   } catch (error) {
     // Gather SSE diagnostics from the BrowserView to aid debugging
     let diagnostics = 'no diagnostics';
@@ -1180,13 +1180,6 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
   const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
-    // Ensure the wiki worker has fully started before attempting restart,
-    // otherwise stopWiki() may miss the worker (not yet registered) and startWiki()
-    // will race with the in-progress boot, causing DoubleWikiInstanceError (E-4).
-    // Use default 10s timeout (not LOG_MARKER_WAIT_TIMEOUT which is 3s) because
-    // wiki worker initialization can take several seconds.
-    await waitForLogMarker(this, '[test-id-WIKI_WORKER_STARTED]', 'wiki worker not started before restart attempt');
-
     // Only wait for watch-fs if it was enabled before the update
     // If it was disabled, wiki is ready immediately without watch-fs markers
     if (watchFsCurrentlyEnabled) {

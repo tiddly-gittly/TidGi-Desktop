@@ -273,14 +273,81 @@ export class GitServerService implements IGitServerService {
     });
   }
 
-  /**
-   * Called by the merge-incoming HTTP endpoint AFTER receive-pack completes.
-   * Runs on desktop main process where dugite is available.
-   */
+  // ── Generic file I/O for plugins ────────────────────────────────────
+
+  public async readWorkspaceFile(workspaceId: string, relativePath: string): Promise<string | undefined> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    // Use path.relative to safely detect traversal; startsWith is insufficient
+    // because /repo-malicious would pass /repo check.
+    const fullPath = path.resolve(repoPath, relativePath);
+    const relative = path.relative(repoPath, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error('Path traversal not allowed');
+    }
+    try {
+      return await fs.readFile(fullPath, 'utf-8');
+    } catch {
+      return undefined;
+    }
+  }
+
+  public async writeWorkspaceFile(workspaceId: string, relativePath: string, content: string): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    const fullPath = path.resolve(repoPath, relativePath);
+    const relative = path.relative(repoPath, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error('Path traversal not allowed');
+    }
+    await fs.writeFile(fullPath, content, 'utf-8');
+  }
+
+  // ── Generic git command runner for plugins ────────────────────────────
+  public async runGitCommand(workspaceId: string, gitArguments: string[]): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    return await runGit(gitArguments, repoPath);
+  }
+
   public async mergeAfterPush(workspaceId: string): Promise<void> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
-    if (!repoPath) return;
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
     await mergeMobileIncomingIfExists(repoPath);
+  }
+
+  public async writeTempGitFile(workspaceId: string, fileName: string, data: Uint8Array): Promise<string> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    // Sanitize fileName to prevent path traversal
+    const sanitized = path.basename(fileName);
+    const filePath = path.join(repoPath, '.git', sanitized);
+    await fs.writeFile(filePath, Buffer.from(data));
+    return filePath;
+  }
+
+  public async deleteTempGitFile(workspaceId: string, fileName: string): Promise<void> {
+    const repoPath = await this.getWorkspaceRepoPath(workspaceId);
+    if (!repoPath) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    const sanitized = path.basename(fileName);
+    const filePath = path.join(repoPath, '.git', sanitized);
+    try {
+      await fs.unlink(filePath);
+    } catch {
+      // Ignore if file doesn't exist
+    }
   }
 
   // ── Full Archive for fast mobile clone ────────────────────────────────

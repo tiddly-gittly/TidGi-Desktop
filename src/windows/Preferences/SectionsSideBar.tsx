@@ -1,11 +1,14 @@
+import SearchIcon from '@mui/icons-material/Search';
 import { Divider as DividerRaw, List, ListItemButton, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
 import { keyframes, styled } from '@mui/material/styles';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { PreferenceSections } from '@services/preferences/interface';
 import type { ISectionRecord } from './useSections';
 
 interface SectionSideBarProps {
+  onSearchClick: () => void;
   sections: ISectionRecord;
 }
 
@@ -42,17 +45,29 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
 `;
 
 export function SectionSideBar(props: SectionSideBarProps): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <SideBar>
       <List dense>
+        <SideMenuListItem
+          index={0}
+          onClick={props.onSearchClick}
+          data-testid='preference-section-search'
+        >
+          <ListItemIcon>
+            <SearchIcon />
+          </ListItemIcon>
+          <ListItemText primary={t('Preference.Search')} />
+        </SideMenuListItem>
+        <Divider />
         {Object.keys(props.sections).map((sectionKey, index) => {
           const { Icon, text, ref, hidden } = props.sections[sectionKey as PreferenceSections];
-          if (hidden === true) return <></>;
+          if (hidden === true) return null;
           return (
             <React.Fragment key={sectionKey}>
               {index > 0 && <Divider />}
               <SideMenuListItem
-                index={index}
+                index={index + 1}
                 onClick={() => {
                   ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   // Log for E2E test
