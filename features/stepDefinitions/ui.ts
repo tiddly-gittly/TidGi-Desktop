@@ -228,6 +228,23 @@ When('I click on {string} elements with selectors:', async function(this: Applic
   }
 });
 
+When('I ctrl-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const targetWindow = await this.getWindow('current');
+  if (!targetWindow) {
+    throw new Error(`Window "current" is not available`);
+  }
+  try {
+    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    const isVisible = await targetWindow.isVisible(selector);
+    if (!isVisible) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
+    }
+    await targetWindow.click(selector, { modifiers: ['Control'] });
+  } catch (error) {
+    throw new Error(`Failed to ctrl-click ${elementComment} with selector "${selector}": ${error as Error}`);
+  }
+});
+
 When('I right-click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   const targetWindow = await this.getWindow('current');
 

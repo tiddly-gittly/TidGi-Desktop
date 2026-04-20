@@ -280,9 +280,11 @@ export class GitServerService implements IGitServerService {
     if (!repoPath) {
       throw new Error(`Workspace ${workspaceId} not found`);
     }
-    // Prevent path traversal: resolve and ensure it stays within repoPath
+    // Use path.relative to safely detect traversal; startsWith is insufficient
+    // because /repo-malicious would pass /repo check.
     const fullPath = path.resolve(repoPath, relativePath);
-    if (!fullPath.startsWith(repoPath)) {
+    const relative = path.relative(repoPath, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
       throw new Error('Path traversal not allowed');
     }
     try {
@@ -298,7 +300,8 @@ export class GitServerService implements IGitServerService {
       throw new Error(`Workspace ${workspaceId} not found`);
     }
     const fullPath = path.resolve(repoPath, relativePath);
-    if (!fullPath.startsWith(repoPath)) {
+    const relative = path.relative(repoPath, fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
       throw new Error('Path traversal not allowed');
     }
     await fs.writeFile(fullPath, content, 'utf-8');

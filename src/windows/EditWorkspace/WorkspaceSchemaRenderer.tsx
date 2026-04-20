@@ -385,19 +385,25 @@ export function AllWorkspaceSectionsRenderer({
     const hits: Array<{ item: GenericSettingItemDefinition & { titleKey: string }; section: IGenericSectionDefinition }> = [];
     for (const section of visibleSections) {
       const sectionTitleEn = txEn(section.titleKey, section.ns).toLowerCase();
+      const sectionTitleCurrent = t(section.titleKey, section.ns ? { ns: section.ns } : undefined).toLowerCase();
       const sectionKeyLower = section.titleKey.toLowerCase();
       for (const item of section.items) {
         if (item.type === 'divider') continue;
         if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
         if (!('titleKey' in item)) continue;
         const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
+        const titleCurrent = t(item.titleKey, item.ns ? { ns: item.ns } : undefined).toLowerCase();
         const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';
+        const descCurrent = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined).toLowerCase() : '';
         const titleKeyLower = item.titleKey.toLowerCase();
         if (
           titleEn.includes(q) ||
+          titleCurrent.includes(q) ||
           descEn.includes(q) ||
+          descCurrent.includes(q) ||
           titleKeyLower.includes(q) ||
           sectionTitleEn.includes(q) ||
+          sectionTitleCurrent.includes(q) ||
           sectionKeyLower.includes(q)
         ) {
           hits.push({ item: item as GenericSettingItemDefinition & { titleKey: string }, section });

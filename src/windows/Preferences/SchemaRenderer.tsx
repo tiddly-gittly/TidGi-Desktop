@@ -372,26 +372,32 @@ interface ISearchHit {
   section: ISectionDefinition;
 }
 
-function collectSearchHits(query: string, platform: string | undefined): ISearchHit[] {
+function collectSearchHits(query: string, platform: string | undefined, t: (key: string, options?: Record<string, unknown>) => string): ISearchHit[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
   const hits: ISearchHit[] = [];
   for (const section of allSections) {
     const sectionTitleLower = txEn(section.titleKey, section.ns).toLowerCase();
+    const sectionTitleCurrent = t(section.titleKey, section.ns ? { ns: section.ns } : undefined).toLowerCase();
     const sectionKeyLower = section.titleKey.toLowerCase();
     for (const item of section.items) {
       if (item.type === 'divider') continue;
       if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
       const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
+      const titleCurrent = t(item.titleKey, item.ns ? { ns: item.ns } : undefined).toLowerCase();
       const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';
+      const descCurrent = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined).toLowerCase() : '';
       const titleKeyLower = item.titleKey.toLowerCase();
       const descKeyLower = item.descriptionKey?.toLowerCase() ?? '';
       if (
         titleEn.includes(q) ||
+        titleCurrent.includes(q) ||
         descEn.includes(q) ||
+        descCurrent.includes(q) ||
         titleKeyLower.includes(q) ||
         descKeyLower.includes(q) ||
         sectionTitleLower.includes(q) ||
+        sectionTitleCurrent.includes(q) ||
         sectionKeyLower.includes(q)
       ) {
         hits.push({ item, section });
@@ -485,7 +491,7 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
     if (preference === undefined) {
       return <Skeleton variant='text' width={200} height={24} sx={{ mt: 2 }} />;
     }
-    const hits = collectSearchHits(query, platform);
+    const hits = collectSearchHits(query, platform, t);
     if (hits.length === 0) {
       return (
         <Typography color='text.secondary' sx={{ mt: 2 }}>

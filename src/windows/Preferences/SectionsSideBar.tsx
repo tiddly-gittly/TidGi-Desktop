@@ -62,10 +62,10 @@ export function SectionSideBar(props: SectionSideBarProps): React.JSX.Element {
         <Divider />
         {Object.keys(props.sections).map((sectionKey, index) => {
           const { Icon, text, ref, hidden } = props.sections[sectionKey as PreferenceSections];
-          if (hidden === true) return <></>;
+          if (hidden === true) return null;
           return (
             <React.Fragment key={sectionKey}>
-              <Divider />
+              {index > 0 && <Divider />}
               <SideMenuListItem
                 index={index + 1}
                 onClick={() => {

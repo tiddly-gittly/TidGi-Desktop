@@ -203,16 +203,19 @@ export function CommitDetailsPanel(
   };
 
   const handleUndo = async () => {
-    if (!commit || isUndoing || hasMultipleCommitsSelected) return;
+    if (committedSelections.length === 0 || isUndoing) return;
 
     setIsUndoing(true);
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      // Undo commit - reset to parent and keep changes as unstaged
-      await window.service.git.undoCommit(workspace.wikiFolderLocation, commit.hash);
-      // Notify parent to select uncommitted changes
+      // When multiple commits are selected, undo them from most recent to oldest.
+      // undoCommit only works on HEAD, so after each undo the next commit becomes HEAD.
+      // The entries array is ordered newest-first, so committedSelections should be sorted the same way.
+      for (const selectedEntry of committedSelections) {
+        await window.service.git.undoCommit(workspace.wikiFolderLocation, selectedEntry.hash);
+      }
       if (onUndoSuccess) {
         onUndoSuccess();
       }
@@ -556,10 +559,10 @@ export function CommitDetailsPanel(
                 color='error'
                 onClick={handleUndo}
                 fullWidth
-                disabled={isUndoing || hasMultipleCommitsSelected || hasUncommittedSelection}
+                disabled={isUndoing || committedSelections.length === 0 || hasUncommittedSelection}
                 startIcon={isUndoing ? <CircularProgress size={16} color='inherit' /> : undefined}
               >
-                {isUndoing ? t('GitLog.Undoing') : t('GitLog.UndoCommit')}
+                {isUndoing ? t('GitLog.Undoing') : hasMultipleCommitsSelected ? `${t('GitLog.UndoCommit')} (${committedSelections.length})` : t('GitLog.UndoCommit')}
               </Button>
 
               <Button

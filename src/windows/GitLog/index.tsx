@@ -329,6 +329,8 @@ export default function GitHistory(): React.JSX.Element {
                   theme={gitLogTheme}
                   onSelectCommit={(entry) => {
                     setSelectedCommit(entry);
+                    setSelectedCommitHashes([entry.hash]);
+                    setCommitSelectionAnchorHash(entry.hash);
                     setSelectedFile(null);
                   }}
                   renderTooltip={renderTooltip}
