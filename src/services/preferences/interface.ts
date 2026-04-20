@@ -64,7 +64,6 @@ export enum PreferenceSections {
   notifications = 'notifications',
   performance = 'performance',
   privacy = 'privacy',
-  search = 'search',
   sync = 'sync',
   system = 'system',
   updates = 'updates',

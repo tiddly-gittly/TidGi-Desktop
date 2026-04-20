@@ -11,7 +11,6 @@ import { networkSection } from './network';
 import { notificationsSection } from './notifications';
 import { performanceSection } from './performance';
 import { privacySection } from './privacy';
-import { searchSection } from './search';
 import { syncSection } from './sync';
 import { systemSection } from './system';
 import { tidgiMiniWindowSection } from './tidgiMiniWindow';
@@ -44,7 +43,6 @@ export const allSections: ISectionDefinition[] = [
   downloadsSection,
   networkSection,
   privacySection,
-  searchSection,
   performanceSection,
   updatesSection,
   miscSection,

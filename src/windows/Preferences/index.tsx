@@ -6,7 +6,6 @@ import { useInfoSnackbar } from '@/components/InfoSnackbar';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { allSections } from '@services/preferences/definitions/registry';
 
-import { PreferenceSections } from '@services/preferences/interface';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import React from 'react';
 import { PageInner as Inner, PageRoot as Root } from './PreferenceComponents';
@@ -31,7 +30,7 @@ function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.R
   }, []);
 
   const record = useMemo(() => {
-    const result: Record<string, ISectionRecord[PreferenceSections]> = {};
+    const result: ISectionRecord = {};
     for (const section of allSections) {
       result[section.id] = {
         text: t(section.titleKey, section.ns ? { ns: section.ns } : undefined),
@@ -40,7 +39,7 @@ function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.R
         ref: references.get(section.id) ?? React.createRef<HTMLSpanElement>(),
       };
     }
-    return result as ISectionRecord;
+    return result;
   }, [t, references]);
 
   return { record, refs: references };
