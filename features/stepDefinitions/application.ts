@@ -160,7 +160,7 @@ export class ApplicationWorld {
           const nonClosedPages = pages.filter(page => !page.isClosed());
           for (const page of nonClosedPages) {
             try {
-              const bw = await this.app!.browserWindow(page);
+              const bw = await this.app.browserWindow(page);
               const bwId = await bw.evaluate((win: Electron.BrowserWindow) => win.id);
               if (bwId === electronWindowInfo.id) {
                 return page;
