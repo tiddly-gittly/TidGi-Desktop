@@ -281,10 +281,10 @@ Feature: Git Log Window
     When I ctrl-click on a "commit row with 新条目 0" element with selector "[data-testid^='commit-row-']:has-text('新条目 0')"
     # Switch to Actions tab and verify undo button shows count of 2
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
-    Then I should see a "undo button with count 2" element with selector "button:has-text('撤销 (2)'), button:has-text('Undo (2)')"
+    Then I should see a "undo button with count 2" element with selector "[data-testid='undo-commit-button']:has-text('(2)')"
     # Clear markers and undo both commits
     When I clear log lines containing "[test-id-git-log-refreshed]"
-    When I click on a "undo button" element with selector "button:has-text('撤销 (2)'), button:has-text('Undo (2)')"
+    When I click on a "undo button" element with selector "[data-testid='undo-commit-button']"
     Then I wait for "git log refreshed after undo" log marker "[test-id-git-log-refreshed]"
     # Both commits should be gone; uncommitted changes should appear
     Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"

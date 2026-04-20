@@ -561,6 +561,7 @@ export function CommitDetailsPanel(
                 fullWidth
                 disabled={isUndoing || committedSelections.length === 0 || hasUncommittedSelection}
                 startIcon={isUndoing ? <CircularProgress size={16} color='inherit' /> : undefined}
+                data-testid='undo-commit-button'
               >
                 {isUndoing ? t('GitLog.Undoing') : hasMultipleCommitsSelected ? `${t('GitLog.UndoCommit')} (${committedSelections.length})` : t('GitLog.UndoCommit')}
               </Button>
