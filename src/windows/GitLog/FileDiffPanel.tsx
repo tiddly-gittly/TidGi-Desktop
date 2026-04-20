@@ -135,12 +135,15 @@ const ImagePreview = styled('img')`
 interface IFileDiffPanelProps {
   commitHash: string;
   filePath: string | null;
+  selectedFiles?: string[];
   workspaceID: string;
-  onDiscardSuccess?: () => void;
+  onDiscardSuccess?: (filePaths?: string[]) => void;
   showSnackbar?: (message: string, severity: 'success' | 'error' | 'info') => void;
 }
 
-export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSuccess, showSnackbar: showSnackbarFromParent }: IFileDiffPanelProps): React.JSX.Element {
+export function FileDiffPanel(
+  { commitHash, filePath, selectedFiles = [], workspaceID, onDiscardSuccess, showSnackbar: showSnackbarFromParent }: IFileDiffPanelProps,
+): React.JSX.Element {
   const { t } = useTranslation();
   const [diff, setDiff] = useState<string>('');
   const [fileContent, setFileContent] = useState<string>('');
@@ -184,19 +187,22 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   };
 
   const canDiscardChanges = !commitHash;
+  const selectedPaths = selectedFiles.length > 0 ? selectedFiles : filePath ? [filePath] : [];
+  const isBatchFileSelection = selectedPaths.length > 1;
   const extensionMatch = filePath ? filePath.match(/\.([^.\\/]+)$/) : null;
   const fileExtension = extensionMatch?.[1] ?? null;
 
   const handleDiscardChanges = async () => {
-    if (!filePath || !canDiscardChanges) return;
+    if (selectedPaths.length === 0 || !canDiscardChanges) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
     try {
-      await window.service.git.discardFileChanges(workspace.wikiFolderLocation, filePath);
+      for (const selectedPath of selectedPaths) {
+        await window.service.git.discardFileChanges(workspace.wikiFolderLocation, selectedPath);
+      }
       showSnackbar(t('GitLog.DiscardSuccess'), 'success');
-      // Clear selection and trigger refresh
-      onDiscardSuccess?.();
+      onDiscardSuccess?.(selectedPaths);
     } catch (error) {
       console.error('Failed to discard changes:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -205,15 +211,16 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   };
 
   const handleIgnoreFile = async () => {
-    if (!filePath) return;
+    if (selectedPaths.length === 0) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
     try {
-      await window.service.git.addToGitignore(workspace.wikiFolderLocation, filePath);
+      for (const selectedPath of selectedPaths) {
+        await window.service.git.addToGitignore(workspace.wikiFolderLocation, selectedPath);
+      }
       showSnackbar(t('GitLog.IgnoreSuccess'), 'success');
-      // Trigger refresh after adding to .gitignore
-      onDiscardSuccess?.();
+      onDiscardSuccess?.(selectedPaths);
     } catch (error) {
       console.error('Failed to add to .gitignore:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -222,15 +229,19 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   };
 
   const handleIgnoreExtension = async () => {
-    if (!filePath || !fileExtension) return;
+    if (selectedPaths.length === 0) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
+    const extensions = Array.from(new Set(selectedPaths.map((selectedPath) => selectedPath.match(/\.([^.\\/]+)$/)?.[1]).filter((value): value is string => Boolean(value))));
+    if (extensions.length === 0) return;
+
     try {
-      await window.service.git.addToGitignore(workspace.wikiFolderLocation, `*.${fileExtension}`);
+      for (const extension of extensions) {
+        await window.service.git.addToGitignore(workspace.wikiFolderLocation, `*.${extension}`);
+      }
       showSnackbar(t('GitLog.IgnoreSuccess'), 'success');
-      // Trigger refresh after adding to .gitignore
-      onDiscardSuccess?.();
+      onDiscardSuccess?.(selectedPaths);
     } catch (error) {
       console.error('Failed to add extension to .gitignore:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -239,23 +250,23 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   };
 
   const handleCopyPath = async () => {
-    if (!filePath) return;
+    if (selectedPaths.length === 0) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
-    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    const fullPath = selectedPaths.map((selectedPath) => `${workspace.wikiFolderLocation}/${selectedPath}`).join('\n');
     await navigator.clipboard.writeText(fullPath);
     showSnackbar(t('GitLog.CopySuccess'), 'success');
   };
 
   const handleCopyRelativePath = async () => {
-    if (!filePath) return;
-    await navigator.clipboard.writeText(filePath);
+    if (selectedPaths.length === 0) return;
+    await navigator.clipboard.writeText(selectedPaths.join('\n'));
     showSnackbar(t('GitLog.CopySuccess'), 'success');
   };
 
   const handleShowInExplorer = async () => {
-    if (!filePath) return;
+    if (!filePath || isBatchFileSelection) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
@@ -264,7 +275,7 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   };
 
   const handleOpenInEditor = async () => {
-    if (!filePath) return;
+    if (!filePath || isBatchFileSelection) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
@@ -273,7 +284,7 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   };
 
   const handleOpenWithDefault = async () => {
-    if (!filePath) return;
+    if (!filePath || isBatchFileSelection) return;
     const workspace = await getWorkspace();
     if (!workspace) return;
 
@@ -302,7 +313,7 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
 
   useEffect(() => {
     // Note: commitHash can be empty string for uncommitted changes, which is valid
-    if (!filePath || commitHash === null || commitHash === undefined) {
+    if (!filePath || commitHash === null || commitHash === undefined || isBatchFileSelection) {
       setDiff('');
       setFileContent('');
       setImageDataUrl('');
@@ -367,9 +378,9 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
     };
 
     void loadFileData();
-  }, [commitHash, filePath, t]);
+  }, [commitHash, filePath, isBatchFileSelection, t]);
 
-  if (!filePath) {
+  if (!filePath && selectedPaths.length === 0) {
     return (
       <Panel>
         <EmptyState>
@@ -392,6 +403,11 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
   // Render action buttons panel
   const renderActionsPanel = () => (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {isBatchFileSelection && (
+        <Typography variant='body2' color='text.secondary'>
+          {selectedPaths.length} files selected
+        </Typography>
+      )}
       {canDiscardChanges && (
         <Button variant='outlined' color='warning' onClick={handleDiscardChanges} fullWidth>
           {t('GitLog.DiscardChanges')}
@@ -411,21 +427,33 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
       <Button variant='outlined' onClick={handleCopyRelativePath} fullWidth>
         {t('GitLog.CopyRelativeFilePath')}
       </Button>
-      <Button variant='outlined' onClick={handleShowInExplorer} fullWidth>
-        {t('GitLog.ShowInExplorer')}
-      </Button>
-      <Button variant='outlined' onClick={handleOpenInEditor} fullWidth>
-        {t('GitLog.OpenInExternalEditor')}
-      </Button>
-      <Button variant='outlined' onClick={handleOpenWithDefault} fullWidth>
-        {t('GitLog.OpenWithDefaultProgram')}
-      </Button>
+      {!isBatchFileSelection && (
+        <>
+          <Button variant='outlined' onClick={handleShowInExplorer} fullWidth>
+            {t('GitLog.ShowInExplorer')}
+          </Button>
+          <Button variant='outlined' onClick={handleOpenInEditor} fullWidth>
+            {t('GitLog.OpenInExternalEditor')}
+          </Button>
+          <Button variant='outlined' onClick={handleOpenWithDefault} fullWidth>
+            {t('GitLog.OpenWithDefaultProgram')}
+          </Button>
+        </>
+      )}
     </Box>
   );
 
   const renderTextPanelContent = () => {
     if (currentTab === 'actions') {
       return renderActionsPanel();
+    }
+
+    if (isBatchFileSelection) {
+      return (
+        <EmptyState>
+          <Typography variant='body2'>{selectedPaths.length} files selected</Typography>
+        </EmptyState>
+      );
     }
 
     if (currentTab === 'diff') {
@@ -514,7 +542,7 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
                   ? (
                     <ImagePreview
                       src={imageDataUrl}
-                      alt={filePath}
+                      alt={filePath ?? undefined}
                       onError={() => {
                         setImageDataUrl('');
                         setImageError('Failed to render image');
@@ -544,7 +572,7 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
             <ImageBox>
               <ImagePreview
                 src={imageDataUrl}
-                alt={filePath}
+                alt={filePath ?? undefined}
                 onError={() => {
                   setImageDataUrl('');
                   setImageError('Failed to render image');
@@ -586,7 +614,7 @@ export function FileDiffPanel({ commitHash, filePath, workspaceID, onDiscardSucc
     <Panel>
       <TabsWrapper>
         <Typography variant='h6' sx={{ pt: 2, pb: 1 }}>
-          {filePath}
+          {isBatchFileSelection ? `${selectedPaths.length} files selected` : filePath}
         </Typography>
         <Tabs
           value={currentTab}

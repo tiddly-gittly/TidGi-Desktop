@@ -13,7 +13,7 @@ import type { GitLogEntry } from './types';
 interface ICommitTableRowProps {
   commit: GitLogEntry;
   commitDate: Date;
-  onSelect: () => void;
+  onSelect: (event: React.MouseEvent) => void;
   selected: boolean;
   onSyncClick?: () => void;
 }

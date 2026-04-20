@@ -15,7 +15,7 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
@@ -76,14 +76,28 @@ interface ICommitDetailsPanelProps {
   workspaceID: string;
   onCommitSuccess?: () => void;
   showSnackbar?: (message: string, severity?: 'success' | 'error' | 'info') => void;
-  onFileSelect?: (file: string | null) => void;
+  onFileSelect?: (file: string | null, event?: React.MouseEvent) => void;
   onRevertSuccess?: () => void;
   onUndoSuccess?: () => void;
   selectedFile?: string | null;
+  selectedFiles?: string[];
+  selectedCommits?: GitLogEntry[];
 }
 
 export function CommitDetailsPanel(
-  { commit, isLatestCommit: _isLatestCommit, workspaceID, onCommitSuccess, showSnackbar, onFileSelect, onRevertSuccess, onUndoSuccess, selectedFile }: ICommitDetailsPanelProps,
+  {
+    commit,
+    isLatestCommit: _isLatestCommit,
+    workspaceID,
+    onCommitSuccess,
+    showSnackbar,
+    onFileSelect,
+    onRevertSuccess,
+    onUndoSuccess,
+    selectedFile,
+    selectedFiles = [],
+    selectedCommits = [],
+  }: ICommitDetailsPanelProps,
 ): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, setCurrentTab] = useState<'details' | 'actions'>('details');
@@ -124,13 +138,17 @@ export function CommitDetailsPanel(
 
   // Use files from commit entry (already loaded in useGitLogData)
   const fileChanges = commit?.files ?? [];
+  const commitsForActions = useMemo(() => selectedCommits.length > 0 ? selectedCommits : commit ? [commit] : [], [commit, selectedCommits]);
+  const committedSelections = commitsForActions.filter((entry) => entry.hash !== '');
+  const hasMultipleCommitsSelected = commitsForActions.length > 1;
+  const hasUncommittedSelection = commitsForActions.some((entry) => entry.hash === '');
 
   // Auto-select the first file if none is selected
   useEffect(() => {
-    if (fileChanges.length > 0 && !selectedFile && onFileSelect) {
+    if (fileChanges.length > 0 && !selectedFile && selectedFiles.length === 0 && onFileSelect) {
       onFileSelect(fileChanges[0].path);
     }
-  }, [commit, fileChanges, selectedFile, onFileSelect]);
+  }, [commit, fileChanges, onFileSelect, selectedFile, selectedFiles.length]);
 
   // Check if AI commit message generation is enabled
   useEffect(() => {
@@ -148,8 +166,8 @@ export function CommitDetailsPanel(
   }, []);
 
   const handleRevert = async () => {
-    if (!commit || isReverting) {
-      void window.service.native.log('warn', 'handleRevert: commit is null or already reverting', { hasCommit: !!commit, isReverting });
+    if (committedSelections.length === 0 || isReverting) {
+      void window.service.native.log('warn', 'handleRevert: no commit selected or already reverting', { commitCount: committedSelections.length, isReverting });
       return;
     }
 
@@ -165,22 +183,27 @@ export function CommitDetailsPanel(
         return;
       }
 
-      void window.service.native.log('debug', 'handleRevert: calling revertCommit', { workspaceID, commitHash: commit.hash });
-      // Pass the commit message to revertCommit for better revert message
-      await window.service.git.revertCommit(workspace.wikiFolderLocation, commit.hash, commit.message);
+      for (const selectedEntry of committedSelections) {
+        void window.service.native.log('debug', 'handleRevert: calling revertCommit', { workspaceID, commitHash: selectedEntry.hash });
+        await window.service.git.revertCommit(workspace.wikiFolderLocation, selectedEntry.hash, selectedEntry.message);
+      }
       // Notify parent to select the new revert commit
       if (onRevertSuccess) {
         onRevertSuccess();
       }
     } catch (error) {
-      void window.service.native.log('error', 'handleRevert: Failed to revert commit', { error: String(error), workspaceID, commitHash: commit.hash });
+      void window.service.native.log('error', 'handleRevert: Failed to revert commit', {
+        error: String(error),
+        workspaceID,
+        commitHashes: committedSelections.map((entry) => entry.hash),
+      });
     } finally {
       setIsReverting(false);
     }
   };
 
   const handleUndo = async () => {
-    if (!commit || isUndoing) return;
+    if (!commit || isUndoing || hasMultipleCommitsSelected) return;
 
     setIsUndoing(true);
     try {
@@ -201,7 +224,7 @@ export function CommitDetailsPanel(
   };
 
   const handleOpenEditMessage = (): void => {
-    if (!commit) return;
+    if (!commit || hasMultipleCommitsSelected) return;
     setNewCommitMessage(commit.message || '');
     setIsEditMessageOpen(true);
   };
@@ -321,12 +344,12 @@ export function CommitDetailsPanel(
   };
 
   const handleCopyHash = () => {
-    if (!commit) return;
-    void navigator.clipboard.writeText(commit.hash);
+    if (commitsForActions.length === 0) return;
+    void navigator.clipboard.writeText(commitsForActions.map((entry) => entry.hash).join('\n'));
   };
 
   const handleOpenInGitHub = async () => {
-    if (!commit) return;
+    if (!commit || hasMultipleCommitsSelected) return;
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace) || !('gitUrl' in workspace)) return;
@@ -382,6 +405,15 @@ export function CommitDetailsPanel(
         </Typography>
       </Box>
 
+      {hasMultipleCommitsSelected && (
+        <Box mb={1}>
+          <Typography variant='caption' color='textSecondary'>
+            Selected commits
+          </Typography>
+          <Typography variant='body2'>{commitsForActions.length}</Typography>
+        </Box>
+      )}
+
       {commit.author && (
         <Box mb={1}>
           <Typography variant='caption' color='textSecondary'>
@@ -423,10 +455,11 @@ export function CommitDetailsPanel(
               {fileChanges.map((file, index) => (
                 <ListItem key={index} disablePadding>
                   <ListItemButton
-                    selected={file.path === selectedFile}
-                    onClick={() => {
-                      onFileSelect?.(file.path === selectedFile ? null : file.path);
+                    selected={selectedFiles.includes(file.path) || file.path === selectedFile}
+                    onClick={(event) => {
+                      onFileSelect?.(file.path, event);
                     }}
+                    data-testid={`git-file-row-${index}`}
                   >
                     <ListItemText
                       primary={
@@ -464,7 +497,10 @@ export function CommitDetailsPanel(
 
   const renderActionsTab = () => {
     // Check if this is an uncommitted state (hash would be empty or special)
-    const isUncommitted = !commit || commit.hash === '' || commit.message.includes('未提交') || commit.message.includes('Uncommitted');
+    const isUncommitted = commitsForActions.length > 0 &&
+      commitsForActions.every((entry) => entry.hash === '' || entry.message.includes('未提交') || entry.message.includes('Uncommitted'));
+    const revertLabel = hasMultipleCommitsSelected ? `${t('GitLog.RevertCommit')} (${committedSelections.length})` : t('GitLog.RevertCommit');
+    const copyHashLabel = hasMultipleCommitsSelected ? `${t('GitLog.CopyHash')} (${commitsForActions.length})` : t('GitLog.CopyHash');
 
     return (
       <TabContent>
@@ -501,7 +537,7 @@ export function CommitDetailsPanel(
 
           {!isUncommitted && (
             <>
-              {commit.isUnpushed && (
+              {!hasMultipleCommitsSelected && commit.isUnpushed && (
                 <Button
                   variant='contained'
                   color='warning'
@@ -520,7 +556,7 @@ export function CommitDetailsPanel(
                 color='error'
                 onClick={handleUndo}
                 fullWidth
-                disabled={isUndoing}
+                disabled={isUndoing || hasMultipleCommitsSelected || hasUncommittedSelection}
                 startIcon={isUndoing ? <CircularProgress size={16} color='inherit' /> : undefined}
               >
                 {isUndoing ? t('GitLog.Undoing') : t('GitLog.UndoCommit')}
@@ -531,13 +567,14 @@ export function CommitDetailsPanel(
                 color='warning'
                 onClick={handleRevert}
                 fullWidth
-                disabled={isReverting}
+                disabled={isReverting || committedSelections.length === 0}
                 startIcon={isReverting ? <CircularProgress size={16} color='inherit' /> : undefined}
+                data-testid={hasMultipleCommitsSelected ? 'batch-revert-button' : undefined}
               >
-                {isReverting ? t('GitLog.Reverting') : t('GitLog.RevertCommit')}
+                {isReverting ? t('GitLog.Reverting') : revertLabel}
               </Button>
 
-              {_isLatestCommit && (
+              {_isLatestCommit && !hasMultipleCommitsSelected && (
                 <Button
                   variant='contained'
                   color='info'
@@ -550,10 +587,10 @@ export function CommitDetailsPanel(
               )}
 
               <Button variant='outlined' onClick={handleCopyHash} fullWidth>
-                {t('GitLog.CopyHash')}
+                {copyHashLabel}
               </Button>
 
-              <Button variant='outlined' onClick={handleOpenInGitHub} fullWidth>
+              <Button variant='outlined' onClick={handleOpenInGitHub} fullWidth disabled={hasMultipleCommitsSelected}>
                 {t('GitLog.OpenInGitHub')}
               </Button>
 
