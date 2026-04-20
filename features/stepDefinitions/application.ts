@@ -138,15 +138,15 @@ export class ApplicationWorld {
       const windowDimensions = checkWindowDimension(windowName);
       try {
         const electronWindowInfo = await this.app.evaluate(
-          async ({ BrowserWindow }, searchParams: { size: { width: number; height: number }; titleHint: string }) => {
+          async ({ BrowserWindow }, searchParameters: { size: { width: number; height: number }; titleHint: string }) => {
             const allWindows = BrowserWindow.getAllWindows();
             // First try: match by title hint (BrowserWindow.title, set in WindowProperties)
-            const byTitle = allWindows.find(win => win.getTitle().includes(searchParams.titleHint));
+            const byTitle = allWindows.find(win => win.getTitle().includes(searchParameters.titleHint));
             if (byTitle) return { id: byTitle.id };
             // Second try: match by dimensions
             const bySize = allWindows.find(win => {
               const bounds = win.getBounds();
-              return bounds.width === searchParams.size.width && bounds.height === searchParams.size.height;
+              return bounds.width === searchParameters.size.width && bounds.height === searchParameters.size.height;
             });
             return bySize ? { id: bySize.id } : null;
           },
