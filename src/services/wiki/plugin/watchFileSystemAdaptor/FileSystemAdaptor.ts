@@ -1,5 +1,5 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
-import { workspace } from '@services/wiki/wikiWorker/services';
+import { git, workspace } from '@services/wiki/wikiWorker/services';
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { workspaceSorter } from '@services/workspaces/utilities';
 import { backOff } from 'exponential-backoff';
@@ -362,6 +362,11 @@ export class FileSystemAdaptor {
       });
 
       callback?.(null, this.boot.files[tiddler.fields.title]);
+
+      // Notify git log window to refresh (only if it's open). This covers the case where
+      // enableFileSystemWatch is false and the watcher is not running.
+      const wikiFolderLocation = this.useWikiFolderAsTiddlersPath ? this.watchPathBase : path.dirname(this.watchPathBase);
+      void git.notifyFileChange(wikiFolderLocation, { onlyWhenGitLogOpened: true });
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);

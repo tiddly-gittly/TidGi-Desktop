@@ -210,12 +210,11 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      // When multiple commits are selected, undo them from most recent to oldest.
-      // undoCommit only works on HEAD, so after each undo the next commit becomes HEAD.
-      // The entries array is ordered newest-first, so committedSelections should be sorted the same way.
-      for (const selectedEntry of committedSelections) {
-        await window.service.git.undoCommit(workspace.wikiFolderLocation, selectedEntry.hash);
-      }
+      // Pass hashes newest-first (committedSelections is derived from entries which are newest-first).
+      await window.service.git.undoCommits(
+        workspace.wikiFolderLocation,
+        committedSelections.map((entry) => entry.hash),
+      );
       if (onUndoSuccess) {
         onUndoSuccess();
       }

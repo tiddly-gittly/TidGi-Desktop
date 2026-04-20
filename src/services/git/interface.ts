@@ -168,6 +168,11 @@ export interface IGitService {
    */
   undoCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
   /**
+   * Undo multiple commits sequentially, firing only one git-state notification at the end.
+   * Commits must be ordered newest-first (same order as git log).
+   */
+  undoCommits(wikiFolderPath: string, commitHashes: string[]): Promise<void>;
+  /**
    * Discard changes for a specific file (restore from HEAD)
    */
   discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void>;
@@ -197,6 +202,7 @@ export const GitServiceIPCDescriptor = {
     clone: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,
     discardFileChanges: ProxyPropertyType.Function,
+    undoCommits: ProxyPropertyType.Function,
     forcePull: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,

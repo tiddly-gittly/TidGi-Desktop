@@ -448,6 +448,21 @@ export class Git implements IGitService {
     }
   }
 
+  /** Undo multiple commits sequentially (newest-first) and fire only one notification at the end. */
+  public async undoCommits(wikiFolderPath: string, commitHashes: string[]): Promise<void> {
+    try {
+      for (const hash of commitHashes) {
+        await this.callGitOp('undoCommit', wikiFolderPath, hash);
+        logger.info(`[test-id-git-undo-complete]`, { wikiFolderPath, commitHash: hash });
+      }
+      // One notification after all undos complete so git log refreshes only once.
+      this.notifyGitStateChange(wikiFolderPath, 'undo');
+    } catch (error) {
+      logger.error('undoCommits failed', { error, wikiFolderPath, commitHashes });
+      throw error;
+    }
+  }
+
   public async discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void> {
     await this.callGitOp('discardFileChanges', wikiFolderPath, filePath);
     // Notify git state change
