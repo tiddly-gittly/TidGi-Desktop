@@ -286,7 +286,7 @@ function parseNullSeparatedNameStatusOutput(output: string): Array<{ path: strin
     if (!statusCode) continue;
 
     const status = parseGitStatusCode(statusCode);
-    
+
     // For rename/copy, tokens are: status, oldPath, newPath
     // We want the new path for downstream operations
     if (statusCode.startsWith('R') || statusCode.startsWith('C')) {

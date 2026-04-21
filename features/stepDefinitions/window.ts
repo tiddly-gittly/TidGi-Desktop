@@ -256,12 +256,3 @@ When('I confirm the {string} window browser view fills the window content area',
     );
   }
 });
-
-When('I close current window', async function(this: ApplicationWorld) {
-  const currentWindow = this.currentWindow;
-  if (!currentWindow || currentWindow.isClosed()) {
-    throw new Error('No current window is available or window is already closed');
-  }
-
-  await currentWindow.close();
-});
