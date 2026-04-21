@@ -336,6 +336,15 @@ function parseNullSeparatedPorcelainStatusOutput(output: string): Array<import('
   return files;
 }
 
+function getPorcelainStatusForPath(output: string, filePath: string): GitFileStatus {
+  const matches = parseNullSeparatedPorcelainStatusOutput(output).filter((file) => file.path === filePath);
+  if (matches.length === 0) {
+    return 'unknown';
+  }
+
+  return matches[0].status;
+}
+
 /**
  * Get diff for a specific file in a commit
  * @param maxLines - Maximum number of lines to return (default: 500)
@@ -351,15 +360,14 @@ export async function getFileDiff(
   maxChars = 10000,
 ): Promise<import('./interface').IFileDiffResult> {
   if (!commitHash) {
-    const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '--', filePath], repoPath);
+    const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-z', '-uall', '--', filePath], repoPath);
 
     if (statusResult.exitCode !== 0) {
       throw new Error(`Failed to get status for working tree diff: ${statusResult.stderr}`);
     }
 
-    const statusLine = statusResult.stdout.trim().split(/\r?\n/).find(Boolean) ?? '';
-    const statusCode = statusLine.slice(0, 2);
-    const isUntracked = statusCode === '??';
+    const fileStatus = getPorcelainStatusForPath(statusResult.stdout, filePath);
+    const isUntracked = fileStatus === 'untracked';
     const isImage = IMAGE_EXTENSIONS.some(extension => filePath.toLowerCase().endsWith(extension));
 
     if (isUntracked) {
@@ -390,7 +398,7 @@ export async function getFileDiff(
     }
 
     // Check if file is deleted
-    const isDeleted = statusCode.includes('D');
+    const isDeleted = fileStatus === 'deleted';
 
     if (isDeleted) {
       // For deleted files, show the deletion diff

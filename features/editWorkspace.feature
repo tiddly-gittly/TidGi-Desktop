@@ -34,18 +34,14 @@ Feature: Edit Workspace
     Then settings.json should have workspace "wiki" with "enableHTTPAPI" set to "true"
 
   @edit-workspace-save-tagnames
-  Scenario: tagNames persist after save and reopen
-    # This tests the critical save flow for syncable tagNames field
-    # Regression test for: save button disappears but changes not persisted to tidgi.config.json
-    # Update workspace settings via API to add tagNames
+  Scenario: tagNames syncable config is persisted to tidgi.config.json
+    # This scenario verifies the persistence path for syncable tagNames fields.
+    # It intentionally updates the workspace through the service API instead of the EditWorkspace UI.
     When I update workspace "wiki" settings:
       | property | value         |
       | tagNames | ["Tag1","Tag2"] |
-    # Wait for config to be written
     Then I wait for "config file written" log marker "[test-id-TIDGI_CONFIG_WRITTEN]"
-    # Verify tidgi.config.json was updated
     Then file "wiki/tidgi.config.json" should exist in "wiki-test"
     Then file "wiki/tidgi.config.json" should contain JSON with:
       | jsonPath   | value      |
       | $.tagNames | Tag1,Tag2  |
-

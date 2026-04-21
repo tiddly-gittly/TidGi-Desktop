@@ -66,7 +66,7 @@ Feature: Git Log Window
       | uncommitted changes row             | [data-testid='uncommitted-changes-row']|
       | Index.tid file in uncommitted list  | li:has-text('Index.tid')               |
     # Switch to Actions tab to access commit button
-    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
     # Verify the commit now button is visible
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # In uncommitted state, sync-to-remote button must NOT appear (it only appears for unpushed commits)
@@ -291,12 +291,12 @@ Feature: Git Log Window
     Then I should not see a "commit with Space File 1" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('Space File 1')"
     Then I should not see a "commit with Space File 0" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('Space File 0')"
     # Undo is triggered from the commit details actions tab; switch back to details so file list is visible
-    When I click on a "details tab" element with selector "button[role='tab']:has-text('详情')"
+    When I click on a "details tab" element with selector "button[role='tab']:has-text('详情'), button[role='tab']:has-text('Details')"
     # Verify uncommitted file with space in name can load diff/actions instead of failing with quoted path
     When I click on a "new file with space in name" element with selector "[data-testid^='git-file-row-']:has-text('Space File 1.tid')"
     Then I should see a "file name header in diff panel" element with selector "h6:has-text('Space File 1.tid')"
     Then I should not see a "failed to load diff message" element with selector "*:has-text('加载差异失败')"
-    When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('操作')"
-    Then I should see a "discard changes button" element with selector "button:has-text('放弃修改')"
-    When I click on a "discard changes button" element with selector "button:has-text('放弃修改')"
+    When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('操作'), h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('Actions')"
+    Then I should see a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard Changes')"
+    When I click on a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard Changes')"
     Then I should not see a "new file still in uncommitted list" element with selector "[data-testid^='git-file-row-']:has-text('Space File 1.tid')"

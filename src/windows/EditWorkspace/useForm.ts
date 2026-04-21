@@ -11,6 +11,15 @@ export function useForm(
   const [workspace, workspaceSetter] = useState(originalWorkspace);
   const [requestRestartAfterSave, requestRestartAfterSaveSetter] = useState(false);
   const previous = usePreviousValue(originalWorkspace);
+
+  const hasConfigChanges = useCallback((left?: IWorkspace, right?: IWorkspace): boolean => {
+    if (left === undefined || right === undefined) {
+      return false;
+    }
+
+    return !isEqual(omit(left, nonConfigFields), omit(right, nonConfigFields));
+  }, []);
+
   // initial observable value maybe undefined, we pass an non-null initial value to the form
   useEffect(() => {
     if (previous === undefined && originalWorkspace !== undefined) {
@@ -25,12 +34,23 @@ export function useForm(
       // Only check if originalWorkspace changed (not workspace), to avoid triggering on every user edit
       if (!isEqual(originalWorkspace, previous)) {
         // Check if the current form state matches the new originalWorkspace (excluding non-config fields)
-        if (isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields))) {
+        if (!hasConfigChanges(workspace, originalWorkspace)) {
           workspaceSetter(originalWorkspace);
         }
       }
     }
-  }, [originalWorkspace, previous]);
+  }, [hasConfigChanges, originalWorkspace, previous, workspace]);
+
+  useEffect(() => {
+    if (workspace === undefined || originalWorkspace === undefined) {
+      requestRestartAfterSaveSetter(false);
+      return;
+    }
+
+    if (!hasConfigChanges(workspace, originalWorkspace)) {
+      requestRestartAfterSaveSetter(false);
+    }
+  }, [hasConfigChanges, originalWorkspace, workspace]);
 
   const onSave = useCallback(async () => {
     if (workspace === undefined) {
@@ -53,7 +73,7 @@ export function useForm(
   }, [workspace, requestRestartAfterSave, requestRestartCountDown]);
   const setterWithRestartOption = (newValue: IWorkspace, requestSaveAndRestart?: boolean) => {
     workspaceSetter(newValue);
-    if (requestSaveAndRestart === true && !isEqual(newValue, originalWorkspace)) {
+    if (requestSaveAndRestart === true && hasConfigChanges(newValue, originalWorkspace)) {
       requestRestartAfterSaveSetter(true);
     }
   };

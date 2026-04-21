@@ -47,7 +47,7 @@ export default function EditWorkspace(): React.JSX.Element {
   }, [workspaceID, originalWorkspace, fallbackWorkspace]);
 
   const currentWorkspace = originalWorkspace ?? fallbackWorkspace;
-  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: currentWorkspace, restartType: RestartSnackbarType.Wiki });
   const [workspace, workspaceSetter, onSave] = useForm(currentWorkspace, requestRestartCountDown);
   const isWiki = workspace && isWikiWorkspace(workspace);
   const isSubWiki = isWiki ? workspace.isSubWiki : false;
@@ -110,6 +110,7 @@ export default function EditWorkspace(): React.JSX.Element {
 
   const isSearching = searchQuery.trim().length > 0;
   const wikiWorkspace = isWiki ? workspace : undefined;
+  const hasUnsavedChanges = currentWorkspace !== undefined && !isEqual(omit(workspace, nonConfigFields), omit(currentWorkspace, nonConfigFields));
 
   return (
     <Outter>
@@ -135,7 +136,7 @@ export default function EditWorkspace(): React.JSX.Element {
           </Inner>
         </WorkspaceFormProvider>
       )}
-      {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
+      {hasUnsavedChanges && (
         <SaveCancelButtonsContainer>
           <Button color='primary' variant='contained' disableElevation onClick={() => void handleSave()} data-testid='edit-workspace-save-button'>
             {t('EditWorkspace.Save')}

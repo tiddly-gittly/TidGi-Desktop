@@ -89,7 +89,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     # Step 2: Open workspace settings and navigate to Search/Embedding section to generate embeddings
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
-    When I click on a "search section" element with selector "[data-testid='workspace-section-search']"
+    When I click on a "search section" element with selector "[data-testid='preference-section-search']"
     When I click on a "generate embeddings button" element with selector "[data-testid^='generate-embeddings-button-']"
     Then I should see a "delete embeddings button after generation" element with selector "[data-testid^='delete-embeddings-button-']"
     # Close workspace settings

@@ -87,6 +87,38 @@ async function assertBrowserViewBodyBackground(
   }
 }
 
+async function clickBrowserViewElementWithRetry(
+  world: ApplicationWorld,
+  selector: string,
+  elementComment: string,
+): Promise<void> {
+  if (!world.app) {
+    throw new Error('Application not launched');
+  }
+
+  await backOff(
+    async () => {
+      const exists = await elementExists(world.app!, selector, world.currentWindow);
+      if (!exists) {
+        throw new Error(`Element "${elementComment}" with selector "${selector}" not found yet`);
+      }
+
+      const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
+
+      if (hasTextMatch) {
+        const baseSelector = hasTextMatch[1];
+        const textContent = hasTextMatch[2];
+        await clickElementWithText(world.app!, baseSelector, textContent, world.currentWindow);
+      } else {
+        await clickElement(world.app!, selector, world.currentWindow);
+      }
+    },
+    { ...BACKOFF_OPTIONS, numOfAttempts: 20, startingDelay: 200, maxDelay: 200 },
+  ).catch((error: unknown) => {
+    throw new Error(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${String(error)}`);
+  });
+}
+
 Then('I should see {string} in the browser view content', async function(this: ApplicationWorld, expectedText: string) {
   if (!this.app) {
     throw new Error('Application not launched');
@@ -182,26 +214,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
 });
 
 When('I click on {string} element in browser view with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
-  if (!this.app) {
-    throw new Error('Application not launched');
-  }
-
-  try {
-    // Check if selector contains :has-text() pseudo-selector
-    const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
-
-    if (hasTextMatch) {
-      // Extract base selector and text content
-      const baseSelector = hasTextMatch[1];
-      const textContent = hasTextMatch[2];
-      await clickElementWithText(this.app, baseSelector, textContent, this.currentWindow);
-    } else {
-      // Use regular selector
-      await clickElement(this.app, selector, this.currentWindow);
-    }
-  } catch (error) {
-    throw new Error(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
-  }
+  await clickBrowserViewElementWithRetry(this, selector, elementComment);
 });
 
 When('I click on {string} elements in browser view with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
@@ -219,15 +232,7 @@ When('I click on {string} elements in browser view with selectors:', async funct
 
   for (const [elementComment, selector] of dataRows) {
     try {
-      const hasTextMatch = selector.match(/^(.+):has-text\(['"](.+)['"]\)$/);
-
-      if (hasTextMatch) {
-        const baseSelector = hasTextMatch[1];
-        const textContent = hasTextMatch[2];
-        await clickElementWithText(this.app, baseSelector, textContent, this.currentWindow);
-      } else {
-        await clickElement(this.app, selector, this.currentWindow);
-      }
+      await clickBrowserViewElementWithRetry(this, selector, elementComment);
     } catch (error) {
       errors.push(`Failed to click ${elementComment} element with selector "${selector}" in browser view: ${error as Error}`);
     }
@@ -577,14 +582,6 @@ Then('image {string} should be loaded in browser view', async function(this: App
   ).catch(() => {
     throw new Error(`Image ${imageName} is not loaded correctly in browser view. Last diagnostic: ${lastDiagnostic}`);
   });
-});
-
-Then('browser view body background should be dark', async function(this: ApplicationWorld) {
-  await assertBrowserViewBodyBackground(this, 'dark');
-});
-
-Then('browser view body background should be light', async function(this: ApplicationWorld) {
-  await assertBrowserViewBodyBackground(this, 'light');
 });
 
 Then('browser view body background should be {string}', async function(this: ApplicationWorld, mode: string) {
