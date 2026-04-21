@@ -18,20 +18,20 @@ Feature: Tiddler Creation and Editing
     And I click on "add tiddler button and title input" elements in browser view with selectors:
       | element description | selector                                                                 |
       | add tiddler button  | button:has(.tc-image-new-button)                                         |
-      | title input         | div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor |
+      | title input         | div[data-tiddler-title$='的草稿'] input.tc-titlebar.tc-edit-texteditor |
     And I press "Control+a" in browser view
     And I press "Delete" in browser view
-    And I type "MyTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I click on "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
-    And I type "MyTestTag" in "tag input" element in browser view with selector "div[data-tiddler-title^='Draft of'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
-    And I click on "add tag button" element in browser view with selector "div[data-tiddler-title^='Draft of'] span.tc-add-tag-button button"
-    And I click on "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
-    And I type "customfield" in "add field name input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-name-wrapper input"
-    And I click on "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
-    And I type "customvalue" in "add field value input" element in browser view with selector "div[data-tiddler-title^='Draft of'] .tc-edit-field-add-value input"
+    And I type "MyTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title$='的草稿'] input.tc-titlebar.tc-edit-texteditor"
+    And I click on "tag input" element in browser view with selector "div[data-tiddler-title$='的草稿'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
+    And I type "MyTestTag" in "tag input" element in browser view with selector "div[data-tiddler-title$='的草稿'] div.tc-edit-add-tag-ui input.tc-edit-texteditor[placeholder='标签名称']"
+    And I click on "add tag button" element in browser view with selector "div[data-tiddler-title$='的草稿'] span.tc-add-tag-button button"
+    And I click on "add field name input" element in browser view with selector "div[data-tiddler-title$='的草稿'] .tc-edit-field-add-name-wrapper input"
+    And I type "customfield" in "add field name input" element in browser view with selector "div[data-tiddler-title$='的草稿'] .tc-edit-field-add-name-wrapper input"
+    And I click on "add field value input" element in browser view with selector "div[data-tiddler-title$='的草稿'] .tc-edit-field-add-value input"
+    And I type "customvalue" in "add field value input" element in browser view with selector "div[data-tiddler-title$='的草稿'] .tc-edit-field-add-value input"
     And I click on "add field button and confirm button" elements in browser view with selectors:
       | element description | selector                                                       |
-      | add field button    | div[data-tiddler-title^='Draft of'] .tc-edit-field-add button   |
+      | add field button    | div[data-tiddler-title$='的草稿'] .tc-edit-field-add button   |
       | confirm button      | button:has(.tc-image-done-button)                              |
     Then I should see "MyTestTiddler tiddler and MyTestTag tag" elements in browser view with selectors:
       | element description | selector                                                         |
@@ -41,8 +41,8 @@ Feature: Tiddler Creation and Editing
 
     # --- Part 2: Rapid typing and immediate save should not lose characters ---
     When I click on "add tiddler button" element in browser view with selector "button:has(.tc-image-new-button)"
-    And I click on "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
-    And I type "RapidSaveTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    And I click on "title input" element in browser view with selector "div[data-tiddler-title$='的草稿'] input.tc-titlebar.tc-edit-texteditor"
+    And I type "RapidSaveTiddler" in "title input" element in browser view with selector "div[data-tiddler-title$='的草稿'] input.tc-titlebar.tc-edit-texteditor"
     And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
     Then I should see a "RapidSaveTiddler tiddler" element in browser view with selector "div[data-tiddler-title='RapidSaveTiddler']"
     Then file "RapidSaveTiddler.tid" should exist in "{tmpDir}/wiki/tiddlers"

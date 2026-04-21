@@ -235,7 +235,9 @@
       "all": "Load all at once",
       "lazy-all": "Load images and text on demand",
       "lazy-images": "Load images on demand"
-    }
+    },
+    "SaveError": "Failed to save",
+    "SaveErrorPrefix": "Failed to save"
   },
   "Error": {
     "ALreadyExistErrorDescription": "A folder already exists at this path, and a new knowledge base cannot be created here.",

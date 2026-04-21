@@ -56,7 +56,7 @@ export function WorkspaceSectionSideBar({ sectionRefs, hiddenSections, onSearchC
         <SideMenuListItem
           index={0}
           onClick={onSearchClick}
-          data-testid='workspace-section-search'
+          data-testid='preference-section-search'
         >
           <ListItemIcon>
             <SearchIcon />

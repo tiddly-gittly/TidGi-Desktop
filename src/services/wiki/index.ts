@@ -842,31 +842,38 @@ export class Wiki implements IWikiService {
         logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID, subWikiID: id });
       }
     } else {
-      try {
-        logger.debug('calling startWiki', {
-          function: 'startWiki',
-        });
-        await this.startWiki(id, userName);
-        logger.info('[test-id-WIKI_WORKER_STARTED] Wiki worker started successfully', {
-          function: 'startWiki',
+      if (this.checkWikiStartLock(id) && this.getWorker(id) !== undefined) {
+        logger.debug('skip duplicate startWiki because worker already exists during startup lock', {
+          function: 'wikiStartup',
           workspaceId: id,
         });
-      } catch (error) {
-        logger.warn('startWiki failed', { function: 'startWiki', error });
-        if (error instanceof WikiRuntimeError && error.retry) {
-          logger.warn('startWiki retry', { function: 'startWiki', error });
-          // don't want it to throw here again, so no await here.
+      } else {
+        try {
+          logger.debug('calling startWiki', {
+            function: 'startWiki',
+          });
+          await this.startWiki(id, userName);
+          logger.info('[test-id-WIKI_WORKER_STARTED] Wiki worker started successfully', {
+            function: 'startWiki',
+            workspaceId: id,
+          });
+        } catch (error) {
+          logger.warn('startWiki failed', { function: 'startWiki', error });
+          if (error instanceof WikiRuntimeError && error.retry) {
+            logger.warn('startWiki retry', { function: 'startWiki', error });
+            // don't want it to throw here again, so no await here.
 
-          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-          return workspaceViewService.restartWorkspaceViewService(id);
-        } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
-          // https://github.com/andywer/threads.js/issues/426
-          // wait some time and restart the wiki will solve this
-          logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
-          await this.restartWiki(workspace);
-        } else {
-          logger.warn('unexpected error, throw it', { function: 'startWiki' });
-          throw error;
+            const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+            return workspaceViewService.restartWorkspaceViewService(id);
+          } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
+            // https://github.com/andywer/threads.js/issues/426
+            // wait some time and restart the wiki will solve this
+            logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
+            await this.restartWiki(workspace);
+          } else {
+            logger.warn('unexpected error, throw it', { function: 'startWiki' });
+            throw error;
+          }
         }
       }
     }

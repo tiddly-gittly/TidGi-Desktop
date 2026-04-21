@@ -235,7 +235,9 @@
       "all": "全量加载",
       "lazy-all": "按需加载图片和文本",
       "lazy-images": "按需加载图片"
-    }
+    },
+    "SaveError": "保存失败",
+    "SaveErrorPrefix": "保存失败"
   },
   "Error": {
     "ALreadyExistErrorDescription": "当前路径已有文件夹，新的知识库无法在此新建。",
@@ -434,7 +436,7 @@
     "View": "查看",
     "Wiki": "知识库",
     "Window": "窗口",
-    "Workspaces": "工作区列表",
+    "Workspaces": "知识库列表",
     "ZoomIn": "放大",
     "ZoomOut": "缩小"
   },

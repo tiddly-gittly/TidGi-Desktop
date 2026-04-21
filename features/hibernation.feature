@@ -46,10 +46,10 @@ Feature: Workspace Hibernation
     And I click on "add tiddler button and title input" elements in browser view with selectors:
       | element description | selector                                                                 |
       | add tiddler button  | button:has(.tc-image-new-button)                                         |
-      | title input         | div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor |
+      | title input         | div[data-tiddler-title$='的草稿'] input.tc-titlebar.tc-edit-texteditor |
     And I press "Control+a" in browser view
     And I press "Delete" in browser view
-    And I type "WikiTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title^='Draft of'] input.tc-titlebar.tc-edit-texteditor"
+    And I type "WikiTestTiddler" in "title input" element in browser view with selector "div[data-tiddler-title$='的草稿'] input.tc-titlebar.tc-edit-texteditor"
     # Confirm to save the tiddler
     And I click on "confirm button" element in browser view with selector "button:has(.tc-image-done-button)"
     Then I should see a "WikiTestTiddler tiddler" element in browser view with selector "div[data-tiddler-title='WikiTestTiddler']"

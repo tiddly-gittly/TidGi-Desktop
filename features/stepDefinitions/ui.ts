@@ -297,13 +297,11 @@ When('I type {string} in {string} element with selector {string}', async functio
     throw new Error('No current window is available');
   }
 
-  // Replace {tmpDir} placeholder with actual test root path
   const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
   try {
     await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
-    const element = currentWindow.locator(selector);
-    await element.fill(actualText);
+    await currentWindow.locator(selector).fill(actualText);
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
   }

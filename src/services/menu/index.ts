@@ -120,15 +120,20 @@ export class MenuService implements IMenuService {
     return await Promise.all(
       submenu
         .filter((item) => Object.keys(item).length > 0)
-        .map(async (item) => ({
-          ...item,
-          /** label sometimes is null, causing  */
-          label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
-          checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
-          enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-          visible: typeof item.visible === 'function' ? await item.visible() : item.visible,
-          submenu: Array.isArray(item.submenu) ? await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
-        })),
+        .map(async (item) => {
+          // For separator and role-based items, don't process label
+          const shouldProcessLabel = item.type !== 'separator' && !item.role;
+          const processedLabel = shouldProcessLabel && typeof item.label === 'function' ? item.label() ?? undefined : item.label;
+          return {
+            ...item,
+            /** label sometimes is null, causing error. Skip processing for separators and role-based items. Normalize null to undefined. */
+            label: typeof processedLabel === 'function' ? undefined : (processedLabel ?? undefined),
+            checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
+            enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
+            visible: typeof item.visible === 'function' ? await item.visible() : item.visible,
+            submenu: Array.isArray(item.submenu) ? await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
+          };
+        }),
     );
   }
 

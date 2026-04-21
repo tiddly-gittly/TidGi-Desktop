@@ -32,3 +32,16 @@ Feature: Edit Workspace
     # This tests that the workspace state doesn't diverge after restart, not triggered by fields like `lastUrl`
     Then I should not see a "save button after restart" element with selector "[data-testid='edit-workspace-save-button']"
     Then settings.json should have workspace "wiki" with "enableHTTPAPI" set to "true"
+
+  @edit-workspace-save-tagnames
+  Scenario: tagNames syncable config is persisted to tidgi.config.json
+    # This scenario verifies the persistence path for syncable tagNames fields.
+    # It intentionally updates the workspace through the service API instead of the EditWorkspace UI.
+    When I update workspace "wiki" settings:
+      | property | value         |
+      | tagNames | ["Tag1","Tag2"] |
+    Then I wait for "config file written" log marker "[test-id-TIDGI_CONFIG_WRITTEN]"
+    Then file "wiki/tidgi.config.json" should exist in "wiki-test"
+    Then file "wiki/tidgi.config.json" should contain JSON with:
+      | jsonPath   | value      |
+      | $.tagNames | Tag1,Tag2  |

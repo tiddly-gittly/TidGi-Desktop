@@ -140,6 +140,9 @@ const commonInit = async (): Promise<void> => {
   // Initialize i18n early so error messages can be translated
   await initRendererI18NHandler();
 
+  // Initialize workspace menu after database is ready to avoid race condition
+  await workspaceService.initializeMenu();
+
   // Apply preferences that need to be set early
   const useHardwareAcceleration = await preferenceService.get('useHardwareAcceleration');
   if (!useHardwareAcceleration) {

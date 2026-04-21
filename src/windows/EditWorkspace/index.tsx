@@ -1,5 +1,5 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
@@ -27,6 +27,7 @@ export default function EditWorkspace(): React.JSX.Element {
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID ?? '');
   const [fallbackWorkspace, setFallbackWorkspace] = useState<IWorkspace | undefined>(undefined);
+  const [saveError, setSaveError] = useState<string | undefined>(undefined);
 
   // Fallback for rare cases where observable has not emitted yet but the workspace already exists in service storage.
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function EditWorkspace(): React.JSX.Element {
   }, [workspaceID, originalWorkspace, fallbackWorkspace]);
 
   const currentWorkspace = originalWorkspace ?? fallbackWorkspace;
-  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: currentWorkspace, restartType: RestartSnackbarType.Wiki });
   const [workspace, workspaceSetter, onSave] = useForm(currentWorkspace, requestRestartCountDown);
   const isWiki = workspace && isWikiWorkspace(workspace);
   const isSubWiki = isWiki ? workspace.isSubWiki : false;
@@ -56,6 +57,15 @@ export default function EditWorkspace(): React.JSX.Element {
   const handleSearchClick = () => {
     searchInputReference.current?.focus();
   };
+
+  const handleSave = useCallback(async () => {
+    setSaveError(undefined);
+    try {
+      await onSave();
+    } catch (error) {
+      setSaveError((error as Error).message || t('EditWorkspace.SaveError'));
+    }
+  }, [onSave, t]);
 
   // In e2e startup there is a brief window where meta can be undefined on first render.
   // Keep polling until workspaceID is available to avoid getting stuck on a permanent loading page.
@@ -100,6 +110,7 @@ export default function EditWorkspace(): React.JSX.Element {
 
   const isSearching = searchQuery.trim().length > 0;
   const wikiWorkspace = isWiki ? workspace : undefined;
+  const hasUnsavedChanges = currentWorkspace !== undefined && !isEqual(omit(workspace, nonConfigFields), omit(currentWorkspace, nonConfigFields));
 
   return (
     <Outter>
@@ -125,14 +136,19 @@ export default function EditWorkspace(): React.JSX.Element {
           </Inner>
         </WorkspaceFormProvider>
       )}
-      {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
+      {hasUnsavedChanges && (
         <SaveCancelButtonsContainer>
-          <Button color='primary' variant='contained' disableElevation onClick={() => void onSave()} data-testid='edit-workspace-save-button'>
+          <Button color='primary' variant='contained' disableElevation onClick={() => void handleSave()} data-testid='edit-workspace-save-button'>
             {t('EditWorkspace.Save')}
           </Button>
           <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()} data-testid='edit-workspace-cancel-button'>
             {t('EditWorkspace.Cancel')}
           </Button>
+          {saveError && (
+            <div style={{ color: 'red', marginTop: '8px', fontSize: '14px' }}>
+              {t('EditWorkspace.SaveErrorPrefix')}: {saveError}
+            </div>
+          )}
         </SaveCancelButtonsContainer>
       )}
     </Outter>

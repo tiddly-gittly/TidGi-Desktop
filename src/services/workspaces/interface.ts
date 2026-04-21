@@ -391,6 +391,11 @@ export interface IWorkspaceService {
    */
   initializeDefaultPageWorkspaces(): Promise<void>;
   /**
+   * Initialize workspace menu after database is ready
+   * Called from main.ts after databaseService.initializeForApp()
+   */
+  initializeMenu(): Promise<void>;
+  /**
    * Open a tiddler in the workspace, open workspace's tag by default.
    */
   openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void>;
@@ -436,6 +441,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getWorkspaceToken: ProxyPropertyType.Function,
     validateWorkspaceToken: ProxyPropertyType.Function,
     initializeDefaultPageWorkspaces: ProxyPropertyType.Function,
+    initializeMenu: ProxyPropertyType.Function,
     openWorkspaceTiddler: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,
     removeWorkspacePicture: ProxyPropertyType.Function,

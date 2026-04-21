@@ -66,7 +66,7 @@ Feature: Git Log Window
       | uncommitted changes row             | [data-testid='uncommitted-changes-row']|
       | Index.tid file in uncommitted list  | li:has-text('Index.tid')               |
     # Switch to Actions tab to access commit button
-    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
     # Verify the commit now button is visible
     Then I should see a "commit now button" element with selector "button[data-testid='commit-now-button']"
     # In uncommitted state, sync-to-remote button must NOT appear (it only appears for unpushed commits)
@@ -244,29 +244,29 @@ Feature: Git Log Window
   @git
   Scenario: Git Log multi-select commits with Ctrl and undo both
     # Create first tiddler and commit it
-    When I create file "{tmpDir}/wiki/tiddlers/新条目 0.tid" with content:
+    When I create file "{tmpDir}/wiki/tiddlers/Space File 0.tid" with content:
       """
       created: 20250420070000000
       modified: 20250420070000000
-      title: 新条目 0
+      title: Space File 0
       tags: MultiSelectTest
 
       First tiddler for multi-select undo test.
       """
-    Then I wait for tiddler "新条目 0" to be added by watch-fs
+    Then I wait for tiddler "Space File 0" to be added by watch-fs
     When I click menu "同步和备份 > 立即本地Git备份"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     # Create second tiddler and commit it
-    When I create file "{tmpDir}/wiki/tiddlers/新条目 1.tid" with content:
+    When I create file "{tmpDir}/wiki/tiddlers/Space File 1.tid" with content:
       """
       created: 20250420070000000
       modified: 20250420070000000
-      title: 新条目 1
+      title: Space File 1
       tags: MultiSelectTest
 
       Second tiddler for multi-select undo test.
       """
-    Then I wait for tiddler "新条目 1" to be added by watch-fs
+    Then I wait for tiddler "Space File 1" to be added by watch-fs
     When I clear log lines containing "[test-id-git-commit-complete]"
     When I click menu "同步和备份 > 立即本地Git备份"
     Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
@@ -275,10 +275,10 @@ Feature: Git Log Window
     And I switch to "gitHistory" window
     And I wait for the page to load completely
     Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
-    # Click the commit containing 新条目 1 to select it
-    When I click on a "commit row with 新条目 1" element with selector "[data-testid^='commit-row-']:has-text('新条目 1')"
-    # Ctrl-click the commit containing 新条目 0 to add it to selection
-    When I ctrl-click on a "commit row with 新条目 0" element with selector "[data-testid^='commit-row-']:has-text('新条目 0')"
+    # Click the commit containing Space File 1 to select it
+    When I click on a "commit row with Space File 1" element with selector "[data-testid^='commit-row-']:has-text('Space File 1')"
+    # Ctrl-click the commit containing Space File 0 to add it to selection
+    When I ctrl-click on a "commit row with Space File 0" element with selector "[data-testid^='commit-row-']:has-text('Space File 0')"
     # Switch to Actions tab and verify undo button shows count of 2
     When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作')"
     Then I should see a "undo button with count 2" element with selector "[data-testid='undo-commit-button']:has-text('(2)')"
@@ -288,5 +288,15 @@ Feature: Git Log Window
     Then I wait for "git log refreshed after undo" log marker "[test-id-git-log-refreshed]"
     # Both commits should be gone; uncommitted changes should appear
     Then I should see a "uncommitted changes row" element with selector "[data-testid='uncommitted-changes-row']"
-    Then I should not see a "commit with 新条目 1" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('新条目 1')"
-    Then I should not see a "commit with 新条目 0" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('新条目 0')"
+    Then I should not see a "commit with Space File 1" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('Space File 1')"
+    Then I should not see a "commit with Space File 0" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):has-text('Space File 0')"
+    # Undo is triggered from the commit details actions tab; switch back to details so file list is visible
+    When I click on a "details tab" element with selector "button[role='tab']:has-text('详情'), button[role='tab']:has-text('Details')"
+    # Verify uncommitted file with space in name can load diff/actions instead of failing with quoted path
+    When I click on a "new file with space in name" element with selector "[data-testid^='git-file-row-']:has-text('Space File 1.tid')"
+    Then I should see a "file name header in diff panel" element with selector "h6:has-text('Space File 1.tid')"
+    Then I should not see a "failed to load diff message" element with selector "*:has-text('加载差异失败')"
+    When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('操作'), h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('Actions')"
+    Then I should see a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard Changes')"
+    When I click on a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard Changes')"
+    Then I should not see a "new file still in uncommitted list" element with selector "[data-testid^='git-file-row-']:has-text('Space File 1.tid')"

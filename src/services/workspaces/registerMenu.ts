@@ -8,6 +8,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWorkspaceService } from './interface';
+import { isWikiWorkspace } from './interface';
 
 export async function registerMenu(): Promise<void> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
@@ -69,7 +70,10 @@ export async function registerMenu(): Promise<void> {
         if (currentActiveWorkspace === undefined) return;
         await wikiGitWorkspaceService.removeWorkspace(currentActiveWorkspace.id);
       },
-      enabled: async () => (await workspaceService.countWorkspaces()) > 0,
+      enabled: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        return activeWorkspace !== undefined && isWikiWorkspace(activeWorkspace);
+      },
     },
     { type: 'separator' },
     {

@@ -10,7 +10,6 @@ import { map } from 'rxjs/operators';
 
 import { WikiChannel } from '@/constants/channels';
 import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -43,10 +42,12 @@ export class Workspace implements IWorkspaceService {
   private workspaces: Record<string, IWorkspace> | undefined;
   public workspaces$ = new BehaviorSubject<IWorkspacesWithMetadata | undefined>(undefined);
 
-  constructor() {
-    setTimeout(() => {
-      void registerMenu();
-    }, DELAY_MENU_REGISTER);
+  /**
+   * Initialize workspace menu after database is ready
+   * Called from main.ts after databaseService.initializeForApp()
+   */
+  public async initializeMenu(): Promise<void> {
+    await registerMenu();
   }
 
   public getWorkspacesWithMetadata(): IWorkspacesWithMetadata {
@@ -67,7 +68,7 @@ export class Workspace implements IWorkspaceService {
    * Update items like "activate workspace1" or "open devtool in workspace1" in the menu
    */
   private async updateWorkspaceMenuItems(): Promise<void> {
-    const newMenuItems = (await this.getWorkspacesAsList()).flatMap((workspace, index) => [
+    const newMenuItems = (await this.getWorkspacesAsList()).filter((workspace) => isWikiWorkspace(workspace)).flatMap((workspace, index) => [
       {
         label: (): string => workspace.name || `Workspace ${index + 1}`,
         id: workspace.id,
@@ -208,37 +209,25 @@ export class Workspace implements IWorkspaceService {
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
-    // Capture previous in-memory state before overwriting, for precise syncable-field diffing below.
+    // Capture previous in-memory state for precise syncable-field diffing.
     const previousWorkspace = workspaces[id];
 
-    // Update memory cache with full workspace data (including syncable fields)
-    workspaces[id] = workspaceToSave;
+    // Transactional persistence: write to disk first, then update memory/UI only on success.
+    // This prevents false "saved" feedback when disk writes fail.
 
     // Write tidgi.config.json only when syncable fields actually changed.
-    // Compare previous vs new in-memory syncable config using extractSyncableConfig (which already
-    // knows the full field list and default values), so non-syncable updates like lastNodeJSArgv or
-    // hibernated never trigger a file write.
     if (isWikiWorkspace(workspaceToSave)) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
       const previousSyncableConfig = previousWorkspace !== undefined && isWikiWorkspace(previousWorkspace)
         ? extractSyncableConfig(previousWorkspace)
         : undefined;
-      // Write when: first time saving this workspace (no previous state), or any syncable field changed.
       const syncableChanged = previousSyncableConfig === undefined || !isEqual(newSyncableConfig, previousSyncableConfig);
       if (syncableChanged) {
-        try {
-          await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
-        } catch (error) {
-          logger.warn('Failed to write tidgi.config.json', {
-            workspaceId: id,
-            error: (error as Error).message,
-          });
-        }
+        await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
       }
     }
 
-    // Persist only this workspace to settings.json, stripping syncable fields when tidgi.config.json exists.
-    // Updating a single entry avoids iterating all workspaces on every system-internal update (e.g. hibernated, lastNodeJSArgv).
+    // Persist to settings.json first, stripping syncable fields when tidgi.config.json exists.
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
     currentSettingsWorkspaces[id] = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined
@@ -249,10 +238,12 @@ export class Workspace implements IWorkspaceService {
       await databaseService.immediatelyStoreSettingsToFile();
     }
 
-    // update subject so ui can react to it (can be skipped for batch operations)
+    // Update memory cache only after successful persistence
+    workspaces[id] = workspaceToSave;
+
+    // Update UI only after successful persistence
     if (!skipUiUpdate) {
       this.updateWorkspaceSubject();
-      // menu is mostly invisible, so we don't need to update it immediately
       void this.updateWorkspaceMenuItems();
     }
   }
