@@ -842,6 +842,12 @@ export class Wiki implements IWikiService {
         logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID, subWikiID: id });
       }
     } else {
+      if (this.checkWikiStartLock(id) && this.getWorker(id) !== undefined) {
+        logger.debug('skip duplicate startWiki because worker already exists during startup lock', {
+          function: 'wikiStartup',
+          workspaceId: id,
+        });
+      } else {
       try {
         logger.debug('calling startWiki', {
           function: 'startWiki',
@@ -868,6 +874,7 @@ export class Wiki implements IWikiService {
           logger.warn('unexpected error, throw it', { function: 'startWiki' });
           throw error;
         }
+      }
       }
     }
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);

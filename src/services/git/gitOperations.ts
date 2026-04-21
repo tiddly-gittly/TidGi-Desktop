@@ -85,7 +85,7 @@ export async function getChangedFilesBetweenCommits(
   toCommit: string = 'HEAD',
 ): Promise<Array<{ path: string; status: GitFileStatus }>> {
   const result = await gitExec(
-    ['-c', 'core.quotePath=false', 'diff', '--name-status', fromCommit, toCommit],
+    ['-c', 'core.quotePath=false', 'diff', '--name-status', '-z', fromCommit, toCommit],
     repoPath,
   );
 
@@ -93,36 +93,7 @@ export async function getChangedFilesBetweenCommits(
     throw new Error(`Failed to get changed files: ${result.stderr}`);
   }
 
-  const lines = result.stdout.trim().split('\n').filter(Boolean);
-  return lines.map(line => {
-    const parts = line.split('\t');
-    const statusCode = parts[0];
-    let status: GitFileStatus;
-    switch (statusCode?.charAt(0)) {
-      case 'A':
-        status = 'added';
-        break;
-      case 'M':
-        status = 'modified';
-        break;
-      case 'D':
-        status = 'deleted';
-        break;
-      case 'R':
-        status = 'renamed';
-        break;
-      case 'C':
-        status = 'copied';
-        break;
-      default:
-        status = 'unknown';
-        break;
-    }
-    // For renamed/copied files, git outputs "R100\told/path\tnew/path".
-    // Use the new path (last element) for file operations.
-    const filePath = parts.length >= 3 ? parts[parts.length - 1] : (parts[1] ?? '');
-    return { path: filePath, status };
-  });
+  return parseNullSeparatedNameStatusOutput(result.stdout);
 }
 
 /**
@@ -284,41 +255,18 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
   if (!commitHash || commitHash === '') {
     // Use -uall to show all untracked files, not just directories.
     // This is important for AI commit message generation to see the full context.
-    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-uall'], repoPath);
+    const result = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-z', '-uall'], repoPath);
 
     if (result.exitCode !== 0) {
       throw new Error(`Failed to get uncommitted files: ${result.stderr}`);
     }
 
-    return result.stdout
-      .split(/\r?\n/)
-      .map(line => line.trimEnd())
-      .filter((line: string) => line.length > 0)
-      .map((line: string) => {
-        if (line.length <= 3) {
-          return { path: line.trim(), status: 'unknown' as const };
-        }
-
-        // Parse git status format: "XY filename"
-        // XY is two-letter status code, filename starts at position 3
-        const statusCode = line.slice(0, 2);
-        const rawPath = line.slice(3);
-
-        // Handle rename format: "old -> new" – we want the new path
-        const renameParts = rawPath.split(' -> ');
-        const filePath = renameParts[renameParts.length - 1].trim();
-
-        return {
-          path: filePath,
-          status: parseGitStatusCode(statusCode),
-        };
-      })
-      .filter((item) => item.path.length > 0);
+    return parseNullSeparatedPorcelainStatusOutput(result.stdout);
   }
 
   // For committed changes, use diff-tree with --name-status to get file status
   const result = await gitExec(
-    ['-c', 'core.quotePath=false', 'diff-tree', '--no-commit-id', '--name-status', '-r', commitHash],
+    ['-c', 'core.quotePath=false', 'diff-tree', '--no-commit-id', '--name-status', '-z', '-r', commitHash],
     repoPath,
   );
 
@@ -326,18 +274,60 @@ export async function getCommitFiles(repoPath: string, commitHash: string): Prom
     throw new Error(`Failed to get commit files: ${result.stderr}`);
   }
 
-  return result.stdout
-    .trim()
-    .split('\n')
-    .filter((line: string) => line.length > 0)
-    .map((line: string) => {
-      // Format: "STATUS\tFILENAME" or "STATUS\tOLDNAME\tNEWNAME" for renames
-      const parts = line.split('\t');
-      const statusChar = parts[0];
-      const filePath = parts[parts.length - 1]; // Use last part for renames
+  return parseNullSeparatedNameStatusOutput(result.stdout);
+}
 
-      return { path: filePath, status: parseGitStatusCode(statusChar) };
-    });
+function parseNullSeparatedNameStatusOutput(output: string): Array<{ path: string; status: GitFileStatus }> {
+  const tokens = output.split('\0').filter(Boolean);
+  const files: Array<{ path: string; status: GitFileStatus }> = [];
+
+  for (let index = 0; index < tokens.length; index++) {
+    const statusCode = tokens[index];
+    if (!statusCode) continue;
+
+    const status = parseGitStatusCode(statusCode);
+    const filePath = tokens[index + 1] ?? '';
+    if (!filePath) continue;
+
+    if (statusCode.startsWith('R') || statusCode.startsWith('C')) {
+      index += 2;
+    } else {
+      index += 1;
+    }
+
+    files.push({ path: filePath, status });
+  }
+
+  return files;
+}
+
+function parseNullSeparatedPorcelainStatusOutput(output: string): Array<import('./interface').IFileWithStatus> {
+  const records = output.split('\0').filter(Boolean);
+  const files: Array<import('./interface').IFileWithStatus> = [];
+
+  for (let index = 0; index < records.length; index++) {
+    const record = records[index];
+    if (!record || record.length < 3) continue;
+
+    const statusCode = record.slice(0, 2);
+    const rawPath = record.slice(3);
+    const status = parseGitStatusCode(statusCode);
+
+    if (statusCode[0] === 'R' || statusCode[0] === 'C') {
+      const renamedPath = records[index + 1] ?? rawPath;
+      if (renamedPath) {
+        files.push({ path: renamedPath, status });
+      }
+      index += 1;
+      continue;
+    }
+
+    if (rawPath) {
+      files.push({ path: rawPath, status });
+    }
+  }
+
+  return files;
 }
 
 /**
