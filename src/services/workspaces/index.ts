@@ -44,9 +44,15 @@ export class Workspace implements IWorkspaceService {
   public workspaces$ = new BehaviorSubject<IWorkspacesWithMetadata | undefined>(undefined);
 
   constructor() {
-    setTimeout(() => {
-      void registerMenu();
-    }, DELAY_MENU_REGISTER);
+    // Menu registration moved to main.ts after database initialization to avoid race condition
+  }
+
+  /**
+   * Initialize workspace menu after database is ready
+   * Called from main.ts after databaseService.initializeForApp()
+   */
+  public async initializeMenu(): Promise<void> {
+    await registerMenu();
   }
 
   public getWorkspacesWithMetadata(): IWorkspacesWithMetadata {
