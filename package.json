@@ -116,7 +116,7 @@
     "sqlite-vec": "0.1.7-alpha.2",
     "strip-ansi": "^7.1.2",
     "tapable": "^2.3.0",
-    "tiddlywiki": "github:TiddlyWiki/TiddlyWiki5#75b54457ed665fb679ba54847a29e203f9eb88d3",
+    "tiddlywiki": "5.4.0",
     "type-fest": "5.2.0",
     "typeorm": "^0.3.27",
     "typescript-styled-is": "^2.1.0",
