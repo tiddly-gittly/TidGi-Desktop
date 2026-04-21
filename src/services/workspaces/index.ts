@@ -227,10 +227,7 @@ export class Workspace implements IWorkspaceService {
       }
     }
 
-    // Update memory cache only after successful disk write
-    workspaces[id] = workspaceToSave;
-
-    // Persist to settings.json, stripping syncable fields when tidgi.config.json exists.
+    // Persist to settings.json first, stripping syncable fields when tidgi.config.json exists.
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
     currentSettingsWorkspaces[id] = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined
@@ -240,6 +237,9 @@ export class Workspace implements IWorkspaceService {
     if (immediate === true) {
       await databaseService.immediatelyStoreSettingsToFile();
     }
+
+    // Update memory cache only after successful persistence
+    workspaces[id] = workspaceToSave;
 
     // Update UI only after successful persistence
     if (!skipUiUpdate) {

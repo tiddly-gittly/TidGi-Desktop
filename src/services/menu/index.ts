@@ -126,8 +126,8 @@ export class MenuService implements IMenuService {
           const processedLabel = shouldProcessLabel && typeof item.label === 'function' ? item.label() ?? undefined : item.label;
           return {
             ...item,
-            /** label sometimes is null, causing error. Skip processing for separators and role-based items */
-            label: typeof processedLabel === 'function' ? undefined : processedLabel,
+            /** label sometimes is null, causing error. Skip processing for separators and role-based items. Normalize null to undefined. */
+            label: typeof processedLabel === 'function' ? undefined : (processedLabel ?? undefined),
             checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
             enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
             visible: typeof item.visible === 'function' ? await item.visible() : item.visible,
