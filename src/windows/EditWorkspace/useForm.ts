@@ -36,10 +36,19 @@ export function useForm(
     if (workspace === undefined) {
       return;
     }
-    await window.service.workspace.update(workspace.id, workspace);
-    await window.service.native.log('info', '[test-id-WORKSPACE_SAVED]', { workspaceId: workspace.id, workspaceName: workspace.name });
-    if (requestRestartAfterSave) {
-      requestRestartCountDown();
+    try {
+      await window.service.workspace.update(workspace.id, workspace);
+      await window.service.native.log('info', '[test-id-WORKSPACE_SAVED]', { workspaceId: workspace.id, workspaceName: workspace.name });
+      if (requestRestartAfterSave) {
+        requestRestartCountDown();
+      }
+    } catch (error) {
+      await window.service.native.log('error', 'Failed to save workspace settings', {
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        error: (error as Error).message,
+      });
+      throw error;
     }
   }, [workspace, requestRestartAfterSave, requestRestartCountDown]);
   const setterWithRestartOption = (newValue: IWorkspace, requestSaveAndRestart?: boolean) => {

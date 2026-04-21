@@ -208,37 +208,28 @@ export class Workspace implements IWorkspaceService {
     const workspaceToSave = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
-    // Capture previous in-memory state before overwriting, for precise syncable-field diffing below.
+    // Capture previous in-memory state for precise syncable-field diffing.
     const previousWorkspace = workspaces[id];
 
-    // Update memory cache with full workspace data (including syncable fields)
-    workspaces[id] = workspaceToSave;
+    // Transactional persistence: write to disk first, then update memory/UI only on success.
+    // This prevents false "saved" feedback when disk writes fail.
 
     // Write tidgi.config.json only when syncable fields actually changed.
-    // Compare previous vs new in-memory syncable config using extractSyncableConfig (which already
-    // knows the full field list and default values), so non-syncable updates like lastNodeJSArgv or
-    // hibernated never trigger a file write.
     if (isWikiWorkspace(workspaceToSave)) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
       const previousSyncableConfig = previousWorkspace !== undefined && isWikiWorkspace(previousWorkspace)
         ? extractSyncableConfig(previousWorkspace)
         : undefined;
-      // Write when: first time saving this workspace (no previous state), or any syncable field changed.
       const syncableChanged = previousSyncableConfig === undefined || !isEqual(newSyncableConfig, previousSyncableConfig);
       if (syncableChanged) {
-        try {
-          await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
-        } catch (error) {
-          logger.warn('Failed to write tidgi.config.json', {
-            workspaceId: id,
-            error: (error as Error).message,
-          });
-        }
+        await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
       }
     }
 
-    // Persist only this workspace to settings.json, stripping syncable fields when tidgi.config.json exists.
-    // Updating a single entry avoids iterating all workspaces on every system-internal update (e.g. hibernated, lastNodeJSArgv).
+    // Update memory cache only after successful disk write
+    workspaces[id] = workspaceToSave;
+
+    // Persist to settings.json, stripping syncable fields when tidgi.config.json exists.
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
     currentSettingsWorkspaces[id] = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined
@@ -249,10 +240,9 @@ export class Workspace implements IWorkspaceService {
       await databaseService.immediatelyStoreSettingsToFile();
     }
 
-    // update subject so ui can react to it (can be skipped for batch operations)
+    // Update UI only after successful persistence
     if (!skipUiUpdate) {
       this.updateWorkspaceSubject();
-      // menu is mostly invisible, so we don't need to update it immediately
       void this.updateWorkspaceMenuItems();
     }
   }
