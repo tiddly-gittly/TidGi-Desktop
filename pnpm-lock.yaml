@@ -261,8 +261,8 @@ importers:
         specifier: ^2.3.0
         version: 2.3.0
       tiddlywiki:
-        specifier: github:TiddlyWiki/TiddlyWiki5#75b54457ed665fb679ba54847a29e203f9eb88d3
-        version: https://codeload.github.com/TiddlyWiki/TiddlyWiki5/tar.gz/75b54457ed665fb679ba54847a29e203f9eb88d3
+        specifier: 5.4.0
+        version: 5.4.0
       type-fest:
         specifier: 5.2.0
         version: 5.2.0
@@ -7352,9 +7352,8 @@ packages:
   thenify@3.3.1:
     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
 
-  tiddlywiki@https://codeload.github.com/TiddlyWiki/TiddlyWiki5/tar.gz/75b54457ed665fb679ba54847a29e203f9eb88d3:
-    resolution: {tarball: https://codeload.github.com/TiddlyWiki/TiddlyWiki5/tar.gz/75b54457ed665fb679ba54847a29e203f9eb88d3}
-    version: 5.4.0-prerelease
+  tiddlywiki@5.4.0:
+    resolution: {integrity: sha512-KD7kskwijrj4tOBjHY0XldQiQ2bnNNEsCXcGaYdIUeTqEMoKVK436Gkscc+qUwQE7APRyQ6t1gvbOKOLly1MvA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -15949,7 +15948,7 @@ snapshots:
     dependencies:
       any-promise: 1.3.0
 
-  tiddlywiki@https://codeload.github.com/TiddlyWiki/TiddlyWiki5/tar.gz/75b54457ed665fb679ba54847a29e203f9eb88d3: {}
+  tiddlywiki@5.4.0: {}
 
   tiny-case@1.0.3: {}
 
