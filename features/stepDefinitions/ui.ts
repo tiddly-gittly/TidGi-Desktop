@@ -309,6 +309,24 @@ When('I type {string} in {string} element with selector {string}', async functio
   }
 });
 
+When('I clear and type {string} in {string} element with selector {string}', async function(this: ApplicationWorld, text: string, elementComment: string, selector: string) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
+
+  try {
+    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    const element = currentWindow.locator(selector);
+    await element.clear();
+    await element.fill(actualText);
+  } catch (error) {
+    throw new Error(`Failed to clear and type in ${elementComment} element with selector "${selector}": ${error as Error}`);
+  }
+});
+
 When('I type in {string} elements with selectors:', async function(this: ApplicationWorld, elementDescriptions: string, dataTable: DataTable) {
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
