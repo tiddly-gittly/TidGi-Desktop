@@ -10,7 +10,6 @@ import { map } from 'rxjs/operators';
 
 import { WikiChannel } from '@/constants/channels';
 import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -42,10 +41,6 @@ export class Workspace implements IWorkspaceService {
    */
   private workspaces: Record<string, IWorkspace> | undefined;
   public workspaces$ = new BehaviorSubject<IWorkspacesWithMetadata | undefined>(undefined);
-
-  constructor() {
-    // Menu registration moved to main.ts after database initialization to avoid race condition
-  }
 
   /**
    * Initialize workspace menu after database is ready
