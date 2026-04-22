@@ -1,12 +1,15 @@
+import FolderIcon from '@mui/icons-material/Folder';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { css, styled } from '@mui/material/styles';
 import { t } from 'i18next';
+import { useState } from 'react';
 import SimpleBar from 'simplebar-react';
 import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { WorkspaceGroupManagement } from '@/pages/Main/WorkspaceGroupManagement';
 import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
@@ -87,43 +90,64 @@ export function SideBar(): React.JSX.Element {
   const workspacesList = useWorkspacesListObservable();
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
+  const [groupManagementOpen, setGroupManagementOpen] = useState(false);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
   const { showSideBarText, showSideBarIcon } = preferences;
 
   return (
-    <SidebarContainer data-testid='main-sidebar'>
-      <SidebarTop $titleBar={titleBar}>
-        {workspacesList === undefined
-          ? <div>{t('Loading')}</div>
-          : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
-      </SidebarTop>
-      <SideBarEnd>
-        {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
+    <>
+      <SidebarContainer data-testid='main-sidebar'>
+        <SidebarTop $titleBar={titleBar}>
+          {workspacesList === undefined
+            ? <div>{t('Loading')}</div>
+            : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
+        </SidebarTop>
+        <SideBarEnd>
           <IconButton
-            id='update-available'
-            aria-label={t('SideBar.UpdateAvailable')}
-            onClick={async () => {
-              await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+            id='manage-groups-button'
+            aria-label={t('WorkspaceGroup.ManageGroups')}
+            onClick={() => {
+              setGroupManagementOpen(true);
             }}
+            data-testid='manage-groups-button'
           >
-            <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement='top'>
-              <UpgradeIcon />
+            <Tooltip title={<span>{t('WorkspaceGroup.ManageGroups')}</span>} placement='top'>
+              <FolderIcon />
             </Tooltip>
           </IconButton>
-        )}
-        <IconButton
-          id='open-preferences-button'
-          aria-label={t('SideBar.Preferences')}
-          onClick={async () => {
-            await window.service.window.open(WindowNames.preferences);
-          }}
-        >
-          <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement='top'>
-            <SettingsIcon />
-          </Tooltip>
-        </IconButton>
-      </SideBarEnd>
-    </SidebarContainer>
+          {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
+            <IconButton
+              id='update-available'
+              aria-label={t('SideBar.UpdateAvailable')}
+              onClick={async () => {
+                await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+              }}
+            >
+              <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement='top'>
+                <UpgradeIcon />
+              </Tooltip>
+            </IconButton>
+          )}
+          <IconButton
+            id='open-preferences-button'
+            aria-label={t('SideBar.Preferences')}
+            onClick={async () => {
+              await window.service.window.open(WindowNames.preferences);
+            }}
+          >
+            <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement='top'>
+              <SettingsIcon />
+            </Tooltip>
+          </IconButton>
+        </SideBarEnd>
+      </SidebarContainer>
+      <WorkspaceGroupManagement
+        open={groupManagementOpen}
+        onClose={() => {
+          setGroupManagementOpen(false);
+        }}
+      />
+    </>
   );
 }
