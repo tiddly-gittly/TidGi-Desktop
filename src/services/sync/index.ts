@@ -75,7 +75,6 @@ export class Sync implements ISyncService {
         // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
         if (hasChanges && !workspace.enableFileSystemWatch) {
           await workspaceViewService.restartWorkspaceViewService(idToUse);
-          await viewService.reloadViewsWebContents(idToUse);
         }
       } else if (workspace.syncSubWikis !== false) {
         // sync all sub workspace (can be disabled via syncSubWikis setting)
@@ -99,7 +98,6 @@ export class Sync implements ISyncService {
         // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
         if ((hasChanges || subHasChange) && !workspace.enableFileSystemWatch) {
           await workspaceViewService.restartWorkspaceViewService(id);
-          await viewService.reloadViewsWebContents(id);
         }
       }
     } else {
