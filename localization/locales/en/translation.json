@@ -141,7 +141,7 @@
     "FocusedTiddlerNotFoundTitle": "Can't find focused tiddler",
     "FocusedTiddlerNotFoundTitleDetail": "You can install the FocusedTiddler plugin in CPL.",
     "Later": "Later",
-    "MadeWithLove": "<0>Made with </0><1>❤</1><2> by </2>",
+    "MadeWithLove": "<0>Made with </0><1>?</1><2> by </2>",
     "NeedCorrectTiddlywikiFolderPath": "The correct path needs to be passed in, and this path cannot be recognized by TiddlyWiki. Name: {{name}} , Path: {{wikiFolderLocation}}",
     "PathPassInCantUse": "The path passed in cannot be used",
     "RemoveWorkspace": "Remove workspace",
@@ -151,9 +151,9 @@
     "RestartMessage": "You need to restart the app for this change to take affect.",
     "RestartWikiNow": "Restart Wiki Now",
     "Restarting": "Restarting",
-    "StorageServiceUserInfoNoFound": "Your storage service's UserInfo No Found",
-    "StorageServiceUserInfoNoFoundDetail": "Seems you haven't login to Your storage service, so we disable syncing for this wiki.",
-    "WorkspaceFolderRemoved": "Workspace folder is moved or is not a wiki folder"
+    "Close": "Close",
+    "OK": "OK",
+    "Cancel": "Cancel"
   },
   "EditWorkspace": {
     "AddExcludedPlugins": "Enter the name of the plugin you want to ignore",

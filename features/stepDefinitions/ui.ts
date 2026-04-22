@@ -664,3 +664,29 @@ When('I print all window URLs', async function(this: ApplicationWorld) {
   }
   console.log('=== End Window List ===');
 });
+
+When('I type {string} into the focused input', async function(this: ApplicationWorld, text: string) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    await currentWindow.keyboard.type(text);
+  } catch (error) {
+    throw new Error(`Failed to type into focused input: ${error as Error}`);
+  }
+});
+
+When('I press {string}', async function(this: ApplicationWorld, key: string) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) {
+    throw new Error('No current window is available');
+  }
+
+  try {
+    await currentWindow.keyboard.press(key);
+  } catch (error) {
+    throw new Error(`Failed to press key "${key}": ${error as Error}`);
+  }
+});

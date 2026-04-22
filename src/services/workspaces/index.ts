@@ -777,6 +777,8 @@ export class Workspace implements IWorkspaceService {
       } else {
         this.groups = {};
       }
+      // Initialize the observable with current groups
+      this.groups$.next(this.groups);
     }
     return this.groups;
   }
