@@ -350,6 +350,8 @@ Feature: Git Log Window
     # Switch back to main window to verify the restore
     When I switch to "main" window
     Then I wait for tiddler "Index" to be updated by watch-fs
-    # Verify the file was restored correctly (browser view verification skipped due to TiddlyWiki rendering async issues)
+    # Verify the file was restored correctly on disk
     Then file "{tmpDir}/wiki/tiddlers/Index.tid" should contain text "Checkpoint test content - should be restored!"
-    And I should not see a "modified content after checkpoint" element in browser view with selector "[data-tiddler-title='Index']:has-text('Modified after checkpoint')"
+    # Verify the browser view shows the restored content (with retry to allow syncer → UI update pipeline to complete)
+    And I should see a "restored checkpoint content" element in browser view with selector ".tc-tiddler-body:has-text('Checkpoint test content - should be restored!')"
+    And I should not see a "modified content after checkpoint" element in browser view with selector ".tc-tiddler-body:has-text('Modified after checkpoint')"
