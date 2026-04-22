@@ -25,6 +25,7 @@ import type {
   INewWikiWorkspaceConfig,
   IWikiWorkspace,
   IWorkspace,
+  IWorkspaceGroup,
   IWorkspaceMetaData,
   IWorkspaceService,
   IWorkspacesWithMetadata,
@@ -761,5 +762,74 @@ export class Workspace implements IWorkspaceService {
       return false;
     }
     return workspaceToken === token;
+  }
+
+  // Workspace group methods
+  private groups: Record<string, IWorkspaceGroup> | undefined;
+  public groups$ = new BehaviorSubject<Record<string, IWorkspaceGroup> | undefined>(undefined);
+
+  private getGroupsSync(): Record<string, IWorkspaceGroup> {
+    if (this.groups === undefined) {
+      const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+      const groupsFromDisk = databaseService.getSetting('workspaceGroups') ?? {};
+      if (typeof groupsFromDisk === 'object' && !Array.isArray(groupsFromDisk)) {
+        this.groups = groupsFromDisk;
+      } else {
+        this.groups = {};
+      }
+    }
+    return this.groups;
+  }
+
+  public async getGroups(): Promise<Record<string, IWorkspaceGroup>> {
+    return this.getGroupsSync();
+  }
+
+  public async getGroupsAsList(): Promise<IWorkspaceGroup[]> {
+    const groups = this.getGroupsSync();
+    return Object.values(groups).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  public async getGroup(id: string): Promise<IWorkspaceGroup | undefined> {
+    const groups = this.getGroupsSync();
+    return groups[id];
+  }
+
+  public async setGroup(id: string, group: IWorkspaceGroup): Promise<void> {
+    const groups = this.getGroupsSync();
+    groups[id] = group;
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('workspaceGroups', groups);
+    this.groups = groups;
+    this.groups$.next(groups);
+  }
+
+  public async removeGroup(id: string): Promise<void> {
+    const groups = this.getGroupsSync();
+    delete groups[id];
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('workspaceGroups', groups);
+    this.groups = groups;
+    this.groups$.next(groups);
+
+    // Move workspaces in this group to ungrouped
+    const workspaces = this.getWorkspacesSync();
+    const workspacesToUpdate: Record<string, IWorkspace> = {};
+    for (const [workspaceId, workspace] of Object.entries(workspaces)) {
+      if (workspace.groupId === id) {
+        workspacesToUpdate[workspaceId] = { ...workspace, groupId: null };
+      }
+    }
+    if (Object.keys(workspacesToUpdate).length > 0) {
+      await this.setWorkspaces(workspacesToUpdate);
+    }
+  }
+
+  public async moveWorkspaceToGroup(workspaceId: string, groupId: string | null): Promise<void> {
+    const workspace = await this.get(workspaceId);
+    if (!workspace) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+    await this.update(workspaceId, { groupId });
   }
 }
