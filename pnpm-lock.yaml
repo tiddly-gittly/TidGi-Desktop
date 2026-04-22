@@ -156,8 +156,8 @@ importers:
         specifier: 3.0.3
         version: 3.0.3
       i18next-fs-backend:
-        specifier: 2.6.1
-        version: 2.6.1
+        specifier: 2.6.4
+        version: 2.6.4
       immer:
         specifier: ^10.2.0
         version: 10.2.0
@@ -5093,8 +5093,8 @@ packages:
   i18next-electron-fs-backend@3.0.3:
     resolution: {integrity: sha512-DOC2x+xe8iM0t4Y3Ke2j5bPcT/wBdXT1UgoDeaTm4t+Wpp2plOtxnB61nRLnndUfxeyYTptVNEAvusfwCZTU6w==}
 
-  i18next-fs-backend@2.6.1:
-    resolution: {integrity: sha512-eYWTX7QT7kJ0sZyCPK6x1q+R63zvNKv2D6UdbMf15A8vNb2ZLyw4NNNZxPFwXlIv/U+oUtg8SakW6ZgJZcoqHQ==}
+  i18next-fs-backend@2.6.4:
+    resolution: {integrity: sha512-lzbUnowXYd5RFO8flpQhd9khYWNgrzwtxHw1kktJCiTRBaAEiLB2t9EPSXRj8qlC7WcEgFDIsmBUixyludcznw==}
 
   i18next@25.6.3:
     resolution: {integrity: sha512-AEQvoPDljhp67a1+NsnG/Wb1Nh6YoSvtrmeEd24sfGn3uujCtXCF3cXpr7ulhMywKNFF7p3TX1u2j7y+caLOJg==}
@@ -13594,7 +13594,7 @@ snapshots:
       lodash.clonedeep: 4.5.0
       lodash.merge: 4.6.2
 
-  i18next-fs-backend@2.6.1: {}
+  i18next-fs-backend@2.6.4: {}
 
   i18next@25.6.3(typescript@5.9.3):
     dependencies:

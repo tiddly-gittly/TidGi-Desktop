@@ -81,7 +81,7 @@
     "html-minifier-terser": "^7.2.0",
     "i18next": "25.6.3",
     "i18next-electron-fs-backend": "3.0.3",
-    "i18next-fs-backend": "2.6.1",
+    "i18next-fs-backend": "2.6.4",
     "immer": "^10.2.0",
     "intercept-stdout": "0.1.2",
     "inversify": "7.10.4",
