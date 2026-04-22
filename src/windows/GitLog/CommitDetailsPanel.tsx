@@ -19,7 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
-import type { GitLogEntry } from './types';
+import type { GitLogEntry, IGitCheckpointInfo } from './types';
 
 const Panel = styled(Box)`
   height: 100%;
@@ -110,6 +110,11 @@ export function CommitDetailsPanel(
   const [isEditMessageOpen, setIsEditMessageOpen] = useState(false);
   const [newCommitMessage, setNewCommitMessage] = useState('');
   const [isAmending, setIsAmending] = useState(false);
+  const [checkpoints, setCheckpoints] = useState<IGitCheckpointInfo[]>([]);
+  const [isCheckpointDialogOpen, setIsCheckpointDialogOpen] = useState(false);
+  const [checkpointLabel, setCheckpointLabel] = useState('');
+  const [isCreatingCheckpoint, setIsCreatingCheckpoint] = useState(false);
+  const [isRestoringCheckpoint, setIsRestoringCheckpoint] = useState(false);
 
   const reportProgress = (message: string, severity: 'success' | 'error' | 'info' = 'info') => {
     showSnackbar?.(message, severity);
@@ -164,6 +169,21 @@ export function CommitDetailsPanel(
 
     void checkAIEnabled();
   }, []);
+
+  useEffect(() => {
+    const loadCheckpoints = async () => {
+      try {
+        const workspace = await window.service.workspace.get(workspaceID);
+        if (!workspace || !('wikiFolderLocation' in workspace)) return;
+        const result = await window.service.git.listCheckpoints(workspace.wikiFolderLocation);
+        setCheckpoints(result);
+      } catch (error) {
+        console.error('Failed to load checkpoints:', error);
+      }
+    };
+
+    void loadCheckpoints();
+  }, [workspaceID, commit?.hash]);
 
   const handleRevert = async () => {
     if (committedSelections.length === 0 || isReverting) {
@@ -348,6 +368,43 @@ export function CommitDetailsPanel(
   const handleCopyHash = () => {
     if (commitsForActions.length === 0) return;
     void navigator.clipboard.writeText(commitsForActions.map((entry) => entry.hash).join('\n'));
+  };
+
+  const handleCreateCheckpoint = async () => {
+    if (isCreatingCheckpoint) return;
+    setIsCreatingCheckpoint(true);
+    try {
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+      const created = await window.service.git.createCheckpoint(workspace.wikiFolderLocation, checkpointLabel || commit?.message);
+      setCheckpoints(previous => [created, ...previous.filter(item => item.hash !== created.hash)]);
+      setCheckpointLabel('');
+      setIsCheckpointDialogOpen(false);
+      reportProgress(`Checkpoint created: ${created.message}`, 'success');
+      onCommitSuccess?.();
+    } catch (error) {
+      console.error('Failed to create checkpoint:', error);
+      reportProgress(`Failed to create checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsCreatingCheckpoint(false);
+    }
+  };
+
+  const handleRestoreCheckpoint = async (checkpointHash: string) => {
+    if (isRestoringCheckpoint) return;
+    setIsRestoringCheckpoint(true);
+    try {
+      const workspace = await window.service.workspace.get(workspaceID);
+      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+      await window.service.git.restoreCheckpoint(workspace.wikiFolderLocation, checkpointHash);
+      reportProgress('Checkpoint restored', 'success');
+      onUndoSuccess?.();
+    } catch (error) {
+      console.error('Failed to restore checkpoint:', error);
+      reportProgress(`Failed to restore checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsRestoringCheckpoint(false);
+    }
   };
 
   const handleOpenInGitHub = async () => {
@@ -593,9 +650,57 @@ export function CommitDetailsPanel(
                 {copyHashLabel}
               </Button>
 
+              <Button
+                variant='outlined'
+                onClick={() => {
+                  setCheckpointLabel(commit.message);
+                  setIsCheckpointDialogOpen(true);
+                }}
+                fullWidth
+              >
+                Create Checkpoint
+              </Button>
+
               <Button variant='outlined' onClick={handleOpenInGitHub} fullWidth disabled={hasMultipleCommitsSelected}>
                 {t('GitLog.OpenInGitHub')}
               </Button>
+
+              {checkpoints.length > 0 && (
+                <>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant='caption' color='textSecondary'>
+                    Checkpoints
+                  </Typography>
+                  <List dense disablePadding>
+                    {checkpoints.slice(0, 5).map((checkpoint) => (
+                      <ListItem
+                        key={checkpoint.hash}
+                        disablePadding
+                        secondaryAction={
+                          <Button
+                            size='small'
+                            onClick={() => {
+                              void handleRestoreCheckpoint(checkpoint.hash);
+                            }}
+                            disabled={isRestoringCheckpoint}
+                          >
+                            Restore
+                          </Button>
+                        }
+                      >
+                        <ListItemText
+                          primary={checkpoint.message}
+                          secondary={checkpoint.timestamp}
+                          slotProps={{
+                            primary: { variant: 'body2', sx: { wordBreak: 'break-word' } },
+                            secondary: { variant: 'caption' },
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              )}
 
               <Divider sx={{ my: 1 }} />
 
@@ -648,6 +753,48 @@ export function CommitDetailsPanel(
           <Button onClick={handleCloseEditMessage}>{t('Common.Cancel')}</Button>
           <Button onClick={handleConfirmEditMessage} disabled={isAmending || !newCommitMessage.trim()} variant='contained'>
             {isAmending ? t('GitLog.Committing') : t('GitLog.EditCommitMessageConfirm')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={isCheckpointDialogOpen}
+        onClose={() => {
+          setIsCheckpointDialogOpen(false);
+        }}
+        fullWidth
+        maxWidth='sm'
+      >
+        <DialogTitle>Create Checkpoint</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin='dense'
+            label='Checkpoint label'
+            type='text'
+            fullWidth
+            value={checkpointLabel}
+            onChange={(event) => {
+              setCheckpointLabel(event.target.value);
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setIsCheckpointDialogOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              void handleCreateCheckpoint();
+            }}
+            disabled={isCreatingCheckpoint}
+            variant='contained'
+          >
+            {isCreatingCheckpoint ? 'Creating…' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>

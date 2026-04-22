@@ -463,6 +463,36 @@ export class Git implements IGitService {
     }
   }
 
+  public async createCheckpoint(wikiFolderPath: string, label?: string) {
+    try {
+      const checkpoint = await this.callGitOp('createCheckpoint', wikiFolderPath, label);
+      this.notifyGitStateChange(wikiFolderPath, 'checkpoint');
+      return checkpoint;
+    } catch (error) {
+      logger.error('createCheckpoint failed', { error, wikiFolderPath, label });
+      throw error;
+    }
+  }
+
+  public async listCheckpoints(wikiFolderPath: string) {
+    try {
+      return await this.callGitOp('listCheckpoints', wikiFolderPath);
+    } catch (error) {
+      logger.error('listCheckpoints failed', { error, wikiFolderPath });
+      throw error;
+    }
+  }
+
+  public async restoreCheckpoint(wikiFolderPath: string, checkpointHash: string): Promise<void> {
+    try {
+      await this.callGitOp('restoreCheckpoint', wikiFolderPath, checkpointHash);
+      this.notifyGitStateChange(wikiFolderPath, 'checkpoint');
+    } catch (error) {
+      logger.error('restoreCheckpoint failed', { error, wikiFolderPath, checkpointHash });
+      throw error;
+    }
+  }
+
   public async discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void> {
     await this.callGitOp('discardFileChanges', wikiFolderPath, filePath);
     // Notify git state change

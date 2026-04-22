@@ -1,4 +1,5 @@
 import type { GitFileStatus, IFileWithStatus } from '../../services/git/interface';
+import type { IGitCheckpointInfo } from '../../services/git/interface';
 
 export type SearchMode = 'message' | 'file' | 'dateRange' | 'none';
 
@@ -25,6 +26,7 @@ export interface CommitAuthor {
 
 // Re-export for convenience
 export type { GitFileStatus, IFileWithStatus };
+export type { IGitCheckpointInfo };
 
 /**
  * Represents a single entry in the git log.
