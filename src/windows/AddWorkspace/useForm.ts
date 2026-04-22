@@ -6,6 +6,7 @@ import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import type { INewWikiWorkspaceConfig, IWikiWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import type { INewWikiRequiredFormData } from './useNewWiki';
 
 type IMainWikiInfo = Pick<IWikiWorkspace, 'wikiFolderLocation' | 'port' | 'id'>;
@@ -155,7 +156,7 @@ export function workspaceConfigFromForm(
   form: INewWikiRequiredFormData,
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
-  options?: { useTidgiConfig?: boolean },
+  options?: { useTidgiConfig?: boolean; selectedImportConfig?: Partial<ISyncableWikiConfig> },
 ): INewWikiWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
@@ -171,6 +172,7 @@ export function workspaceConfigFromForm(
     tokenAuth: false,
     enableFileSystemWatch: false,
     useTidgiConfig: options?.useTidgiConfig,
+    ...(options?.selectedImportConfig as Partial<INewWikiWorkspaceConfig> | undefined),
     // Additional fields will be set with default values in `sanitizeWorkspace`, see also `INewWikiWorkspaceConfig`
   };
 }

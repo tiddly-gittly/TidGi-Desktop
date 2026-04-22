@@ -1,4 +1,5 @@
 import { WikiCreationMethod } from '@/constants/wikiCreation';
+import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
@@ -59,12 +60,13 @@ export function useExistedWiki(
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
+  selectedImportConfig?: Partial<ISyncableWikiConfig>,
 ): () => Promise<void> {
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
-    const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace, { useTidgiConfig });
+    const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace, { useTidgiConfig, selectedImportConfig });
     if (!form.wikiFolderLocation) {
       throw new Error(t('AddWorkspace.MainWorkspaceLocation') + t('AddWorkspace.NotFilled'));
     }
@@ -90,7 +92,7 @@ export function useExistedWiki(
       updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, isCreateSyncedWorkspace, useTidgiConfig, errorInWhichComponentSetter, hasErrorSetter]);
+  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, isCreateSyncedWorkspace, useTidgiConfig, selectedImportConfig, errorInWhichComponentSetter, hasErrorSetter]);
 
   return onSubmit;
 }

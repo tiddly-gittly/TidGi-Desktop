@@ -1,4 +1,5 @@
 import { WikiCreationMethod } from '@/constants/wikiCreation';
+import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
@@ -61,13 +62,14 @@ export function useCloneWiki(
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
+  selectedImportConfig?: Partial<ISyncableWikiConfig>,
 ): () => Promise<void> {
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
-      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true, { useTidgiConfig });
+      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true, { useTidgiConfig, selectedImportConfig });
       if (isCreateMainWorkspace) {
         await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo!);
       } else {
@@ -84,7 +86,7 @@ export function useCloneWiki(
       updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, useTidgiConfig, errorInWhichComponentSetter, hasErrorSetter]);
+  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, useTidgiConfig, selectedImportConfig, errorInWhichComponentSetter, hasErrorSetter]);
 
   return onSubmit;
 }
