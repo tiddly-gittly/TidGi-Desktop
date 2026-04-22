@@ -29,7 +29,10 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const hibernated = isWiki ? workspace.hibernated : false;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+    id,
+    data: { type: 'workspace', workspace }
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: transition ?? undefined,
@@ -118,7 +121,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     [t, workspace],
   );
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu} data-testid={`workspace-item-${id}`}>
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
         restarting={workspace.metadata.isRestarting}

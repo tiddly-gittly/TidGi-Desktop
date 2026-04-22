@@ -1,17 +1,104 @@
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { closestCenter, DndContext, DragEndEvent, DragOverEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Collapse, styled } from '@mui/material';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { PageType } from '@/constants/pageTypes';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { IWorkspace, IWorkspaceGroup, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { useWorkspaceGroupsListObservable } from '@services/workspaces/hooks';
 import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
+
+const GroupHeader = styled('div', { shouldForwardProp: (prop) => !/^\$/.test(String(prop)) })<{ $isDragging?: boolean }>`
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  opacity: ${({ $isDragging }) => ($isDragging ? 0.5 : 1)};
+  transition: opacity 0.2s ease;
+  &:hover {
+    background-color: ${({ theme }) => theme.palette.action.hover};
+  }
+`;
+
+const GroupTitle = styled('span')`
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${({ theme }) => theme.palette.text.secondary};
+`;
+
+const GroupContent = styled('div')`
+  padding-left: 8px;
+`;
+
+const UngroupedSection = styled('div')`
+  margin-bottom: 8px;
+`;
 
 export interface ISortableListProps {
   showSideBarIcon: boolean;
   showSideBarText: boolean;
   workspacesList: IWorkspaceWithMetadata[];
+}
+
+interface SortableGroupProps {
+  group: IWorkspaceGroup;
+  workspaces: IWorkspaceWithMetadata[];
+  showSideBarIcon: boolean;
+  showSidebarTexts: boolean;
+  onToggleCollapse: (groupId: string) => void;
+}
+
+function SortableGroup({ group, workspaces, showSideBarIcon, showSidebarTexts, onToggleCollapse }: SortableGroupProps): React.JSX.Element {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+    id: `group-${group.id}`,
+    data: { type: 'group', group }
+  });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? undefined,
+  };
+
+  const workspaceIds = workspaces.map(w => w.id);
+
+  return (
+    <div ref={setNodeRef} style={style} data-testid={`workspace-group-${group.id}`}>
+      <GroupHeader 
+        $isDragging={isDragging}
+        onClick={() => onToggleCollapse(group.id)}
+        {...attributes}
+        {...listeners}
+      >
+        {group.collapsed ? <ChevronRightIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+        <GroupTitle>{group.name}</GroupTitle>
+      </GroupHeader>
+      <Collapse in={!group.collapsed} timeout="auto" unmountOnExit>
+        <GroupContent>
+          <SortableContext items={workspaceIds} strategy={verticalListSortingStrategy}>
+            {workspaces.map((workspace, index) => (
+              <SortableWorkspaceSelectorButton
+                key={`item-${workspace.id}`}
+                index={index}
+                workspace={workspace}
+                showSidebarTexts={showSidebarTexts}
+                showSideBarIcon={showSideBarIcon}
+              />
+            ))}
+          </SortableContext>
+        </GroupContent>
+      </Collapse>
+    </div>
+  );
 }
 
 export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText, showSideBarIcon }: ISortableListProps): React.JSX.Element {
@@ -24,11 +111,11 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   );
 
   const isMiniWindow = window.meta().windowName === WindowNames.tidgiMiniWindow;
+  const groups = useWorkspaceGroupsListObservable();
 
-  // Optimistic order state - stores workspace IDs in the order they should be displayed
-  // This updates immediately on drag end, before the backend confirms the change
-  const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null);
-  // Track if we're waiting for backend to confirm the reorder
+  // Optimistic state for workspace and group reordering
+  const [optimisticWorkspaceOrder, setOptimisticWorkspaceOrder] = useState<string[] | null>(null);
+  const [optimisticGroupOrder, setOptimisticGroupOrder] = useState<string[] | null>(null);
   const pendingReorderReference = useRef<boolean>(false);
 
   // Filter out 'add' workspace in mini window
@@ -39,76 +126,189 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     return workspacesList;
   }, [isMiniWindow, workspacesList]);
 
-  // Apply optimistic order if present, otherwise use natural order from props
-  const filteredWorkspacesList = useMemo(() => {
-    if (optimisticOrder === null) {
-      // No optimistic order, sort by order property
+  // Apply optimistic order to workspaces
+  const orderedWorkspaces = useMemo(() => {
+    if (optimisticWorkspaceOrder === null) {
       return [...baseFilteredList].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     }
-    // Apply optimistic order
-    const orderMap = new Map(optimisticOrder.map((id, index) => [id, index]));
+    const orderMap = new Map(optimisticWorkspaceOrder.map((id, index) => [id, index]));
     return [...baseFilteredList].sort((a, b) => {
       const orderA = orderMap.get(a.id) ?? a.order ?? 0;
       const orderB = orderMap.get(b.id) ?? b.order ?? 0;
       return orderA - orderB;
     });
-  }, [baseFilteredList, optimisticOrder]);
+  }, [baseFilteredList, optimisticWorkspaceOrder]);
 
-  // When workspacesList updates from backend, clear optimistic order if pending
+  // Apply optimistic order to groups
+  const orderedGroups = useMemo(() => {
+    if (!groups) return [];
+    if (optimisticGroupOrder === null) {
+      return [...groups].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    const orderMap = new Map(optimisticGroupOrder.map((id, index) => [id, index]));
+    return [...groups].sort((a, b) => {
+      const orderA = orderMap.get(a.id) ?? a.order ?? 0;
+      const orderB = orderMap.get(b.id) ?? b.order ?? 0;
+      return orderA - orderB;
+    });
+  }, [groups, optimisticGroupOrder]);
+
+  // Separate ungrouped and grouped workspaces
+  const { ungroupedWorkspaces, groupedWorkspaces } = useMemo(() => {
+    const ungrouped: IWorkspaceWithMetadata[] = [];
+    const grouped: Record<string, IWorkspaceWithMetadata[]> = {};
+
+    orderedWorkspaces.forEach(workspace => {
+      if (!workspace.groupId) {
+        ungrouped.push(workspace);
+      } else {
+        if (!grouped[workspace.groupId]) {
+          grouped[workspace.groupId] = [];
+        }
+        grouped[workspace.groupId].push(workspace);
+      }
+    });
+
+    return { ungroupedWorkspaces: ungrouped, groupedWorkspaces: grouped };
+  }, [orderedWorkspaces]);
+
+  // Clear optimistic state when backend updates
   useEffect(() => {
     if (pendingReorderReference.current) {
       pendingReorderReference.current = false;
-      setOptimisticOrder(null);
+      setOptimisticWorkspaceOrder(null);
+      setOptimisticGroupOrder(null);
     }
-  }, [workspacesList]);
+  }, [workspacesList, groups]);
 
-  const workspaceIDs = filteredWorkspacesList.map((workspace) => workspace.id);
+  // Collect all draggable IDs (workspaces + groups)
+  const allDraggableIds = useMemo(() => {
+    const workspaceIds = orderedWorkspaces.map(w => w.id);
+    const groupIds = orderedGroups.map(g => `group-${g.id}`);
+    return [...workspaceIds, ...groupIds];
+  }, [orderedWorkspaces, orderedGroups]);
+
+  const handleToggleCollapse = useCallback(async (groupId: string) => {
+    const group = groups?.find(g => g.id === groupId);
+    if (!group) return;
+    
+    await window.service.workspace.setGroup(groupId, {
+      ...group,
+      collapsed: !group.collapsed,
+    });
+  }, [groups]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || !active.data.current) return;
+
+    const activeType = active.data.current.type;
+    const overId = String(over.id);
+
+    // Handle workspace dragged over group
+    if (activeType === 'workspace' && overId.startsWith('group-')) {
+      // Visual feedback handled by CSS
+    }
+  }, []);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over === null || active.id === over.id) return;
+    if (!over || active.id === over.id) return;
 
     const activeId = String(active.id);
     const overId = String(over.id);
+    const activeData = active.data.current;
 
-    const oldIndex = filteredWorkspacesList.findIndex(workspace => workspace.id === activeId);
-    const newIndex = filteredWorkspacesList.findIndex(workspace => workspace.id === overId);
+    // Case 1: Workspace dropped on group
+    if (activeData?.type === 'workspace' && overId.startsWith('group-')) {
+      const groupId = overId.replace('group-', '');
+      await window.service.workspace.moveWorkspaceToGroup(activeId, groupId);
+      return;
+    }
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    // Case 2: Group reordering
+    if (activeId.startsWith('group-') && overId.startsWith('group-')) {
+      const activeGroupId = activeId.replace('group-', '');
+      const overGroupId = overId.replace('group-', '');
+      
+      const oldIndex = orderedGroups.findIndex(g => g.id === activeGroupId);
+      const newIndex = orderedGroups.findIndex(g => g.id === overGroupId);
+      
+      if (oldIndex === -1 || newIndex === -1) return;
 
-    // OPTIMISTIC UPDATE: Immediately update the display order
-    const newOrderedList = arrayMove(filteredWorkspacesList, oldIndex, newIndex);
-    const newOrder = newOrderedList.map(w => w.id);
-    setOptimisticOrder(newOrder);
-    pendingReorderReference.current = true;
+      const reorderedGroups = arrayMove(orderedGroups, oldIndex, newIndex);
+      setOptimisticGroupOrder(reorderedGroups.map(g => g.id));
+      pendingReorderReference.current = true;
 
-    // Prepare data for backend update
-    const newWorkspaces: Record<string, IWorkspace> = {};
-    newOrderedList.forEach((workspace, index) => {
-      newWorkspaces[workspace.id] = { ...workspace };
-      newWorkspaces[workspace.id].order = index;
-    });
+      // Update all group orders
+      await Promise.all(
+        reorderedGroups.map((group, index) =>
+          window.service.workspace.setGroup(group.id, { ...group, order: index })
+        )
+      );
+      return;
+    }
 
-    // Update backend (this will eventually trigger workspacesList update via Observable)
-    await window.service.workspace.setWorkspaces(newWorkspaces);
-  }, [filteredWorkspacesList]);
+    // Case 3: Workspace reordering (within same group or ungrouped)
+    if (activeData?.type === 'workspace' || !activeId.startsWith('group-')) {
+      const oldIndex = orderedWorkspaces.findIndex(w => w.id === activeId);
+      const newIndex = orderedWorkspaces.findIndex(w => w.id === overId);
+      
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reorderedWorkspaces = arrayMove(orderedWorkspaces, oldIndex, newIndex);
+      setOptimisticWorkspaceOrder(reorderedWorkspaces.map(w => w.id));
+      pendingReorderReference.current = true;
+
+      const newWorkspaces: Record<string, IWorkspace> = {};
+      reorderedWorkspaces.forEach((workspace, index) => {
+        newWorkspaces[workspace.id] = { ...workspace, order: index };
+      });
+
+      await window.service.workspace.setWorkspaces(newWorkspaces);
+    }
+  }, [orderedWorkspaces, orderedGroups]);
 
   return (
     <DndContext
       sensors={dndSensors}
+      collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
-        {filteredWorkspacesList.map((workspace, index) => (
-          <SortableWorkspaceSelectorButton
-            key={`item-${workspace.id}`}
-            index={index}
-            workspace={workspace}
-            showSidebarTexts={showSideBarText}
-            showSideBarIcon={showSideBarIcon}
-          />
-        ))}
+      <SortableContext items={allDraggableIds} strategy={verticalListSortingStrategy}>
+        {/* Ungrouped workspaces */}
+        {ungroupedWorkspaces.length > 0 && (
+          <UngroupedSection>
+            {ungroupedWorkspaces.map((workspace, index) => (
+              <SortableWorkspaceSelectorButton
+                key={`item-${workspace.id}`}
+                index={index}
+                workspace={workspace}
+                showSidebarTexts={showSideBarText}
+                showSideBarIcon={showSideBarIcon}
+              />
+            ))}
+          </UngroupedSection>
+        )}
+
+        {/* Grouped workspaces */}
+        {orderedGroups.map(group => {
+          const workspacesInGroup = groupedWorkspaces[group.id] || [];
+          if (workspacesInGroup.length === 0) return null;
+          
+          return (
+            <SortableGroup
+              key={group.id}
+              group={group}
+              workspaces={workspacesInGroup}
+              showSideBarIcon={showSideBarIcon}
+              showSidebarTexts={showSideBarText}
+              onToggleCollapse={handleToggleCollapse}
+            />
+          );
+        })}
       </SortableContext>
     </DndContext>
   );
