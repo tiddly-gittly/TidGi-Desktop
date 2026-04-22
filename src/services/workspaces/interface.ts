@@ -32,6 +32,7 @@ export const localOnlyFields = [
   'wikiFolderLocation',
   'pageType',
   'port',
+  'useTidgiConfigSync',
 ] as const;
 
 /**
@@ -79,6 +80,7 @@ export const localConfigDefaultValues = {
   picturePath: null as string | null,
   pageType: null as PageType.wiki | null,
   port: 5212,
+  useTidgiConfigSync: true,
 } as const;
 
 /**
@@ -187,6 +189,12 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    * Localhost tiddlywiki server port
    */
   port: number;
+  /**
+   * Whether to sync workspace configuration to tidgi.config.json in the wiki folder.
+   * When false, all config is stored locally in settings.json and tidgi.config.json is not read or written.
+   * This allows multiple workspaces to point to the same wiki folder without config conflicts.
+   */
+  useTidgiConfigSync: boolean;
   /**
    * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
    *
@@ -305,7 +313,7 @@ export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
  */
 export type INewWikiWorkspaceConfig =
   & SetOptional<
-    Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
+    Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup' | 'useTidgiConfigSync'>,
     | 'homeUrl'
     | 'transparentBackground'
     | 'picturePath'

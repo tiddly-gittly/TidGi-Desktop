@@ -215,8 +215,10 @@ export class Workspace implements IWorkspaceService {
     // Transactional persistence: write to disk first, then update memory/UI only on success.
     // This prevents false "saved" feedback when disk writes fail.
 
-    // Write tidgi.config.json only when syncable fields actually changed.
-    if (isWikiWorkspace(workspaceToSave)) {
+    const shouldSyncToTidgiConfig = isWikiWorkspace(workspaceToSave) && workspaceToSave.useTidgiConfigSync;
+
+    // Write tidgi.config.json only when syncable fields actually changed AND workspace uses tidgi.config.json sync.
+    if (shouldSyncToTidgiConfig) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
       const previousSyncableConfig = previousWorkspace !== undefined && isWikiWorkspace(previousWorkspace)
         ? extractSyncableConfig(previousWorkspace)
@@ -227,10 +229,11 @@ export class Workspace implements IWorkspaceService {
       }
     }
 
-    // Persist to settings.json first, stripping syncable fields when tidgi.config.json exists.
+    // Persist to settings.json first, stripping syncable fields when tidgi.config.json exists AND workspace uses it.
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
-    currentSettingsWorkspaces[id] = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined
+    const hasTidgiConfigFile = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined;
+    currentSettingsWorkspaces[id] = shouldSyncToTidgiConfig && hasTidgiConfigFile
       ? removeSyncableFields(workspaceToSave) as IWorkspace
       : workspaceToSave;
     databaseService.setSetting('workspaces', currentSettingsWorkspaces);
@@ -304,8 +307,10 @@ export class Workspace implements IWorkspaceService {
     // Read syncable config from tidgi.config.json if it exists
     // Only apply synced config during initial load, not during updates
     // (to avoid overwriting user's changes with old file content)
+    // Skip tidgi.config.json if workspace is configured to not use it (e.g. secondary workspace pointing to same wiki folder)
     let workspaceWithSyncedConfig = workspaceToSanitize;
-    if (applySyncedConfig) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
+    if (applySyncedConfig && workspaceToSanitize.useTidgiConfigSync !== false) {
       try {
         const syncedConfig = readTidgiConfigSync(workspaceToSanitize.wikiFolderLocation);
         if (syncedConfig) {
@@ -608,6 +613,7 @@ export class Workspace implements IWorkspaceService {
       lastNodeJSArgv: [],
       order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : await this.getNextInsertOrder(),
       picturePath: null,
+      useTidgiConfigSync: useTidgiConfig,
     };
 
     await this.set(newID, newWorkspace, true);
