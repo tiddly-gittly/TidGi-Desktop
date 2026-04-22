@@ -117,6 +117,10 @@ export interface IDedicatedWorkspace {
    * workspace icon's path in file system
    */
   picturePath: string | null;
+  /**
+   * Optional group ID this workspace belongs to. Null/undefined means ungrouped.
+   */
+  groupId?: string | null;
 }
 
 /**
@@ -287,6 +291,22 @@ export function isDedicatedWorkspace(workspace: IWorkspace): workspace is IDedic
   return !isWikiWorkspace(workspace);
 }
 
+/**
+ * Workspace group for organizing multiple workspaces
+ */
+export interface IWorkspaceGroup {
+  id: string;
+  name: string;
+  /**
+   * Display order of this group in the sidebar
+   */
+  order: number;
+  /**
+   * Whether this group is collapsed in the sidebar
+   */
+  collapsed: boolean;
+}
+
 export interface IWorkspaceMetaData {
   badgeCount?: number;
   /**
@@ -425,6 +445,15 @@ export interface IWorkspaceService {
   updateWorkspaceSubject(): void;
   workspaceDidFailLoad(id: string): Promise<boolean>;
   workspaces$: BehaviorSubject<IWorkspacesWithMetadata | undefined>;
+
+  // Workspace group methods
+  getGroups(): Promise<Record<string, IWorkspaceGroup>>;
+  getGroupsAsList(): Promise<IWorkspaceGroup[]>;
+  getGroup(id: string): Promise<IWorkspaceGroup | undefined>;
+  setGroup(id: string, group: IWorkspaceGroup): Promise<void>;
+  removeGroup(id: string): Promise<void>;
+  moveWorkspaceToGroup(workspaceId: string, groupId: string | null): Promise<void>;
+  groups$: BehaviorSubject<Record<string, IWorkspaceGroup> | undefined>;
 }
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
@@ -462,6 +491,13 @@ export const WorkspaceServiceIPCDescriptor = {
     updateWorkspaceSubject: ProxyPropertyType.Value$,
     workspaceDidFailLoad: ProxyPropertyType.Function,
     workspaces$: ProxyPropertyType.Value$,
+    getGroups: ProxyPropertyType.Function,
+    getGroupsAsList: ProxyPropertyType.Function,
+    getGroup: ProxyPropertyType.Function,
+    setGroup: ProxyPropertyType.Function,
+    removeGroup: ProxyPropertyType.Function,
+    moveWorkspaceToGroup: ProxyPropertyType.Function,
+    groups$: ProxyPropertyType.Value$,
   },
 };
 
