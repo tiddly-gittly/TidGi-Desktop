@@ -540,17 +540,24 @@ export class WorkspaceView implements IWorkspaceViewService {
       isLoading: false,
       isRestarting: true,
     });
-    await container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceToRestart.id);
-    await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
-    if (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).workspaceDidFailLoad(workspaceToRestart.id)) {
-      logger.warn('skip because workspaceDidFailLoad', { function: 'restartWorkspaceViewService' });
-      return;
+    try {
+      await container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceToRestart.id);
+      await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
+      if (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).workspaceDidFailLoad(workspaceToRestart.id)) {
+        logger.warn('skip because workspaceDidFailLoad', { function: 'restartWorkspaceViewService' });
+        return;
+      }
+      await container.get<IViewService>(serviceIdentifier.View).reloadViewsWebContents(workspaceToRestart.id);
+      await container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.generalNotification, workspaceToRestart.id, [
+        i18n.t('ContextMenu.RestartServiceComplete'),
+      ]);
+    } catch (error) {
+      logger.error('restartWorkspaceViewService failed', { function: 'restartWorkspaceViewService', error, workspaceId: workspaceToRestart.id });
+      throw error;
+    } finally {
+      // Ensure isRestarting is always reset even if restart fails
+      await container.get<IWorkspaceService>(serviceIdentifier.Workspace).updateMetaData(workspaceToRestart.id, { isRestarting: false });
     }
-    await container.get<IViewService>(serviceIdentifier.View).reloadViewsWebContents(workspaceToRestart.id);
-    await container.get<IWikiService>(serviceIdentifier.Wiki).wikiOperationInBrowser(WikiChannel.generalNotification, workspaceToRestart.id, [
-      i18n.t('ContextMenu.RestartServiceComplete'),
-    ]);
-    await container.get<IWorkspaceService>(serviceIdentifier.Workspace).updateMetaData(workspaceToRestart.id, { isRestarting: false });
   }
 
   public async restartAllWorkspaceView(): Promise<void> {
