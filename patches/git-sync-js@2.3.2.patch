@@ -1,0 +1,52 @@
+diff --git a/dist/src/inspect.js b/dist/src/inspect.js
+index 416459100e7689a0ab18831cb6f027761ef30770..7f7abefb2d6dc977f4164f564dc58bf969685c76 100644
+--- a/dist/src/inspect.js
++++ b/dist/src/inspect.js
+@@
+ export async function getGitDirectory(dir, logger) {
+     const logDebug = (message, step) => logger?.debug?.(message, { functionName: 'getGitDirectory', step, dir });
+     const logProgress = (step) => logger?.info?.(step, {
+         functionName: 'getGitDirectory',
+         step,
+         dir,
+     });
+     logProgress(GitStep.CheckingLocalGitRepoSanity);
+-    const { stdout, stderr } = toGitStringResult(await exec(['rev-parse', '--is-inside-work-tree', dir], dir));
+-    if (stderr.length > 0) {
++    const revParseResult = toGitStringResult(await exec(['rev-parse', '--is-inside-work-tree', dir], dir));
++    const { stdout, stderr, exitCode } = revParseResult;
++    if (exitCode !== 0) {
+         logDebug(stderr, GitStep.CheckingLocalGitRepoSanity);
+         throw new CantSyncGitNotInitializedError(dir);
+     }
++    if (stderr.length > 0) {
++        logDebug(stderr, GitStep.CheckingLocalGitRepoSanity);
++    }
+     if (stdout.startsWith('true')) {
+         const gitDirResult = toGitStringResult(await exec(['rev-parse', '--git-dir', dir], dir));
+         const gitPathParts = compact(gitDirResult.stdout.split('\n'));
+         const gitPath2 = gitPathParts[0];
+         const gitPath1 = gitPathParts[1];
+@@
+ }
++
++function normalizePathForComparison(inputPath) {
++    const resolvedPath = path.resolve(path.normalize(inputPath)).replace(/[\\/]+$/, '');
++    return process.platform === 'win32' ? resolvedPath.toLowerCase() : resolvedPath;
++}
+ /**
+  * Check if dir has `.git`.
+  * @param dir folder that may contains a git
+  * @param strict if is true, then dir should be the root of the git repo. Default is true
+  * @returns
+@@
+ export async function hasGit(dir, strict = true) {
+     try {
+         const resultDir = await getGitDirectory(dir);
+-        if (strict && path.dirname(resultDir) !== dir) {
++        if (strict && normalizePathForComparison(path.dirname(resultDir)) !== normalizePathForComparison(dir)) {
+             return false;
+         }
+     }
+     catch (error) {
+         if (error instanceof CantSyncGitNotInitializedError) {

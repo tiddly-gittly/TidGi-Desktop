@@ -193,6 +193,9 @@
     "vitest": "^3.2.4"
   },
   "pnpm": {
+    "patchedDependencies": {
+      "git-sync-js@2.3.2": "patches/git-sync-js@2.3.2.patch"
+    },
     "overrides": {
       "prebuild-install": "latest",
       "node-addon-api": "^7.1.1"
