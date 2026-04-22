@@ -1567,6 +1567,60 @@ Then('file {string} should contain JSON with:', async function(this: Application
 });
 
 /**
+ * Verify file does NOT contain specific JSON path/value pairs.
+ * This is useful for ensuring sensitive config (like readOnlyMode) does not leak into tidgi.config.json.
+ * Example:
+ *   Then file "config-test-wiki/tidgi.config.json" should not contain JSON with:
+ *     | jsonPath       | value |
+ *     | $.readOnlyMode | true  |
+ */
+Then('file {string} should not contain JSON with:', async function(this: ApplicationWorld, fileName: string, dataTable: DataTable) {
+  const rows = dataTable.hashes();
+  const filePath = path.join(getWikiTestRootPath(this), fileName);
+
+  // If file doesn't exist, the assertion passes (can't contain anything)
+  if (!await fs.pathExists(filePath)) {
+    return;
+  }
+
+  const content = await fs.readFile(filePath, 'utf-8');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const json = JSON.parse(content);
+
+  const errors: string[] = [];
+  for (const row of rows) {
+    const jsonPath = row.jsonPath;
+    const expectedValue = row.value;
+
+    // Simple JSONPath implementation
+    const pathParts = jsonPath.replace(/^\$\./, '').split('.');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    let actualValue = json;
+
+    for (const part of pathParts) {
+      if (actualValue && typeof actualValue === 'object' && part in actualValue) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        actualValue = actualValue[part];
+      } else {
+        actualValue = undefined;
+        break;
+      }
+    }
+
+    if (actualValue !== undefined) {
+      const actualValueString = String(actualValue);
+      if (actualValueString === expectedValue) {
+        errors.push(`Expected ${jsonPath} to NOT be "${expectedValue}", but it was found in the file`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`JSON assertions failed:\n${errors.join('\n')}`);
+  }
+});
+
+/**
  * Remove workspace without deleting files (via API)
  */
 When('I remove workspace {string} keeping files', async function(this: ApplicationWorld, workspaceName: string) {
