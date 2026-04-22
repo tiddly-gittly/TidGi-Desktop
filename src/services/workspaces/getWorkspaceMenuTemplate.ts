@@ -108,7 +108,8 @@ export async function getSimplifiedWorkspaceMenuTemplate(
   template.push({
     label: t('WorkspaceSelector.ViewGitHistory'),
     click: async () => {
-      await service.window.open(WindowNames.gitHistory, { workspaceID: id }, { recreate: true });
+      // Only recreate window if workspace changed; otherwise just focus existing
+      await service.window.open(WindowNames.gitHistory, { workspaceID: id }, { recreateUnlessWorkspaceID: id });
     },
   });
 

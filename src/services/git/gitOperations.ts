@@ -16,22 +16,35 @@ const SHADOW_CHECKPOINT_REPO_DIR_NAME = 'shadow-checkpoints';
 const SHADOW_CHECKPOINT_AUTHOR_NAME = 'TidGi Checkpoint';
 const SHADOW_CHECKPOINT_AUTHOR_EMAIL = 'checkpoint@tidgi.app';
 const SHADOW_CHECKPOINT_MESSAGE_PREFIX = 'checkpoint';
+const SHADOW_CHECKPOINT_METADATA_FILE_NAME = 'checkpoints.json';
 
 function getShadowCheckpointRepoPath(repoPath: string): string {
   return path.join(repoPath, '.git', SHADOW_CHECKPOINT_REPO_DIR_NAME);
 }
 
-function getShadowCheckpointEnvironment(repoPath: string): NodeJS.ProcessEnv {
-  return {
-    ...process.env,
-    GIT_DIR: getShadowCheckpointRepoPath(repoPath),
-    GIT_WORK_TREE: repoPath,
-    GIT_AUTHOR_NAME: SHADOW_CHECKPOINT_AUTHOR_NAME,
-    GIT_AUTHOR_EMAIL: SHADOW_CHECKPOINT_AUTHOR_EMAIL,
-    GIT_COMMITTER_NAME: SHADOW_CHECKPOINT_AUTHOR_NAME,
-    GIT_COMMITTER_EMAIL: SHADOW_CHECKPOINT_AUTHOR_EMAIL,
-  };
+function getShadowCheckpointMetadataPath(repoPath: string): string {
+  return path.join(getShadowCheckpointRepoPath(repoPath), SHADOW_CHECKPOINT_METADATA_FILE_NAME);
 }
+
+async function readCheckpointMetadata(repoPath: string): Promise<IGitCheckpointInfo[]> {
+  const metadataPath = getShadowCheckpointMetadataPath(repoPath);
+  const content = await fs.readFile(metadataPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') {
+      return '[]';
+    }
+    throw error;
+  });
+
+  const parsed = JSON.parse(content) as IGitCheckpointInfo[];
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+async function writeCheckpointMetadata(repoPath: string, checkpoints: IGitCheckpointInfo[]): Promise<void> {
+  const metadataPath = getShadowCheckpointMetadataPath(repoPath);
+  await fs.writeFile(metadataPath, JSON.stringify(checkpoints, null, 2), 'utf8');
+}
+
+const checkpointInitLocks = new Map<string, Promise<string>>();
 
 async function ensureShadowCheckpointRepository(repoPath: string): Promise<string> {
   const shadowGitDirectory = getShadowCheckpointRepoPath(repoPath);
@@ -41,54 +54,55 @@ async function ensureShadowCheckpointRepository(repoPath: string): Promise<strin
     return shadowGitDirectory;
   }
 
-  await fs.mkdir(shadowGitDirectory, { recursive: true });
-  const environment = getShadowCheckpointEnvironment(repoPath);
-
-  const initResult = await gitExec(['init', '--bare', shadowGitDirectory], repoPath, { env: environment });
-  if (initResult.exitCode !== 0) {
-    throw new Error(`Failed to initialize checkpoint repository: ${initResult.stderr}`);
+  const existingLock = checkpointInitLocks.get(repoPath);
+  if (existingLock) {
+    return existingLock;
   }
 
-  const configEntries: Array<[string, string]> = [
-    ['core.worktree', repoPath],
-    ['commit.gpgSign', 'false'],
-    ['user.name', SHADOW_CHECKPOINT_AUTHOR_NAME],
-    ['user.email', SHADOW_CHECKPOINT_AUTHOR_EMAIL],
-  ];
+  const initPromise = (async () => {
+    try {
+      await fs.mkdir(shadowGitDirectory, { recursive: true });
 
-  for (const [key, value] of configEntries) {
-    const configResult = await gitExec(['config', key, value], repoPath, { env: environment });
-    if (configResult.exitCode !== 0) {
-      throw new Error(`Failed to configure checkpoint repository (${key}): ${configResult.stderr}`);
+      const initResult = await gitExec(
+        ['--git-dir', shadowGitDirectory, '--work-tree', repoPath, 'init'],
+        repoPath,
+      );
+      if (initResult.exitCode !== 0) {
+        throw new Error(`Failed to initialize checkpoint repository: ${initResult.stderr}`);
+      }
+
+      const configEntries: Array<[string, string]> = [
+        ['core.worktree', repoPath],
+        ['commit.gpgSign', 'false'],
+        ['user.name', SHADOW_CHECKPOINT_AUTHOR_NAME],
+        ['user.email', SHADOW_CHECKPOINT_AUTHOR_EMAIL],
+      ];
+
+      for (const [key, value] of configEntries) {
+        const configResult = await gitExec(
+          ['--git-dir', shadowGitDirectory, '--work-tree', repoPath, 'config', key, value],
+          repoPath,
+        );
+        if (configResult.exitCode !== 0) {
+          throw new Error(`Failed to configure checkpoint repository (${key}): ${configResult.stderr}`);
+        }
+      }
+
+      await writeCheckpointMetadata(repoPath, []);
+
+      return shadowGitDirectory;
+    } finally {
+      checkpointInitLocks.delete(repoPath);
     }
-  }
+  })();
 
-  const initialCommitResult = await gitExec(['commit', '--allow-empty', '-m', 'initial checkpoint'], repoPath, { env: environment });
-  if (initialCommitResult.exitCode !== 0) {
-    throw new Error(`Failed to create initial checkpoint commit: ${initialCommitResult.stderr}`);
-  }
-
-  return shadowGitDirectory;
+  checkpointInitLocks.set(repoPath, initPromise);
+  return initPromise;
 }
 
 function buildCheckpointMessage(label?: string): string {
   const trimmedLabel = label?.trim();
   return trimmedLabel ? `${SHADOW_CHECKPOINT_MESSAGE_PREFIX}: ${trimmedLabel}` : `${SHADOW_CHECKPOINT_MESSAGE_PREFIX}: ${new Date().toISOString()}`;
-}
-
-async function getCheckpointCommitInfo(repoPath: string, checkpointHash: string): Promise<IGitCheckpointInfo> {
-  const environment = getShadowCheckpointEnvironment(repoPath);
-  const result = await gitExec(['show', '-s', '--format=%H|%s|%ci', checkpointHash], repoPath, { env: environment });
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to read checkpoint ${checkpointHash}: ${result.stderr}`);
-  }
-
-  const [hash, message, timestamp] = result.stdout.trim().split('|');
-  if (!hash || !message || !timestamp) {
-    throw new Error(`Malformed checkpoint metadata for ${checkpointHash}`);
-  }
-
-  return { hash, message, timestamp };
 }
 
 /**
@@ -915,67 +929,69 @@ export async function amendCommitMessage(repoPath: string, newMessage: string): 
   }
 }
 
+function getShadowGitFlags(repoPath: string): string[] {
+  const shadowGitDirectory = getShadowCheckpointRepoPath(repoPath);
+  return ['--git-dir', shadowGitDirectory, '--work-tree', repoPath];
+}
+
 export async function createCheckpoint(repoPath: string, label?: string): Promise<IGitCheckpointInfo> {
   await ensureShadowCheckpointRepository(repoPath);
-  const environment = getShadowCheckpointEnvironment(repoPath);
-  const addResult = await gitExec(['add', '-A'], repoPath, { env: environment });
+  const flags = getShadowGitFlags(repoPath);
+  const addResult = await gitExec([...flags, 'add', '-A'], repoPath);
   if (addResult.exitCode !== 0) {
     throw new Error(`Failed to stage checkpoint changes: ${addResult.stderr}`);
   }
 
-  const commitMessage = buildCheckpointMessage(label);
-  const commitResult = await gitExec(['commit', '--allow-empty', '-m', commitMessage], repoPath, { env: environment });
-  if (commitResult.exitCode !== 0) {
-    throw new Error(`Failed to create checkpoint: ${commitResult.stderr}`);
+  const treeResult = await gitExec([...flags, 'write-tree'], repoPath);
+  if (treeResult.exitCode !== 0) {
+    throw new Error(`Failed to create checkpoint tree: ${treeResult.stderr}`);
   }
 
-  const hashResult = await gitExec(['rev-parse', 'HEAD'], repoPath, { env: environment });
-  if (hashResult.exitCode !== 0) {
-    throw new Error(`Failed to resolve checkpoint hash: ${hashResult.stderr}`);
-  }
+  const checkpoint: IGitCheckpointInfo = {
+    hash: treeResult.stdout.trim(),
+    message: buildCheckpointMessage(label),
+    timestamp: new Date().toISOString(),
+  };
 
-  return await getCheckpointCommitInfo(repoPath, hashResult.stdout.trim());
+  const checkpoints = await readCheckpointMetadata(repoPath);
+  await writeCheckpointMetadata(repoPath, [checkpoint, ...checkpoints.filter(item => item.hash !== checkpoint.hash)]);
+  return checkpoint;
 }
 
 export async function listCheckpoints(repoPath: string): Promise<IGitCheckpointInfo[]> {
   await ensureShadowCheckpointRepository(repoPath);
-  const environment = getShadowCheckpointEnvironment(repoPath);
-  const result = await gitExec(['log', '--pretty=format:%H|%s|%ci'], repoPath, { env: environment });
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to list checkpoints: ${result.stderr}`);
-  }
-
-  return result.stdout
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const [hash, message, timestamp] = line.split('|');
-      if (!hash || !message || !timestamp) {
-        throw new Error(`Malformed checkpoint entry: ${line}`);
-      }
-      return { hash, message, timestamp };
-    })
-    .filter(entry => entry.message !== 'initial checkpoint');
+  return await readCheckpointMetadata(repoPath);
 }
 
 export async function restoreCheckpoint(repoPath: string, checkpointHash: string): Promise<void> {
   await ensureShadowCheckpointRepository(repoPath);
-  const environment = getShadowCheckpointEnvironment(repoPath);
-  const verifyResult = await gitExec(['cat-file', '-e', checkpointHash], repoPath, { env: environment });
+  const flags = getShadowGitFlags(repoPath);
+  const verifyResult = await gitExec([...flags, 'cat-file', '-e', checkpointHash], repoPath);
   if (verifyResult.exitCode !== 0) {
     throw new Error(`Invalid checkpoint hash: ${checkpointHash}`);
   }
 
-  const checkoutResult = await gitExec(['checkout', checkpointHash, '--', '.'], repoPath, { env: environment });
-  if (checkoutResult.exitCode !== 0) {
-    throw new Error(`Failed to restore checkpoint: ${checkoutResult.stderr}`);
+  const diffResult = await gitExec([...flags, 'diff', '--name-status', '-z', checkpointHash], repoPath);
+  if (diffResult.exitCode !== 0) {
+    throw new Error(`Failed to compute checkpoint diff: ${diffResult.stderr}`);
   }
 
-  const cleanResult = await gitExec(['clean', '-fd'], repoPath, { env: environment });
-  if (cleanResult.exitCode !== 0) {
-    throw new Error(`Failed to clean workspace after restoring checkpoint: ${cleanResult.stderr}`);
-  }
+  const changes = parseNullSeparatedNameStatusOutput(diffResult.stdout)
+    .filter(({ path: filePath }) => !filePath.includes('$__StoryList.tid'));
+  await Promise.all(changes.map(async ({ path: filePath, status }) => {
+    const absolutePath = path.join(repoPath, filePath);
+    if (status === 'D') {
+      try {
+        await fs.unlink(absolutePath);
+      } catch {}
+    } else {
+      const showResult = await gitExec([...flags, 'show', `${checkpointHash}:${filePath}`], repoPath);
+      if (showResult.exitCode !== 0) {
+        throw new Error(`Failed to read checkpoint content for ${filePath}: ${showResult.stderr}`);
+      }
+      await fs.writeFile(absolutePath, showResult.stdout, 'utf8');
+    }
+  }));
 }
 
 /**

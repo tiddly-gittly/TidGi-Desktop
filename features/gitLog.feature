@@ -299,4 +299,57 @@ Feature: Git Log Window
     When I click on a "actions tab in file diff panel" element with selector "h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('操作'), h6:has-text('Space File 1.tid') ~ div button[role='tab']:has-text('Actions')"
     Then I should see a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard Changes')"
     When I click on a "discard changes button" element with selector "button:has-text('放弃修改'), button:has-text('Discard Changes')"
-    Then I should not see a "new file still in uncommitted list" element with selector "[data-testid^='git-file-row-']:has-text('Space File 1.tid')"
+     Then I should not see a "new file still in uncommitted list" element with selector "[data-testid^='git-file-row-']:has-text('Space File 1.tid')"
+
+  @git
+  Scenario: Create and restore checkpoint from Git Log window
+    # Modify the existing Index.tid file to create uncommitted changes
+    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Checkpoint test content - should be restored!"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # Commit the changes first so we have a commit to create checkpoint from
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
+    # Open Git Log window
+    When I click menu "同步和备份 > 查看历史备份"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
+    # Click on the latest commit to select it
+    When I click on a "latest commit row" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):first-child"
+    # Switch to Actions tab
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
+    # Verify create checkpoint button is visible
+    Then I should see a "create checkpoint button" element with selector "button[data-testid='create-checkpoint-button']"
+    # Click create checkpoint button
+    When I click on a "create checkpoint button" element with selector "button[data-testid='create-checkpoint-button']"
+    # Checkpoint dialog should open
+    Then I should see a "checkpoint dialog" element with selector "div[role='dialog']:has-text('Create Checkpoint')"
+    # Enter checkpoint label
+    When I type "Test Checkpoint" in "checkpoint label input" element with selector "label:has-text('Checkpoint label') + * input, input[aria-label='Checkpoint label']"
+    # Click create button in dialog
+    When I click on a "confirm create checkpoint button" element with selector "button[data-testid='confirm-create-checkpoint-button']"
+    # Verify checkpoint appears in the list
+    Then I should see a "checkpoint list" element with selector "[data-testid='checkpoint-list']"
+    Then I should see a "checkpoint row with label" element with selector "[data-testid^='checkpoint-row-']:has-text('checkpoint: Test Checkpoint')"
+    # Now modify the file again to test restore
+    When I switch to "main" window
+    And I modify file "{tmpDir}/wiki/tiddlers/Index.tid" to contain "Modified after checkpoint - should be reverted!"
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # Open Git Log again and restore checkpoint
+    When I click menu "同步和备份 > 查看历史备份"
+    And I switch to "gitHistory" window
+    And I wait for the page to load completely
+    Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
+    When I click on a "latest commit row" element with selector "[data-testid^='commit-row-']:not([data-testid='uncommitted-changes-row']):first-child"
+    # Switch to Actions tab
+    When I click on a "actions tab" element with selector "button[role='tab']:has-text('操作'), button[role='tab']:has-text('Actions')"
+    # Click restore checkpoint button
+    When I click on a "restore checkpoint button" element with selector "button[data-testid='restore-checkpoint-button']"
+    # Wait for restore to complete
+    Then I wait for "git log refreshed after checkpoint restore" log marker "[test-id-git-log-refreshed]"
+    # Switch back to main window to verify the restore
+    When I switch to "main" window
+    Then I wait for tiddler "Index" to be updated by watch-fs
+    # Verify the file was restored correctly (browser view verification skipped due to TiddlyWiki rendering async issues)
+    Then file "{tmpDir}/wiki/tiddlers/Index.tid" should contain text "Checkpoint test content - should be restored!"
+    And I should not see a "modified content after checkpoint" element in browser view with selector "[data-tiddler-title='Index']:has-text('Modified after checkpoint')"

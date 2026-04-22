@@ -120,6 +120,18 @@ export function CommitDetailsPanel(
     showSnackbar?.(message, severity);
   };
 
+  const loadCheckpoints = async (): Promise<IGitCheckpointInfo[]> => {
+    const workspace = await window.service.workspace.get(workspaceID);
+    if (!workspace || !('wikiFolderLocation' in workspace)) {
+      setCheckpoints([]);
+      return [];
+    }
+
+    const result = await window.service.git.listCheckpoints(workspace.wikiFolderLocation);
+    setCheckpoints(result);
+    return result;
+  };
+
   // Bridge real sync progress text from git-sync-js (published by main process through gitSyncProgress$)
   // to GitLog snackbar, but only while a commit/sync action from this panel is running.
   useEffect(() => {
@@ -171,19 +183,30 @@ export function CommitDetailsPanel(
   }, []);
 
   useEffect(() => {
-    const loadCheckpoints = async () => {
+    const syncCheckpoints = async () => {
       try {
-        const workspace = await window.service.workspace.get(workspaceID);
-        if (!workspace || !('wikiFolderLocation' in workspace)) return;
-        const result = await window.service.git.listCheckpoints(workspace.wikiFolderLocation);
-        setCheckpoints(result);
+        await loadCheckpoints();
       } catch (error) {
+        void window.service.native.log('error', '[test-id-checkpoint-load-failed]', {
+          workspaceID,
+          error: error instanceof Error ? error.message : String(error),
+        });
         console.error('Failed to load checkpoints:', error);
       }
     };
 
-    void loadCheckpoints();
+    void syncCheckpoints();
   }, [workspaceID, commit?.hash]);
+
+  useEffect(() => {
+    void window.service.native.log('debug', '[test-id-checkpoint-panel-state]', {
+      workspaceID,
+      currentTab,
+      commitHash: commit?.hash ?? null,
+      checkpointsCount: checkpoints.length,
+      isCheckpointDialogOpen,
+    });
+  }, [workspaceID, currentTab, commit?.hash, checkpoints.length, isCheckpointDialogOpen]);
 
   const handleRevert = async () => {
     if (committedSelections.length === 0 || isReverting) {
@@ -376,12 +399,17 @@ export function CommitDetailsPanel(
     try {
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
-      const created = await window.service.git.createCheckpoint(workspace.wikiFolderLocation, checkpointLabel || commit?.message);
-      setCheckpoints(previous => [created, ...previous.filter(item => item.hash !== created.hash)]);
+      await window.service.git.createCheckpoint(workspace.wikiFolderLocation, checkpointLabel || commit?.message);
+      const loaded = await loadCheckpoints();
+      void window.service.native.log('info', '[test-id-checkpoint-created]', {
+        workspaceID,
+        commitHash: commit?.hash ?? null,
+        loadedCount: loaded.length,
+        loadedMessages: loaded.map((item) => item.message),
+      });
       setCheckpointLabel('');
       setIsCheckpointDialogOpen(false);
-      reportProgress(`Checkpoint created: ${created.message}`, 'success');
-      onCommitSuccess?.();
+      reportProgress('Checkpoint created', 'success');
     } catch (error) {
       console.error('Failed to create checkpoint:', error);
       reportProgress(`Failed to create checkpoint: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
@@ -397,6 +425,7 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
       await window.service.git.restoreCheckpoint(workspace.wikiFolderLocation, checkpointHash);
+      await loadCheckpoints();
       reportProgress('Checkpoint restored', 'success');
       onUndoSuccess?.();
     } catch (error) {
@@ -657,6 +686,7 @@ export function CommitDetailsPanel(
                   setIsCheckpointDialogOpen(true);
                 }}
                 fullWidth
+                data-testid='create-checkpoint-button'
               >
                 Create Checkpoint
               </Button>
@@ -665,17 +695,17 @@ export function CommitDetailsPanel(
                 {t('GitLog.OpenInGitHub')}
               </Button>
 
-              {checkpoints.length > 0 && (
-                <>
-                  <Divider sx={{ my: 1 }} />
-                  <Typography variant='caption' color='textSecondary'>
-                    Checkpoints
-                  </Typography>
-                  <List dense disablePadding>
-                    {checkpoints.slice(0, 5).map((checkpoint) => (
+              <Divider sx={{ my: 1 }} />
+              <Typography variant='caption' color='textSecondary'>
+                Checkpoints
+              </Typography>
+              <List dense disablePadding data-testid='checkpoint-list'>
+                {checkpoints.length > 0
+                  ? checkpoints.slice(0, 5).map((checkpoint) => (
                       <ListItem
                         key={checkpoint.hash}
                         disablePadding
+                        data-testid={`checkpoint-row-${checkpoint.hash}`}
                         secondaryAction={
                           <Button
                             size='small'
@@ -683,6 +713,7 @@ export function CommitDetailsPanel(
                               void handleRestoreCheckpoint(checkpoint.hash);
                             }}
                             disabled={isRestoringCheckpoint}
+                            data-testid='restore-checkpoint-button'
                           >
                             Restore
                           </Button>
@@ -697,10 +728,18 @@ export function CommitDetailsPanel(
                           }}
                         />
                       </ListItem>
-                    ))}
-                  </List>
-                </>
-              )}
+                    ))
+                  : (
+                      <ListItem disablePadding data-testid='checkpoint-empty-state'>
+                        <ListItemText
+                          primary='No checkpoints yet'
+                          slotProps={{
+                            primary: { variant: 'body2', color: 'text.secondary' },
+                          }}
+                        />
+                      </ListItem>
+                    )}
+              </List>
 
               <Divider sx={{ my: 1 }} />
 
@@ -777,6 +816,11 @@ export function CommitDetailsPanel(
             onChange={(event) => {
               setCheckpointLabel(event.target.value);
             }}
+            slotProps={{
+              htmlInput: {
+                'data-testid': 'checkpoint-label-input',
+              },
+            }}
           />
         </DialogContent>
         <DialogActions>
@@ -784,6 +828,7 @@ export function CommitDetailsPanel(
             onClick={() => {
               setIsCheckpointDialogOpen(false);
             }}
+            data-testid='cancel-checkpoint-button'
           >
             Cancel
           </Button>
@@ -793,6 +838,7 @@ export function CommitDetailsPanel(
             }}
             disabled={isCreatingCheckpoint}
             variant='contained'
+            data-testid='confirm-create-checkpoint-button'
           >
             {isCreatingCheckpoint ? 'Creating…' : 'Create'}
           </Button>

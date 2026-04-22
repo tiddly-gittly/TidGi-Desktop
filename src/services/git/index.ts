@@ -465,9 +465,7 @@ export class Git implements IGitService {
 
   public async createCheckpoint(wikiFolderPath: string, label?: string) {
     try {
-      const checkpoint = await this.callGitOp('createCheckpoint', wikiFolderPath, label);
-      this.notifyGitStateChange(wikiFolderPath, 'checkpoint');
-      return checkpoint;
+      return await this.callGitOp('createCheckpoint', wikiFolderPath, label);
     } catch (error) {
       logger.error('createCheckpoint failed', { error, wikiFolderPath, label });
       throw error;

@@ -336,6 +336,42 @@ When(
 );
 
 When(
+  'I ctrl-click on a {string} element with selector {string}',
+  async function(
+    this: ApplicationWorld,
+    elementComment: string,
+    selector: string,
+  ) {
+    const targetWindow = await this.getWindow('current');
+
+    if (!targetWindow) {
+      throw new Error('Window "current" is not available');
+    }
+
+    try {
+      await targetWindow.waitForSelector(selector, {
+        timeout: PLAYWRIGHT_TIMEOUT,
+      });
+      const isVisible = await targetWindow.isVisible(selector);
+      if (!isVisible) {
+        throw new Error(
+          `Element "${elementComment}" with selector "${selector}" is not visible`,
+        );
+      }
+
+      const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+      await targetWindow.keyboard.down(modifier);
+      await targetWindow.click(selector);
+      await targetWindow.keyboard.up(modifier);
+    } catch (error) {
+      throw new Error(
+        `Failed to ctrl-click ${elementComment} with selector "${selector}" in current window: ${error as Error}`,
+      );
+    }
+  },
+);
+
+When(
   'I click on {string} elements with selectors:',
   async function(
     this: ApplicationWorld,
@@ -863,7 +899,7 @@ When(
         await locator.setChecked(shouldBeChecked);
       } catch {
         await locator.evaluate((input, desiredState) => {
-          const checkbox = input;
+          const checkbox = input as HTMLInputElement;
           if (checkbox.checked === desiredState) {
             return;
           }
