@@ -110,11 +110,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       await workspaceService.remove(workspaceID);
       try {
-        if (!isSubWiki) {
-          await wikiService.removeWiki(wikiFolderLocation);
-        } else if (typeof mainWikiToLink === 'string') {
-          await wikiService.removeWiki(wikiFolderLocation, mainWikiToLink);
-        }
+        await wikiService.removeWiki(wikiFolderLocation);
       } catch (error_: unknown) {
         throw new InitWikiGitRevertError(String(error_));
       }
@@ -211,7 +207,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
       }
       if (!isWikiWorkspace(workspace)) {
-        throw new Error('removeWikiGitTransaction can only be called with wiki workspaces');
+        throw new Error('removeWorkspace can only be called with wiki workspaces');
       }
       const { isSubWiki, mainWikiToLink, wikiFolderLocation, id, name } = workspace;
       const { response } = await dialog.showMessageBox(mainWindow, {
@@ -233,10 +229,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           logger.error(error.message, { error });
         });
         if (isSubWiki) {
-          if (mainWikiToLink === null) {
-            throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
-          }
-          await wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, onlyRemoveWorkspace);
+          await wikiService.removeWiki(wikiFolderLocation);
           // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
         } else {
           // is main wiki, also delete all sub wikis
