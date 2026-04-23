@@ -452,7 +452,7 @@ export interface IWorkspaceService {
   getGroup(id: string): Promise<IWorkspaceGroup | undefined>;
   setGroup(id: string, group: IWorkspaceGroup): Promise<void>;
   removeGroup(id: string): Promise<void>;
-  moveWorkspaceToGroup(workspaceId: string, groupId: string | null): Promise<void>;
+  moveWorkspaceToGroup(workspaceId: string, groupId: string | null, autoDisband?: boolean): Promise<void>;
   groups$: BehaviorSubject<Record<string, IWorkspaceGroup> | undefined>;
 }
 export const WorkspaceServiceIPCDescriptor = {

@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { Box, styled } from '@mui/material';
 import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
@@ -11,7 +12,24 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { getSimplifiedWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { useDragContext } from './SortableWorkspaceSelectorList';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
+
+const DragOverlayContainer = styled(Box, { shouldForwardProp: (property) => property !== '$dragIntent' })<
+  { $dragIntent?: 'group' | 'ungroup' | 'reorder-before' | 'reorder-after' | null }
+>`
+  position: relative;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  ${({ $dragIntent, theme }) =>
+  $dragIntent === 'group'
+    ? `background-color: ${theme.palette.primary.light}40; outline: 2px dashed ${theme.palette.primary.main};`
+    : $dragIntent === 'ungroup'
+    ? `background-color: ${theme.palette.error.light}40; outline: 2px dashed ${theme.palette.error.main};`
+    : $dragIntent === 'reorder-before' || $dragIntent === 'reorder-after'
+    ? `background-color: ${theme.palette.action.hover};`
+    : ''}
+`;
 
 export interface ISortableItemProps {
   index: number;
@@ -24,14 +42,15 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const { t } = useTranslation();
   const { active, id, name, picturePath, pageType } = workspace;
   const preference = usePreferenceObservable();
+  const dragContext = useDragContext();
 
   const isWiki = isWikiWorkspace(workspace);
   const hibernated = isWiki ? workspace.hibernated : false;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id,
-    data: { type: 'workspace', workspace }
+    data: { type: 'workspace', workspace },
   });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -120,8 +139,20 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     },
     [t, workspace],
   );
+
+  const isDragOverTarget = dragContext.overId === id;
+  const dragIntent = isDragOverTarget ? dragContext.intent : null;
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu} data-testid={`workspace-item-${id}`}>
+    <DragOverlayContainer
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onContextMenu={onWorkspaceContextMenu}
+      data-testid={`workspace-item-${id}`}
+      $dragIntent={dragIntent}
+    >
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
         restarting={workspace.metadata.isRestarting}
@@ -139,6 +170,6 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         hibernated={hibernated}
         showSidebarTexts={showSidebarTexts}
       />
-    </div>
+    </DragOverlayContainer>
   );
 }

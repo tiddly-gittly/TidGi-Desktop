@@ -70,6 +70,7 @@ export enum PreferenceSections {
   wiki = 'wiki',
   externalAPI = 'externalAPI',
   aiAgent = 'aiAgent',
+  workspaceGroups = 'workspaceGroups',
 }
 
 /**

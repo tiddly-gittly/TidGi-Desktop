@@ -36,7 +36,10 @@ interface IWorkspaceMenuRequiredServices {
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open' | 'get'>;
-  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler'>;
+  workspace: Pick<
+    IWorkspaceService,
+    'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler' | 'getGroupsAsList' | 'setGroup' | 'moveWorkspaceToGroup' | 'removeGroup'
+  >;
   workspaceView: Pick<
     IWorkspaceViewService,
     | 'wakeUpWorkspaceView'
@@ -103,6 +106,47 @@ export async function getSimplifiedWorkspaceMenuTemplate(
       await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
     },
   });
+
+  // Workspace group management
+  const groups = await service.workspace.getGroupsAsList();
+  if (workspace.groupId) {
+    // Workspace is in a group - show "Remove from Group"
+    template.push({
+      label: t('WorkspaceGroup.RemoveFromGroup'),
+      click: async () => {
+        // Pass autoDisband=false so right-click removal never auto-deletes the group.
+        // Only dragging out the last workspace should truly cancel a group.
+        await service.workspace.moveWorkspaceToGroup(id, null, false);
+      },
+    });
+  } else {
+    // Workspace is not in a group - show "Create Group" and "Move to Group" (if groups exist)
+    template.push({
+      label: t('WorkspaceGroup.CreateGroup'),
+      click: async () => {
+        const newGroupId = `group-${Date.now()}`;
+        await service.workspace.setGroup(newGroupId, {
+          id: newGroupId,
+          name: `${workspace.name || 'Workspace'} Group`,
+          collapsed: false,
+          order: groups.length,
+        });
+        await service.workspace.moveWorkspaceToGroup(id, newGroupId);
+      },
+    });
+
+    if (groups.length > 0) {
+      template.push({
+        label: t('WorkspaceGroup.MoveToGroup'),
+        submenu: groups.map((group) => ({
+          label: group.name,
+          click: async () => {
+            await service.workspace.moveWorkspaceToGroup(id, group.id);
+          },
+        })),
+      });
+    }
+  }
 
   // View git history (always visible for wiki workspaces)
   template.push({

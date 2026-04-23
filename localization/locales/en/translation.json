@@ -678,12 +678,20 @@
   },
   "WorkspaceGroup": {
     "CreateGroup": "Create Group",
+    "RemoveFromGroup": "Remove from Group",
+    "MoveToGroup": "Move to Group",
+    "EditGroup": "Edit Group",
     "RenameGroup": "Rename Group",
     "DeleteGroup": "Delete Group",
     "GroupName": "Group Name",
     "NewGroup": "New Group",
     "DeleteGroupConfirm": "Delete group \"{{groupName}}\"? Workspaces will be moved to ungrouped.",
-    "ManageGroups": "Manage Groups"
+    "ManageGroups": "Manage Groups",
+    "ManageGroupsDescription": "Create, rename, or delete workspace groups. Drag workspaces in the sidebar to organize them into groups.",
+    "WorkspaceCount": "{{count}} workspaces",
+    "DefaultGroupName": "Group {{number}}",
+    "AddWorkspaces": "Workspaces",
+    "SearchWorkspace": "Search workspace..."
   },
   "Sync": {
     "Failure": "Sync failed: {{error}}",

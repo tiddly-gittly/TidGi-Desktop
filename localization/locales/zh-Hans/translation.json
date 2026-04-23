@@ -702,12 +702,20 @@
   },
   "WorkspaceGroup": {
     "CreateGroup": "创建分组",
+    "RemoveFromGroup": "移出分组",
+    "MoveToGroup": "移入分组",
+    "EditGroup": "修改分组",
     "RenameGroup": "重命名分组",
     "DeleteGroup": "删除分组",
     "GroupName": "分组名称",
     "NewGroup": "新建分组",
     "DeleteGroupConfirm": "删除分组「{{groupName}}」？工作区将移至未分组。",
-    "ManageGroups": "管理分组"
+    "ManageGroups": "管理分组",
+    "ManageGroupsDescription": "创建、重命名或删除工作区分组。在侧边栏中拖动工作区以将它们组织到分组中。",
+    "WorkspaceCount": "{{count}} 个工作区",
+    "DefaultGroupName": "分组 {{number}}",
+    "AddWorkspaces": "工作区",
+    "SearchWorkspace": "搜索工作区..."
   },
   "Sync": {
     "Failure": "同步失败：{{error}}",

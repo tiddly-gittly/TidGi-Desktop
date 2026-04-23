@@ -11,6 +11,7 @@ import { NotificationHelpTextItem, NotificationTestItem } from './customItems/No
 import { NotificationScheduleItem } from './customItems/NotificationScheduleItem';
 import { OpenAtLoginItem } from './customItems/OpenAtLoginItem';
 import { SpellcheckLanguagesItem } from './customItems/SpellcheckLanguagesItem';
+import { WorkspaceGroupsItem } from './customItems/WorkspaceGroupsItem';
 import { WikiUserNameItem } from './customItems/WikiUserNameItem';
 
 // ─── Lazy-loaded section-level custom components (very complex sections) ──
@@ -57,4 +58,5 @@ export function registerCustomSections(): void {
   registerCustomComponent('notifications.schedule', NotificationScheduleItem);
   registerCustomComponent('notifications.test', NotificationTestItem);
   registerCustomComponent('notifications.helpText', NotificationHelpTextItem);
+  registerCustomComponent('workspaceGroups.management', WorkspaceGroupsItem);
 }

@@ -347,9 +347,11 @@ function ItemRenderer({
     case 'action':
       return <ActionItem item={item} query={query} />;
     case 'custom':
-      // In search mode: show a read-only info card so the user knows where to find it.
-      // In normal mode: render the registered custom component.
       if (query) {
+        const Component = getCustomComponent(item.componentId);
+        if (Component) {
+          return <Component onNeedsRestart={onNeedsRestart} />;
+        }
         const primaryText = i18next.t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
         const secondaryText = item.descriptionKey ? i18next.t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
         return (

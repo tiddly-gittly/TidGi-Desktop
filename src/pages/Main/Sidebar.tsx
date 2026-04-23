@@ -1,15 +1,12 @@
-import FolderIcon from '@mui/icons-material/Folder';
 import SettingsIcon from '@mui/icons-material/Settings';
 import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { css, styled } from '@mui/material/styles';
 import { t } from 'i18next';
-import { useState } from 'react';
 import SimpleBar from 'simplebar-react';
 import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { WorkspaceGroupManagement } from '@/pages/Main/WorkspaceGroupManagement';
 import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
@@ -90,7 +87,6 @@ export function SideBar(): React.JSX.Element {
   const workspacesList = useWorkspacesListObservable();
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
-  const [groupManagementOpen, setGroupManagementOpen] = useState(false);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
   const { showSideBarText, showSideBarIcon } = preferences;
@@ -104,18 +100,6 @@ export function SideBar(): React.JSX.Element {
             : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
         </SidebarTop>
         <SideBarEnd>
-          <IconButton
-            id='manage-groups-button'
-            aria-label={t('WorkspaceGroup.ManageGroups')}
-            onClick={() => {
-              setGroupManagementOpen(true);
-            }}
-            data-testid='manage-groups-button'
-          >
-            <Tooltip title={<span>{t('WorkspaceGroup.ManageGroups')}</span>} placement='top'>
-              <FolderIcon />
-            </Tooltip>
-          </IconButton>
           {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
             <IconButton
               id='update-available'
@@ -142,12 +126,6 @@ export function SideBar(): React.JSX.Element {
           </IconButton>
         </SideBarEnd>
       </SidebarContainer>
-      <WorkspaceGroupManagement
-        open={groupManagementOpen}
-        onClose={() => {
-          setGroupManagementOpen(false);
-        }}
-      />
     </>
   );
 }

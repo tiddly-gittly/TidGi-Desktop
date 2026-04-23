@@ -63,6 +63,8 @@ export class Workspace implements IWorkspaceService {
 
   public updateWorkspaceSubject(): void {
     this.workspaces$.next(this.getWorkspacesWithMetadata());
+    // Also initialize groups observable
+    this.getGroupsSync();
   }
 
   /**
@@ -827,11 +829,34 @@ export class Workspace implements IWorkspaceService {
     }
   }
 
-  public async moveWorkspaceToGroup(workspaceId: string, groupId: string | null): Promise<void> {
+  public async moveWorkspaceToGroup(workspaceId: string, groupId: string | null, autoDisband = true): Promise<void> {
     const workspace = await this.get(workspaceId);
     if (!workspace) {
       throw new Error(`Workspace ${workspaceId} not found`);
     }
+
+    const oldGroupId = workspace.groupId;
     await this.update(workspaceId, { groupId });
+
+    // Auto-disband old group only when explicitly allowed (e.g. drag operations).
+    // Right-click or settings removal should not trigger auto-disband,
+    // matching the requirement that only dragging out the last workspace truly cancels a group.
+    if (autoDisband && oldGroupId) {
+      await this.disbandGroupIfEmpty(oldGroupId);
+    }
+  }
+
+  /**
+   * Disband group if it has zero workspaces left.
+   * Groups are only removed when they become completely empty,
+   * not when dropping from 2→1 workspaces.
+   */
+  private async disbandGroupIfEmpty(groupId: string): Promise<void> {
+    const workspaces = this.getWorkspacesSync();
+    const workspacesInGroup = Object.values(workspaces).filter(w => w.groupId === groupId);
+
+    if (workspacesInGroup.length === 0) {
+      await this.removeGroup(groupId);
+    }
   }
 }
