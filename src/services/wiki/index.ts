@@ -661,7 +661,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.SubWikiCreationCompleted'));
   }
 
-  public async removeWiki(wikiPath: string, _mainWikiToUnLink?: string, _onlyRemoveLink = false): Promise<void> {
+  public async removeWiki(wikiPath: string): Promise<void> {
     // Sub-wiki configuration is now handled by FileSystemAdaptor - no symlinks to manage
     // Just remove the wiki folder itself
     await shell.trashItem(wikiPath);

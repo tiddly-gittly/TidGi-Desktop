@@ -210,7 +210,6 @@ export class Workspace implements IWorkspaceService {
   public async set(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     const workspaceToSave = this.sanitizeWorkspace(workspace);
-    await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
     // Capture previous in-memory state for precise syncable-field diffing.
     const previousWorkspace = workspaces[id];
@@ -387,34 +386,6 @@ export class Workspace implements IWorkspaceService {
       hasSyncedConfig: workspaceWithSyncedConfig !== workspaceToSanitize,
     });
     return result;
-  }
-
-  /**
-   * Do some side effect before config change, update other services or filesystem, with new and old values
-   * This happened after values sanitized
-   * @param newWorkspaceConfig new workspace settings
-   */
-  private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
-    if (!isWikiWorkspace(newWorkspaceConfig)) return;
-
-    const existedWorkspace = this.getSync(newWorkspaceConfig.id);
-    const { id, tagNames } = newWorkspaceConfig;
-    // when update tagNames of subWiki
-    if (
-      existedWorkspace !== undefined && isWikiWorkspace(existedWorkspace) && existedWorkspace.isSubWiki && tagNames.length > 0 &&
-      JSON.stringify(existedWorkspace.tagNames) !== JSON.stringify(tagNames)
-    ) {
-      const { mainWikiToLink } = existedWorkspace;
-      if (typeof mainWikiToLink !== 'string') {
-        throw new TypeError(
-          `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${
-            JSON.stringify(
-              this.workspaces,
-            )
-          }`,
-        );
-      }
-    }
   }
 
   public async getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined> {
