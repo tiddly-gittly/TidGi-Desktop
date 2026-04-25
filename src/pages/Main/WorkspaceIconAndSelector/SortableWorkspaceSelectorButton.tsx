@@ -1,5 +1,4 @@
 import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Box, styled } from '@mui/material';
 import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,20 +14,19 @@ import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/in
 import { useDragContext } from './SortableWorkspaceSelectorList';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
-const DragOverlayContainer = styled(Box, { shouldForwardProp: (property) => property !== '$dragIntent' })<
-  { $dragIntent?: 'group' | 'ungroup' | 'reorder-before' | 'reorder-after' | null }
->`
+const DragOverlayContainer = styled(Box)`
   position: relative;
   border-radius: 4px;
   transition: background-color 0.15s ease;
-  ${({ $dragIntent, theme }) =>
-  $dragIntent === 'group'
-    ? `background-color: ${theme.palette.primary.light}40; outline: 2px dashed ${theme.palette.primary.main};`
-    : $dragIntent === 'ungroup'
-    ? `background-color: ${theme.palette.error.light}40; outline: 2px dashed ${theme.palette.error.main};`
-    : $dragIntent === 'reorder-before' || $dragIntent === 'reorder-after'
-    ? `background-color: ${theme.palette.action.hover};`
-    : ''}
+`;
+
+const WorkspaceDropZone = styled('div')<{ $bottom?: boolean; $center?: boolean }>`
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+  z-index: 2;
+  background: transparent;
 `;
 
 export interface ISortableItemProps {
@@ -48,13 +46,18 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const hibernated = isWiki ? workspace.hibernated : false;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id,
     data: { type: 'workspace', workspace },
   });
+
+  const isDragOverTarget = dragContext.overId === id;
+  const dragIntent = isDragOverTarget ? dragContext.intent : null;
+
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition ?? undefined,
+    transform: 'translate3d(0, 0, 0)',
+    transition: 'none',
+    opacity: isDragging ? 0 : undefined,
   };
   const [workspaceClickedLoading, workspaceClickedLoadingSetter] = useState(false);
   const [, setLocation] = useLocation();
@@ -140,19 +143,20 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     [t, workspace],
   );
 
-  const isDragOverTarget = dragContext.overId === id;
-  const dragIntent = isDragOverTarget ? dragContext.intent : null;
-
   return (
     <DragOverlayContainer
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node as HTMLElement | null);
+      }}
       style={style}
       {...attributes}
       {...listeners}
       onContextMenu={onWorkspaceContextMenu}
       data-testid={`workspace-item-${id}`}
-      $dragIntent={dragIntent}
     >
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-top`} style={{ top: 0, height: '25%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-center`} $center style={{ top: '25%', height: '50%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-bottom`} $bottom style={{ bottom: 0, height: '25%', pointerEvents: 'none' }} />
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
         restarting={workspace.metadata.isRestarting}
@@ -169,6 +173,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         index={index}
         hibernated={hibernated}
         showSidebarTexts={showSidebarTexts}
+        dragIntent={dragIntent}
       />
     </DragOverlayContainer>
   );

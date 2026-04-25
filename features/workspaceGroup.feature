@@ -75,6 +75,13 @@ Feature: Workspace Grouping
     Then workspaces "Zone Center Alpha" and "Zone Center Beta" should share a group
     And the group containing workspace "Zone Center Alpha" should contain 2 workspaces
 
+  Scenario: Hovering a workspace over another shows combine intent on the target
+    When I create a new wiki workspace with name "Hover Highlight Alpha"
+    And I create a new wiki workspace with name "Hover Highlight Beta"
+    And I hover workspace "Hover Highlight Alpha" over workspace "Hover Highlight Beta"
+    Then workspace "Hover Highlight Beta" should show "group" drag intent
+    And I release the mouse
+
   Scenario: Preferences search finds workspace group management
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
