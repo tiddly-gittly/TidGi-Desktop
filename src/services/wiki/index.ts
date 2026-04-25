@@ -261,7 +261,10 @@ export class Wiki implements IWikiService {
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
-    void worker.notifyServicesReady();
+    
+    // Notify worker that services are ready before subscribing to startNodeJSWiki
+    // This ensures the worker doesn't start sending messages before we're subscribed
+    await worker.notifyServicesReady();
 
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 

@@ -52,41 +52,46 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
       void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
-      const textDecoder = new TextDecoder();
-      intercept(
-        (newStdOut: string | Uint8Array) => {
-          const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
-          // Send to main process logger if services are ready
-          void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
-            console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
-          });
-          return message;
-        },
-        (newStdError: string | Uint8Array) => {
-          const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
-          // Send to main process logger if services are ready
-          void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
-            console.error('[intercept] Failed to send stderr to main process:', error, message);
-          });
-
-          // Detect critical plugin loading errors that can cause white screen
-          // These errors occur during TiddlyWiki boot module execution
-          if (
-            message.includes('Error executing boot module') ||
-            message.includes('Cannot find module')
-          ) {
-            observer.next({
-              type: 'control',
-              source: 'plugin-error',
-              actions: WikiControlActions.error,
-              message,
-              argv: [],
+      
+      // Small delay to ensure Observable subscription is fully established in main process
+      // This prevents the race condition where booted message is sent before subscription is ready
+      setTimeout(() => {
+        const textDecoder = new TextDecoder();
+        intercept(
+          (newStdOut: string | Uint8Array) => {
+            const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
+            // Send to main process logger if services are ready
+            void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
+              console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
             });
-          }
+            return message;
+          },
+          (newStdError: string | Uint8Array) => {
+            const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
+            // Send to main process logger if services are ready
+            void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
+              console.error('[intercept] Failed to send stderr to main process:', error, message);
+            });
 
-          return message;
-        },
-      );
+            // Detect critical plugin loading errors that can cause white screen
+            // These errors occur during TiddlyWiki boot module execution
+            if (
+              message.includes('Error executing boot module') ||
+              message.includes('Cannot find module')
+            ) {
+              observer.next({
+                type: 'control',
+                source: 'plugin-error',
+                actions: WikiControlActions.error,
+                message,
+                argv: [],
+              });
+            }
+
+            return message;
+          },
+        );
+      }, 50);
     });
     let fullBootArgv: string[] = [];
     // mark isDev as used to satisfy lint when not needed directly
