@@ -75,6 +75,83 @@ Feature: Workspace Grouping
     Then workspaces "Zone Center Alpha" and "Zone Center Beta" should share a group
     And the group containing workspace "Zone Center Alpha" should contain 2 workspaces
 
+  Scenario: Canceling a drag with Escape key leaves workspaces unchanged
+    When I create a new wiki workspace with name "Cancel Drag Alpha"
+    And I create a new wiki workspace with name "Cancel Drag Beta"
+    And I hover workspace "Cancel Drag Alpha" over workspace "Cancel Drag Beta"
+    And I press the Escape key
+    Then workspace "Cancel Drag Alpha" should be ungrouped
+    And workspace "Cancel Drag Beta" should be ungrouped
+
+  Scenario: Dragging a workspace from a collapsed group
+    When I create a new wiki workspace with name "Collapsed Group Alpha"
+    And I create a new wiki workspace with name "Collapsed Group Beta"
+    And I create a new wiki workspace with name "Collapsed Group Gamma"
+    Given workspace group "Collapsed Test Group" contains workspaces:
+      | Collapsed Group Alpha |
+      | Collapsed Group Beta  |
+    When I collapse workspace group "Collapsed Test Group"
+    And I expand workspace group "Collapsed Test Group"
+    And I drag workspace "Collapsed Group Alpha" onto workspace "Collapsed Group Gamma"
+    Then workspaces "Collapsed Group Alpha" and "Collapsed Group Gamma" should share a group
+    And workspace "Collapsed Group Beta" should be in a group
+
+  Scenario: Dragging workspace between different groups
+    When I create a new wiki workspace with name "Cross Group Alpha"
+    And I create a new wiki workspace with name "Cross Group Beta"
+    And I create a new wiki workspace with name "Cross Group Gamma"
+    And I create a new wiki workspace with name "Cross Group Delta"
+    Given workspace group "Cross Group A" contains workspaces:
+      | Cross Group Alpha |
+      | Cross Group Beta  |
+    Given workspace group "Cross Group B" contains workspaces:
+      | Cross Group Gamma |
+      | Cross Group Delta |
+    When I drag workspace "Cross Group Alpha" onto workspace "Cross Group Gamma"
+    Then workspaces "Cross Group Alpha" and "Cross Group Gamma" should share a group
+    And workspace "Cross Group Beta" should be in a group
+    And the group containing workspace "Cross Group Beta" should contain 1 workspaces
+    And the group containing workspace "Cross Group Gamma" should contain 3 workspaces
+
+  Scenario: Reordering workspaces within the same group
+    When I create a new wiki workspace with name "Same Group Alpha"
+    And I create a new wiki workspace with name "Same Group Beta"
+    And I create a new wiki workspace with name "Same Group Gamma"
+    Given workspace group "Same Group Test" contains workspaces:
+      | Same Group Alpha |
+      | Same Group Beta  |
+      | Same Group Gamma |
+    When I drag workspace "Same Group Gamma" to the top zone of workspace "Same Group Alpha"
+    Then workspace "Same Group Gamma" should appear before workspace "Same Group Alpha"
+    And workspace "Same Group Alpha" should appear before workspace "Same Group Beta"
+    And workspaces "Same Group Alpha" and "Same Group Gamma" should share a group
+
+  Scenario: Reordering group headers
+    When I create a new wiki workspace with name "Group Order Alpha"
+    And I create a new wiki workspace with name "Group Order Beta"
+    And I create a new wiki workspace with name "Group Order Gamma"
+    And I create a new wiki workspace with name "Group Order Delta"
+    Given workspace group "Group Order A" contains workspaces:
+      | Group Order Alpha |
+      | Group Order Beta  |
+    Given workspace group "Group Order B" contains workspaces:
+      | Group Order Gamma |
+      | Group Order Delta |
+    When I drag group header "Group Order B" onto group header "Group Order A"
+    Then group "Group Order B" should appear before group "Group Order A"
+
+  Scenario: Dragging ungrouped workspace to zone of grouped workspace
+    When I create a new wiki workspace with name "Zone Grouped Alpha"
+    And I create a new wiki workspace with name "Zone Grouped Beta"
+    And I create a new wiki workspace with name "Zone Grouped Gamma"
+    Given workspace group "Zone Grouped Test" contains workspaces:
+      | Zone Grouped Alpha |
+      | Zone Grouped Beta  |
+    When I drag workspace "Zone Grouped Gamma" to the top zone of workspace "Zone Grouped Alpha"
+    Then workspace "Zone Grouped Gamma" should be ungrouped
+    And workspace "Zone Grouped Gamma" should appear before workspace "Zone Grouped Alpha"
+    And workspaces "Zone Grouped Alpha" and "Zone Grouped Beta" should share a group
+
   Scenario: Hovering a workspace over another shows combine intent on the target
     When I create a new wiki workspace with name "Hover Highlight Alpha"
     And I create a new wiki workspace with name "Hover Highlight Beta"

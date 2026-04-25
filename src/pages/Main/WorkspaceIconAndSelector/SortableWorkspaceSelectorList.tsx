@@ -24,6 +24,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 
 import { PageType } from '@/constants/pageTypes';
+import { getBuildInPageIcon } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageIcon';
+import { getBuildInPageName } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageName';
 import { PreferenceSections } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspaceGroupsListObservable } from '@services/workspaces/hooks';
@@ -330,38 +332,23 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
    * When the pointer overlaps its own group header, that header must outrank nearby workspaces so
    * the drop result matches the ungroup affordance the user is aiming at.
    */
+  /**
+   * Custom collision detection that handles workspace vs group header targeting:
+   * - Ungrouped workspace drag: filter out group headers to prevent them from stealing targets.
+   *   This ensures dropping on a workspace creates a new group rather than joining an existing one.
+   * - Grouped workspace drag: include group headers so users can drop on their own group header
+   *   to drag out of the group.
+   *
+   * The active workspace's current group decides whether a header can win the collision race.
+   * When the pointer overlaps its own group header, that header must outrank nearby workspaces so
+   * the drop result matches the ungroup affordance the user is aiming at.
+   *
+   * Note: MeasuringStrategy.Always ensures droppable rects are always fresh, eliminating the need
+   * for manual DOM rect fallbacks.
+   */
   const customCollisionDetection = useCallback<CollisionDetection>((arguments_) => {
     const activeId = String(arguments_.active.id);
     const pointerCollisions = pointerWithin(arguments_).filter((collision) => String(collision.id) !== activeId);
-
-    // When dnd-kit's cached droppable rects become stale after React re-renders shift the
-    // sidebar layout, pointerWithin may miss the group header even though the pointer is
-    // visually over it. We manually verify the live DOM rect for the active workspace's
-    // own group header so the ungroup affordance remains reliable.
-    if (typeof document !== 'undefined' && arguments_.pointerCoordinates) {
-      const activeWorkspace = (arguments_.active.data.current as { workspace?: IWorkspaceWithMetadata } | undefined)?.workspace;
-      const ownGroupHeaderId = activeWorkspace?.groupId ? `group-${activeWorkspace.groupId}` : null;
-      if (ownGroupHeaderId && !pointerCollisions.some(c => String(c.id) === ownGroupHeaderId)) {
-        const container = arguments_.droppableContainers.find(c => String(c.id) === ownGroupHeaderId);
-        const node = container?.node.current;
-        if (node) {
-          const rect = node.getBoundingClientRect();
-          const pointer = arguments_.pointerCoordinates;
-          if (
-            pointer.x >= rect.left &&
-            pointer.x <= rect.right &&
-            pointer.y >= rect.top &&
-            pointer.y <= rect.bottom
-          ) {
-            pointerCollisions.push({
-              id: ownGroupHeaderId,
-              data: { droppableContainer: container, value: 0 },
-            });
-          }
-        }
-      }
-    }
-
     const collisions = pointerCollisions.length > 0
       ? pointerCollisions
       : closestCorners(arguments_).filter((collision) => String(collision.id) !== activeId);
@@ -844,12 +831,19 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         <DragOverlay dropAnimation={null}>
           {activeWorkspace && (() => {
             const isWiki = isWikiWorkspace(activeWorkspace);
+            const displayName = activeWorkspace.pageType
+              ? getBuildInPageName(activeWorkspace.pageType, t)
+              : activeWorkspace.name;
+            const customIcon = activeWorkspace.pageType
+              ? getBuildInPageIcon(activeWorkspace.pageType)
+              : undefined;
             return (
               <WorkspaceSelectorBase
                 id={activeWorkspace.id}
                 active={activeWorkspace.active}
-                workspaceName={activeWorkspace.name}
+                workspaceName={displayName}
                 picturePath={activeWorkspace.picturePath}
+                customIcon={customIcon}
                 showSideBarIcon={showSideBarIcon}
                 showSidebarTexts={showSideBarText}
                 pageType={activeWorkspace.pageType || undefined}

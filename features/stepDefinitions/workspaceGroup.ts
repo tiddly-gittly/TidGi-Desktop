@@ -460,3 +460,94 @@ Then('workspace {string} should show {string} drag intent', async function(this:
     }
   }, BACKOFF_OPTIONS);
 });
+
+When('I press the Escape key', async function(this: ApplicationWorld) {
+  if (!this.currentWindow) {
+    throw new Error('Current window not set');
+  }
+
+  await this.currentWindow.keyboard.press('Escape');
+  await this.currentWindow.waitForTimeout(100);
+});
+
+When('I collapse workspace group {string}', async function(this: ApplicationWorld, groupName: string) {
+  const groups = await getGroups(this);
+  const group = groups.find(g => g.name === groupName);
+  if (!group) {
+    throw new Error(`Group "${groupName}" not found`);
+  }
+
+  await executeInMainWindow<unknown>(
+    this,
+    `
+    window.service.workspace.setGroup(${JSON.stringify(group.id)}, { ...${JSON.stringify(group)}, collapsed: true })
+  `,
+  );
+
+  await this.currentWindow?.waitForTimeout(200);
+});
+
+When('I expand workspace group {string}', async function(this: ApplicationWorld, groupName: string) {
+  const groups = await getGroups(this);
+  const group = groups.find(g => g.name === groupName);
+  if (!group) {
+    throw new Error(`Group "${groupName}" not found`);
+  }
+
+  await executeInMainWindow<unknown>(
+    this,
+    `
+    window.service.workspace.setGroup(${JSON.stringify(group.id)}, { ...${JSON.stringify(group)}, collapsed: false })
+  `,
+  );
+
+  await this.currentWindow?.waitForTimeout(200);
+});
+
+When('I drag group header {string} onto group header {string}', async function(this: ApplicationWorld, sourceGroupName: string, targetGroupName: string) {
+  if (!this.currentWindow) {
+    throw new Error('Current window not set');
+  }
+
+  const groups = await getGroups(this);
+  const sourceGroup = groups.find(g => g.name === sourceGroupName);
+  const targetGroup = groups.find(g => g.name === targetGroupName);
+
+  if (!sourceGroup) {
+    throw new Error(`Source group "${sourceGroupName}" not found`);
+  }
+  if (!targetGroup) {
+    throw new Error(`Target group "${targetGroupName}" not found`);
+  }
+
+  const sourceSelector = `[data-testid="workspace-group-${sourceGroup.id}"]`;
+  const targetSelector = `[data-testid="workspace-group-${targetGroup.id}"]`;
+  const targetLocator = this.currentWindow.locator(targetSelector);
+  await targetLocator.waitFor({ state: 'visible' });
+
+  await dragLocatorToCoordinates(this, sourceSelector, async () => {
+    return getLocatorCenter(targetSelector, targetLocator);
+  });
+});
+
+Then('group {string} should appear before group {string}', async function(this: ApplicationWorld, firstGroupName: string, secondGroupName: string) {
+  await backOff(async () => {
+    const groups = await getGroups(this);
+    const firstGroup = groups.find(g => g.name === firstGroupName);
+    const secondGroup = groups.find(g => g.name === secondGroupName);
+
+    if (!firstGroup) {
+      throw new Error(`Group "${firstGroupName}" not found`);
+    }
+    if (!secondGroup) {
+      throw new Error(`Group "${secondGroupName}" not found`);
+    }
+
+    const firstOrder = firstGroup.order ?? 0;
+    const secondOrder = secondGroup.order ?? 0;
+
+    if (firstOrder >= secondOrder) {
+      throw new Error(`Group "${firstGroupName}" (order ${firstOrder}) should appear before "${secondGroupName}" (order ${secondOrder})`);
+    }
+  }, BACKOFF_OPTIONS);
+});
