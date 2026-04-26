@@ -11,8 +11,8 @@ import { NotificationHelpTextItem, NotificationTestItem } from './customItems/No
 import { NotificationScheduleItem } from './customItems/NotificationScheduleItem';
 import { OpenAtLoginItem } from './customItems/OpenAtLoginItem';
 import { SpellcheckLanguagesItem } from './customItems/SpellcheckLanguagesItem';
-import { WorkspaceGroupsItem } from './customItems/WorkspaceGroupsItem';
 import { WikiUserNameItem } from './customItems/WikiUserNameItem';
+import { WorkspaceGroupsItem } from './customItems/WorkspaceGroupsItem';
 
 // ─── Lazy-loaded section-level custom components (very complex sections) ──
 const LazyExternalAPISection = lazy(() => import('./sections/ExternalAPI').then((m) => ({ default: m.ExternalAPI })));

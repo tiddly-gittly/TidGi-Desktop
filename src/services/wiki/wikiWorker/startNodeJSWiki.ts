@@ -52,7 +52,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
       void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
-      
+
       // Small delay to ensure Observable subscription is fully established in main process
       // This prevents the race condition where booted message is sent before subscription is ready
       setTimeout(() => {

@@ -9,6 +9,21 @@ import SearchGithubRepo from '../SearchGithubRepo';
 const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
 
+interface IMockSearchQueryResult {
+  loading: boolean;
+  error: undefined;
+  refetch: ReturnType<typeof vi.fn>;
+  data: {
+    repositoryOwner: { id: string };
+    search: {
+      repositoryCount: number;
+      edges: Array<{ node: { name: string; url: string } }>;
+    };
+  };
+}
+
+type TMockMutationResult = [ReturnType<typeof vi.fn>];
+
 vi.mock('graphql-hooks', () => ({
   ClientContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
@@ -16,8 +31,8 @@ vi.mock('graphql-hooks', () => ({
   GraphQLClient: class {
     setHeader() {}
   },
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+  useMutation: (...args: unknown[]): TMockMutationResult => mockUseMutation(...args) as TMockMutationResult,
+  useQuery: (...args: unknown[]): IMockSearchQueryResult => mockUseQuery(...args) as IMockSearchQueryResult,
 }));
 
 describe('SearchGithubRepo', () => {

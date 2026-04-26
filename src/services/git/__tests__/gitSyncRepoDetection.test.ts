@@ -1,11 +1,11 @@
 // @vitest-environment node
 
-import * as os from 'node:os';
-import * as path from 'node:path';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { describe, expect, it } from 'vitest';
 import { exec as gitExec } from 'dugite';
 import { hasGit } from 'git-sync-js/dist/src/inspect.js';
+import { mkdtemp, rm } from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 describe('git-sync-js repo detection compatibility', () => {
   it('treats Windows path format differences and benign stderr as a valid git repository', async () => {

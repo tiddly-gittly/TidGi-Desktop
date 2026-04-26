@@ -75,7 +75,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     if (!isWikiWorkspace(newWorkspace)) {
       throw new Error('initWikiGitTransaction can only be called with wiki workspaces');
     }
-    const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
+    const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID } = newWorkspace;
     try {
       const previousActiveId = workspaceService.getActiveWorkspaceSync()?.id;
       await workspaceService.setActiveWorkspace(newWorkspace.id, previousActiveId);
@@ -209,7 +209,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       if (!isWikiWorkspace(workspace)) {
         throw new Error('removeWorkspace can only be called with wiki workspaces');
       }
-      const { isSubWiki, mainWikiToLink, wikiFolderLocation, id, name } = workspace;
+      const { isSubWiki, wikiFolderLocation, id, name } = workspace;
       const { response } = await dialog.showMessageBox(mainWindow, {
         type: 'question',
         buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],

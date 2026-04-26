@@ -9,7 +9,6 @@ import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
-import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -34,7 +33,6 @@ export class Sync implements ISyncService {
     // Get Layer 3 services
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
-    const viewService = container.get<IViewService>(serviceIdentifier.View);
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
