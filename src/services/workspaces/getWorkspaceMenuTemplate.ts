@@ -19,6 +19,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { FlatNamespace, TFunction } from 'i18next';
+import { nanoid } from 'nanoid';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
 import { isWikiWorkspace } from './interface';
@@ -124,10 +125,10 @@ export async function getSimplifiedWorkspaceMenuTemplate(
     template.push({
       label: t('WorkspaceGroup.CreateGroup'),
       click: async () => {
-        const newGroupId = `group-${Date.now()}`;
+        const newGroupId = nanoid();
         await service.workspace.setGroup(newGroupId, {
           id: newGroupId,
-          name: `${workspace.name || 'Workspace'} Group`,
+          name: t('WorkspaceGroup.DefaultGroupName', { number: groups.length + 1 }),
           collapsed: false,
           order: groups.length,
         });

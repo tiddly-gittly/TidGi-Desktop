@@ -331,17 +331,6 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
    * The active workspace's current group decides whether a header can win the collision race.
    * When the pointer overlaps its own group header, that header must outrank nearby workspaces so
    * the drop result matches the ungroup affordance the user is aiming at.
-   */
-  /**
-   * Custom collision detection that handles workspace vs group header targeting:
-   * - Ungrouped workspace drag: filter out group headers to prevent them from stealing targets.
-   *   This ensures dropping on a workspace creates a new group rather than joining an existing one.
-   * - Grouped workspace drag: include group headers so users can drop on their own group header
-   *   to drag out of the group.
-   *
-   * The active workspace's current group decides whether a header can win the collision race.
-   * When the pointer overlaps its own group header, that header must outrank nearby workspaces so
-   * the drop result matches the ungroup affordance the user is aiming at.
    *
    * Note: MeasuringStrategy.Always ensures droppable rects are always fresh, eliminating the need
    * for manual DOM rect fallbacks.

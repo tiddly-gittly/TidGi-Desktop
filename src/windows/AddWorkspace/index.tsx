@@ -98,9 +98,9 @@ export default function AddWorkspace(): React.JSX.Element {
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList());
 
-  // Clear selected import config when user switches back to using tidgi.config or changes tabs
+  // Keep imported config scoped to the current import flow so it cannot bleed into another tab.
   useEffect(() => {
-    if (useTidgiConfig) {
+    if (useTidgiConfig || currentTab === CreateWorkspaceTabs.CreateNewWiki || currentTab === CreateWorkspaceTabs.OpenLocalWikiFromHtml) {
       selectedImportConfigSetter(undefined);
     }
   }, [useTidgiConfig, currentTab]);
