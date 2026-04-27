@@ -251,6 +251,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const dragStateReference = useRef<IDragState>(initialDragState);
   const lastResolvedDragStateReference = useRef<IDragState>(initialDragState);
   const dragStateTimeoutReference = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialPointerYReference = useRef<number | null>(null);
 
   // Drag preview and drop behavior must resolve from the same projected state.
   const [dragState, setDragState] = useState<IDragState>(initialDragState);
@@ -312,6 +313,20 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
    * Note: MeasuringStrategy.Always ensures droppable rects are always fresh, eliminating the need
    * for manual DOM rect fallbacks.
    */
+  // Track the actual pointer Y during drag for accurate zone calculations.
+  // dnd-kit's event.delta is scrollAdjustedTranslate (modified by modifiers
+  // and scroll), not the raw pointer position. We use a capture-phase listener
+  // to ensure pointerYRef is updated BEFORE dnd-kit's onDragMove fires, so
+  // deriveDragState always reads the current pointer position.
+  const pointerYRef = useRef<number>(0);
+  useEffect(() => {
+    const handler = (event: PointerEvent) => {
+      pointerYRef.current = event.clientY;
+    };
+    window.addEventListener('pointermove', handler, { capture: true });
+    return () => window.removeEventListener('pointermove', handler, { capture: true });
+  }, []);
+
   const customCollisionDetection = useCallback<CollisionDetection>((arguments_) => {
     const activeId = String(arguments_.active.id);
     const pointerCollisions = pointerWithin(arguments_).filter((collision) => String(collision.id) !== activeId);
@@ -319,6 +334,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       ? pointerCollisions
       : closestCorners(arguments_).filter((collision) => String(collision.id) !== activeId);
     const isDraggingWorkspace = !activeId.startsWith('group-');
+
+    let result = collisions;
 
     if (isDraggingWorkspace && collisions.length > 0) {
       const activeGroupId = (arguments_.active.data.current as { groupId?: string | null } | undefined)?.groupId;
@@ -331,32 +348,35 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         const ownGroupHeaderCollision = collisions.find((collision) => String(collision.id) === ownGroupHeaderId);
 
         if (ownGroupHeaderCollision) {
-          return [
+          result = [
             ownGroupHeaderCollision,
             ...collisions.filter((collision) => String(collision.id) !== ownGroupHeaderId),
           ];
+        } else {
+          // Pointer is not over own header; exclude group headers so the drop
+          // lands on a workspace instead.
+          result = workspaceCollisions.length > 0 ? workspaceCollisions : collisions;
         }
-
-        // Pointer is not over own header; exclude group headers so the drop
-        // lands on a workspace instead.
-        return workspaceCollisions.length > 0 ? workspaceCollisions : collisions;
+      } else {
+        // Ungrouped workspace drag: filter out group headers entirely.
+        result = workspaceCollisions.length > 0 ? workspaceCollisions : collisions;
       }
-
-      // Ungrouped workspace drag: filter out group headers entirely.
-      if (workspaceCollisions.length > 0) {
-        return workspaceCollisions;
-      }
-    }
-
-    if (!isDraggingWorkspace && collisions.length > 0) {
+    } else if (!isDraggingWorkspace && collisions.length > 0) {
       const groupCollisions = collisions.filter((collision) => String(collision.id).startsWith('group-'));
-
       if (groupCollisions.length > 0) {
-        return groupCollisions;
+        result = groupCollisions;
+      } else {
+        // pointerWithin found no group headers (likely because a workspace rect
+        // is overlapping the pointer). Use closestCorners to find the nearest
+        // group header instead of falling back to the workspace collision.
+        const nearestGroupCollisions = closestCorners(arguments_)
+          .filter((collision) => String(collision.id) !== activeId)
+          .filter((collision) => String(collision.id).startsWith('group-'));
+        result = nearestGroupCollisions.length > 0 ? nearestGroupCollisions : collisions;
       }
     }
 
-    return collisions;
+    return result;
   }, []);
 
   const baseFilteredList = useMemo(() => {
@@ -370,34 +390,18 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     return [...baseFilteredList].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [baseFilteredList]);
 
-  const displayedWorkspaces = useMemo(() => {
-    if (dragState.projectedWorkspaceOrder === null) {
-      return canonicalWorkspaces;
-    }
-    const orderMap = new Map(dragState.projectedWorkspaceOrder.map((id, index) => [id, index]));
-    return [...canonicalWorkspaces].sort((a, b) => {
-      const orderA = orderMap.get(a.id) ?? a.order ?? 0;
-      const orderB = orderMap.get(b.id) ?? b.order ?? 0;
-      return orderA - orderB;
-    });
-  }, [canonicalWorkspaces, dragState.projectedWorkspaceOrder]);
+  // Visual reordering during drag is disabled to keep DOM positions stable.
+  // This prevents drop zones from shifting under the pointer while the user
+  // is dragging, which caused intent mis-detection in E2E tests and real use.
+  // Drag intent highlights (reorder-before/after, group) still provide feedback.
+  const displayedWorkspaces = canonicalWorkspaces;
 
   const canonicalGroups = useMemo(() => {
     if (!groups) return [];
     return [...groups].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [groups]);
 
-  const displayedGroups = useMemo(() => {
-    if (dragState.projectedGroupOrder === null) {
-      return canonicalGroups;
-    }
-    const orderMap = new Map(dragState.projectedGroupOrder.map((id, index) => [id, index]));
-    return [...canonicalGroups].sort((a, b) => {
-      const orderA = orderMap.get(a.id) ?? a.order ?? 0;
-      const orderB = orderMap.get(b.id) ?? b.order ?? 0;
-      return orderA - orderB;
-    });
-  }, [canonicalGroups, dragState.projectedGroupOrder]);
+  const displayedGroups = canonicalGroups;
 
   const { ungroupedWorkspaces, groupedWorkspaces } = useMemo(() => {
     const ungrouped: IWorkspaceWithMetadata[] = [];
@@ -586,31 +590,40 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       const activeWorkspace = canonicalWorkspaces.find(workspace => workspace.id === activeId);
       const overId = effectiveOverId;
       const overWorkspace = canonicalWorkspaces.find(workspace => workspace.id === overId);
+      // dnd-kit caches droppable rects and may return stale positions after DOM
+      // mutations (e.g. workspaces moving between ungrouped/grouped sections).
+      // The over.id itself is still correct (collision detection resolves the
+      // right target), but over.rect can be stale. Query the live DOM rect of
+      // the known target workspace to compute accurate zone boundaries.
       const activeRect = active.rect.current.translated;
-      const overRect = over?.rect;
+      // Use the actual pointer Y computed from the initial pointerdown position
+      const pointerY = pointerYRef.current || (activeRect
+        ? activeRect.top + activeRect.height / 2
+        : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
+      const referenceY = pointerY;
 
-      if (!overRect) {
+      const overRect = over?.rect ?? null;
+      const resolvedOverId = overId;
+      const resolvedOverWorkspace = overWorkspace;
+
+      if (!overRect || !resolvedOverId) {
         return {
           ...dragStateReference.current,
           activeId,
-          overId,
+          overId: resolvedOverId,
           intent: null,
           projectedWorkspaceOrder: null,
           projectedGroupOrder: null,
         };
       }
 
-      const isSameGroup = activeWorkspace?.groupId && overWorkspace?.groupId && activeWorkspace.groupId === overWorkspace.groupId;
-      const canGroup = !isSameGroup && isGroupableWorkspace(activeWorkspace) && isGroupableWorkspace(overWorkspace);
-      // Use the active item's translated rect centre as the reference point.
-      // Both activeRect and overRect are measured by dnd-kit at the same moment,
-      // so their relative positions are stable even when SortableContext shifts
-      // items during the drag.
-      const activeCenterY = activeRect
-        ? activeRect.top + activeRect.height / 2
-        : overRect.top + overRect.height / 2;
-      const relativeY = Math.min(Math.max(activeCenterY - overRect.top, 0), overRect.height);
-      const beforeBoundary = overRect.height / 4;
+      const isSameGroup = activeWorkspace?.groupId && resolvedOverWorkspace?.groupId && activeWorkspace.groupId === resolvedOverWorkspace.groupId;
+      const canGroup = !isSameGroup && isGroupableWorkspace(activeWorkspace) && isGroupableWorkspace(resolvedOverWorkspace);
+      const relativeY = Math.min(Math.max(referenceY - overRect.top, 0), overRect.height);
+      // Use 1/3 boundaries for top/bottom zones to provide more margin for
+      // pointer positioning, reducing mis-detection when DOM shifts slightly
+      // during drag or when pointer tracking has minor inaccuracies.
+      const beforeBoundary = overRect.height / 3;
       const afterBoundary = overRect.height - beforeBoundary;
       let intent: TDragIntent;
 
@@ -626,10 +639,10 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
       return {
         intent,
-        overId,
+        overId: resolvedOverId,
         activeId,
         projectedWorkspaceOrder: intent === 'reorder-before' || intent === 'reorder-after'
-          ? computeWorkspaceProjection(activeId, overId, intent)
+          ? computeWorkspaceProjection(activeId, resolvedOverId, intent)
           : null,
         projectedGroupOrder: null,
       };
@@ -720,6 +733,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const handleDragStart = useCallback((event: DragStartEvent) => {
     clearDragStateTimeout();
     lastResolvedDragStateReference.current = initialDragState;
+    initialPointerYReference.current = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.clientY : null;
     applyDragState(previous => ({ ...previous, activeId: String(event.active.id) }));
   }, [applyDragState, clearDragStateTimeout]);
 

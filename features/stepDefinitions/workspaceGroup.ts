@@ -113,29 +113,10 @@ async function dragLocatorToCoordinates(
   world: ApplicationWorld,
   sourceSelector: string,
   resolveTargetCoordinates: () => Promise<{ targetX: number; targetY: number }>,
-  scrollTargetSelector?: string,
 ): Promise<void> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
   }
-
-  // Capture renderer-side errors (e.g. React crashes) that would otherwise be silent.
-  // React errors caught by ErrorBoundary go to console.error, not pageerror.
-  const pageErrors: string[] = [];
-  const consoleErrors: string[] = [];
-  const onPageError = (error: Error) => {
-    pageErrors.push(error.message);
-    console.error('[Renderer pageerror]', error.message);
-  };
-  const onConsole = (message: import('playwright').ConsoleMessage) => {
-    if (message.type() === 'error') {
-      const text = message.text();
-      consoleErrors.push(text);
-      console.error('[Renderer console.error]', text);
-    }
-  };
-  world.currentWindow.on('pageerror', onPageError);
-  world.currentWindow.on('console', onConsole);
 
   const sourceLocator = world.currentWindow.locator(sourceSelector);
   await sourceLocator.waitFor({ state: 'visible' });
@@ -149,89 +130,34 @@ async function dragLocatorToCoordinates(
   const startX = sourceBox.x + sourceBox.width / 2;
   const startY = sourceBox.y + sourceBox.height / 2;
 
-  // Pre-compute target coordinates before starting the drag.
-  // Once dnd-kit activates, CSS transitions on SortableGroupHeader can make
-  // Playwright's boundingBox() stall until they settle (or time out).
   const initialTargetCoordinates = await resolveTargetCoordinates();
 
   await world.currentWindow.mouse.move(startX, startY);
   await world.currentWindow.mouse.down();
   // Small initial movement to satisfy dnd-kit PointerSensor activationConstraint (distance: 8)
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
-  // Wait for dnd-kit to start the drag and for SortableContext to shift items
-  await world.currentWindow.waitForTimeout(200);
-
-  if (scrollTargetSelector) {
-    // Use synthetic pointer events to teleport the drag directly onto the target.
-    // This avoids coordinate drift that occurs with Playwright's mouse.move() over long distances.
-    await world.currentWindow.mouse.move(startX, startY);
-    await world.currentWindow.mouse.down();
-    await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
-    await world.currentWindow.waitForTimeout(200);
-
-    const targetBox = await world.currentWindow.evaluate((selector: string) => {
-      const element = document.querySelector(selector);
-      if (!element) return null;
-      const rect = element.getBoundingClientRect();
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    }, scrollTargetSelector);
-
-    if (!targetBox) {
-      throw new Error(`Could not find target element ${scrollTargetSelector} for synthetic drag`);
-    }
-
-    // Dispatch pointermove directly at the target center to update dnd-kit's drag position
-    await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
-      window.dispatchEvent(
-        new PointerEvent('pointermove', {
-          bubbles: true,
-          clientX: x,
-          clientY: y,
-        }),
-      );
-    }, targetBox);
-
-    await world.currentWindow.waitForTimeout(400);
-    await world.currentWindow.mouse.up();
-    return;
-  }
-
-  // Move to target with a smooth path, then re-track once in case the target shifted
-  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 12 });
-  await world.currentWindow.waitForTimeout(200);
-  const settledTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(settledTargetCoordinates.targetX, settledTargetCoordinates.targetY, { steps: 5 });
-  await world.currentWindow.waitForTimeout(600);
-  // Final live re-track: read the target's current position and teleport the
-  // mouse there immediately. This compensates for CSS transitions applied by
-  // dnd-kit's SortableContext which can shift the target after we last
-  // measured it.
-  const liveTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(liveTargetCoordinates.targetX, liveTargetCoordinates.targetY, { steps: 1 });
-  // Dispatch a synthetic pointermove at the live target coordinates.
-  // dnd-kit reads clientX/clientY from pointer events; Playwright's discrete
-  // mouse.move steps can leave the internal pointer position behind if the
-  // target element has shifted due to SortableContext layout changes.
-  await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
-    window.dispatchEvent(
-      new PointerEvent('pointermove', {
-        bubbles: true,
-        clientX: x,
-        clientY: y,
-      }),
-    );
-  }, { x: liveTargetCoordinates.targetX, y: liveTargetCoordinates.targetY });
   await world.currentWindow.waitForTimeout(100);
-  await world.currentWindow.mouse.up();
 
-  world.currentWindow.off('pageerror', onPageError);
-  world.currentWindow.off('console', onConsole);
-  if (pageErrors.length > 0 || consoleErrors.length > 0) {
-    throw new Error(
-      `Renderer crashed during drag with ${pageErrors.length} page error(s) and ${consoleErrors.length} console error(s): ` +
-        [...pageErrors, ...consoleErrors].join('; '),
-    );
+  // Move to target with a short smooth path
+  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 3 });
+  await world.currentWindow.waitForTimeout(100);
+
+  // Re-track the target in case the DOM shifted during the drag (e.g. due to
+  // visual reordering). Keep adjusting the mouse until the target stabilises
+  // or we hit a reasonable attempt limit.
+  let previousTargetCoordinates = await resolveTargetCoordinates();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await world.currentWindow.mouse.move(previousTargetCoordinates.targetX, previousTargetCoordinates.targetY, { steps: 1 });
+    await world.currentWindow.waitForTimeout(80);
+    const currentTargetCoordinates = await resolveTargetCoordinates();
+    const delta = Math.abs(currentTargetCoordinates.targetY - previousTargetCoordinates.targetY);
+    if (delta < 3) {
+      break;
+    }
+    previousTargetCoordinates = currentTargetCoordinates;
   }
+
+  await world.currentWindow.mouse.up();
 }
 
 async function dragLocatorAndHoldAtCoordinates(
@@ -258,28 +184,19 @@ async function dragLocatorAndHoldAtCoordinates(
   await world.currentWindow.mouse.down();
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
   const initialTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 20 });
+  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 3 });
   await world.currentWindow.waitForTimeout(40);
-  const settledTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(settledTargetCoordinates.targetX, settledTargetCoordinates.targetY, { steps: 10 });
-  await world.currentWindow.waitForTimeout(80);
 }
 
 async function getLocatorCenter(
   world: ApplicationWorld,
   targetSelector: string,
 ): Promise<{ targetX: number; targetY: number }> {
-  // Use page.evaluate with document.querySelector instead of locator.evaluate.
-  // locator.evaluate's timeout option only controls script execution, not element
-  // resolution. When React re-renders detach the target, Playwright retries for
-  // the default action timeout (30 s) and ignores the short timeout we pass.
-  // page.evaluate returns immediately if the element is missing, so our own retry
-  // loop stays within the cucumber step budget.
   if (!world.currentWindow) {
     throw new Error('Current window not set');
   }
 
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     const rect = await world.currentWindow.evaluate((selector: string) => {
       const element = document.querySelector(selector);
       if (!element) return null;
@@ -294,8 +211,7 @@ async function getLocatorCenter(
       };
     }
 
-    if (attempt === 5) {
-      // Diagnostic: list all workspace/group testids currently in the DOM
+    if (attempt === 3) {
       const testIds = await world.currentWindow.evaluate(() => {
         const elements = document.querySelectorAll('[data-testid]');
         return Array.from(elements).map(element => element.getAttribute('data-testid')).filter(Boolean);
@@ -304,7 +220,7 @@ async function getLocatorCenter(
         `Could not read bounding box for ${targetSelector}. Current DOM testids: ${testIds.join(', ')}`,
       );
     }
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   throw new Error(`Could not read bounding box for ${targetSelector}`);
@@ -397,6 +313,7 @@ When('I drag workspace {string} to the top zone of workspace {string}', async fu
   const targetSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-top"]`;
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
+
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
     return getLocatorCenter(this, targetSelector);
   });
@@ -633,7 +550,14 @@ When('I drag group header {string} onto group header {string}', async function(t
   await targetLocator.waitFor({ state: 'visible' });
 
   await dragLocatorToCoordinates(this, sourceSelector, async () => {
-    return getLocatorCenter(this, targetSelector);
+    const center = await getLocatorCenter(this, targetSelector);
+    const targetBox = await this.currentWindow?.evaluate((selector: string) => {
+      const el = document.querySelector(selector);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { top: r.top, left: r.left, width: r.width, height: r.height };
+    }, targetSelector);
+    return center;
   });
 });
 

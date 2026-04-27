@@ -164,9 +164,9 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
       onContextMenu={onWorkspaceContextMenu}
       data-testid={`workspace-item-${id}`}
     >
-      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-top`} style={{ top: 0, height: '25%', pointerEvents: 'none' }} />
-      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-center`} $center style={{ top: '25%', height: '50%', pointerEvents: 'none' }} />
-      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-bottom`} $bottom style={{ bottom: 0, height: '25%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-top`} style={{ top: 0, height: '33%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-center`} $center style={{ top: '33%', height: '34%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-bottom`} $bottom style={{ bottom: 0, height: '33%', pointerEvents: 'none' }} />
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
         restarting={workspace.metadata.isRestarting}

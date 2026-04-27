@@ -1055,6 +1055,37 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     },
     BACKOFF_OPTIONS,
   );
+
+  // Also wait for the workspace to actually appear in the sidebar DOM.
+  // The observable emission that triggers React re-render can lag behind
+  // the service-side creation on slow CI runners, causing drag steps to
+  // target elements that have not yet been mounted.
+  await backOff(
+    async () => {
+      const workspaceId = await this.app!.evaluate(async ({ BrowserWindow }, name: string) => {
+        const windows = BrowserWindow.getAllWindows();
+        const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+        if (!mainWindow) return null;
+        return await mainWindow.webContents.executeJavaScript(`
+          (async () => {
+            const all = await window.service.workspace.getWorkspacesAsList();
+            const ws = all.find(w => w.name === ${JSON.stringify(name)});
+            return ws ? ws.id : null;
+          })();
+        `);
+      }, workspaceName);
+
+      if (!workspaceId || !this.currentWindow) {
+        throw new Error(`Workspace ${workspaceName} ID not available for DOM check`);
+      }
+
+      const count = await this.currentWindow.locator(`[data-testid="workspace-item-${workspaceId}"]`).count();
+      if (count === 0) {
+        throw new Error(`Workspace ${workspaceName} not yet rendered in sidebar DOM`);
+      }
+    },
+    BACKOFF_OPTIONS,
+  );
 });
 
 /**
