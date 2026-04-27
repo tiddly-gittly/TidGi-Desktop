@@ -2,6 +2,9 @@ import { DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 
 import type { IWorkspaceGroup } from '../../src/services/workspaces/interface';
+// Pull in renderer window type declarations so Playwright page.evaluate callbacks
+// can access window.service with proper typing.
+import type {} from '../../src/preload/index';
 import type { ApplicationWorld } from './application';
 
 const BACKOFF_OPTIONS = {
@@ -19,22 +22,14 @@ interface ITestWorkspace {
   pageType?: string | null;
 }
 
-async function executeInMainWindow<T>(world: ApplicationWorld, pageFunction: (...arguments_: any[]) => any, argument?: any): Promise<T> {
+async function getAllWikiWorkspaces(world: ApplicationWorld): Promise<ITestWorkspace[]> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
   }
-  return await world.currentWindow.evaluate(pageFunction, argument);
-}
-
-async function getAllWikiWorkspaces(world: ApplicationWorld): Promise<ITestWorkspace[]> {
-  return await executeInMainWindow<ITestWorkspace[]>(
-    world,
-    async () => {
-      const all = await window.service.workspace.getWorkspacesAsList();
-      return all.filter(workspace => !workspace.pageType) as ITestWorkspace[];
-    },
-    undefined,
-  );
+  return await world.currentWindow.evaluate(async () => {
+    const all = await window.service.workspace.getWorkspacesAsList();
+    return all.filter(workspace => !workspace.pageType) as ITestWorkspace[];
+  });
 }
 
 async function getWorkspaceByName(world: ApplicationWorld, workspaceName: string): Promise<ITestWorkspace> {
@@ -50,19 +45,17 @@ async function getWorkspaceByName(world: ApplicationWorld, workspaceName: string
 }
 
 async function getGroups(world: ApplicationWorld): Promise<IWorkspaceGroup[]> {
-  return await executeInMainWindow<IWorkspaceGroup[]>(
-    world,
-    async () => window.service.workspace.getGroupsAsList(),
-    undefined,
-  );
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+  return await world.currentWindow.evaluate(async () => window.service.workspace.getGroupsAsList());
 }
 
 async function getGroupById(world: ApplicationWorld, groupId: string): Promise<IWorkspaceGroup | undefined> {
-  return await executeInMainWindow<IWorkspaceGroup | undefined>(
-    world,
-    async (id) => window.service.workspace.getGroup(id),
-    groupId,
-  );
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+  return await world.currentWindow.evaluate(async (id) => window.service.workspace.getGroup(id), groupId);
 }
 
 async function createGroup(world: ApplicationWorld, groupName: string): Promise<IWorkspaceGroup> {
@@ -74,15 +67,23 @@ async function createGroup(world: ApplicationWorld, groupName: string): Promise<
     collapsed: false,
   };
 
-  await executeInMainWindow<unknown>(
-    world,
-    async (group: IWorkspaceGroup) => {
-      await window.service.workspace.setGroup(group.id, group);
-    },
-    newGroup,
-  );
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+  await world.currentWindow.evaluate(async (group: IWorkspaceGroup) => {
+    await window.service.workspace.setGroup(group.id, group);
+  }, newGroup);
 
   return newGroup;
+}
+
+async function moveWorkspaceToGroup(world: ApplicationWorld, workspaceId: string, groupId: string | null, autoDisband = true): Promise<void> {
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+  await world.currentWindow.evaluate(async ({ workspaceId: id, groupId: gid, autoDisband: disband }: { workspaceId: string; groupId: string | null; autoDisband: boolean }) => {
+    await window.service.workspace.moveWorkspaceToGroup(id, gid, disband);
+  }, { workspaceId, groupId, autoDisband });
 }
 
 async function waitForWorkspaceGroupId(world: ApplicationWorld, workspaceName: string, expectedGroupId: string | null): Promise<void> {
@@ -93,16 +94,6 @@ async function waitForWorkspaceGroupId(world: ApplicationWorld, workspaceName: s
       throw new Error(`Workspace "${workspaceName}" groupId is ${String(actualGroupId)}, expected ${String(expectedGroupId)}`);
     }
   }, BACKOFF_OPTIONS);
-}
-
-async function moveWorkspaceToGroup(world: ApplicationWorld, workspaceId: string, groupId: string | null, autoDisband = true): Promise<void> {
-  await executeInMainWindow<unknown>(
-    world,
-    async ({ workspaceId: id, groupId: gid, autoDisband: disband }: { workspaceId: string; groupId: string | null; autoDisband: boolean }) => {
-      await window.service.workspace.moveWorkspaceToGroup(id, gid, disband);
-    },
-    { workspaceId, groupId, autoDisband },
-  );
 }
 
 async function waitForGroupVisibility(world: ApplicationWorld, groupId: string): Promise<void> {
@@ -587,13 +578,12 @@ When('I collapse workspace group {string}', async function(this: ApplicationWorl
     throw new Error(`Group "${groupName}" not found`);
   }
 
-  await executeInMainWindow<unknown>(
-    this,
-    async (g: IWorkspaceGroup) => {
-      await window.service.workspace.setGroup(g.id, { ...g, collapsed: true });
-    },
-    group,
-  );
+  if (!this.currentWindow) {
+    throw new Error('Current window not set');
+  }
+  await this.currentWindow.evaluate(async (g: IWorkspaceGroup) => {
+    await window.service.workspace.setGroup(g.id, { ...g, collapsed: true });
+  }, group);
 
   // Wait for Collapse unmountOnExit to fully remove children from DOM
   await this.currentWindow?.waitForTimeout(400);
@@ -606,13 +596,12 @@ When('I expand workspace group {string}', async function(this: ApplicationWorld,
     throw new Error(`Group "${groupName}" not found`);
   }
 
-  await executeInMainWindow<unknown>(
-    this,
-    async (g: IWorkspaceGroup) => {
-      await window.service.workspace.setGroup(g.id, { ...g, collapsed: false });
-    },
-    group,
-  );
+  if (!this.currentWindow) {
+    throw new Error('Current window not set');
+  }
+  await this.currentWindow.evaluate(async (g: IWorkspaceGroup) => {
+    await window.service.workspace.setGroup(g.id, { ...g, collapsed: false });
+  }, group);
 
   // Wait for the MUI Collapse animation to finish so that
   // overflow:hidden no longer clips pointer events on child elements.

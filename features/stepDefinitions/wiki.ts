@@ -1033,7 +1033,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
 
   await backOff(
     async () => {
-      const workspaces = await this.app!.evaluate(async ({ BrowserWindow }, name: string) => {
+      const workspaces = await this.app!.evaluate(async ({ BrowserWindow }, _name: string) => {
         const windows = BrowserWindow.getAllWindows();
         const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
