@@ -100,10 +100,8 @@ export default function AddWorkspace(): React.JSX.Element {
 
   // Keep imported config scoped to the current import flow so it cannot bleed into another tab.
   useEffect(() => {
-    if (useTidgiConfig || currentTab === CreateWorkspaceTabs.CreateNewWiki || currentTab === CreateWorkspaceTabs.OpenLocalWikiFromHtml) {
-      selectedImportConfigSetter(undefined);
-    }
-  }, [useTidgiConfig, currentTab]);
+    selectedImportConfigSetter(undefined);
+  }, [currentTab]);
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
   const { storageProvider, storageProviderSetter, wikiFolderName } = form;

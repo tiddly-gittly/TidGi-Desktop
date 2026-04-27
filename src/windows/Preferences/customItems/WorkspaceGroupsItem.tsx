@@ -70,17 +70,17 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
     const currentIds = new Set(currentGroupMembers.map(workspace => workspace.id));
     const selectedIds = new Set(selectedWorkspaces.map(workspace => workspace.id));
 
-    for (const workspace of currentGroupMembers) {
-      if (!selectedIds.has(workspace.id)) {
-        await window.service.workspace.moveWorkspaceToGroup(workspace.id, null, false);
-      }
-    }
+    await Promise.all(
+      currentGroupMembers
+        .filter(workspace => !selectedIds.has(workspace.id))
+        .map(workspace => window.service.workspace.moveWorkspaceToGroup(workspace.id, null, false)),
+    );
 
-    for (const workspace of selectedWorkspaces) {
-      if (!currentIds.has(workspace.id)) {
-        await window.service.workspace.moveWorkspaceToGroup(workspace.id, groupId);
-      }
-    }
+    await Promise.all(
+      selectedWorkspaces
+        .filter(workspace => !currentIds.has(workspace.id))
+        .map(workspace => window.service.workspace.moveWorkspaceToGroup(workspace.id, groupId)),
+    );
   }, [wikiWorkspaces]);
 
   return (
