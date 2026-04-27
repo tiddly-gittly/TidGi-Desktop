@@ -75,6 +75,7 @@ export class ApplicationWorld {
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
+  scenarioTags: string[] = [];
   providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
   launchEnvOverrides: Record<string, string> = {};
 

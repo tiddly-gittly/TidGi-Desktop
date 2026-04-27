@@ -51,6 +51,8 @@ export class Workspace implements IWorkspaceService {
     await registerMenu();
   }
 
+  private previousWorkspacesWithMetadata: IWorkspacesWithMetadata | undefined;
+
   public getWorkspacesWithMetadata(): IWorkspacesWithMetadata {
     return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => {
       // Only wiki workspaces can have metadata, dedicated workspaces are filtered out
@@ -62,7 +64,14 @@ export class Workspace implements IWorkspaceService {
   }
 
   public updateWorkspaceSubject(): void {
-    this.workspaces$.next(this.getWorkspacesWithMetadata());
+    const next = this.getWorkspacesWithMetadata();
+    // Skip emission when nothing actually changed to break infinite render loops
+    // caused by unstable object references in renderer-side dnd-kit hooks.
+    if (this.previousWorkspacesWithMetadata !== undefined && isEqual(this.previousWorkspacesWithMetadata, next)) {
+      return;
+    }
+    this.previousWorkspacesWithMetadata = next;
+    this.workspaces$.next(next);
     // Also initialize groups observable
     this.getGroupsSync();
   }
@@ -532,21 +541,14 @@ export class Workspace implements IWorkspaceService {
 
   /**
    * Compute the order for a newly created wiki workspace so it appears at
-   * the TOP of the regular-workspace section (before page workspaces).
-   * Shifts all existing non-page workspaces down by 1 to make room.
+   * the BOTTOM of the regular-workspace section (after existing page workspaces).
    */
   private async getNextInsertOrder(): Promise<number> {
     const all = await this.getWorkspacesAsList();
     const regularWorkspaces = all.filter(w => !w.pageType);
     if (regularWorkspaces.length === 0) return 0;
-    const minOrder = Math.min(...regularWorkspaces.map(w => w.order));
-    // Shift every existing workspace's order up by 1
-    for (const ws of all) {
-      if (ws.order >= minOrder) {
-        await this.set(ws.id, { ...ws, order: ws.order + 1 });
-      }
-    }
-    return minOrder;
+    const maxOrder = Math.max(...regularWorkspaces.map(w => w.order));
+    return maxOrder + 1;
   }
 
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
@@ -740,6 +742,22 @@ export class Workspace implements IWorkspaceService {
   // Workspace group methods
   private groups: Record<string, IWorkspaceGroup> | undefined;
   public groups$ = new BehaviorSubject<Record<string, IWorkspaceGroup> | undefined>(undefined);
+  private previousGroups: Record<string, IWorkspaceGroup> | undefined;
+
+  private emitGroups(next: Record<string, IWorkspaceGroup> | undefined): void {
+    // Always emit when the reference is identical so that in-place mutations
+    // (e.g. groups[id] = group) are not swallowed. Only skip when the
+    // reference differs but the deep content is the same.
+    if (next !== undefined && this.previousGroups === next) {
+      this.groups$.next(next);
+      return;
+    }
+    if (this.previousGroups !== undefined && next !== undefined && isEqual(this.previousGroups, next)) {
+      return;
+    }
+    this.previousGroups = next;
+    this.groups$.next(next);
+  }
 
   private getGroupsSync(): Record<string, IWorkspaceGroup> {
     if (this.groups === undefined) {
@@ -751,7 +769,7 @@ export class Workspace implements IWorkspaceService {
         this.groups = {};
       }
       // Initialize the observable with current groups
-      this.groups$.next(this.groups);
+      this.emitGroups(this.groups);
     }
     return this.groups;
   }
@@ -776,7 +794,7 @@ export class Workspace implements IWorkspaceService {
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     databaseService.setSetting('workspaceGroups', groups);
     this.groups = groups;
-    this.groups$.next(groups);
+    this.emitGroups(groups);
   }
 
   public async removeGroup(id: string): Promise<void> {
@@ -785,7 +803,7 @@ export class Workspace implements IWorkspaceService {
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     databaseService.setSetting('workspaceGroups', groups);
     this.groups = groups;
-    this.groups$.next(groups);
+    this.emitGroups(groups);
 
     // Move workspaces in this group to ungrouped
     const workspaces = this.getWorkspacesSync();

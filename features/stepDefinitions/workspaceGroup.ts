@@ -19,30 +19,21 @@ interface ITestWorkspace {
   pageType?: string | null;
 }
 
-async function executeInMainWindow<T>(world: ApplicationWorld, script: string): Promise<T> {
-  if (!world.app) {
-    throw new Error('App not initialized');
+async function executeInMainWindow<T>(world: ApplicationWorld, pageFunction: (...arguments_: any[]) => any, argument?: any): Promise<T> {
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
   }
-
-  return await world.app.evaluate(async ({ webContents }, code) => {
-    const mainWindow = webContents.getAllWebContents().find(wc => wc.getURL().includes('index.html'));
-    if (!mainWindow) {
-      throw new Error('Main window not found');
-    }
-
-    return await mainWindow.executeJavaScript(code) as T;
-  }, script);
+  return await world.currentWindow.evaluate(pageFunction, argument);
 }
 
 async function getAllWikiWorkspaces(world: ApplicationWorld): Promise<ITestWorkspace[]> {
   return await executeInMainWindow<ITestWorkspace[]>(
     world,
-    `
-    (async () => {
+    async () => {
       const all = await window.service.workspace.getWorkspacesAsList();
-      return all.filter(workspace => !workspace.pageType);
-    })();
-  `,
+      return all.filter(workspace => !workspace.pageType) as ITestWorkspace[];
+    },
+    undefined,
   );
 }
 
@@ -61,18 +52,16 @@ async function getWorkspaceByName(world: ApplicationWorld, workspaceName: string
 async function getGroups(world: ApplicationWorld): Promise<IWorkspaceGroup[]> {
   return await executeInMainWindow<IWorkspaceGroup[]>(
     world,
-    `
-    window.service.workspace.getGroupsAsList()
-  `,
+    async () => window.service.workspace.getGroupsAsList(),
+    undefined,
   );
 }
 
 async function getGroupById(world: ApplicationWorld, groupId: string): Promise<IWorkspaceGroup | undefined> {
   return await executeInMainWindow<IWorkspaceGroup | undefined>(
     world,
-    `
-    window.service.workspace.getGroup(${JSON.stringify(groupId)})
-  `,
+    async (id) => window.service.workspace.getGroup(id),
+    groupId,
   );
 }
 
@@ -87,9 +76,10 @@ async function createGroup(world: ApplicationWorld, groupName: string): Promise<
 
   await executeInMainWindow<unknown>(
     world,
-    `
-    window.service.workspace.setGroup(${JSON.stringify(newGroup.id)}, ${JSON.stringify(newGroup)})
-  `,
+    async (group: IWorkspaceGroup) => {
+      await window.service.workspace.setGroup(group.id, group);
+    },
+    newGroup,
   );
 
   return newGroup;
@@ -103,6 +93,16 @@ async function waitForWorkspaceGroupId(world: ApplicationWorld, workspaceName: s
       throw new Error(`Workspace "${workspaceName}" groupId is ${String(actualGroupId)}, expected ${String(expectedGroupId)}`);
     }
   }, BACKOFF_OPTIONS);
+}
+
+async function moveWorkspaceToGroup(world: ApplicationWorld, workspaceId: string, groupId: string | null, autoDisband = true): Promise<void> {
+  await executeInMainWindow<unknown>(
+    world,
+    async ({ workspaceId: id, groupId: gid, autoDisband: disband }: { workspaceId: string; groupId: string | null; autoDisband: boolean }) => {
+      await window.service.workspace.moveWorkspaceToGroup(id, gid, disband);
+    },
+    { workspaceId, groupId, autoDisband },
+  );
 }
 
 async function waitForGroupVisibility(world: ApplicationWorld, groupId: string): Promise<void> {
@@ -122,13 +122,33 @@ async function dragLocatorToCoordinates(
   world: ApplicationWorld,
   sourceSelector: string,
   resolveTargetCoordinates: () => Promise<{ targetX: number; targetY: number }>,
+  scrollTargetSelector?: string,
 ): Promise<void> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
   }
 
+  // Capture renderer-side errors (e.g. React crashes) that would otherwise be silent.
+  // React errors caught by ErrorBoundary go to console.error, not pageerror.
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  const onPageError = (error: Error) => {
+    pageErrors.push(error.message);
+    console.error('[Renderer pageerror]', error.message);
+  };
+  const onConsole = (message: import('playwright').ConsoleMessage) => {
+    if (message.type() === 'error') {
+      const text = message.text();
+      consoleErrors.push(text);
+      console.error('[Renderer console.error]', text);
+    }
+  };
+  world.currentWindow.on('pageerror', onPageError);
+  world.currentWindow.on('console', onConsole);
+
   const sourceLocator = world.currentWindow.locator(sourceSelector);
   await sourceLocator.waitFor({ state: 'visible' });
+  await sourceLocator.scrollIntoViewIfNeeded();
 
   const sourceBox = await sourceLocator.boundingBox();
   if (!sourceBox) {
@@ -137,16 +157,90 @@ async function dragLocatorToCoordinates(
 
   const startX = sourceBox.x + sourceBox.width / 2;
   const startY = sourceBox.y + sourceBox.height / 2;
+
+  // Pre-compute target coordinates before starting the drag.
+  // Once dnd-kit activates, CSS transitions on SortableGroupHeader can make
+  // Playwright's boundingBox() stall until they settle (or time out).
+  const initialTargetCoordinates = await resolveTargetCoordinates();
+
   await world.currentWindow.mouse.move(startX, startY);
   await world.currentWindow.mouse.down();
+  // Small initial movement to satisfy dnd-kit PointerSensor activationConstraint (distance: 8)
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
-  const initialTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 20 });
-  await world.currentWindow.waitForTimeout(40);
+  // Wait for dnd-kit to start the drag and for SortableContext to shift items
+  await world.currentWindow.waitForTimeout(200);
+
+  if (scrollTargetSelector) {
+    // Use synthetic pointer events to teleport the drag directly onto the target.
+    // This avoids coordinate drift that occurs with Playwright's mouse.move() over long distances.
+    await world.currentWindow.mouse.move(startX, startY);
+    await world.currentWindow.mouse.down();
+    await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
+    await world.currentWindow.waitForTimeout(200);
+
+    const targetBox = await world.currentWindow.evaluate((selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }, scrollTargetSelector);
+
+    if (!targetBox) {
+      throw new Error(`Could not find target element ${scrollTargetSelector} for synthetic drag`);
+    }
+
+    // Dispatch pointermove directly at the target center to update dnd-kit's drag position
+    await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
+      window.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: x,
+          clientY: y,
+        }),
+      );
+    }, targetBox);
+
+    await world.currentWindow.waitForTimeout(400);
+    await world.currentWindow.mouse.up();
+    return;
+  }
+
+  // Move to target with a smooth path, then re-track once in case the target shifted
+  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 12 });
+  await world.currentWindow.waitForTimeout(200);
   const settledTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(settledTargetCoordinates.targetX, settledTargetCoordinates.targetY, { steps: 10 });
-  await world.currentWindow.waitForTimeout(80);
+  await world.currentWindow.mouse.move(settledTargetCoordinates.targetX, settledTargetCoordinates.targetY, { steps: 5 });
+  await world.currentWindow.waitForTimeout(600);
+  // Final live re-track: read the target's current position and teleport the
+  // mouse there immediately. This compensates for CSS transitions applied by
+  // dnd-kit's SortableContext which can shift the target after we last
+  // measured it.
+  const liveTargetCoordinates = await resolveTargetCoordinates();
+  await world.currentWindow.mouse.move(liveTargetCoordinates.targetX, liveTargetCoordinates.targetY, { steps: 1 });
+  // Dispatch a synthetic pointermove at the live target coordinates.
+  // dnd-kit reads clientX/clientY from pointer events; Playwright's discrete
+  // mouse.move steps can leave the internal pointer position behind if the
+  // target element has shifted due to SortableContext layout changes.
+  await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
+    window.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: x,
+        clientY: y,
+      }),
+    );
+  }, { x: liveTargetCoordinates.targetX, y: liveTargetCoordinates.targetY });
+  await world.currentWindow.waitForTimeout(100);
   await world.currentWindow.mouse.up();
+
+  world.currentWindow.off('pageerror', onPageError);
+  world.currentWindow.off('console', onConsole);
+  if (pageErrors.length > 0 || consoleErrors.length > 0) {
+    throw new Error(
+      `Renderer crashed during drag with ${pageErrors.length} page error(s) and ${consoleErrors.length} console error(s): ` +
+        [...pageErrors, ...consoleErrors].join('; '),
+    );
+  }
 }
 
 async function dragLocatorAndHoldAtCoordinates(
@@ -160,6 +254,7 @@ async function dragLocatorAndHoldAtCoordinates(
 
   const sourceLocator = world.currentWindow.locator(sourceSelector);
   await sourceLocator.waitFor({ state: 'visible' });
+  await sourceLocator.scrollIntoViewIfNeeded();
 
   const sourceBox = await sourceLocator.boundingBox();
   if (!sourceBox) {
@@ -180,18 +275,47 @@ async function dragLocatorAndHoldAtCoordinates(
 }
 
 async function getLocatorCenter(
+  world: ApplicationWorld,
   targetSelector: string,
-  locator: { boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null> },
+  _locator: { boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null> },
 ): Promise<{ targetX: number; targetY: number }> {
-  const targetBox = await locator.boundingBox();
-  if (!targetBox) {
-    throw new Error(`Could not read bounding box for ${targetSelector}`);
+  // Use Playwright locator.evaluate with retries.
+  // React may still be re-rendering after group creation, so the element can
+  // appear slightly after the parent workspace item.
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
   }
 
-  return {
-    targetX: targetBox.x + targetBox.width / 2,
-    targetY: targetBox.y + targetBox.height / 2,
-  };
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const rect = await world.currentWindow.locator(targetSelector).evaluate(
+        (element: Element) => {
+          const r = element.getBoundingClientRect();
+          return { x: r.left, y: r.top, width: r.width, height: r.height };
+        },
+        undefined,
+        { timeout: 1500 },
+      );
+      return {
+        targetX: rect.x + rect.width / 2,
+        targetY: rect.y + rect.height / 2,
+      };
+    } catch {
+      if (attempt === 5) {
+        // Diagnostic: list all workspace/group testids currently in the DOM
+        const testIds = await world.currentWindow.evaluate(() => {
+          const elements = document.querySelectorAll('[data-testid]');
+          return Array.from(elements).map(element => element.getAttribute('data-testid')).filter(Boolean);
+        });
+        throw new Error(
+          `Could not read bounding box for ${targetSelector}. Current DOM testids: ${testIds.join(', ')}`,
+        );
+      }
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+
+  throw new Error(`Could not read bounding box for ${targetSelector}`);
 }
 
 Given('workspace group {string} contains workspaces:', async function(this: ApplicationWorld, groupName: string, dataTable: DataTable) {
@@ -200,16 +324,34 @@ Given('workspace group {string} contains workspaces:', async function(this: Appl
 
   for (const workspaceName of rows) {
     const workspace = await getWorkspaceByName(this, workspaceName);
-    await executeInMainWindow<unknown>(
-      this,
-      `
-      window.service.workspace.moveWorkspaceToGroup(${JSON.stringify(workspace.id)}, ${JSON.stringify(group.id)})
-    `,
-    );
+    await moveWorkspaceToGroup(this, workspace.id, group.id);
     await waitForWorkspaceGroupId(this, workspaceName, group.id);
   }
 
   await waitForGroupVisibility(this, group.id);
+
+  // Wait for every workspace in the group to actually appear in the DOM
+  // so that subsequent drag steps can locate their drop zones.
+  for (const workspaceName of rows) {
+    const workspace = await getWorkspaceByName(this, workspaceName);
+    await backOff(async () => {
+      if (!this.currentWindow) {
+        throw new Error('Current window not set');
+      }
+      const itemCount = await this.currentWindow.locator(`[data-testid="workspace-item-${workspace.id}"]`).count();
+      if (itemCount === 0) {
+        throw new Error(`Workspace item "${workspaceName}" not yet rendered in DOM`);
+      }
+      const dropZoneCount = await this.currentWindow.locator(`[data-testid="workspace-drop-zone-${workspace.id}-top"]`).count();
+      if (dropZoneCount === 0) {
+        throw new Error(`Workspace drop zone "${workspaceName}" not yet rendered in DOM`);
+      }
+    }, BACKOFF_OPTIONS);
+  }
+
+  // Allow any deferred async side-effects (e.g. tidgi.config.json writes)
+  // to finish so that React state stabilises before the drag step starts.
+  await this.currentWindow?.waitForTimeout(3000);
 });
 
 When('I drag workspace {string} onto workspace {string}', async function(this: ApplicationWorld, sourceWorkspaceName: string, targetWorkspaceName: string) {
@@ -222,9 +364,12 @@ When('I drag workspace {string} onto workspace {string}', async function(this: A
   const targetSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-center"]`;
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
-  await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(targetSelector, targetLocator);
-  });
+
+  await dragLocatorToCoordinates(
+    this,
+    `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
+    async () => getLocatorCenter(this, targetSelector, targetLocator),
+  );
 });
 
 When('I hover workspace {string} over workspace {string}', async function(this: ApplicationWorld, sourceWorkspaceName: string, targetWorkspaceName: string) {
@@ -238,7 +383,7 @@ When('I hover workspace {string} over workspace {string}', async function(this: 
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
   await dragLocatorAndHoldAtCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector, targetLocator);
   });
 });
 
@@ -261,7 +406,7 @@ When('I drag workspace {string} to the top zone of workspace {string}', async fu
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector, targetLocator);
   });
 });
 
@@ -276,7 +421,7 @@ When('I drag workspace {string} to the bottom zone of workspace {string}', async
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector, targetLocator);
   });
 });
 
@@ -292,48 +437,18 @@ When('I drag workspace {string} onto the header of its current group', async fun
 
   const sourceSelector = `[data-testid="workspace-item-${workspace.id}"]`;
   const groupHeaderSelector = `[data-testid="workspace-group-${workspace.groupId}"]`;
-  const sourceLocator = this.currentWindow.locator(sourceSelector);
-  const groupHeaderLocator = this.currentWindow.locator(groupHeaderSelector);
-  await sourceLocator.waitFor({ state: 'visible' });
-  await groupHeaderLocator.waitFor({ state: 'visible' });
 
-  const sourceBox = await sourceLocator.boundingBox();
-  if (!sourceBox) {
-    throw new Error(`Could not read bounding box for ${sourceSelector}`);
+  if (!this.currentWindow) {
+    throw new Error('Current window not set');
   }
+  const targetLocator = this.currentWindow.locator(groupHeaderSelector);
+  await targetLocator.waitFor({ state: 'visible' });
 
-  const startX = sourceBox.x + sourceBox.width / 2;
-  const startY = sourceBox.y + sourceBox.height / 2;
-  await this.currentWindow.mouse.move(startX, startY);
-  await this.currentWindow.mouse.down();
-  await this.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
-
-  const liveTargetCoordinates = await this.currentWindow.evaluate((selector: string) => {
-    const element = document.querySelector(selector);
-    if (!(element instanceof HTMLElement)) {
-      return null;
-    }
-
-    const rect = element.getBoundingClientRect();
-    return {
-      targetX: rect.x + rect.width / 2,
-      targetY: rect.y + rect.height / 2,
-      rectTop: rect.top,
-      rectBottom: rect.bottom,
-      rectLeft: rect.left,
-      rectRight: rect.right,
-    };
-  }, groupHeaderSelector);
-
-  if (!liveTargetCoordinates) {
-    throw new Error(`Could not read bounding box for ${groupHeaderSelector}`);
-  }
-
-  // Teleport directly to the target to avoid intermediate mousemove events
-  // that can trigger React re-renders and shift the DOM before we arrive.
-  await this.currentWindow.mouse.move(liveTargetCoordinates.targetX, liveTargetCoordinates.targetY);
-  await this.currentWindow.waitForTimeout(100);
-  await this.currentWindow.mouse.up();
+  await dragLocatorToCoordinates(
+    this,
+    sourceSelector,
+    async () => getLocatorCenter(this, groupHeaderSelector, targetLocator),
+  );
 });
 
 When('I remove workspace {string} from its group without auto-disband', async function(this: ApplicationWorld, workspaceName: string) {
@@ -342,12 +457,7 @@ When('I remove workspace {string} from its group without auto-disband', async fu
     throw new Error(`Workspace "${workspaceName}" is not currently grouped`);
   }
 
-  await executeInMainWindow<unknown>(
-    this,
-    `
-    window.service.workspace.moveWorkspaceToGroup(${JSON.stringify(workspace.id)}, null, false)
-  `,
-  );
+  await moveWorkspaceToGroup(this, workspace.id, null, false);
 });
 
 Then('workspaces {string} and {string} should share a group', async function(this: ApplicationWorld, firstWorkspaceName: string, secondWorkspaceName: string) {
@@ -479,12 +589,14 @@ When('I collapse workspace group {string}', async function(this: ApplicationWorl
 
   await executeInMainWindow<unknown>(
     this,
-    `
-    window.service.workspace.setGroup(${JSON.stringify(group.id)}, { ...${JSON.stringify(group)}, collapsed: true })
-  `,
+    async (g: IWorkspaceGroup) => {
+      await window.service.workspace.setGroup(g.id, { ...g, collapsed: true });
+    },
+    group,
   );
 
-  await this.currentWindow?.waitForTimeout(200);
+  // Wait for Collapse unmountOnExit to fully remove children from DOM
+  await this.currentWindow?.waitForTimeout(400);
 });
 
 When('I expand workspace group {string}', async function(this: ApplicationWorld, groupName: string) {
@@ -496,12 +608,17 @@ When('I expand workspace group {string}', async function(this: ApplicationWorld,
 
   await executeInMainWindow<unknown>(
     this,
-    `
-    window.service.workspace.setGroup(${JSON.stringify(group.id)}, { ...${JSON.stringify(group)}, collapsed: false })
-  `,
+    async (g: IWorkspaceGroup) => {
+      await window.service.workspace.setGroup(g.id, { ...g, collapsed: false });
+    },
+    group,
   );
 
-  await this.currentWindow?.waitForTimeout(200);
+  // Wait for the MUI Collapse animation to finish so that
+  // overflow:hidden no longer clips pointer events on child elements.
+  // timeout='auto' can take 300-500ms for small lists; 2000ms ensures completion
+  // even on slower CI runners.
+  await this.currentWindow?.waitForTimeout(2000);
 });
 
 When('I drag group header {string} onto group header {string}', async function(this: ApplicationWorld, sourceGroupName: string, targetGroupName: string) {
@@ -526,7 +643,7 @@ When('I drag group header {string} onto group header {string}', async function(t
   await targetLocator.waitFor({ state: 'visible' });
 
   await dragLocatorToCoordinates(this, sourceSelector, async () => {
-    return getLocatorCenter(targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector, targetLocator);
   });
 });
 

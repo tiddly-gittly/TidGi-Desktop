@@ -46,13 +46,19 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const hibernated = isWiki ? workspace.hibernated : false;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
 
+  // Only pass groupId in data to keep the reference stable when workspaces$
+  // emits new objects with identical groupId values. Passing the whole
+  // workspace object caused dnd-kit useSortable to re-register on every
+  // emission, triggering an infinite render loop.
+  const sortableData = useMemo(() => ({ type: 'workspace' as const, groupId: workspace.groupId }), [workspace.groupId]);
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id,
-    data: { type: 'workspace', workspace },
+    data: sortableData,
   });
 
   const isDragOverTarget = dragContext.overId === id;
   const dragIntent = isDragOverTarget ? dragContext.intent : null;
+  const isAnyDragActive = dragContext.activeId !== null;
 
   const style = {
     transform: 'translate3d(0, 0, 0)',
@@ -90,6 +96,10 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   }, [isMiniWindow, preference?.tidgiMiniWindowFixedWorkspaceId, id, active]);
 
   const onWorkspaceClick = useCallback(async () => {
+    if (isAnyDragActive) {
+      return;
+    }
+
     workspaceClickedLoadingSetter(true);
     try {
       // Special "add" workspace always opens add workspace window
@@ -121,7 +131,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     } finally {
       workspaceClickedLoadingSetter(false);
     }
-  }, [id, setLocation, workspace, isMiniWindow]);
+  }, [id, isAnyDragActive, isMiniWindow, setLocation, workspace]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();

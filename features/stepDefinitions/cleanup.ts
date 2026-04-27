@@ -11,6 +11,7 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   // Initialize scenario-specific paths
   this.scenarioName = pickle.name;
   this.scenarioSlug = makeSlugPath(pickle.name, 60);
+  this.scenarioTags = pickle.tags.map((tag) => tag.name);
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
   const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');

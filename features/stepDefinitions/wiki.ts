@@ -182,7 +182,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
   try {
     await backOff(
       async () => {
-        fs.writeJsonSync(getSettingsPath(this), { ...settings, workspaces: filtered }, { spaces: 2 });
+        fs.writeJsonSync(getSettingsPath(this), { ...settings, workspaces: filtered, workspaceGroups: {} }, { spaces: 2 });
       },
       {
         numOfAttempts: 3,
@@ -971,6 +971,8 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     throw new Error('Application is not available');
   }
 
+  const isWorkspaceGroupScenario = this.scenarioTags.includes('@workspace-group');
+
   // Construct the full wiki path
   const wikiPath = path.join(getWikiTestRootPath(this), workspaceName);
 
@@ -986,21 +988,24 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     },
   });
 
-  // Initialize fresh git repository for the new wiki using dugite
-  try {
-    // Initialize git repository with master branch
-    await gitExec(['init', '-b', 'master'], wikiPath);
+  // Workspace-group scenarios only validate grouping and drag behavior.
+  // Skipping git bootstrap avoids repeated add/commit overhead across dozens of test workspaces.
+  if (!isWorkspaceGroupScenario) {
+    try {
+      // Initialize git repository with master branch
+      await gitExec(['init', '-b', 'master'], wikiPath);
 
-    // Configure git user
-    await gitExec(['config', 'user.email', 'test@tidgi.test'], wikiPath);
-    await gitExec(['config', 'user.name', 'TidGi Test'], wikiPath);
+      // Configure git user
+      await gitExec(['config', 'user.email', 'test@tidgi.test'], wikiPath);
+      await gitExec(['config', 'user.name', 'TidGi Test'], wikiPath);
 
-    // Add all files and create initial commit
-    await gitExec(['add', '.'], wikiPath);
-    await gitExec(['commit', '-m', 'Initial commit'], wikiPath);
-  } catch (error) {
-    // Git initialization is not critical for the test, continue anyway
-    console.log('Git initialization skipped:', (error as Error).message);
+      // Add all files and create initial commit
+      await gitExec(['add', '.'], wikiPath);
+      await gitExec(['commit', '-m', 'Initial commit'], wikiPath);
+    } catch (error) {
+      // Git initialization is not critical for the test, continue anyway
+      console.log('Git initialization skipped:', (error as Error).message);
+    }
   }
 
   // Now create workspace configuration
@@ -1026,10 +1031,30 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     `);
   }, { wikiName: workspaceName, wikiFullPath: wikiPath });
 
-  // Wait for workspace to appear in UI
-  await this.app.evaluate(async () => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  });
+  await backOff(
+    async () => {
+      const workspaces = await this.app!.evaluate(async ({ BrowserWindow }, name: string) => {
+        const windows = BrowserWindow.getAllWindows();
+        const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+        if (!mainWindow) {
+          throw new Error('Main window not found');
+        }
+
+        return await mainWindow.webContents.executeJavaScript(`
+          (async () => {
+            const all = await window.service.workspace.getWorkspacesAsList();
+            return all.filter(workspace => !workspace.pageType).map(workspace => workspace.name);
+          })();
+        `) as Promise<string[]>;
+      }, workspaceName);
+
+      if (!workspaces.includes(workspaceName)) {
+        throw new Error(`Workspace ${workspaceName} not visible yet`);
+      }
+    },
+    BACKOFF_OPTIONS,
+  );
 });
 
 /**
