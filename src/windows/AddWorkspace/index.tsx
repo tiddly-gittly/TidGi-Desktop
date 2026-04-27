@@ -103,6 +103,16 @@ export default function AddWorkspace(): React.JSX.Element {
     selectedImportConfigSetter(undefined);
   }, [currentTab]);
 
+  // When user explicitly disables tidgi.config sync, discard any config that was
+  // eagerly loaded while the checkbox was still checked. Otherwise the imported
+  // workspace accidentally inherits synced fields (e.g. name, readOnlyMode) even
+  // though it should be local-only.
+  useEffect(() => {
+    if (!useTidgiConfig) {
+      selectedImportConfigSetter(undefined);
+    }
+  }, [useTidgiConfig]);
+
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
   const { storageProvider, storageProviderSetter, wikiFolderName } = form;
   useEffect(() => {
