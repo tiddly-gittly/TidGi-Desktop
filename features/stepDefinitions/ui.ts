@@ -193,6 +193,25 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 });
 
+Then('the {string} element with selector {string} should be unchecked', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const targetWindow = await this.getWindow('current');
+
+  if (!targetWindow) {
+    throw new Error(`Window "current" is not available`);
+  }
+
+  try {
+    const locator = targetWindow.locator(selector);
+    await locator.waitFor({ state: 'visible', timeout: PLAYWRIGHT_TIMEOUT });
+    const isChecked = await locator.isChecked();
+    if (isChecked) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is checked, expected unchecked`);
+    }
+  } catch (error) {
+    throw new Error(`Failed to verify ${elementComment} with selector "${selector}" is unchecked: ${error as Error}`);
+  }
+});
+
 When('I click on {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const targetWindow = await this.getWindow('current');
 

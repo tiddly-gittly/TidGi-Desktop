@@ -268,42 +268,43 @@ async function dragLocatorAndHoldAtCoordinates(
 async function getLocatorCenter(
   world: ApplicationWorld,
   targetSelector: string,
-  _locator: { boundingBox: () => Promise<{ x: number; y: number; width: number; height: number } | null> },
 ): Promise<{ targetX: number; targetY: number }> {
-  // Use Playwright locator.evaluate with retries.
-  // React may still be re-rendering after group creation, so the element can
-  // appear slightly after the parent workspace item.
+  // Use page.evaluate with document.querySelector instead of locator.evaluate.
+  // locator.evaluate's timeout option only controls script execution, not element
+  // resolution. When React re-renders detach the target, Playwright retries for
+  // the default action timeout (30 s) and ignores the short timeout we pass.
+  // page.evaluate returns immediately if the element is missing, so our own retry
+  // loop stays within the cucumber step budget.
   if (!world.currentWindow) {
     throw new Error('Current window not set');
   }
 
   for (let attempt = 0; attempt < 6; attempt++) {
-    try {
-      const rect = await world.currentWindow.locator(targetSelector).evaluate(
-        (element: Element) => {
-          const r = element.getBoundingClientRect();
-          return { x: r.left, y: r.top, width: r.width, height: r.height };
-        },
-        undefined,
-        { timeout: 1500 },
-      );
+    const rect = await world.currentWindow.evaluate((selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const r = element.getBoundingClientRect();
+      return { x: r.left, y: r.top, width: r.width, height: r.height };
+    }, targetSelector);
+
+    if (rect) {
       return {
         targetX: rect.x + rect.width / 2,
         targetY: rect.y + rect.height / 2,
       };
-    } catch {
-      if (attempt === 5) {
-        // Diagnostic: list all workspace/group testids currently in the DOM
-        const testIds = await world.currentWindow.evaluate(() => {
-          const elements = document.querySelectorAll('[data-testid]');
-          return Array.from(elements).map(element => element.getAttribute('data-testid')).filter(Boolean);
-        });
-        throw new Error(
-          `Could not read bounding box for ${targetSelector}. Current DOM testids: ${testIds.join(', ')}`,
-        );
-      }
-      await new Promise(resolve => setTimeout(resolve, 300));
     }
+
+    if (attempt === 5) {
+      // Diagnostic: list all workspace/group testids currently in the DOM
+      const testIds = await world.currentWindow.evaluate(() => {
+        const elements = document.querySelectorAll('[data-testid]');
+        return Array.from(elements).map(element => element.getAttribute('data-testid')).filter(Boolean);
+      });
+      throw new Error(
+        `Could not read bounding box for ${targetSelector}. Current DOM testids: ${testIds.join(', ')}`,
+      );
+    }
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
 
   throw new Error(`Could not read bounding box for ${targetSelector}`);
@@ -359,7 +360,7 @@ When('I drag workspace {string} onto workspace {string}', async function(this: A
   await dragLocatorToCoordinates(
     this,
     `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
-    async () => getLocatorCenter(this, targetSelector, targetLocator),
+    async () => getLocatorCenter(this, targetSelector),
   );
 });
 
@@ -374,7 +375,7 @@ When('I hover workspace {string} over workspace {string}', async function(this: 
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
   await dragLocatorAndHoldAtCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(this, targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector);
   });
 });
 
@@ -397,7 +398,7 @@ When('I drag workspace {string} to the top zone of workspace {string}', async fu
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(this, targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector);
   });
 });
 
@@ -412,7 +413,7 @@ When('I drag workspace {string} to the bottom zone of workspace {string}', async
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(this, targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector);
   });
 });
 
@@ -438,7 +439,7 @@ When('I drag workspace {string} onto the header of its current group', async fun
   await dragLocatorToCoordinates(
     this,
     sourceSelector,
-    async () => getLocatorCenter(this, groupHeaderSelector, targetLocator),
+    async () => getLocatorCenter(this, groupHeaderSelector),
   );
 });
 
@@ -632,7 +633,7 @@ When('I drag group header {string} onto group header {string}', async function(t
   await targetLocator.waitFor({ state: 'visible' });
 
   await dragLocatorToCoordinates(this, sourceSelector, async () => {
-    return getLocatorCenter(this, targetSelector, targetLocator);
+    return getLocatorCenter(this, targetSelector);
   });
 });
 
