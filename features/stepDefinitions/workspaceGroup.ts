@@ -22,6 +22,12 @@ interface ITestWorkspace {
   pageType?: string | null;
 }
 
+interface IWorkspaceOrGroupOrderEntry {
+  name: string;
+  order: number;
+  type: 'workspace' | 'group';
+}
+
 async function getAllWikiWorkspaces(world: ApplicationWorld): Promise<ITestWorkspace[]> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
@@ -49,6 +55,22 @@ async function getGroups(world: ApplicationWorld): Promise<IWorkspaceGroup[]> {
     throw new Error('Current window not set');
   }
   return await world.currentWindow.evaluate(async () => window.service.workspace.getGroupsAsList());
+}
+
+async function getSidebarOrderEntries(world: ApplicationWorld): Promise<IWorkspaceOrGroupOrderEntry[]> {
+  const [workspaces, groups] = await Promise.all([getAllWikiWorkspaces(world), getGroups(world)]);
+  return [
+    ...workspaces.filter(workspace => !workspace.groupId).map(workspace => ({
+      name: workspace.name,
+      order: workspace.order ?? 0,
+      type: 'workspace' as const,
+    })),
+    ...groups.map(group => ({
+      name: group.name,
+      order: group.order ?? 0,
+      type: 'group' as const,
+    })),
+  ].sort((left, right) => left.order - right.order);
 }
 
 async function getGroupById(world: ApplicationWorld, groupId: string): Promise<IWorkspaceGroup | undefined> {
@@ -550,14 +572,29 @@ When('I drag group header {string} onto group header {string}', async function(t
   await targetLocator.waitFor({ state: 'visible' });
 
   await dragLocatorToCoordinates(this, sourceSelector, async () => {
-    const center = await getLocatorCenter(this, targetSelector);
-    const targetBox = await this.currentWindow?.evaluate((selector: string) => {
-      const el = document.querySelector(selector);
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { top: r.top, left: r.left, width: r.width, height: r.height };
-    }, targetSelector);
-    return center;
+    return await getLocatorCenter(this, targetSelector);
+  });
+});
+
+When('I drag group header {string} onto workspace {string}', async function(this: ApplicationWorld, sourceGroupName: string, targetWorkspaceName: string) {
+  if (!this.currentWindow) {
+    throw new Error('Current window not set');
+  }
+
+  const groups = await getGroups(this);
+  const sourceGroup = groups.find(group => group.name === sourceGroupName);
+  if (!sourceGroup) {
+    throw new Error(`Source group "${sourceGroupName}" not found`);
+  }
+
+  const targetWorkspace = await getWorkspaceByName(this, targetWorkspaceName);
+  const sourceSelector = `[data-testid="workspace-group-${sourceGroup.id}"]`;
+  const targetSelector = `[data-testid="workspace-item-${targetWorkspace.id}"]`;
+  const targetLocator = this.currentWindow.locator(targetSelector);
+  await targetLocator.waitFor({ state: 'visible' });
+
+  await dragLocatorToCoordinates(this, sourceSelector, async () => {
+    return await getLocatorCenter(this, targetSelector);
   });
 });
 
@@ -579,6 +616,25 @@ Then('group {string} should appear before group {string}', async function(this: 
 
     if (firstOrder >= secondOrder) {
       throw new Error(`Group "${firstGroupName}" (order ${firstOrder}) should appear before "${secondGroupName}" (order ${secondOrder})`);
+    }
+  }, BACKOFF_OPTIONS);
+});
+
+Then('group {string} should appear before workspace {string}', async function(this: ApplicationWorld, groupName: string, workspaceName: string) {
+  await backOff(async () => {
+    const entries = await getSidebarOrderEntries(this);
+    const groupEntry = entries.find(entry => entry.type === 'group' && entry.name === groupName);
+    const workspaceEntry = entries.find(entry => entry.type === 'workspace' && entry.name === workspaceName);
+
+    if (!groupEntry) {
+      throw new Error(`Group "${groupName}" not found in sidebar entries: ${entries.map(entry => `${entry.type}:${entry.name}`).join(', ')}`);
+    }
+    if (!workspaceEntry) {
+      throw new Error(`Workspace "${workspaceName}" not found in sidebar entries: ${entries.map(entry => `${entry.type}:${entry.name}`).join(', ')}`);
+    }
+
+    if (groupEntry.order >= workspaceEntry.order) {
+      throw new Error(`Group "${groupName}" (order ${groupEntry.order}) should appear before workspace "${workspaceName}" (order ${workspaceEntry.order})`);
     }
   }, BACKOFF_OPTIONS);
 });

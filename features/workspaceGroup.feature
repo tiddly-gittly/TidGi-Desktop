@@ -140,6 +140,15 @@ Feature: Workspace Grouping
     When I drag group header "Group Order B" onto group header "Group Order A"
     Then group "Group Order B" should appear before group "Group Order A"
 
+  Scenario: Reordering group header before an ungrouped workspace
+    When I create a new wiki workspace with name "Mixed Order Alpha"
+    And I create a new wiki workspace with name "Mixed Order Beta"
+    And I create a new wiki workspace with name "Mixed Order Gamma"
+    Given workspace group "Mixed Order Group" contains workspaces:
+      | Mixed Order Gamma |
+    When I drag group header "Mixed Order Group" onto workspace "Mixed Order Alpha"
+    Then group "Mixed Order Group" should appear before workspace "Mixed Order Alpha"
+
   Scenario: Dragging ungrouped workspace to zone of grouped workspace
     When I create a new wiki workspace with name "Zone Grouped Alpha"
     And I create a new wiki workspace with name "Zone Grouped Beta"

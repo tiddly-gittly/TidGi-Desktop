@@ -1066,13 +1066,14 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
         const windows = BrowserWindow.getAllWindows();
         const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
         if (!mainWindow) return null;
-        return await mainWindow.webContents.executeJavaScript(`
+        const resolvedWorkspaceId = await mainWindow.webContents.executeJavaScript(`
           (async () => {
             const all = await window.service.workspace.getWorkspacesAsList();
             const ws = all.find(w => w.name === ${JSON.stringify(name)});
             return ws ? ws.id : null;
           })();
-        `);
+        `) as string | null;
+        return resolvedWorkspaceId;
       }, workspaceName);
 
       if (!workspaceId || !this.currentWindow) {

@@ -759,12 +759,55 @@ export class Workspace implements IWorkspaceService {
     this.groups$.next(next);
   }
 
+  private normalizeLegacyGroupOrders(groups: Record<string, IWorkspaceGroup>): Record<string, IWorkspaceGroup> {
+    const groupList = Object.values(groups);
+    if (groupList.length === 0) {
+      return groups;
+    }
+
+    const sortedGroupOrders = groupList
+      .map(group => group.order ?? 0)
+      .sort((left, right) => left - right);
+    const isLegacyDenseOrder = sortedGroupOrders.every((order, index) => order === index);
+
+    if (!isLegacyDenseOrder) {
+      return groups;
+    }
+
+    const ungroupedWorkspaces = Object.values(this.getWorkspacesSync()).filter(workspace => !workspace.groupId);
+    if (ungroupedWorkspaces.length === 0) {
+      return groups;
+    }
+
+    const maxUngroupedOrder = Math.max(...ungroupedWorkspaces.map(workspace => workspace.order ?? 0));
+    let hasChanges = false;
+    const normalizedGroups = { ...groups };
+
+    [...groupList]
+      .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
+      .forEach((group, index) => {
+        const nextOrder = maxUngroupedOrder + index + 1;
+        if (group.order !== nextOrder) {
+          normalizedGroups[group.id] = { ...group, order: nextOrder };
+          hasChanges = true;
+        }
+      });
+
+    if (!hasChanges) {
+      return groups;
+    }
+
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('workspaceGroups', normalizedGroups);
+    return normalizedGroups;
+  }
+
   private getGroupsSync(): Record<string, IWorkspaceGroup> {
     if (this.groups === undefined) {
       const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
       const groupsFromDisk = databaseService.getSetting('workspaceGroups') ?? {};
       if (typeof groupsFromDisk === 'object' && !Array.isArray(groupsFromDisk)) {
-        this.groups = groupsFromDisk;
+        this.groups = this.normalizeLegacyGroupOrders(groupsFromDisk);
       } else {
         this.groups = {};
       }

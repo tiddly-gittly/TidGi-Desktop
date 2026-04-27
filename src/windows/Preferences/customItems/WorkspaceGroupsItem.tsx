@@ -34,15 +34,19 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
     const trimmedName = newGroupName.trim();
     if (!trimmedName) return;
 
+    const ungroupedWikiWorkspaces = wikiWorkspaces.filter(workspace => !workspace.groupId);
+    const maxUngroupedOrder = ungroupedWikiWorkspaces.reduce((maxOrder, workspace) => Math.max(maxOrder, workspace.order ?? 0), -1);
+    const nextGroupOrder = Math.max(maxUngroupedOrder + groups.length + 1, groups.length);
+
     const newGroup: IWorkspaceGroup = {
       id: nanoid(),
       name: trimmedName,
-      order: groups.length,
+      order: nextGroupOrder,
       collapsed: false,
     };
     await window.service.workspace.setGroup(newGroup.id, newGroup);
     setNewGroupName('');
-  }, [newGroupName, groups.length]);
+  }, [groups.length, newGroupName, wikiWorkspaces]);
 
   const saveGroupName = useCallback(async (group: IWorkspaceGroup) => {
     const trimmedName = editingName.trim();

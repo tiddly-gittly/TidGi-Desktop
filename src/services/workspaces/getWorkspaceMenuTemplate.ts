@@ -39,7 +39,7 @@ interface IWorkspaceMenuRequiredServices {
   window: Pick<IWindowService, 'open' | 'get'>;
   workspace: Pick<
     IWorkspaceService,
-    'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler' | 'getGroupsAsList' | 'setGroup' | 'moveWorkspaceToGroup' | 'removeGroup'
+    'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'getWorkspacesAsList' | 'openWorkspaceTiddler' | 'getGroupsAsList' | 'setGroup' | 'moveWorkspaceToGroup' | 'removeGroup'
   >;
   workspaceView: Pick<
     IWorkspaceViewService,
@@ -126,11 +126,13 @@ export async function getSimplifiedWorkspaceMenuTemplate(
       label: t('WorkspaceGroup.CreateGroup'),
       click: async () => {
         const newGroupId = nanoid();
+        const ungroupedWorkspaces = (await service.workspace.getWorkspacesAsList()).filter(workspaceToCheck => !workspaceToCheck.pageType && !workspaceToCheck.groupId);
+        const maxUngroupedOrder = ungroupedWorkspaces.reduce((maxOrder, workspaceToCheck) => Math.max(maxOrder, workspaceToCheck.order ?? 0), -1);
         await service.workspace.setGroup(newGroupId, {
           id: newGroupId,
           name: t('WorkspaceGroup.DefaultGroupName', { number: groups.length + 1 }),
           collapsed: false,
-          order: groups.length,
+          order: Math.max(maxUngroupedOrder + groups.length + 1, groups.length),
         });
         await service.workspace.moveWorkspaceToGroup(id, newGroupId);
       },

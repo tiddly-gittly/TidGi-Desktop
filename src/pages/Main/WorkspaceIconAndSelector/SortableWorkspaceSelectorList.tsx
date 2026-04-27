@@ -97,6 +97,21 @@ interface IDragState extends IDragContextValue {
   projectedGroupOrder: string[] | null;
 }
 
+interface IInterleavedSidebarItemWorkspace {
+  type: 'workspace';
+  workspace: IWorkspaceWithMetadata;
+  order: number;
+}
+
+interface IInterleavedSidebarItemGroup {
+  type: 'group';
+  group: IWorkspaceGroup;
+  workspaces: IWorkspaceWithMetadata[];
+  order: number;
+}
+
+type TInterleavedSidebarItem = IInterleavedSidebarItemWorkspace | IInterleavedSidebarItemGroup;
+
 const initialDragState: IDragState = {
   intent: null,
   overId: null,
@@ -152,6 +167,36 @@ function getReorderTargetIndex({
   }
 
   return oldIndex < overIndex ? Math.max(overIndex - 1, 0) : overIndex;
+}
+
+function isSidebarGroupItem(item: TInterleavedSidebarItem): item is IInterleavedSidebarItemGroup {
+  return item.type === 'group';
+}
+
+function getSidebarItemId(item: TInterleavedSidebarItem): string {
+  return isSidebarGroupItem(item) ? `group-${item.group.id}` : item.workspace.id;
+}
+
+function getReorderIntentFromPointer({
+  pointerY,
+  rect,
+}: {
+  pointerY: number;
+  rect: { top: number; height: number };
+}): Exclude<TDragIntent, 'group' | 'ungroup' | null> {
+  const relativeY = Math.min(Math.max(pointerY - rect.top, 0), rect.height);
+  const beforeBoundary = rect.height / 3;
+  const afterBoundary = rect.height - beforeBoundary;
+
+  if (relativeY <= beforeBoundary) {
+    return 'reorder-before';
+  }
+
+  if (relativeY >= afterBoundary) {
+    return 'reorder-after';
+  }
+
+  return relativeY < rect.height / 2 ? 'reorder-before' : 'reorder-after';
 }
 
 // ─── SortableGroupHeader ─────────────────────────────────────────────
@@ -250,8 +295,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const pendingReorderReference = useRef<boolean>(false);
   const dragStateReference = useRef<IDragState>(initialDragState);
   const lastResolvedDragStateReference = useRef<IDragState>(initialDragState);
-  const dragStateTimeoutReference = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialPointerYReference = useRef<number | null>(null);
+  const dragStateTimeoutReference = useRef<number | null>(null);
 
   // Drag preview and drop behavior must resolve from the same projected state.
   const [dragState, setDragState] = useState<IDragState>(initialDragState);
@@ -316,15 +360,17 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   // Track the actual pointer Y during drag for accurate zone calculations.
   // dnd-kit's event.delta is scrollAdjustedTranslate (modified by modifiers
   // and scroll), not the raw pointer position. We use a capture-phase listener
-  // to ensure pointerYRef is updated BEFORE dnd-kit's onDragMove fires, so
+  // to ensure pointerYReference is updated BEFORE dnd-kit's onDragMove fires, so
   // deriveDragState always reads the current pointer position.
-  const pointerYRef = useRef<number>(0);
+  const pointerYReference = useRef<number>(0);
   useEffect(() => {
     const handler = (event: PointerEvent) => {
-      pointerYRef.current = event.clientY;
+      pointerYReference.current = event.clientY;
     };
     window.addEventListener('pointermove', handler, { capture: true });
-    return () => window.removeEventListener('pointermove', handler, { capture: true });
+    return () => {
+      window.removeEventListener('pointermove', handler, { capture: true });
+    };
   }, []);
 
   const customCollisionDetection = useCallback<CollisionDetection>((arguments_) => {
@@ -362,18 +408,10 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         result = workspaceCollisions.length > 0 ? workspaceCollisions : collisions;
       }
     } else if (!isDraggingWorkspace && collisions.length > 0) {
-      const groupCollisions = collisions.filter((collision) => String(collision.id).startsWith('group-'));
-      if (groupCollisions.length > 0) {
-        result = groupCollisions;
-      } else {
-        // pointerWithin found no group headers (likely because a workspace rect
-        // is overlapping the pointer). Use closestCorners to find the nearest
-        // group header instead of falling back to the workspace collision.
-        const nearestGroupCollisions = closestCorners(arguments_)
-          .filter((collision) => String(collision.id) !== activeId)
-          .filter((collision) => String(collision.id).startsWith('group-'));
-        result = nearestGroupCollisions.length > 0 ? nearestGroupCollisions : collisions;
-      }
+      // Group headers now participate in the same mixed ordering space as
+      // ungrouped workspaces, so group drags must be allowed to collide with
+      // both groups and workspaces.
+      result = collisions;
     }
 
     return result;
@@ -421,6 +459,24 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     return { ungroupedWorkspaces: ungrouped, groupedWorkspaces: grouped };
   }, [displayedWorkspaces]);
 
+  const interleavedSidebarItems = useMemo<TInterleavedSidebarItem[]>(() => {
+    const items: TInterleavedSidebarItem[] = [
+      ...ungroupedWorkspaces.map(workspace => ({
+        type: 'workspace' as const,
+        workspace,
+        order: workspace.order ?? 0,
+      })),
+      ...displayedGroups.map(group => ({
+        type: 'group' as const,
+        group,
+        workspaces: groupedWorkspaces[group.id] || [],
+        order: group.order ?? 0,
+      })),
+    ];
+
+    return items.sort((left, right) => left.order - right.order);
+  }, [displayedGroups, groupedWorkspaces, ungroupedWorkspaces]);
+
   useEffect(() => {
     if (pendingReorderReference.current) {
       pendingReorderReference.current = false;
@@ -434,27 +490,16 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   // re-registration loops. See https://github.com/clauderic/dnd-kit/issues/900
   const allDraggableIds = useMemo(() => {
     const ids: string[] = [];
-    const grouped: Record<string, IWorkspaceWithMetadata[]> = {};
 
-    canonicalWorkspaces.forEach(workspace => {
-      if (workspace.groupId) {
-        if (!grouped[workspace.groupId]) {
-          grouped[workspace.groupId] = [];
-        }
-        grouped[workspace.groupId].push(workspace);
-      } else {
-        ids.push(workspace.id);
+    interleavedSidebarItems.forEach(item => {
+      ids.push(getSidebarItemId(item));
+      if (isSidebarGroupItem(item) && !item.group.collapsed) {
+        item.workspaces.forEach(workspace => ids.push(workspace.id));
       }
     });
 
-    canonicalGroups.forEach(group => {
-      ids.push(`group-${group.id}`);
-      if (!group.collapsed) {
-        (grouped[group.id] || []).forEach(w => ids.push(w.id));
-      }
-    });
     return ids;
-  }, [canonicalWorkspaces, canonicalGroups]);
+  }, [interleavedSidebarItems]);
 
   const handleToggleCollapse = useCallback(async (groupId: string) => {
     const group = groups?.find(g => g.id === groupId);
@@ -488,27 +533,30 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     return arrayMove(canonicalWorkspaces, oldIndex, targetIndex).map(workspace => workspace.id);
   }, [canonicalWorkspaces]);
 
-  const computeGroupProjection = useCallback((activeGroupId: string, overGroupId: string, intent: TDragIntent): string[] | null => {
-    if (intent !== 'reorder-before' && intent !== 'reorder-after') {
-      return null;
-    }
+  const persistInterleavedSidebarOrder = useCallback(async (nextItems: TInterleavedSidebarItem[]) => {
+    const nextWorkspaces: Record<string, IWorkspace> = {};
+    const nextGroups: IWorkspaceGroup[] = [];
 
-    const oldIndex = canonicalGroups.findIndex(group => group.id === activeGroupId);
-    const overIndex = canonicalGroups.findIndex(group => group.id === overGroupId);
+    nextItems.forEach((item, index) => {
+      if (isSidebarGroupItem(item)) {
+        nextGroups.push({ ...item.group, order: index });
+        return;
+      }
 
-    if (oldIndex === -1 || overIndex === -1) {
-      return null;
-    }
-
-    const targetIndex = getReorderTargetIndex({
-      listLength: canonicalGroups.length,
-      oldIndex,
-      overIndex,
-      placement: intent === 'reorder-after' ? 'after' : 'before',
+      nextWorkspaces[item.workspace.id] = {
+        ...item.workspace,
+        order: index,
+      };
     });
 
-    return arrayMove(canonicalGroups, oldIndex, targetIndex).map(group => group.id);
-  }, [canonicalGroups]);
+    pendingReorderReference.current = true;
+
+    if (Object.keys(nextWorkspaces).length > 0) {
+      await window.service.workspace.setWorkspaces(nextWorkspaces);
+    }
+
+    await Promise.all(nextGroups.map(group => window.service.workspace.setGroup(group.id, group)));
+  }, []);
 
   const clearDragStateTimeout = useCallback(() => {
     if (dragStateTimeoutReference.current !== null) {
@@ -549,13 +597,41 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     await window.service.workspace.setWorkspaces(newWorkspaces);
   }, [canonicalWorkspaces]);
 
-  const createGroupWithWorkspaces = useCallback(async (workspaceIds: string[]) => {
+  const reorderSidebarItems = useCallback(async (activeId: string, overId: string, placement: 'before' | 'after' | 'direct' = 'before') => {
+    const oldIndex = interleavedSidebarItems.findIndex(item => getSidebarItemId(item) === activeId);
+    const overIndex = interleavedSidebarItems.findIndex(item => getSidebarItemId(item) === overId);
+
+    if (oldIndex === -1 || overIndex === -1) {
+      return;
+    }
+
+    let targetIndex: number;
+    if (placement === 'direct') {
+      targetIndex = overIndex;
+    } else {
+      targetIndex = getReorderTargetIndex({
+        listLength: interleavedSidebarItems.length,
+        oldIndex,
+        overIndex,
+        placement,
+      });
+    }
+
+    if (targetIndex === oldIndex) {
+      return;
+    }
+
+    const reorderedItems = arrayMove(interleavedSidebarItems, oldIndex, targetIndex);
+    await persistInterleavedSidebarOrder(reorderedItems);
+  }, [interleavedSidebarItems, persistInterleavedSidebarOrder]);
+
+  const createGroupWithWorkspaces = useCallback(async (workspaceIds: string[], order: number) => {
     const newGroupId = `group-${Date.now()}`;
     const newGroup: IWorkspaceGroup = {
       id: newGroupId,
       name: t('WorkspaceGroup.DefaultGroupName', { number: canonicalGroups.length + 1 }),
       collapsed: false,
-      order: canonicalGroups.length,
+      order,
     };
 
     await window.service.workspace.setGroup(newGroupId, newGroup);
@@ -597,7 +673,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // the known target workspace to compute accurate zone boundaries.
       const activeRect = active.rect.current.translated;
       // Use the actual pointer Y computed from the initial pointerdown position
-      const pointerY = pointerYRef.current || (activeRect
+      const pointerY = pointerYReference.current || (activeRect
         ? activeRect.top + activeRect.height / 2
         : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
       const referenceY = pointerY;
@@ -619,22 +695,20 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
       const isSameGroup = activeWorkspace?.groupId && resolvedOverWorkspace?.groupId && activeWorkspace.groupId === resolvedOverWorkspace.groupId;
       const canGroup = !isSameGroup && isGroupableWorkspace(activeWorkspace) && isGroupableWorkspace(resolvedOverWorkspace);
-      const relativeY = Math.min(Math.max(referenceY - overRect.top, 0), overRect.height);
-      // Use 1/3 boundaries for top/bottom zones to provide more margin for
-      // pointer positioning, reducing mis-detection when DOM shifts slightly
-      // during drag or when pointer tracking has minor inaccuracies.
-      const beforeBoundary = overRect.height / 3;
-      const afterBoundary = overRect.height - beforeBoundary;
       let intent: TDragIntent;
 
-      if (relativeY <= beforeBoundary) {
-        intent = 'reorder-before';
-      } else if (relativeY >= afterBoundary) {
-        intent = 'reorder-after';
-      } else if (canGroup) {
+      const reorderIntent = getReorderIntentFromPointer({
+        pointerY: referenceY,
+        rect: overRect,
+      });
+      const relativeY = Math.min(Math.max(referenceY - overRect.top, 0), overRect.height);
+      const beforeBoundary = overRect.height / 3;
+      const afterBoundary = overRect.height - beforeBoundary;
+
+      if (relativeY > beforeBoundary && relativeY < afterBoundary && canGroup) {
         intent = 'group';
       } else {
-        intent = relativeY < overRect.height / 2 ? 'reorder-before' : 'reorder-after';
+        intent = reorderIntent;
       }
 
       return {
@@ -650,15 +724,59 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
     if (activeType === 'group' && overType === 'group') {
       const overId = effectiveOverId;
-      const activeGroupId = activeId.replace('group-', '');
-      const overGroupId = overId.replace('group-', '');
+      const overRect = over?.rect ?? null;
+
+      if (!overRect) {
+        return {
+          ...dragStateReference.current,
+          activeId,
+          overId,
+          intent: null,
+          projectedWorkspaceOrder: null,
+          projectedGroupOrder: null,
+        };
+      }
+
+      const pointerY = pointerYReference.current || (overRect.top + overRect.height / 2);
 
       return {
-        intent: 'reorder-before',
+        intent: getReorderIntentFromPointer({
+          pointerY,
+          rect: overRect,
+        }),
         overId,
         activeId,
         projectedWorkspaceOrder: null,
-        projectedGroupOrder: computeGroupProjection(activeGroupId, overGroupId, 'reorder-before'),
+        projectedGroupOrder: null,
+      };
+    }
+
+    if (activeType === 'group' && overType === 'workspace') {
+      const overId = effectiveOverId;
+      const overRect = over?.rect ?? null;
+
+      if (!overRect) {
+        return {
+          ...dragStateReference.current,
+          activeId,
+          overId,
+          intent: null,
+          projectedWorkspaceOrder: null,
+          projectedGroupOrder: null,
+        };
+      }
+
+      const pointerY = pointerYReference.current || (overRect.top + overRect.height / 2);
+
+      return {
+        intent: getReorderIntentFromPointer({
+          pointerY,
+          rect: overRect,
+        }),
+        overId,
+        activeId,
+        projectedWorkspaceOrder: null,
+        projectedGroupOrder: null,
       };
     }
 
@@ -687,7 +805,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       projectedWorkspaceOrder: null,
       projectedGroupOrder: null,
     };
-  }, [canonicalWorkspaces, computeGroupProjection, computeWorkspaceProjection]);
+  }, [canonicalWorkspaces, computeWorkspaceProjection]);
 
   const updateDragStateFromEvent = useCallback((event: DragMoveEvent | DragOverEvent) => {
     const nextDragState = deriveDragState(event);
@@ -716,7 +834,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     if (dragStateTimeoutReference.current !== null) {
       clearTimeout(dragStateTimeoutReference.current);
     }
-    dragStateTimeoutReference.current = setTimeout(() => {
+    dragStateTimeoutReference.current = window.setTimeout(() => {
       dragStateTimeoutReference.current = null;
       applyDragState(nextDragState);
     }, 0);
@@ -733,7 +851,6 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const handleDragStart = useCallback((event: DragStartEvent) => {
     clearDragStateTimeout();
     lastResolvedDragStateReference.current = initialDragState;
-    initialPointerYReference.current = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.clientY : null;
     applyDragState(previous => ({ ...previous, activeId: String(event.active.id) }));
   }, [applyDragState, clearDragStateTimeout]);
 
@@ -775,30 +892,19 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     const resolvedOverType = overId.startsWith('group-') ? 'group' : 'workspace';
 
     // === Case: Group dropped on group → reorder groups ===
+    // Group headers are small (~32px), so before/after intent detection from
+    // pointer position is unreliable. Use direct index swap like the legacy
+    // implementation to ensure predictable reordering.
     if (activeId.startsWith('group-') && overId.startsWith('group-')) {
-      const activeGroupId = activeId.replace('group-', '');
-      const overGroupId = overId.replace('group-', '');
+      await reorderSidebarItems(activeId, overId, 'direct');
+      return;
+    }
 
-      const oldIndex = canonicalGroups.findIndex(g => g.id === activeGroupId);
-      const overIndex = canonicalGroups.findIndex(g => g.id === overGroupId);
-
-      if (oldIndex === -1 || overIndex === -1) return;
-
-      const targetIndex = getReorderTargetIndex({
-        listLength: canonicalGroups.length,
-        oldIndex,
-        overIndex,
-        placement: currentIntent === 'reorder-after' ? 'after' : 'before',
-      });
-
-      if (targetIndex === oldIndex) return;
-
-      const reorderedGroups = arrayMove(canonicalGroups, oldIndex, targetIndex);
-      pendingReorderReference.current = true;
-
-      await Promise.all(
-        reorderedGroups.map((group, index) => window.service.workspace.setGroup(group.id, { ...group, order: index })),
-      );
+    // === Case: Group dropped on workspace → reorder in the mixed sidebar sequence ===
+    // Always place the group before the target workspace. Group headers act as
+    // section titles and should naturally precede the content they organize.
+    if (activeId.startsWith('group-') && resolvedOverType === 'workspace') {
+      await reorderSidebarItems(activeId, overId, 'before');
       return;
     }
 
@@ -838,7 +944,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       if (currentIntent === 'group') {
         // From grouped to ungrouped → create a dedicated group with the hovered workspace
         if (activeWorkspace.groupId && !overWorkspace.groupId) {
-          await createGroupWithWorkspaces([activeId, overId]);
+          await createGroupWithWorkspaces([activeId, overId], overWorkspace.order ?? 0);
           return;
         }
 
@@ -856,7 +962,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
         // Both ungrouped → create new group
         if (!activeWorkspace.groupId && !overWorkspace.groupId) {
-          await createGroupWithWorkspaces([activeId, overId]);
+          await createGroupWithWorkspaces([activeId, overId], Math.min(activeWorkspace.order ?? 0, overWorkspace.order ?? 0));
           return;
         }
       }
@@ -864,7 +970,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       await reorderWorkspaces(activeId, overId, currentIntent === 'reorder-after' ? 'after' : 'before');
       return;
     }
-  }, [canonicalGroups, canonicalWorkspaces, createGroupWithWorkspaces, deriveDragState, reorderWorkspaces, resetDragState]);
+  }, [canonicalWorkspaces, createGroupWithWorkspaces, deriveDragState, reorderSidebarItems, reorderWorkspaces, resetDragState]);
 
   const activeWorkspace = dragState.activeId && !dragState.activeId.startsWith('group-')
     ? canonicalWorkspaces.find(w => w.id === dragState.activeId)
@@ -886,38 +992,33 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <SortableContext items={allDraggableIds} strategy={verticalListSortingStrategy}>
-          {/* Ungrouped workspaces */}
-          {ungroupedWorkspaces.length > 0 && (
-            <UngroupedSection>
-              {ungroupedWorkspaces.map((workspace, index) => (
-                <SortableWorkspaceSelectorButton
-                  key={`item-${workspace.id}`}
-                  index={index}
-                  workspace={workspace}
-                  showSidebarTexts={showSideBarText}
-                  showSideBarIcon={showSideBarIcon}
-                />
-              ))}
-            </UngroupedSection>
-          )}
-
-          {/* Groups with their workspaces — flat structure in SortableContext */}
-          {displayedGroups.map(group => {
-            const workspacesInGroup = groupedWorkspaces[group.id] || [];
+        <SortableContext items={allDraggableIds} strategy={dragState.activeId?.startsWith('group-') ? undefined : verticalListSortingStrategy}>
+          {interleavedSidebarItems.map((item, index) => {
+            if (!isSidebarGroupItem(item)) {
+              return (
+                <UngroupedSection key={`item-${item.workspace.id}`}>
+                  <SortableWorkspaceSelectorButton
+                    index={index}
+                    workspace={item.workspace}
+                    showSidebarTexts={showSideBarText}
+                    showSideBarIcon={showSideBarIcon}
+                  />
+                </UngroupedSection>
+              );
+            }
 
             return (
-              <React.Fragment key={group.id}>
+              <React.Fragment key={item.group.id}>
                 <SortableGroupHeader
-                  group={group}
+                  group={item.group}
                   onToggleCollapse={handleToggleCollapse}
                 />
-                <Collapse in={!group.collapsed} timeout='auto' unmountOnExit>
+                <Collapse in={!item.group.collapsed} timeout='auto' unmountOnExit>
                   <GroupContent>
-                    {workspacesInGroup.map((workspace, index) => (
+                    {item.workspaces.map((workspace, workspaceIndex) => (
                       <SortableWorkspaceSelectorButton
                         key={`item-${workspace.id}`}
-                        index={index}
+                        index={workspaceIndex}
                         workspace={workspace}
                         showSidebarTexts={showSideBarText}
                         showSideBarIcon={showSideBarIcon}
