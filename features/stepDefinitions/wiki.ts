@@ -896,23 +896,18 @@ When('I open edit workspace window for workspace with name {string}', async func
       const settings = await fs.readJson(getSettingsPath(this)) as { workspaces?: Record<string, IWorkspace> };
       const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
 
-      // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json)
+      // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json).
+      // Do two passes so exact name matches take priority over folder-basename matches.
+      // First pass: match by settings.json name or tidgi.config.json name
       for (const [id, workspace] of Object.entries(workspaces)) {
         if (workspace.pageType) continue; // Skip page workspaces
 
-        // Try to match by name (if available in settings.json)
         if (workspace.name === workspaceName) {
           targetWorkspaceId = id;
           return;
         }
 
-        // Try to read name from tidgi.config.json
         if (isWikiWorkspace(workspace)) {
-          if (path.basename(workspace.wikiFolderLocation) === workspaceName) {
-            targetWorkspaceId = id;
-            return;
-          }
-
           try {
             const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
             if (await fs.pathExists(tidgiConfigPath)) {
@@ -925,6 +920,14 @@ When('I open edit workspace window for workspace with name {string}', async func
           } catch {
             // Ignore errors reading tidgi.config.json
           }
+        }
+      }
+      // Second pass: fallback to folder basename match
+      for (const [id, workspace] of Object.entries(workspaces)) {
+        if (workspace.pageType) continue;
+        if (isWikiWorkspace(workspace) && path.basename(workspace.wikiFolderLocation) === workspaceName) {
+          targetWorkspaceId = id;
+          return;
         }
       }
 
@@ -1172,6 +1175,8 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
 
   // Helper JS snippet for renderer-side workspace lookup by name or folder basename.
   // Uses String.fromCharCode(92) for backslash to avoid template-literal escaping issues.
+  // Does two passes: exact name match first, then folder basename fallback, to avoid
+  // returning the wrong workspace when multiple wikiFolderLocation basenames collide.
   const findWorkspaceJS = (targetName: string) => `
     (async () => {
       var backslash = String.fromCharCode(92);
@@ -1183,12 +1188,20 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
         return i >= 0 ? loc.substring(i + 1) : loc;
       }
       var workspaces = await window.service.workspace.getWorkspacesAsList();
+      // First pass: prefer exact name match
       var found = workspaces.find(function(ws) {
         if (ws.pageType) return false;
-        if (ws.name === ${JSON.stringify(targetName)}) return true;
-        var fn = 'wikiFolderLocation' in ws ? getFolderName(ws.wikiFolderLocation) : undefined;
-        return fn === ${JSON.stringify(targetName)};
+        return ws.name === ${JSON.stringify(targetName)};
       });
+      // Second pass: fallback to folder basename match
+      if (!found) {
+        found = workspaces.find(function(ws) {
+          if (ws.pageType) return false;
+          var fn = 'wikiFolderLocation' in ws ? getFolderName(ws.wikiFolderLocation) : undefined;
+          return fn === ${JSON.stringify(targetName)};
+        });
+      }
+      // Final fallback for the default "wiki" workspace when name is still empty
       if (!found && ${JSON.stringify(targetName)} === 'wiki') {
         found = workspaces.find(function(ws) {
           return !ws.pageType && !ws.isSubWiki;
