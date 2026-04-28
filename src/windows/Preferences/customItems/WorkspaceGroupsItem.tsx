@@ -1,4 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -176,25 +178,53 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                         </Typography>
                       </Box>
                     )}
-                  <IconButton
-                    size='small'
-                    onClick={() => {
-                      setEditingGroupId(group.id);
-                      setEditingName(group.name);
-                    }}
-                    data-testid={`edit-group-${group.id}`}
-                  >
-                    <EditIcon fontSize='small' />
-                  </IconButton>
-                  <IconButton
-                    size='small'
-                    onClick={() => {
-                      void deleteGroup(group);
-                    }}
-                    data-testid={`delete-group-${group.id}`}
-                  >
-                    <DeleteIcon fontSize='small' />
-                  </IconButton>
+                  {isEditing
+                    ? (
+                      <>
+                        <IconButton
+                          size='small'
+                          onClick={() => {
+                            void saveGroupName(group);
+                          }}
+                          data-testid={`save-group-${group.id}`}
+                        >
+                          <CheckIcon fontSize='small' />
+                        </IconButton>
+                        <IconButton
+                          size='small'
+                          onClick={() => {
+                            setEditingGroupId(null);
+                            setEditingName('');
+                          }}
+                          data-testid={`cancel-edit-group-${group.id}`}
+                        >
+                          <CloseIcon fontSize='small' />
+                        </IconButton>
+                      </>
+                    )
+                    : (
+                      <>
+                        <IconButton
+                          size='small'
+                          onClick={() => {
+                            setEditingGroupId(group.id);
+                            setEditingName(group.name);
+                          }}
+                          data-testid={`edit-group-${group.id}`}
+                        >
+                          <EditIcon fontSize='small' />
+                        </IconButton>
+                        <IconButton
+                          size='small'
+                          onClick={() => {
+                            void deleteGroup(group);
+                          }}
+                          data-testid={`delete-group-${group.id}`}
+                        >
+                          <DeleteIcon fontSize='small' />
+                        </IconButton>
+                      </>
+                    )}
                 </Box>
 
                 <Autocomplete
