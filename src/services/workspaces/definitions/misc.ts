@@ -26,14 +26,6 @@ export const miscSection: IGenericSectionDefinition = {
     },
     { type: 'divider' },
     {
-      type: 'preference-boolean',
-      key: 'enableFileSystemWatch',
-      titleKey: 'EditWorkspace.EnableFileSystemWatchTitle',
-      descriptionKey: 'EditWorkspace.EnableFileSystemWatchDescription',
-      needsRestart: true,
-    },
-    { type: 'divider' },
-    {
       type: 'custom',
       componentId: 'workspace.lastUrl',
       titleKey: 'EditWorkspace.LastVisitState',

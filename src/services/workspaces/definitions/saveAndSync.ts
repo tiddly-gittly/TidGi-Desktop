@@ -20,6 +20,14 @@ export const saveAndSyncSection: IGenericSectionDefinition = {
     },
     { type: 'divider' },
     {
+      type: 'preference-boolean',
+      key: 'enableFileSystemWatch',
+      titleKey: 'EditWorkspace.EnableFileSystemWatchTitle',
+      descriptionKey: 'EditWorkspace.EnableFileSystemWatchDescription',
+      needsRestart: true,
+    },
+    { type: 'divider' },
+    {
       type: 'custom',
       componentId: 'workspace.storageServiceSwitch',
       titleKey: 'AddWorkspace.SyncedWiki',
