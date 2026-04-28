@@ -281,6 +281,14 @@ export class Window implements IWindowService {
       }
     }
     windowWithBrowserViewState?.manage(newWindow);
+    // When runOnBackground=true the main window is hidden rather than destroyed, so 'closed' never
+    // fires and electron-window-state never writes the state file. Save explicitly on 'hide'.
+    if (windowName === WindowNames.main && windowWithBrowserViewState !== undefined) {
+      const stateRef = windowWithBrowserViewState;
+      newWindow.on('hide', () => {
+        stateRef.saveState(newWindow);
+      });
+    }
     if (isWindowWithBrowserView) {
       const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
       const viewService = container.get<IViewService>(serviceIdentifier.View);
