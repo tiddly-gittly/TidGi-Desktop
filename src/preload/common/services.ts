@@ -9,6 +9,7 @@ import { AsyncifyProxy } from 'electron-ipc-cat/common';
 import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
 import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
+import { AnalyticsServiceIPCDescriptor, type IAnalyticsService } from '@services/analytics/interface';
 import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from '@services/auth/interface';
 import { ContextServiceIPCDescriptor, type IContextService } from '@services/context/interface';
 import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/database/interface';
@@ -34,6 +35,7 @@ import { type IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@
 export const agentBrowser = createProxy<AsyncifyProxy<IAgentBrowserService>>(AgentBrowserServiceIPCDescriptor);
 export const agentDefinition = createProxy<AsyncifyProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor);
 export const agentInstance = createProxy<AsyncifyProxy<IAgentInstanceService>>(AgentInstanceServiceIPCDescriptor);
+export const analytics = createProxy<IAnalyticsService>(AnalyticsServiceIPCDescriptor);
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
@@ -60,6 +62,7 @@ export const descriptors = {
   agentBrowser: AgentBrowserServiceIPCDescriptor,
   agentDefinition: AgentDefinitionServiceIPCDescriptor,
   agentInstance: AgentInstanceServiceIPCDescriptor,
+  analytics: AnalyticsServiceIPCDescriptor,
   auth: AuthenticationServiceIPCDescriptor,
   context: ContextServiceIPCDescriptor,
   deepLink: DeepLinkServiceIPCDescriptor,

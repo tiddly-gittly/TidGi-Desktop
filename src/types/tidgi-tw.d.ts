@@ -1,6 +1,7 @@
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
@@ -28,6 +29,7 @@ export type TidgiService = {
   agentBrowser: IAgentBrowserService;
   agentDefinition: IAgentDefinitionService;
   agentInstance: IAgentInstanceService;
+  analytics: IAnalyticsService;
   auth: IAuthenticationService;
   context: IContextService;
   database: IDatabaseService;

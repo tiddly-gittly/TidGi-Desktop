@@ -7,6 +7,10 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { DataSource } from 'typeorm';
 
 export interface ISettingFile {
+  analyticsSecrets?: {
+    analyticsApiKey?: string;
+    analyticsDisclosureVersion?: number;
+  };
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
