@@ -56,6 +56,16 @@ export const stringPreferenceItemSchema = definitionBaseSchema.extend({
 });
 export type IStringPreferenceItem = z.infer<typeof stringPreferenceItemSchema>;
 
+export const textPreferenceItemSchema = definitionBaseSchema.extend({
+  type: z.literal('preference-text'),
+  key: z.string() as z.ZodType<keyof IPreferences>,
+  multiline: z.boolean().optional(),
+  needsRestart: z.boolean().optional(),
+  sideEffectId: z.string().optional(),
+  zod: z.custom<z.ZodString | z.ZodOptional<z.ZodString>>(),
+});
+export type ITextPreferenceItem = z.infer<typeof textPreferenceItemSchema>;
+
 export const stringArrayPreferenceItemSchema = definitionBaseSchema.extend({
   type: z.literal('preference-string-array'),
   key: z.string() as z.ZodType<keyof IPreferences>,
@@ -88,6 +98,7 @@ export const preferenceItemDefinitionSchema = z.discriminatedUnion('type', [
   enumPreferenceItemSchema,
   numberPreferenceItemSchema,
   stringPreferenceItemSchema,
+  textPreferenceItemSchema,
   stringArrayPreferenceItemSchema,
   actionItemSchema,
   customItemSchema,

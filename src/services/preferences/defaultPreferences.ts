@@ -4,9 +4,29 @@ import { app } from 'electron';
 import semver from 'semver';
 import type { IPreferences } from './interface';
 
+// Allow E2E tests to inject analytics configuration via environment variables
+function getAnalyticsEnvironmentOverrides(): { analyticsApiKey: string; analyticsEnabled: boolean; analyticsHost: string; analyticsSiteId: string } {
+  const analyticsHost = process.env.TIDGI_ANALYTICS_HOST ?? '';
+  if (analyticsHost) {
+    return {
+      analyticsApiKey: process.env.TIDGI_ANALYTICS_API_KEY ?? 'test-api-key',
+      analyticsEnabled: true,
+      analyticsHost,
+      analyticsSiteId: process.env.TIDGI_ANALYTICS_SITE_ID ?? 'test-site',
+    };
+  }
+  return { analyticsApiKey: '', analyticsEnabled: true, analyticsHost: '', analyticsSiteId: '' };
+}
+
+const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
+
 export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   alwaysOnTop: false,
+  analyticsApiKey: analyticsEnvironment.analyticsApiKey,
+  analyticsEnabled: analyticsEnvironment.analyticsEnabled,
+  analyticsHost: analyticsEnvironment.analyticsHost,
+  analyticsSiteId: analyticsEnvironment.analyticsSiteId,
   askForDownloadPath: true,
   disableAntiAntiLeech: false,
   disableAntiAntiLeechForUrls: [],

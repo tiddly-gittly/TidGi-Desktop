@@ -19,6 +19,7 @@ import type {
   ISectionDefinition,
   IStringArrayPreferenceItem,
   IStringPreferenceItem,
+  ITextPreferenceItem,
   PlatformCondition,
   PreferenceItemDefinition,
 } from '@services/preferences/definitions/types';
@@ -208,7 +209,7 @@ function StringItem({
   onNeedsRestart,
   query = '',
 }: {
-  item: IStringPreferenceItem;
+  item: IStringPreferenceItem | ITextPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
   query?: string;
@@ -342,6 +343,8 @@ function ItemRenderer({
       return <NumberItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'preference-string':
       return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+    case 'preference-text':
+      return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'preference-string-array':
       return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'action':
@@ -364,6 +367,8 @@ function ItemRenderer({
         );
       }
       return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+    default:
+      return null;
   }
 }
 
