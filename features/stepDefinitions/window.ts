@@ -1,4 +1,5 @@
 import { When } from '@cucumber/cucumber';
+import { backOff } from 'exponential-backoff';
 import { WebContentsView } from 'electron';
 import type { ElectronApplication } from 'playwright';
 import type { ApplicationWorld } from './application';
@@ -141,24 +142,32 @@ When('I confirm the {string} window browser view is positioned within visible wi
   const windowName = checkWindowName(windowType);
   const windowDimensions = checkWindowDimension(windowName);
 
-  // Get browser view bounds for the specific window type
-  const viewInfo = await getBrowserViewInfo(this.app, windowDimensions);
+  // Retry with backoff: browser view repositioning can lag behind DOM updates
+  await backOff(async () => {
+    // Get browser view bounds for the specific window type
+    const viewInfo = await getBrowserViewInfo(this.app!, windowDimensions);
 
-  if (!viewInfo.hasView || !viewInfo.windowContent) {
-    throw new Error(`No browser view found in "${windowType}" window`);
-  }
+    if (!viewInfo.hasView || !viewInfo.windowContent) {
+      throw new Error(`No browser view found in "${windowType}" window (retrying)`);
+    }
 
-  const visibleView = viewInfo.views.find((view) => isViewWithinBounds(view, viewInfo.windowContent!));
+    const visibleView = viewInfo.views.find((view) => isViewWithinBounds(view, viewInfo.windowContent!));
 
-  if (!visibleView) {
-    const sampledView = viewInfo.views[0];
-    throw new Error(
-      `Browser view is not positioned within visible window bounds.\n` +
-        `Views: ${JSON.stringify(viewInfo.views)}, ` +
-        `Window content: {width: ${viewInfo.windowContent.width}, height: ${viewInfo.windowContent.height}}` +
-        (sampledView ? `, First view: {x: ${sampledView.x}, y: ${sampledView.y}, width: ${sampledView.width}, height: ${sampledView.height}}` : ''),
-    );
-  }
+    if (!visibleView) {
+      const sampledView = viewInfo.views[0];
+      throw new Error(
+        `Browser view is not positioned within visible window bounds (retrying).\n` +
+          `Views: ${JSON.stringify(viewInfo.views)}, ` +
+          `Window content: {width: ${viewInfo.windowContent.width}, height: ${viewInfo.windowContent.height}}` +
+          (sampledView ? `, First view: {x: ${sampledView.x}, y: ${sampledView.y}, width: ${sampledView.width}, height: ${sampledView.height}}` : ''),
+      );
+    }
+  }, {
+    numOfAttempts: 10,
+    startingDelay: 200,
+    timeMultiple: 1,
+    maxDelay: 500,
+  });
 });
 
 When('I confirm the {string} window browser view is not positioned within visible window bounds', async function(this: ApplicationWorld, windowType: string) {
@@ -175,24 +184,32 @@ When('I confirm the {string} window browser view is not positioned within visibl
   const windowName = checkWindowName(windowType);
   const windowDimensions = checkWindowDimension(windowName);
 
-  // Get browser view bounds for the specific window type
-  const viewInfo = await getBrowserViewInfo(this.app, windowDimensions);
+  // Retry with backoff: browser view hiding can lag behind workspace switching
+  await backOff(async () => {
+    // Get browser view bounds for the specific window type
+    const viewInfo = await getBrowserViewInfo(this.app!, windowDimensions);
 
-  if (!viewInfo.hasView || !viewInfo.windowContent) {
-    // No view found is acceptable for this check - means it's definitely not visible
-    return;
-  }
+    if (!viewInfo.hasView || !viewInfo.windowContent) {
+      // No view found is acceptable for this check
+      return;
+    }
 
-  const visibleView = viewInfo.views.find((view) => isViewWithinBounds(view, viewInfo.windowContent!));
+    const visibleView = viewInfo.views.find((view) => isViewWithinBounds(view, viewInfo.windowContent!));
 
-  if (visibleView) {
-    throw new Error(
-      `Browser view IS positioned within visible window bounds, but expected it to be outside.\n` +
-        `Visible view: {x: ${visibleView.x}, y: ${visibleView.y}, width: ${visibleView.width}, height: ${visibleView.height}}, ` +
-        `All views: ${JSON.stringify(viewInfo.views)}, ` +
-        `Window content: {width: ${viewInfo.windowContent.width}, height: ${viewInfo.windowContent.height}}`,
-    );
-  }
+    if (visibleView) {
+      throw new Error(
+        `Browser view IS positioned within visible window bounds, but expected it to be outside (retrying).\n` +
+          `Visible view: {x: ${visibleView.x}, y: ${visibleView.y}, width: ${visibleView.width}, height: ${visibleView.height}}, ` +
+          `All views: ${JSON.stringify(viewInfo.views)}, ` +
+          `Window content: {width: ${viewInfo.windowContent.width}, height: ${viewInfo.windowContent.height}}`,
+      );
+    }
+  }, {
+    numOfAttempts: 5,
+    startingDelay: 200,
+    timeMultiple: 1,
+    maxDelay: 500,
+  });
 });
 
 When('I resize the {string} window to {int}x{int}', async function(this: ApplicationWorld, windowType: string, width: number, height: number) {

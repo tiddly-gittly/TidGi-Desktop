@@ -27,7 +27,7 @@ Feature: Workspace Grouping
     # Test: removing the last workspace deletes the empty group
     When I drag workspace "Ungroup Gamma" onto the header of its current group
     Then workspace "Ungroup Gamma" should be ungrouped
-    And there should be 1 workspace group
+    And there should be 1 workspace groups
 
   Scenario: Dragging across top, bottom, and center zones covers grouped and ungrouped targets
     When I create new wiki workspaces with names:
