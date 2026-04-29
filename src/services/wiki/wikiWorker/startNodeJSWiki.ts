@@ -12,7 +12,6 @@ import type { Server } from 'node:http';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
-import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
@@ -20,6 +19,24 @@ import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 import { authTokenIsProvided } from './wikiWorkerUtilities';
+
+/**
+ * Dynamically load the TiddlyWiki module from wiki-local installation if available,
+ * otherwise fall back to the built-in version shipped with TidGi.
+ * This must be dynamic because the static `import { TiddlyWiki } from 'tiddlywiki'`
+ * always resolves to the built-in version at module load time, ignoring local installations.
+ */
+function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string) {
+  // TIDDLY_WIKI_BOOT_PATH points to ".../node_modules/tiddlywiki/boot"
+  // Go up one level to get the package root
+  const tiddlyWikiPackagePath = path.resolve(TIDDLY_WIKI_BOOT_PATH, '..');
+  try {
+    return require(tiddlyWikiPackagePath) as typeof import('tiddlywiki');
+  } catch {
+    // If loading from local path fails, fall back to built-in
+    return require('tiddlywiki') as typeof import('tiddlywiki');
+  }
+}
 
 export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
   const {
@@ -107,6 +124,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
       );
 
+      const { TiddlyWiki } = loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH);
       const wikiInstance = TiddlyWiki();
       setWikiInstance(wikiInstance);
       /**
