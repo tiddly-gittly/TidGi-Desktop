@@ -95,7 +95,6 @@ Feature: Workspace Configuration Sync
     When I update workspace "wiki" settings:
       | property | value      |
       | name     | LocalWiki  |
-    When I wait for 2 seconds for "potential config write"
 
     # Step 4: Verify tidgi.config.json was NOT overwritten by the local-only workspace
     Then file "wiki/tidgi.config.json" should contain JSON with:
@@ -109,7 +108,6 @@ Feature: Workspace Configuration Sync
     When I update workspace "LocalWiki" settings:
       | property     | value |
       | readOnlyMode | true  |
-    When I wait for 2 seconds for "potential config write"
 
     # Step 7: Verify read-only config did NOT leak into tidgi.config.json
     Then file "wiki/tidgi.config.json" should contain JSON with:
@@ -159,7 +157,6 @@ Feature: Workspace Configuration Sync
       | property     | value      |
       | name         | BlogDeploy |
       | readOnlyMode | true       |
-    When I wait for 2 seconds for "potential config write"
 
     # Step 3: Verify tidgi.config.json does NOT contain the readOnlyMode from the non-synced workspace
     # (Default wiki may have created tidgi.config.json, but the non-synced workspace must not modify it)

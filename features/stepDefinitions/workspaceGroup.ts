@@ -57,6 +57,11 @@ async function getGroups(world: ApplicationWorld): Promise<IWorkspaceGroup[]> {
   return await world.currentWindow.evaluate(async () => window.service.workspace.getGroupsAsList());
 }
 
+async function getGroupWorkspaces(world: ApplicationWorld, groupId: string): Promise<ITestWorkspace[]> {
+  const workspaces = await getAllWikiWorkspaces(world);
+  return workspaces.filter(workspace => workspace.groupId === groupId);
+}
+
 async function getSidebarOrderEntries(world: ApplicationWorld): Promise<IWorkspaceOrGroupOrderEntry[]> {
   const [workspaces, groups] = await Promise.all([getAllWikiWorkspaces(world), getGroups(world)]);
   return [
@@ -71,13 +76,6 @@ async function getSidebarOrderEntries(world: ApplicationWorld): Promise<IWorkspa
       type: 'group' as const,
     })),
   ].sort((left, right) => left.order - right.order);
-}
-
-async function getGroupById(world: ApplicationWorld, groupId: string): Promise<IWorkspaceGroup | undefined> {
-  if (!world.currentWindow) {
-    throw new Error('Current window not set');
-  }
-  return await world.currentWindow.evaluate(async (id) => window.service.workspace.getGroup(id), groupId);
 }
 
 async function createGroup(world: ApplicationWorld, groupName: string): Promise<IWorkspaceGroup> {
@@ -127,6 +125,29 @@ async function waitForGroupVisibility(world: ApplicationWorld, groupId: string):
     const count = await world.currentWindow.locator(`[data-testid="workspace-group-${groupId}"]`).count();
     if (count === 0) {
       throw new Error(`Group ${groupId} not visible yet`);
+    }
+  }, BACKOFF_OPTIONS);
+}
+
+async function waitForGroupedWorkspaceDomState(world: ApplicationWorld, groupId: string, shouldBeVisible: boolean): Promise<void> {
+  await backOff(async () => {
+    if (!world.currentWindow) {
+      throw new Error('Current window not set');
+    }
+
+    const groupedWorkspaces = await getGroupWorkspaces(world, groupId);
+
+    for (const workspace of groupedWorkspaces) {
+      const itemCount = await world.currentWindow.locator(`[data-testid="workspace-item-${workspace.id}"]`).count();
+      const topDropZoneCount = await world.currentWindow.locator(`[data-testid="workspace-drop-zone-${workspace.id}-top"]`).count();
+
+      if (shouldBeVisible && (itemCount === 0 || topDropZoneCount === 0)) {
+        throw new Error(`Grouped workspace "${workspace.name}" is not fully visible yet`);
+      }
+
+      if (!shouldBeVisible && (itemCount !== 0 || topDropZoneCount !== 0)) {
+        throw new Error(`Grouped workspace "${workspace.name}" is still visible`);
+      }
     }
   }, BACKOFF_OPTIONS);
 }
@@ -278,10 +299,6 @@ Given('workspace group {string} contains workspaces:', async function(this: Appl
       }
     }, BACKOFF_OPTIONS);
   }
-
-  // Allow any deferred async side-effects (e.g. tidgi.config.json writes)
-  // to finish so that React state stabilises before the drag step starts.
-  await this.currentWindow?.waitForTimeout(3000);
 });
 
 When('I drag workspace {string} onto workspace {string}', async function(this: ApplicationWorld, sourceWorkspaceName: string, targetWorkspaceName: string) {
@@ -382,15 +399,6 @@ When('I drag workspace {string} onto the header of its current group', async fun
   );
 });
 
-When('I remove workspace {string} from its group without auto-disband', async function(this: ApplicationWorld, workspaceName: string) {
-  const workspace = await getWorkspaceByName(this, workspaceName);
-  if (!workspace.groupId) {
-    throw new Error(`Workspace "${workspaceName}" is not currently grouped`);
-  }
-
-  await moveWorkspaceToGroup(this, workspace.id, null, false);
-});
-
 Then('workspaces {string} and {string} should share a group', async function(this: ApplicationWorld, firstWorkspaceName: string, secondWorkspaceName: string) {
   await backOff(async () => {
     const [firstWorkspace, secondWorkspace] = await Promise.all([
@@ -417,39 +425,11 @@ Then('workspace {string} should be in a group', async function(this: Application
   }, BACKOFF_OPTIONS);
 });
 
-Then('the group containing workspace {string} should contain {int} workspaces', async function(this: ApplicationWorld, workspaceName: string, expectedCount: number) {
-  await backOff(async () => {
-    const workspace = await getWorkspaceByName(this, workspaceName);
-    if (!workspace.groupId) {
-      throw new Error(`Workspace "${workspaceName}" is not in a group`);
-    }
-
-    const groupedWorkspaces = (await getAllWikiWorkspaces(this)).filter(candidate => candidate.groupId === workspace.groupId);
-    if (groupedWorkspaces.length !== expectedCount) {
-      throw new Error(`Expected ${expectedCount} workspaces in group ${workspace.groupId}, found ${groupedWorkspaces.length}`);
-    }
-  }, BACKOFF_OPTIONS);
-});
-
 Then('there should be {int} workspace groups', async function(this: ApplicationWorld, expectedCount: number) {
   await backOff(async () => {
     const groups = await getGroups(this);
     if (groups.length !== expectedCount) {
       throw new Error(`Expected ${expectedCount} workspace groups, found ${groups.length}`);
-    }
-  }, BACKOFF_OPTIONS);
-});
-
-Then('the group containing workspace {string} should still exist', async function(this: ApplicationWorld, workspaceName: string) {
-  await backOff(async () => {
-    const workspace = await getWorkspaceByName(this, workspaceName);
-    if (!workspace.groupId) {
-      throw new Error(`Workspace "${workspaceName}" is not in a group`);
-    }
-
-    const group = await getGroupById(this, workspace.groupId);
-    if (!group) {
-      throw new Error(`Group ${workspace.groupId} no longer exists`);
     }
   }, BACKOFF_OPTIONS);
 });
@@ -502,15 +482,6 @@ Then('workspace {string} should show {string} drag intent', async function(this:
   }, BACKOFF_OPTIONS);
 });
 
-When('I press the Escape key', async function(this: ApplicationWorld) {
-  if (!this.currentWindow) {
-    throw new Error('Current window not set');
-  }
-
-  await this.currentWindow.keyboard.press('Escape');
-  await this.currentWindow.waitForTimeout(100);
-});
-
 When('I collapse workspace group {string}', async function(this: ApplicationWorld, groupName: string) {
   const groups = await getGroups(this);
   const group = groups.find(g => g.name === groupName);
@@ -525,8 +496,7 @@ When('I collapse workspace group {string}', async function(this: ApplicationWorl
     await window.service.workspace.setGroup(g.id, { ...g, collapsed: true });
   }, group);
 
-  // Wait for Collapse unmountOnExit to fully remove children from DOM
-  await this.currentWindow?.waitForTimeout(400);
+  await waitForGroupedWorkspaceDomState(this, group.id, false);
 });
 
 When('I expand workspace group {string}', async function(this: ApplicationWorld, groupName: string) {
@@ -543,11 +513,8 @@ When('I expand workspace group {string}', async function(this: ApplicationWorld,
     await window.service.workspace.setGroup(g.id, { ...g, collapsed: false });
   }, group);
 
-  // Wait for the MUI Collapse animation to finish so that
-  // overflow:hidden no longer clips pointer events on child elements.
-  // timeout='auto' can take 300-500ms for small lists; 2000ms ensures completion
-  // even on slower CI runners.
-  await this.currentWindow?.waitForTimeout(2000);
+  await waitForGroupVisibility(this, group.id);
+  await waitForGroupedWorkspaceDomState(this, group.id, true);
 });
 
 When('I drag group header {string} onto group header {string}', async function(this: ApplicationWorld, sourceGroupName: string, targetGroupName: string) {

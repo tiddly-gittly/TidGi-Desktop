@@ -542,11 +542,8 @@ When('I select {string} from MUI Select with test id {string}', async function(t
       throw new Error(`Failed to click: ${JSON.stringify(clicked)}`);
     }
 
-    // Wait a bit for the menu to appear
-    await currentWindow.waitForTimeout(500);
-
     // Wait for the menu to appear
-    await currentWindow.waitForSelector('[role="listbox"]', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     // Try to click on the option with the specified value (data-value attribute)
     // If not found, try to find by text content
