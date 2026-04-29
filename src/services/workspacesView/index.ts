@@ -253,6 +253,10 @@ export class WorkspaceView implements IWorkspaceViewService {
       windowName: WindowNames.secondary,
       uri: uriToOpen,
     });
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('workspace.opened_in_new_window', {
+      isSubWiki: isWikiWorkspace(workspace) ? (workspace.isSubWiki ?? false) : false,
+    });
   }
 
   public async updateLastUrl(

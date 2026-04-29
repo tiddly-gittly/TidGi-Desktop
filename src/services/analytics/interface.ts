@@ -9,6 +9,7 @@ export type BuiltInAnalyticsEventName =
   | 'settings.opened'
   | 'workspace.created'
   | 'workspace.activated'
+  | 'workspace.opened_in_new_window'
   | 'preferences.analytics_updated'
   | 'sync.triggered'
   | 'sync.completed'

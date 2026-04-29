@@ -60,6 +60,11 @@ Feature: TidGi Default Wiki
     # In lazy-all mode, Index.tid is served via tidgi:// protocol. Opening it confirms lazy-load works.
     When I open tiddler "Index" in browser view
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
+    # --- Part 4: Open workspace in new window ---
+    When I open workspace "wiki" in a new window
+    Then I should see analytics events:
+      | event_name                     | isSubWiki |
+      | workspace.opened_in_new_window | *boolean* |
 
 
   @wiki @move-workspace
