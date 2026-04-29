@@ -269,26 +269,20 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
         ]
         : []),
     ],
-    env: (() => {
-      const launchEnv: Record<string, string> = {
-        ...process.env as Record<string, string>,
-        ...world.launchEnvOverrides,
-        NODE_ENV: 'test',
-        E2E_TEST: 'true',
-        LANG: process.env.LANG || 'zh-Hans.UTF-8',
-        LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
-        LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
-        ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
-      };
-      // Prevent ELECTRON_RUN_AS_NODE from leaking into E2E (e.g. from test:unit script),
-      // which would cause Electron to run as Node.js and reject Chromium flags like --remote-debugging-port.
-      delete launchEnv.ELECTRON_RUN_AS_NODE;
-      if (process.env.CI) {
-        launchEnv.ELECTRON_ENABLE_LOGGING = 'true';
-        launchEnv.ELECTRON_DISABLE_HARDWARE_ACCELERATION = 'true';
-      }
-      return launchEnv;
-    })(),
+    env: {
+      ...process.env,
+      ...world.launchEnvOverrides,
+      NODE_ENV: 'test',
+      E2E_TEST: 'true',
+      LANG: process.env.LANG || 'zh-Hans.UTF-8',
+      LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
+      LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
+      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+      ...(process.env.CI && {
+        ELECTRON_ENABLE_LOGGING: 'true',
+        ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
+      }),
+    },
     cwd: process.cwd(),
     timeout: PLAYWRIGHT_TIMEOUT,
   });
