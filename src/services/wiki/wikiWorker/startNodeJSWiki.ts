@@ -17,8 +17,8 @@ import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOpera
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
-import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 import { authTokenIsProvided, loadTiddlyWikiModule } from './loadTiddlyWikiModule';
+import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 
 export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
   const {
