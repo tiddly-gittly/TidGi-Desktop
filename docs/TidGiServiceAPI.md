@@ -29,6 +29,45 @@ Frontend UI code should keep using `window.service`.
 await window.service.workspace.getActiveWorkspace();
 ```
 
+## Usage for analytics
+
+TidGi exposes `analytics` to both renderer code and TiddlyWiki plugins.
+
+Use the guarded plugin-facing method for custom analytics:
+
+```ts
+await window.service.analytics.trackPluginEvent('my-plugin', 'panel_opened', {
+  source: 'toolbar',
+  has_selection: true,
+});
+```
+
+Inside a TiddlyWiki plugin module:
+
+```ts
+const tidgiService = ($tw as typeof $tw & { tidgi?: { service?: ITidGiGlobalService } }).tidgi?.service;
+
+await tidgiService?.analytics.trackPluginEvent('my-plugin', 'panel_opened', {
+  source: 'toolbar',
+  has_selection: true,
+});
+```
+
+The final emitted event name becomes:
+
+```text
+plugin.my-plugin.panel_opened
+```
+
+### Analytics guardrails
+
+- `pluginId` and `eventName` must be lowercase slug-like identifiers
+- Property keys must be short snake_case-style identifiers
+- Property values must be `string | number | boolean`
+- Do not send note text, tiddler titles, workspace names, file paths, tokens, or raw URLs
+
+See [Analytics.md](./Analytics.md) for the full analytics contract.
+
 ## How the API is wired
 
 - Service proxies are created in the wiki worker and preload using `electron-ipc-cat`.
