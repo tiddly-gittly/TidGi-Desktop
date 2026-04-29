@@ -4,7 +4,8 @@ Feature: Cross-Window Synchronization
   So that I can view consistent content across all windows
 
   Background:
-    Given I cleanup test wiki so it could create a new one on start
+    Given I start mock analytics server
+    And I cleanup test wiki so it could create a new one on start
     And I launch the TidGi application
     And I wait for the page to load completely
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
@@ -30,3 +31,10 @@ Feature: Cross-Window Synchronization
     When I switch to the newest window
     Then the browser view should be loaded and visible
     Then I should see "CrossWindowSyncTestContent123" in the browser view content
+    # Verify analytics events were tracked throughout the scenario
+    Then I should see analytics events:
+      | event_name                     | platform   | version    | firstLaunchDate | isFirstLaunch | isSubWiki | hasGitUrl |
+      | app.launched                   | *string*   | *string*   | *exists*        | *boolean*     |           |           |
+      | workspace.created              |            |            |                 |               | *boolean* | *boolean* |
+      | workspace.activated            |            |            |                 |               | *boolean* |           |
+      | workspace.opened_in_new_window |            |            |                 |               | *boolean* |           |
