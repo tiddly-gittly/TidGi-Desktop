@@ -124,7 +124,8 @@ Feature: Create New Agent Workflow
     When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     # Step 7: Test in the immediate use section (embedded chat)
     # The immediate use section should show an embedded chat interface
-    # Find a message input in the immediate use section and test the agent
+    # Ensure the message input is visible before clicking (it may be scrolled below the prompt editor)
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "你好，请介绍一下自己" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key

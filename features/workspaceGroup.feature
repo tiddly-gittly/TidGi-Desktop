@@ -10,24 +10,24 @@ Feature: Workspace Grouping
     And I wait for the page to load completely
     And the browser view should be loaded and visible
 
-  Scenario: Dragging a workspace onto its own group header removes it from the group
+  Scenario: Ungrouping workspaces and emptying groups via own-group-header drag
     When I create new wiki workspaces with names:
-      | Ungroup Drag Beta  |
-      | Ungroup Drag Gamma |
-    Given workspace group "Ungroup Drag Group" contains workspaces:
-      | Ungroup Drag Beta  |
-      | Ungroup Drag Gamma |
-    When I drag workspace "Ungroup Drag Beta" onto the header of its current group
-    Then workspace "Ungroup Drag Beta" should be ungrouped
-    And workspace "Ungroup Drag Gamma" should be in a group
-
-  Scenario: Removing the last workspace deletes the empty group
-    When I create a new wiki workspace with name "Last Workspace Gamma"
-    Given workspace group "Last Workspace Group" contains workspaces:
-      | Last Workspace Gamma |
-    When I drag workspace "Last Workspace Gamma" onto the header of its current group
-    Then workspace "Last Workspace Gamma" should be ungrouped
-    And there should be 0 workspace groups
+      | Ungroup Alpha |
+      | Ungroup Beta  |
+      | Ungroup Gamma |
+    Given workspace group "Group Dual" contains workspaces:
+      | Ungroup Alpha |
+      | Ungroup Beta  |
+    Given workspace group "Group Solo" contains workspaces:
+      | Ungroup Gamma |
+    # Test: removing from multi-item group leaves the other item grouped
+    When I drag workspace "Ungroup Alpha" onto the header of its current group
+    Then workspace "Ungroup Alpha" should be ungrouped
+    And workspace "Ungroup Beta" should be in a group
+    # Test: removing the last workspace deletes the empty group
+    When I drag workspace "Ungroup Gamma" onto the header of its current group
+    Then workspace "Ungroup Gamma" should be ungrouped
+    And there should be 1 workspace group
 
   Scenario: Dragging across top, bottom, and center zones covers grouped and ungrouped targets
     When I create new wiki workspaces with names:
