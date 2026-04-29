@@ -92,22 +92,20 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         );
       }, 50);
     });
-    void (async () => {
     let fullBootArgv: string[] = [];
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
 
-    try {
-      // Log which TiddlyWiki version is being used (local vs built-in)
-      const isUsingLocalTiddlyWiki = TIDDLY_WIKI_BOOT_PATH.includes(path.join(homePath, 'node_modules'));
-      void native.logFor(
-        workspace.name,
-        'info',
-        `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
-      );
+    // Log which TiddlyWiki version is being used (local vs built-in)
+    const isUsingLocalTiddlyWiki = TIDDLY_WIKI_BOOT_PATH.includes(path.join(homePath, 'node_modules'));
+    void native.logFor(
+      workspace.name,
+      'info',
+      `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
+    );
 
-      const { TiddlyWiki } = await loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH);
+    loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH).then(({ TiddlyWiki }) => {
       const wikiInstance = TiddlyWiki();
       setWikiInstance(wikiInstance);
       /**
@@ -271,10 +269,9 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         message: `Tiddlywiki booted with args ${wikiInstance === undefined ? '(wikiInstance is undefined)' : fullBootArgv.join(' ')}`,
         argv: fullBootArgv,
       });
-    } catch (error) {
+    }).catch((error) => {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
-    }
-    })();
+    });
   });
 }
