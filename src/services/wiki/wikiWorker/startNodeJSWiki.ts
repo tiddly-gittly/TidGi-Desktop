@@ -41,7 +41,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     userName,
     workspace,
   } = configs;
-  return new Observable<IWikiMessage>(async (observer) => {
+  return new Observable<IWikiMessage>((observer) => {
     if (openDebugger === true) {
       inspector.open();
       inspector.waitForDebugger();
@@ -92,6 +92,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
         );
       }, 50);
     });
+    void (async () => {
     let fullBootArgv: string[] = [];
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
@@ -274,5 +275,6 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
     }
+    })();
   });
 }
