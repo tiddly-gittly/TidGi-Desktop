@@ -969,15 +969,15 @@ When('I open edit workspace window for workspace with name {string}', async func
   }
 });
 
-When('I create a new wiki workspace with name {string}', async function(this: ApplicationWorld, workspaceName: string) {
-  if (!this.app) {
+async function createWikiWorkspace(world: ApplicationWorld, workspaceName: string): Promise<void> {
+  if (!world.app) {
     throw new Error('Application is not available');
   }
 
-  const isWorkspaceGroupScenario = this.scenarioTags.includes('@workspace-group');
+  const isWorkspaceGroupScenario = world.scenarioTags.includes('@workspace-group');
 
   // Construct the full wiki path
-  const wikiPath = path.join(getWikiTestRootPath(this), workspaceName);
+  const wikiPath = path.join(getWikiTestRootPath(world), workspaceName);
 
   // Create the wiki folder using the template (same filter as createWiki in wiki/index.ts)
   const templatePath = path.join(process.cwd(), 'template', 'wiki');
@@ -1012,7 +1012,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
   }
 
   // Now create workspace configuration
-  await this.app.evaluate(async ({ BrowserWindow }, { wikiName, wikiFullPath }: { wikiName: string; wikiFullPath: string }) => {
+  await world.app.evaluate(async ({ BrowserWindow }, { wikiName, wikiFullPath }: { wikiName: string; wikiFullPath: string }) => {
     const windows = BrowserWindow.getAllWindows();
     const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
@@ -1036,7 +1036,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
 
   await backOff(
     async () => {
-      const workspaces = await this.app!.evaluate(async ({ BrowserWindow }, _name: string) => {
+      const workspaces = await world.app!.evaluate(async ({ BrowserWindow }, _name: string) => {
         const windows = BrowserWindow.getAllWindows();
         const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
@@ -1065,7 +1065,7 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
   // target elements that have not yet been mounted.
   await backOff(
     async () => {
-      const workspaceId = await this.app!.evaluate(async ({ BrowserWindow }, name: string) => {
+      const workspaceId = await world.app!.evaluate(async ({ BrowserWindow }, name: string) => {
         const windows = BrowserWindow.getAllWindows();
         const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
         if (!mainWindow) return null;
@@ -1079,17 +1079,31 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
         return resolvedWorkspaceId;
       }, workspaceName);
 
-      if (!workspaceId || !this.currentWindow) {
+      if (!workspaceId || !world.currentWindow) {
         throw new Error(`Workspace ${workspaceName} ID not available for DOM check`);
       }
 
-      const count = await this.currentWindow.locator(`[data-testid="workspace-item-${workspaceId}"]`).count();
+      const count = await world.currentWindow.locator(`[data-testid="workspace-item-${workspaceId}"]`).count();
       if (count === 0) {
         throw new Error(`Workspace ${workspaceName} not yet rendered in sidebar DOM`);
       }
     },
     BACKOFF_OPTIONS,
   );
+}
+
+When('I create a new wiki workspace with name {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  await createWikiWorkspace(this, workspaceName);
+});
+
+When('I create new wiki workspaces with names:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  const workspaceNames = dataTable.raw()
+    .map(([workspaceName]) => workspaceName?.trim())
+    .filter((workspaceName): workspaceName is string => Boolean(workspaceName));
+
+  for (const workspaceName of workspaceNames) {
+    await createWikiWorkspace(this, workspaceName);
+  }
 });
 
 /**

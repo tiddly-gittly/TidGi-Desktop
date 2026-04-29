@@ -11,8 +11,9 @@ Feature: Workspace Grouping
     And the browser view should be loaded and visible
 
   Scenario: Dragging a workspace onto its own group header removes it from the group
-    When I create a new wiki workspace with name "Ungroup Drag Beta"
-    And I create a new wiki workspace with name "Ungroup Drag Gamma"
+    When I create new wiki workspaces with names:
+      | Ungroup Drag Beta  |
+      | Ungroup Drag Gamma |
     Given workspace group "Ungroup Drag Group" contains workspaces:
       | Ungroup Drag Beta  |
       | Ungroup Drag Gamma |
@@ -29,10 +30,11 @@ Feature: Workspace Grouping
     And there should be 0 workspace groups
 
   Scenario: Dragging across top, bottom, and center zones covers grouped and ungrouped targets
-    When I create a new wiki workspace with name "Zone Test Alpha"
-    And I create a new wiki workspace with name "Zone Test Beta"
-    And I create a new wiki workspace with name "Zone Test Gamma"
-    And I create a new wiki workspace with name "Zone Test Delta"
+    When I create new wiki workspaces with names:
+      | Zone Test Alpha |
+      | Zone Test Beta  |
+      | Zone Test Gamma |
+      | Zone Test Delta |
     When I drag workspace "Zone Test Gamma" to the top zone of workspace "Zone Test Alpha"
     And workspace "Zone Test Gamma" should appear before workspace "Zone Test Alpha"
     When I drag workspace "Zone Test Gamma" to the bottom zone of workspace "Zone Test Beta"
@@ -42,19 +44,17 @@ Feature: Workspace Grouping
     When I drag workspace "Zone Test Delta" to the top zone of workspace "Zone Test Alpha"
     Then workspace "Zone Test Delta" should appear before workspace "Zone Test Alpha"
     And workspaces "Zone Test Alpha" and "Zone Test Beta" should share a group
-
-  Scenario: Canceling a drag with Escape key leaves workspaces unchanged
-    When I create a new wiki workspace with name "Cancel Drag Alpha"
-    And I create a new wiki workspace with name "Cancel Drag Beta"
-    And I hover workspace "Cancel Drag Alpha" over workspace "Cancel Drag Beta"
+    When I hover workspace "Zone Test Delta" over workspace "Zone Test Beta"
+    Then workspace "Zone Test Beta" should show "group" drag intent
     And I press "Escape" key
-    Then workspace "Cancel Drag Alpha" should be ungrouped
-    And workspace "Cancel Drag Beta" should be ungrouped
+    Then workspace "Zone Test Delta" should be ungrouped
+    And workspaces "Zone Test Alpha" and "Zone Test Beta" should share a group
 
   Scenario: Dragging workspace between different groups after collapsing and re-expanding the source group
-    When I create a new wiki workspace with name "Cross Group Alpha"
-    And I create a new wiki workspace with name "Cross Group Beta"
-    And I create a new wiki workspace with name "Cross Group Gamma"
+    When I create new wiki workspaces with names:
+      | Cross Group Alpha |
+      | Cross Group Beta  |
+      | Cross Group Gamma |
     Given workspace group "Cross Group A" contains workspaces:
       | Cross Group Alpha |
       | Cross Group Beta  |
@@ -67,9 +67,10 @@ Feature: Workspace Grouping
     And workspace "Cross Group Beta" should be in a group
 
   Scenario: Reordering group headers and positioning before ungrouped workspaces
-    When I create a new wiki workspace with name "Group Order Alpha"
-    And I create a new wiki workspace with name "Group Order Beta"
-    And I create a new wiki workspace with name "Group Order Gamma"
+    When I create new wiki workspaces with names:
+      | Group Order Alpha |
+      | Group Order Beta  |
+      | Group Order Gamma |
     Given workspace group "Group Order A" contains workspaces:
       | Group Order Alpha |
     Given workspace group "Group Order B" contains workspaces:
@@ -78,10 +79,3 @@ Feature: Workspace Grouping
     Then group "Group Order B" should appear before group "Group Order A"
     When I drag group header "Group Order A" onto workspace "Group Order Gamma"
     Then group "Group Order A" should appear before workspace "Group Order Gamma"
-
-  Scenario: Hovering a workspace over another shows combine intent on the target
-    When I create a new wiki workspace with name "Hover Highlight Alpha"
-    And I create a new wiki workspace with name "Hover Highlight Beta"
-    And I hover workspace "Hover Highlight Alpha" over workspace "Hover Highlight Beta"
-    Then workspace "Hover Highlight Beta" should show "group" drag intent
-    And I release the mouse

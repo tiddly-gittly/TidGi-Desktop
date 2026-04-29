@@ -38,11 +38,12 @@ Feature: Workspace Configuration Sync
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    When I click on a "open existing wiki tab" element with selector "button:has-text('导入本地知识库')"
     When I prepare to select directory in dialog "wiki-test/wiki"
-    When I click on a "select folder button" element with selector "button:has-text('选择')"
-    # Click the import button to actually add the workspace
-    When I click on a "import wiki button" element with selector "button:has-text('导入知识库')"
+    When I click on "open existing wiki tab and select folder button and import wiki button" elements with selectors:
+      | element description    | selector                          |
+      | open existing wiki tab | button:has-text('导入本地知识库') |
+      | select folder button   | button:has-text('选择')           |
+      | import wiki button     | button:has-text('导入知识库')     |
     # Switch back to main window and wait for workspace to be created and loaded
     When I switch to "main" window
     Then I wait for log markers:
@@ -76,9 +77,11 @@ Feature: Workspace Configuration Sync
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    When I click on a "open existing wiki tab" element with selector "button:has-text('导入本地知识库')"
     When I prepare to select directory in dialog "wiki-test/wiki"
-    When I click on a "select folder button" element with selector "button:has-text('选择')"
+    When I click on "open existing wiki tab and select folder button" elements with selectors:
+      | element description    | selector                          |
+      | open existing wiki tab | button:has-text('导入本地知识库') |
+      | select folder button   | button:has-text('选择')           |
     # Uncheck the "Use tidgi.config" checkbox to create a local-only workspace
     When I click on a "use tidgi config checkbox" element with selector "[data-testid='use-tidgi-config-checkbox']"
     Then the "use tidgi config checkbox" element with selector "[data-testid='use-tidgi-config-checkbox']" should be unchecked
@@ -139,9 +142,11 @@ Feature: Workspace Configuration Sync
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    When I click on a "open existing wiki tab" element with selector "button:has-text('导入本地知识库')"
     When I prepare to select directory in dialog "wiki-test/wiki"
-    When I click on a "select folder button" element with selector "button:has-text('选择')"
+    When I click on "open existing wiki tab and select folder button" elements with selectors:
+      | element description    | selector                          |
+      | open existing wiki tab | button:has-text('导入本地知识库') |
+      | select folder button   | button:has-text('选择')           |
     # Uncheck the "Use tidgi.config" checkbox
     When I click on a "use tidgi config checkbox" element with selector "[data-testid='use-tidgi-config-checkbox']"
     Then the "use tidgi config checkbox" element with selector "[data-testid='use-tidgi-config-checkbox']" should be unchecked
