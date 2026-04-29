@@ -11,6 +11,7 @@ import { map } from 'rxjs/operators';
 import { WikiChannel } from '@/constants/channels';
 import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
 import { getDefaultTidGiUrl } from '@/constants/urls';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -594,6 +595,13 @@ export class Workspace implements IWorkspaceService {
 
     await this.set(newID, newWorkspace, true);
     logger.info(`[test-id-WORKSPACE_CREATED] Workspace created`, { workspaceId: newID, workspaceName: newWorkspace.name, wikiFolderLocation: newWorkspace.wikiFolderLocation });
+
+    // Track workspace creation event
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('workspace.created', {
+      isSubWiki: newWorkspace.isSubWiki ?? false,
+      hasGitUrl: Boolean(newWorkspace.gitUrl),
+    });
 
     return newWorkspace;
   }

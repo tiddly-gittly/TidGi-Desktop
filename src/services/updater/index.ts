@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import { BehaviorSubject } from 'rxjs';
 import semver from 'semver';
 
+import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { logger } from '@services/libs/log';
@@ -44,6 +45,7 @@ export class Updater implements IUpdaterService {
   public async checkForUpdates(): Promise<void> {
     logger.debug('Checking for updates...');
     this.setMetaData({ status: IUpdaterStatus.checkingForUpdate });
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
     const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
     await menuService.insertMenu('TidGi', [
       {
@@ -55,6 +57,7 @@ export class Updater implements IUpdaterService {
     let latestVersion: string;
     let latestReleasePageUrl: string;
     const allowPrerelease = await this.preferenceService.get('allowPrerelease');
+    void analyticsService.track('updater.check_started', { allowPrerelease });
     try {
       const latestReleaseData = await (allowPrerelease
         ? fetch('https://api.github.com/repos/tiddly-gittly/TidGi-Desktop/releases?per_page=1')
@@ -70,6 +73,7 @@ export class Updater implements IUpdaterService {
       latestReleasePageUrl = latestReleaseData.html_url;
     } catch (fetchError) {
       logger.error('Fetching latest release failed', { fetchError });
+      void analyticsService.track('updater.check_failed', { allowPrerelease });
       this.setMetaData({
         status: 'error' as IUpdaterStatus,
         info: { errorMessage: (fetchError as Error).message },
@@ -94,6 +98,7 @@ export class Updater implements IUpdaterService {
     const hasNewRelease = semver.gt(latestVersion, currentVersion);
     logger.debug('Compare version', { currentVersion, isLatestRelease: hasNewRelease });
     if (hasNewRelease) {
+      void analyticsService.track('updater.update_available', { allowPrerelease });
       this.setMetaData({ status: IUpdaterStatus.updateAvailable, info: { version: latestVersion, latestReleasePageUrl } });
       const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
       await menuService.insertMenu('TidGi', [
@@ -106,6 +111,7 @@ export class Updater implements IUpdaterService {
         },
       ]);
     } else {
+      void analyticsService.track('updater.update_not_available', { allowPrerelease });
       this.setMetaData({ status: IUpdaterStatus.updateNotAvailable, info: { version: latestVersion } });
       const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
       await menuService.insertMenu('TidGi', [

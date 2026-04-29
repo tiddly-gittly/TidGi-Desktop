@@ -7,6 +7,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -307,6 +308,12 @@ export class Window implements IWindowService {
         await workspaceViewService.refreshActiveWorkspaceView();
       }
     }
+    // Track analytics event when preferences window is opened
+    if (windowName === WindowNames.preferences) {
+      const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+      void analyticsService.track('settings.opened', { window: 'preferences' });
+    }
+
     if (returnWindow === true) {
       return newWindow;
     }

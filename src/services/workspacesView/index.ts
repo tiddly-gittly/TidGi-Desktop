@@ -4,6 +4,7 @@ import { inject, injectable } from 'inversify';
 
 import { WikiChannel } from '@/constants/channels';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
@@ -374,6 +375,12 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     // later process will use the current active workspace
     await container.get<IWorkspaceService>(serviceIdentifier.Workspace).setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
+
+    // Track workspace activation event
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('workspace.activated', {
+      isSubWiki: isWikiWorkspace(newWorkspace) ? (newWorkspace.isSubWiki ?? false) : false,
+    });
 
     // When coming from a page workspace (agent), the wiki that was active *before* the agent was
     // deferred and kept alive. Hibernate it now that we have a real wiki destination.

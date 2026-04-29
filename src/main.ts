@@ -25,6 +25,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { sanitizeErrorMessage } from '@services/analytics';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -73,6 +75,7 @@ protocol.registerSchemesAsPrivileged([
 bindServiceAndProxy();
 
 // Get services - DO NOT use them until commonInit() is called
+const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
@@ -223,6 +226,14 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
+
+  // Track app launch event with retention properties
+  const retentionProperties = await analyticsService.getRetentionProperties();
+  void analyticsService.track('app.launched', {
+    platform: process.platform,
+    version: app.getVersion(),
+    ...retentionProperties,
+  });
 };
 
 /**
@@ -249,7 +260,18 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    logger.error('Error during app ready handler', { function: "app.on('ready')", error });
+    const error_ = error as Error;
+    logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_ });
+    // Fire-and-forget error tracking for post-init failures
+    try {
+      void analyticsService.track('error.unhandled', {
+        errorName: error_.name || 'Error',
+        errorMessage: sanitizeErrorMessage(error_),
+        errorSource: 'app_ready',
+      });
+    } catch {
+      // Silently ignore — analytics infrastructure may not be ready
+    }
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -291,6 +313,16 @@ unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
     logger.error('unhandled', { error });
+    // Fire-and-forget error tracking. Wrapped to avoid throwing if services are not yet initialized.
+    try {
+      void analyticsService.track('error.unhandled', {
+        errorName: error.name || 'Error',
+        errorMessage: sanitizeErrorMessage(error),
+        errorSource: 'unhandled',
+      });
+    } catch {
+      // Silently ignore — analytics infrastructure may not be ready during early startup
+    }
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);
