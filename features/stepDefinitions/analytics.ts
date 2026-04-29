@@ -33,7 +33,7 @@ When('I reset mock analytics events', async function(this: ApplicationWorld) {
 
 /**
  * Verify that specific analytics events were received by the mock server.
- * Polls with a timeout to tolerate fire-and-forget event delivery.
+ * Supports table format with event names and optional property checks.
  */
 Then('I should see analytics events:', async function(this: ApplicationWorld, dataTable: { hashes: () => Array<Record<string, string>> }) {
   const mockAnalyticsServer = (this as unknown as Record<string, unknown>).mockAnalyticsServer as MockAnalyticsServer | undefined;
@@ -41,83 +41,44 @@ Then('I should see analytics events:', async function(this: ApplicationWorld, da
     throw new Error('Mock analytics server is not started. Call "I start mock analytics server" first.');
   }
 
+  // Wait a short time for any pending analytics requests to complete
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const events = mockAnalyticsServer.getEvents();
   const expectedEvents = dataTable.hashes();
-  const pollIntervalMs = 200;
-  const maxWaitMs = 3000;
-  const startTime = Date.now();
 
-  while (true) {
-    const events = mockAnalyticsServer.getEvents();
-    let allFound = true;
-
-    for (const expected of expectedEvents) {
-      const eventName = expected.event_name;
-      if (!eventName) {
-        throw new Error('Missing "event_name" column in analytics events table');
-      }
-
-      const matchingEvents = events.filter(event => event.event_name === eventName);
-      if (matchingEvents.length === 0) {
-        allFound = false;
-        break;
-      }
-
-      // Check optional properties
-      const matchedEvent = matchingEvents[0];
-      for (const [key, value] of Object.entries(expected)) {
-        if (key === 'event_name' || !value) continue;
-
-        const actualValue = matchedEvent.properties?.[key];
-        const expectedValue = value;
-
-        if (expectedValue === '*exists*') {
-          if (actualValue === undefined) {
-            allFound = false;
-            break;
-          }
-        } else if (expectedValue === '*boolean*') {
-          if (typeof actualValue !== 'boolean') {
-            allFound = false;
-            break;
-          }
-        } else if (expectedValue === '*number*') {
-          if (typeof actualValue !== 'number') {
-            allFound = false;
-            break;
-          }
-        } else if (expectedValue === '*string*') {
-          if (typeof actualValue !== 'string') {
-            allFound = false;
-            break;
-          }
-        } else if (expectedValue.startsWith('*contains:')) {
-          const substring = expectedValue.slice(10, -1);
-          if (!String(actualValue).includes(substring)) {
-            allFound = false;
-            break;
-          }
-        } else if (String(actualValue) !== expectedValue) {
-          allFound = false;
-          break;
-        }
-      }
-      if (!allFound) break;
+  for (const expected of expectedEvents) {
+    const eventName = expected.event_name;
+    if (!eventName) {
+      throw new Error('Missing "event_name" column in analytics events table');
     }
 
-    if (allFound) {
-      return;
-    }
+    const matchingEvents = events.filter(event => event.event_name === eventName);
+    assert(matchingEvents.length >= 1, `Expected analytics event "${eventName}" to be received, but got ${events.map(event => event.event_name).join(', ') || 'none'}`);
 
-    if (Date.now() - startTime >= maxWaitMs) {
-      const events = mockAnalyticsServer.getEvents();
-      for (const expected of expectedEvents) {
-        const eventName = expected.event_name;
-        const matchingEvents = events.filter(event => event.event_name === eventName);
-        assert(matchingEvents.length >= 1, `Expected analytics event "${eventName}" to be received, but got ${events.map(event => event.event_name).join(', ') || 'none'}`);
+    // Check optional properties
+    const matchedEvent = matchingEvents[0];
+    for (const [key, value] of Object.entries(expected)) {
+      if (key === 'event_name' || !value) continue;
+
+      const actualValue = matchedEvent.properties?.[key];
+      const expectedValue = value;
+
+      // Support special matchers
+      if (expectedValue === '*exists*') {
+        assert(actualValue !== undefined, `Expected property "${key}" to exist on event "${eventName}"`);
+      } else if (expectedValue === '*boolean*') {
+        assert(typeof actualValue === 'boolean', `Expected property "${key}" to be a boolean on event "${eventName}"`);
+      } else if (expectedValue === '*number*') {
+        assert(typeof actualValue === 'number', `Expected property "${key}" to be a number on event "${eventName}"`);
+      } else if (expectedValue === '*string*') {
+        assert(typeof actualValue === 'string', `Expected property "${key}" to be a string on event "${eventName}"`);
+      } else if (expectedValue.startsWith('*contains:')) {
+        const substring = expectedValue.slice(10, -1);
+        assert(String(actualValue).includes(substring), `Expected property "${key}" to contain "${substring}" on event "${eventName}"`);
+      } else {
+        assert(String(actualValue) === expectedValue, `Expected property "${key}" to be "${expectedValue}" on event "${eventName}", but got "${String(actualValue)}"`);
       }
-      return;
     }
-
-    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
   }
 });

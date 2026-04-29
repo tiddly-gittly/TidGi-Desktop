@@ -5,6 +5,7 @@ Feature: TidGi Application Launch
 
   @smoke @logging
   Scenario: Application starts, shows interface, and logs work
+    Given I start mock analytics server
     When I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
@@ -15,3 +16,6 @@ Feature: TidGi Application Launch
     When I click on a "sync section" element with selector "[data-testid='preference-section-sync']"
     Then I should find log entries containing
       | test-id-Preferences section clicked |
+    Then I should see analytics events:
+      | event_name      | window        |
+      | settings.opened | preferences   |
