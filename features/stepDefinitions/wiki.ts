@@ -706,22 +706,19 @@ Then('I wait for SSE and watch-fs to be ready', async function(this: Application
  * @param marker - The text pattern to remove from log files
  */
 When('I clear log lines containing {string}', async function(this: ApplicationWorld, marker: string) {
-  const logDirectory = getLogPath(this);
-  if (!fs.existsSync(logDirectory)) return;
+  await clearLogLinesContaining(this, marker);
+});
 
-  // Clear from both TidGi- and wiki- prefixed log files
-  const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('TidGi-') || f.startsWith('wiki')) && f.endsWith('.log'));
+When('I clear log lines containing:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 1);
 
-  for (const logFile of logFiles) {
-    const logPath = path.join(logDirectory, logFile);
-    try {
-      const content = fs.readFileSync(logPath, 'utf-8');
-      // Remove lines containing the marker
-      const filteredLines = content.split('\n').filter(line => !line.includes(marker));
-      fs.writeFileSync(logPath, filteredLines.join('\n'), 'utf-8');
-    } catch (error) {
-      console.warn(`Failed to clear log lines from ${logFile}:`, error);
-    }
+  if (dataRows[0]?.length !== 1) {
+    throw new Error('Table must have exactly 1 column: | marker |');
+  }
+
+  for (const [marker] of dataRows) {
+    await clearLogLinesContaining(this, marker);
   }
 });
 

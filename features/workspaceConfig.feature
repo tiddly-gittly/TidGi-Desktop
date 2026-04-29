@@ -33,8 +33,10 @@ Feature: Workspace Configuration Sync
     Then file "wiki/tidgi.config.json" should exist in "wiki-test"
     # Step 5: Re-add the workspace by opening existing wiki
     # Clear previous log markers before waiting for new ones
-    And I clear log lines containing "[test-id-WORKSPACE_CREATED]"
-    And I clear log lines containing "[test-id-VIEW_LOADED]"
+    And I clear log lines containing:
+      | marker                      |
+      | [test-id-WORKSPACE_CREATED] |
+      | [test-id-VIEW_LOADED]       |
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
@@ -72,8 +74,10 @@ Feature: Workspace Configuration Sync
       | $.name   | SyncedWiki |
 
     # Step 2: Import the same wiki folder WITHOUT using tidgi.config.json
-    And I clear log lines containing "[test-id-WORKSPACE_CREATED]"
-    And I clear log lines containing "[test-id-VIEW_LOADED]"
+    And I clear log lines containing:
+      | marker                      |
+      | [test-id-WORKSPACE_CREATED] |
+      | [test-id-VIEW_LOADED]       |
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
@@ -122,8 +126,10 @@ Feature: Workspace Configuration Sync
       | $.readOnlyMode | true  |
 
     # Step 8: Verify both workspaces are visible in the sidebar
-    Then I should see a "synced wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('SyncedWiki')"
-    Then I should see a "local wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('LocalWiki')"
+    Then I should see "workspace sidebar entries" elements with selectors:
+      | element description     | selector                                                       |
+      | synced wiki workspace   | div[data-testid^='workspace-']:has-text('SyncedWiki')          |
+      | local wiki workspace    | div[data-testid^='workspace-']:has-text('LocalWiki')           |
 
   @no-tidgi-config-restart
   Scenario: Non-synced workspace config survives restart
@@ -137,8 +143,10 @@ Feature: Workspace Configuration Sync
       | name     | DefaultWiki |
 
     # Step 1: Import wiki folder without using tidgi.config.json
-    And I clear log lines containing "[test-id-WORKSPACE_CREATED]"
-    And I clear log lines containing "[test-id-VIEW_LOADED]"
+    And I clear log lines containing:
+      | marker                      |
+      | [test-id-WORKSPACE_CREATED] |
+      | [test-id-VIEW_LOADED]       |
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
@@ -171,8 +179,10 @@ Feature: Workspace Configuration Sync
 
     # Step 4: Restart the application
     When I close the TidGi application
-    And I clear log lines containing "[test-id-WORKSPACE_CREATED]"
-    And I clear log lines containing "[test-id-VIEW_LOADED]"
+    And I clear log lines containing:
+      | marker                      |
+      | [test-id-WORKSPACE_CREATED] |
+      | [test-id-VIEW_LOADED]       |
     When I launch the TidGi application
     And I wait for the page to load completely
     And the browser view should be loaded and visible
