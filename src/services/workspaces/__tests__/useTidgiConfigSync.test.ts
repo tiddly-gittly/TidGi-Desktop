@@ -63,6 +63,12 @@ vi.mock('@services/container', async () => {
             setActiveWorkspaceView: vi.fn().mockResolvedValue(undefined),
           };
         }
+        if (description.includes('Analytics')) {
+          return {
+            track: vi.fn().mockResolvedValue(undefined),
+            identify: vi.fn().mockResolvedValue(undefined),
+          };
+        }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return actual.container.get(identifier);
       }),
