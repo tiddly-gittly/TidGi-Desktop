@@ -5,10 +5,10 @@ const isCI = Boolean(process.env.CI);
 
 /**
  * Get the performance multiplier.
- * CI always uses 1.0×, local dev uses calibrated multiplier.
+ * CI uses 1.5× for native module operations (nsfw watcher), local dev uses calibrated multiplier.
  */
 function getMultiplier(): number {
-  if (isCI) return 1.0;
+  if (isCI) return 1.5;
 
   const multiplier = getPerformanceMultiplier();
 
