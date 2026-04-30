@@ -1,6 +1,6 @@
 import { When } from '@cucumber/cucumber';
-import { backOff } from 'exponential-backoff';
 import { WebContentsView } from 'electron';
+import { backOff } from 'exponential-backoff';
 import type { ElectronApplication } from 'playwright';
 import type { ApplicationWorld } from './application';
 import { checkWindowDimension, checkWindowName } from './application';
