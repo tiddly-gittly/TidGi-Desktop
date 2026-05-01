@@ -3,6 +3,15 @@ name: Test
 on:
   workflow_call:
 
+env:
+  # E2E timeout calculation constants
+  BASE_TIMEOUT_MS: 25000
+  FALLBACK_MULTIPLIER: 4.0
+  SCENARIO_COUNT: 65
+  # Calculated timeout: (25000ms × 4.0 × 65 scenarios) / 60000 ≈ 108 minutes
+  # Add 20% buffer for CI overhead: 108 × 1.2 ≈ 130 minutes
+  E2E_TIMEOUT_MINUTES: 130
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -68,8 +77,8 @@ jobs:
       
       - name: Run E2E tests
         # E2E GUI tests with Electron on Linux require a virtual framebuffer, upgrade screen size from time to time.
-        # No timeout specified - uses GitHub Actions default (360 minutes)
-        # Actual test duration is controlled by calibration-based step timeouts in cucumber
+        # Timeout calculated from: BASE_TIMEOUT_MS × FALLBACK_MULTIPLIER × SCENARIO_COUNT / 60000 + 20% buffer
+        # Update SCENARIO_COUNT in workflow env when E2E suite grows
         run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
         env:
           CI: true
@@ -77,6 +86,7 @@ jobs:
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
+        timeout-minutes: ${{ fromJSON(env.E2E_TIMEOUT_MINUTES) }}
 
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts
