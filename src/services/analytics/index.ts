@@ -1,5 +1,6 @@
 import { app } from 'electron';
 import { inject, injectable } from 'inversify';
+import { randomUUID } from 'node:crypto';
 
 import { container } from '@services/container';
 import type { IDatabaseService, ISettingFile } from '@services/database/interface';
@@ -11,6 +12,12 @@ import type { AnalyticsEventName, BuiltInAnalyticsEventName, IAnalyticsEventProp
 interface IAnalyticsSecretSettings {
   deviceFirstLaunchDate?: string;
   deviceLastLaunchDate?: string;
+  /**
+   * Stable random UUID generated once on first launch and persisted forever.
+   * Used as Rybbit `user_id` so events from the same installation are always
+   * grouped under the same user regardless of IP or User-Agent changes.
+   */
+  deviceId?: string;
 }
 
 interface ITrackPayload {
@@ -20,6 +27,8 @@ interface ITrackPayload {
   properties?: Record<string, string | number | boolean>;
   hostname: string;
   pathname: string;
+  /** Stable per-installation UUID — maps to Rybbit identified_user_id */
+  user_id?: string;
 }
 
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
@@ -266,6 +275,8 @@ export class AnalyticsService implements IAnalyticsService {
         return undefined;
       }
 
+      const deviceId = this.getOrCreateDeviceId();
+
       return {
         site_id: analyticsSiteId.trim(),
         type: 'custom_event',
@@ -273,8 +284,25 @@ export class AnalyticsService implements IAnalyticsService {
         properties,
         hostname: this.getAnalyticsHostname(analyticsHost),
         pathname: ANALYTICS_PATHNAME,
+        user_id: deviceId,
       };
     });
+  }
+
+  /**
+   * Return the persisted device UUID, creating and storing it on first call.
+   * Stored alongside other analytics secrets so it survives app updates.
+   */
+  private getOrCreateDeviceId(): string {
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const secrets = this.getAnalyticsSecrets(databaseService);
+    if (secrets.deviceId) {
+      return secrets.deviceId;
+    }
+    const newId = randomUUID();
+    databaseService.setSetting(ANALYTICS_SETTINGS_KEY as keyof ISettingFile, { ...secrets, deviceId: newId } as never);
+    void databaseService.immediatelyStoreSettingsToFile();
+    return newId;
   }
 
   private getAnalyticsTrackUrl(analyticsHost: string): string {
