@@ -16,21 +16,9 @@ The current design goals are:
 
 ## Architecture
 
-TidGi does not initialize a browser-side analytics SDK.
-
-Instead:
-
 1. Renderer code and TiddlyWiki plugins call the TidGi analytics service through the existing IPC proxy layer
 2. The analytics service runs in the main process
 3. The main process sends events to Rybbit over HTTP
-
-Relevant files:
-
-- `src/services/analytics/interface.ts`
-- `src/services/analytics/index.ts`
-- `src/preload/common/services.ts`
-- `src/preload/common/exportServices.ts`
-- `src/services/wiki/plugin/ipcSyncAdaptor/Startup/mount-tidgi-service.ts`
 
 ## Delivery model
 
@@ -133,44 +121,3 @@ Plugin event names are intentionally restricted.
 If `pluginId` or `eventName` is invalid, the event is rejected.
 
 If all properties are invalid, the event is still allowed to be sent without properties.
-
-### What plugin authors should track
-
-Good examples:
-
-- whether a plugin feature was used
-- which plugin surface triggered an action (`toolbar`, `context_menu`, `shortcut`)
-- coarse booleans like `has_filter`, `used_template`, `has_due_date`
-- bounded enums represented as short strings
-
-Bad examples:
-
-- card title text
-- search query text
-- raw wiki URL
-- tiddler title
-- workspace name
-- exported content
-
-## When to add a built-in event instead of a plugin event
-
-Use a built-in event when the behavior is part of TidGi core product behavior and should be governed by a fixed property allowlist in source control.
-
-Use `trackPluginEvent()` when the event belongs to a plugin or extension and needs a stable but bounded custom namespace.
-
-## Rybbit usage in TidGi today
-
-Today TidGi only uses Rybbit's event ingestion path for coarse custom events.
-
-The current implementation sends HTTP requests to the configured Rybbit host using the server-side API key stored only in the main process.
-
-## Verification checklist for analytics changes
-
-When editing analytics behavior:
-
-1. Confirm the event does not include content or identifiers from user data
-2. If it is a built-in event, update the property allowlist
-3. If it is a plugin event, prefer `trackPluginEvent()` instead of widening built-in types
-4. Run `pnpm check`
-5. Run eslint on changed files
-6. Update this document and `docs/TidGiServiceAPI.md` if the callable surface changed

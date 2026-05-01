@@ -92,32 +92,11 @@ TidGi treats the sidebar as an interleaved sequence of two item types:
 
 Grouped workspaces are rendered under their group header, but the ordering logic still treats the sidebar as one ordered structure. This is why a group can be placed before another group or before an ungrouped workspace.
 
-### Drag intent resolution
+## Developer
 
-The drag system resolves intent from three things:
+### Why the ghost preview was removed
 
-- what is being dragged
-- what is under the pointer
-- where the pointer is inside the target rectangle
-
-For workspace-on-workspace drops, the target rectangle is divided into three zones:
-
-- top third: reorder before
-- middle third: group
-- bottom third: reorder after
-
-For group-header drags, the result is reorder only.
-
-For workspace-on-group-header drops, the result is interpreted as either:
-
-- join that group
-- leave the current group, if the header belongs to the workspace's own group
-
-This model keeps the visible interaction simple while still supporting several operations with one pointer gesture.
-
-## Why the ghost preview was removed
-
-Earlier versions used a ghost or placeholder style preview that visually moved items around while dragging. In theory this made the future drop position easier to imagine. In practice it introduced a more serious problem: the DOM and drop zones moved during the drag itself.
+Earlier versions (before v0.13.1) used a ghost or placeholder style preview that visually moved items around while dragging. In theory this made the future drop position easier to imagine. In practice it introduced a more serious problem: the DOM and drop zones moved during the drag itself.
 
 That movement caused two kinds of trouble.
 
@@ -146,36 +125,7 @@ The highlight still tells the user what will happen:
 
 This trades a more dramatic preview for a more trustworthy interaction. The result is easier to reason about, easier to test, and less likely to produce accidental grouping or accidental reordering.
 
-## Why stable layout matters more than animated preview
-
-The sidebar is not a plain sortable list. It mixes:
-
-- workspaces
-- group headers
-- collapsed groups
-- expanded groups
-- workspace-to-workspace drops
-- workspace-to-group-header drops
-- group-header-to-group-header drops
-
-In that environment, stable hit targets matter more than visual motion.
-
-When users drag in a dense sidebar, they need the drop zones to stay where they are. If the UI animates a placeholder into the structure too early, the pointer can end up triggering a different action from the one the user intended.
-
-Removing the ghost is therefore not a visual simplification for its own sake. It is a correctness decision.
-
-## Implementation notes
-
-At a high level, the workspace grouping UI is implemented in the main sidebar list component. The current implementation:
-
-- keeps a canonical ordered list of workspaces and groups
-- resolves drag intent from pointer position and target type
-- persists reorder or membership changes after drop
-- uses visual intent highlighting instead of in-drag DOM reordering
-
-The Preferences management UI is implemented separately and uses workspace service calls to create groups, rename groups, delete groups, and synchronize membership.
-
-## Related code
+### Related code
 
 - [src/pages/Main/WorkspaceIconAndSelector/SortableWorkspaceSelectorList.tsx](../../src/pages/Main/WorkspaceIconAndSelector/SortableWorkspaceSelectorList.tsx)
 - [src/windows/Preferences/customItems/WorkspaceGroupsItem.tsx](../../src/windows/Preferences/customItems/WorkspaceGroupsItem.tsx)
