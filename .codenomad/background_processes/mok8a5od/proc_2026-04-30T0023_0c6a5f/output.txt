@@ -1,0 +1,230 @@
+
+> tidgi@0.13.0 test:unit I:\github\TidGi-Desktop
+> cross-env ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron --max-old-space-size=8192 ./node_modules/vitest/vitest.mjs run
+
+[1m[43m DEPRECATED [49m[22m [33m"environmentMatchGlobs" is deprecated. Use `test.projects` to define different configurations instead.[39m
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mI:/github/TidGi-Desktop[39m
+
+ [32m✓[39m src/services/agentInstance/tools/__tests__/wikiSearchPlugin.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/tools/__tests__/wikiOperationPlugin.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/services/wiki/plugin/watchFileSystemAdaptor/__tests__/FileSystemAdaptor.routing.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/services/wikiEmbedding/__tests__/index.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 232[2mms[22m[39m
+ [32m✓[39m src/pages/ChatTabContent/components/MessageRenderer/__tests__/MessageRenderers.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[33m 711[2mms[22m[39m
+ [32m✓[39m src/services/wikiEmbedding/__tests__/sqlite-vec.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/agentFrameworks/__tests__/taskAgent.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 189[2mms[22m[39m
+ [32m✓[39m src/pages/ChatTabContent/components/__tests__/MessageBubble.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/__tests__/TidGiMiniWindow.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[33m 2452[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/tools/__tests__/messageManagementPlugin.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 291[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/index.streaming.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 104[2mms[22m[39m
+ [32m✓[39m src/pages/Agent/TabContent/TabTypes/__tests__/CreateNewAgentContent.test.tsx [2m([22m[2m16 tests[22m[2m)[22m[33m 811[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/tools/__tests__/fullReplacementPlugin.duration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/KeyboardShortcutRegister.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 2059[2mms[22m[39m
+   [33m[2m✓[22m[39m KeyboardShortcutRegister Component[2m > [22mConfirm functionality[2m > [22mshould close dialog after confirm [33m 303[2mms[22m[39m
+ [32m✓[39m src/pages/ChatTabContent/components/PromptPreviewDialog/__tests__/PromptPreviewDialog.promptConcat.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 366[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/scheduledTaskManager.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render General section with key settings
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Performance section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Downloads section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Network section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Privacy section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Updates section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Miscellaneous section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+[90mstderr[2m | src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx[2m > [22m[2mPreferences - All Sections Rendering[2m > [22m[2mshould render Notifications section
+[22m[39mMUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+MUI: You have provided an out-of-range value `zh-Hans` for the select component.
+Consider providing a value that matches one of the available options or ''.
+The available values are "".
+
+ [32m✓[39m src/windows/Preferences/__tests__/AllSectionsRendering.test.tsx [2m([22m[2m11 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m[33m 1908[2mms[22m[39m
+   [33m[2m✓[22m[39m Preferences - All Sections Rendering[2m > [22mshould render General section with key settings [33m 587[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/agentFrameworks/__tests__/taskAgent.failure.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 548[2mms[22m[39m
+   [33m[2m✓[22m[39m basicPromptConcatHandler - failure path persists error message and logs[2m > [22mshould cover two-round flow: tool_use then Chat.ConfigError.AIProviderError and print ordering [33m 440[2mms[22m[39m
+ [32m✓[39m src/windows/AddWorkspace/__tests__/NewWikiForm.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[33m 1769[2mms[22m[39m
+   [33m[2m✓[22m[39m NewWikiForm Component[2m > [22mUser Interaction Tests[2m > [22mshould handle wiki folder name input change [33m 334[2mms[22m[39m
+   [33m[2m✓[22m[39m NewWikiForm Component[2m > [22mUser Interaction Tests[2m > [22mshould handle tag name input for sub workspace [33m 379[2mms[22m[39m
+ [32m✓[39m src/services/wiki/plugin/watchFileSystemAdaptor/__tests__/FileSystemAdaptor.delete.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/services/wiki/plugin/watchFileSystemAdaptor/__tests__/InverseFilesIndex.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [31m❯[39m src/services/workspaces/__tests__/useTidgiConfigSync.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+[31m   [31m×[31m Workspace useTidgiConfigSync[2m > [22mcreate[2m > [22mshould set useTidgiConfigSync to true by default when creating workspace[39m[32m 16[2mms[22m[39m
+[31m     → No bindings found for service: "Symbol(Analytics)".
+
+Trying to resolve bindings for "Symbol(Analytics) (Root service)".
+
+Binding constraints:
+- service identifier: Symbol(Analytics)
+- name: -[39m
+[31m   [31m×[31m Workspace useTidgiConfigSync[2m > [22mcreate[2m > [22mshould set useTidgiConfigSync to false when useTidgiConfig is false[39m[32m 1[2mms[22m[39m
+[31m     → No bindings found for service: "Symbol(Analytics)".
+
+Trying to resolve bindings for "Symbol(Analytics) (Root service)".
+
+Binding constraints:
+- service identifier: Symbol(Analytics)
+- name: -[39m
+   [32m✓[39m Workspace useTidgiConfigSync[2m > [22mset[2m > [22mshould write tidgi.config.json and strip syncable fields from settings.json when useTidgiConfigSync is true and tidgi.config.json exists[32m 3[2mms[22m[39m
+   [32m✓[39m Workspace useTidgiConfigSync[2m > [22mset[2m > [22mshould NOT write tidgi.config.json and should keep syncable fields in settings.json when useTidgiConfigSync is false[32m 1[2mms[22m[39m
+   [32m✓[39m Workspace useTidgiConfigSync[2m > [22mset[2m > [22mshould NOT write tidgi.config.json even when syncable fields changed if useTidgiConfigSync is false[32m 0[2mms[22m[39m
+   [32m✓[39m Workspace useTidgiConfigSync[2m > [22msanitizeWorkspace[2m > [22mshould read tidgi.config.json during initial load when useTidgiConfigSync is true[32m 0[2mms[22m[39m
+   [32m✓[39m Workspace useTidgiConfigSync[2m > [22msanitizeWorkspace[2m > [22mshould NOT read tidgi.config.json during initial load when useTidgiConfigSync is false[32m 0[2mms[22m[39m
+   [32m✓[39m Workspace useTidgiConfigSync[2m > [22msanitizeWorkspace[2m > [22mshould not read tidgi.config.json during runtime updates regardless of useTidgiConfigSync[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/injection-prevention.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/tools/__tests__/workspacesListPlugin.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/services/agentDefinition/__tests__/index.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 215[2mms[22m[39m
+ [32m✓[39m src/services/wiki/plugin/watchFileSystemAdaptor/__tests__/FileSystemAdaptor.save.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 9462[2mms[22m[39m
+   [33m[2m✓[22m[39m FileSystemAdaptor - Save Operations[2m > [22msaveTiddler - File Lock Retry[2m > [22mshould give up after max retries on persistent lock [33m 9233[2mms[22m[39m
+ [32m✓[39m src/services/agentDefinition/__tests__/responsePatternUtility.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/ExternalAPI/__tests__/index.test.tsx [2m([22m[2m12 tests[22m[2m)[22m[33m 2798[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Component[2m > [22mshould render loading state initially [33m 428[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Component[2m > [22mshould show model selectors with autocomplete inputs [33m 384[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Component[2m > [22mshould call delete API when default model is cleared and no embedding model exists [33m 455[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Component[2m > [22mshould only clear default field when embedding model exists [33m 339[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Component[2m > [22mshould call delete API when embedding model is cleared via autocomplete [33m 348[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/ExternalAPI/__tests__/useAIConfigManagement.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 512[2mms[22m[39m
+ [32m✓[39m src/helpers/__tests__/url.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/services/externalAPI/__tests__/autoFillDefaultModels.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/pages/Agent/TabContent/TabTypes/__tests__/EditAgentDefinitionContent.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 8311[2mms[22m[39m
+   [33m[2m✓[22m[39m EditAgentDefinitionContent[2m > [22mshould handle agent name changes [33m 4483[2mms[22m[39m
+   [33m[2m✓[22m[39m EditAgentDefinitionContent[2m > [22mshould show current agent information in form fields [33m 357[2mms[22m[39m
+   [33m[2m✓[22m[39m EditAgentDefinitionContent[2m > [22mshould handle save button click [33m 513[2mms[22m[39m
+   [33m[2m✓[22m[39m EditAgentDefinitionContent[2m > [22mshould disable save button when agent name is empty [33m 532[2mms[22m[39m
+   [33m[2m✓[22m[39m EditAgentDefinitionContent[2m > [22mshould handle save action [33m 431[2mms[22m[39m
+ [32m✓[39m src/services/agentDefinition/__tests__/responsePatternUtility.security.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/__tests__/Sync.timezone.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/backgroundTaskSettings.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/services/wiki/plugin/watchFileSystemAdaptor/__tests__/FileSystemAdaptor.basic.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/pages/Main/__tests__/index.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1234[2mms[22m[39m
+   [33m[2m✓[22m[39m Main Page[2m > [22mshould display workspace names and icons in sidebar [33m 477[2mms[22m[39m
+ [32m✓[39m src/services/wiki/wikiWorker/__tests__/ipcServerRoutes.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/index.failure.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 119[2mms[22m[39m
+ [32m✓[39m src/pages/Agent/TabContent/TabTypes/__tests__/NewTabContent.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[33m 693[2mms[22m[39m
+ [32m✓[39m src/components/TokenForm/__tests__/GitTokenForm.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1766[2mms[22m[39m
+   [33m[2m✓[22m[39m GitTokenForm[2m > [22mshould update form when userInfo changes after OAuth login (BUG TEST) [33m 343[2mms[22m[39m
+   [33m[2m✓[22m[39m GitTokenForm[2m > [22mshould call auth.set when user types in input fields [33m 808[2mms[22m[39m
+   [33m[2m✓[22m[39m GitTokenForm[2m > [22mshould update form when userInfo is overwritten [33m 319[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/utilities/__tests__/schemaToToolContent.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/services/externalAPI/__tests__/externalAPI.logging.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 98[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/utilities/__tests__/messageDurationFilter.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/index.wikiOperation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 85[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/ExternalAPI/components/__tests__/ProviderConfig.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 808[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/promptConcat/__tests__/promptConcatWithImage.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 122[2mms[22m[39m
+ [32m✓[39m src/services/preferences/definitions/__tests__/schemaValidation.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/promptConcat/__tests__/flattenPrompts.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/components/StorageService/__tests__/SearchGithubRepo.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 315[2mms[22m[39m
+ [32m✓[39m src/pages/ChatTabContent/components/PromptPreviewDialog/__tests__/PromptPreviewDialog.ui.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 465[2mms[22m[39m
+   [33m[2m✓[22m[39m PromptPreviewDialog - Tool Information Rendering[2m > [22mshould render dialog when open=true [33m 406[2mms[22m[39m
+ [32m✓[39m src/constants/__tests__/appPaths.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/ExternalAPI/components/__tests__/NewModelDialog.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 877[2mms[22m[39m
+   [33m[2m✓[22m[39m NewModelDialog - ComfyUI workflow support[2m > [22mshould show workflow file input for ComfyUI provider [33m 407[2mms[22m[39m
+ [32m✓[39m src/services/wiki/wikiWorker/__tests__/applyInitialPalette.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/agentRepository.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/services/libs/__tests__/port.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/services/agentDefinition/__tests__/getAgentDefinitionTemplatesFromWikis.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/services/workspaces/__tests__/tokenAuth.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/pages/ChatTabContent/components/__tests__/PromptTree.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m src/services/agentInstance/__tests__/utilities.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/windows/Preferences/sections/ExternalAPI/__tests__/addProviderIntegration.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 1090[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Add Provider with Embedding Model[2m > [22mshould show add provider functionality [33m 419[2mms[22m[39m
+   [33m[2m✓[22m[39m ExternalAPI Add Provider with Embedding Model[2m > [22mshould handle embedding model selection correctly [33m 437[2mms[22m[39m
+[90mstdout[2m | src/services/context/__tests__/contextService.spec.ts
+[22m[39m[viteEntry] Using production file URL: file://I:/github/TidGi-Desktop/src/services/renderer/index.html __dirname: I:\github\TidGi-Desktop\src\services\windows
+
+ [32m✓[39m src/services/context/__tests__/contextService.spec.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/environment.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+Sourcemap for "I:/github/TidGi-Desktop/node_modules/git-sync-js/dist/src/inspect.js" points to missing source files
+Sourcemap for "I:/github/TidGi-Desktop/node_modules/git-sync-js/dist/src/errors.js" points to missing source files
+Sourcemap for "I:/github/TidGi-Desktop/node_modules/git-sync-js/dist/src/interface.js" points to missing source files
+Sourcemap for "I:/github/TidGi-Desktop/node_modules/git-sync-js/dist/src/utils.js" points to missing source files
+ [32m✓[39m src/services/git/__tests__/gitSyncRepoDetection.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 476[2mms[22m[39m
+   [33m[2m✓[22m[39m git-sync-js repo detection compatibility[2m > [22mtreats Windows path format differences and benign stderr as a valid git repository [33m 475[2mms[22m[39m
+ [32m✓[39m features/supports/mockOpenAI.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 15115[2mms[22m[39m
+   [33m[2m✓[22m[39m Mock OpenAI Server[2m > [22mshould integrate with streamFromProvider (SDK) for streaming responses [33m 15053[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/services/workspaces/__tests__/useTidgiConfigSync.test.ts[2m > [22mWorkspace useTidgiConfigSync[2m > [22mcreate[2m > [22mshould set useTidgiConfigSync to true by default when creating workspace
+[41m[1m FAIL [22m[49m src/services/workspaces/__tests__/useTidgiConfigSync.test.ts[2m > [22mWorkspace useTidgiConfigSync[2m > [22mcreate[2m > [22mshould set useTidgiConfigSync to false when useTidgiConfig is false
+[31m[1mError[22m: No bindings found for service: "Symbol(Analytics)".
+
+Trying to resolve bindings for "Symbol(Analytics) (Root service)".
+
+Binding constraints:
+- service identifier: Symbol(Analytics)
+- name: -[39m
+[90m [2m❯[22m throwBindingNotFoundError node_modules/@inversifyjs/core/src/planning/calculations/throwErrorWhenUnexpectedBindingsAmountFound.ts:[2m59:9[22m[39m
+[90m [2m❯[22m throwErrorWhenMultipleUnexpectedBindingsAmountFound node_modules/@inversifyjs/core/src/planning/calculations/throwErrorWhenUnexpectedBindingsAmountFound.ts:[2m72:7[22m[39m
+[90m [2m❯[22m throwErrorWhenUnexpectedBindingsAmountFound node_modules/@inversifyjs/core/src/planning/calculations/throwErrorWhenUnexpectedBindingsAmountFound.ts:[2m26:5[22m[39m
+[90m [2m❯[22m checkServiceNodeSingleInjectionBindings node_modules/@inversifyjs/core/src/planning/calculations/checkServiceNodeSingleInjectionBindings.ts:[2m35:3[22m[39m
+[90m [2m❯[22m buildPlanServiceNode node_modules/@inversifyjs/core/src/planning/actions/curryBuildPlanServiceNode.ts:[2m63:7[22m[39m
+[90m [2m❯[22m plan node_modules/@inversifyjs/core/src/planning/actions/plan.ts:[2m103:42[22m[39m
+[90m [2m❯[22m Y.buildPlanResult node_modules/@inversifyjs/container/src/container/services/ServiceResolutionManager.ts:[2m260:36[22m[39m
+[90m [2m❯[22m Y.get node_modules/@inversifyjs/container/src/container/services/ServiceResolutionManager.ts:[2m80:41[22m[39m
+[90m [2m❯[22m ne.get node_modules/@inversifyjs/container/src/container/services/Container.ts:[2m111:43[22m[39m
+[36m [2m❯[22m ne.<anonymous> src/services/workspaces/__tests__/useTidgiConfigSync.test.ts:[2m67:33[22m[39m
+    [90m 65| [39m        }
+    [90m 66| [39m        [90m// eslint-disable-next-line @typescript-eslint/no-unsafe-return[39m
+    [90m 67| [39m        [35mreturn[39m actual[33m.[39mcontainer[33m.[39m[35mget[39m(identifier)[33m;[39m
+    [90m   | [39m                                [31m^[39m
+    [90m 68| [39m      })[33m,[39m
+    [90m 69| [39m    })[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m64 passed[39m[22m[90m (65)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m529 passed[39m[22m[2m | [22m[33m3 skipped[39m[90m (534)[39m
+[2m   Start at [22m 08:23:47
+[2m   Duration [22m 55.49s[2m (transform 3.66s, setup 71.52s, collect 57.67s, tests 56.59s, environment 38.36s, prepare 5.39s)[22m
+
+ ELIFECYCLE  Command failed with exit code 1.

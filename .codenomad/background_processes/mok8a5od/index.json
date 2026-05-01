@@ -1,0 +1,59 @@
+[
+  {
+    "id": "proc_2026-04-29T1653_10415f",
+    "workspaceId": "mok8a5od",
+    "title": "prepare-e2e-build",
+    "command": "cd I:\\github\\TidGi-Desktop && pnpm run test:prepare-e2e 2>&1",
+    "cwd": "I:\\github\\TidGi-Desktop",
+    "status": "stopped",
+    "pid": 28884,
+    "startedAt": "2026-04-29T16:53:10.482Z",
+    "outputSizeBytes": 6774,
+    "notify": {
+      "sessionID": "ses_226dff628ffeEh32ekLSF2Ug9D",
+      "directory": "I:\\github\\TidGi-Desktop",
+      "sentAt": "2026-04-29T16:54:24.363Z"
+    },
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-04-29T16:54:24.349Z"
+  },
+  {
+    "id": "proc_2026-04-30T0023_0c6a5f",
+    "workspaceId": "mok8a5od",
+    "title": "ci-unit-tests",
+    "command": "cd I:\\github\\TidGi-Desktop && pnpm run test:unit 2>&1",
+    "cwd": "I:\\github\\TidGi-Desktop",
+    "status": "error",
+    "pid": 9852,
+    "startedAt": "2026-04-30T00:23:45.641Z",
+    "outputSizeBytes": 24244,
+    "notify": {
+      "sessionID": "ses_226dff628ffeEh32ekLSF2Ug9D",
+      "directory": "I:\\github\\TidGi-Desktop",
+      "sentAt": "2026-04-30T00:24:44.130Z"
+    },
+    "terminalReason": "failed",
+    "exitCode": 1,
+    "stoppedAt": "2026-04-30T00:24:44.114Z"
+  },
+  {
+    "id": "proc_2026-04-30T0024_74f973",
+    "workspaceId": "mok8a5od",
+    "title": "ci-e2e-prepare",
+    "command": "cd I:\\github\\TidGi-Desktop && pnpm run test:prepare-e2e 2>&1",
+    "cwd": "I:\\github\\TidGi-Desktop",
+    "status": "stopped",
+    "pid": 12620,
+    "startedAt": "2026-04-30T00:24:03.166Z",
+    "outputSizeBytes": 6774,
+    "notify": {
+      "sessionID": "ses_226dff628ffeEh32ekLSF2Ug9D",
+      "directory": "I:\\github\\TidGi-Desktop",
+      "sentAt": "2026-04-30T00:25:26.476Z"
+    },
+    "terminalReason": "finished",
+    "exitCode": 0,
+    "stoppedAt": "2026-04-30T00:25:26.466Z"
+  }
+]

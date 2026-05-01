@@ -100,13 +100,14 @@ export function getPerformanceMultiplier(): number {
   }
 
   // Fallback if calibration preflight did not run.
+  // Conservative 4.0× to accommodate slow CI environments and native module initialization
   console.warn(
-    '[E2E Calibration] Calibration file not found, using fallback multiplier 3.0×',
+    '[E2E Calibration] Calibration file not found, using fallback multiplier 4.0×',
   );
   console.warn(
     '[E2E Calibration] Expected preflight calibration to run before cucumber startup',
   );
-  return 3.0;
+  return 4.0;
 }
 
 /**

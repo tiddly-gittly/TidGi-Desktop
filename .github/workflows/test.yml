@@ -64,7 +64,10 @@ jobs:
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
-        timeout-minutes: 30
+        # Timeout calculation: BASE_TIMEOUT (25s) × fallback_multiplier (4.0) × scenario_count (~65) / 60 ≈ 108min
+        # Conservative 40min allows for CI overhead, native module init, and future scenario growth
+        # If E2E suite grows significantly, increase proportionally or implement calibration preflight
+        timeout-minutes: 40
 
       # Upload test artifacts (screenshots, logs)
       - name: Upload test artifacts
