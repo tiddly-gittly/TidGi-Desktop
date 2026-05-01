@@ -17,14 +17,14 @@ async function runCalibration() {
 
   try {
     // Run smoke test with calibration profile
+    // Use normal fallback timeout, measure actual duration
     execSync(
-      'cross-env NODE_ENV=test TIDGI_E2E_IS_CALIBRATION=true cucumber-js --config features/cucumber.config.js --profile calibration --exit',
+      'cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --exit',
       {
         stdio: 'inherit',
         env: {
           ...process.env,
           NODE_ENV: 'test',
-          TIDGI_E2E_IS_CALIBRATION: 'true',
         },
       },
     );

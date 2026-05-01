@@ -85,12 +85,6 @@ export function setCalibrationResult(actualDurationMs: number): void {
  * Returns calibrated value if smoke test has run, otherwise returns a conservative fallback.
  */
 export function getPerformanceMultiplier(): number {
-  // During calibration run, use a very conservative multiplier to ensure smoke test completes
-  // Calibration measures actual duration, not timeout behavior
-  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
-    return MAX_MULTIPLIER * 2.0; // 10.0× for first-time Electron initialization
-  }
-
   if (cachedMultiplier !== null) {
     return cachedMultiplier;
   }
