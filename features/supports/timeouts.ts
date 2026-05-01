@@ -4,12 +4,10 @@ import { getPerformanceMultiplier, isCalibrated } from './calibration';
 const isCI = Boolean(process.env.CI);
 
 /**
- * Get the performance multiplier.
- * CI uses 1.5× for native module operations (nsfw watcher), local dev uses calibrated multiplier.
+ * Get the performance multiplier based on calibration.
+ * Both CI and local dev use the same calibrated multiplier.
  */
 function getMultiplier(): number {
-  if (isCI) return 1.5;
-
   const multiplier = getPerformanceMultiplier();
 
   // Log warning if calibration hasn't run yet
