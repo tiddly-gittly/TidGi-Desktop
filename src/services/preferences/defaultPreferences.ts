@@ -15,7 +15,10 @@ function getAnalyticsEnvironmentOverrides(): { analyticsApiKey: string; analytic
       analyticsSiteId: process.env.TIDGI_ANALYTICS_SITE_ID ?? 'test-site',
     };
   }
-  return { analyticsApiKey: 'bXYIPyGutUccWmIQyPIwCTvWINQJHoWWEUcWNOWuoNHykztsMXsmqqTUAjRuWPGF', analyticsEnabled: true, analyticsHost: 'https://analytics.tidgi.fun', analyticsSiteId: '189dd97a8d37' };
+  // site_id is safe to embed publicly — Rybbit's /api/track is a public endpoint
+  // that only needs site_id (same as the data-site-id in <script> tags on websites).
+  // API keys are only for reading data via the dashboard API, not for writing events.
+  return { analyticsApiKey: '', analyticsEnabled: true, analyticsHost: 'https://analytics.tidgi.fun', analyticsSiteId: '189dd97a8d37' };
 }
 
 const analyticsEnvironment = getAnalyticsEnvironmentOverrides();

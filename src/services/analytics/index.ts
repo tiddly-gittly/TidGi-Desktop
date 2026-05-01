@@ -269,9 +269,8 @@ export class AnalyticsService implements IAnalyticsService {
     return Promise.all([
       this.preferenceService.get('analyticsHost'),
       this.preferenceService.get('analyticsSiteId'),
-      this.preferenceService.get('analyticsApiKey'),
-    ]).then(([analyticsHost, analyticsSiteId, analyticsApiKey]) => {
-      if (!analyticsHost.trim() || !analyticsSiteId.trim() || !analyticsApiKey.trim()) {
+    ]).then(([analyticsHost, analyticsSiteId]) => {
+      if (!analyticsHost.trim() || !analyticsSiteId.trim()) {
         return undefined;
       }
 
@@ -320,12 +319,11 @@ export class AnalyticsService implements IAnalyticsService {
 
   private async sendEvent(eventName: AnalyticsEventName, properties?: Record<string, string | number | boolean>): Promise<boolean> {
     try {
-      const [analyticsHost, payload, apiKey] = await Promise.all([
+      const [analyticsHost, payload] = await Promise.all([
         this.preferenceService.get('analyticsHost'),
         this.buildPayload(eventName, properties),
-        this.preferenceService.get('analyticsApiKey'),
       ]);
-      if (!payload || !apiKey.trim()) {
+      if (!payload) {
         return false;
       }
 
@@ -338,9 +336,7 @@ export class AnalyticsService implements IAnalyticsService {
         const response = await fetch(this.getAnalyticsTrackUrl(analyticsHost), {
           method: 'POST',
           headers: {
-            // Keep the API key in-process only and avoid logging request init objects in future changes.
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify(payload),
           signal: abortController.signal,
