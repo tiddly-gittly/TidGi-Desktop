@@ -15,7 +15,7 @@ function getAnalyticsEnvironmentOverrides(): { analyticsApiKey: string; analytic
       analyticsSiteId: process.env.TIDGI_ANALYTICS_SITE_ID ?? 'test-site',
     };
   }
-  return { analyticsApiKey: '', analyticsEnabled: true, analyticsHost: 'https://analytics.tidgi.fun', analyticsSiteId: '' };
+  return { analyticsApiKey: 'bXYIPyGutUccWmIQyPIwCTvWINQJHoWWEUcWNOWuoNHykztsMXsmqqTUAjRuWPGF', analyticsEnabled: true, analyticsHost: 'https://analytics.tidgi.fun', analyticsSiteId: '189dd97a8d37' };
 }
 
 const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
