@@ -55,6 +55,17 @@ jobs:
         env:
           CI: true
         timeout-minutes: 5
+      
+      - name: Run E2E calibration
+        run: pnpm run test:e2e:calibration
+        env:
+          CI: true
+          DISPLAY: :99
+          LANG: zh_CN.UTF-8
+          LC_ALL: zh_CN.UTF-8
+        timeout-minutes: 5
+        continue-on-error: true
+      
       - name: Run E2E tests
         # E2E GUI tests with Electron on Linux require a virtual framebuffer, upgrade screen size from time to time.
         run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
@@ -64,9 +75,9 @@ jobs:
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
-        # Timeout calculation: BASE_TIMEOUT (25s) × fallback_multiplier (4.0) × scenario_count (~65) / 60 ≈ 108min
-        # Conservative 40min allows for CI overhead, native module init, and future scenario growth
-        # If E2E suite grows significantly, increase proportionally or implement calibration preflight
+        # Dynamic timeout based on calibration result. If calibration succeeds, timeout is calculated.
+        # If calibration fails, fallback multiplier (4.0×) is used: 25s × 4.0 × 65 scenarios / 60 ≈ 108min
+        # Conservative 40min allows room for both calibrated and fallback scenarios
         timeout-minutes: 40
 
       # Upload test artifacts (screenshots, logs)
