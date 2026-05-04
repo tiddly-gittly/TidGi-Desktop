@@ -1,32 +1,19 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getPerformanceMultiplier, isCalibrated } from './calibration';
+import { BASE_STEP_TIMEOUT_MS, getPerformanceMultiplier } from './calibration';
 
 const isCI = process.env.CI;
 
-/**
- * Get the performance multiplier based on calibration.
- * Both CI and local dev use the same calibrated multiplier.
- */
-function getMultiplier(): number {
-  const multiplier = getPerformanceMultiplier();
-
-  // Log warning if calibration hasn't run yet
-  if (!isCalibrated()) {
-    console.warn('[Timeout Config] Using fallback multiplier - calibration not yet performed');
-  }
-
-  return multiplier;
-}
-
-const performanceMultiplier = getMultiplier();
-const BASE_TIMEOUT = 25000;
+const performanceMultiplier = getPerformanceMultiplier();
 
 /**
- * Cucumber global timeout budget per step/hook, scaled by calibration measurement.
- * Calibration includes heavy operations (filesystem watch), so single multiplier
- * suffices for all step types.
+ * Cucumber global timeout budget per step/hook.
+ * Calculated from calibration measurements:
+ *   step_timeout = BASE_STEP_TIMEOUT_MS × multiplier
+ *
+ * BASE_STEP_TIMEOUT_MS (60s) = minimum budget on baseline reference CI.
+ * multiplier scales this up for slower machines or down for faster ones.
  */
-export const CUCUMBER_GLOBAL_TIMEOUT = Math.round(BASE_TIMEOUT * performanceMultiplier);
+export const CUCUMBER_GLOBAL_TIMEOUT = Math.round(BASE_STEP_TIMEOUT_MS * performanceMultiplier);
 
 console.log(
   `[Timeout Config] multiplier=${performanceMultiplier.toFixed(2)}×  step budget=${CUCUMBER_GLOBAL_TIMEOUT} ms  (CI=${isCI})`,

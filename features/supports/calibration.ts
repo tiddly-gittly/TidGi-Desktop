@@ -4,25 +4,38 @@ import path from 'path';
 /**
  * E2E performance calibration to determine dynamic timeout multiplier.
  *
- * Why this exists: E2E tests involve CPU, I/O, Electron startup, and rendering.
- * A pure CPU benchmark doesn't capture the full performance picture. Instead,
- * each `pnpm test:e2e` run first measures a representative smoke scenario and
- * writes the result to a temporary calibration file. The main E2E run then
- * reads that file before loading timeout constants.
+ * How it works:
+ * 1. `pnpm test:e2e` runs calibration preflight (error-to-error-preflight.ts) first
+ * 2. Preflight runs the smoke test (with filesystem watch) and measures total time
+ * 3. Multiplier = measured_ms / REFERENCE_CALIBRATION_MS
+ * 4. Main test: step_timeout = BASE_STEP_TIMEOUT_MS × multiplier
  *
- * The smoke test includes filesystem watch enable/wait to measure the worst-case
- * operation (nsfw watcher init), so the measured multiplier is representative.
+ * On baseline CI (~20s calibration): multiplier ≈ 1.0 → timeout ≈ 60s per step
+ * On slow CI (~30s calibration): multiplier ≈ 1.5 → timeout ≈ 90s per step
  */
-
-/** Reference duration for smoke test on GitHub Actions (measured empirically). */
-const REFERENCE_SMOKE_DURATION_MS = 8000; // ~8s on CI
 
 /**
- * Safety cap to prevent absurd multipliers from transient issues.
- * High enough that genuinely slow environments get appropriate timeouts,
- * low enough that a single outlier measurement doesn't hang tests for hours.
+ * Baseline calibration time on reference GitHub Actions CI.
+ * Measured empirically: smoke test (16 steps + app launch + filesystem watch) ≈ 20s.
+ * This is the "1×" reference point. All timeout calculations scale from this.
  */
-const SAFETY_CAP = 20.0; // 20× reference = 500s max per step
+const REFERENCE_CALIBRATION_MS = 20000; // ~20s on baseline CI
+
+/**
+ * Minimum step timeout budget on the reference (1×) machine.
+ * Heavy operations (nsfw watcher init, filesystem watch enable) need ~60s.
+ * Lighter machines get proportionally more time via the calibration multiplier.
+ */
+const BASE_STEP_TIMEOUT_MS = 60000; // 60s per step on baseline machine
+
+/**
+ * Multiplier used during calibration preflight only.
+ * First Electron launch is significantly slower than subsequent ones,
+ * so the measurement itself needs generous time to complete.
+ * This is NOT a safety cap for regular tests - if calibration is missing,
+ * tests will fail with a clear error.
+ */
+const CALIBRATION_PREFLIGHT_MULTIPLIER = 10.0; // 600s timeout for calibration smoke test
 
 const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
 
@@ -56,8 +69,7 @@ function readCalibrationRecord(): CalibrationRecord | null {
 }
 
 export function writeCalibrationResult(actualDurationMs: number): number {
-  const raw = actualDurationMs / REFERENCE_SMOKE_DURATION_MS;
-  const multiplier = Math.min(SAFETY_CAP, raw);
+  const multiplier = actualDurationMs / REFERENCE_CALIBRATION_MS;
 
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
   fs.writeFileSync(
@@ -77,25 +89,24 @@ export function writeCalibrationResult(actualDurationMs: number): number {
   return multiplier;
 }
 
-/**
- * Load calibration result that was computed before cucumber started.
- */
 export function setCalibrationResult(actualDurationMs: number): void {
   cachedMultiplier = writeCalibrationResult(actualDurationMs);
 }
 
 /**
  * Get the performance multiplier for timeout scaling.
- * Returns calibrated value if smoke test has run.
  *
- * During calibration preflight (TIDGI_E2E_IS_CALIBRATION=true), uses the safety
- * cap to ensure the measurement itself can complete even on very slow machines.
- * Main test runs use the measured multiplier from the calibration file.
+ * During calibration preflight (TIDGI_E2E_IS_CALIBRATION=true):
+ *   Uses conservative multiplier so the measurement can complete.
+ *
+ * During regular test run:
+ *   Reads the calibration file written by the preflight.
+ *   If no calibration file exists → throws, because something is wrong
+ *   (the preflight should always run before the main test in `test:e2e`).
  */
 export function getPerformanceMultiplier(): number {
-  // During calibration preflight, use max timeout to ensure measurement completes
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
-    return SAFETY_CAP;
+    return CALIBRATION_PREFLIGHT_MULTIPLIER;
   }
 
   if (cachedMultiplier !== null) {
@@ -108,14 +119,11 @@ export function getPerformanceMultiplier(): number {
     return cachedMultiplier;
   }
 
-  // Fallback if calibration preflight did not run (e.g., direct cucumber invocation)
-  console.warn(
-    `[E2E Calibration] Calibration file not found, using safety cap ${SAFETY_CAP}×`,
+  throw new Error(
+    'E2E calibration file is missing. ' +
+      'Always run `pnpm test:e2e` which includes calibration preflight. ' +
+      'If running cucumber directly, first run `pnpm test:e2e:calibration` or set TIDGI_E2E_IS_CALIBRATION=true.',
   );
-  console.warn(
-    '[E2E Calibration] Expected preflight calibration to run before cucumber startup',
-  );
-  return SAFETY_CAP;
 }
 
 /**
@@ -124,3 +132,9 @@ export function getPerformanceMultiplier(): number {
 export function isCalibrated(): boolean {
   return cachedMultiplier !== null || readCalibrationRecord() !== null;
 }
+
+/**
+ * The base step timeout for 1× multiplier (reference machine performance).
+ * Used by timeouts.ts to calculate actual timeouts.
+ */
+export { BASE_STEP_TIMEOUT_MS };
