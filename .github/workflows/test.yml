@@ -56,21 +56,10 @@ jobs:
           CI: true
         timeout-minutes: 5
       
-      - name: Run E2E calibration
-        run: pnpm run test:e2e:calibration
-        env:
-          CI: true
-          DISPLAY: :99
-          LANG: zh_CN.UTF-8
-          LC_ALL: zh_CN.UTF-8
-        timeout-minutes: 5
-        continue-on-error: true
-      
       - name: Run E2E tests
-        # E2E GUI tests with Electron on Linux require a virtual framebuffer, upgrade screen size from time to time.
-        # No workflow-level timeout - relies on cucumber step timeouts (calibration-based, max 125s per step)
-        # Each step has independent timeout, preventing infinite hangs
-        # Uses GitHub Actions default job timeout (360 minutes) as safety net
+        # Calibration runs automatically via error-to-error-preflight.ts as part of test:e2e
+        # No workflow-level timeout - relies on calibration-based cucumber step timeouts
+        # Calibration preflight uses 250s timeout (10×), main tests use measured multiplier (capped at 5×)
         run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
         env:
           CI: true

@@ -2,10 +2,6 @@ import { execSync } from 'child_process';
 import { writeCalibrationResult } from '../features/supports/calibration';
 
 function runSmokeCalibration(): void {
-  if (process.env.CI) {
-    return;
-  }
-
   const startedAt = Date.now();
 
   execSync('cross-env NODE_ENV=test CUCUMBER_PROFILE=calibration cucumber-js --config features/cucumber.config.js --tags "@smoke" --exit', {

@@ -85,6 +85,12 @@ export function setCalibrationResult(actualDurationMs: number): void {
  * Returns calibrated value if smoke test has run, otherwise returns a conservative fallback.
  */
 export function getPerformanceMultiplier(): number {
+  // During calibration preflight, use a very conservative timeout
+  // First Electron launch is significantly slower than subsequent launches
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
+    return 10.0; // 250s timeout ensures calibration smoke test can complete
+  }
+
   if (cachedMultiplier !== null) {
     return cachedMultiplier;
   }
