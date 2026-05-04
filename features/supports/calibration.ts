@@ -15,11 +15,11 @@ import path from 'path';
  */
 
 /**
- * Baseline calibration time on reference GitHub Actions CI.
- * Measured empirically: smoke test (16 steps + app launch + filesystem watch) ≈ 20s.
- * This is the "1×" reference point. All timeout calculations scale from this.
+ * Fastest observed calibration time on GitHub Actions CI.
+ * Setting this below the minimum ensures multiplier stays ≥ 1.0
+ * on typical CI, providing stability margin for heavy operations.
  */
-const REFERENCE_CALIBRATION_MS = 20000; // ~20s on baseline CI
+const REFERENCE_CALIBRATION_MS = 18000; // fastest observed CI (~19.4s), ensures multiplier ≥ 1.0
 
 /**
  * Minimum step timeout budget on the reference (1×) machine.
