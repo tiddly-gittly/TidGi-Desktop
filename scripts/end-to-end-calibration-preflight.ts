@@ -1,37 +1,62 @@
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
 
 function runSmokeCalibration(): void {
-  // Run calibration multiple times to capture variance.
-  // Single measurement may hit a "good" run; max of multiple runs
-  // accounts for transient CI load that affects the full test suite.
   const CALIBRATION_RUNS = 2;
+  const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
-  let maxDuration = 0;
+  let maxTotalMs = 0;
+  let maxStepMs = 0;
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
 
-    execSync(`cross-env NODE_ENV=test CUCUMBER_PROFILE=calibration cucumber-js --config features/cucumber.config.js --tags "@smoke" --exit`, {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        TIDGI_E2E_IS_CALIBRATION: 'true',
+    execSync(
+      `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
+      {
+        stdio: 'inherit',
+        cwd: process.cwd(),
+        env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
       },
-    });
+    );
 
-    const duration = Date.now() - startedAt;
-    console.log(`[E2E Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: ${duration}ms`);
+    const totalMs = Date.now() - startedAt;
+    const stepMs = extractMaxStepDuration(outputFile);
 
-    if (duration > maxDuration) {
-      maxDuration = duration;
-    }
+    console.log(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: total=${totalMs}ms maxStep=${stepMs}ms`);
+
+    if (totalMs > maxTotalMs) maxTotalMs = totalMs;
+    if (stepMs > maxStepMs) maxStepMs = stepMs;
   }
 
-  const multiplier = writeCalibrationResult(maxDuration);
+  writeCalibrationResult(maxTotalMs, maxStepMs);
 
-  console.log(`[E2E Calibration] max duration=${maxDuration}ms multiplier=${multiplier.toFixed(2)}×`);
+  console.log(`[Calibration] stored: maxStep=${maxStepMs}ms total=${maxTotalMs}ms`);
+}
+
+function extractMaxStepDuration(jsonFilePath: string): number {
+  try {
+    const report = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8')) as Array<Record<string, unknown>>;
+    let maxMs = 0;
+
+    for (const feature of report) {
+      for (const element of (feature.elements ?? []) as Array<Record<string, unknown>>) {
+        for (const step of (element.steps ?? []) as Array<Record<string, unknown>>) {
+          if (step.result?.duration) {
+            const ms = (step.result.duration as number) / 1_000_000;
+            if (ms > maxMs) maxMs = ms;
+          }
+        }
+      }
+    }
+
+    return Math.ceil(maxMs);
+  } catch {
+    console.warn('[Calibration] Failed to parse JSON output');
+    return 0;
+  }
 }
 
 runSmokeCalibration();
