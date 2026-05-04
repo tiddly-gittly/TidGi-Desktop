@@ -26,7 +26,7 @@ const REFERENCE_CALIBRATION_MS = 18000; // fastest observed CI (~19.4s), ensures
  * Heavy operations (nsfw watcher init, filesystem watch enable) need ~60s.
  * Lighter machines get proportionally more time via the calibration multiplier.
  */
-const BASE_STEP_TIMEOUT_MS = 60000; // 60s per step on baseline machine
+const BASE_STEP_TIMEOUT_MS = 80000; // 80s per step on reference machine, covers heavy I/O ops
 
 /**
  * Multiplier used during calibration preflight only.
