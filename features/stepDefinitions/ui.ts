@@ -2,7 +2,7 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
-import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
+import { HEAVY_PLAYWRIGHT_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(seconds: number) {
@@ -32,11 +32,11 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 
   let currentWindow = this.currentWindow;
   if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });
+    currentWindow = await this.app.firstWindow({ timeout: HEAVY_PLAYWRIGHT_TIMEOUT });
     this.mainWindow = this.mainWindow ?? currentWindow;
     this.currentWindow = currentWindow;
   }
-  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: PLAYWRIGHT_TIMEOUT });
+  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: HEAVY_PLAYWRIGHT_TIMEOUT });
   // Short networkidle gives workspace-creation and other startup IPC time to finish
   // without blocking on long-lived connections. 3s is intentionally different from
   // PLAYWRIGHT_TIMEOUT — this is just a grace period, not a hard requirement.
