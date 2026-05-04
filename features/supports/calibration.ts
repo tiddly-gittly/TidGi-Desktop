@@ -9,16 +9,20 @@ import path from 'path';
  * each `pnpm test:e2e` run first measures a representative smoke scenario and
  * writes the result to a temporary calibration file. The main E2E run then
  * reads that file before loading timeout constants.
+ *
+ * The smoke test includes filesystem watch enable/wait to measure the worst-case
+ * operation (nsfw watcher init), so the measured multiplier is representative.
  */
 
 /** Reference duration for smoke test on GitHub Actions (measured empirically). */
 const REFERENCE_SMOKE_DURATION_MS = 8000; // ~8s on CI
 
 /**
- * Upper bound: don't let very slow machines wait more than 5× the reference
- * budget, otherwise the whole suite becomes impractically slow to debug.
+ * Safety cap to prevent absurd multipliers from transient issues.
+ * High enough that genuinely slow environments get appropriate timeouts,
+ * low enough that a single outlier measurement doesn't hang tests for hours.
  */
-const MAX_MULTIPLIER = 5.0;
+const SAFETY_CAP = 20.0; // 20× reference = 500s max per step
 
 const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
 
@@ -53,11 +57,7 @@ function readCalibrationRecord(): CalibrationRecord | null {
 
 export function writeCalibrationResult(actualDurationMs: number): number {
   const raw = actualDurationMs / REFERENCE_SMOKE_DURATION_MS;
-  // Cap at MAX_MULTIPLIER, but also enforce a minimum floor
-  // Heavy operations (nsfw watcher init, file system watch) need more time
-  // than the basic calibration smoke test exercises
-  const MIN_MULTIPLIER = 4.0;
-  const multiplier = Math.min(MAX_MULTIPLIER, Math.max(MIN_MULTIPLIER, raw));
+  const multiplier = Math.min(SAFETY_CAP, raw);
 
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
   fs.writeFileSync(
@@ -86,13 +86,16 @@ export function setCalibrationResult(actualDurationMs: number): void {
 
 /**
  * Get the performance multiplier for timeout scaling.
- * Returns calibrated value if smoke test has run, otherwise returns a conservative fallback.
+ * Returns calibrated value if smoke test has run.
+ *
+ * During calibration preflight (TIDGI_E2E_IS_CALIBRATION=true), uses the safety
+ * cap to ensure the measurement itself can complete even on very slow machines.
+ * Main test runs use the measured multiplier from the calibration file.
  */
 export function getPerformanceMultiplier(): number {
-  // During calibration preflight, use a very conservative timeout
-  // First Electron launch is significantly slower than subsequent launches
+  // During calibration preflight, use max timeout to ensure measurement completes
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
-    return 10.0; // 250s timeout ensures calibration smoke test can complete
+    return SAFETY_CAP;
   }
 
   if (cachedMultiplier !== null) {
@@ -105,15 +108,14 @@ export function getPerformanceMultiplier(): number {
     return cachedMultiplier;
   }
 
-  // Fallback if calibration preflight did not run.
-  // Should match MIN_MULTIPLIER floor in writeCalibrationResult
+  // Fallback if calibration preflight did not run (e.g., direct cucumber invocation)
   console.warn(
-    '[E2E Calibration] Calibration file not found, using fallback multiplier 4.0×',
+    `[E2E Calibration] Calibration file not found, using safety cap ${SAFETY_CAP}×`,
   );
   console.warn(
     '[E2E Calibration] Expected preflight calibration to run before cucumber startup',
   );
-  return 4.0;
+  return SAFETY_CAP;
 }
 
 /**
