@@ -1,7 +1,7 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
 import { getPerformanceMultiplier, isCalibrated } from './calibration';
 
-const isCI = Boolean(process.env.CI);
+const isCI = process.env.CI;
 
 /**
  * Get the performance multiplier based on calibration.

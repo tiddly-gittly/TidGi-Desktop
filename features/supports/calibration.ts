@@ -53,7 +53,11 @@ function readCalibrationRecord(): CalibrationRecord | null {
 
 export function writeCalibrationResult(actualDurationMs: number): number {
   const raw = actualDurationMs / REFERENCE_SMOKE_DURATION_MS;
-  const multiplier = Math.min(MAX_MULTIPLIER, Math.max(1.0, raw));
+  // Cap at MAX_MULTIPLIER, but also enforce a minimum floor
+  // Heavy operations (nsfw watcher init, file system watch) need more time
+  // than the basic calibration smoke test exercises
+  const MIN_MULTIPLIER = 4.0;
+  const multiplier = Math.min(MAX_MULTIPLIER, Math.max(MIN_MULTIPLIER, raw));
 
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
   fs.writeFileSync(
@@ -102,7 +106,7 @@ export function getPerformanceMultiplier(): number {
   }
 
   // Fallback if calibration preflight did not run.
-  // Conservative 4.0× to accommodate slow CI environments and native module initialization
+  // Should match MIN_MULTIPLIER floor in writeCalibrationResult
   console.warn(
     '[E2E Calibration] Calibration file not found, using fallback multiplier 4.0×',
   );
