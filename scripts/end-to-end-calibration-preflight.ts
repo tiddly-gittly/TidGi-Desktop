@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
@@ -22,8 +22,19 @@ function runSmokeCalibration(): void {
     let success = false;
 
     try {
-      execSync(
-        `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
+      execFileSync(
+        'cross-env',
+        [
+          'NODE_ENV=test',
+          'cucumber-js',
+          '--config',
+          'features/cucumber.config.js',
+          '--profile',
+          'calibration',
+          '--format',
+          `json:${outputFile}`,
+          '--exit',
+        ],
         {
           stdio: 'inherit',
           cwd: process.cwd(),
