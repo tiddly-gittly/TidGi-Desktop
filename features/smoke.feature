@@ -4,7 +4,7 @@ Feature: TidGi Application Launch
   So that I can use the application
 
   @smoke @logging
-  Scenario: Application starts, shows interface, and logs work
+  Scenario: Basic launch, preferences, and filesystem watch setup
     Given I start mock analytics server
     When I launch the TidGi application
     And I wait for the page to load completely
@@ -19,18 +19,17 @@ Feature: TidGi Application Launch
     Then I should see analytics events:
       | event_name      | window        |
       | settings.opened | preferences   |
-    # Switch back to main window for filesystem watch calibration
+    # Switch to main window for filesystem watch calibration
     When I switch to "main" window
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    # Enable filesystem watch — the heaviest operation in the suite
+    # Enable filesystem watch and create probe files
+    # These files accumulate state that makes the watcher slower on restart
     When I update workspace "wiki" settings:
       | property              | value |
       | enableFileSystemWatch | true  |
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
-    # Stress-test the watcher: create multiple files to simulate suite load
-    # Accumulated file state makes watcher re-indexing proportionally slower
     When I create file "{tmpDir}/wiki/tiddlers/ProbeAlpha.tid" with content:
       """
       created: 20250226070000000
@@ -58,7 +57,17 @@ Feature: TidGi Application Launch
       Gamma probe
       """
     Then I wait for tiddler "ProbeGamma" to be added by watch-fs
-    # Restart after accumulated file operations — watcher re-index is the bottleneck
+
+  @smoke
+  Scenario: Watcher re-index under accumulated file state
+    # This scenario runs AFTER the first one, on a system where the
+    # wiki has been restarted and the watcher must re-index files
+    # created by the previous scenario. The "wait for SSE and watch-fs"
+    # step measures worst-case watcher re-indexing under load.
+    When I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     And I restart workspace "wiki"
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
