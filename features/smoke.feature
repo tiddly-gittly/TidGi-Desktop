@@ -29,25 +29,36 @@ Feature: TidGi Application Launch
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
-    # Stress-test the watcher with repeated file operations
-    # Running multiple create/modify/delete cycles captures watcher
-    # performance degradation that occurs in the full test suite
-    When I create file "{tmpDir}/wiki/tiddlers/CalibrationProbe.tid" with content:
+    # Stress-test the watcher: create multiple files to simulate suite load
+    # Accumulated file state makes watcher re-indexing proportionally slower
+    When I create file "{tmpDir}/wiki/tiddlers/ProbeAlpha.tid" with content:
       """
       created: 20250226070000000
       modified: 20250226070000000
-      title: CalibrationProbe
-
-      Initial probe content
+      title: ProbeAlpha
+      tags: calibration
+      Alpha probe
       """
-    Then I wait for tiddler "CalibrationProbe" to be added by watch-fs
-    When I modify file "{tmpDir}/wiki/tiddlers/CalibrationProbe.tid" to contain "Modified probe content"
-    Then I wait for tiddler "CalibrationProbe" to be updated by watch-fs
-    When I delete file "{tmpDir}/wiki/tiddlers/CalibrationProbe.tid"
-    Then I wait for tiddler "CalibrationProbe" to be deleted by watch-fs
-    # Restart wiki to measure worst-case: watcher MUST re-index on restart
-    # This is the real bottleneck — scenarios restart the wiki and the
-    # watcher re-scans all files, which is 5-10× slower than first init
+    Then I wait for tiddler "ProbeAlpha" to be added by watch-fs
+    When I create file "{tmpDir}/wiki/tiddlers/ProbeBeta.tid" with content:
+      """
+      created: 20250226070000000
+      modified: 20250226070000000
+      title: ProbeBeta
+      tags: calibration
+      Beta probe
+      """
+    Then I wait for tiddler "ProbeBeta" to be added by watch-fs
+    When I create file "{tmpDir}/wiki/tiddlers/ProbeGamma.tid" with content:
+      """
+      created: 20250226070000000
+      modified: 20250226070000000
+      title: ProbeGamma
+      tags: calibration
+      Gamma probe
+      """
+    Then I wait for tiddler "ProbeGamma" to be added by watch-fs
+    # Restart after accumulated file operations — watcher re-index is the bottleneck
     And I restart workspace "wiki"
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
