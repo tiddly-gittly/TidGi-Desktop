@@ -4,21 +4,19 @@ import path from 'path';
 /**
  * E2E performance calibration — every value comes from measurement.
  *
- * Flow:
- * 1. Preflight runs smoke test (light clicks + filesystem watch) with JSON formatter
- * 2. Parses JSON to find max individual step duration (real worst case)
- * 3. Main test uses that measured max as per-step timeout
- *
- * No multipliers, no caps, no floors. The measurement IS the timeout.
+ * The smoke test exercises launch, element interaction, log-marker waits,
+ * and filesystem watch. Individual step durations are extracted from cucumber
+ * JSON output and classified by operation type so each type gets its own
+ * measured timeout — no hardcoded constants.
  */
 
 const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
 
 type CalibrationRecord = {
-  /** Total smoke test wall-clock time (ms) */
   totalMs: number;
-  /** Longest individual step measured during smoke test (ms) */
-  maxStepMs: number;
+  stepMs: number;
+  launchMs: number;
+  waitMs: number;
   recordedAt: number;
 };
 
@@ -28,10 +26,12 @@ function readCalibrationRecord(): CalibrationRecord | null {
   try {
     if (!fs.existsSync(CALIBRATION_FILE)) return null;
     const parsed = JSON.parse(fs.readFileSync(CALIBRATION_FILE, 'utf-8')) as Partial<CalibrationRecord>;
-    if (typeof parsed.maxStepMs !== 'number' || typeof parsed.totalMs !== 'number') return null;
+    if (typeof parsed.stepMs !== 'number') return null;
     return {
-      totalMs: parsed.totalMs,
-      maxStepMs: parsed.maxStepMs,
+      totalMs: parsed.totalMs ?? 0,
+      stepMs: parsed.stepMs,
+      launchMs: parsed.launchMs ?? parsed.stepMs,
+      waitMs: parsed.waitMs ?? parsed.stepMs,
       recordedAt: typeof parsed.recordedAt === 'number' ? parsed.recordedAt : Date.now(),
     };
   } catch {
@@ -39,14 +39,21 @@ function readCalibrationRecord(): CalibrationRecord | null {
   }
 }
 
-export function writeCalibrationResult(totalMs: number, maxStepMs: number): void {
+export function writeCalibrationResult(
+  totalMs: number,
+  stepMs: number,
+  launchMs: number,
+  waitMs: number,
+): void {
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
   fs.writeFileSync(
     CALIBRATION_FILE,
     JSON.stringify(
       {
         totalMs,
-        maxStepMs,
+        stepMs,
+        launchMs,
+        waitMs,
         recordedAt: Date.now(),
       } satisfies CalibrationRecord,
       null,
@@ -56,26 +63,30 @@ export function writeCalibrationResult(totalMs: number, maxStepMs: number): void
   );
 }
 
-/**
- * The measured worst-case step duration from calibration.
- * This becomes the cucumber per-step timeout for heavy operations.
- * Light operations (click/type/find) use fixed short timeouts instead.
- */
-export function getMeasuredStepTimeoutMs(): number {
-  // During calibration preflight, use a huge timeout so measurement can complete
-  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
-    return 3_600_000; // 1 hour — purely to let the measurement finish
-  }
-
-  if (cachedRecord !== null) return cachedRecord.maxStepMs;
-
+function requireRecord(): CalibrationRecord {
+  if (cachedRecord !== null) return cachedRecord;
   const record = readCalibrationRecord();
   if (record) {
     cachedRecord = record;
-    return record.maxStepMs;
+    return record;
   }
+  throw new Error('E2E calibration file is missing. Run `pnpm test:e2e`.');
+}
 
-  throw new Error(
-    'E2E calibration file is missing. Run `pnpm test:e2e` which includes the calibration preflight.',
-  );
+/** All-step max — cucumber per-step timeout for heavy operations. */
+export function getMeasuredStepTimeoutMs(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return 3_600_000;
+  return requireRecord().stepMs;
+}
+
+/** App launch + page load — measured from launch/browser-view steps. */
+export function getMeasuredLaunchTimeoutMs(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return 3_600_000;
+  return requireRecord().launchMs;
+}
+
+/** Log-marker waits + SSE/watch-fs — measured from wait/log steps. */
+export function getMeasuredWaitTimeoutMs(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return 3_600_000;
+  return requireRecord().waitMs;
 }

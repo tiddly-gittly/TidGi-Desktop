@@ -1,46 +1,42 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getMeasuredStepTimeoutMs } from './calibration';
+import { getMeasuredLaunchTimeoutMs, getMeasuredStepTimeoutMs, getMeasuredWaitTimeoutMs } from './calibration';
 
 const isCI = process.env.CI;
 
 /**
- * Cucumber global timeout per step/hook.
- * Measured from calibration smoke test — the worst-case individual step duration.
- * Light operations (clicks, element checks) fail fast via PLAYWRIGHT_TIMEOUT (10s).
+ * Cucumber global timeout per step — measured from worst-case step in calibration.
  */
 export const CUCUMBER_GLOBAL_TIMEOUT = getMeasuredStepTimeoutMs();
 
 console.log(
-  `[Timeout Config] step budget=${CUCUMBER_GLOBAL_TIMEOUT} ms  (CI=${isCI})`,
+  `[Timeout Config] step=${CUCUMBER_GLOBAL_TIMEOUT}ms (CI=${isCI})`,
 );
 
 setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
 
 /**
- * Fixed short timeout for element-finding (clicks, selectors, typing).
- * If an element isn't there within 10s, it's a real bug — fail fast.
+ * Element-finding operations (clicks, selectors, typing).
+ * Fixed short timeout — if an element isn't there, fail fast.
  */
 export const PLAYWRIGHT_TIMEOUT = 10000;
 
 export const PLAYWRIGHT_SHORT_TIMEOUT = 5000;
 
 /**
- * Heavy Playwright timeout for app launch and page load.
- * Uses the calibrated worst-case measurement.
+ * App launch + page load — measured from launch/browser-view steps in calibration.
  */
-export const HEAVY_PLAYWRIGHT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
+export const HEAVY_PLAYWRIGHT_TIMEOUT = getMeasuredLaunchTimeoutMs();
 
 /**
- * Log marker wait — nearly full step budget minus buffer for error reporting.
- * With short step timeouts (measured from calibration), every ms counts.
+ * Log marker / SSE / watch-fs waits — measured from wait/log steps in calibration.
  */
-export const LOG_MARKER_WAIT_TIMEOUT = Math.max(CUCUMBER_GLOBAL_TIMEOUT - 500, 4000);
+export const LOG_MARKER_WAIT_TIMEOUT = getMeasuredWaitTimeoutMs();
 
 export const HEAVY_OPERATION_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = LOG_MARKER_WAIT_TIMEOUT;
 
 /**
- * UI retry attempts. More retries on slower machines since individual element
- * timeouts are fixed at 10s regardless of calibration.
+ * UI retry attempts — more retries needed when element timeouts (10s) are
+ * short relative to the calibrated step budget.
  */
 export const UI_RETRY_ATTEMPTS = Math.max(3, Math.round(CUCUMBER_GLOBAL_TIMEOUT / 3000));
