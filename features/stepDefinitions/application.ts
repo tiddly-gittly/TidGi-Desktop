@@ -378,12 +378,10 @@ AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pi
 // Read docs/Testing.md section "Key E2E Testing Patterns" point 6 before attempting any changes.
 // Maximum allowed timeouts: Local 5s, CI 10s (exactly 2x local, no more)
 When('I launch the TidGi application', async function(this: ApplicationWorld) {
-  // Fire-and-forget: don't block step on process launch.
-  // The next step ("wait for page to load") handles window acquisition.
-
   this.appLaunchPromise = launchTidGiApplication(this).catch((error: unknown) => {
     throw error;
   });
+  await this.appLaunchPromise;
 });
 
 When('I close the TidGi application', async function(this: ApplicationWorld) {

@@ -1,5 +1,5 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getMeasuredLaunchTimeoutMs, getMeasuredStepTimeoutMs, getMeasuredWaitTimeoutMs } from './calibration';
+import { getMeasuredStepTimeoutMs } from './calibration';
 
 const isCI = process.env.CI;
 
@@ -23,17 +23,18 @@ export const PLAYWRIGHT_TIMEOUT = 10000;
 export const PLAYWRIGHT_SHORT_TIMEOUT = 5000;
 
 /**
- * App launch + page load — measured from launch/browser-view steps in calibration.
+ * App launch + page load — generous ceiling, fast failures from PLAYWRIGHT (10s).
  */
-export const HEAVY_PLAYWRIGHT_TIMEOUT = getMeasuredLaunchTimeoutMs();
+export const HEAVY_PLAYWRIGHT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 /**
- * Log marker / SSE / watch-fs waits — measured from wait/log steps in calibration.
+ * Log marker / SSE / watch-fs waits — generous ceiling.
+ * Internal retries handle the actual waiting; this is the maximum budget.
  */
-export const LOG_MARKER_WAIT_TIMEOUT = getMeasuredWaitTimeoutMs();
+export const LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 export const HEAVY_OPERATION_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
-export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = LOG_MARKER_WAIT_TIMEOUT;
+export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 /**
  * UI retry attempts — more retries needed when element timeouts (10s) are

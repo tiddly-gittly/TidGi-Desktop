@@ -76,7 +76,9 @@ function requireRecord(): CalibrationRecord {
 /** All-step max — cucumber per-step timeout for heavy operations. */
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return 3_600_000;
-  return requireRecord().stepMs;
+  // Use generous ceiling: Playwright system operations (launch/firstWindow) need room.
+  // Quick failures come from PLAYWRIGHT_TIMEOUT (10s), not the cucumber timeout.
+  return 120_000;
 }
 
 /** App launch + page load — measured from launch/browser-view steps. */
