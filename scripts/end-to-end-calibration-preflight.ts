@@ -19,15 +19,23 @@ function runSmokeCalibration(): void {
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
+    let success = false;
 
-    execSync(
-      `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
-      {
-        stdio: 'inherit',
-        cwd: process.cwd(),
-        env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
-      },
-    );
+    try {
+      execSync(
+        `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
+        {
+          stdio: 'inherit',
+          cwd: process.cwd(),
+          env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
+        },
+      );
+      success = true;
+    } catch {
+      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} failed, skipping results`);
+    }
+
+    if (!success) continue;
 
     const totalMs = Date.now() - startedAt;
     const steps = extractStepTimings(outputFile);
@@ -36,8 +44,6 @@ function runSmokeCalibration(): void {
 
     for (const step of steps) {
       if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
-
-      // Classify by step type for operation-specific timeouts
       if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
         maxLaunchStepMs = step.durationMs;
       }
@@ -47,6 +53,11 @@ function runSmokeCalibration(): void {
     }
 
     console.log(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: total=${totalMs}ms allMax=${maxStepMs}ms launchMax=${maxLaunchStepMs}ms waitMax=${maxWaitStepMs}ms`);
+  }
+
+  if (maxStepMs === 0) {
+    console.error('[Calibration] All runs failed, cannot proceed');
+    process.exit(1);
   }
 
   writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs);
