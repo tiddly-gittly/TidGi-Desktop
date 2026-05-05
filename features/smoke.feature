@@ -72,3 +72,12 @@ Feature: TidGi Application Launch
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
+
+  @smoke
+  Scenario: Third launch sample for variance capture
+    # Extra launch to increase sample size for app launch timing.
+    # Two scenarios give 4 launches (2 runs × 2). Adding a third
+    # gives 6 samples to better capture the launch time distribution.
+    When I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
