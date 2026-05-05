@@ -31,9 +31,10 @@ export const PLAYWRIGHT_SHORT_TIMEOUT = 5000;
 export const HEAVY_PLAYWRIGHT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 /**
- * Log marker wait — slightly shorter than step timeout for proper error reporting.
+ * Log marker wait — nearly full step budget minus buffer for error reporting.
+ * With short step timeouts (measured from calibration), every ms counts.
  */
-export const LOG_MARKER_WAIT_TIMEOUT = Math.max(5000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
+export const LOG_MARKER_WAIT_TIMEOUT = Math.max(CUCUMBER_GLOBAL_TIMEOUT - 500, 4000);
 
 export const HEAVY_OPERATION_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = LOG_MARKER_WAIT_TIMEOUT;
