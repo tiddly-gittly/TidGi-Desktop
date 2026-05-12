@@ -65,7 +65,8 @@ export async function internalIpV4(): Promise<string | undefined> {
       // Fall through to the interface-scan fallback below.
       console.warn(
         'internalIpV4: default gateway found but no matching network interface CIDR, trying interface scan fallback.',
-        'gateway:', defaultGatewayResult.gateway,
+        'gateway:',
+        defaultGatewayResult.gateway,
       );
     } else {
       console.warn('internalIpV4: defaultGatewayV4 returned no gateway, trying interface scan fallback. Result:', defaultGatewayResult);
