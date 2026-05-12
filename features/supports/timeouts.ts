@@ -15,8 +15,10 @@ setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
 export const PLAYWRIGHT_TIMEOUT = getMeasuredElementTimeoutMs();
 export const PLAYWRIGHT_SHORT_TIMEOUT = getMeasuredElementTimeoutMs();
 export const HEAVY_PLAYWRIGHT_TIMEOUT = getMeasuredLaunchTimeoutMs();
-export const LOG_MARKER_WAIT_TIMEOUT = getMeasuredWaitTimeoutMs();
-export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = getMeasuredWaitTimeoutMs();
+// Log-marker waits can involve background processes (sync, git, SSE)
+// that take longer than measured element waits. Use the generous step budget.
+export const LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
+export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 export const HEAVY_OPERATION_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 // Retry budget: how many element-level retries fit within the step timeout.
