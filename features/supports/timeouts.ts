@@ -1,5 +1,5 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getMeasuredElementTimeoutMs, getMeasuredLaunchTimeoutMs, getMeasuredStepTimeoutMs, getMeasuredWaitTimeoutMs } from './calibration';
+import { getMeasuredElementTimeoutMs, getMeasuredLaunchTimeoutMs, getMeasuredStepTimeoutMs } from './calibration';
 
 const isCI = process.env.CI;
 
