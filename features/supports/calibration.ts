@@ -45,18 +45,38 @@ function readCalibrationRecord(): CalibrationRecord | null {
 }
 
 export function writeCalibrationResult(
-  totalMs: number, stepMs: number, launchMs: number, waitMs: number, elementMs: number,
+  totalMs: number,
+  stepMs: number,
+  launchMs: number,
+  waitMs: number,
+  elementMs: number,
 ): void {
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
-  fs.writeFileSync(CALIBRATION_FILE, JSON.stringify({
-    totalMs, stepMs, launchMs, waitMs, elementMs, recordedAt: Date.now(),
-  } satisfies CalibrationRecord, null, 2), 'utf-8');
+  fs.writeFileSync(
+    CALIBRATION_FILE,
+    JSON.stringify(
+      {
+        totalMs,
+        stepMs,
+        launchMs,
+        waitMs,
+        elementMs,
+        recordedAt: Date.now(),
+      } satisfies CalibrationRecord,
+      null,
+      2,
+    ),
+    'utf-8',
+  );
 }
 
 function requireRecord(): CalibrationRecord {
   if (cachedRecord !== null) return cachedRecord;
   const record = readCalibrationRecord();
-  if (record) { cachedRecord = record; return record; }
+  if (record) {
+    cachedRecord = record;
+    return record;
+  }
   throw new Error('E2E calibration file is missing. Run `pnpm test:e2e`.');
 }
 

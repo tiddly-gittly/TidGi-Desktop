@@ -56,17 +56,25 @@ function runSmokeCalibration(): void {
       }
     }
 
-    console.log(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: total=${totalMs}ms all=${maxStepMs}ms launch=${maxLaunchStepMs}ms wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`);
+    console.log(
+      `[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: `
+      + `total=${totalMs}ms all=${maxStepMs}ms launch=${maxLaunchStepMs}ms `
+      + `wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`,
+    );
   }
 
   writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
 
-  console.log(`[Calibration] stored: step=${maxStepMs}ms launch=${maxLaunchStepMs}ms wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`);
+  console.log(
+    `[Calibration] stored: step=${maxStepMs}ms launch=${maxLaunchStepMs}ms `
+    + `wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`,
+  );
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
   try {
-    const report = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8')) as Array<Record<string, unknown>>;
+    const raw = fs.readFileSync(jsonFilePath, 'utf-8');
+    const report = JSON.parse(raw) as Array<Record<string, unknown>>;
     const timings: StepTiming[] = [];
 
     for (const feature of report) {
