@@ -56,19 +56,19 @@ function runSmokeCalibration(): void {
       }
     }
 
-    console.log(
-      `[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: `
-      + `total=${totalMs}ms all=${maxStepMs}ms launch=${maxLaunchStepMs}ms `
-      + `wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`,
-    );
+    const runResult =
+      `[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: total=${totalMs}ms ` +
+      `all=${maxStepMs}ms launch=${maxLaunchStepMs}ms ` +
+      `wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`;
+    console.log(runResult);
   }
 
   writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
 
-  console.log(
-    `[Calibration] stored: step=${maxStepMs}ms launch=${maxLaunchStepMs}ms `
-    + `wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`,
-  );
+  const storedResult =
+    `[Calibration] stored: step=${maxStepMs}ms launch=${maxLaunchStepMs}ms ` +
+    `wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`;
+  console.log(storedResult);
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
