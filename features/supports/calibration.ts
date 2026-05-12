@@ -100,7 +100,12 @@ const NO_TIMEOUT = 2_147_483_647;
 
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  return requireRecord().stepMs;
+  // Cucumber step timeout is a safety net, not a per-operation budget.
+  // Per-type timeouts (launch, element, wait) are tight and measured from
+  // calibration. The step timeout catches completely stuck steps only.
+  // Smoke-test calibration cannot predict worst-case steps from complex
+  // scenarios (AI, sync, hibernation), so use the generous fallback here.
+  return FALLBACK_STEP_MS;
 }
 
 export function getMeasuredLaunchTimeoutMs(): number {
