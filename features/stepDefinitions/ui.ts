@@ -2,7 +2,7 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
-import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
+import { HEAVY_PLAYWRIGHT_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(seconds: number) {
@@ -32,16 +32,14 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 
   let currentWindow = this.currentWindow;
   if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-    currentWindow = await this.app.firstWindow({ timeout: 120_000 });
+    currentWindow = await this.app.firstWindow({ timeout: HEAVY_PLAYWRIGHT_TIMEOUT });
     this.mainWindow = this.mainWindow ?? currentWindow;
     this.currentWindow = currentWindow;
   }
-  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: 120_000 });
-  // Short networkidle gives workspace-creation and other startup IPC time to finish
-  // without blocking on long-lived connections. 3s is intentionally different from
-  // PLAYWRIGHT_TIMEOUT — this is just a grace period, not a hard requirement.
+  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: HEAVY_PLAYWRIGHT_TIMEOUT });
+  // Short grace period for network idle during startup. Fails silently — DOM is ready.
   try {
-    await currentWindow?.waitForLoadState('networkidle', { timeout: 3000 });
+    await currentWindow?.waitForLoadState('networkidle', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
   } catch {
     // Ignore – DOM is already ready.
   }
@@ -301,7 +299,7 @@ When('I click all {string} elements matching selector {string}', async function(
   for (let index = count - 1; index >= 0; index--) {
     try {
       await locator.nth(index).scrollIntoViewIfNeeded().catch(() => {});
-      await locator.nth(index).click({ force: true, timeout: 3000 });
+      await locator.nth(index).click({ force: true, timeout: PLAYWRIGHT_SHORT_TIMEOUT });
       // Brief pause for the UI to settle after each close
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {

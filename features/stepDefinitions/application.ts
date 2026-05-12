@@ -8,6 +8,7 @@ import { windowDimension, WindowNames } from '../../src/services/windows/WindowP
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
+import { HEAVY_PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
 
 /**
@@ -283,7 +284,7 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
       }),
     },
     cwd: process.cwd(),
-    timeout: 120_000, // generous process-launch budget, cucumber step timeout catches hangs
+    timeout: HEAVY_PLAYWRIGHT_TIMEOUT,
   });
 
   // Do not block launch step on firstWindow; this can exceed Cucumber's 5s step timeout.

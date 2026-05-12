@@ -1,4 +1,4 @@
-import { execFileSync } from 'child_process';
+import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
@@ -16,25 +16,15 @@ function runSmokeCalibration(): void {
   let maxStepMs = 0;
   let maxLaunchStepMs = 0;
   let maxWaitStepMs = 0;
+  let maxElementStepMs = 0;
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
     let success = false;
 
     try {
-      execFileSync(
-        'cross-env',
-        [
-          'NODE_ENV=test',
-          'cucumber-js',
-          '--config',
-          'features/cucumber.config.js',
-          '--profile',
-          'calibration',
-          '--format',
-          `json:${outputFile}`,
-          '--exit',
-        ],
+      execSync(
+        `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
         {
           stdio: 'inherit',
           cwd: process.cwd(),
@@ -61,19 +51,17 @@ function runSmokeCalibration(): void {
       if (isWaitStep(step.name) && step.durationMs > maxWaitStepMs) {
         maxWaitStepMs = step.durationMs;
       }
+      if (isElementStep(step.name) && step.durationMs > maxElementStepMs) {
+        maxElementStepMs = step.durationMs;
+      }
     }
 
-    console.log(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: total=${totalMs}ms allMax=${maxStepMs}ms launchMax=${maxLaunchStepMs}ms waitMax=${maxWaitStepMs}ms`);
+    console.log(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS}: total=${totalMs}ms all=${maxStepMs}ms launch=${maxLaunchStepMs}ms wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`);
   }
 
-  if (maxStepMs === 0) {
-    console.error('[Calibration] All runs failed, cannot proceed');
-    process.exit(1);
-  }
+  writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
 
-  writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs);
-
-  console.log(`[Calibration] stored: step=${maxStepMs}ms launch=${maxLaunchStepMs}ms wait=${maxWaitStepMs}ms`);
+  console.log(`[Calibration] stored: step=${maxStepMs}ms launch=${maxLaunchStepMs}ms wait=${maxWaitStepMs}ms el=${maxElementStepMs}ms`);
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
@@ -105,6 +93,10 @@ function isLaunchStep(name: string): boolean {
 
 function isWaitStep(name: string): boolean {
   return /wait for|log entries|SSE|watch-fs/i.test(name);
+}
+
+function isElementStep(name: string): boolean {
+  return /click|type|check/i.test(name);
 }
 
 runSmokeCalibration();

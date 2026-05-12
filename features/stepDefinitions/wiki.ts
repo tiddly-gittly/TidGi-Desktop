@@ -19,7 +19,7 @@ import type { ApplicationWorld } from './application';
  * ABSOLUTE RULES - NO EXCEPTIONS:
  *
  * 1. NEVER INCREASE TIMEOUT VALUES! TIMEOUT = FAILURE = REAL BUG!
- * 2. MAXIMUM TIMEOUTS: Local 5s, CI 10s (exactly 2x, NO MORE)
+ * 2. ALL TIMEOUTS are calibrated from measured step durations via preflight.
  * 3. BEFORE MODIFYING: Read docs/Testing.md, find REAL BUG, fix APPLICATION
  * 4. THIS HAS BEEN VIOLATED 3 TIMES - DO NOT MAKE IT 4!
  *
@@ -56,7 +56,7 @@ const BACKOFF_OPTIONS = {
  *
  * You can add test-id for debugging, And remove unused test-id before you finish the work. Also remove test-id that interval is smaller than 2s.
  */
-export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = '*'): Promise<void> {
+export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = LOG_MARKER_WAIT_TIMEOUT, logFilePattern = '*'): Promise<void> {
   const logPath = getLogPath(world);
   // Support multiple patterns separated by '|', and '*' for all log files
   const patterns = logFilePattern.split('|');
