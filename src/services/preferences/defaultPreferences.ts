@@ -5,11 +5,10 @@ import semver from 'semver';
 import type { IPreferences } from './interface';
 
 // Allow E2E tests to inject analytics configuration via environment variables
-function getAnalyticsEnvironmentOverrides(): { analyticsApiKey: string; analyticsEnabled: boolean; analyticsHost: string; analyticsSiteId: string } {
+function getAnalyticsEnvironmentOverrides(): { analyticsEnabled: boolean; analyticsHost: string; analyticsSiteId: string } {
   const analyticsHost = process.env.TIDGI_ANALYTICS_HOST ?? '';
   if (analyticsHost) {
     return {
-      analyticsApiKey: process.env.TIDGI_ANALYTICS_API_KEY ?? 'test-api-key',
       analyticsEnabled: true,
       analyticsHost,
       analyticsSiteId: process.env.TIDGI_ANALYTICS_SITE_ID ?? 'test-site',
@@ -17,8 +16,7 @@ function getAnalyticsEnvironmentOverrides(): { analyticsApiKey: string; analytic
   }
   // site_id is safe to embed publicly — Rybbit's /api/track is a public endpoint
   // that only needs site_id (same as the data-site-id in <script> tags on websites).
-  // API keys are only for reading data via the dashboard API, not for writing events.
-  return { analyticsApiKey: '', analyticsEnabled: true, analyticsHost: 'https://analytics.tidgi.fun', analyticsSiteId: '189dd97a8d37' };
+  return { analyticsEnabled: true, analyticsHost: 'https://analytics.tidgi.fun', analyticsSiteId: '189dd97a8d37' };
 }
 
 const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
@@ -26,7 +24,6 @@ const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
 export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   alwaysOnTop: false,
-  analyticsApiKey: analyticsEnvironment.analyticsApiKey,
   analyticsEnabled: analyticsEnvironment.analyticsEnabled,
   analyticsHost: analyticsEnvironment.analyticsHost,
   analyticsSiteId: analyticsEnvironment.analyticsSiteId,

@@ -87,6 +87,9 @@ export class Preference implements IPreferenceService {
     // Track analytics preference changes
     if (key === 'analyticsEnabled' || key === 'analyticsHost' || key === 'analyticsSiteId') {
       const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+      if (key === 'analyticsEnabled' && value === false) {
+        await analyticsService.clearPendingEvents();
+      }
       void analyticsService.track('preferences.analytics_updated', {
         field: key,
         enabled: key === 'analyticsEnabled' ? Boolean(value) : undefined,

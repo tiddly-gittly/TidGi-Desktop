@@ -134,8 +134,7 @@ export class AnalyticsService implements IAnalyticsService {
 
     const analyticsHost = await this.preferenceService.get('analyticsHost');
     const analyticsSiteId = await this.preferenceService.get('analyticsSiteId');
-    const analyticsApiKey = await this.preferenceService.get('analyticsApiKey');
-    return Boolean(analyticsHost.trim() && analyticsSiteId.trim() && analyticsApiKey.trim());
+    return Boolean(analyticsHost.trim() && analyticsSiteId.trim());
   }
 
   public async clearPendingEvents(): Promise<void> {

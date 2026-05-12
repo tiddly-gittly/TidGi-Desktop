@@ -14,7 +14,6 @@ export interface IPreferences {
   aiGenerateBackupTitleTimeout: number;
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
-  analyticsApiKey: string;
   analyticsEnabled: boolean;
   analyticsHost: string;
   analyticsSiteId: string;

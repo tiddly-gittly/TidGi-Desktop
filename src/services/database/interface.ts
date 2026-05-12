@@ -8,7 +8,6 @@ import { DataSource } from 'typeorm';
 
 export interface ISettingFile {
   analyticsSecrets?: {
-    analyticsApiKey?: string;
     analyticsDisclosureVersion?: number;
   };
   preferences: IPreferences;
