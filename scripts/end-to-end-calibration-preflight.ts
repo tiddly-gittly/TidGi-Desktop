@@ -9,7 +9,7 @@ interface StepTiming {
 }
 
 function runSmokeCalibration(): void {
-  const CALIBRATION_RUNS = 4; // more runs = more launch samples to capture timing variance
+  const CALIBRATION_RUNS = 2; // full-suite runs for per-step timing measurements
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
   let maxTotalMs = 0;

@@ -26,6 +26,6 @@ module.exports = {
     formatOptions: {
       snippetInterface: 'async-await',
     },
-    paths: ['features/smoke.feature'],
+    paths: ['features/*.feature'],
   },
 };
