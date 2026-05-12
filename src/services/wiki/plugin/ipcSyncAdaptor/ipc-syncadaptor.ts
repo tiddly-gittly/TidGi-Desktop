@@ -43,7 +43,9 @@ class TidGiIPCSyncAdaptor {
   wikiService: typeof $tw.tidgi.service.wiki;
   workspaceService: typeof $tw.tidgi.service.workspace;
   authService: typeof $tw.tidgi.service.auth;
+  analyticsService: typeof $tw.tidgi.service.analytics;
   workspaceID: string;
+  isSubWiki: boolean;
   recipe?: string;
   private sseSubscribed = false;
   /**
@@ -78,6 +80,7 @@ class TidGiIPCSyncAdaptor {
     this.wikiService = tidgiService.wiki;
     this.workspaceService = tidgiService.workspace;
     this.authService = tidgiService.auth;
+    this.analyticsService = tidgiService.analytics;
     this.hasStatus = false;
     this.isAnonymous = false;
     this.logger = new $tw.utils.Logger('TidGiIPCSyncAdaptor');
@@ -89,6 +92,7 @@ class TidGiIPCSyncAdaptor {
       throw new Error('TidGiIPCSyncAdaptor: workspaceID is undefined. Cannot initialize sync adaptor without a valid workspace ID.');
     }
     this.workspaceID = workspaceID;
+    this.isSubWiki = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.isSubWiki);
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();
@@ -315,6 +319,7 @@ class TidGiIPCSyncAdaptor {
     }
     try {
       const title = tiddler.fields.title;
+      const shouldTrackCreatedUserTiddler = !title.startsWith('$:/') && this.getTiddlerRevision(title) === undefined;
       const tiddlersToNotSave = $tw.utils.parseStringArray(this.wiki.getTiddlerText('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/TiddlersToNotSave') ?? '');
       if (tiddlersToNotSave.includes(title)) {
         this.logger.log(`Ignore saveTiddler ${title}, config in TiddlersToNotSave`);
@@ -359,6 +364,12 @@ class TidGiIPCSyncAdaptor {
             return;
           }
           this.rememberRevision(title, etagInfo.revision);
+          if (shouldTrackCreatedUserTiddler) {
+            void this.analyticsService.track('tiddler.created', {
+              storage: 'filesystem',
+              isSubWiki: this.isSubWiki,
+            });
+          }
           callback(null, {
             bag: etagInfo.bag,
           }, etagInfo.revision);

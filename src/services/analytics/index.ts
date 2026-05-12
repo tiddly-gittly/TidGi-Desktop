@@ -56,6 +56,7 @@ const allowedPropertiesByEvent: Record<BuiltInAnalyticsEventName, ReadonlySet<st
   'error.unhandled': new Set(['errorName', 'errorMessage', 'errorSource']),
   'preferences.analytics_updated': new Set(['field', 'enabled']),
   'settings.opened': new Set(['window']),
+  'tiddler.created': new Set(['storage', 'isSubWiki']),
   'sync.completed': new Set(['storage', 'commitOnly', 'hasChanges', 'force']),
   'sync.failed': new Set(['storage', 'reason', 'commitOnly', 'force']),
   'sync.triggered': new Set(['storage', 'commitOnly', 'force']),

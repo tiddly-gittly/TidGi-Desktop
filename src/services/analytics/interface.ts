@@ -7,6 +7,7 @@ export type BuiltInAnalyticsEventName =
   | 'error.report_requested'
   | 'error.unhandled'
   | 'settings.opened'
+  | 'tiddler.created'
   | 'workspace.created'
   | 'workspace.activated'
   | 'workspace.opened_in_new_window'
