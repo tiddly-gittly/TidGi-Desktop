@@ -70,18 +70,30 @@ export function writeCalibrationResult(
   );
 }
 
+// Conservative fallback when calibration file is missing.
+const FALLBACK_STEP_MS = 120_000;
+const FALLBACK_LAUNCH_MS = 120_000;
+const FALLBACK_WAIT_MS = 30_000;
+const FALLBACK_ELEMENT_MS = 10_000;
+
 function requireRecord(): CalibrationRecord {
   if (cachedRecord !== null) return cachedRecord;
   const record = readCalibrationRecord();
-  if (record) {
-    cachedRecord = record;
-    return record;
-  }
-  throw new Error('E2E calibration file is missing. Run `pnpm test:e2e`.');
+  if (record) { cachedRecord = record; return record; }
+  console.warn('E2E calibration file is missing — using conservative fallback values. Run `pnpm test:e2e` locally to calibrate.');
+  return {
+    totalMs: FALLBACK_STEP_MS,
+    stepMs: FALLBACK_STEP_MS,
+    launchMs: FALLBACK_LAUNCH_MS,
+    waitMs: FALLBACK_WAIT_MS,
+    elementMs: FALLBACK_ELEMENT_MS,
+    recordedAt: 0,
+  };
 }
 
-// During calibration preflight, use no timeout — measurement must complete.
-const NO_TIMEOUT = Number.MAX_SAFE_INTEGER;
+// During calibration preflight, use max safe timeout for Node.js (2^31-1 ≈ 24.8d).
+// Cucumber delegates to Node's setTimeout which has a 32-bit signed int limit.
+const NO_TIMEOUT = 2_147_483_647;
 
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
