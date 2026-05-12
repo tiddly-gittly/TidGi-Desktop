@@ -56,6 +56,7 @@ const allowedPropertiesByEvent: Record<BuiltInAnalyticsEventName, ReadonlySet<st
   'error.unhandled': new Set(['errorName', 'errorMessage', 'errorSource']),
   'preferences.analytics_updated': new Set(['field', 'enabled']),
   'settings.opened': new Set(['window']),
+  'tiddler.created': new Set(['storage', 'isSubWiki']),
   'sync.completed': new Set(['storage', 'commitOnly', 'hasChanges', 'force']),
   'sync.failed': new Set(['storage', 'reason', 'commitOnly', 'force']),
   'sync.triggered': new Set(['storage', 'commitOnly', 'force']),
@@ -134,8 +135,7 @@ export class AnalyticsService implements IAnalyticsService {
 
     const analyticsHost = await this.preferenceService.get('analyticsHost');
     const analyticsSiteId = await this.preferenceService.get('analyticsSiteId');
-    const analyticsApiKey = await this.preferenceService.get('analyticsApiKey');
-    return Boolean(analyticsHost.trim() && analyticsSiteId.trim() && analyticsApiKey.trim());
+    return Boolean(analyticsHost.trim() && analyticsSiteId.trim());
   }
 
   public async clearPendingEvents(): Promise<void> {

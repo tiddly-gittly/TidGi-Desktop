@@ -39,14 +39,6 @@ export const privacySection: ISectionDefinition = {
       needsRestart: false,
       zod: z.string(),
     },
-    {
-      type: 'preference-text',
-      key: 'analyticsApiKey',
-      titleKey: 'Preference.AnalyticsApiKey',
-      descriptionKey: 'Preference.AnalyticsApiKeyDescription',
-      needsRestart: false,
-      zod: z.string(),
-    },
     { type: 'divider' },
     {
       type: 'preference-boolean',
