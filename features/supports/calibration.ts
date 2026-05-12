@@ -79,7 +79,10 @@ const FALLBACK_ELEMENT_MS = 10_000;
 function requireRecord(): CalibrationRecord {
   if (cachedRecord !== null) return cachedRecord;
   const record = readCalibrationRecord();
-  if (record) { cachedRecord = record; return record; }
+  if (record) {
+    cachedRecord = record;
+    return record;
+  }
   console.warn('E2E calibration file is missing — using conservative fallback values. Run `pnpm test:e2e` locally to calibrate.');
   return {
     totalMs: FALLBACK_STEP_MS,
