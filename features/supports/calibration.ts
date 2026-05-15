@@ -88,7 +88,8 @@ function requireRecord(): CalibrationRecord {
 
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  return requireRecord().stepMs;
+  const record = requireRecord();
+  return record.launchMs + record.waitMs + record.elementMs;
 }
 
 export function getMeasuredLaunchTimeoutMs(): number {
