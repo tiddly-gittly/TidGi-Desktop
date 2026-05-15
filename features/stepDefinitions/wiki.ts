@@ -1237,8 +1237,8 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   await new Promise(resolve => setTimeout(resolve, 500));
 
   // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
-  const fsSettingChanged = 'enableFileSystemWatch' in settingsUpdate
-    && settingsUpdate.enableFileSystemWatch !== watchFsCurrentlyEnabled;
+  const fsSettingChanged = 'enableFileSystemWatch' in settingsUpdate &&
+    settingsUpdate.enableFileSystemWatch !== watchFsCurrentlyEnabled;
   const needsRestart = fsSettingChanged || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
     // Only wait for watch-fs if it was enabled before the update
