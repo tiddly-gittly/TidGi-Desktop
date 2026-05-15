@@ -51,9 +51,11 @@ jobs:
           CI: true
         timeout-minutes: 5
       - name: Prepare E2E
-        run: pnpm run test:prepare-e2e
+        # xvfb-run is needed for the calibration preflight which launches Electron.
+        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:prepare-e2e
         env:
           CI: true
+          DISPLAY: :99
         timeout-minutes: 15
       
       - name: Run E2E tests
