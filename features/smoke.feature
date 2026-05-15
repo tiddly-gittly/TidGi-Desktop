@@ -30,6 +30,11 @@ Feature: TidGi Application Launch
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
+    # Wait for git initialization to measure realistic background-operation timing
+    And I wait for "git initialization" log marker "[test-id-git-init-complete]"
+    # Wait for SSE ready marker to measure long-polling timing
+    And I clear log lines containing "[test-id-SSE_READY]"
+    And I wait for "SSE ready after restart" log marker "[test-id-SSE_READY]"
     When I create file "{tmpDir}/wiki/tiddlers/ProbeAlpha.tid" with content:
       """
       created: 20250226070000000
