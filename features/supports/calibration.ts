@@ -82,8 +82,8 @@ function requireRecord(): CalibrationRecord {
     return record;
   }
   throw new Error(
-    'E2E calibration file is missing.\n'
-    + 'Run `pnpm test:e2e` to generate it — the calibration preflight runs automatically.',
+    'E2E calibration file is missing.\n' +
+    'Run `pnpm test:e2e` to generate it — the calibration preflight runs automatically.',
   );
 }
 
