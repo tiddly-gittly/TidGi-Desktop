@@ -1,5 +1,5 @@
 import { setDefaultTimeout } from '@cucumber/cucumber';
-import { getMeasuredElementTimeoutMs, getMeasuredLaunchTimeoutMs, getMeasuredStepTimeoutMs, getMeasuredWaitTimeoutMs } from './calibration';
+import { getMeasuredElementTimeoutMs, getMeasuredLaunchTimeoutMs, getMeasuredStepTimeoutMs } from './calibration';
 
 const isCI = process.env.CI;
 
@@ -10,8 +10,10 @@ setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
 export const PLAYWRIGHT_TIMEOUT = getMeasuredElementTimeoutMs();
 export const PLAYWRIGHT_SHORT_TIMEOUT = getMeasuredElementTimeoutMs();
 export const HEAVY_PLAYWRIGHT_TIMEOUT = getMeasuredLaunchTimeoutMs();
-export const LOG_MARKER_WAIT_TIMEOUT = getMeasuredWaitTimeoutMs();
-export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = getMeasuredWaitTimeoutMs();
+// Log-marker waits wait for background processes (sync, git, SSE);
+// use the generous step budget rather than the measured element wait.
+export const LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
+export const HEAVY_LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 export const HEAVY_OPERATION_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
 
 export const UI_RETRY_ATTEMPTS = Math.max(1, Math.round(CUCUMBER_GLOBAL_TIMEOUT / PLAYWRIGHT_TIMEOUT));
