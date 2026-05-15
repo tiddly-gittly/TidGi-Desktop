@@ -86,10 +86,17 @@ function requireRecord(): CalibrationRecord {
   );
 }
 
+// Smoke-test calibration cannot predict worst-case step durations for complex
+// scenarios involving background sync, git operations, AI mock calls, etc.
+// The cucumber step timeout must be generous — it catches completely stuck steps,
+// not per-operation budgets. Per-type timeouts (launch, element, wait) are tight
+// and measured. The step timeout is a safety net that must accommodate the
+// longest legitimate step across the full e2e suite.
+const STEP_TIMEOUT_MS = 120_000;
+
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  const record = requireRecord();
-  return record.launchMs + record.waitMs + record.elementMs;
+  return STEP_TIMEOUT_MS;
 }
 
 export function getMeasuredLaunchTimeoutMs(): number {
