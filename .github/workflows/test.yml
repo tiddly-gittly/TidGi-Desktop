@@ -6,8 +6,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -56,12 +54,10 @@ jobs:
         run: pnpm run test:prepare-e2e
         env:
           CI: true
-        timeout-minutes: 5
+        timeout-minutes: 15
       
       - name: Run E2E tests
-        # Calibration runs automatically via error-to-error-preflight.ts as part of test:e2e
-        # No workflow-level timeout - relies on calibration-based cucumber step timeouts
-        # Calibration preflight uses 250s timeout (10×), main tests use measured multiplier (capped at 5×)
+        # Calibration runs in test:prepare-e2e before the tests start.
         run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
         env:
           CI: true
