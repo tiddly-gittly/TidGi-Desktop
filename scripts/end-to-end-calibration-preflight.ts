@@ -56,6 +56,9 @@ function runSmokeCalibration(): void {
       }
     }
 
+    // Step timeout = worst composite: a single step may involve launch + wait + click.
+    maxStepMs = Math.max(maxStepMs, maxLaunchStepMs + maxWaitStepMs + maxElementStepMs);
+
     console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
   }
 

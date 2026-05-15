@@ -13,7 +13,7 @@ jobs:
           submodules: recursive
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
       - name: Install Node.js
@@ -76,7 +76,7 @@ jobs:
           echo "Cleaned up test-artifacts-ci cache folders"
         continue-on-error: true
       
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-artifacts-ci

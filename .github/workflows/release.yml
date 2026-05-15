@@ -60,7 +60,7 @@ jobs:
           submodules: recursive
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
       - name: Install Node.js
@@ -132,7 +132,7 @@ jobs:
       # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
       - name: Upload analyzer reports
         if: matrix.platform == 'linux' && matrix.arch == 'x64'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: analyzer-reports-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
@@ -142,7 +142,7 @@ jobs:
 
       - name: Upload packaged apps
         if: (matrix.platform == 'mac' && matrix.arch == 'x64') || (matrix.platform == 'win' && matrix.arch == 'x64')
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: packaged-apps-${{ matrix.platform }}-${{ matrix.arch }}
           path: out/make/**
