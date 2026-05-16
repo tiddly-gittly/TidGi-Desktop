@@ -13,7 +13,7 @@ jobs:
           submodules: recursive
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
       - name: Install Node.js
@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y build-essential
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install
 
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
