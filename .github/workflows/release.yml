@@ -61,7 +61,7 @@ jobs:
           submodules: recursive
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v4
         with:
           run_install: false
       - name: Install Node.js
