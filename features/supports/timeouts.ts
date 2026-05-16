@@ -7,7 +7,7 @@ export const CUCUMBER_GLOBAL_TIMEOUT = getMeasuredStepTimeoutMs();
 console.log(`[Timeout] step=${CUCUMBER_GLOBAL_TIMEOUT}ms (CI=${isCI})`);
 setDefaultTimeout(CUCUMBER_GLOBAL_TIMEOUT);
 
-export const PLAYWRIGHT_TIMEOUT = getMeasuredElementTimeoutMs();
+export const PLAYWRIGHT_TIMEOUT = getMeasuredLaunchTimeoutMs() + getMeasuredElementTimeoutMs();
 export const PLAYWRIGHT_SHORT_TIMEOUT = getMeasuredElementTimeoutMs();
 export const HEAVY_PLAYWRIGHT_TIMEOUT = getMeasuredLaunchTimeoutMs();
 export const LOG_MARKER_WAIT_TIMEOUT = CUCUMBER_GLOBAL_TIMEOUT;
