@@ -27,7 +27,6 @@ jobs:
   build:
     needs: test
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
