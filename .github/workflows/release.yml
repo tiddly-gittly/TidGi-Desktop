@@ -61,7 +61,7 @@ jobs:
           submodules: recursive
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v5
         with:
           run_install: false
       - name: Install Node.js
@@ -86,7 +86,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Rebuild native modules for Electron
-        run: npx electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Remove windows only deps
         if: matrix.platform != 'win'
         run: pnpm remove registry-js
