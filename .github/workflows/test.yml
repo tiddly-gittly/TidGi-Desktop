@@ -29,11 +29,7 @@ jobs:
           sudo apt-get install -y build-essential
 
       - name: Install dependencies
-        run: pnpm install
-
-      # pnpm v11 moved binary shims to PNPM_HOME/bin. Add to PATH for script execution.
-      - name: Fix pnpm PATH for v11
-        run: echo "$PNPM_HOME/bin" >> $GITHUB_PATH
+        run: pnpm install --no-frozen-lockfile
 
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
