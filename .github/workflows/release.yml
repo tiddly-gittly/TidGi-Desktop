@@ -86,8 +86,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-      # Run rebuild in same shell context as MSVC setup (pwsh inherits from GitHub Actions env)
+      # Run rebuild in pwsh on Windows (better MSVC env inheritance), bash elsewhere
       - name: Rebuild native modules for Electron
+        if: matrix.platform != 'win'
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
+      - name: Rebuild native modules for Electron (Windows)
+        if: matrix.platform == 'win'
         shell: pwsh
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Remove windows only deps
