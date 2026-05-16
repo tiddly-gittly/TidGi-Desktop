@@ -86,13 +86,16 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-      # Run rebuild in pwsh on Windows (better MSVC env inheritance), bash elsewhere
-      - name: Rebuild native modules for Electron
-        if: matrix.platform != 'win'
-        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
+      # Windows: MSVC + rebuild in one step (environment doesn't persist via pnpm exec to node-gyp)
       - name: Rebuild native modules for Electron (Windows)
         if: matrix.platform == 'win'
         shell: pwsh
+        run: |
+          $vsPath = & '${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe' -latest -property installationPath
+          $vcvarsArch = if ('${{ matrix.arch }}' -eq 'arm64') { 'amd64_arm64' } else { 'x64' }
+          cmd /c "`"$vsPath\VC\Auxiliary\Build\vcvarsall.bat`" $vcvarsArch > nul 2>&1 && pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}"
+      - name: Rebuild native modules for Electron (non-Windows)
+        if: matrix.platform != 'win'
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Remove windows only deps
         if: matrix.platform != 'win'
