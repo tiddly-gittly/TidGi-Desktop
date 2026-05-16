@@ -31,9 +31,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Fix pnpm v11 PATH layout (bins moved to PNPM_HOME/bin)
+      # pnpm v11 moved binary shims to PNPM_HOME/bin. Add to PATH for script execution.
       - name: Fix pnpm PATH for v11
-        run: pnpm setup
+        run: echo "$PNPM_HOME/bin" >> $GITHUB_PATH
 
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw

@@ -86,9 +86,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-      # Fix pnpm v11 PATH layout (bins moved to PNPM_HOME/bin)
       - name: Fix pnpm PATH for v11
-        run: pnpm setup
+        run: echo "$PNPM_HOME/bin" >> $GITHUB_PATH
       - name: Rebuild native modules for Electron (non-Windows)
         if: matrix.platform != 'win'
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
