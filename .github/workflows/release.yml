@@ -27,6 +27,7 @@ jobs:
   build:
     needs: test
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -70,12 +71,13 @@ jobs:
 
       # Windows specific: Set up CV dependency for pngquant-bin
       # Also sets up MSVC (Microsoft Visual C++) compiler for native modules (nsfw, better-sqlite3)
-      - name: Set up CV dependency for pngquant-bin
+      - name: Set up MSVC compiler (Windows)
         if: matrix.platform == 'win'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch == 'arm64' && 'amd64_arm64' || 'x64' }}
       # Install C++ build tools for native modules (Linux only)
       # macOS: GitHub Actions runners come with Xcode Command Line Tools pre-installed
-      # Windows: MSVC is set up by msvc-dev-cmd action above
       - name: Install build dependencies (Linux)
         if: matrix.platform == 'linux'
         run: |
@@ -84,7 +86,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+      # Run rebuild in same shell context as MSVC setup (pwsh inherits from GitHub Actions env)
       - name: Rebuild native modules for Electron
+        shell: pwsh
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Remove windows only deps
         if: matrix.platform != 'win'
