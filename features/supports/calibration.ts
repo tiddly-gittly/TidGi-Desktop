@@ -70,9 +70,10 @@ export function writeCalibrationResult(
   );
 }
 
-// During calibration preflight, use max safe timeout for Node.js (2^31-1 ≈ 24.8d).
-// Cucumber delegates to Node's setTimeout which has a 32-bit signed int limit.
-const NO_TIMEOUT = 2_147_483_647;
+// During calibration preflight, use a generous timeout that is safe for Node.js setTimeout
+// AND Playwright Chromium CDP. Node.js 32-bit signed max is 2^31-1 (2147483647 ≈ 24.8d),
+// but Playwright CDP may overflow values above 2^30. 5 minutes is safe and enough.
+const NO_TIMEOUT = 300_000;
 
 function requireRecord(): CalibrationRecord {
   if (cachedRecord !== null) return cachedRecord;

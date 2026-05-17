@@ -62,6 +62,17 @@ function runSmokeCalibration(): void {
     console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
   }
 
+  // If all runs failed, use safe conservative defaults instead of zeroes.
+  // Zeroes cause every Cucumber step to time out immediately.
+  if (maxTotalMs === 0) {
+    console.warn('[Cal] all runs failed — using conservative fallback timeouts');
+    maxTotalMs = 120_000;
+    maxStepMs = 120_000;
+    maxLaunchStepMs = 60_000;
+    maxWaitStepMs = 30_000;
+    maxElementStepMs = 10_000;
+  }
+
   writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
 
   console.log(`[Cal] stored: S=${maxStepMs}ms L=${maxLaunchStepMs}ms W=${maxWaitStepMs}ms E=${maxElementStepMs}ms`);
