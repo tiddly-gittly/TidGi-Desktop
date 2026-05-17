@@ -89,6 +89,12 @@ jobs:
       - name: Rebuild native modules for Electron (non-Windows)
         if: matrix.platform != 'win'
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
+      - name: Rebuild native modules for Electron (Windows)
+        if: matrix.platform == 'win'
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch == 'arm64' && 'amd64_arm64' || 'x64' }}
+          pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Remove windows only deps
         if: matrix.platform != 'win'
         run: pnpm remove registry-js
