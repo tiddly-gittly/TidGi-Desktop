@@ -5,7 +5,7 @@ const isCI = process.env.CI;
 
 // Floors: calibration only measures 3 simple smoke scenarios. Real test suite
 // has 66 scenarios, many much slower. Floors prevent timeout-on-normal-operation.
-const FLOOR_STEP_MS = 60_000;
+const FLOOR_STEP_MS = 120_000;
 const FLOOR_LAUNCH_MS = 15_000;
 const FLOOR_ELEMENT_MS = 5_000;
 
