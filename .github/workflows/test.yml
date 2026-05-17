@@ -66,7 +66,17 @@ jobs:
 
       - name: Run E2E tests
         # Calibration runs as part of test:e2e before the cucumber tests.
-        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
+        run: |
+          echo "=== pnpm version ===" && pnpm --version
+          echo "=== node version ===" && node --version
+          echo "=== tsx version ===" && pnpm exec tsx --version || true
+          echo "=== cucumber-js version ===" && pnpm exec cucumber-js --version || true
+          echo "=== Running E2E tests ==="
+          xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e 2>&1 | tee e2e-output.log
+          E2E_EXIT=${PIPESTATUS[0]}
+          echo "=== E2E exit code: ${E2E_EXIT} ==="
+          exit ${E2E_EXIT}
+        shell: bash
         env:
           CI: true
           DISPLAY: :99
