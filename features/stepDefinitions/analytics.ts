@@ -16,6 +16,7 @@ Given('I start mock analytics server', async function(this: ApplicationWorld) {
   // Configure app to use mock analytics server via launch env overrides
   // The app reads these and sets them as default preferences
   this.launchEnvOverrides.TIDGI_ANALYTICS_HOST = mockAnalyticsServer.baseUrl;
+  this.launchEnvOverrides.TIDGI_ANALYTICS_HOSTNAME = 'test-hostname';
   this.launchEnvOverrides.TIDGI_ANALYTICS_SITE_ID = 'test-site-id';
   this.launchEnvOverrides.TIDGI_ANALYTICS_API_KEY = 'test-api-key';
 });
@@ -58,10 +59,19 @@ Then('I should see analytics events:', async function(this: ApplicationWorld, da
 
     // Check optional properties
     const matchedEvent = matchingEvents[0];
+    // Parse properties JSON string (analytics service serializes for Rybbit compatibility)
+    let eventProperties: Record<string, unknown> = {};
+    if (typeof matchedEvent.properties === 'string') {
+      try {
+        eventProperties = JSON.parse(matchedEvent.properties) as Record<string, unknown>;
+      } catch {
+        // ignore parse errors — properties will be empty
+      }
+    }
     for (const [key, value] of Object.entries(expected)) {
       if (key === 'event_name' || !value) continue;
 
-      const actualValue = matchedEvent.properties?.[key];
+      const actualValue = eventProperties[key];
       const expectedValue = value;
 
       // Support special matchers

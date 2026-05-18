@@ -5,7 +5,8 @@ export interface AnalyticsTrackPayload {
   site_id: string;
   type: 'custom_event';
   event_name: string;
-  properties?: Record<string, unknown>;
+  /** Analytics service sends properties as a JSON-serialized string for Rybbit compatibility */
+  properties?: string;
   hostname: string;
   pathname: string;
 }
