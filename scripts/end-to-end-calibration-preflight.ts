@@ -9,7 +9,7 @@ interface StepTiming {
 }
 
 function runSmokeCalibration(): void {
-  const CALIBRATION_RUNS = 4; // more runs = more launch samples to capture timing variance
+  const SMOKE_RUNS = 4;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
   let maxTotalMs = 0;
@@ -18,48 +18,48 @@ function runSmokeCalibration(): void {
   let maxWaitStepMs = 0;
   let maxElementStepMs = 0;
 
-  for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
+  function runCucumber(profile: string, label: string): { success: boolean; totalMs: number; steps: StepTiming[] } {
     const startedAt = Date.now();
-    let success = false;
-
     try {
       execSync(
-        `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
+        `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile ${profile} --format json:${outputFile} --exit`,
         {
           stdio: 'inherit',
           cwd: process.cwd(),
           env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
         },
       );
-      success = true;
+      return { success: true, totalMs: Date.now() - startedAt, steps: extractStepTimings(outputFile) };
     } catch {
-      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} failed, skipping results`);
+      console.warn(`[Calibration] ${label} failed, skipping results`);
+      return { success: false, totalMs: 0, steps: [] };
     }
+  }
 
-    if (!success) continue;
-
-    const totalMs = Date.now() - startedAt;
-    const steps = extractStepTimings(outputFile);
-
+  function mergeRun(totalMs: number, steps: StepTiming[]): void {
     if (totalMs > maxTotalMs) maxTotalMs = totalMs;
-
     for (const step of steps) {
       if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
-      if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
-        maxLaunchStepMs = step.durationMs;
-      }
-      if (isWaitStep(step.name) && step.durationMs > maxWaitStepMs) {
-        maxWaitStepMs = step.durationMs;
-      }
-      if (isElementStep(step.name) && step.durationMs > maxElementStepMs) {
-        maxElementStepMs = step.durationMs;
-      }
+      if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) maxLaunchStepMs = step.durationMs;
+      if (isWaitStep(step.name) && step.durationMs > maxWaitStepMs) maxWaitStepMs = step.durationMs;
+      if (isElementStep(step.name) && step.durationMs > maxElementStepMs) maxElementStepMs = step.durationMs;
     }
-
-    // Step timeout = worst composite: a single step may involve launch + wait + click.
     maxStepMs = Math.max(maxStepMs, maxLaunchStepMs + maxWaitStepMs + maxElementStepMs);
+  }
 
-    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
+  // ── Smoke calibration: fast launch/watch/click timings ──────────
+  for (let runIndex = 0; runIndex < SMOKE_RUNS; runIndex++) {
+    const result = runCucumber('calibration', `smoke run ${runIndex + 1}/${SMOKE_RUNS}`);
+    if (!result.success) continue;
+    mergeRun(result.totalMs, result.steps);
+    console.log(`[Cal] smoke #${runIndex + 1}/${SMOKE_RUNS}: T=${result.totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
+  }
+
+  // ── Git calibration: one run for slow git operations ─────────────
+  const gitResult = runCucumber('calibration-git', 'git');
+  if (gitResult.success) {
+    mergeRun(gitResult.totalMs, gitResult.steps);
+    console.log(`[Cal] git #1/1: T=${gitResult.totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
   }
 
   // If all runs failed, use safe conservative defaults instead of zeroes.

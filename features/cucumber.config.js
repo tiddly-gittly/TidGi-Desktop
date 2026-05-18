@@ -28,4 +28,17 @@ module.exports = {
     },
     paths: ['features/smoke.feature'],
   },
+  'calibration-git': {
+    require: [
+      'ts-node/register',
+      'features/supports/**/!(*.test).ts',
+      'features/stepDefinitions/**/*.ts',
+    ],
+    requireModule: ['ts-node/register'],
+    format: ['progress'],
+    formatOptions: {
+      snippetInterface: 'async-await',
+    },
+    paths: ['features/gitCalibration.feature'],
+  },
 };
