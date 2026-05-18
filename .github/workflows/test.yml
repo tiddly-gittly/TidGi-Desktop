@@ -13,7 +13,7 @@ jobs:
           submodules: recursive
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
       - name: Install Node.js
@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y build-essential
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
@@ -55,10 +55,14 @@ jobs:
         env:
           CI: true
         timeout-minutes: 15
-      
+
       - name: Run E2E tests
-        # Calibration runs in test:prepare-e2e before the tests start.
-        run: xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e
+        # Calibration runs as part of test:e2e before the cucumber tests.
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e 2>&1 | tee e2e-output.log
+          E2E_EXIT=${PIPESTATUS[0]}
+          exit ${E2E_EXIT}
+        shell: bash
         env:
           CI: true
           DISPLAY: :99
@@ -76,7 +80,7 @@ jobs:
           echo "Cleaned up test-artifacts-ci cache folders"
         continue-on-error: true
       
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-artifacts-ci

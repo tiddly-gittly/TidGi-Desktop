@@ -12,12 +12,13 @@ import path from 'path';
 const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
 
 type CalibrationRecord = {
+  /** Total wall-clock time of slowest calibration run → CUCUMBER_GLOBAL_TIMEOUT */
   totalMs: number;
-  /** Max of ALL steps → CUCUMBER_GLOBAL_TIMEOUT */
+  /** Max of ALL individual steps across all runs — fallback when per-type measurements are missing. */
   stepMs: number;
   /** Max of launch/browser-view steps → HEAVY_PLAYWRIGHT_TIMEOUT */
   launchMs: number;
-  /** Max of wait/log/SSE/watch-fs steps → LOG_MARKER_WAIT_TIMEOUT */
+  /** Max of wait/log/SSE/watch-fs steps — measured, reserved for future per-category timeout. */
   waitMs: number;
   /** Max of click/type/check steps → PLAYWRIGHT_TIMEOUT */
   elementMs: number;
@@ -70,9 +71,10 @@ export function writeCalibrationResult(
   );
 }
 
-// During calibration preflight, use max safe timeout for Node.js (2^31-1 ≈ 24.8d).
-// Cucumber delegates to Node's setTimeout which has a 32-bit signed int limit.
-const NO_TIMEOUT = 2_147_483_647;
+// During calibration preflight, use a generous timeout that is safe for Node.js setTimeout
+// AND Playwright Chromium CDP. Node.js 32-bit signed max is 2^31-1 (2147483647 ≈ 24.8d),
+// but Playwright CDP may overflow values above 2^30. 5 minutes is safe and enough.
+const NO_TIMEOUT = 300_000;
 
 function requireRecord(): CalibrationRecord {
   if (cachedRecord !== null) return cachedRecord;
@@ -86,27 +88,14 @@ function requireRecord(): CalibrationRecord {
   );
 }
 
-// Smoke-test calibration cannot predict worst-case step durations for complex
-// scenarios involving background sync, git operations, AI mock calls, etc.
-// The cucumber step timeout must be generous — it catches completely stuck steps,
-// not per-operation budgets. Per-type timeouts (launch, element, wait) are tight
-// and measured. The step timeout is a safety net that must accommodate the
-// longest legitimate step across the full e2e suite.
-const STEP_TIMEOUT_MS = 120_000;
-
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  return STEP_TIMEOUT_MS;
+  return requireRecord().totalMs;
 }
 
 export function getMeasuredLaunchTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
   return requireRecord().launchMs;
-}
-
-export function getMeasuredWaitTimeoutMs(): number {
-  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  return requireRecord().waitMs;
 }
 
 export function getMeasuredElementTimeoutMs(): number {
