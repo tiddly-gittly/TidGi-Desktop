@@ -192,7 +192,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         workspaceId?: string; x: number; y: number; button?: 'left' | 'right' | 'middle'; clickCount?: number;
       };
       const { webContents } = await getWebContents(workspaceId);
-      for (let i = 0; i < clickCount; i++) {
+      for (let index = 0; index < clickCount; index++) {
         webContents.sendInputEvent({ type: 'mouseDown', x, y, button, clickCount });
         webContents.sendInputEvent({ type: 'mouseUp', x, y, button, clickCount });
       }
@@ -248,14 +248,14 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
           'ui_evaluate',
         ) as string;
         raw = JSON.parse(json) as typeof raw;
-      } catch (execErr) {
+      } catch (execError) {
         // SyntaxError at parse time — extract message from Electron's error object
-        const msg = execErr instanceof Error
-          ? execErr.message
-          : (typeof execErr === 'object' && execErr !== null && 'message' in execErr)
-            ? String((execErr as Record<string, unknown>).message)
-            : String(execErr);
-        throw new Error(`ui_evaluate syntax/execution error: ${msg}`);
+        const message = execError instanceof Error
+          ? execError.message
+          : (typeof execError === 'object' && execError !== null && 'message' in execError)
+            ? String((execError as Record<string, unknown>).message)
+            : String(execError);
+        throw new Error(`ui_evaluate syntax/execution error: ${message}`);
       }
       if (!raw.ok) {
         throw new Error(`ui_evaluate script error: ${raw.error ?? '(unknown)'}\n${raw.stack ?? ''}`);

@@ -30,8 +30,8 @@ async function handleJsonRpc(request: JsonRpcRequest): Promise<JsonRpcResponse> 
     }
 
     if (method === 'tools/call') {
-      const { name, arguments: toolArgs } = params as { name: string; arguments: ToolInput };
-      const toolResult = await callTool(name, toolArgs ?? {});
+      const { name, arguments: toolArguments } = params as { name: string; arguments: ToolInput };
+      const toolResult = await callTool(name, toolArguments ?? {});
       return {
         jsonrpc: '2.0',
         id,
@@ -54,55 +54,55 @@ async function handleJsonRpc(request: JsonRpcRequest): Promise<JsonRpcResponse> 
   }
 }
 
-function readBody(req: IncomingMessage): Promise<string> {
+function readBody(request: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => { chunks.push(chunk); });
-    req.on('end', () => { resolve(Buffer.concat(chunks).toString('utf8')); });
-    req.on('error', reject);
+    request.on('data', (chunk: Buffer) => { chunks.push(chunk); });
+    request.on('end', () => { resolve(Buffer.concat(chunks).toString('utf8')); });
+    request.on('error', reject);
   });
 }
 
-async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+async function handleRequest(httpRequest: IncomingMessage, response: ServerResponse): Promise<void> {
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
+  if (httpRequest.method === 'OPTIONS') {
+    response.writeHead(204);
+    response.end();
     return;
   }
 
-  if (req.url === '/mcp' && req.method === 'POST') {
+  if (httpRequest.url === '/mcp' && httpRequest.method === 'POST') {
     try {
-      const body = await readBody(req);
+      const body = await readBody(httpRequest);
       const request = JSON.parse(body) as JsonRpcRequest;
-      const response = await handleJsonRpc(request);
-      const responseBody = JSON.stringify(response);
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(responseBody) });
-      res.end(responseBody);
+      const jsonRpcResponse = await handleJsonRpc(request);
+      const responseBody = JSON.stringify(jsonRpcResponse);
+      response.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(responseBody) });
+      response.end(responseBody);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const errResponse = JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32_700, message: `Parse error: ${message}` } });
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(errResponse);
+      const errorResponse = JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32_700, message: `Parse error: ${message}` } });
+      response.writeHead(400, { 'Content-Type': 'application/json' });
+      response.end(errorResponse);
     }
     return;
   }
 
-  if (req.url === '/' || req.url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ name: 'tidgi-mcp', status: 'ok', tools: TOOLS.map(t => t.name) }));
+  if (httpRequest.url === '/' || httpRequest.url === '/health') {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ name: 'tidgi-mcp', status: 'ok', tools: TOOLS.map(t => t.name) }));
     return;
   }
 
-  res.writeHead(404);
-  res.end('Not found');
+  response.writeHead(404);
+  response.end('Not found');
 }
 
 export function createMcpHttpServer(): http.Server {
-  return http.createServer((req, res) => {
-    void handleRequest(req, res);
+  return http.createServer((httpRequest, response) => {
+    void handleRequest(httpRequest, response);
   });
 }
