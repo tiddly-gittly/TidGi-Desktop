@@ -48,7 +48,9 @@ jobs:
           - os: windows-2022
             platform: win
             arch: x64
-          # windows-2022 does not have native ARM64 runners, cross-compile via MSVC.
+          # Pin to windows-2022 (VS 17.x / 2022) because windows-latest
+          # ships VS 18 (2026 preview) which node-gyp cannot detect.
+          # ARM64 cross-compiles via MSVC — no native ARM64 runner needed.
           - os: windows-2022
             platform: win
             arch: arm64
