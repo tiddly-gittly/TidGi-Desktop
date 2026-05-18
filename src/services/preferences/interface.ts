@@ -16,6 +16,7 @@ export interface IPreferences {
   alwaysOnTop: boolean;
   analyticsEnabled: boolean;
   analyticsHost: string;
+  analyticsHostname: string;
   analyticsSiteId: string;
   askForDownloadPath: boolean;
   disableAntiAntiLeech: boolean;

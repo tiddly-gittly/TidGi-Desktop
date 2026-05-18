@@ -33,6 +33,14 @@ export const privacySection: ISectionDefinition = {
     },
     {
       type: 'preference-text',
+      key: 'analyticsHostname',
+      titleKey: 'Preference.AnalyticsHostname',
+      descriptionKey: 'Preference.AnalyticsHostnameDescription',
+      needsRestart: false,
+      zod: z.string(),
+    },
+    {
+      type: 'preference-text',
       key: 'analyticsSiteId',
       titleKey: 'Preference.AnalyticsSiteId',
       descriptionKey: 'Preference.AnalyticsSiteIdDescription',

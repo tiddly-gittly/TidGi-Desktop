@@ -44,6 +44,7 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import EventEmitter from 'events';
 import { initDevelopmentExtension } from './debug';
 import { isLinux } from './helpers/system';
+import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
 import type { IWorkspaceService } from './services/workspaces/interface';
@@ -74,6 +75,11 @@ protocol.registerSchemesAsPrivileged([
 ]);
 bindServiceAndProxy();
 
+// Start TidGi MCP server early in dev/test so it is available even during slow wiki startup
+if (isDevelopmentOrTest) {
+  startMcpServer();
+}
+
 // Get services - DO NOT use them until commonInit() is called
 const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
@@ -101,6 +107,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
+    stopMcpServer();
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();

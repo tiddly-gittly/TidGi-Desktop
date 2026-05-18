@@ -489,6 +489,8 @@
     "AnalyticsDisclosureTitle": "匿名使用分析",
     "AnalyticsHost": "分析服务器地址",
     "AnalyticsHostDescription": "Rybbit 分析服务器 URL（例如：https://analysis.tidgi.fun）",
+    "AnalyticsHostname": "追踪主机名",
+    "AnalyticsHostnameDescription": "附加到桌面端分析事件上的逻辑域名（例如：desktop.tidgi.fun 或 localhost）",
     "AnalyticsSiteId": "分析站点 ID",
     "AnalyticsSiteIdDescription": "Rybbit 分析服务的站点标识符",
     "AntiAntiLeech": "有的网站做了防盗链，会阻止某些图片在你的知识库上显示，我们通过模拟访问该网站的请求头来绕过这种限制。",

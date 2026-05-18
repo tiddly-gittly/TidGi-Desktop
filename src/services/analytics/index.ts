@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, net } from 'electron';
 import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
 
@@ -24,7 +24,8 @@ interface ITrackPayload {
   site_id: string;
   type: 'custom_event';
   event_name: AnalyticsEventName;
-  properties?: Record<string, string | number | boolean>;
+  /** Rybbit requires properties as a JSON-serialized string, not a plain object */
+  properties?: string;
   hostname: string;
   pathname: string;
   /** Stable per-installation UUID — maps to Rybbit identified_user_id */
@@ -33,7 +34,7 @@ interface ITrackPayload {
 
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
 const ANALYTICS_PATHNAME = '/desktop';
-const DEFAULT_TIMEOUT_MS = 5000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 const ERROR_MESSAGE_MAX_LENGTH = 100;
 
 /**
@@ -133,9 +134,12 @@ export class AnalyticsService implements IAnalyticsService {
       return false;
     }
 
-    const analyticsHost = await this.preferenceService.get('analyticsHost');
-    const analyticsSiteId = await this.preferenceService.get('analyticsSiteId');
-    return Boolean(analyticsHost.trim() && analyticsSiteId.trim());
+    const [analyticsHost, analyticsHostname, analyticsSiteId] = await Promise.all([
+      this.preferenceService.get('analyticsHost'),
+      this.preferenceService.get('analyticsHostname'),
+      this.preferenceService.get('analyticsSiteId'),
+    ]);
+    return Boolean(analyticsHost.trim() && analyticsHostname.trim() && analyticsSiteId.trim());
   }
 
   public async clearPendingEvents(): Promise<void> {
@@ -268,9 +272,10 @@ export class AnalyticsService implements IAnalyticsService {
   private buildPayload(eventName: AnalyticsEventName, properties?: Record<string, string | number | boolean>): Promise<ITrackPayload | undefined> {
     return Promise.all([
       this.preferenceService.get('analyticsHost'),
+      this.preferenceService.get('analyticsHostname'),
       this.preferenceService.get('analyticsSiteId'),
-    ]).then(([analyticsHost, analyticsSiteId]) => {
-      if (!analyticsHost.trim() || !analyticsSiteId.trim()) {
+    ]).then(([analyticsHost, analyticsHostname, analyticsSiteId]) => {
+      if (!analyticsHost.trim() || !analyticsHostname.trim() || !analyticsSiteId.trim()) {
         return undefined;
       }
 
@@ -280,8 +285,8 @@ export class AnalyticsService implements IAnalyticsService {
         site_id: analyticsSiteId.trim(),
         type: 'custom_event',
         event_name: eventName,
-        properties,
-        hostname: this.getAnalyticsHostname(analyticsHost),
+        properties: properties ? JSON.stringify(properties) : JSON.stringify({}),
+        hostname: analyticsHostname.trim(),
         pathname: ANALYTICS_PATHNAME,
         user_id: deviceId,
       };
@@ -309,14 +314,6 @@ export class AnalyticsService implements IAnalyticsService {
     return normalizedHost.endsWith('/api') ? `${normalizedHost}/track` : `${normalizedHost}/api/track`;
   }
 
-  private getAnalyticsHostname(analyticsHost: string): string {
-    try {
-      return new URL(analyticsHost).hostname;
-    } catch {
-      return 'desktop.tidgi';
-    }
-  }
-
   private async sendEvent(eventName: AnalyticsEventName, properties?: Record<string, string | number | boolean>): Promise<boolean> {
     try {
       const [analyticsHost, payload] = await Promise.all([
@@ -333,7 +330,9 @@ export class AnalyticsService implements IAnalyticsService {
       }, DEFAULT_TIMEOUT_MS);
 
       try {
-        const response = await fetch(this.getAnalyticsTrackUrl(analyticsHost), {
+        // Use Electron's net.fetch so the request goes through the Chromium
+        // network stack with a proper browser User-Agent, avoiding bot detection.
+        const response = await net.fetch(this.getAnalyticsTrackUrl(analyticsHost), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

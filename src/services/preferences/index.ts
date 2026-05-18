@@ -85,7 +85,7 @@ export class Preference implements IPreferenceService {
    */
   private async reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
     // Track analytics preference changes
-    if (key === 'analyticsEnabled' || key === 'analyticsHost' || key === 'analyticsSiteId') {
+    if (key === 'analyticsEnabled' || key === 'analyticsHost' || key === 'analyticsHostname' || key === 'analyticsSiteId') {
       const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
       if (key === 'analyticsEnabled' && value === false) {
         await analyticsService.clearPendingEvents();

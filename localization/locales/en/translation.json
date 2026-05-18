@@ -491,6 +491,8 @@
     "AnalyticsDisclosureTitle": "Anonymous Analytics",
     "AnalyticsHost": "Analytics Host",
     "AnalyticsHostDescription": "Rybbit analytics server URL (e.g., https://analysis.tidgi.fun)",
+    "AnalyticsHostname": "Tracked Hostname",
+    "AnalyticsHostnameDescription": "Logical hostname attached to desktop analytics events (for example desktop.tidgi.fun or localhost)",
     "AnalyticsSiteId": "Analytics Site ID",
     "AnalyticsSiteIdDescription": "Site identifier for Rybbit analytics",
     "AntiAntiLeech": "Some website has Anti-Leech, will prevent some images from being displayed on your wiki, we simulate a request header that looks like visiting that website to bypass this protection.",
