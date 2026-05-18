@@ -29,4 +29,3 @@ module.exports = {
     paths: ['features/smoke.feature'],
   },
 };
-};
