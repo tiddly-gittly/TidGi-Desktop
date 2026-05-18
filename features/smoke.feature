@@ -84,7 +84,7 @@ Feature: TidGi Application Launch
 
   @smoke
   Scenario: Git initialization timing calibration
-    # Measures git init time only — the single slowest operation.
+    # Measures git init time — the single slowest operation.
     # No menu navigation, no window switches, no file modifications.
     When I launch the TidGi application
     And I wait for the page to load completely
