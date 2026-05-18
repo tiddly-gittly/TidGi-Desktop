@@ -33,6 +33,7 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
@@ -44,7 +45,6 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import EventEmitter from 'events';
 import { initDevelopmentExtension } from './debug';
 import { isLinux } from './helpers/system';
-import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
 import type { IWorkspaceService } from './services/workspaces/interface';

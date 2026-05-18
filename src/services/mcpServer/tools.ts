@@ -1,9 +1,9 @@
 import { container } from '@services/container';
-import type { IViewService } from '@services/view/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { McpToolDefinition, ToolInput } from './types';
 
 /** Pass this as workspaceId to target the main React UI window instead of a wiki webview. */
@@ -15,7 +15,8 @@ export const TOOLS: McpToolDefinition[] = [
   // ── UI interaction (like Chrome DevTools Protocol) ────────────────────────
   {
     name: 'ui_snapshot',
-    description: 'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI (sidebar, settings, workspace switcher). Omit workspaceId to use the active workspace.',
+    description:
+      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI (sidebar, settings, workspace switcher). Omit workspaceId to use the active workspace.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -86,7 +87,8 @@ export const TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'ui_evaluate',
-    description: 'Evaluate JavaScript and return the result. In wiki webviews, $tw.wiki API is available. Use "main-window" to query the main React UI (window.service, React state, etc.).',
+    description:
+      'Evaluate JavaScript and return the result. In wiki webviews, $tw.wiki API is available. Use "main-window" to query the main React UI (window.service, React state, etc.).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -106,7 +108,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
     new Promise<never>((_, reject) =>
       setTimeout(() => {
         reject(new Error(`${label} timed out after ${ms}ms`));
-      }, ms),
+      }, ms)
     ),
   ]);
 }
@@ -147,9 +149,9 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_snapshot': {
       const { workspaceId } = input as { workspaceId?: string };
       const { webContents } = await getWebContents(workspaceId);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Electron executeJavaScript returns Promise<any>
       const text = await withTimeout(
-        webContents.executeJavaScript(`
-          JSON.stringify({
+        webContents.executeJavaScript(`          JSON.stringify({
             title: document.title,
             url: location.href,
             body: document.body ? document.body.innerText.slice(0, 6000) : '',
@@ -189,7 +191,11 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 
     case 'ui_click': {
       const { workspaceId, x, y, button = 'left', clickCount = 1 } = input as {
-        workspaceId?: string; x: number; y: number; button?: 'left' | 'right' | 'middle'; clickCount?: number;
+        workspaceId?: string;
+        x: number;
+        y: number;
+        button?: 'left' | 'right' | 'middle';
+        clickCount?: number;
       };
       const { webContents } = await getWebContents(workspaceId);
       for (let index = 0; index < clickCount; index++) {
@@ -253,8 +259,8 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         const message = execError instanceof Error
           ? execError.message
           : (typeof execError === 'object' && execError !== null && 'message' in execError)
-            ? String((execError as Record<string, unknown>).message)
-            : String(execError);
+          ? String((execError as Record<string, unknown>).message)
+          : String(execError);
         throw new Error(`ui_evaluate syntax/execution error: ${message}`);
       }
       if (!raw.ok) {
@@ -267,4 +273,3 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       throw new Error(`Unknown tool: ${name}`);
   }
 }
-
