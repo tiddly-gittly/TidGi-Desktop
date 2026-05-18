@@ -72,8 +72,7 @@ jobs:
         with:
           node-version: lts/*
 
-      # Windows specific: Set up CV dependency for pngquant-bin
-      # Also sets up MSVC (Microsoft Visual C++) compiler for native modules (nsfw, better-sqlite3)
+      # Set up MSVC compiler for native modules: nsfw, better-sqlite3
       - name: Set up MSVC compiler (Windows)
         if: matrix.platform == 'win'
         uses: ilammy/msvc-dev-cmd@v1

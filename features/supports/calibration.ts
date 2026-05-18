@@ -12,12 +12,13 @@ import path from 'path';
 const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
 
 type CalibrationRecord = {
+  /** Total wall-clock time of slowest calibration run → CUCUMBER_GLOBAL_TIMEOUT */
   totalMs: number;
-  /** Max of ALL steps → CUCUMBER_GLOBAL_TIMEOUT */
+  /** Max of ALL individual steps across all runs — fallback when per-type measurements are missing. */
   stepMs: number;
   /** Max of launch/browser-view steps → HEAVY_PLAYWRIGHT_TIMEOUT */
   launchMs: number;
-  /** Max of wait/log/SSE/watch-fs steps → LOG_MARKER_WAIT_TIMEOUT */
+  /** Max of wait/log/SSE/watch-fs steps — measured, reserved for future per-category timeout. */
   waitMs: number;
   /** Max of click/type/check steps → PLAYWRIGHT_TIMEOUT */
   elementMs: number;
@@ -95,11 +96,6 @@ export function getMeasuredStepTimeoutMs(): number {
 export function getMeasuredLaunchTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
   return requireRecord().launchMs;
-}
-
-export function getMeasuredWaitTimeoutMs(): number {
-  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  return requireRecord().waitMs;
 }
 
 export function getMeasuredElementTimeoutMs(): number {
