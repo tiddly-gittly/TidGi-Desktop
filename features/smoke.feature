@@ -81,3 +81,16 @@ Feature: TidGi Application Launch
     When I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
+
+  @smoke
+  Scenario: Git initialization timing calibration
+    # Measures git init time only — the single slowest operation.
+    # No menu navigation, no window switches, no file modifications.
+    When I launch the TidGi application
+    And I wait for the page to load completely
+    And I should see a "page body" element with selector "body"
+    Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    Then the browser view should be loaded and visible
+    And I wait for SSE and watch-fs to be ready
+    And I wait for "git initialization" log marker "[test-id-git-init-complete]"
