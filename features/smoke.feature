@@ -29,6 +29,9 @@ Feature: TidGi Application Launch
       | enableFileSystemWatch | true  |
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
+    # Wait for git init during the FIRST launch — this captures real timing
+    # when git is actually initializing, not a cached marker from earlier scenarios.
+    And I wait for "git initialization" log marker "[test-id-git-init-complete]"
     And I wait for SSE and watch-fs to be ready
     When I create file "{tmpDir}/wiki/tiddlers/ProbeAlpha.tid" with content:
       """
@@ -83,14 +86,8 @@ Feature: TidGi Application Launch
     And I should see a "page body" element with selector "body"
 
   @smoke
-  Scenario: Git initialization timing calibration
-    # Measures git init time — the single slowest operation.
-    # No menu navigation, no window switches, no file modifications.
+  Scenario: Fourth launch sample for variance capture
+    # Extra launch sample for launch timing distribution.
     When I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
-    Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
-    Then the browser view should be loaded and visible
-    And I wait for SSE and watch-fs to be ready
-    And I wait for "git initialization" log marker "[test-id-git-init-complete]"
