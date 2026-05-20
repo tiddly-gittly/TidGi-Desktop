@@ -4,7 +4,6 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { takeSnapshot } from './snapshot';
 import type { McpToolDefinition, ToolInput } from './types';
 
 /** Pass this as workspaceId to target the main React UI window instead of a wiki webview. */
@@ -150,12 +149,17 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_snapshot': {
       const { workspaceId } = input as { workspaceId?: string };
       const { webContents } = await getWebContents(workspaceId);
-      const result = await withTimeout(
-        takeSnapshot(webContents),
-        10_000,
-        'ui_snapshot',
-      );
-      return result;
+      if (!webContents.debugger.isAttached()) webContents.debugger.attach('1.3');
+      try {
+        const result = (await withTimeout(
+          webContents.debugger.sendCommand('Accessibility.getFullAXTree', {}),
+          10_000,
+          'ui_snapshot',
+        )) as unknown;
+        return result;
+      } finally {
+        if (webContents.debugger.isAttached()) webContents.debugger.detach();
+      }
     }
 
     case 'ui_screenshot': {
