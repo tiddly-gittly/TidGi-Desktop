@@ -37,7 +37,7 @@ export function createMcpHttpServer(): http.Server {
       });
 
       httpRequest.on('close', () => {
-        await transport.close();
+        void transport.close();
       });
       return;
     }
