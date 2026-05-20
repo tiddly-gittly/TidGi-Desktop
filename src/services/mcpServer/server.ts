@@ -10,9 +10,9 @@ function registerTools(server: McpServer): void {
       tool.name,
       tool.description,
       tool.inputSchema.properties ?? {},
-      async (params) => {
+      async (parameters) => {
         const { callTool } = await import('./tools');
-        const result = await callTool(tool.name, params as ToolInput);
+        const result = await callTool(tool.name, parameters as ToolInput);
         return {
           content: [{ type: 'text' as const, text: typeof result === 'string' ? result : JSON.stringify(result, null, 2) }],
         };
