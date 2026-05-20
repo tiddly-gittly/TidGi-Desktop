@@ -33,7 +33,7 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
-import { startMcpServer, stopMcpServer } from '@services/mcpServer';
+// import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
@@ -76,12 +76,17 @@ protocol.registerSchemesAsPrivileged([
 bindServiceAndProxy();
 
 // Start TidGi MCP server early in dev/test so it is available even during slow wiki startup
-if (isDevelopmentOrTest) {
-  startMcpServer();
-}
+// Temporarily disabled for debugging CI hang
+// if (isDevelopmentOrTest) {
+//   try {
+//     startMcpServer();
+//   } catch (error) {
+//     logger.error('Failed to start MCP server', { error });
+//   }
+// }
 
 // Get services - DO NOT use them until commonInit() is called
-const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+// const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
@@ -107,7 +112,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
-    stopMcpServer();
+    // stopMcpServer();
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
@@ -235,12 +240,13 @@ const commonInit = async (): Promise<void> => {
   ipcMain.emit(MainChannel.commonInitFinished);
 
   // Track app launch event with retention properties
-  const retentionProperties = await analyticsService.getRetentionProperties();
-  void analyticsService.track('app.launched', {
-    platform: process.platform,
-    version: app.getVersion(),
-    ...retentionProperties,
-  });
+  // Temporarily disabled for debugging CI hang
+  // const retentionProperties = await analyticsService.getRetentionProperties();
+  // void analyticsService.track('app.launched', {
+  //   platform: process.platform,
+  //   version: app.getVersion(),
+  //   ...retentionProperties,
+  // });
 };
 
 /**
@@ -269,11 +275,11 @@ app.on('ready', async () => {
   } catch (error) {
     const error_ = error as Error;
     logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_ });
-    void analyticsService.track('error.unhandled', {
-      errorName: error_.name || 'Error',
-      errorMessage: sanitizeErrorMessage(error_),
-      errorSource: 'app_ready',
-    });
+    // void analyticsService.track('error.unhandled', {
+    //   errorName: error_.name || 'Error',
+    //   errorMessage: sanitizeErrorMessage(error_),
+    //   errorSource: 'app_ready',
+    // });
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -315,11 +321,11 @@ unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
     logger.error('unhandled', { error });
-    void analyticsService.track('error.unhandled', {
-      errorName: error.name || 'Error',
-      errorMessage: sanitizeErrorMessage(error),
-      errorSource: 'unhandled',
-    });
+    // void analyticsService.track('error.unhandled', {
+    //   errorName: error.name || 'Error',
+    //   errorMessage: sanitizeErrorMessage(error),
+    //   errorSource: 'unhandled',
+    // });
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);
