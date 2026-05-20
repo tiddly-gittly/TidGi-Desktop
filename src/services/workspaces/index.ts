@@ -841,11 +841,16 @@ export class Workspace implements IWorkspaceService {
 
   public async setGroup(id: string, group: IWorkspaceGroup): Promise<void> {
     const groups = this.getGroupsSync();
+    const isNew = !groups[id];
     groups[id] = group;
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     databaseService.setSetting('workspaceGroups', groups);
     this.groups = groups;
     this.emitGroups(groups);
+    if (isNew) {
+      const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+      void analyticsService.track('workspace.group.created', { groupCount: Object.keys(groups).length });
+    }
   }
 
   public async removeGroup(id: string): Promise<void> {
@@ -855,6 +860,9 @@ export class Workspace implements IWorkspaceService {
     databaseService.setSetting('workspaceGroups', groups);
     this.groups = groups;
     this.emitGroups(groups);
+
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('workspace.group.deleted', { groupCount: Object.keys(groups).length });
 
     // Move workspaces in this group to ungrouped
     const workspaces = this.getWorkspacesSync();
@@ -877,6 +885,15 @@ export class Workspace implements IWorkspaceService {
 
     const oldGroupId = workspace.groupId;
     await this.update(workspaceId, { groupId });
+
+    const groups = this.getGroupsSync();
+    const groupCount = Object.keys(groups).length;
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    if (groupId) {
+      void analyticsService.track('workspace.moved_to_group', { groupId, groupCount });
+    } else {
+      void analyticsService.track('workspace.moved_out_of_group', { groupCount });
+    }
 
     // Auto-disband old group only when explicitly allowed (e.g. drag operations).
     // Right-click or settings removal should not trigger auto-disband,

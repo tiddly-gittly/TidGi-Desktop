@@ -69,6 +69,10 @@ const allowedPropertiesByEvent: Record<BuiltInAnalyticsEventName, ReadonlySet<st
   'workspace.activated': new Set(['isSubWiki']),
   'workspace.created': new Set(['isSubWiki', 'hasGitUrl']),
   'workspace.opened_in_new_window': new Set(['isSubWiki']),
+  'workspace.group.created': new Set(['groupCount']),
+  'workspace.group.deleted': new Set(['groupCount']),
+  'workspace.moved_to_group': new Set(['groupId', 'groupCount']),
+  'workspace.moved_out_of_group': new Set(['groupCount']),
 };
 
 const pluginAnalyticsEventPattern = /^plugin\.[a-z0-9]+(?:[-_][a-z0-9]+)*\.[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
