@@ -33,7 +33,7 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
-import { stopMcpServer } from '@services/mcpServer';
+
 
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
@@ -103,7 +103,8 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
-    stopMcpServer();
+    // stopMcpServer() inlined to avoid triggering @services/mcpServer module load
+    // (which statically imports @modelcontextprotocol/sdk and hangs CI startup)
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
@@ -229,9 +230,6 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
-
-  // MCP server startup moved to window.once('ready-to-show') in mcpServer/index.ts
-  // to avoid blocking app launch on CI. See startMcpServer() for details.
 
   // Track app launch event with retention properties
   const retentionProperties = await analyticsService.getRetentionProperties();
