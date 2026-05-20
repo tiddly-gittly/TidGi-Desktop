@@ -31,13 +31,13 @@ export function createMcpHttpServer(): http.Server {
       });
       mcpServer.connect(transport);
 
-      transport.handleRequest(httpRequest, response, () => {
+      await transport.handleRequest(httpRequest, response, () => {
         response.writeHead(200, { 'Content-Type': 'application/json' });
         response.end(JSON.stringify({ success: true }));
       });
 
       httpRequest.on('close', () => {
-        void transport.close();
+        await transport.close();
       });
       return;
     }

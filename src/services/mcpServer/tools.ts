@@ -149,78 +149,42 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_snapshot': {
       const { workspaceId } = input as { workspaceId?: string };
       const { webContents } = await getWebContents(workspaceId);
-      if (!webContents.debugger.isAttached()) {
-        webContents.debugger.attach('1.3');
-      }
-      try {
-        const result = await withTimeout(
-          webContents.debugger.sendCommand('DOMSnapshot.captureSnapshot', {
-            computedStyles: [],
-            includeDOMRects: true,
-            includePaintOrder: false,
-          }) as unknown as {
-            documents: Array<{
-              layout: {
-                nodeIndex: number[];
-                bounds: Array<number[]>;
-                text: Array<{ nodeIndex: number }>;
-                inlineTextNodes: Array<{ startCharacterIndex: number }>;
-                styles: never[];
-              };
-              nodes: {
-                nodeName: string[];
-                nodeValue: string[];
-                attributes: Array<{ name: string; value: string }[]>;
-                nodeType: number[];
-                parentIndex: number[];
-                backendNodeId: number[];
-              };
-              textBoxes: { layoutIndex: number[]; bounds: Array<number[]> };
-            }>;
-          },
-          10_000,
-          'ui_snapshot',
-        );
-        const doc = result.documents[0];
-        if (!doc) return { title: '', url: '', body: '', interactive: [], links: [] };
-
-        const interactive: Array<{ tag: string; type: string; id: string; name: string; placeholder: string; value: string; text: string; role: string; cx: number; cy: number }> =
-          [];
-        const links: Array<{ text: string; href: string; cx: number; cy: number }> = [];
-        const { nodes, layout } = doc;
-
-        for (let index = 0; index < nodes.nodeName.length && interactive.length < 60; index++) {
-          const tag = (nodes.nodeName[index] || '').toLowerCase();
-          if (!['input', 'textarea', 'button', 'select', 'a'].includes(tag) || nodes.nodeType[index] !== 1) continue;
-          const attrs = nodes.attributes[index] ?? [];
-          const attrMap = Object.fromEntries(attrs.map((a: { name: string; value: string }) => [a.name, a.value]));
-          const rectIndex = layout.nodeIndex.indexOf(index);
-          const rect = rectIndex >= 0 ? layout.bounds[rectIndex] : undefined;
-          const [x = 0, y = 0, width = 0, height = 0] = rect ?? [];
-
-          if (tag === 'a') {
-            links.push({ text: (attrMap['aria-label'] || '').slice(0, 60).trim(), href: attrMap.href || '', cx: Math.round(x + width / 2), cy: Math.round(y + height / 2) });
-          } else {
-            interactive.push({
-              tag,
-              type: attrMap.type || '',
-              id: attrMap.id || '',
-              name: attrMap.name || '',
-              placeholder: attrMap.placeholder || '',
-              value: (attrMap.value || '').slice(0, 100),
-              text: (attrMap['aria-label'] || '').slice(0, 80).trim(),
-              role: attrMap.role || '',
-              cx: Math.round(x + width / 2),
-              cy: Math.round(y + height / 2),
-            });
-          }
-        }
-
-        const body = nodes.nodeValue.filter(Boolean).join(' ').slice(0, 6000);
-        return { title: '', url: '', body, interactive, links };
-      } finally {
-        webContents.debugger.detach();
-      }
+      const result = (await withTimeout(
+        webContents.executeJavaScript(`(function() {
+  var body = document.body ? document.body.innerText.slice(0, 6000) : '';
+  var interactive = Array.from(document.querySelectorAll(
+    'input,textarea,button,select,[contenteditable],[role="button"],[role="textbox"]'
+  )).slice(0, 60).map(function(el) {
+    var r = el.getBoundingClientRect();
+    return {
+      tag: el.tagName.toLowerCase(),
+      type: el.type || el.getAttribute('type') || '',
+      id: el.id || '',
+      name: el.name || '',
+      placeholder: el.placeholder || '',
+      value: (el.value || '').slice(0, 100),
+      text: (el.innerText || el.textContent || '').slice(0, 80).trim(),
+      role: el.getAttribute('role') || '',
+      cx: Math.round(r.x + r.width / 2),
+      cy: Math.round(r.y + r.height / 2),
+    };
+  });
+  var links = Array.from(document.querySelectorAll('a[href]')).slice(0, 30).map(function(a) {
+    var r = a.getBoundingClientRect();
+    return { text: (a.innerText||'').slice(0,60).trim(), href: a.href, cx: Math.round(r.x + r.width/2), cy: Math.round(r.y + r.height/2) };
+  });
+  return { title: document.title, url: location.href, body: body, interactive: interactive, links: links };
+})()`),
+        10_000,
+        'ui_snapshot',
+      )) as unknown as {
+        title: string;
+        url: string;
+        body: string;
+        interactive: Array<{ tag: string; type: string; id: string; name: string; placeholder: string; value: string; text: string; role: string; cx: number; cy: number }>;
+        links: Array<{ text: string; href: string; cx: number; cy: number }>;
+      };
+      return result;
     }
 
     case 'ui_screenshot': {
