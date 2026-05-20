@@ -26,7 +26,6 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { sanitizeErrorMessage } from '@services/analytics';
-import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
@@ -34,6 +33,7 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
@@ -75,8 +75,6 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'mailto', privileges: { standard: true } },
 ]);
 bindServiceAndProxy();
-
-
 
 // Get services - DO NOT use them until commonInit() is called
 const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
