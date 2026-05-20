@@ -34,7 +34,6 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
 
-
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
