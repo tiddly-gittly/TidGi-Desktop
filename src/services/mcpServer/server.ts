@@ -1,15 +1,12 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import http from 'node:http';
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
 
-import { logger } from '@services/libs/log';
 import { TOOLS } from './tools';
 import type { ToolInput } from './types';
 
 function registerTools(server: McpServer): void {
   for (const tool of TOOLS) {
-    server.tool(
+    server.registerTool(
       tool.name,
       tool.description,
       tool.inputSchema.properties ?? {},

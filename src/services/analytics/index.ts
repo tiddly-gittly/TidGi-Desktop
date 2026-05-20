@@ -23,20 +23,7 @@ interface IAnalyticsSecretSettings {
   deviceId?: string;
 }
 
-interface ITrackPayload {
-  site_id: string;
-  type: 'custom_event';
-  event_name: AnalyticsEventName;
-  /** Rybbit requires properties as a JSON-serialized string, not a plain object */
-  properties?: string;
-  hostname: string;
-  pathname: string;
-  /** Stable per-installation UUID — maps to Rybbit identified_user_id */
-  user_id?: string;
-}
-
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
-const ANALYTICS_PATHNAME = '/desktop';
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 @injectable()
@@ -162,6 +149,29 @@ export class AnalyticsService implements IAnalyticsService {
   private getAnalyticsTrackUrl(analyticsHost: string): string {
     const normalizedHost = analyticsHost.trim().replace(/\/+$/, '');
     return normalizedHost.endsWith('/api') ? `${normalizedHost}/track` : `${normalizedHost}/api/track`;
+  }
+
+  private async buildPayload(
+    eventName: AnalyticsEventName,
+    properties?: Record<string, string | number | boolean>,
+  ): Promise<{ site_id: string; type: 'custom_event'; event_name: AnalyticsEventName; properties?: string; hostname: string; pathname: string; user_id?: string } | undefined> {
+    const [analyticsHost, analyticsHostname, analyticsSiteId] = await Promise.all([
+      this.preferenceService.get('analyticsHost'),
+      this.preferenceService.get('analyticsHostname'),
+      this.preferenceService.get('analyticsSiteId'),
+    ]);
+    if (!analyticsHost.trim() || !analyticsHostname.trim() || !analyticsSiteId.trim()) {
+      return undefined;
+    }
+    return {
+      site_id: analyticsSiteId.trim(),
+      type: 'custom_event',
+      event_name: eventName,
+      properties: properties ? JSON.stringify(properties) : JSON.stringify({}),
+      hostname: analyticsHostname.trim(),
+      pathname: '/desktop',
+      user_id: this.getOrCreateDeviceId(),
+    };
   }
 
   private async sendEvent(eventName: AnalyticsEventName, properties?: Record<string, string | number | boolean>): Promise<boolean> {
