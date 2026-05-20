@@ -110,9 +110,6 @@ importers:
       bluebird:
         specifier: 3.7.2
         version: 3.7.2
-      browserclaw:
-        specifier: ^0.19.1
-        version: 0.19.1
       croner:
         specifier: ^10.0.1
         version: 10.0.1
@@ -3590,10 +3587,6 @@ packages:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
 
-  browserclaw@0.19.1:
-    resolution: {integrity: sha512-wd4S43ByM46hY+V1PLLCZ5CSFeIgg6YI9olLKfdYYxAzQbxUPqQV8tL9722Nemm91aRKvIkvRAGSqomCzwZJBw==}
-    engines: {node: '>=18'}
-
   browserslist@4.28.0:
     resolution: {integrity: sha512-tbydkR/CxfMwelN0vwdP/pLkDwyAASZ+VfWm4EOwlB6SWhx1sYnWLqo8N5j0rAzPfzfRaxt0mM/4wPU/Su84RQ==}
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
@@ -5273,10 +5266,6 @@ packages:
 
   ipaddr.js@2.2.0:
     resolution: {integrity: sha512-Ag3wB2o37wslZS19hZqorUnrnzSkpOVy+IiiDEiTqNubEYpYuHWIf6K4psgN2ZWKExS4xhVCrRVfb/wfW8fWJA==}
-    engines: {node: '>= 10'}
-
-  ipaddr.js@2.4.0:
-    resolution: {integrity: sha512-9VGk3HGanVE6JoZXHiCpnGy5X0jYDnN4EA4lntFPj+1vIWlFhIylq2CrrCOJH9EAhc5CYhq18F2Av2tgoAPsYQ==}
     engines: {node: '>= 10'}
 
   is-array-buffer@3.0.5:
@@ -11775,11 +11764,6 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
-  browserclaw@0.19.1:
-    dependencies:
-      ipaddr.js: 2.4.0
-      playwright-core: 1.56.1
-
   browserslist@4.28.0:
     dependencies:
       baseline-browser-mapping: 2.10.9
@@ -13889,8 +13873,6 @@ snapshots:
   ipaddr.js@1.9.1: {}
 
   ipaddr.js@2.2.0: {}
-
-  ipaddr.js@2.4.0: {}
 
   is-array-buffer@3.0.5:
     dependencies:
