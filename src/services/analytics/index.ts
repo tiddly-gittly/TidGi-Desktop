@@ -7,7 +7,10 @@ import type { IDatabaseService, ISettingFile } from '@services/database/interfac
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { AnalyticsEventName, BuiltInAnalyticsEventName, IAnalyticsEventProperties, IAnalyticsService, PluginAnalyticsEventName } from './interface';
+import type { AnalyticsEventName, IAnalyticsEventProperties, IAnalyticsService } from './interface';
+import { sanitizeErrorMessage } from './utilities';
+
+export { sanitizeErrorMessage };
 
 interface IAnalyticsSecretSettings {
   deviceFirstLaunchDate?: string;
@@ -35,50 +38,6 @@ interface ITrackPayload {
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
 const ANALYTICS_PATHNAME = '/desktop';
 const DEFAULT_TIMEOUT_MS = 15_000;
-const ERROR_MESSAGE_MAX_LENGTH = 100;
-
-/**
- * Extract a privacy-safe summary from an Error for analytics.
- * Strips file paths and truncates, keeping only the error name and the beginning of the message.
- */
-export function sanitizeErrorMessage(error: Error): string {
-  const firstLine = (error.stack ?? error.message ?? '').split('\n')[0] ?? '';
-  // Remove " at function (path)" or " at path" patterns that appear in stack traces
-  let cleaned = firstLine.replace(/\s+at\s+.*$/i, '');
-  // Remove standalone parenthesized paths like (file:///path) or (I:\path) anywhere in the line
-  cleaned = cleaned.replace(/\s*\([^)]*(?:file:\/\/|[a-zA-Z]:\\|\/)[^)]*\)/g, '');
-  return cleaned.trim().slice(0, ERROR_MESSAGE_MAX_LENGTH);
-}
-
-const allowedPropertiesByEvent: Record<BuiltInAnalyticsEventName, ReadonlySet<string>> = {
-  'app.launched': new Set(['platform', 'version', 'firstLaunchDate', 'daysSinceLastLaunch', 'isFirstLaunch']),
-  'deep_link.opened': new Set(['resolvedWorkspace', 'fromPendingQueue']),
-  'error.report_requested': new Set(['errorName', 'errorMessage']),
-  'error.unhandled': new Set(['errorName', 'errorMessage', 'errorSource']),
-  'preferences.analytics_updated': new Set(['field', 'enabled']),
-  'settings.opened': new Set(['window']),
-  'tiddler.created': new Set(['storage', 'isSubWiki']),
-  'sync.completed': new Set(['storage', 'commitOnly', 'hasChanges', 'force']),
-  'sync.failed': new Set(['storage', 'reason', 'commitOnly', 'force']),
-  'sync.triggered': new Set(['storage', 'commitOnly', 'force']),
-  'theme.changed': new Set(['themeSource', 'darkMode']),
-  'updater.check_failed': new Set(['allowPrerelease']),
-  'updater.check_started': new Set(['allowPrerelease']),
-  'updater.update_available': new Set(['allowPrerelease']),
-  'updater.update_not_available': new Set(['allowPrerelease']),
-  'workspace.activated': new Set(['isSubWiki']),
-  'workspace.created': new Set(['isSubWiki', 'hasGitUrl']),
-  'workspace.opened_in_new_window': new Set(['isSubWiki']),
-  'workspace.group.created': new Set(['groupCount']),
-  'workspace.group.deleted': new Set(['groupCount']),
-  'workspace.moved_to_group': new Set(['groupId', 'groupCount']),
-  'workspace.moved_out_of_group': new Set(['groupCount']),
-};
-
-const pluginAnalyticsEventPattern = /^plugin\.[a-z0-9]+(?:[-_][a-z0-9]+)*\.[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
-const pluginEventNamePattern = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
-const pluginPropertyKeyPattern = /^[a-z][a-z0-9_]{0,39}$/;
-const maxPluginStringLength = 120;
 
 @injectable()
 export class AnalyticsService implements IAnalyticsService {
@@ -95,20 +54,12 @@ export class AnalyticsService implements IAnalyticsService {
   }
 
   public async track(eventName: AnalyticsEventName, properties?: IAnalyticsEventProperties): Promise<void> {
-    if (!this.isTrackableEventName(eventName)) {
-      logger.warn('Analytics event rejected because eventName is invalid or unsupported', {
-        eventName,
-        function: 'track',
-      });
-      return;
-    }
-
     const enabled = await this.isEnabled();
     if (!enabled) {
       return;
     }
 
-    const sanitizedProperties = this.sanitizePropertiesForEvent(eventName, properties);
+    const sanitizedProperties = this.sanitizeProperties(properties);
     const sent = await this.sendEvent(eventName, sanitizedProperties);
     if (!sent) {
       this.enqueueEvent(eventName, sanitizedProperties);
@@ -116,20 +67,8 @@ export class AnalyticsService implements IAnalyticsService {
   }
 
   public async trackPluginEvent(pluginId: string, eventName: string, properties?: IAnalyticsEventProperties): Promise<void> {
-    const normalizedPluginId = this.normalizePluginSegment(pluginId);
-    const normalizedEventName = this.normalizePluginSegment(eventName);
-    if (!normalizedPluginId || !normalizedEventName) {
-      logger.warn('Plugin analytics event rejected because pluginId or eventName is invalid', {
-        function: 'trackPluginEvent',
-      });
-      return;
-    }
-
-    const sanitizedProperties = this.sanitizePluginProperties(properties);
-    await this.track(
-      this.makePluginEventName(normalizedPluginId, normalizedEventName),
-      sanitizedProperties,
-    );
+    const sanitizedProperties = this.sanitizeProperties(properties);
+    await this.track(`plugin.${pluginId}.${eventName}`, sanitizedProperties);
   }
 
   public async isEnabled(): Promise<boolean> {
@@ -208,99 +147,6 @@ export class AnalyticsService implements IAnalyticsService {
     return Object.fromEntries(sanitizedEntries) as Record<string, string | number | boolean>;
   }
 
-  private sanitizePropertiesForEvent(eventName: AnalyticsEventName, properties?: IAnalyticsEventProperties): Record<string, string | number | boolean> | undefined {
-    if (eventName.startsWith('plugin.')) {
-      return this.sanitizePluginProperties(properties);
-    }
-
-    const sanitized = this.sanitizeProperties(properties);
-    if (!sanitized) {
-      return undefined;
-    }
-
-    const allowedProperties = allowedPropertiesByEvent[eventName as BuiltInAnalyticsEventName];
-    const filteredEntries = Object.entries(sanitized).filter(([key]) => allowedProperties.has(key));
-    if (filteredEntries.length === 0) {
-      return undefined;
-    }
-
-    return Object.fromEntries(filteredEntries) as Record<string, string | number | boolean>;
-  }
-
-  private isTrackableEventName(eventName: string): eventName is AnalyticsEventName {
-    return this.isBuiltInAnalyticsEventName(eventName) || pluginAnalyticsEventPattern.test(eventName);
-  }
-
-  private isBuiltInAnalyticsEventName(eventName: string): eventName is BuiltInAnalyticsEventName {
-    return Object.hasOwn(allowedPropertiesByEvent, eventName);
-  }
-
-  private sanitizePluginProperties(properties?: IAnalyticsEventProperties): Record<string, string | number | boolean> | undefined {
-    const sanitized = this.sanitizeProperties(properties);
-    if (!sanitized) {
-      return undefined;
-    }
-
-    const filteredEntries = Object.entries(sanitized)
-      .filter(([key]) => pluginPropertyKeyPattern.test(key))
-      .map(([key, value]) => {
-        if (typeof value === 'string') {
-          return [key, value.slice(0, maxPluginStringLength)] as const;
-        }
-        return [key, value] as const;
-      });
-
-    if (filteredEntries.length === 0) {
-      return undefined;
-    }
-
-    return Object.fromEntries(filteredEntries) as Record<string, string | number | boolean>;
-  }
-
-  private normalizePluginSegment(segment: string): string | undefined {
-    const normalized = segment.trim().toLowerCase();
-    if (!pluginEventNamePattern.test(normalized)) {
-      return undefined;
-    }
-    return normalized;
-  }
-
-  /**
-   * Construct a PluginAnalyticsEventName from already-validated segments.
-   * Callers must guarantee segments pass normalizePluginSegment first.
-   */
-  private makePluginEventName(pluginId: string, eventName: string): PluginAnalyticsEventName {
-    return `plugin.${pluginId}.${eventName}`;
-  }
-
-  private buildPayload(eventName: AnalyticsEventName, properties?: Record<string, string | number | boolean>): Promise<ITrackPayload | undefined> {
-    return Promise.all([
-      this.preferenceService.get('analyticsHost'),
-      this.preferenceService.get('analyticsHostname'),
-      this.preferenceService.get('analyticsSiteId'),
-    ]).then(([analyticsHost, analyticsHostname, analyticsSiteId]) => {
-      if (!analyticsHost.trim() || !analyticsHostname.trim() || !analyticsSiteId.trim()) {
-        return undefined;
-      }
-
-      const deviceId = this.getOrCreateDeviceId();
-
-      return {
-        site_id: analyticsSiteId.trim(),
-        type: 'custom_event',
-        event_name: eventName,
-        properties: properties ? JSON.stringify(properties) : JSON.stringify({}),
-        hostname: analyticsHostname.trim(),
-        pathname: ANALYTICS_PATHNAME,
-        user_id: deviceId,
-      };
-    });
-  }
-
-  /**
-   * Return the persisted device UUID, creating and storing it on first call.
-   * Stored alongside other analytics secrets so it survives app updates.
-   */
   private getOrCreateDeviceId(): string {
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const secrets = this.getAnalyticsSecrets(databaseService);
@@ -375,7 +221,7 @@ export class AnalyticsService implements IAnalyticsService {
     this.flushInFlight = (async () => {
       while (this.queuedEvents.length > 0) {
         const nextEvent = this.queuedEvents[0];
-        const sent = await this.sendEvent(nextEvent.eventName, this.sanitizePropertiesForEvent(nextEvent.eventName, nextEvent.properties));
+        const sent = await this.sendEvent(nextEvent.eventName, this.sanitizeProperties(nextEvent.properties));
         if (!sent) {
           break;
         }

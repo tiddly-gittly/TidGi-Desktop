@@ -149,37 +149,42 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_snapshot': {
       const { workspaceId } = input as { workspaceId?: string };
       const { webContents } = await getWebContents(workspaceId);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Electron executeJavaScript returns Promise<any>
-      const text = await withTimeout(
-        webContents.executeJavaScript(`          JSON.stringify({
-            title: document.title,
-            url: location.href,
-            body: document.body ? document.body.innerText.slice(0, 6000) : '',
-            interactive: Array.from(document.querySelectorAll('input,textarea,button,select,[contenteditable],[role="button"],[role="textbox"]')).slice(0, 60).map(el => {
-              const r = el.getBoundingClientRect();
-              return {
-                tag: el.tagName.toLowerCase(),
-                type: el.type || el.getAttribute('type') || '',
-                id: el.id || '',
-                name: el.name || '',
-                placeholder: el.placeholder || '',
-                value: (el.value || '').slice(0, 100),
-                text: (el.innerText || el.textContent || '').slice(0, 80).trim(),
-                role: el.getAttribute('role') || '',
-                cx: Math.round(r.x + r.width / 2),
-                cy: Math.round(r.y + r.height / 2),
-              };
-            }),
-            links: Array.from(document.querySelectorAll('a[href]')).slice(0, 30).map(a => {
-              const r = a.getBoundingClientRect();
-              return { text: (a.innerText||'').slice(0,60).trim(), href: a.href, cx: Math.round(r.x + r.width/2), cy: Math.round(r.y + r.height/2) };
-            }),
-          })
-        `),
+      const result = await withTimeout(
+        webContents.executeJavaScript(`(function() {
+  const body = document.body ? document.body.innerText.slice(0, 6000) : '';
+  const interactive = Array.from(document.querySelectorAll(
+    'input,textarea,button,select,[contenteditable],[role="button"],[role="textbox"]'
+  )).slice(0, 60).map(function(el) {
+    var r = el.getBoundingClientRect();
+    return {
+      tag: el.tagName.toLowerCase(),
+      type: el.type || el.getAttribute('type') || '',
+      id: el.id || '',
+      name: el.name || '',
+      placeholder: el.placeholder || '',
+      value: (el.value || '').slice(0, 100),
+      text: (el.innerText || el.textContent || '').slice(0, 80).trim(),
+      role: el.getAttribute('role') || '',
+      cx: Math.round(r.x + r.width / 2),
+      cy: Math.round(r.y + r.height / 2),
+    };
+  });
+  const links = Array.from(document.querySelectorAll('a[href]')).slice(0, 30).map(function(a) {
+    var r = a.getBoundingClientRect();
+    return { text: (a.innerText||'').slice(0,60).trim(), href: a.href, cx: Math.round(r.x + r.width/2), cy: Math.round(r.y + r.height/2) };
+  });
+  return { title: document.title, url: location.href, body: body, interactive: interactive, links: links };
+})()`) as unknown as {
+          title: string;
+          url: string;
+          body: string;
+          interactive: Array<{ tag: string; type: string; id: string; name: string; placeholder: string; value: string; text: string; role: string; cx: number; cy: number }>;
+          links: Array<{ text: string; href: string; cx: number; cy: number }>;
+        },
         10_000,
         'ui_snapshot',
       );
-      return JSON.parse(text as string);
+      return result;
     }
 
     case 'ui_screenshot': {
