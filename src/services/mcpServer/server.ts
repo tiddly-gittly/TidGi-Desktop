@@ -88,7 +88,7 @@ async function handleRequest(httpRequest: IncomingMessage, response: ServerRespo
       response.end(responseBody);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const errorResponse = JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32_700, message: 'Parse error: ' } });
+      const errorResponse = JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32_700, message: `Parse error: ${message}` } });
       response.writeHead(400, { 'Content-Type': 'application/json' });
       response.end(errorResponse);
     }
