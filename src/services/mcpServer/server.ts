@@ -29,7 +29,7 @@ export function createMcpHttpServer(): http.Server {
         sessionIdGenerator: undefined,
         enableJsonResponse: true,
       });
-      mcpServer.connect(transport);
+      await mcpServer.connect(transport);
 
       await transport.handleRequest(httpRequest, response, () => {
         response.writeHead(200, { 'Content-Type': 'application/json' });
