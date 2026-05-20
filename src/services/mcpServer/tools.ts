@@ -4,6 +4,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { takeSnapshot } from './snapshot';
 import type { McpToolDefinition, ToolInput } from './types';
 
 /** Pass this as workspaceId to target the main React UI window instead of a wiki webview. */
@@ -149,41 +150,11 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_snapshot': {
       const { workspaceId } = input as { workspaceId?: string };
       const { webContents } = await getWebContents(workspaceId);
-      const result = (await withTimeout(
-        webContents.executeJavaScript(`(function() {
-  var body = document.body ? document.body.innerText.slice(0, 6000) : '';
-  var interactive = Array.from(document.querySelectorAll(
-    'input,textarea,button,select,[contenteditable],[role="button"],[role="textbox"]'
-  )).slice(0, 60).map(function(el) {
-    var r = el.getBoundingClientRect();
-    return {
-      tag: el.tagName.toLowerCase(),
-      type: el.type || el.getAttribute('type') || '',
-      id: el.id || '',
-      name: el.name || '',
-      placeholder: el.placeholder || '',
-      value: (el.value || '').slice(0, 100),
-      text: (el.innerText || el.textContent || '').slice(0, 80).trim(),
-      role: el.getAttribute('role') || '',
-      cx: Math.round(r.x + r.width / 2),
-      cy: Math.round(r.y + r.height / 2),
-    };
-  });
-  var links = Array.from(document.querySelectorAll('a[href]')).slice(0, 30).map(function(a) {
-    var r = a.getBoundingClientRect();
-    return { text: (a.innerText||'').slice(0,60).trim(), href: a.href, cx: Math.round(r.x + r.width/2), cy: Math.round(r.y + r.height/2) };
-  });
-  return { title: document.title, url: location.href, body: body, interactive: interactive, links: links };
-})()`),
+      const result = await withTimeout(
+        takeSnapshot(webContents),
         10_000,
         'ui_snapshot',
-      )) as unknown as {
-        title: string;
-        url: string;
-        body: string;
-        interactive: Array<{ tag: string; type: string; id: string; name: string; placeholder: string; value: string; text: string; role: string; cx: number; cy: number }>;
-        links: Array<{ text: string; href: string; cx: number; cy: number }>;
-      };
+      );
       return result;
     }
 
