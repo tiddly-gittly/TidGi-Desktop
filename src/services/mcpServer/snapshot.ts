@@ -75,6 +75,10 @@ export async function takeSnapshot(webContents: WebContents): Promise<SnapshotRe
 export async function takeSnapshotWithTimeout(webContents: WebContents, timeoutMs: number): Promise<SnapshotResult> {
   return Promise.race([
     takeSnapshot(webContents),
-    new Promise<never>((_, reject) => { setTimeout(() => { reject(new Error('takeSnapshot timed out')); }, timeoutMs); }),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('takeSnapshot timed out'));
+      }, timeoutMs);
+    }),
   ]);
 }
