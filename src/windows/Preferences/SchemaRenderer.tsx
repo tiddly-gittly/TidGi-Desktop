@@ -15,6 +15,7 @@ import type {
   IBooleanPreferenceItem,
   ICustomItem,
   IEnumPreferenceItem,
+  IFragmentListItem,
   INumberPreferenceItem,
   ISectionDefinition,
   IStringArrayPreferenceItem,
@@ -316,6 +317,15 @@ function CustomItemWrapper({ item, onNeedsRestart }: { item: ICustomItem; onNeed
   return <Component onNeedsRestart={onNeedsRestart} />;
 }
 
+function FragmentListItem({ item, onNeedsRestart }: { item: IFragmentListItem; onNeedsRestart: () => void }): React.JSX.Element | null {
+  const ItemComponent = getCustomComponent(item.itemComponentId);
+  if (!ItemComponent) {
+    console.warn(`Fragment list item component not registered: ${item.itemComponentId}`);
+    return null;
+  }
+  return <ItemComponent onNeedsRestart={onNeedsRestart} />;
+}
+
 // ─── Section renderer ────────────────────────────────────────────────
 
 function ItemRenderer({
@@ -355,18 +365,10 @@ function ItemRenderer({
         if (Component) {
           return <Component onNeedsRestart={onNeedsRestart} />;
         }
-        const primaryText = i18next.t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-        const secondaryText = item.descriptionKey ? i18next.t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
-        return (
-          <ListItem>
-            <ListItemText
-              primary={<HighlightText text={primaryText} query={query} />}
-              secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
-            />
-          </ListItem>
-        );
       }
       return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+    case 'fragment-list':
+      return <FragmentListItem item={item} onNeedsRestart={onNeedsRestart} />;
     default:
       return null;
   }

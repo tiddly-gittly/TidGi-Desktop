@@ -7,8 +7,8 @@ export const workspaceGroupsSection: ISectionDefinition = {
   Icon: FolderIcon,
   items: [
     {
-      type: 'custom',
-      componentId: 'workspaceGroups.management',
+      type: 'fragment-list',
+      itemComponentId: 'workspaceGroups.management',
       titleKey: 'WorkspaceGroup.ManageGroups',
       descriptionKey: 'WorkspaceGroup.ManageGroupsDescription',
     },

@@ -88,6 +88,12 @@ export const customItemSchema = definitionBaseSchema.extend({
 });
 export type ICustomItem = z.infer<typeof customItemSchema>;
 
+export const fragmentListItemSchema = definitionBaseSchema.extend({
+  type: z.literal('fragment-list'),
+  itemComponentId: z.string(),
+});
+export type IFragmentListItem = z.infer<typeof fragmentListItemSchema>;
+
 export const dividerItemSchema = z.object({ type: z.literal('divider') });
 export type IDividerItem = z.infer<typeof dividerItemSchema>;
 
@@ -100,6 +106,7 @@ export const preferenceItemDefinitionSchema = z.discriminatedUnion('type', [
   stringPreferenceItemSchema,
   textPreferenceItemSchema,
   stringArrayPreferenceItemSchema,
+  fragmentListItemSchema,
   actionItemSchema,
   customItemSchema,
   dividerItemSchema,
