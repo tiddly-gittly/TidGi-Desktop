@@ -26,6 +26,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { sanitizeErrorMessage } from '@services/analytics';
+import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
@@ -75,15 +76,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 bindServiceAndProxy();
 
-// Start TidGi MCP server early in dev/test so it is available even during slow wiki startup
-// Temporarily disabled for debugging CI hang
-// if (isDevelopmentOrTest) {
-//   try {
-//     startMcpServer();
-//   } catch (error) {
-//     logger.error('Failed to start MCP server', { error });
-//   }
-// }
+
 
 // Get services - DO NOT use them until commonInit() is called
 const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
@@ -112,7 +105,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
-    // stopMcpServer();
+    stopMcpServer();
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
@@ -238,6 +231,15 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
+
+  // Start MCP server after full initialization to avoid blocking startup
+  if (isDevelopmentOrTest) {
+    try {
+      startMcpServer();
+    } catch (error) {
+      logger.error('Failed to start MCP server', { error });
+    }
+  }
 
   // Track app launch event with retention properties
   const retentionProperties = await analyticsService.getRetentionProperties();
