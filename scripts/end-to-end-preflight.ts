@@ -16,7 +16,6 @@ function runSmokeCalibration(): void {
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
-    let success = false;
 
     try {
       execSync(
@@ -27,15 +26,17 @@ function runSmokeCalibration(): void {
           env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
         },
       );
-      success = true;
     } catch {
-      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} failed, skipping results`);
+      // Cucumber exits non-zero when some scenarios fail, but we can still
+      // extract timing data from the passed scenarios.
     }
-
-    if (!success) continue;
 
     const totalMs = Date.now() - startedAt;
     const steps = extractStepTimings(outputFile);
+    if (steps.length === 0) {
+      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} had no measurable steps, skipping`);
+      continue;
+    }
 
     for (const step of steps) {
       if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
