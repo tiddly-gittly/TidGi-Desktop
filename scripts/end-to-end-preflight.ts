@@ -47,8 +47,8 @@ function runSmokeCalibration(): void {
   }
 
   if (maxLaunchStepMs === 0) {
-    console.warn('[Cal] all runs failed — using conservative fallback timeouts');
-    maxLaunchStepMs = 60_000;
+    console.error('[Cal] all calibration runs failed. Aborting — fix the app startup before running E2E.');
+    process.exit(1);
   }
 
   writeCalibrationResult(maxLaunchStepMs);

@@ -212,6 +212,9 @@ importers:
       ollama-ai-provider-v2:
         specifier: ^1.5.5
         version: 1.5.5(zod@4.1.12)
+      playwright-core:
+        specifier: 1.56.1
+        version: 1.56.1
       react:
         specifier: 19.2.0
         version: 19.2.0

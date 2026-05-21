@@ -100,6 +100,7 @@
     "nsfw": "^2.2.5",
     "oidc-client-ts": "^3.4.1",
     "ollama-ai-provider-v2": "^1.5.5",
+    "playwright-core": "1.56.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-i18next": "16.3.5",
