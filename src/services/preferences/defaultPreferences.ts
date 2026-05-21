@@ -4,9 +4,36 @@ import { app } from 'electron';
 import semver from 'semver';
 import type { IPreferences } from './interface';
 
+// Allow E2E tests to inject analytics configuration via environment variables
+function getAnalyticsEnvironmentOverrides(): { analyticsEnabled: boolean; analyticsHost: string; analyticsHostname: string; analyticsSiteId: string } {
+  const analyticsHost = process.env.TIDGI_ANALYTICS_HOST ?? '';
+  if (analyticsHost) {
+    return {
+      analyticsEnabled: true,
+      analyticsHost,
+      analyticsHostname: process.env.TIDGI_ANALYTICS_HOSTNAME ?? 'desktop.tidgi.fun',
+      analyticsSiteId: process.env.TIDGI_ANALYTICS_SITE_ID ?? 'test-site',
+    };
+  }
+  // site_id is safe to embed publicly — Rybbit's /api/track is a public endpoint
+  // that only needs site_id (same as the data-site-id in <script> tags on websites).
+  return {
+    analyticsEnabled: true,
+    analyticsHost: 'https://analytics.tidgi.fun',
+    analyticsHostname: 'desktop.tidgi.fun',
+    analyticsSiteId: '189dd97a8d37',
+  };
+}
+
+const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
+
 export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   alwaysOnTop: false,
+  analyticsEnabled: analyticsEnvironment.analyticsEnabled,
+  analyticsHost: analyticsEnvironment.analyticsHost,
+  analyticsHostname: analyticsEnvironment.analyticsHostname,
+  analyticsSiteId: analyticsEnvironment.analyticsSiteId,
   askForDownloadPath: true,
   disableAntiAntiLeech: false,
   disableAntiAntiLeechForUrls: [],

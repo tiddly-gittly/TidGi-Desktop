@@ -4,6 +4,7 @@ import semver from 'semver';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Divider, List, ListItemButton, Switch } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { renderTimeViewClock } from '@mui/x-date-pickers/timeViewRenderers';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -59,6 +60,10 @@ export function Notifications(props: ICustomSectionProps): React.JSX.Element {
                       await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true });
                     }}
                     disabled={!preference.pauseNotificationsBySchedule}
+                    viewRenderers={{
+                      hours: renderTimeViewClock,
+                      minutes: renderTimeViewClock,
+                    }}
                   />
                   <TimePicker
                     label='to'
@@ -73,6 +78,10 @@ export function Notifications(props: ICustomSectionProps): React.JSX.Element {
                       await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true });
                     }}
                     disabled={!preference.pauseNotificationsBySchedule}
+                    viewRenderers={{
+                      hours: renderTimeViewClock,
+                      minutes: renderTimeViewClock,
+                    }}
                   />
                 </TimePickerContainer>
                 ({window.Intl.DateTimeFormat().resolvedOptions().timeZone})

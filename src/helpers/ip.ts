@@ -24,16 +24,65 @@ function findIp(gateway: string): string | undefined {
   }
 }
 
+/**
+ * Fallback: scan all network interfaces and return the first routable IPv4 address.
+ * Skips loopback (127.x), link-local (169.254.x), and well-known virtual adapter ranges
+ * used by WSL2 (172.16–31.x), Docker (172.17.x), and Hyper-V (172.x).
+ * This is intentionally permissive — we prefer showing a real IP over "localhost".
+ */
+function findFirstRoutableIpV4(): string | undefined {
+  for (const [, addresses] of Object.entries(networkInterfaces())) {
+    if (addresses === undefined) continue;
+    for (const { address, family, internal } of addresses) {
+      if (family !== 'IPv4' || internal) continue;
+      // Skip link-local
+      if (address.startsWith('169.254.')) continue;
+      // Skip common virtual adapter ranges (WSL2, Docker, Hyper-V)
+      if (address.startsWith('172.')) continue;
+      return address;
+    }
+  }
+  // If nothing matched above, try again without skipping 172.x (user may only have that)
+  for (const [, addresses] of Object.entries(networkInterfaces())) {
+    if (addresses === undefined) continue;
+    for (const { address, family, internal } of addresses) {
+      if (family !== 'IPv4' || internal) continue;
+      if (address.startsWith('169.254.')) continue;
+      return address;
+    }
+  }
+}
+
 export async function internalIpV4(): Promise<string | undefined> {
   try {
     const defaultGatewayResult = await defaultGatewayV4();
     if (defaultGatewayResult?.gateway) {
-      return findIp(defaultGatewayResult.gateway);
+      const found = findIp(defaultGatewayResult.gateway);
+      if (found !== undefined) return found;
+
+      // This commonly happens when WSL2, Docker Desktop, or Hyper-V virtual adapters
+      // inject extra default routes whose gateway subnet doesn't match any physical NIC CIDR.
+      // Fall through to the interface-scan fallback below.
+      console.warn(
+        'internalIpV4: default gateway found but no matching network interface CIDR, trying interface scan fallback.',
+        'gateway:',
+        defaultGatewayResult.gateway,
+      );
+    } else {
+      console.warn('internalIpV4: defaultGatewayV4 returned no gateway, trying interface scan fallback. Result:', defaultGatewayResult);
     }
   } catch (_error) {
-    // noop: best-effort to get default gateway, ignore errors
-    void _error;
+    // best-effort to get default gateway, ignore errors
+    console.warn('internalIpV4: failed to get default gateway, trying interface scan fallback.', _error);
   }
+
+  const fallback = findFirstRoutableIpV4();
+  if (fallback !== undefined) {
+    console.warn('internalIpV4: using interface scan fallback IP:', fallback);
+    return fallback;
+  }
+
+  console.warn('internalIpV4: no routable IPv4 found at all, returning "localhost".');
   return 'localhost';
 }
 

@@ -49,12 +49,13 @@ Feature: Create New Agent Workflow
     # Step 4.2: Navigate to the correct tab and expand array items to edit prompt
     # Look for tabs in the PromptConfigForm
     And I should see a "config tabs" element with selector "[data-testid='prompt-config-form'] .MuiTabs-root"
-    # Click on the first tab, expand array item, and click on the system prompt text field
-    When I click on "first config tab and expand array item button and system prompt text field" elements with selectors:
-      | element description        | selector                                                                                                                                                                                              |
-      | first config tab           | [data-testid='prompt-config-form'] .MuiTab-root:first-of-type                                                                                                                                         |
-      | expand array item button   | [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon'] |
-      | system prompt text field   | [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])                                                                                              |
+    # Click the first tab to reveal its panel content
+    When I click on a "first config tab" element with selector "[data-testid='prompt-config-form'] .MuiTab-root:first-of-type"
+    And I should see a "visible tab panel" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden])"
+    # Expand array item to show the system prompt text field
+    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    # Click the system prompt text field to focus it for editing
+    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     # Step 5: Advance to step 3 (Immediate Use)
@@ -112,17 +113,19 @@ Feature: Create New Agent Workflow
     # Step 6.1: Navigate to the correct tab and expand array items to edit prompt
     # Look for tabs in the PromptConfigForm
     And I should see a "config tabs" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTabs-root"
-    # Click on the first tab, expand array item, and click on the system prompt text field
-    When I click on "first config tab and expand array item button and system prompt text field" elements with selectors:
-      | element description        | selector                                                                                                                                                                                                      |
-      | first config tab           | [data-testid='edit-agent-prompt-form'] .MuiTab-root:first-of-type                                                                                                                                             |
-      | expand array item button   | [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon'] |
-      | system prompt text field   | [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])                                                                                                  |
+    # Click the first tab to reveal its panel content
+    When I click on a "first config tab" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTab-root:first-of-type"
+    And I should see a "visible tab panel" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden])"
+    # Expand array item to show the system prompt text field
+    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    # Click the system prompt text field to focus it for editing
+    When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     # Step 7: Test in the immediate use section (embedded chat)
     # The immediate use section should show an embedded chat interface
-    # Find a message input in the immediate use section and test the agent
+    # Ensure the message input is visible before clicking (it may be scrolled below the prompt editor)
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "你好，请介绍一下自己" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key

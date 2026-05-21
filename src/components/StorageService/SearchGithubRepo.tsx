@@ -162,13 +162,6 @@ function SearchGithubRepoResultList({
     [data, repositoryCount],
   );
 
-  // auto select first one after first search
-  useEffect(() => {
-    if (githubWikiUrl.length === 0 && repoList.length > 0) {
-      onSelectRepo(repoList[0].url, repoList[0].name);
-    }
-  }, [repoList, githubWikiUrl, onSelectRepo]);
-
   const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
   const githubUserID = data?.repositoryOwner.id;
   const wikiUrlToCreate = `https://github.com/${githubUsername ?? '???'}/${githubRepoSearchString}`;

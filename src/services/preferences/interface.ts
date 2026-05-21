@@ -14,6 +14,10 @@ export interface IPreferences {
   aiGenerateBackupTitleTimeout: number;
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
+  analyticsEnabled: boolean;
+  analyticsHost: string;
+  analyticsHostname: string;
+  analyticsSiteId: string;
   askForDownloadPath: boolean;
   disableAntiAntiLeech: boolean;
   disableAntiAntiLeechForUrls: string[];
@@ -70,6 +74,7 @@ export enum PreferenceSections {
   wiki = 'wiki',
   externalAPI = 'externalAPI',
   aiAgent = 'aiAgent',
+  workspaceGroups = 'workspaceGroups',
 }
 
 /**

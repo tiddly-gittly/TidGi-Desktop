@@ -1,4 +1,6 @@
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
+import type { IAnalyticsService } from '@services/analytics/interface';
+import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -54,8 +56,9 @@ export class DeepLinkService implements IDeepLinkService {
    * Handle link and open the workspace.
    * @param requestUrl like `tidgi://lxqsftvfppu_z4zbaadc0/#:Index` or `tidgi://lxqsftvfppu_z4zbaadc0/#%E6%96%B0%E6%9D%A1%E7%9B%AE`
    */
-  private readonly deepLinkHandler: (requestUrl: string) => Promise<void> = async (requestUrl) => {
+  private readonly deepLinkHandler: (requestUrl: string, fromPendingQueue?: boolean) => Promise<void> = async (requestUrl, fromPendingQueue = false) => {
     logger.info(`Receiving deep link`, { requestUrl, function: 'deepLinkHandler' });
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
     try {
       // hostname is workspace id or name
       const { hostname, hash, pathname } = new URL(requestUrl);
@@ -93,6 +96,10 @@ export class DeepLinkService implements IDeepLinkService {
       }
 
       logger.info(`Open deep link`, { workspaceId: workspace.id, tiddlerName, function: 'deepLinkHandler' });
+      void analyticsService.track('deep_link.opened', {
+        resolvedWorkspace: true,
+        fromPendingQueue,
+      });
       await this.workspaceService.openWorkspaceTiddler(workspace, tiddlerName);
     } catch (error) {
       logger.error(`Invalid URL`, { requestUrl, error, function: 'deepLinkHandler' });
@@ -107,7 +114,7 @@ export class DeepLinkService implements IDeepLinkService {
       const url = this.pendingDeepLink;
       this.pendingDeepLink = undefined;
       logger.info(`Processing pending deep link`, { url, function: 'processPendingDeepLink' });
-      await this.deepLinkHandler(url);
+      await this.deepLinkHandler(url, true);
     }
   }
 

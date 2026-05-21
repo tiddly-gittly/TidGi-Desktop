@@ -25,6 +25,7 @@ import type {
 } from './types';
 import { updatesSection } from './updates';
 import { wikiSection } from './wiki';
+import { workspaceGroupsSection } from './workspaceGroups';
 
 /**
  * Ordered list of all sections. Display order matches array order.
@@ -39,6 +40,7 @@ export const allSections: ISectionDefinition[] = [
   notificationsSection,
   systemSection,
   languagesSection,
+  workspaceGroupsSection,
   developersSection,
   downloadsSection,
   networkSection,

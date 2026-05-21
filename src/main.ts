@@ -25,12 +25,16 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { sanitizeErrorMessage } from '@services/analytics';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+import { startMcpServer, stopMcpServer } from '@services/mcpServer';
+
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
@@ -73,6 +77,7 @@ protocol.registerSchemesAsPrivileged([
 bindServiceAndProxy();
 
 // Get services - DO NOT use them until commonInit() is called
+const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
@@ -98,6 +103,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
+    stopMcpServer();
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
@@ -223,6 +229,22 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
+
+  // Start MCP server when --mcp-port flag is passed
+  // Usage: pnpm run start:dev:mcp  (starts app with MCP server on port 7890)
+  const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='));
+  if (mcpPortArgument) {
+    const port = Number.parseInt(mcpPortArgument.split('=')[1], 10);
+    void startMcpServer(Number.isNaN(port) ? undefined : port);
+  }
+
+  // Track app launch event with retention properties
+  const retentionProperties = await analyticsService.getRetentionProperties();
+  void analyticsService.track('app.launched', {
+    platform: process.platform,
+    version: app.getVersion(),
+    ...retentionProperties,
+  });
 };
 
 /**
@@ -249,7 +271,13 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    logger.error('Error during app ready handler', { function: "app.on('ready')", error });
+    const error_ = error as Error;
+    logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_ });
+    void analyticsService.track('error.unhandled', {
+      errorName: error_.name || 'Error',
+      errorMessage: sanitizeErrorMessage(error_),
+      errorSource: 'app_ready',
+    });
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -291,6 +319,11 @@ unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
     logger.error('unhandled', { error });
+    void analyticsService.track('error.unhandled', {
+      errorName: error.name || 'Error',
+      errorMessage: sanitizeErrorMessage(error),
+      errorSource: 'unhandled',
+    });
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);

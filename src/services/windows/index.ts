@@ -7,6 +7,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -281,6 +282,14 @@ export class Window implements IWindowService {
       }
     }
     windowWithBrowserViewState?.manage(newWindow);
+    // When runOnBackground=true the main window is hidden rather than destroyed, so 'closed' never
+    // fires and electron-window-state never writes the state file. Save explicitly on 'hide'.
+    if (windowName === WindowNames.main && windowWithBrowserViewState !== undefined) {
+      const stateReference = windowWithBrowserViewState;
+      newWindow.on('hide', () => {
+        stateReference.saveState(newWindow);
+      });
+    }
     if (isWindowWithBrowserView) {
       const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();
       const viewService = container.get<IViewService>(serviceIdentifier.View);
@@ -299,6 +308,12 @@ export class Window implements IWindowService {
         await workspaceViewService.refreshActiveWorkspaceView();
       }
     }
+    // Track analytics event when preferences window is opened
+    if (windowName === WindowNames.preferences) {
+      const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+      void analyticsService.track('settings.opened', { window: 'preferences' });
+    }
+
     if (returnWindow === true) {
       return newWindow;
     }

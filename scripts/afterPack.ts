@@ -82,6 +82,14 @@ export default (
       }
     }
 
+    // MCP SDK is used by both agentInstance and mcpServer, and is externalized in vite config
+    console.log('Copy @modelcontextprotocol/sdk');
+    fs.copySync(
+      path.join(sourceNodeModulesFolder, '@modelcontextprotocol', 'sdk'),
+      path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk'),
+      { dereference: true, recursive: true },
+    );
+
     console.log('Copy dugite');
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true, recursive: true` here.
     fs.copySync(

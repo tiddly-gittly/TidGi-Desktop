@@ -2,6 +2,7 @@ import { dialog, nativeTheme } from 'electron';
 import { injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
+import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
@@ -83,6 +84,18 @@ export class Preference implements IPreferenceService {
    * @param preference new preference settings
    */
   private async reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
+    // Track analytics preference changes
+    if (key === 'analyticsEnabled' || key === 'analyticsHost' || key === 'analyticsHostname' || key === 'analyticsSiteId') {
+      const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+      if (key === 'analyticsEnabled' && value === false) {
+        await analyticsService.clearPendingEvents();
+      }
+      void analyticsService.track('preferences.analytics_updated', {
+        field: key,
+        enabled: key === 'analyticsEnabled' ? Boolean(value) : undefined,
+      });
+    }
+
     // maybe pauseNotificationsBySchedule or pauseNotifications or ...
     if (key.startsWith('pauseNotifications')) {
       const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);

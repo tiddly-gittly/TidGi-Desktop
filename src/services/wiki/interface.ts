@@ -56,7 +56,7 @@ export interface IWikiService {
    */
   getWorkersInfo(): Promise<IWorkerInfo[]>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
-  removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
+  removeWiki(wikiPath: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
   setAllWikiStartLockOff(): void;
   setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void>;

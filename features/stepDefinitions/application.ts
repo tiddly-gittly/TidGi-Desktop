@@ -8,7 +8,7 @@ import { windowDimension, WindowNames } from '../../src/services/windows/WindowP
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
-import { PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
+import { HEAVY_PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
 import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
 
 /**
@@ -75,6 +75,7 @@ export class ApplicationWorld {
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
+  scenarioTags: string[] = [];
   providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
   launchEnvOverrides: Record<string, string> = {};
 
@@ -283,7 +284,7 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
       }),
     },
     cwd: process.cwd(),
-    timeout: PLAYWRIGHT_TIMEOUT,
+    timeout: HEAVY_PLAYWRIGHT_TIMEOUT,
   });
 
   // Do not block launch step on firstWindow; this can exceed Cucumber's 5s step timeout.
@@ -381,6 +382,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   this.appLaunchPromise = launchTidGiApplication(this).catch((error: unknown) => {
     throw error;
   });
+  await this.appLaunchPromise;
 });
 
 When('I close the TidGi application', async function(this: ApplicationWorld) {

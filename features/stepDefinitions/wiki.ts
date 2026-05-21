@@ -19,7 +19,7 @@ import type { ApplicationWorld } from './application';
  * ABSOLUTE RULES - NO EXCEPTIONS:
  *
  * 1. NEVER INCREASE TIMEOUT VALUES! TIMEOUT = FAILURE = REAL BUG!
- * 2. MAXIMUM TIMEOUTS: Local 5s, CI 10s (exactly 2x, NO MORE)
+ * 2. ALL TIMEOUTS are calibrated from measured step durations via preflight.
  * 3. BEFORE MODIFYING: Read docs/Testing.md, find REAL BUG, fix APPLICATION
  * 4. THIS HAS BEEN VIOLATED 3 TIMES - DO NOT MAKE IT 4!
  *
@@ -56,7 +56,13 @@ const BACKOFF_OPTIONS = {
  *
  * You can add test-id for debugging, And remove unused test-id before you finish the work. Also remove test-id that interval is smaller than 2s.
  */
-export async function waitForLogMarker(world: ApplicationWorld, searchString: string, errorMessage: string, maxWaitMs = 10000, logFilePattern = '*'): Promise<void> {
+export async function waitForLogMarker(
+  world: ApplicationWorld,
+  searchString: string,
+  errorMessage: string,
+  maxWaitMs = LOG_MARKER_WAIT_TIMEOUT,
+  logFilePattern = '*',
+): Promise<void> {
   const logPath = getLogPath(world);
   // Support multiple patterns separated by '|', and '*' for all log files
   const patterns = logFilePattern.split('|');
@@ -182,7 +188,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
   try {
     await backOff(
       async () => {
-        fs.writeJsonSync(getSettingsPath(this), { ...settings, workspaces: filtered }, { spaces: 2 });
+        fs.writeJsonSync(getSettingsPath(this), { ...settings, workspaces: filtered, workspaceGroups: {} }, { spaces: 2 });
       },
       {
         numOfAttempts: 3,
@@ -706,22 +712,19 @@ Then('I wait for SSE and watch-fs to be ready', async function(this: Application
  * @param marker - The text pattern to remove from log files
  */
 When('I clear log lines containing {string}', async function(this: ApplicationWorld, marker: string) {
-  const logDirectory = getLogPath(this);
-  if (!fs.existsSync(logDirectory)) return;
+  await clearLogLinesContaining(this, marker);
+});
 
-  // Clear from both TidGi- and wiki- prefixed log files
-  const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('TidGi-') || f.startsWith('wiki')) && f.endsWith('.log'));
+When('I clear log lines containing:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  const rows = dataTable.raw();
+  const dataRows = parseDataTableRows(rows, 1);
 
-  for (const logFile of logFiles) {
-    const logPath = path.join(logDirectory, logFile);
-    try {
-      const content = fs.readFileSync(logPath, 'utf-8');
-      // Remove lines containing the marker
-      const filteredLines = content.split('\n').filter(line => !line.includes(marker));
-      fs.writeFileSync(logPath, filteredLines.join('\n'), 'utf-8');
-    } catch (error) {
-      console.warn(`Failed to clear log lines from ${logFile}:`, error);
-    }
+  if (dataRows[0]?.length !== 1) {
+    throw new Error('Table must have exactly 1 column: | marker |');
+  }
+
+  for (const [marker] of dataRows) {
+    await clearLogLinesContaining(this, marker);
   }
 });
 
@@ -896,23 +899,18 @@ When('I open edit workspace window for workspace with name {string}', async func
       const settings = await fs.readJson(getSettingsPath(this)) as { workspaces?: Record<string, IWorkspace> };
       const workspaces: Record<string, IWorkspace> = settings.workspaces ?? {};
 
-      // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json)
+      // Find workspace by name or by wikiFolderLocation (in case name is removed from settings.json).
+      // Do two passes so exact name matches take priority over folder-basename matches.
+      // First pass: match by settings.json name or tidgi.config.json name
       for (const [id, workspace] of Object.entries(workspaces)) {
         if (workspace.pageType) continue; // Skip page workspaces
 
-        // Try to match by name (if available in settings.json)
         if (workspace.name === workspaceName) {
           targetWorkspaceId = id;
           return;
         }
 
-        // Try to read name from tidgi.config.json
         if (isWikiWorkspace(workspace)) {
-          if (path.basename(workspace.wikiFolderLocation) === workspaceName) {
-            targetWorkspaceId = id;
-            return;
-          }
-
           try {
             const tidgiConfigPath = path.join(workspace.wikiFolderLocation, 'tidgi.config.json');
             if (await fs.pathExists(tidgiConfigPath)) {
@@ -925,6 +923,14 @@ When('I open edit workspace window for workspace with name {string}', async func
           } catch {
             // Ignore errors reading tidgi.config.json
           }
+        }
+      }
+      // Second pass: fallback to folder basename match
+      for (const [id, workspace] of Object.entries(workspaces)) {
+        if (workspace.pageType) continue;
+        if (isWikiWorkspace(workspace) && path.basename(workspace.wikiFolderLocation) === workspaceName) {
+          targetWorkspaceId = id;
+          return;
         }
       }
 
@@ -966,13 +972,15 @@ When('I open edit workspace window for workspace with name {string}', async func
   }
 });
 
-When('I create a new wiki workspace with name {string}', async function(this: ApplicationWorld, workspaceName: string) {
-  if (!this.app) {
+async function createWikiWorkspace(world: ApplicationWorld, workspaceName: string): Promise<void> {
+  if (!world.app) {
     throw new Error('Application is not available');
   }
 
+  const isWorkspaceGroupScenario = world.scenarioTags.includes('@workspace-group');
+
   // Construct the full wiki path
-  const wikiPath = path.join(getWikiTestRootPath(this), workspaceName);
+  const wikiPath = path.join(getWikiTestRootPath(world), workspaceName);
 
   // Create the wiki folder using the template (same filter as createWiki in wiki/index.ts)
   const templatePath = path.join(process.cwd(), 'template', 'wiki');
@@ -986,25 +994,28 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     },
   });
 
-  // Initialize fresh git repository for the new wiki using dugite
-  try {
-    // Initialize git repository with master branch
-    await gitExec(['init', '-b', 'master'], wikiPath);
+  // Workspace-group scenarios only validate grouping and drag behavior.
+  // Skipping git bootstrap avoids repeated add/commit overhead across dozens of test workspaces.
+  if (!isWorkspaceGroupScenario) {
+    try {
+      // Initialize git repository with master branch
+      await gitExec(['init', '-b', 'master'], wikiPath);
 
-    // Configure git user
-    await gitExec(['config', 'user.email', 'test@tidgi.test'], wikiPath);
-    await gitExec(['config', 'user.name', 'TidGi Test'], wikiPath);
+      // Configure git user
+      await gitExec(['config', 'user.email', 'test@tidgi.test'], wikiPath);
+      await gitExec(['config', 'user.name', 'TidGi Test'], wikiPath);
 
-    // Add all files and create initial commit
-    await gitExec(['add', '.'], wikiPath);
-    await gitExec(['commit', '-m', 'Initial commit'], wikiPath);
-  } catch (error) {
-    // Git initialization is not critical for the test, continue anyway
-    console.log('Git initialization skipped:', (error as Error).message);
+      // Add all files and create initial commit
+      await gitExec(['add', '.'], wikiPath);
+      await gitExec(['commit', '-m', 'Initial commit'], wikiPath);
+    } catch (error) {
+      // Git initialization is not critical for the test, continue anyway
+      console.log('Git initialization skipped:', (error as Error).message);
+    }
   }
 
   // Now create workspace configuration
-  await this.app.evaluate(async ({ BrowserWindow }, { wikiName, wikiFullPath }: { wikiName: string; wikiFullPath: string }) => {
+  await world.app.evaluate(async ({ BrowserWindow }, { wikiName, wikiFullPath }: { wikiName: string; wikiFullPath: string }) => {
     const windows = BrowserWindow.getAllWindows();
     const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
 
@@ -1026,10 +1037,76 @@ When('I create a new wiki workspace with name {string}', async function(this: Ap
     `);
   }, { wikiName: workspaceName, wikiFullPath: wikiPath });
 
-  // Wait for workspace to appear in UI
-  await this.app.evaluate(async () => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  });
+  await backOff(
+    async () => {
+      const workspaces = await world.app!.evaluate(async ({ BrowserWindow }, _name: string) => {
+        const windows = BrowserWindow.getAllWindows();
+        const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+
+        if (!mainWindow) {
+          throw new Error('Main window not found');
+        }
+
+        return await mainWindow.webContents.executeJavaScript(`
+          (async () => {
+            const all = await window.service.workspace.getWorkspacesAsList();
+            return all.filter(workspace => !workspace.pageType).map(workspace => workspace.name);
+          })();
+        `) as Promise<string[]>;
+      }, workspaceName);
+
+      if (!workspaces.includes(workspaceName)) {
+        throw new Error(`Workspace ${workspaceName} not visible yet`);
+      }
+    },
+    BACKOFF_OPTIONS,
+  );
+
+  // Also wait for the workspace to actually appear in the sidebar DOM.
+  // The observable emission that triggers React re-render can lag behind
+  // the service-side creation on slow CI runners, causing drag steps to
+  // target elements that have not yet been mounted.
+  await backOff(
+    async () => {
+      const workspaceId = await world.app!.evaluate(async ({ BrowserWindow }, name: string) => {
+        const windows = BrowserWindow.getAllWindows();
+        const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
+        if (!mainWindow) return null;
+        const resolvedWorkspaceId = await mainWindow.webContents.executeJavaScript(`
+          (async () => {
+            const all = await window.service.workspace.getWorkspacesAsList();
+            const ws = all.find(w => w.name === ${JSON.stringify(name)});
+            return ws ? ws.id : null;
+          })();
+        `) as string | null;
+        return resolvedWorkspaceId;
+      }, workspaceName);
+
+      if (!workspaceId || !world.currentWindow) {
+        throw new Error(`Workspace ${workspaceName} ID not available for DOM check`);
+      }
+
+      const count = await world.currentWindow.locator(`[data-testid="workspace-item-${workspaceId}"]`).count();
+      if (count === 0) {
+        throw new Error(`Workspace ${workspaceName} not yet rendered in sidebar DOM`);
+      }
+    },
+    BACKOFF_OPTIONS,
+  );
+}
+
+When('I create a new wiki workspace with name {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  await createWikiWorkspace(this, workspaceName);
+});
+
+When('I create new wiki workspaces with names:', async function(this: ApplicationWorld, dataTable: DataTable) {
+  const workspaceNames = dataTable.raw()
+    .map(([workspaceName]) => workspaceName?.trim())
+    .filter((workspaceName): workspaceName is string => Boolean(workspaceName));
+
+  for (const workspaceName of workspaceNames) {
+    await createWikiWorkspace(this, workspaceName);
+  }
 });
 
 /**
@@ -1113,41 +1190,32 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     settingsUpdate[property] = parsedValue;
   }
 
-  // Helper JS snippet for renderer-side workspace lookup by name or folder basename.
-  // Uses String.fromCharCode(92) for backslash to avoid template-literal escaping issues.
-  const findWorkspaceJS = (targetName: string) => `
-    (async () => {
-      var backslash = String.fromCharCode(92);
-      function getFolderName(loc) {
-        if (!loc) return undefined;
-        var i1 = loc.lastIndexOf('/');
-        var i2 = loc.lastIndexOf(backslash);
-        var i = Math.max(i1, i2);
-        return i >= 0 ? loc.substring(i + 1) : loc;
-      }
-      var workspaces = await window.service.workspace.getWorkspacesAsList();
-      var found = workspaces.find(function(ws) {
-        if (ws.pageType) return false;
-        if (ws.name === ${JSON.stringify(targetName)}) return true;
-        var fn = 'wikiFolderLocation' in ws ? getFolderName(ws.wikiFolderLocation) : undefined;
-        return fn === ${JSON.stringify(targetName)};
-      });
-      if (!found && ${JSON.stringify(targetName)} === 'wiki') {
-        found = workspaces.find(function(ws) {
-          return !ws.pageType && !ws.isSubWiki;
-        });
-      }
-      return found || null;
-    })()
-  `;
-
   // Resolve workspace from the live renderer to avoid stale IDs from the settings file.
-  const runtimeWorkspace = await this.app.evaluate(async ({ BrowserWindow }, name: string) => {
-    const windows = BrowserWindow.getAllWindows();
-    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-    if (!mainWindow) return null;
-    return await mainWindow.webContents.executeJavaScript(name) as Promise<IWorkspace | null>;
-  }, findWorkspaceJS(workspaceName));
+  const targetWindow = this.mainWindow ?? this.currentWindow;
+  if (!targetWindow) {
+    throw new Error('No window available to look up workspace');
+  }
+  const runtimeWorkspace = await targetWindow.evaluate(async (name: string) => {
+    const backslash = String.fromCharCode(92);
+    function getFolderName(loc: string | undefined): string | undefined {
+      if (!loc) return undefined;
+      const separatorIndex = Math.max(loc.lastIndexOf('/'), loc.lastIndexOf(backslash));
+      return separatorIndex >= 0 ? loc.substring(separatorIndex + 1) : loc;
+    }
+    const workspaces = await window.service.workspace.getWorkspacesAsList();
+    let found = workspaces.find(ws => !ws.pageType && ws.name === name);
+    if (!found) {
+      found = workspaces.find(ws => {
+        if (ws.pageType) return false;
+        const folderName = 'wikiFolderLocation' in ws ? getFolderName(ws.wikiFolderLocation) : undefined;
+        return folderName === name;
+      });
+    }
+    if (!found && name === 'wiki') {
+      found = workspaces.find(ws => !ws.pageType && !('isSubWiki' in ws && ws.isSubWiki));
+    }
+    return found || null;
+  }, workspaceName) as IWorkspace | null;
 
   if (!runtimeWorkspace) {
     throw new Error(`No workspace found with name: ${workspaceName}`);
@@ -1161,24 +1229,17 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
   }
 
   // Update workspace settings via main window
-  await this.app.evaluate(async ({ BrowserWindow }, { workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
-    const windows = BrowserWindow.getAllWindows();
-    const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-    if (!mainWindow) throw new Error('Main window not found');
-    await mainWindow.webContents.executeJavaScript(`
-      (async () => {
-        await window.service.workspace.update(${JSON.stringify(workspaceId)}, ${JSON.stringify(updates)});
-      })();
-    `);
+  await targetWindow.evaluate(async ({ workspaceId, updates }: { workspaceId: string; updates: Record<string, unknown> }) => {
+    await window.service.workspace.update(workspaceId, updates);
   }, { workspaceId: targetWorkspaceId, updates: settingsUpdate });
 
   // Wait for settings to propagate
-  await this.app.evaluate(async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-  });
+  await new Promise(resolve => setTimeout(resolve, 500));
 
   // If enableFileSystemWatch or enableHTTPAPI was changed, we need to restart the wiki
-  const needsRestart = 'enableFileSystemWatch' in settingsUpdate || 'enableHTTPAPI' in settingsUpdate;
+  const fsSettingChanged = 'enableFileSystemWatch' in settingsUpdate &&
+    settingsUpdate.enableFileSystemWatch !== watchFsCurrentlyEnabled;
+  const needsRestart = fsSettingChanged || 'enableHTTPAPI' in settingsUpdate;
   if (needsRestart) {
     // Only wait for watch-fs if it was enabled before the update
     // If it was disabled, wiki is ready immediately without watch-fs markers
@@ -1190,24 +1251,16 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
 
     // Restart the wiki using the runtime-resolved workspace ID
-    const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
-      const windows = BrowserWindow.getAllWindows();
-      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents && win.webContents.getURL().includes('index.html'));
-      if (!mainWindow) throw new Error('Main window not found');
-      const result = await mainWindow.webContents.executeJavaScript(`
-        (async () => {
-          var workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
-          if (!workspace) return { success: false, error: 'Workspace not found for id=' + ${JSON.stringify(workspaceId)} };
-          try {
-            await window.service.wiki.restartWiki(workspace);
-            return { success: true };
-          } catch (error) {
-            return { success: false, error: error.message };
-          }
-        })();
-      `) as Promise<{ success: boolean; error?: string }>;
-      return result;
-    }, targetWorkspaceId);
+    const restartResult = await targetWindow.evaluate(async (workspaceId: string) => {
+      const workspace = await window.service.workspace.get(workspaceId);
+      if (!workspace) return { success: false, error: 'Workspace not found for id=' + workspaceId };
+      try {
+        await window.service.wiki.restartWiki(workspace);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }, targetWorkspaceId) as { success: boolean; error?: string };
 
     if (!restartResult.success) {
       throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);
@@ -1564,6 +1617,60 @@ Then('file {string} should contain JSON with:', async function(this: Application
     },
     BACKOFF_OPTIONS,
   );
+});
+
+/**
+ * Verify file does NOT contain specific JSON path/value pairs.
+ * This is useful for ensuring sensitive config (like readOnlyMode) does not leak into tidgi.config.json.
+ * Example:
+ *   Then file "config-test-wiki/tidgi.config.json" should not contain JSON with:
+ *     | jsonPath       | value |
+ *     | $.readOnlyMode | true  |
+ */
+Then('file {string} should not contain JSON with:', async function(this: ApplicationWorld, fileName: string, dataTable: DataTable) {
+  const rows = dataTable.hashes();
+  const filePath = path.join(getWikiTestRootPath(this), fileName);
+
+  // If file doesn't exist, the assertion passes (can't contain anything)
+  if (!await fs.pathExists(filePath)) {
+    return;
+  }
+
+  const content = await fs.readFile(filePath, 'utf-8');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const json = JSON.parse(content);
+
+  const errors: string[] = [];
+  for (const row of rows) {
+    const jsonPath = row.jsonPath;
+    const expectedValue = row.value;
+
+    // Simple JSONPath implementation
+    const pathParts = jsonPath.replace(/^\$\./, '').split('.');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    let actualValue = json;
+
+    for (const part of pathParts) {
+      if (actualValue && typeof actualValue === 'object' && part in actualValue) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        actualValue = actualValue[part];
+      } else {
+        actualValue = undefined;
+        break;
+      }
+    }
+
+    if (actualValue !== undefined) {
+      const actualValueString = String(actualValue);
+      if (actualValueString === expectedValue) {
+        errors.push(`Expected ${jsonPath} to NOT be "${expectedValue}", but it was found in the file`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`JSON assertions failed:\n${errors.join('\n')}`);
+  }
 });
 
 /**

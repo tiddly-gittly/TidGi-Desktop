@@ -80,8 +80,8 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 800,
   },
   [WindowNames.preferences]: {
-    width: 840,
-    height: 700,
+    width: 960,
+    height: 800,
   },
   [WindowNames.notifications]: {
     width: 400,

@@ -15,10 +15,12 @@ import type {
   IBooleanPreferenceItem,
   ICustomItem,
   IEnumPreferenceItem,
+  IFragmentListItem,
   INumberPreferenceItem,
   ISectionDefinition,
   IStringArrayPreferenceItem,
   IStringPreferenceItem,
+  ITextPreferenceItem,
   PlatformCondition,
   PreferenceItemDefinition,
 } from '@services/preferences/definitions/types';
@@ -208,7 +210,7 @@ function StringItem({
   onNeedsRestart,
   query = '',
 }: {
-  item: IStringPreferenceItem;
+  item: IStringPreferenceItem | ITextPreferenceItem;
   onNeedsRestart: () => void;
   preference: IPreferences;
   query?: string;
@@ -315,6 +317,15 @@ function CustomItemWrapper({ item, onNeedsRestart }: { item: ICustomItem; onNeed
   return <Component onNeedsRestart={onNeedsRestart} />;
 }
 
+function FragmentListItem({ item, onNeedsRestart }: { item: IFragmentListItem; onNeedsRestart: () => void }): React.JSX.Element | null {
+  const ItemComponent = getCustomComponent(item.itemComponentId);
+  if (!ItemComponent) {
+    console.warn(`Fragment list item component not registered: ${item.itemComponentId}`);
+    return null;
+  }
+  return <ItemComponent onNeedsRestart={onNeedsRestart} />;
+}
+
 // ─── Section renderer ────────────────────────────────────────────────
 
 function ItemRenderer({
@@ -342,26 +353,24 @@ function ItemRenderer({
       return <NumberItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'preference-string':
       return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+    case 'preference-text':
+      return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'preference-string-array':
       return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'action':
       return <ActionItem item={item} query={query} />;
     case 'custom':
-      // In search mode: show a read-only info card so the user knows where to find it.
-      // In normal mode: render the registered custom component.
       if (query) {
-        const primaryText = i18next.t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
-        const secondaryText = item.descriptionKey ? i18next.t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
-        return (
-          <ListItem>
-            <ListItemText
-              primary={<HighlightText text={primaryText} query={query} />}
-              secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
-            />
-          </ListItem>
-        );
+        const Component = getCustomComponent(item.componentId);
+        if (Component) {
+          return <Component onNeedsRestart={onNeedsRestart} />;
+        }
       }
       return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+    case 'fragment-list':
+      return <FragmentListItem item={item} onNeedsRestart={onNeedsRestart} />;
+    default:
+      return null;
   }
 }
 

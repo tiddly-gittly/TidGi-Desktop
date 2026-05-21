@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify';
 
 import { WikiChannel } from '@/constants/channels';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { ICommitAndSyncConfigs, IGitService } from '@services/git/interface';
@@ -9,7 +10,6 @@ import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
-import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -34,7 +34,7 @@ export class Sync implements ISyncService {
     // Get Layer 3 services
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
-    const viewService = container.get<IViewService>(serviceIdentifier.View);
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
@@ -45,23 +45,37 @@ export class Sync implements ISyncService {
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
     const commitMessage = useAICommitMessage ? undefined : (overrideCommitMessage ?? defaultCommitMessage);
     const localCommitMessage = useAICommitMessage ? undefined : overrideCommitMessage;
+    const { force = false } = options ?? {};
     const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
     const mainWorkspace = isSubWiki ? workspaceService.getMainWorkspace(workspace) : undefined;
+    const analyticsBaseProperties = {
+      storage: storageService,
+      commitOnly: storageService === SupportedStorageServices.local,
+      force,
+    };
     if (isSubWiki && mainWorkspace === undefined) {
       logger.error(`Main workspace not found for sub workspace ${id}`, { function: 'syncWikiIfNeeded' });
       return;
     }
     const idToUse = isSubWiki ? mainWorkspace!.id : id;
-    const { force = false } = options ?? {};
     // we can only run filter on main wiki (tw don't know what is sub-wiki)
     // Skip draft check when user explicitly triggers sync (force=true), or when syncOnlyWhenNoDraft is disabled.
     if (!force && syncOnlyWhenNoDraft && !(await this.checkCanSyncDueToNoDraft(idToUse))) {
       await wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [i18n.t('Preference.SyncOnlyWhenNoDraft')]);
+      void analyticsService.track('sync.failed', {
+        ...analyticsBaseProperties,
+        reason: 'draft_blocked',
+      });
       return;
     }
+    void analyticsService.track('sync.triggered', analyticsBaseProperties);
     if (storageService === SupportedStorageServices.local) {
       // for local workspace, commitOnly, no sync and no force pull.
-      await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true, commitMessage: localCommitMessage });
+      const hasChanges = await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true, commitMessage: localCommitMessage });
+      void analyticsService.track('sync.completed', {
+        ...analyticsBaseProperties,
+        hasChanges,
+      });
     } else if (
       typeof gitUrl === 'string' &&
       userInfo !== undefined
@@ -75,7 +89,6 @@ export class Sync implements ISyncService {
         // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
         if (hasChanges && !workspace.enableFileSystemWatch) {
           await workspaceViewService.restartWorkspaceViewService(idToUse);
-          await viewService.reloadViewsWebContents(idToUse);
         }
       } else if (workspace.syncSubWikis !== false) {
         // sync all sub workspace (can be disabled via syncSubWikis setting)
@@ -99,9 +112,12 @@ export class Sync implements ISyncService {
         // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
         if ((hasChanges || subHasChange) && !workspace.enableFileSystemWatch) {
           await workspaceViewService.restartWorkspaceViewService(id);
-          await viewService.reloadViewsWebContents(id);
         }
       }
+      void analyticsService.track('sync.completed', {
+        ...analyticsBaseProperties,
+        hasChanges,
+      });
     } else {
       // cloud workspace but missing gitUrl or userInfo - log and notify instead of silently doing nothing
       const reason = typeof gitUrl !== 'string' ? 'missing gitUrl' : 'missing userInfo (not authenticated)';
@@ -109,6 +125,10 @@ export class Sync implements ISyncService {
       await wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [
         `${i18n.t('Log.SynchronizationFailed')} (${reason})`,
       ]);
+      void analyticsService.track('sync.failed', {
+        ...analyticsBaseProperties,
+        reason: typeof gitUrl !== 'string' ? 'missing_git_url' : 'missing_user_info',
+      });
     }
   }
 

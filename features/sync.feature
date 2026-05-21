@@ -4,7 +4,8 @@ Feature: Git Sync
   So that I can backup and share my content
 
   Background:
-    Given I cleanup test wiki so it could create a new one on start
+    Given I start mock analytics server
+    And I cleanup test wiki so it could create a new one on start
     And I launch the TidGi application
     And I wait for the page to load completely
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
@@ -313,3 +314,6 @@ Feature: Git Sync
     And file "{tmpDir}/wiki/tiddlers/Journal.tid" should contain text "Desktop added this line."
     And file "{tmpDir}/wiki/tiddlers/Journal.tid" should contain text "Line one from original."
     And file "{tmpDir}/wiki/tiddlers/Journal.tid" should not contain text "<<<<<<<"
+    Then I should see analytics events:
+      | event_name    |
+      | sync.completed |

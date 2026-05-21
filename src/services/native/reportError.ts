@@ -1,4 +1,7 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
+import { sanitizeErrorMessage } from '@services/analytics';
+import type { IAnalyticsService } from '@services/analytics/interface';
+import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { app, shell } from 'electron';
 import newGithubIssueUrl, { type Options as OpenNewGitHubIssueOptions } from 'new-github-issue-url';
@@ -58,6 +61,11 @@ Locale: ${app.getLocale()}
 `.trim();
 
 export function reportErrorToGithubWithTemplates(error: Error): void {
+  const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+  void analyticsService.track('error.report_requested', {
+    errorName: error.name || 'Error',
+    errorMessage: sanitizeErrorMessage(error),
+  });
   void import('@services/container')
     .then(({ container }) => {
       const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
