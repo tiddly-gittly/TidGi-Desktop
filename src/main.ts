@@ -230,9 +230,12 @@ const commonInit = async (): Promise<void> => {
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
 
-  // Start MCP server after full initialization (dynamic import avoids blocking startup)
-  if (isDevelopmentOrTest) {
-    void startMcpServer();
+  // Start MCP server when --mcp-port flag is passed
+  // Usage: pnpm run start:dev:mcp  (starts app with MCP server on port 7890)
+  const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='));
+  if (mcpPortArgument) {
+    const port = Number.parseInt(mcpPortArgument.split('=')[1], 10);
+    void startMcpServer(Number.isNaN(port) ? undefined : port);
   }
 
   // Track app launch event with retention properties

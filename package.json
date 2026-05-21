@@ -8,7 +8,7 @@
   "scripts": {
     "start:init": "pnpm run clean && pnpm run init:git-submodule && pnpm run build:plugin && cross-env NODE_ENV=development tsx scripts/developmentMkdir.ts && pnpm run start:dev",
     "start:dev": "cross-env NODE_ENV=development electron-forge start",
-    "start:dev:mcp": "cross-env NODE_ENV=development electron-forge start -- --remote-debugging-port=9222",
+    "start:dev:mcp": "cross-env NODE_ENV=development electron-forge start -- --mcp-port=7890",
     "clean": "pnpm run clean:cache && rimraf -- ./out ./logs ./userData-dev ./userData-test ./wiki-dev ./wiki-test ./test-artifacts ./node_modules/tiddlywiki/plugins/linonetwo",
     "clean:cache": "rimraf -- ./node_modules/.vite .vite",
     "start:dev:debug-worker": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
