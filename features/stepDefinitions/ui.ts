@@ -2,7 +2,7 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
-import { CUCUMBER_GLOBAL_TIMEOUT, CUCUMBER_GLOBAL_TIMEOUT, CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(seconds: number) {

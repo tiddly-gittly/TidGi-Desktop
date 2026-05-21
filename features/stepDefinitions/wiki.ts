@@ -7,7 +7,7 @@ import { WindowNames } from '../../src/services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
-import { CUCUMBER_GLOBAL_TIMEOUT, CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
 
