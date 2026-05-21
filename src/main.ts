@@ -4,12 +4,6 @@ import 'reflect-metadata';
 import './helpers/singleInstance';
 import './services/database/configSetting';
 import { app, ipcMain, powerMonitor, protocol } from 'electron';
-
-// Register custom flags that Playwright passes during E2E tests.
-// Electron 41 on Windows rejects unknown CLI flags unless pre-registered.
-app.commandLine.appendSwitch('test-scenario');
-app.commandLine.appendSwitch('remote-debugging-port');
-
 import unhandled from 'electron-unhandled';
 import inspector from 'node:inspector';
 import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database/configSetting';
