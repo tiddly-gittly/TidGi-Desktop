@@ -1,12 +1,15 @@
 import { logger } from '@services/libs/log';
-import { createMcpHttpServer } from './server';
+import type http from 'node:http';
 
 export const MCP_SERVER_PORT = 7890;
 
-let server: ReturnType<typeof createMcpHttpServer> | undefined;
+let server: http.Server | undefined;
 
-export function startMcpServer(): void {
+export async function startMcpServer(): Promise<void> {
   if (server !== undefined) return;
+  // Dynamic import to avoid loading @modelcontextprotocol/sdk at module init time
+  // (static imports in server.ts → sdkAdapter.ts chain would hang Electron startup on CI)
+  const { createMcpHttpServer } = await import('./server');
   server = createMcpHttpServer();
   server.listen(MCP_SERVER_PORT, '127.0.0.1', () => {
     logger.info(`TidGi MCP server listening on http://127.0.0.1:${MCP_SERVER_PORT}/mcp`);
