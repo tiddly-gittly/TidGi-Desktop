@@ -12,7 +12,6 @@ function runSmokeCalibration(): void {
   const CALIBRATION_RUNS = 4;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
-  let maxTotalMs = 0;
   let maxStepMs = 0;
   let maxLaunchStepMs = 0;
   let maxWaitStepMs = 0;
@@ -41,8 +40,6 @@ function runSmokeCalibration(): void {
     const totalMs = Date.now() - startedAt;
     const steps = extractStepTimings(outputFile);
 
-    if (totalMs > maxTotalMs) maxTotalMs = totalMs;
-
     for (const step of steps) {
       if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
       if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
@@ -64,16 +61,15 @@ function runSmokeCalibration(): void {
 
   // If all runs failed, use safe conservative defaults instead of zeroes.
   // Zeroes cause every Cucumber step to time out immediately.
-  if (maxTotalMs === 0) {
+  if (maxStepMs === 0) {
     console.warn('[Cal] all runs failed — using conservative fallback timeouts');
-    maxTotalMs = 120_000;
     maxStepMs = 120_000;
     maxLaunchStepMs = 60_000;
     maxWaitStepMs = 30_000;
     maxElementStepMs = 10_000;
   }
 
-  writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
+  writeCalibrationResult(maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
 
   console.log(`[Cal] stored: S=${maxStepMs}ms L=${maxLaunchStepMs}ms W=${maxWaitStepMs}ms E=${maxElementStepMs}ms`);
 }
