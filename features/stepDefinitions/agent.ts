@@ -8,7 +8,7 @@ import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getSettingsPath } from '../supports/paths';
-import { PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -205,7 +205,7 @@ Then('I should see {int} messages in chat history', async function(this: Applica
   await backOff(
     async () => {
       // Wait for at least one message to exist
-      await currentWindow.waitForSelector(messageSelector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+      await currentWindow.waitForSelector(messageSelector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
       // Count current messages
       const messages = currentWindow.locator(messageSelector);

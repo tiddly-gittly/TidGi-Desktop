@@ -12,10 +12,7 @@ function runSmokeCalibration(): void {
   const CALIBRATION_RUNS = 4;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
-  let maxStepMs = 0;
   let maxLaunchStepMs = 0;
-  let maxWaitStepMs = 0;
-  let maxElementStepMs = 0;
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
@@ -41,37 +38,22 @@ function runSmokeCalibration(): void {
     const steps = extractStepTimings(outputFile);
 
     for (const step of steps) {
-      if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
       if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
         maxLaunchStepMs = step.durationMs;
       }
-      if (isWaitStep(step.name) && step.durationMs > maxWaitStepMs) {
-        maxWaitStepMs = step.durationMs;
-      }
-      if (isElementStep(step.name) && step.durationMs > maxElementStepMs) {
-        maxElementStepMs = step.durationMs;
-      }
     }
 
-    // Step timeout = worst composite: a single step may involve launch + wait + click.
-    maxStepMs = Math.max(maxStepMs, maxLaunchStepMs + maxWaitStepMs + maxElementStepMs);
-
-    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
+    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} L=${maxLaunchStepMs}ms`);
   }
 
-  // If all runs failed, use safe conservative defaults instead of zeroes.
-  // Zeroes cause every Cucumber step to time out immediately.
-  if (maxStepMs === 0) {
+  if (maxLaunchStepMs === 0) {
     console.warn('[Cal] all runs failed — using conservative fallback timeouts');
-    maxStepMs = 120_000;
     maxLaunchStepMs = 60_000;
-    maxWaitStepMs = 30_000;
-    maxElementStepMs = 10_000;
   }
 
-  writeCalibrationResult(maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
+  writeCalibrationResult(maxLaunchStepMs);
 
-  console.log(`[Cal] stored: S=${maxStepMs}ms L=${maxLaunchStepMs}ms W=${maxWaitStepMs}ms E=${maxElementStepMs}ms`);
+  console.log(`[Cal] stored: step timeout = ${maxLaunchStepMs}ms`);
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
@@ -100,14 +82,6 @@ function extractStepTimings(jsonFilePath: string): StepTiming[] {
 
 function isLaunchStep(name: string): boolean {
   return /launch|page to load|browser view.*loaded/i.test(name);
-}
-
-function isWaitStep(name: string): boolean {
-  return /wait for|log entries|SSE|watch-fs/i.test(name);
-}
-
-function isElementStep(name: string): boolean {
-  return /click|type|check/i.test(name);
 }
 
 runSmokeCalibration();

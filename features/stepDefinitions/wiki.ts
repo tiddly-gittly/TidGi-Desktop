@@ -7,7 +7,7 @@ import { WindowNames } from '../../src/services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
-import { HEAVY_LOG_MARKER_WAIT_TIMEOUT, LOG_MARKER_WAIT_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT, CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 // Scenario-specific paths are computed via helper functions
 import type { ApplicationWorld } from './application';
 
@@ -60,7 +60,7 @@ export async function waitForLogMarker(
   world: ApplicationWorld,
   searchString: string,
   errorMessage: string,
-  maxWaitMs = LOG_MARKER_WAIT_TIMEOUT,
+  maxWaitMs = CUCUMBER_GLOBAL_TIMEOUT,
   logFilePattern = '*',
 ): Promise<void> {
   const logPath = getLogPath(world);
@@ -637,7 +637,7 @@ async function clearSubWikiRoutingTestData(scenarioRoot?: string) {
  */
 Then('I wait for {string} log marker {string}', async function(this: ApplicationWorld, description: string, marker: string) {
   // Search in all log files using '*' pattern (includes TidGi-, wiki-, and workspace-named logs like WikiRenamed-)
-  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, HEAVY_LOG_MARKER_WAIT_TIMEOUT, '*');
+  await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, CUCUMBER_GLOBAL_TIMEOUT, '*');
 });
 
 /**
@@ -662,7 +662,7 @@ Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable
   // Wait for markers sequentially to maintain order
   for (const [description, marker] of dataRows) {
     try {
-      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, HEAVY_LOG_MARKER_WAIT_TIMEOUT, '*');
+      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, CUCUMBER_GLOBAL_TIMEOUT, '*');
     } catch (error) {
       errors.push(`Failed to find log marker "${marker}" (${description}): ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -678,9 +678,9 @@ Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable
  * This is commonly used in Background sections
  */
 Then('I wait for SSE and watch-fs to be ready', async function(this: ApplicationWorld) {
-  await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', HEAVY_LOG_MARKER_WAIT_TIMEOUT);
+  await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not become ready within timeout', CUCUMBER_GLOBAL_TIMEOUT);
   try {
-    await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', HEAVY_LOG_MARKER_WAIT_TIMEOUT);
+    await waitForLogMarker(this, '[test-id-SSE_READY]', 'SSE backend did not become ready within timeout', CUCUMBER_GLOBAL_TIMEOUT);
   } catch (error) {
     // Gather SSE diagnostics from the BrowserView to aid debugging
     let diagnostics = 'no diagnostics';
@@ -1244,7 +1244,7 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     // Only wait for watch-fs if it was enabled before the update
     // If it was disabled, wiki is ready immediately without watch-fs markers
     if (watchFsCurrentlyEnabled) {
-      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', LOG_MARKER_WAIT_TIMEOUT);
+      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs not ready before restart', CUCUMBER_GLOBAL_TIMEOUT);
     }
 
     // Clear log markers to ensure we wait for fresh ones after restart
@@ -1269,7 +1269,7 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     // Wait for wiki to restart and watch-fs to stabilize
     // Only wait if enableFileSystemWatch was set to true
     if (settingsUpdate.enableFileSystemWatch === true) {
-      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', LOG_MARKER_WAIT_TIMEOUT);
+      await waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after restart', CUCUMBER_GLOBAL_TIMEOUT);
     }
   }
 });
