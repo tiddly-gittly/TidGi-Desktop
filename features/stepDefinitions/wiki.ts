@@ -659,10 +659,13 @@ Then('I wait for log markers:', async function(this: ApplicationWorld, dataTable
   }
   const errors: string[] = [];
 
-  // Wait for markers sequentially to maintain order
+  // Wait for markers sequentially to maintain order.
+  // Per-marker timeout = global step timeout ÷ marker count,
+  // so the total can never exceed the cucumber step timeout.
+  const perMarkerTimeout = Math.floor(HEAVY_LOG_MARKER_WAIT_TIMEOUT / dataRows.length);
   for (const [description, marker] of dataRows) {
     try {
-      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, HEAVY_LOG_MARKER_WAIT_TIMEOUT, '*');
+      await waitForLogMarker(this, marker, `Log marker "${marker}" not found. Expected: ${description}`, perMarkerTimeout, '*');
     } catch (error) {
       errors.push(`Failed to find log marker "${marker}" (${description}): ${error instanceof Error ? error.message : String(error)}`);
     }
