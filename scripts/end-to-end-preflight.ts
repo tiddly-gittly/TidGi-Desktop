@@ -12,7 +12,7 @@ function runSmokeCalibration(): void {
   const CALIBRATION_RUNS = 4;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
-  let maxLaunchStepMs = 0;
+  let maxStepMs = 0;
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
@@ -39,22 +39,20 @@ function runSmokeCalibration(): void {
     }
 
     for (const step of steps) {
-      if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
-        maxLaunchStepMs = step.durationMs;
-      }
+      if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
     }
 
-    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} L=${maxLaunchStepMs}ms`);
+    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs}ms`);
   }
 
-  if (maxLaunchStepMs === 0) {
+  if (maxStepMs === 0) {
     console.error('[Cal] all calibration runs failed. Aborting — fix the app startup before running E2E.');
     process.exit(1);
   }
 
-  writeCalibrationResult(maxLaunchStepMs);
+  writeCalibrationResult(maxStepMs);
 
-  console.log(`[Cal] stored: step timeout = ${maxLaunchStepMs}ms`);
+  console.log(`[Cal] stored: step timeout = ${maxStepMs}ms`);
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
@@ -79,10 +77,6 @@ function extractStepTimings(jsonFilePath: string): StepTiming[] {
   } catch {
     return [];
   }
-}
-
-function isLaunchStep(name: string): boolean {
-  return /launch|page to load|browser view.*loaded/i.test(name);
 }
 
 runSmokeCalibration();
