@@ -16,6 +16,7 @@ function runSmokeCalibration(): void {
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
+    let success = false;
 
     try {
       execSync(
@@ -26,23 +27,17 @@ function runSmokeCalibration(): void {
           env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
         },
       );
+      success = true;
     } catch {
-      // Cucumber exits non-zero when some scenarios fail, but we can still
-      // extract timing data from the passed scenarios.
+      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} failed, skipping results`);
     }
+
+    if (!success) continue;
 
     const totalMs = Date.now() - startedAt;
     const steps = extractStepTimings(outputFile);
-    if (steps.length === 0) {
-      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} had no measurable steps, skipping`);
-      continue;
-    }
 
     for (const step of steps) {
-      // Exclude steps that hit the calibration timeout ceiling — these are
-      // artifacts of NO_TIMEOUT, not real step durations. A step that genuinely
-      // needs 5 minutes would fail the test anyway.
-      if (step.durationMs >= 290_000) continue;
       if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
     }
 
@@ -68,7 +63,7 @@ function extractStepTimings(jsonFilePath: string): StepTiming[] {
     for (const feature of report) {
       for (const element of (feature.elements ?? []) as Array<Record<string, unknown>>) {
         for (const step of (element.steps ?? []) as Array<Record<string, unknown>>) {
-          const duration = step.result?.duration as number | undefined;
+          const duration = (step.result as Record<string, unknown>)?.duration as number | undefined;
           const name = (step.name ?? '') as string;
           if (duration && name) {
             timings.push({ name, durationMs: Math.ceil(duration / 1_000_000) });
