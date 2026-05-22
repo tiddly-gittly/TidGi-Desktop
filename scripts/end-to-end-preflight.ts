@@ -39,6 +39,10 @@ function runSmokeCalibration(): void {
     }
 
     for (const step of steps) {
+      // Exclude steps that hit the calibration timeout ceiling — these are
+      // artifacts of NO_TIMEOUT, not real step durations. A step that genuinely
+      // needs 5 minutes would fail the test anyway.
+      if (step.durationMs >= 290_000) continue;
       if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
     }
 
