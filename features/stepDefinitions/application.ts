@@ -238,7 +238,6 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
   world.app = await electron.launch({
     executablePath: packedAppPath,
     args: [
-      `--test-scenario=${world.scenarioSlug}`,
       '--no-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
@@ -273,6 +272,7 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
       ...process.env,
       ...world.launchEnvOverrides,
       NODE_ENV: 'test',
+      TIDGI_TEST_SCENARIO: world.scenarioSlug,
       E2E_TEST: 'true',
       LANG: process.env.LANG || 'zh-Hans.UTF-8',
       LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
