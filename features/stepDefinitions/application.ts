@@ -278,6 +278,8 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
       LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
       LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
       ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+      // Playwright bug #39922: ELECTRON_RUN_AS_NODE=1 causes "bad option: --remote-debugging-port=0" on Windows
+      ELECTRON_RUN_AS_NODE: '',
       ...(process.env.CI && {
         ELECTRON_ENABLE_LOGGING: 'true',
         ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
