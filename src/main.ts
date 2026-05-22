@@ -33,7 +33,6 @@ import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
-import { startMcpServer, stopMcpServer } from '@services/mcpServer';
 
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
@@ -103,7 +102,11 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
-    stopMcpServer();
+    // Dynamic import to avoid loading MCP SDK at startup
+    try {
+      const { stopMcpServer } = await import('@services/mcpServer');
+      stopMcpServer();
+    } catch { /* not loaded */ }
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
@@ -235,6 +238,8 @@ const commonInit = async (): Promise<void> => {
   const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='));
   if (mcpPortArgument) {
     const port = Number.parseInt(mcpPortArgument.split('=')[1], 10);
+    // Dynamic import to avoid loading MCP SDK during normal startup
+    const { startMcpServer } = await import('@services/mcpServer');
     void startMcpServer(Number.isNaN(port) ? undefined : port);
   }
 
