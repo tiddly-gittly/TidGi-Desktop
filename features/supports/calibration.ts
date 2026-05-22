@@ -5,15 +5,14 @@ import path from 'path';
  * E2E performance calibration — every timeout comes from step measurement.
  *
  * Preflight runs smoke test 4×, measures per-step durations.
- * launchMs = the slowest launch step across all runs → step timeout.
- * Different business logic takes different time — no per-category breakdown needed.
+ * stepMs = the slowest individual step across all successful runs.
  */
 
 const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
 
 type CalibrationRecord = {
-  /** Max launch step duration across all calibration runs → step timeout. */
-  launchMs: number;
+  /** Max individual step duration across all calibration runs. */
+  stepMs: number;
   recordedAt: number;
 };
 
@@ -23,9 +22,9 @@ function readCalibrationRecord(): CalibrationRecord | null {
   try {
     if (!fs.existsSync(CALIBRATION_FILE)) return null;
     const parsed = JSON.parse(fs.readFileSync(CALIBRATION_FILE, 'utf-8')) as Partial<CalibrationRecord>;
-    if (typeof parsed.launchMs !== 'number') return null;
+    if (typeof parsed.stepMs !== 'number') return null;
     return {
-      launchMs: parsed.launchMs,
+      stepMs: parsed.stepMs,
       recordedAt: typeof parsed.recordedAt === 'number' ? parsed.recordedAt : Date.now(),
     };
   } catch {
@@ -33,9 +32,9 @@ function readCalibrationRecord(): CalibrationRecord | null {
   }
 }
 
-export function writeCalibrationResult(launchMs: number): void {
+export function writeCalibrationResult(stepMs: number): void {
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
-  fs.writeFileSync(CALIBRATION_FILE, JSON.stringify({ launchMs, recordedAt: Date.now() }, null, 2), 'utf-8');
+  fs.writeFileSync(CALIBRATION_FILE, JSON.stringify({ stepMs, recordedAt: Date.now() }, null, 2), 'utf-8');
 }
 
 const NO_TIMEOUT = 300_000;
@@ -52,5 +51,5 @@ function requireRecord(): CalibrationRecord {
 
 export function getMeasuredStepTimeoutMs(): number {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
-  return requireRecord().launchMs;
+  return requireRecord().stepMs;
 }
