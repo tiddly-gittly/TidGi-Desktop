@@ -21,15 +21,27 @@ const isPackaged = process.resourcesPath && !process.resourcesPath.includes('ele
 
 /**
  * Parse test scenario identifier from environment variable or CLI argument.
+ * On Windows Electron rejects custom CLI flags, so E2E tests pass TIDGI_TEST_SCENARIO via env.
  * This is used to isolate test data per scenario in E2E tests.
  */
 function getTestScenarioSlug(): string | undefined {
-  // On Windows Electron rejects custom CLI flags, so E2E tests pass TIDGI_TEST_SCENARIO via env.
-  const envScenario = process.env.TIDGI_TEST_SCENARIO;
+  // Use bracket notation to prevent Vite/esbuild from stripping the runtime env var.
+  const envScenario = process.env['TIDGI_TEST_SCENARIO'];
   if (envScenario) {
     const slug = slugify(envScenario, 60);
     return slug === 'unknown' ? undefined : slug;
   }
+
+  // Fallback to CLI argument for legacy compatibility
+  const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
+  if (!scenarioArgument) return undefined;
+
+  const rawName = scenarioArgument.split('=')[1];
+  if (!rawName) return undefined;
+
+  const slug = slugify(rawName, 60);
+  return slug === 'unknown' ? undefined : slug;
+}
 
   // Fallback to CLI argument for legacy compatibility
   const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
