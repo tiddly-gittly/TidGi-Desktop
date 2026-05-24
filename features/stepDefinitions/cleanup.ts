@@ -91,6 +91,22 @@ After(async function(this: ApplicationWorld, { pickle }) {
         // Even force close can fail, but we don't care - move on
       }
 
+      // Hard-kill fallback: if graceful + force close failed, terminate the specific PID
+      // to prevent zombie processes from accumulating across scenarios.
+      if (this.appPid !== undefined) {
+        try {
+          const { execSync } = await import('child_process');
+          if (process.platform === 'win32') {
+            execSync(`taskkill /PID ${this.appPid} /T /F`, { stdio: 'ignore' });
+          } else {
+            process.kill(this.appPid, 'SIGKILL');
+          }
+        } catch {
+          // Process already exited or kill failed — ignore
+        }
+        this.appPid = undefined;
+      }
+
       // Clear references immediately
       this.app = undefined;
       this.mainWindow = undefined;

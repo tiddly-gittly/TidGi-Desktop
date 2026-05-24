@@ -77,6 +77,7 @@ export class ApplicationWorld {
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
   scenarioTags: string[] = [];
   providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
+  appPid: number | undefined; // Playwright Electron process PID for hard-kill cleanup
   launchEnvOverrides: Record<string, string> = {};
 
   // Helper method to check if window is visible
@@ -235,7 +236,7 @@ setWorldConstructor(ApplicationWorld);
 async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
   const packedAppPath = getPackedAppPath();
 
-  world.app = await electron.launch({
+  const app = await electron.launch({
     executablePath: packedAppPath,
     args: [
       '--no-sandbox',
@@ -294,9 +295,13 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
     timeout: CUCUMBER_GLOBAL_TIMEOUT,
   });
 
+  world.app = app;
+  // Record the PID so cleanup can hard-kill the specific process if graceful close fails.
+  world.appPid = app.process().pid;
+
   // Do not block launch step on firstWindow; this can exceed Cucumber's 5s step timeout.
   // Window acquisition is handled in "I wait for the page to load completely".
-  const openedWindows = world.app.windows().filter(page => !page.isClosed());
+  const openedWindows = app.windows().filter(page => !page.isClosed());
   world.mainWindow = openedWindows[0];
   world.currentWindow = world.mainWindow;
 
@@ -379,6 +384,21 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
       // ignore
     }
   } finally {
+    // Hard-kill fallback: if the process is still alive, force terminate it via PID
+    // to prevent zombie processes from accumulating across scenarios.
+    if (world.appPid !== undefined) {
+      try {
+        const { execSync } = await import('child_process');
+        if (process.platform === 'win32') {
+          execSync(`taskkill /PID ${world.appPid} /T /F`, { stdio: 'ignore' });
+        } else {
+          process.kill(world.appPid, 'SIGKILL');
+        }
+      } catch {
+        // Process already exited or kill failed — ignore
+      }
+      world.appPid = undefined;
+    }
     world.appLaunchPromise = undefined;
     world.app = undefined;
     world.mainWindow = undefined;
