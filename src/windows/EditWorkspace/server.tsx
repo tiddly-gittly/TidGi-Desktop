@@ -158,7 +158,7 @@ export function ServerOptions(props: ICustomSectionProps) {
           >
             <ListItemText
               primary={t('EditWorkspace.TokenAuth')}
-              secondaryTypographyProps={{ component: 'div' }}
+              slotProps={{ secondary: { component: 'div' } }}
               secondary={
                 <>
                   <div>{t('EditWorkspace.TokenAuthDescription')}</div>
@@ -173,7 +173,7 @@ export function ServerOptions(props: ICustomSectionProps) {
                 <TextField
                   id='outlined-full-width'
                   label={t('EditWorkspace.TokenAuthCurrentToken')}
-                  FormHelperTextProps={{ component: 'div' }}
+                  slotProps={{ formHelperText: { component: 'div' } }}
                   helperText={
                     <AuthTokenTextAndButtonContainer>
                       <div>{t('EditWorkspace.TokenAuthCurrentTokenDescription')}</div>{' '}

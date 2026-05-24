@@ -96,9 +96,9 @@ export const LOCALIZATION_FOLDER = isPackaged
  */
 function getTestScenarioSlugForWiki(): string | undefined {
   // Use bracket notation to prevent Vite/esbuild from stripping the runtime env var.
-  const envScenario = process.env['TIDGI_TEST_SCENARIO'];
-  if (envScenario) {
-    let s = envScenario.normalize('NFKC');
+  const environmentScenario = process.env['TIDGI_TEST_SCENARIO'];
+  if (environmentScenario) {
+    let s = environmentScenario.normalize('NFKC');
     s = s.replace(/\./g, '');
     let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-');
     slug = slug.replace(/-+/g, '-');

@@ -314,27 +314,33 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
     page.on('pageerror', (error: Error) => {
       console.error(`[RENDERER ERROR @ ${key}] ${error.name}: ${error.message}\n${error.stack ?? ''}`);
     });
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        console.error(`[RENDERER CONSOLE ERROR @ ${key}] ${msg.text()}`);
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        console.error(`[RENDERER CONSOLE ERROR @ ${key}] ${message.text()}`);
       }
     });
   };
   for (const page of openedWindows) attachListeners(page);
   const windowTracker = setInterval(() => {
-    if (!world.app) { clearInterval(windowTracker); return; }
+    if (!world.app) {
+      clearInterval(windowTracker);
+      return;
+    }
     for (const page of world.app.windows().filter(p => !p.isClosed())) {
       attachListeners(page);
     }
   }, 500);
   // Stop tracking after 2 minutes (test duration upper bound)
-  setTimeout(() => clearInterval(windowTracker), 120_000);
+  setTimeout(() => {
+    clearInterval(windowTracker);
+  }, 120_000);
 
   // Suppress "No dialog is showing" unhandled rejections from Playwright's
   // DialogManager. Playwright auto-closes dialogs via CDP but doesn't catch
   // the rejection when the dialog already closed (race condition). The
   // unhandled rejection then propagates to whatever Playwright action was running.
-  if (!(process as any).__dialogRejectionHandlerInstalled) {
+  const processWithDialogFlag = process as NodeJS.Process & { __dialogRejectionHandlerInstalled?: boolean };
+  if (!processWithDialogFlag.__dialogRejectionHandlerInstalled) {
     process.on('unhandledRejection', (reason: unknown) => {
       if (reason instanceof Error && reason.message.includes('handleJavaScriptDialog')) {
         // Swallow — this is a known Playwright race condition
@@ -342,7 +348,7 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
       }
       // For other rejections, let them propagate normally
     });
-    (process as any).__dialogRejectionHandlerInstalled = true;
+    processWithDialogFlag.__dialogRejectionHandlerInstalled = true;
   }
 }
 

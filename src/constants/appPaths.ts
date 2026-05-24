@@ -26,9 +26,9 @@ const isPackaged = process.resourcesPath && !process.resourcesPath.includes('ele
  */
 function getTestScenarioSlug(): string | undefined {
   // Use bracket notation to prevent Vite/esbuild from stripping the runtime env var.
-  const envScenario = process.env['TIDGI_TEST_SCENARIO'];
-  if (envScenario) {
-    const slug = slugify(envScenario, 60);
+  const environmentScenario = process.env['TIDGI_TEST_SCENARIO'];
+  if (environmentScenario) {
+    const slug = slugify(environmentScenario, 60);
     return slug === 'unknown' ? undefined : slug;
   }
 

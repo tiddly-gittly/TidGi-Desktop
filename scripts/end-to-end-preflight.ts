@@ -82,7 +82,11 @@ function runSmokeCalibration(): void {
     maxElementStepMs + CALIBRATION_BUFFER_MS,
   );
 
-  console.log(`[Cal] stored: S=${maxStepMs + CALIBRATION_BUFFER_MS}ms L=${maxLaunchStepMs + CALIBRATION_BUFFER_MS}ms W=${maxWaitStepMs + CALIBRATION_BUFFER_MS}ms E=${maxElementStepMs + CALIBRATION_BUFFER_MS}ms`);
+  console.log(
+    `[Cal] stored: S=${maxStepMs + CALIBRATION_BUFFER_MS}ms L=${maxLaunchStepMs + CALIBRATION_BUFFER_MS}ms W=${maxWaitStepMs + CALIBRATION_BUFFER_MS}ms E=${
+      maxElementStepMs + CALIBRATION_BUFFER_MS
+    }ms`,
+  );
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
