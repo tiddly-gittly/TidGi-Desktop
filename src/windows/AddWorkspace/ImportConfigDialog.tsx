@@ -1,6 +1,6 @@
 import { Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, List, ListItem, Typography } from '@mui/material';
 import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface IImportConfigDialogProps {
@@ -27,6 +27,14 @@ export function ImportConfigDialog({ open, wikiFolderLocation, onClose, onConfir
   const [loading, loadingSetter] = useState(false);
   const [error, errorSetter] = useState<string | undefined>(undefined);
   const [selectedKeys, selectedKeysSetter] = useState<Set<string>>(new Set());
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open || !wikiFolderLocation) return;
@@ -36,11 +44,15 @@ export function ImportConfigDialog({ open, wikiFolderLocation, onClose, onConfir
     void (async () => {
       try {
         const wikiConfig = await window.service.database.readWikiConfig(wikiFolderLocation);
+        if (!mountedRef.current) return;
         configSetter(wikiConfig);
       } catch (error_) {
+        if (!mountedRef.current) return;
         errorSetter((error_ as Error).message);
       } finally {
-        loadingSetter(false);
+        if (mountedRef.current) {
+          loadingSetter(false);
+        }
       }
     })();
   }, [open, wikiFolderLocation]);

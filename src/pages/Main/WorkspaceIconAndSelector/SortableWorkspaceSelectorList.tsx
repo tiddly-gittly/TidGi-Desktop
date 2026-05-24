@@ -277,6 +277,66 @@ function SortableGroupHeader({ group, onToggleCollapse }: SortableGroupHeaderPro
   );
 }
 
+// ─── DragOverlay Sub-components ──────────────────────────────────────
+
+const DragOverlayWorkspaceItem = React.memo(function DragOverlayWorkspaceItem({
+  workspace,
+  showSideBarIcon,
+  showSideBarText,
+}: {
+  workspace: IWorkspaceWithMetadata;
+  showSideBarIcon: boolean;
+  showSideBarText: boolean;
+}): React.JSX.Element {
+  const { t } = useTranslation();
+  const isWiki = isWikiWorkspace(workspace);
+  const displayName = workspace.pageType
+    ? getBuildInPageName(workspace.pageType, t)
+    : workspace.name;
+  const customIcon = workspace.pageType
+    ? getBuildInPageIcon(workspace.pageType)
+    : undefined;
+  return (
+    <WorkspaceSelectorBase
+      id={workspace.id}
+      active={workspace.active}
+      workspaceName={displayName}
+      picturePath={workspace.picturePath}
+      customIcon={customIcon}
+      showSideBarIcon={showSideBarIcon}
+      showSidebarTexts={showSideBarText}
+      pageType={workspace.pageType || undefined}
+      hibernated={isWiki ? workspace.hibernated : false}
+      transparentBackground={isWiki ? workspace.transparentBackground : false}
+      index={0}
+    />
+  );
+});
+
+const DragOverlayGroupHeaderItem = React.memo(function DragOverlayGroupHeaderItem({ group }: { group: IWorkspaceGroup }): React.JSX.Element {
+  return (
+    <GroupHeader $isDragging style={{ cursor: 'grabbing' }}>
+      {group.collapsed ? <ChevronRightIcon fontSize='small' /> : <ExpandMoreIcon fontSize='small' />}
+      <Avatar
+        sx={{
+          width: 20,
+          height: 20,
+          fontSize: 10,
+          fontWeight: 600,
+          ml: 0.5,
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+        }}
+      >
+        {getGroupInitial(group.name)}
+      </Avatar>
+      <Tooltip title={group.name} placement='top'>
+        <GroupTitle>{group.name}</GroupTitle>
+      </Tooltip>
+    </GroupHeader>
+  );
+});
+
 // ─── SortableWorkspaceSelectorList ───────────────────────────────────
 
 export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText, showSideBarIcon }: ISortableListProps): React.JSX.Element {
@@ -296,6 +356,14 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const dragStateReference = useRef<IDragState>(initialDragState);
   const lastResolvedDragStateReference = useRef<IDragState>(initialDragState);
   const dragStateTimeoutReference = useRef<number | null>(null);
+  const allDraggableIdsReference = useRef<string[]>([]);
+
+  useEffect(() => () => {
+    if (dragStateTimeoutReference.current !== null) {
+      clearTimeout(dragStateTimeoutReference.current);
+      dragStateTimeoutReference.current = null;
+    }
+  }, []);
 
   // Drag preview and drop behavior must resolve from the same projected state.
   const [dragState, setDragState] = useState<IDragState>(initialDragState);
@@ -489,6 +557,9 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   // SortableContext items should not change during drag to avoid dnd-kit
   // re-registration loops. See https://github.com/clauderic/dnd-kit/issues/900
   const allDraggableIds = useMemo(() => {
+    if (dragState.activeId !== null) {
+      return allDraggableIdsReference.current;
+    }
     const ids: string[] = [];
 
     interleavedSidebarItems.forEach(item => {
@@ -498,8 +569,9 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       }
     });
 
+    allDraggableIdsReference.current = ids;
     return ids;
-  }, [interleavedSidebarItems]);
+  }, [interleavedSidebarItems, dragState.activeId]);
 
   const handleToggleCollapse = useCallback(async (groupId: string) => {
     const group = groups?.find(g => g.id === groupId);
@@ -536,6 +608,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const persistInterleavedSidebarOrder = useCallback(async (nextItems: TInterleavedSidebarItem[]) => {
     const nextWorkspaces: Record<string, IWorkspace> = {};
     const nextGroups: IWorkspaceGroup[] = [];
+    const previousWorkspaceOrders: Record<string, number> = {};
 
     nextItems.forEach((item, index) => {
       if (isSidebarGroupItem(item)) {
@@ -543,6 +616,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         return;
       }
 
+      previousWorkspaceOrders[item.workspace.id] = item.workspace.order ?? 0;
       nextWorkspaces[item.workspace.id] = {
         ...item.workspace,
         order: index,
@@ -551,11 +625,23 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
     pendingReorderReference.current = true;
 
-    if (Object.keys(nextWorkspaces).length > 0) {
-      await window.service.workspace.setWorkspaces(nextWorkspaces);
-    }
+    try {
+      if (Object.keys(nextWorkspaces).length > 0) {
+        await window.service.workspace.setWorkspaces(nextWorkspaces);
+      }
 
-    await Promise.all(nextGroups.map(group => window.service.workspace.setGroup(group.id, group)));
+      await Promise.all(nextGroups.map(group => window.service.workspace.setGroup(group.id, group)));
+    } catch (error) {
+      // Rollback workspace orders if group updates fail
+      const rollbackWorkspaces: Record<string, IWorkspace> = {};
+      Object.keys(previousWorkspaceOrders).forEach((id) => {
+        rollbackWorkspaces[id] = { ...nextWorkspaces[id], order: previousWorkspaceOrders[id] };
+      });
+      if (Object.keys(rollbackWorkspaces).length > 0) {
+        await window.service.workspace.setWorkspaces(rollbackWorkspaces).catch(() => {});
+      }
+      throw error;
+    }
   }, []);
 
   const clearDragStateTimeout = useCallback(() => {
@@ -985,7 +1071,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         sensors={dndSensors}
         collisionDetection={customCollisionDetection}
         modifiers={[restrictToVerticalAxis]}
-        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+        measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragOver={handleDragOver}
@@ -1031,51 +1117,14 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
           })}
         </SortableContext>
         <DragOverlay dropAnimation={null}>
-          {activeWorkspace && (() => {
-            const isWiki = isWikiWorkspace(activeWorkspace);
-            const displayName = activeWorkspace.pageType
-              ? getBuildInPageName(activeWorkspace.pageType, t)
-              : activeWorkspace.name;
-            const customIcon = activeWorkspace.pageType
-              ? getBuildInPageIcon(activeWorkspace.pageType)
-              : undefined;
-            return (
-              <WorkspaceSelectorBase
-                id={activeWorkspace.id}
-                active={activeWorkspace.active}
-                workspaceName={displayName}
-                picturePath={activeWorkspace.picturePath}
-                customIcon={customIcon}
-                showSideBarIcon={showSideBarIcon}
-                showSidebarTexts={showSideBarText}
-                pageType={activeWorkspace.pageType || undefined}
-                hibernated={isWiki ? activeWorkspace.hibernated : false}
-                transparentBackground={isWiki ? activeWorkspace.transparentBackground : false}
-                index={0}
-              />
-            );
-          })()}
-          {activeGroup && (
-            <GroupHeader $isDragging style={{ cursor: 'grabbing' }}>
-              {activeGroup.collapsed ? <ChevronRightIcon fontSize='small' /> : <ExpandMoreIcon fontSize='small' />}
-              <Avatar
-                sx={{
-                  width: 20,
-                  height: 20,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  ml: 0.5,
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                }}
-              >
-                {getGroupInitial(activeGroup.name)}
-              </Avatar>
-              <Tooltip title={activeGroup.name} placement='top'>
-                <GroupTitle>{activeGroup.name}</GroupTitle>
-              </Tooltip>
-            </GroupHeader>
+          {activeWorkspace && (
+            <DragOverlayWorkspaceItem
+              workspace={activeWorkspace}
+              showSideBarIcon={showSideBarIcon}
+              showSideBarText={showSideBarText}
+            />
           )}
+          {activeGroup && <DragOverlayGroupHeaderItem group={activeGroup} />}
         </DragOverlay>
       </DndContext>
     </DragContext.Provider>

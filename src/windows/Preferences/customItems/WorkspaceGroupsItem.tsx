@@ -10,7 +10,7 @@ import { useWorkspaceGroupsListObservable, useWorkspacesListObservable } from '@
 import type { IWorkspace, IWorkspaceGroup } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { nanoid } from 'nanoid';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -71,22 +71,29 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
     }
   }, [t]);
 
+  const isSyncingReference = useRef(false);
   const syncGroupMembership = useCallback(async (groupId: string, selectedWorkspaces: IWorkspace[]) => {
-    const currentGroupMembers = wikiWorkspaces.filter(workspace => workspace.groupId === groupId);
-    const currentIds = new Set(currentGroupMembers.map(workspace => workspace.id));
-    const selectedIds = new Set(selectedWorkspaces.map(workspace => workspace.id));
+    if (isSyncingReference.current) return;
+    isSyncingReference.current = true;
+    try {
+      const currentGroupMembers = wikiWorkspaces.filter(workspace => workspace.groupId === groupId);
+      const currentIds = new Set(currentGroupMembers.map(workspace => workspace.id));
+      const selectedIds = new Set(selectedWorkspaces.map(workspace => workspace.id));
 
-    await Promise.all(
-      currentGroupMembers
-        .filter(workspace => !selectedIds.has(workspace.id))
-        .map(workspace => window.service.workspace.moveWorkspaceToGroup(workspace.id, null, false)),
-    );
+      await Promise.all(
+        currentGroupMembers
+          .filter(workspace => !selectedIds.has(workspace.id))
+          .map(workspace => window.service.workspace.moveWorkspaceToGroup(workspace.id, null, false)),
+      );
 
-    await Promise.all(
-      selectedWorkspaces
-        .filter(workspace => !currentIds.has(workspace.id))
-        .map(workspace => window.service.workspace.moveWorkspaceToGroup(workspace.id, groupId)),
-    );
+      await Promise.all(
+        selectedWorkspaces
+          .filter(workspace => !currentIds.has(workspace.id))
+          .map(workspace => window.service.workspace.moveWorkspaceToGroup(workspace.id, groupId)),
+      );
+    } finally {
+      isSyncingReference.current = false;
+    }
   }, [wikiWorkspaces]);
 
   return (
@@ -154,9 +161,6 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                         value={editingName}
                         onChange={(event) => {
                           setEditingName(event.target.value);
-                        }}
-                        onBlur={() => {
-                          void saveGroupName(group);
                         }}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
@@ -232,16 +236,16 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                   fullWidth
                   options={availableWorkspaces}
                   value={workspacesInGroup}
-                  getOptionLabel={(workspace) => workspace.name}
+                  getOptionLabel={(workspace) => workspace.name ?? workspace.id ?? ''}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
                   filterSelectedOptions
-                  renderValue={(value, getItemProps) =>
+                  renderTags={(value, getTagProps) =>
                     value.map((workspace, tagIndex) => (
                       <Chip
                         variant='outlined'
                         size='small'
                         label={workspace.name}
-                        {...getItemProps({ index: tagIndex })}
+                        {...getTagProps({ index: tagIndex })}
                       />
                     ))}
                   renderInput={(parameters) => (
