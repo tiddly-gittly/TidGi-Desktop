@@ -284,6 +284,10 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       };
+      // When ELECTRON_RUN_AS_NODE is set, Electron runs in Node mode instead of GUI mode.
+      // Unit tests set this for vitest, but E2E tests need Electron to launch as a GUI app.
+      // Delete it from the child process env so Playwright can find the browser window.
+      delete environment.ELECTRON_RUN_AS_NODE;
       return environment;
     })(),
     cwd: process.cwd(),
