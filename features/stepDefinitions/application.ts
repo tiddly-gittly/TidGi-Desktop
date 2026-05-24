@@ -284,10 +284,6 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       };
-      // Playwright bug #39922: ELECTRON_RUN_AS_NODE causes Electron to run in Node mode
-      // instead of GUI mode. The test harness inherits this from unit tests, so we must
-      // delete it before launching the Electron app via Playwright.
-      delete environment.ELECTRON_RUN_AS_NODE;
       return environment;
     })(),
     cwd: process.cwd(),
