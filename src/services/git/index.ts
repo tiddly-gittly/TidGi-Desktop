@@ -148,7 +148,15 @@ export class Git implements IGitService {
     if (remoteUrl === undefined || remoteUrl.length < 3) return;
     if (branch === undefined) return;
     // "/tiddly-gittly/TidGi-Desktop/issues/370"
-    const { pathname } = new URL(remoteUrl);
+    let url: URL;
+    try {
+      url = new URL(remoteUrl);
+    } catch {
+      // SSH URLs (e.g. git@github.com:user/repo.git) are not valid URLs.
+      // Skip updating the git info tiddler for SSH remotes.
+      return;
+    }
+    const { pathname } = url;
     // [ "", "tiddly-gittly", "TidGi-Desktop", "issues", "370" ]
     const [, userName, repoName] = pathname.split('/');
     /**

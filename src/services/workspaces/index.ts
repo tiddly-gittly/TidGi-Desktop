@@ -590,7 +590,7 @@ export class Workspace implements IWorkspaceService {
       lastNodeJSArgv: [],
       order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : await this.getNextInsertOrder(),
       picturePath: null,
-      useTidgiConfigSync: useTidgiConfig,
+      useTidgiConfigSync: useTidgiConfig ?? true,
     };
 
     await this.set(newID, newWorkspace, true);
@@ -753,13 +753,7 @@ export class Workspace implements IWorkspaceService {
   private previousGroups: Record<string, IWorkspaceGroup> | undefined;
 
   private emitGroups(next: Record<string, IWorkspaceGroup> | undefined): void {
-    // Always emit when the reference is identical so that in-place mutations
-    // (e.g. groups[id] = group) are not swallowed. Only skip when the
-    // reference differs but the deep content is the same.
-    if (next !== undefined && this.previousGroups === next) {
-      this.groups$.next(next);
-      return;
-    }
+    // Skip emission when nothing actually changed to break infinite render loops.
     if (this.previousGroups !== undefined && next !== undefined && isEqual(this.previousGroups, next)) {
       return;
     }
@@ -767,55 +761,12 @@ export class Workspace implements IWorkspaceService {
     this.groups$.next(next);
   }
 
-  private normalizeLegacyGroupOrders(groups: Record<string, IWorkspaceGroup>): Record<string, IWorkspaceGroup> {
-    const groupList = Object.values(groups);
-    if (groupList.length === 0) {
-      return groups;
-    }
-
-    const sortedGroupOrders = groupList
-      .map(group => group.order ?? 0)
-      .sort((left, right) => left - right);
-    const isLegacyDenseOrder = sortedGroupOrders.every((order, index) => order === index);
-
-    if (!isLegacyDenseOrder) {
-      return groups;
-    }
-
-    const ungroupedWorkspaces = Object.values(this.getWorkspacesSync()).filter(workspace => !workspace.groupId);
-    if (ungroupedWorkspaces.length === 0) {
-      return groups;
-    }
-
-    const maxUngroupedOrder = Math.max(...ungroupedWorkspaces.map(workspace => workspace.order ?? 0));
-    let hasChanges = false;
-    const normalizedGroups = { ...groups };
-
-    [...groupList]
-      .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
-      .forEach((group, index) => {
-        const nextOrder = maxUngroupedOrder + index + 1;
-        if (group.order !== nextOrder) {
-          normalizedGroups[group.id] = { ...group, order: nextOrder };
-          hasChanges = true;
-        }
-      });
-
-    if (!hasChanges) {
-      return groups;
-    }
-
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('workspaceGroups', normalizedGroups);
-    return normalizedGroups;
-  }
-
   private getGroupsSync(): Record<string, IWorkspaceGroup> {
     if (this.groups === undefined) {
       const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
       const groupsFromDisk = databaseService.getSetting('workspaceGroups') ?? {};
       if (typeof groupsFromDisk === 'object' && !Array.isArray(groupsFromDisk)) {
-        this.groups = this.normalizeLegacyGroupOrders(groupsFromDisk);
+        this.groups = groupsFromDisk;
       } else {
         this.groups = {};
       }
@@ -842,27 +793,27 @@ export class Workspace implements IWorkspaceService {
   public async setGroup(id: string, group: IWorkspaceGroup): Promise<void> {
     const groups = this.getGroupsSync();
     const isNew = !groups[id];
-    groups[id] = group;
+    const nextGroups = { ...groups, [id]: group };
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('workspaceGroups', groups);
-    this.groups = groups;
-    this.emitGroups(groups);
+    databaseService.setSetting('workspaceGroups', nextGroups);
+    this.groups = nextGroups;
+    this.emitGroups(nextGroups);
     if (isNew) {
       const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
-      void analyticsService.track('workspace.group.created', { groupCount: Object.keys(groups).length });
+      void analyticsService.track('workspace.group.created', { groupCount: Object.keys(nextGroups).length });
     }
   }
 
   public async removeGroup(id: string): Promise<void> {
     const groups = this.getGroupsSync();
-    delete groups[id];
+    const { [id]: _, ...nextGroups } = groups;
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('workspaceGroups', groups);
-    this.groups = groups;
-    this.emitGroups(groups);
+    databaseService.setSetting('workspaceGroups', nextGroups);
+    this.groups = nextGroups;
+    this.emitGroups(nextGroups);
 
     const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
-    void analyticsService.track('workspace.group.deleted', { groupCount: Object.keys(groups).length });
+    void analyticsService.track('workspace.group.deleted', { groupCount: Object.keys(nextGroups).length });
 
     // Move workspaces in this group to ungrouped
     const workspaces = this.getWorkspacesSync();

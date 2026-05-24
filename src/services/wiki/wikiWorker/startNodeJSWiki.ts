@@ -210,46 +210,49 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
       void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
-      setTimeout(() => {
-        const textDecoder = new TextDecoder();
-        intercept(
-          (newStdOut: string | Uint8Array) => {
-            const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
-            void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
-              console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
+      const textDecoder = new TextDecoder();
+      intercept(
+        (newStdOut: string | Uint8Array) => {
+          const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
+          void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
+            console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
+          });
+          return message;
+        },
+        (newStdError: string | Uint8Array) => {
+          const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
+          void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
+            console.error('[intercept] Failed to send stderr to main process:', error, message);
+          });
+          if (
+            message.includes('Error executing boot module') ||
+            message.includes('Cannot find module')
+          ) {
+            observer.next({
+              type: 'control',
+              source: 'plugin-error',
+              actions: WikiControlActions.error,
+              message,
+              argv: [],
             });
-            return message;
-          },
-          (newStdError: string | Uint8Array) => {
-            const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
-            void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
-              console.error('[intercept] Failed to send stderr to main process:', error, message);
-            });
-            if (
-              message.includes('Error executing boot module') ||
-              message.includes('Cannot find module')
-            ) {
-              observer.next({
-                type: 'control',
-                source: 'plugin-error',
-                actions: WikiControlActions.error,
-                message,
-                argv: [],
-              });
-            }
-            return message;
-          },
-        );
-      }, 50);
+          }
+          return message;
+        },
+      );
     });
 
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
 
-    bootWiki(bootContext, observer, fullBootArgv).catch((error: unknown) => {
-      const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+    try {
+      bootWiki(bootContext, observer, fullBootArgv).catch((error: unknown) => {
+        const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+        observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
+      });
+    } catch (error: unknown) {
+      const message = `Tiddlywiki booted failed synchronously with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
-    });
+    }
   });
 }
