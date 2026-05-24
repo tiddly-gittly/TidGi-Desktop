@@ -6,10 +6,20 @@ import type { ISyncableWikiConfig, IWorkspace, IWorkspaceGroup } from '@services
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { DataSource } from 'typeorm';
 
+export interface IAnalyticsSecretSettings {
+  analyticsDisclosureVersion?: number;
+  deviceFirstLaunchDate?: string;
+  deviceLastLaunchDate?: string;
+  /**
+   * Stable random UUID generated once on first launch and persisted forever.
+   * Used as Rybbit `user_id` so events from the same installation are always
+   * grouped under the same user regardless of IP or User-Agent changes.
+   */
+  deviceId?: string;
+}
+
 export interface ISettingFile {
-  analyticsSecrets?: {
-    analyticsDisclosureVersion?: number;
-  };
+  analyticsSecrets?: IAnalyticsSecretSettings;
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;

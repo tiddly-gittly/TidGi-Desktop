@@ -38,6 +38,8 @@ export class Window implements IWindowService {
   private tidgiMiniWindowMenubar?: Menubar;
   /** Lock to prevent concurrent tidgi mini window operations */
   private tidgiMiniWindowOperationLock = false;
+  /** Debounce timer for main window state save on hide */
+  private mainWindowHideSaveTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
@@ -220,6 +222,7 @@ export class Window implements IWindowService {
       [WindowNames.addWorkspace]: 'TidGi [Add Workspace]',
       [WindowNames.editWorkspace]: 'TidGi [Edit Workspace]',
       [WindowNames.about]: 'TidGi [About]',
+      [WindowNames.analyticsDisclosure]: 'TidGi [Analytics Disclosure]',
       [WindowNames.gitHistory]: 'TidGi [Git History]',
       [WindowNames.notifications]: 'TidGi [Notifications]',
       [WindowNames.spellcheck]: 'TidGi [Spellcheck]',
@@ -287,7 +290,12 @@ export class Window implements IWindowService {
     if (windowName === WindowNames.main && windowWithBrowserViewState !== undefined) {
       const stateReference = windowWithBrowserViewState;
       newWindow.on('hide', () => {
-        stateReference.saveState(newWindow);
+        if (this.mainWindowHideSaveTimer !== undefined) {
+          clearTimeout(this.mainWindowHideSaveTimer);
+        }
+        this.mainWindowHideSaveTimer = setTimeout(() => {
+          stateReference.saveState(newWindow);
+        }, 500);
       });
     }
     if (isWindowWithBrowserView) {

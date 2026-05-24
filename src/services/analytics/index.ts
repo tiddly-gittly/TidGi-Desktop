@@ -3,7 +3,7 @@ import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
 
 import { container } from '@services/container';
-import type { IDatabaseService, ISettingFile } from '@services/database/interface';
+import type { IAnalyticsSecretSettings, IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -12,17 +12,7 @@ import { sanitizeErrorMessage } from './utilities';
 
 export { sanitizeErrorMessage };
 
-interface IAnalyticsSecretSettings {
-  deviceFirstLaunchDate?: string;
-  deviceLastLaunchDate?: string;
-  /**
-   * Stable random UUID generated once on first launch and persisted forever.
-   * Used as Rybbit `user_id` so events from the same installation are always
-   * grouped under the same user regardless of IP or User-Agent changes.
-   */
-  deviceId?: string;
-}
-
+const CURRENT_ANALYTICS_DISCLOSURE_VERSION = 1;
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
 const DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -54,6 +44,11 @@ export class AnalyticsService implements IAnalyticsService {
   }
 
   public async trackPluginEvent(pluginId: string, eventName: string, properties?: IAnalyticsEventProperties): Promise<void> {
+    const slugPattern = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+    if (!slugPattern.test(pluginId) || !slugPattern.test(eventName)) {
+      logger.warn('Invalid plugin event name format', { pluginId, eventName });
+      return;
+    }
     const sanitizedProperties = this.sanitizeProperties(properties);
     await this.track(`plugin.${pluginId}.${eventName}`, sanitizedProperties);
   }
@@ -69,11 +64,28 @@ export class AnalyticsService implements IAnalyticsService {
       this.preferenceService.get('analyticsHostname'),
       this.preferenceService.get('analyticsSiteId'),
     ]);
-    return Boolean(analyticsHost.trim() && analyticsHostname.trim() && analyticsSiteId.trim());
+    return Boolean(analyticsHost?.trim() && analyticsHostname?.trim() && analyticsSiteId?.trim());
   }
 
   public async clearPendingEvents(): Promise<void> {
     this.queuedEvents.length = 0;
+  }
+
+  public async shouldShowDisclosure(): Promise<boolean> {
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const secrets = databaseService.getSetting(ANALYTICS_SETTINGS_KEY);
+    const recordedVersion = secrets?.analyticsDisclosureVersion;
+    return recordedVersion === undefined || recordedVersion < CURRENT_ANALYTICS_DISCLOSURE_VERSION;
+  }
+
+  public async recordDisclosureVersion(): Promise<void> {
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const secrets = this.getAnalyticsSecrets(databaseService);
+    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, {
+      ...secrets,
+      analyticsDisclosureVersion: CURRENT_ANALYTICS_DISCLOSURE_VERSION,
+    });
+    await databaseService.immediatelyStoreSettingsToFile();
   }
 
   public async getRetentionProperties(): Promise<IAnalyticsEventProperties | undefined> {
@@ -101,7 +113,7 @@ export class AnalyticsService implements IAnalyticsService {
       deviceFirstLaunchDate: firstLaunchDate,
       deviceLastLaunchDate: todayDate,
     };
-    databaseService.setSetting(ANALYTICS_SETTINGS_KEY as keyof ISettingFile, nextSecrets as never);
+    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, nextSecrets);
     await databaseService.immediatelyStoreSettingsToFile();
 
     return {
@@ -112,9 +124,9 @@ export class AnalyticsService implements IAnalyticsService {
   }
 
   private getAnalyticsSecrets(databaseService: IDatabaseService): IAnalyticsSecretSettings {
-    const rawSettings = databaseService.getSetting(ANALYTICS_SETTINGS_KEY as keyof ISettingFile) as unknown;
+    const rawSettings = databaseService.getSetting(ANALYTICS_SETTINGS_KEY);
     return (rawSettings && typeof rawSettings === 'object' && !Array.isArray(rawSettings))
-      ? (rawSettings as IAnalyticsSecretSettings)
+      ? rawSettings
       : {};
   }
 
@@ -123,9 +135,16 @@ export class AnalyticsService implements IAnalyticsService {
       return undefined;
     }
 
-    const sanitizedEntries = Object.entries(properties).filter(([, value]) => (
-      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-    ));
+    const sanitizedEntries = Object.entries(properties).filter(([, value]) => {
+      if (typeof value === 'string') {
+        // Filter out strings that look like absolute paths, URLs, or emails
+        if (/^\/(?:home|Users|tmp|var|etc|opt)\//.test(value)) return false;
+        if (/^[A-Za-z]:\\/.test(value)) return false;
+        if (/^https?:\/\//.test(value)) return false;
+        if (value.includes('@') && value.includes('.')) return false;
+      }
+      return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+    });
 
     if (sanitizedEntries.length === 0) {
       return undefined;
@@ -141,7 +160,7 @@ export class AnalyticsService implements IAnalyticsService {
       return secrets.deviceId;
     }
     const newId = randomUUID();
-    databaseService.setSetting(ANALYTICS_SETTINGS_KEY as keyof ISettingFile, { ...secrets, deviceId: newId } as never);
+    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, { ...secrets, deviceId: newId });
     void databaseService.immediatelyStoreSettingsToFile();
     return newId;
   }
@@ -211,7 +230,11 @@ export class AnalyticsService implements IAnalyticsService {
         clearTimeout(timeoutHandle);
       }
     } catch (error) {
-      logger.debug('Analytics event delivery failed', { eventName, error });
+      if (error instanceof Error && error.name === 'AbortError') {
+        logger.debug('Analytics event timed out', { eventName });
+      } else {
+        logger.debug('Analytics event delivery failed', { eventName, error });
+      }
       return false;
     }
   }
