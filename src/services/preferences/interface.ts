@@ -28,6 +28,10 @@ export interface IPreferences {
   ignoreCertificateErrors: boolean;
   keyboardShortcuts: Record<string, string>;
   language: string;
+  mcpServerEnabled: boolean;
+  mcpServerPort: number;
+  mcpServerRequireToken: boolean;
+  mcpServerToken: string;
   pauseNotifications?: string;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;

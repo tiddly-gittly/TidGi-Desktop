@@ -8,6 +8,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
 
+import type { AnySchema } from '@modelcontextprotocol/sdk/server/zod-compat';
 import { TOOLS } from './tools';
 import type { ToolInput } from './types';
 
@@ -19,9 +20,11 @@ function createMcpServerWithTools(): McpServer {
   for (const tool of TOOLS) {
     server.registerTool(
       tool.name,
-      tool.description,
-      tool.inputSchema.properties ?? {},
-      async (parameters) => {
+      {
+        description: tool.description,
+        inputSchema: (tool.inputSchema.properties ?? undefined) as unknown as AnySchema | undefined,
+      },
+      async (parameters: unknown) => {
         const { callTool } = await import('./tools');
         const result = await callTool(tool.name, parameters as ToolInput);
         return {

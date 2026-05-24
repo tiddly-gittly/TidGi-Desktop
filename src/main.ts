@@ -3,7 +3,7 @@ import 'source-map-support/register';
 import 'reflect-metadata';
 import './helpers/singleInstance';
 import './services/database/configSetting';
-import { app, ipcMain, powerMonitor, protocol } from 'electron';
+import { app, dialog, ipcMain, powerMonitor, protocol } from 'electron';
 import unhandled from 'electron-unhandled';
 import inspector from 'node:inspector';
 import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database/configSetting';
@@ -243,7 +243,72 @@ const commonInit = async (): Promise<void> => {
     void startMcpServer(Number.isNaN(port) ? undefined : port);
   }
 
+  // Start MCP server if enabled via preferences (token auth is read inside restartMcpServerIfNeeded)
+  const mcpServerEnabled = await preferenceService.get('mcpServerEnabled');
+  if (mcpServerEnabled) {
+    const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
+    await restartMcpServerIfNeeded(preferenceService);
+  }
+
+  // Listen for MCP preference changes to start/stop the server dynamically
+  let previousMcpEnabled = mcpServerEnabled;
+  let previousMcpPort: number | undefined;
+  let previousMcpRequireToken: boolean | undefined;
+  let previousMcpToken: string | undefined;
+  preferenceService.preference$.subscribe(async (preferences) => {
+    if (!preferences) return;
+    const { mcpServerEnabled: enabled, mcpServerPort: port, mcpServerRequireToken: requireToken, mcpServerToken: token } = preferences;
+    // Only react if an MCP-related value actually changed
+    if (
+      enabled !== previousMcpEnabled ||
+      port !== previousMcpPort ||
+      requireToken !== previousMcpRequireToken ||
+      token !== previousMcpToken
+    ) {
+      previousMcpEnabled = enabled;
+      previousMcpPort = port;
+      previousMcpRequireToken = requireToken;
+      previousMcpToken = token;
+      const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
+      void restartMcpServerIfNeeded(preferenceService);
+    }
+  });
+
   // Track app launch event with retention properties
+  // Show analytics disclosure dialog on first launch before sending any events
+  // Skip in test environments to avoid blocking E2E test execution
+  if (!isTest && await analyticsService.shouldShowDisclosure()) {
+    const result = await dialog.showMessageBox({
+      type: 'question',
+      title: 'Analytics Data Collection',
+      message: 'Help Improve TidGi',
+      detail: [
+        'We collect anonymous usage data to help improve TidGi.',
+        '',
+        'We collect:',
+        '  \u2022 Feature usage counts (e.g., how often sync is triggered)',
+        '  \u2022 App version and platform (Windows, macOS, Linux)',
+        '  \u2022 Error reports to help fix bugs faster',
+        '',
+        'We do NOT collect:',
+        '  \u2022 Your wiki content or tiddler text',
+        '  \u2022 File paths from your computer',
+        '  \u2022 Any personal data (names, emails, IPs)',
+        '',
+        'You can change this anytime in Preferences > Privacy.',
+      ].join('\n'),
+      buttons: ['Enable Analytics', 'Disable Analytics'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    const analyticsEnabled = result.response === 0;
+    await preferenceService.set('analyticsEnabled', analyticsEnabled);
+    await analyticsService.recordDisclosureVersion();
+    if (analyticsEnabled) {
+      await analyticsService.track('analytics.disclosure_responded', { enabled: analyticsEnabled });
+    }
+  }
+
   const retentionProperties = await analyticsService.getRetentionProperties();
   void analyticsService.track('app.launched', {
     platform: process.platform,
