@@ -284,9 +284,10 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
           ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
         }),
       };
-      // Preserve ELECTRON_RUN_AS_NODE from parent env so tests that rely on it (e.g. unit
-      // tests with native modules) continue to work. Playwright 1.60.0 no longer crashes
-      // when this variable is present (bug #39922 fixed).
+      // Playwright bug #39922: ELECTRON_RUN_AS_NODE causes Electron to run in Node mode
+      // instead of GUI mode. The test harness inherits this from unit tests, so we must
+      // delete it before launching the Electron app via Playwright.
+      delete environment.ELECTRON_RUN_AS_NODE;
       return environment;
     })(),
     cwd: process.cwd(),
