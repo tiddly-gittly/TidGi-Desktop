@@ -92,7 +92,8 @@ class TidGiIPCSyncAdaptor {
       throw new Error('TidGiIPCSyncAdaptor: workspaceID is undefined. Cannot initialize sync adaptor without a valid workspace ID.');
     }
     this.workspaceID = workspaceID;
-    this.isSubWiki = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.isSubWiki);
+    const metaWorkspace = (typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace;
+    this.isSubWiki = Boolean(metaWorkspace && (metaWorkspace as unknown as { isSubWiki?: boolean }).isSubWiki);
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();

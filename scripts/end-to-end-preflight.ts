@@ -98,7 +98,8 @@ function extractStepTimings(jsonFilePath: string): StepTiming[] {
     for (const feature of report) {
       for (const element of (feature.elements ?? []) as Array<Record<string, unknown>>) {
         for (const step of (element.steps ?? []) as Array<Record<string, unknown>>) {
-          const duration = step.result?.duration as number | undefined;
+          const result = step.result as { duration?: number } | undefined;
+          const duration = result?.duration;
           const name = (step.name ?? '') as string;
           if (duration && name) {
             timings.push({ name, durationMs: Math.ceil(duration / 1_000_000) });

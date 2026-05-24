@@ -87,7 +87,7 @@ export default (
     fs.copySync(
       path.join(sourceNodeModulesFolder, '@modelcontextprotocol', 'sdk'),
       path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk'),
-      { dereference: true, recursive: true },
+      { dereference: true },
     );
 
     console.log('Copy dugite');
