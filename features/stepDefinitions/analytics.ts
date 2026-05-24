@@ -4,6 +4,31 @@ import { MockAnalyticsServer } from '../supports/mockAnalytics';
 import type { ApplicationWorld } from './application';
 
 /**
+ * Poll for all expected analytics events to arrive.
+ * Retries with short intervals until all events are found or max attempts exhausted.
+ */
+async function pollForEvents(
+  server: MockAnalyticsServer,
+  expectedEvents: Array<Record<string, string>>,
+  maxAttempts = 20,
+  intervalMs = 100,
+): Promise<ReturnType<MockAnalyticsServer['getEvents']>> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const events = server.getEvents();
+    const allFound = expectedEvents.every(expected => {
+      const eventName = expected.event_name;
+      if (!eventName) return false;
+      return events.some(event => event.event_name === eventName);
+    });
+    if (allFound) {
+      return events;
+    }
+    await new Promise(resolve => setTimeout(resolve, intervalMs));
+  }
+  return server.getEvents();
+}
+
+/**
  * Start a mock analytics server and configure the app to use it.
  * This should be called before launching the app.
  */
@@ -42,10 +67,8 @@ Then('I should see analytics events:', async function(this: ApplicationWorld, da
     throw new Error('Mock analytics server is not started. Call "I start mock analytics server" first.');
   }
 
-  // Wait a short time for any pending analytics requests to complete
-  await new Promise(resolve => setTimeout(resolve, 500));
-
-  const events = mockAnalyticsServer.getEvents();
+  // Poll for analytics events to arrive instead of a fixed 500ms wait
+  const events = await pollForEvents(mockAnalyticsServer, dataTable.hashes());
   const expectedEvents = dataTable.hashes();
 
   for (const expected of expectedEvents) {

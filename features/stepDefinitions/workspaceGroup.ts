@@ -179,11 +179,9 @@ async function dragLocatorToCoordinates(
   await world.currentWindow.mouse.down();
   // Small initial movement to satisfy dnd-kit PointerSensor activationConstraint (distance: 8)
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
-  await world.currentWindow.waitForTimeout(100);
 
   // Move to target with a short smooth path
   await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 3 });
-  await world.currentWindow.waitForTimeout(100);
 
   // Re-track the target in case the DOM shifted during the drag (e.g. due to
   // visual reordering). Keep adjusting the mouse until the target stabilises
@@ -191,7 +189,6 @@ async function dragLocatorToCoordinates(
   let previousTargetCoordinates = await resolveTargetCoordinates();
   for (let attempt = 0; attempt < 5; attempt++) {
     await world.currentWindow.mouse.move(previousTargetCoordinates.targetX, previousTargetCoordinates.targetY, { steps: 1 });
-    await world.currentWindow.waitForTimeout(80);
     const currentTargetCoordinates = await resolveTargetCoordinates();
     const delta = Math.abs(currentTargetCoordinates.targetY - previousTargetCoordinates.targetY);
     if (delta < 3) {

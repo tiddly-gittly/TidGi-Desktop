@@ -2,6 +2,7 @@ import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
 import { makeSlugPath } from '../supports/paths';
+import type { MockAnalyticsServer } from '../supports/mockAnalytics';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
@@ -112,6 +113,17 @@ After(async function(this: ApplicationWorld, { pickle }) {
       this.mainWindow = undefined;
       this.currentWindow = undefined;
     }
+  }
+
+  // Stop mock analytics server if it was started for this scenario
+  const mockAnalyticsServer = (this as unknown as Record<string, unknown>).mockAnalyticsServer as MockAnalyticsServer | undefined;
+  if (mockAnalyticsServer) {
+    try {
+      await mockAnalyticsServer.stop();
+    } catch {
+      // Server may already be stopped — ignore
+    }
+    (this as unknown as Record<string, unknown>).mockAnalyticsServer = undefined;
   }
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
