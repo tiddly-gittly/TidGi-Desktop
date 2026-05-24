@@ -1550,7 +1550,7 @@ When('I clear test-id markers from logs', async function(this: ApplicationWorld)
  * This is more targeted than clearTestIdLogs - it only removes lines matching the marker.
  * @param marker - The text pattern to remove from log files
  */
-async function clearLogLinesContaining(world: ApplicationWorld, marker: string) {
+async function clearLogLinesContaining(world: ApplicationWorld, _marker: string) {
   const logDirectory = getLogPath(world);
   if (!await fs.pathExists(logDirectory)) return;
 
@@ -1559,11 +1559,14 @@ async function clearLogLinesContaining(world: ApplicationWorld, marker: string) 
   for (const logFile of logFiles) {
     const logFilePath = path.join(logDirectory, logFile);
     try {
-      const content = await fs.readFile(logFilePath, 'utf-8');
-      const filteredLines = content.split('\n').filter(line => !line.includes(marker));
-      await fs.writeFile(logFilePath, filteredLines.join('\n'), 'utf-8');
+      // Use truncate instead of read-filter-write to avoid a race condition:
+      // Winston may append a log line between our readFile and writeFile,
+      // causing the newly-written line to be overwritten and lost.
+      // Truncating atomically ensures subsequent waitForLogMarker calls
+      // only see fresh markers, without dropping interleaved log entries.
+      await fs.truncate(logFilePath, 0);
     } catch (error) {
-      console.warn(`Failed to clear log lines from ${logFile}:`, error);
+      console.warn(`Failed to truncate log file ${logFile}:`, error);
     }
   }
 }
