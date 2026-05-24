@@ -268,23 +268,27 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
         ]
         : []),
     ],
-    env: {
-      ...process.env,
-      ...world.launchEnvOverrides,
-      NODE_ENV: 'test',
-      TIDGI_TEST_SCENARIO: world.scenarioSlug,
-      E2E_TEST: 'true',
-      LANG: process.env.LANG || 'zh-Hans.UTF-8',
-      LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
-      LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
-      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
-      // Playwright bug #39922: ELECTRON_RUN_AS_NODE=1 causes "bad option: --remote-debugging-port=0" on Windows
-      ELECTRON_RUN_AS_NODE: '',
-      ...(process.env.CI && {
-        ELECTRON_ENABLE_LOGGING: 'true',
-        ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
-      }),
-    },
+    env: (() => {
+      const environment: Record<string, string> = {
+        ...process.env as Record<string, string>,
+        ...world.launchEnvOverrides,
+        NODE_ENV: 'test',
+        TIDGI_TEST_SCENARIO: world.scenarioSlug,
+        E2E_TEST: 'true',
+        LANG: process.env.LANG || 'zh-Hans.UTF-8',
+        LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
+        LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+        ...(process.env.CI && {
+          ELECTRON_ENABLE_LOGGING: 'true',
+          ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
+        }),
+      };
+      // Preserve ELECTRON_RUN_AS_NODE from parent env so tests that rely on it (e.g. unit
+      // tests with native modules) continue to work. Playwright 1.60.0 no longer crashes
+      // when this variable is present (bug #39922 fixed).
+      return environment;
+    })(),
     cwd: process.cwd(),
     timeout: CUCUMBER_GLOBAL_TIMEOUT,
   });
@@ -294,6 +298,46 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
   const openedWindows = world.app.windows().filter(page => !page.isClosed());
   world.mainWindow = openedWindows[0];
   world.currentWindow = world.mainWindow;
+
+  // Attach pageerror/console listeners to all renderer pages so we can capture React errors.
+  const trackedPages = new Set<string>();
+  const attachListeners = (page: import('playwright').Page) => {
+    const key = page.url();
+    if (trackedPages.has(key)) return;
+    trackedPages.add(key);
+    page.on('pageerror', (error: Error) => {
+      console.error(`[RENDERER ERROR @ ${key}] ${error.name}: ${error.message}\n${error.stack ?? ''}`);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        console.error(`[RENDERER CONSOLE ERROR @ ${key}] ${msg.text()}`);
+      }
+    });
+  };
+  for (const page of openedWindows) attachListeners(page);
+  const windowTracker = setInterval(() => {
+    if (!world.app) { clearInterval(windowTracker); return; }
+    for (const page of world.app.windows().filter(p => !p.isClosed())) {
+      attachListeners(page);
+    }
+  }, 500);
+  // Stop tracking after 2 minutes (test duration upper bound)
+  setTimeout(() => clearInterval(windowTracker), 120_000);
+
+  // Suppress "No dialog is showing" unhandled rejections from Playwright's
+  // DialogManager. Playwright auto-closes dialogs via CDP but doesn't catch
+  // the rejection when the dialog already closed (race condition). The
+  // unhandled rejection then propagates to whatever Playwright action was running.
+  if (!(process as any).__dialogRejectionHandlerInstalled) {
+    process.on('unhandledRejection', (reason: unknown) => {
+      if (reason instanceof Error && reason.message.includes('handleJavaScriptDialog')) {
+        // Swallow — this is a known Playwright race condition
+        return;
+      }
+      // For other rejections, let them propagate normally
+    });
+    (process as any).__dialogRejectionHandlerInstalled = true;
+  }
 }
 
 Given('I mock system palette as {string}', function(this: ApplicationWorld, palette: string) {

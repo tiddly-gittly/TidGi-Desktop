@@ -33,6 +33,7 @@ export class Git implements IGitService {
   private nativeWorker?: Worker;
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
+  private operationLocks = new Map<string, Promise<void>>();
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
@@ -40,6 +41,31 @@ export class Git implements IGitService {
     @inject(serviceIdentifier.NativeService) private readonly nativeService: INativeService,
     @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
   ) {}
+
+  /**
+   * Acquire a per-workspace lock to serialize git operations.
+   * Returns a release function that must be called in a finally block.
+   */
+  private async acquireOperationLock(workspaceID: string): Promise<() => void> {
+    let release: () => void;
+    const promise = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const previousLock = this.operationLocks.get(workspaceID);
+    this.operationLocks.set(workspaceID, promise);
+
+    if (previousLock !== undefined) {
+      await previousLock;
+    }
+
+    return () => {
+      release!();
+      if (this.operationLocks.get(workspaceID) === promise) {
+        this.operationLocks.delete(workspaceID);
+      }
+    };
+  }
 
   private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
     const change = {
@@ -250,6 +276,8 @@ export class Git implements IGitService {
       return false;
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
+    const workspaceID = workspace.id;
+    const releaseLock = await this.acquireOperationLock(workspaceID);
     try {
       // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever
       if (!workspace.isSubWiki) {
@@ -294,6 +322,8 @@ export class Git implements IGitService {
       this.createFailedNotification(error_.message, workspaceIDToShowNotification);
       // Return false on sync failure - no successful changes were made
       return false;
+    } finally {
+      releaseLock();
     }
   }
 
@@ -304,11 +334,17 @@ export class Git implements IGitService {
       return false;
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
-    const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
-    const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
-    // Notify git state change
-    this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
-    return hasChanges;
+    const workspaceID = workspace.id;
+    const releaseLock = await this.acquireOperationLock(workspaceID);
+    try {
+      const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
+      const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+      // Notify git state change
+      this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
+      return hasChanges;
+    } finally {
+      releaseLock();
+    }
   }
 
   /**

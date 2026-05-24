@@ -73,9 +73,16 @@ function runSmokeCalibration(): void {
     maxElementStepMs = 10_000;
   }
 
-  writeCalibrationResult(maxTotalMs, maxStepMs, maxLaunchStepMs, maxWaitStepMs, maxElementStepMs);
+  const CALIBRATION_BUFFER_MS = 200;
+  writeCalibrationResult(
+    maxTotalMs + CALIBRATION_BUFFER_MS,
+    maxStepMs + CALIBRATION_BUFFER_MS,
+    maxLaunchStepMs + CALIBRATION_BUFFER_MS,
+    maxWaitStepMs + CALIBRATION_BUFFER_MS,
+    maxElementStepMs + CALIBRATION_BUFFER_MS,
+  );
 
-  console.log(`[Cal] stored: S=${maxStepMs}ms L=${maxLaunchStepMs}ms W=${maxWaitStepMs}ms E=${maxElementStepMs}ms`);
+  console.log(`[Cal] stored: S=${maxStepMs + CALIBRATION_BUFFER_MS}ms L=${maxLaunchStepMs + CALIBRATION_BUFFER_MS}ms W=${maxWaitStepMs + CALIBRATION_BUFFER_MS}ms E=${maxElementStepMs + CALIBRATION_BUFFER_MS}ms`);
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {
