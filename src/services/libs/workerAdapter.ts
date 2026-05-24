@@ -182,98 +182,89 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
     throw new Error('This function must be called in a worker thread');
   }
 
-  let messageQueue = Promise.resolve();
+  parentPort.on('message', async (message: WorkerMessage) => {
+    const { id, method, args, type } = message;
 
-  parentPort.on('message', (message: WorkerMessage) => {
-    messageQueue = messageQueue.then(async () => {
-      const { id, method, args, type } = message;
+    if (type !== 'call' || !method) return;
 
-      if (type !== 'call' || !method) return;
+    const implementation = methods[method];
+    if (!implementation) {
+      parentPort.postMessage({
+        type: 'error',
+        id,
+        error: {
+          message: `Method '${method}' not found in worker`,
+          name: 'MethodNotFoundError',
+        },
+      } as WorkerMessage);
+      return;
+    }
 
-      const implementation = methods[method];
-      if (!implementation) {
-        parentPort.postMessage({
-          type: 'error',
-          id,
-          error: {
-            message: `Method '${method}' not found in worker`,
-            name: 'MethodNotFoundError',
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const result = implementation(...(args || []));
+      // Check if result is Observable
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
+        (result as Observable<unknown>).subscribe({
+          next: (value: unknown) => {
+            parentPort.postMessage({
+              type: 'stream',
+              id,
+              result: value,
+            } as WorkerMessage);
           },
-        } as WorkerMessage);
-        return;
-      }
-
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result = implementation(...(args || []));
-        // Check if result is Observable
+          error: (error: Error) => {
+            parentPort.postMessage({
+              type: 'error',
+              id,
+              error: {
+                message: error.message,
+                stack: error.stack,
+                name: error.name,
+              },
+            } as WorkerMessage);
+          },
+          complete: () => {
+            parentPort.postMessage({
+              type: 'complete',
+              id,
+            } as WorkerMessage);
+          },
+        });
+        // Note: we do NOT await Observable completion — some Observables (e.g.
+        // startNodeJSWiki) never complete, they only emit next values. Awaiting
+        // would permanently block the message handler. Per-workspace git
+        // serialization is handled by operationLocks in GitService instead.
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
-          await new Promise<void>((resolve, reject) => {
-            (result as Observable<unknown>).subscribe({
-              next: (value: unknown) => {
-                parentPort.postMessage({
-                  type: 'stream',
-                  id,
-                  result: value,
-                } as WorkerMessage);
-              },
-              error: (error: Error) => {
-                parentPort.postMessage({
-                  type: 'error',
-                  id,
-                  error: {
-                    message: error.message,
-                    stack: error.stack,
-                    name: error.name,
-                  },
-                } as WorkerMessage);
-                reject(error);
-              },
-              complete: () => {
-                parentPort.postMessage({
-                  type: 'complete',
-                  id,
-                } as WorkerMessage);
-                resolve();
-              },
-            });
-          });
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
-          // Handle Promise
-          const resolvedValue = await (result as Promise<unknown>);
-          parentPort.postMessage({
-            type: 'response',
-            id,
-            result: resolvedValue,
-          } as WorkerMessage);
-        } else {
-          // Handle synchronous result
-          parentPort.postMessage({
-            type: 'response',
-            id,
-            result,
-          } as WorkerMessage);
-        }
-      } catch (error) {
-        const error_ = error as Error;
+      } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
+        // Handle Promise
+        const resolvedValue = await (result as Promise<unknown>);
         parentPort.postMessage({
-          type: 'error',
+          type: 'response',
           id,
-          error: {
-            message: error_.message,
-            stack: error_.stack,
-            name: error_.name,
-          },
+          result: resolvedValue,
+        } as WorkerMessage);
+      } else {
+        // Handle synchronous result
+        parentPort.postMessage({
+          type: 'response',
+          id,
+          result,
         } as WorkerMessage);
       }
-    }).catch(() => {
-      // Intentionally swallow errors here — the per-handler try/catch already
-      // sends an error response to the main thread. We must not let a rejected
-      // promise break the serialization chain, otherwise subsequent messages
-      // would be silently dropped.
-    });
+    } catch (error) {
+      const error_ = error as Error;
+      parentPort.postMessage({
+        type: 'error',
+        id,
+        error: {
+          message: error_.message,
+          stack: error_.stack,
+          name: error_.name,
+        },
+      } as WorkerMessage);
+    }
   });
 }
 

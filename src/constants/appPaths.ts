@@ -43,17 +43,6 @@ function getTestScenarioSlug(): string | undefined {
   return slug === 'unknown' ? undefined : slug;
 }
 
-  // Fallback to CLI argument for legacy compatibility
-  const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
-  if (!scenarioArgument) return undefined;
-
-  const rawName = scenarioArgument.split('=')[1];
-  if (!rawName) return undefined;
-
-  const slug = slugify(rawName, 60);
-  return slug === 'unknown' ? undefined : slug;
-}
-
 export const TEST_SCENARIO_SLUG = getTestScenarioSlug();
 
 // Set isolated userData paths for dev/test
