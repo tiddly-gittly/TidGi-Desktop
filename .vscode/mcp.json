@@ -2,7 +2,7 @@
   "servers": {
     "tidgi": {
       "type": "http",
-      "url": "http://127.0.0.1:7890/mcp"
+      "url": "http://127.0.0.1:38385/mcp"
     },
     "chromedevtools/chrome-devtools-mcp": {
       "type": "stdio",

@@ -22,7 +22,7 @@ function createMcpServerWithTools(): McpServer {
       tool.name,
       {
         description: tool.description,
-        inputSchema: (tool.inputSchema.properties ?? undefined) as unknown as AnySchema | undefined,
+        inputSchema: tool.inputSchema as unknown as AnySchema | undefined,
       },
       async (parameters: unknown) => {
         const { callTool } = await import('./tools');

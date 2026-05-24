@@ -76,18 +76,3 @@ Feature: TidGi Application Launch
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
 
-  @smoke
-  Scenario: Third launch sample for variance capture
-    # Extra launch to increase sample size for app launch timing.
-    # Two scenarios give 4 launches (2 runs × 2). Adding a third
-    # gives 6 samples to better capture the launch time distribution.
-    When I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
-
-  @smoke
-  Scenario: Fourth launch sample for variance capture
-    # Extra launch sample for launch timing distribution.
-    When I launch the TidGi application
-    And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"

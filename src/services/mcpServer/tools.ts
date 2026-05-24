@@ -188,9 +188,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_type': {
       const { workspaceId, text } = input as { workspaceId?: string; text: string };
       const { webContents } = await getWebContents(workspaceId);
-      for (const char of text) {
-        webContents.sendInputEvent({ type: 'char', keyCode: char });
-      }
+      await webContents.insertText(text);
       return { success: true, length: text.length };
     }
 

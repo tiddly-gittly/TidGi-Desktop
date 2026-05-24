@@ -12,7 +12,7 @@ import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
-import { initRendererI18NHandler } from '@services/libs/i18n';
+import { i18n, initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 
@@ -233,12 +233,15 @@ const commonInit = async (): Promise<void> => {
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
 
-  // Start MCP server when --mcp-port flag is passed
-  // Usage: pnpm run start:dev:mcp  (starts app with MCP server on port 7890)
+  // Start MCP server when --mcp-port flag is passed (e.g. `pnpm start:dev:mcp`).
+  // On Windows, the packaged binary may reject custom CLI flags; if neither
+  // --mcp-port nor MCP_PORT env var is set, check user preferences.
   let mcpServerEnabled = false;
   const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='));
-  if (mcpPortArgument) {
-    const port = Number.parseInt(mcpPortArgument.split('=')[1], 10);
+  const mcpPortEnvironment = process.env.MCP_PORT;
+  const mcpPort = mcpPortArgument ? mcpPortArgument.split('=')[1] : mcpPortEnvironment;
+  if (mcpPort) {
+    const port = Number.parseInt(mcpPort, 10);
     // Dynamic import to avoid loading MCP SDK during normal startup
     const { startMcpServer } = await import('@services/mcpServer');
     void startMcpServer(Number.isNaN(port) ? undefined : port);
@@ -284,24 +287,24 @@ const commonInit = async (): Promise<void> => {
   if (!isTest && await analyticsService.shouldShowDisclosure()) {
     const result = await dialog.showMessageBox({
       type: 'question',
-      title: 'Analytics Data Collection',
-      message: 'Help Improve TidGi',
+      title: i18n.t('AnalyticsDisclosure.Title'),
+      message: i18n.t('AnalyticsDisclosure.Message'),
       detail: [
-        'We collect anonymous usage data to help improve TidGi.',
+        i18n.t('AnalyticsDisclosure.Description'),
         '',
-        'We collect:',
-        '  \u2022 Feature usage counts (e.g., how often sync is triggered)',
-        '  \u2022 App version and platform (Windows, macOS, Linux)',
-        '  \u2022 Error reports to help fix bugs faster',
+        i18n.t('AnalyticsDisclosure.WeCollect'),
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectFeatureUsage')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectPlatform')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectErrors')}`,
         '',
-        'We do NOT collect:',
-        '  \u2022 Your wiki content or tiddler text',
-        '  \u2022 File paths from your computer',
-        '  \u2022 Any personal data (names, emails, IPs)',
+        i18n.t('AnalyticsDisclosure.WeDoNotCollect'),
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectWikiContent')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPaths')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPersonalData')}`,
         '',
-        'You can change this anytime in Preferences > Privacy.',
+        i18n.t('AnalyticsDisclosure.ChangeAnytime'),
       ].join('\n'),
-      buttons: ['Enable Analytics', 'Disable Analytics'],
+      buttons: [i18n.t('AnalyticsDisclosure.EnableAnalytics'), i18n.t('AnalyticsDisclosure.DisableAnalytics')],
       defaultId: 0,
       cancelId: 1,
     });
