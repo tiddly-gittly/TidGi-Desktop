@@ -430,7 +430,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   // and scroll), not the raw pointer position. We use a capture-phase listener
   // to ensure pointerYReference is updated BEFORE dnd-kit's onDragMove fires, so
   // deriveDragState always reads the current pointer position.
-  const pointerYReference = useRef<number>(0);
+  const pointerYReference = useRef<number | undefined>(undefined);
   useEffect(() => {
     const handler = (event: PointerEvent) => {
       pointerYReference.current = event.clientY;
@@ -759,7 +759,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // the known target workspace to compute accurate zone boundaries.
       const activeRect = active.rect.current.translated;
       // Use the actual pointer Y computed from the initial pointerdown position
-      const pointerY = pointerYReference.current || (activeRect
+      const pointerY = pointerYReference.current ?? (activeRect
         ? activeRect.top + activeRect.height / 2
         : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
       const referenceY = pointerY;
@@ -823,7 +823,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         };
       }
 
-      const pointerY = pointerYReference.current || (overRect.top + overRect.height / 2);
+      const pointerY = pointerYReference.current ?? (overRect.top + overRect.height / 2);
 
       return {
         intent: getReorderIntentFromPointer({
@@ -852,7 +852,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         };
       }
 
-      const pointerY = pointerYReference.current || (overRect.top + overRect.height / 2);
+      const pointerY = pointerYReference.current ?? (overRect.top + overRect.height / 2);
 
       return {
         intent: getReorderIntentFromPointer({

@@ -105,7 +105,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
     // Dynamic import to avoid loading MCP SDK at startup
     try {
       const { stopMcpServer } = await import('@services/mcpServer');
-      stopMcpServer();
+      void stopMcpServer();
     } catch { /* not loaded */ }
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
@@ -235,19 +235,21 @@ const commonInit = async (): Promise<void> => {
 
   // Start MCP server when --mcp-port flag is passed
   // Usage: pnpm run start:dev:mcp  (starts app with MCP server on port 7890)
+  let mcpServerEnabled = false;
   const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='));
   if (mcpPortArgument) {
     const port = Number.parseInt(mcpPortArgument.split('=')[1], 10);
     // Dynamic import to avoid loading MCP SDK during normal startup
     const { startMcpServer } = await import('@services/mcpServer');
     void startMcpServer(Number.isNaN(port) ? undefined : port);
-  }
-
-  // Start MCP server if enabled via preferences (token auth is read inside restartMcpServerIfNeeded)
-  const mcpServerEnabled = await preferenceService.get('mcpServerEnabled');
-  if (mcpServerEnabled) {
-    const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
-    await restartMcpServerIfNeeded(preferenceService);
+    mcpServerEnabled = true;
+  } else {
+    // Start MCP server if enabled via preferences (token auth is read inside restartMcpServerIfNeeded)
+    mcpServerEnabled = await preferenceService.get('mcpServerEnabled');
+    if (mcpServerEnabled) {
+      const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
+      await restartMcpServerIfNeeded(preferenceService);
+    }
   }
 
   // Listen for MCP preference changes to start/stop the server dynamically
@@ -270,7 +272,9 @@ const commonInit = async (): Promise<void> => {
       previousMcpRequireToken = requireToken;
       previousMcpToken = token;
       const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
-      void restartMcpServerIfNeeded(preferenceService);
+      restartMcpServerIfNeeded(preferenceService).catch((error: unknown) => {
+        logger.error('Failed to restart MCP server after preference change', { error });
+      });
     }
   });
 

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
@@ -29,10 +30,23 @@ export function createMcpHttpServer(authConfig?: McpAuthConfig): http.Server {
     }
 
     if (httpRequest.url === '/mcp' && httpRequest.method === 'POST') {
-      // Token auth check
       if (authConfig?.requireToken && authConfig.token) {
         const authHeader = httpRequest.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== authConfig.token) {
+        const expected = authConfig.token;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          response.writeHead(401, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: 'Unauthorized: invalid or missing Bearer token' }));
+          return;
+        }
+        const provided = authHeader.slice(7);
+        if (provided.length !== expected.length) {
+          response.writeHead(401, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: 'Unauthorized: invalid or missing Bearer token' }));
+          return;
+        }
+        const providedBuffer = Buffer.from(provided);
+        const expectedBuffer = Buffer.from(expected);
+        if (!crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
           response.writeHead(401, { 'Content-Type': 'application/json' });
           response.end(JSON.stringify({ error: 'Unauthorized: invalid or missing Bearer token' }));
           return;
@@ -43,12 +57,16 @@ export function createMcpHttpServer(authConfig?: McpAuthConfig): http.Server {
         sessionIdGenerator: undefined,
         enableJsonResponse: true,
       });
-      await mcpServer.connect(transport);
-
-      await transport.handleRequest(httpRequest, response, () => {
-        response.writeHead(200, { 'Content-Type': 'application/json' });
-        response.end(JSON.stringify({ success: true }));
-      });
+      try {
+        await mcpServer.connect(transport);
+        await transport.handleRequest(httpRequest, response, () => {
+          response.writeHead(200, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ success: true }));
+        });
+      } catch {
+        response.writeHead(500, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ error: 'Internal Server Error' }));
+      }
 
       httpRequest.on('close', () => {
         void transport.close();

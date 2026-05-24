@@ -10,7 +10,7 @@ import { useWorkspaceGroupsListObservable, useWorkspacesListObservable } from '@
 import type { IWorkspace, IWorkspaceGroup } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { nanoid } from 'nanoid';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -30,7 +30,7 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
     }
   }, [groups, editingGroupId]);
 
-  const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
+  const wikiWorkspaces = useMemo(() => workspaces.filter(isWikiWorkspace), [workspaces]);
 
   const createGroup = useCallback(async () => {
     const trimmedName = newGroupName.trim();
@@ -170,6 +170,9 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                             setEditingName('');
                           }
                         }}
+                        onBlur={() => {
+                          void saveGroupName(group);
+                        }}
                       />
                     )
                     : (
@@ -239,13 +242,13 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                   getOptionLabel={(workspace) => workspace.name ?? workspace.id ?? ''}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
                   filterSelectedOptions
-                  renderTags={(value, getTagProps) =>
-                    value.map((workspace, tagIndex) => (
+                  renderValue={(value) =>
+                    value.map((workspace) => (
                       <Chip
                         variant='outlined'
                         size='small'
                         label={workspace.name}
-                        {...getTagProps({ index: tagIndex })}
+                        key={workspace.id}
                       />
                     ))}
                   renderInput={(parameters) => (

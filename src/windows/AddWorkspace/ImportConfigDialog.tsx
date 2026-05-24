@@ -27,12 +27,12 @@ export function ImportConfigDialog({ open, wikiFolderLocation, onClose, onConfir
   const [loading, loadingSetter] = useState(false);
   const [error, errorSetter] = useState<string | undefined>(undefined);
   const [selectedKeys, selectedKeysSetter] = useState<Set<string>>(new Set());
-  const mountedRef = useRef(true);
+  const mountedReference = useRef(true);
 
   useEffect(() => {
-    mountedRef.current = true;
+    mountedReference.current = true;
     return () => {
-      mountedRef.current = false;
+      mountedReference.current = false;
     };
   }, []);
 
@@ -44,13 +44,13 @@ export function ImportConfigDialog({ open, wikiFolderLocation, onClose, onConfir
     void (async () => {
       try {
         const wikiConfig = await window.service.database.readWikiConfig(wikiFolderLocation);
-        if (!mountedRef.current) return;
+        if (!mountedReference.current) return;
         configSetter(wikiConfig);
       } catch (error_) {
-        if (!mountedRef.current) return;
+        if (!mountedReference.current) return;
         errorSetter((error_ as Error).message);
       } finally {
-        if (mountedRef.current) {
+        if (mountedReference.current) {
           loadingSetter(false);
         }
       }

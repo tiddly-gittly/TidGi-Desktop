@@ -297,6 +297,12 @@ export class Window implements IWindowService {
           stateReference.saveState(newWindow);
         }, 500);
       });
+      newWindow.on('closed', () => {
+        if (this.mainWindowHideSaveTimer !== undefined) {
+          clearTimeout(this.mainWindowHideSaveTimer);
+          this.mainWindowHideSaveTimer = undefined;
+        }
+      });
     }
     if (isWindowWithBrowserView) {
       const activeWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).getActiveWorkspace();

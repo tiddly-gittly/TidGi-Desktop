@@ -199,7 +199,20 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       const { webContents } = await getWebContents(workspaceId);
       const parts = key.split('+');
       const mainKey = parts.at(-1) ?? key;
-      const modifiers: Array<'shift' | 'control' | 'alt' | 'meta'> = parts.slice(0, -1).map(m => m.toLowerCase() as 'shift' | 'control' | 'alt' | 'meta');
+      const modifierMap: Record<string, 'shift' | 'control' | 'alt' | 'meta'> = {
+        shift: 'shift',
+        ctrl: 'control',
+        control: 'control',
+        alt: 'alt',
+        option: 'alt',
+        meta: 'meta',
+        cmd: 'meta',
+        command: 'meta',
+      };
+      const modifiers = parts
+        .slice(0, -1)
+        .map(m => modifierMap[m.toLowerCase()])
+        .filter((m): m is 'shift' | 'control' | 'alt' | 'meta' => m !== undefined);
       webContents.sendInputEvent({ type: 'keyDown', keyCode: mainKey, modifiers });
       webContents.sendInputEvent({ type: 'keyUp', keyCode: mainKey, modifiers });
       return { success: true, key };
@@ -245,7 +258,9 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       }
       if (!raw.ok) {
         // Redact absolute file paths from the stack before returning to avoid leaking local paths
-        const redactedStack = (raw.stack ?? '').replace(/[A-Za-z]:\\[^\s]*/g, '<redacted>').replace(/\/(?:Users|home)\/[^\s]*/g, '<redacted>');
+        const redactedStack = (raw.stack ?? '')
+          .replace(/[A-Za-z]:\\[\s\S]*?(?=\n|\s{2,}|$)/gi, '<redacted>')
+          .replace(/\/(?:Users|home)\/[\s\S]*?(?=\n|\s{2,}|$)/g, '<redacted>');
         throw new Error(`ui_evaluate script error: ${raw.error ?? '(unknown)'}\n${redactedStack}`);
       }
       return raw.value;

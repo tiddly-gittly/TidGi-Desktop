@@ -1,8 +1,8 @@
 import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
-import { makeSlugPath } from '../supports/paths';
 import type { MockAnalyticsServer } from '../supports/mockAnalytics';
+import { makeSlugPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';

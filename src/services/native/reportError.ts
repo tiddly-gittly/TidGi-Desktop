@@ -66,8 +66,8 @@ Locale: ${app.getLocale()}
  */
 function sanitizePaths(text: string): string {
   return text
-    .replace(/[A-Z]:\\[^\s]*/gi, '<redacted>')
-    .replace(/\/(?:home|Users)\/[^\s]*/g, '<redacted>');
+    .replace(/[A-Za-z]:\\[\s\S]*?(?=\n|\s{2,}|$)/gi, '<redacted>')
+    .replace(/\/(?:home|Users)\/[\s\S]*?(?=\n|\s{2,}|$)/g, '<redacted>');
 }
 
 export function reportErrorToGithubWithTemplates(error: Error): void {

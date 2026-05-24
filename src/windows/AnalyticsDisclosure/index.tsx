@@ -1,6 +1,7 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
 import { styled } from '@mui/material/styles';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button, DialogContent as DialogContentRaw, Typography } from '@mui/material';
 
@@ -38,7 +39,14 @@ const DisableButton = styled(Button)`
 `;
 
 export default function AnalyticsDisclosure(): React.JSX.Element {
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mountedReference = useRef(true);
+  useEffect(() => {
+    return () => {
+      mountedReference.current = false;
+    };
+  }, []);
 
   const handleResponse = async (enabled: boolean) => {
     if (isSubmitting) {
@@ -51,42 +59,56 @@ export default function AnalyticsDisclosure(): React.JSX.Element {
       await window.service.analytics.track('analytics.disclosure_responded', { enabled });
       await window.service.window.close(window.meta().windowName);
     } catch {
-      setIsSubmitting(false);
+      if (mountedReference.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <DialogContent>
       <Helmet>
-        <title>Analytics Data Collection</title>
+        <title>{t('AnalyticsDisclosure.Title')}</title>
       </Helmet>
 
-      <Title variant='h6'>Help Improve TidGi</Title>
+      <Title variant='h6'>{t('AnalyticsDisclosure.Title')}</Title>
 
       <Typography variant='body2' color='textSecondary' sx={{ mb: 1.5 }}>
-        We collect anonymous usage data to help improve TidGi. Your privacy is our priority.
+        {t('AnalyticsDisclosure.Description')}
       </Typography>
 
       <Typography variant='body2' sx={{ mb: 0.5, fontWeight: 600 }}>
-        We collect:
+        {t('AnalyticsDisclosure.WeCollect')}
       </Typography>
       <BulletList>
-        <li><Typography variant='body2'>Feature usage counts (e.g., how often sync is triggered)</Typography></li>
-        <li><Typography variant='body2'>App version and platform (Windows, macOS, Linux)</Typography></li>
-        <li><Typography variant='body2'>Error reports to help fix bugs faster</Typography></li>
+        <li>
+          <Typography variant='body2'>{t('AnalyticsDisclosure.CollectFeatureUsage')}</Typography>
+        </li>
+        <li>
+          <Typography variant='body2'>{t('AnalyticsDisclosure.CollectPlatform')}</Typography>
+        </li>
+        <li>
+          <Typography variant='body2'>{t('AnalyticsDisclosure.CollectErrors')}</Typography>
+        </li>
       </BulletList>
 
       <Typography variant='body2' sx={{ mb: 0.5, mt: 2, fontWeight: 600 }}>
-        We do NOT collect:
+        {t('AnalyticsDisclosure.WeDoNotCollect')}
       </Typography>
       <BulletList>
-        <li><Typography variant='body2'>Your wiki content or tiddler text</Typography></li>
-        <li><Typography variant='body2'>File paths from your computer</Typography></li>
-        <li><Typography variant='body2'>Any personal data (names, emails, IPs)</Typography></li>
+        <li>
+          <Typography variant='body2'>{t('AnalyticsDisclosure.NotCollectWikiContent')}</Typography>
+        </li>
+        <li>
+          <Typography variant='body2'>{t('AnalyticsDisclosure.NotCollectPaths')}</Typography>
+        </li>
+        <li>
+          <Typography variant='body2'>{t('AnalyticsDisclosure.NotCollectPersonalData')}</Typography>
+        </li>
       </BulletList>
 
       <Typography variant='body2' color='textSecondary' sx={{ mt: 2 }}>
-        You can change this anytime in Preferences &gt; Privacy.
+        {t('AnalyticsDisclosure.ChangeAnytime')}
       </Typography>
 
       <ButtonContainer>
@@ -97,7 +119,7 @@ export default function AnalyticsDisclosure(): React.JSX.Element {
             void handleResponse(false);
           }}
         >
-          Disable Analytics
+          {t('AnalyticsDisclosure.DisableAnalytics')}
         </DisableButton>
         <Button
           variant='contained'
@@ -107,7 +129,7 @@ export default function AnalyticsDisclosure(): React.JSX.Element {
             void handleResponse(true);
           }}
         >
-          Enable Analytics
+          {t('AnalyticsDisclosure.EnableAnalytics')}
         </Button>
       </ButtonContainer>
     </DialogContent>

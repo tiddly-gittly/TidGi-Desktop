@@ -24,23 +24,40 @@ export async function startMcpServer(port: number = DEFAULT_MCP_SERVER_PORT, req
   });
 }
 
-export function stopMcpServer(): void {
-  server?.close();
-  server = undefined;
+export function stopMcpServer(): Promise<void> | undefined {
+  return new Promise((resolve) => {
+    if (server === undefined) {
+      resolve();
+      return;
+    }
+    server.close(() => {
+      resolve();
+    });
+    server = undefined;
+  });
 }
+
+let startPromise: Promise<void> | undefined;
 
 /**
  * Read MCP preferences and start or stop the server accordingly.
  */
 export async function restartMcpServerIfNeeded(preferenceService: IPreferenceService): Promise<void> {
-  const enabled = await preferenceService.get('mcpServerEnabled');
-  if (!enabled) {
-    stopMcpServer();
-    return;
+  if (startPromise) {
+    await startPromise;
   }
-  stopMcpServer();
-  const port = await preferenceService.get('mcpServerPort');
-  const requireToken = await preferenceService.get('mcpServerRequireToken');
-  const token = await preferenceService.get('mcpServerToken');
-  void startMcpServer(port, requireToken, token);
+  startPromise = (async () => {
+    const enabled = await preferenceService.get('mcpServerEnabled');
+    if (!enabled) {
+      void stopMcpServer();
+      return;
+    }
+    void stopMcpServer();
+    const port = await preferenceService.get('mcpServerPort');
+    const requireToken = await preferenceService.get('mcpServerRequireToken');
+    const token = await preferenceService.get('mcpServerToken');
+    await startMcpServer(port, requireToken, token);
+  })();
+  await startPromise;
+  startPromise = undefined;
 }
