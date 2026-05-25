@@ -311,24 +311,69 @@ export class View implements IViewService {
         if (!view.webContents) continue;
 
         reloadTasks.push((async () => {
-          let targetUrl: string | undefined;
-          if (workspaceID !== undefined) {
-            const workspace = await this.workspaceService.get(workspaceID);
-            if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
-              targetUrl = workspace.lastUrl;
-            }
+          const workspace = workspaceID !== undefined ? await this.workspaceService.get(workspaceID) : undefined;
+          const targetUrl = workspace && isWikiWorkspace(workspace)
+            ? (rememberLastPageVisited ? workspace.lastUrl : undefined) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id)
+            : undefined;
+
+          // Wait for any in-flight navigation to finish before reloading.
+          // This prevents did-stop-loading from firing for the cancelled load
+          // when reload() / loadURL() interrupts an ongoing navigation.
+          if (view.webContents.isLoading()) {
+            await new Promise<void>((resolve) => {
+              const onLoaded = () => {
+                view.webContents.off('did-stop-loading', onLoaded);
+                resolve();
+              };
+              view.webContents.on('did-stop-loading', onLoaded);
+              setTimeout(() => {
+                view.webContents.off('did-stop-loading', onLoaded);
+                resolve();
+              }, 10_000);
+            });
           }
 
-          if (targetUrl) {
-            try {
-              await view.webContents.loadURL(targetUrl);
-            } catch (error) {
-              const errorMessage = error instanceof Error ? `${error.message} ${error.stack ?? ''}` : String(error);
-              logger.warn(new ViewLoadUrlError(targetUrl, errorMessage));
+          // Wait for the navigation/reload to actually finish so callers
+          // (e.g. E2E executeJavaScript) don't race with an in-flight load.
+          await new Promise<void>((resolve, reject) => {
+            const onLoaded = () => {
+              view.webContents.off('did-stop-loading', onLoaded);
+              view.webContents.off('did-fail-load', onFailed);
+              resolve();
+            };
+            const onFailed = (_event: unknown, errorCode: number, errorDescription: string) => {
+              if (errorCode === -3) {
+                // ERR_ABORTED — expected when reload()/loadURL() cancels an
+                // in-flight load. Keep listening for did-stop-loading of the
+                // new navigation.
+                return;
+              }
+              view.webContents.off('did-stop-loading', onLoaded);
+              view.webContents.off('did-fail-load', onFailed);
+              reject(new Error(`Reload failed: ${errorDescription} (${errorCode})`));
+            };
+            view.webContents.on('did-stop-loading', onLoaded);
+            view.webContents.on('did-fail-load', onFailed);
+
+            if (targetUrl) {
+              view.webContents.loadURL(targetUrl).catch((error: unknown) => {
+                view.webContents.off('did-stop-loading', onLoaded);
+                view.webContents.off('did-fail-load', onFailed);
+                const errorMessage = error instanceof Error ? `${error.message} ${error.stack ?? ''}` : String(error);
+                logger.warn(new ViewLoadUrlError(targetUrl, errorMessage));
+                resolve();
+              });
+            } else {
+              view.webContents.reload();
             }
-          } else {
-            view.webContents.reload();
-          }
+
+            // Failsafe: resolve anyway after 30s so we don't hang forever
+            setTimeout(() => {
+              view.webContents.off('did-stop-loading', onLoaded);
+              view.webContents.off('did-fail-load', onFailed);
+              resolve();
+            }, 30_000);
+          });
         })());
       }
     }
@@ -416,11 +461,12 @@ export class View implements IViewService {
     view.webContents.focus();
     browserWindow.setTitle(view.webContents.getTitle());
     // When a workspace view moves from offscreen to onscreen, its webContents may
-    // still show about:blank if the initial loadURL was skipped (e.g. due to a
-    // transient load error flag). Reload the URL so the embedded wiki content is
-    // always visible when the view is shown.
+    // still show about:blank or an error page if the initial loadURL was skipped
+    // (e.g. due to a transient load error flag) or if a previous reload failed.
+    // Reload the URL so the embedded wiki content is always visible.
     const currentUrl = view.webContents.getURL();
-    if (!currentUrl || currentUrl === 'about:blank') {
+    const didFailLoad = await this.workspaceService.workspaceDidFailLoad(workspaceID);
+    if (!currentUrl || currentUrl === 'about:blank' || didFailLoad) {
       const workspace = await this.workspaceService.get(workspaceID);
       if (workspace !== undefined) {
         await this.loadUrlForView(workspace, view);
