@@ -314,7 +314,9 @@ export class Wiki implements IWikiService {
 
       // Handle worker exit
       wikiWorker.on('exit', (code) => {
-        delete this.wikiWorkers[workspaceID];
+        if (this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker) {
+          delete this.wikiWorkers[workspaceID];
+        }
         const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped with code ${code}`;
         logger.info(warningMessage, loggerMeta);
         if (code !== 0) {
@@ -334,80 +336,87 @@ export class Wiki implements IWikiService {
       // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
       logger.debug('startWiki calling startNodeJSWiki in the main process', { function: 'wikiWorker.startNodeJSWiki' });
 
-      worker.startNodeJSWiki(workerData).subscribe(async (message) => {
-        if (message.type === 'control') {
-          await workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
-          switch (message.actions) {
-            case WikiControlActions.booted: {
-              setTimeout(async () => {
-                logger.info('resolved with control booted', {
+      worker.startNodeJSWiki(workerData).subscribe({
+        next: async (message) => {
+          if (message.type === 'control') {
+            await workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
+            switch (message.actions) {
+              case WikiControlActions.booted: {
+                setTimeout(async () => {
+                  logger.info('resolved with control booted', {
+                    ...loggerMeta,
+                    message: message.message,
+                    workspaceID,
+                    function: 'startWiki',
+                  });
+                  resolve();
+                }, 100);
+                break;
+              }
+              case WikiControlActions.start: {
+                if (message.message !== undefined) {
+                  logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta, workspaceID });
+                }
+                break;
+              }
+              case WikiControlActions.listening: {
+                // API server started, but we are using IPC to serve content now, so do nothing here.
+                if (message.message !== undefined) {
+                  logger.info('WikiControlActions.listening ' + message.message, { ...loggerMeta, workspaceID });
+                }
+                break;
+              }
+              case WikiControlActions.error: {
+                const errorMessage = message.message ?? 'get WikiControlActions.error without message';
+                logger.error('rejected with control error', {
                   ...loggerMeta,
-                  message: message.message,
+                  message,
+                  errorMessage,
                   workspaceID,
                   function: 'startWiki',
                 });
-                resolve();
-              }, 100);
-              break;
-            }
-            case WikiControlActions.start: {
-              if (message.message !== undefined) {
-                logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta, workspaceID });
-              }
-              break;
-            }
-            case WikiControlActions.listening: {
-              // API server started, but we are using IPC to serve content now, so do nothing here.
-              if (message.message !== undefined) {
-                logger.info('WikiControlActions.listening ' + message.message, { ...loggerMeta, workspaceID });
-              }
-              break;
-            }
-            case WikiControlActions.error: {
-              const errorMessage = message.message ?? 'get WikiControlActions.error without message';
-              logger.error('rejected with control error', {
-                ...loggerMeta,
-                message,
-                errorMessage,
-                workspaceID,
-                function: 'startWiki',
-              });
-              await workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
+                await workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
 
-              // For plugin errors that occur after wiki boot, realign the view to hide it and show error message
-              const isPluginError = message.source === 'plugin-error';
-              if (isPluginError && workspace.active) {
-                const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-                await workspaceViewService.realignActiveWorkspace(workspaceID);
-                logger.info('Realigned view after plugin error', { workspaceID, function: 'startWiki' });
-              }
+                // For plugin errors that occur after wiki boot, realign the view to hide it and show error message
+                const isPluginError = message.source === 'plugin-error';
+                if (isPluginError && workspace.active) {
+                  const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+                  await workspaceViewService.realignActiveWorkspace(workspaceID);
+                  logger.info('Realigned view after plugin error', { workspaceID, function: 'startWiki' });
+                }
 
-              // Port availability check should have prevented EADDRINUSE, but handle as fallback
-              if (errorMessage.includes('EADDRINUSE')) {
-                logger.warn('EADDRINUSE error despite pre-flight port check', {
-                  workspaceID,
-                  port,
-                  errorMessage,
-                });
-                // Try to find another available port as emergency fallback
-                const emergencyPort = await findAvailablePort(port + 1);
-                if (emergencyPort !== null) {
-                  const portChange = { port: emergencyPort };
-                  await workspaceService.update(workspaceID, portChange, true);
-                  reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
-                } else {
+                // Port availability check should have prevented EADDRINUSE, but handle as fallback
+                if (errorMessage.includes('EADDRINUSE')) {
+                  logger.warn('EADDRINUSE error despite pre-flight port check', {
+                    workspaceID,
+                    port,
+                    errorMessage,
+                  });
+                  // Try to find another available port as emergency fallback
+                  const emergencyPort = await findAvailablePort(port + 1);
+                  if (emergencyPort !== null) {
+                    const portChange = { port: emergencyPort };
+                    await workspaceService.update(workspaceID, portChange, true);
+                    reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                  } else {
+                    reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
+                  }
+                  return;
+                }
+
+                // For plugin errors, don't reject - let user see the error and try to recover
+                if (!isPluginError) {
                   reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
                 }
-                return;
-              }
-
-              // For plugin errors, don't reject - let user see the error and try to recover
-              if (!isPluginError) {
-                reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false, { ...workspace }));
               }
             }
           }
-        }
+        },
+        error: (error: unknown) => {
+          const normalizedError = error instanceof Error ? error : new Error(String(error));
+          logger.error('startNodeJSWiki Observable error', { error: normalizedError, workspaceID, function: 'startWiki' });
+          reject(new WikiRuntimeError(normalizedError, name, false));
+        },
       });
     });
     void this.afterWikiStart(workspaceID);
@@ -537,12 +546,16 @@ export class Wiki implements IWikiService {
       return;
     }
 
+    // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker
+    if (nativeWorker !== undefined) {
+      nativeWorker.removeAllListeners();
+    }
+
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
 
     try {
       logger.info(`worker.beforeExit for ${id}`);
-      // Add timeout to prevent hanging
       await Promise.race([
         worker.beforeExit(),
         new Promise((_, reject) => {
@@ -551,15 +564,22 @@ export class Wiki implements IWikiService {
           }, 5000);
         }),
       ]);
+    } catch (error) {
+      logger.error('wiki worker beforeExit failed', { function: 'stopWiki', error });
+    }
+    try {
       logger.info(`terminateWorker for ${id}`);
       await terminateWorker(nativeWorker);
-      // Detach worker from service message handlers
-      if (detachWorker !== undefined) {
+    } catch (error) {
+      logger.error('terminateWorker failed', { function: 'stopWiki', error });
+    }
+    if (detachWorker !== undefined) {
+      try {
         logger.info(`detachWorker for ${id}`);
         detachWorker();
+      } catch {
+        /* ignore */
       }
-    } catch (error) {
-      logger.error('wiki worker stop failed', { function: 'stopWiki', error });
     }
 
     delete this.wikiWorkers[id];
