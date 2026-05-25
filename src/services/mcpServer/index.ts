@@ -31,9 +31,9 @@ export function stopMcpServer(): Promise<void> | undefined {
       return;
     }
     server.close(() => {
+      server = undefined;
       resolve();
     });
-    server = undefined;
   });
 }
 
@@ -47,16 +47,20 @@ export async function restartMcpServerIfNeeded(preferenceService: IPreferenceSer
     await startPromise;
   }
   startPromise = (async () => {
-    const enabled = await preferenceService.get('mcpServerEnabled');
-    if (!enabled) {
-      void stopMcpServer();
-      return;
+    try {
+      const enabled = await preferenceService.get('mcpServerEnabled');
+      if (!enabled) {
+        await stopMcpServer();
+        return;
+      }
+      await stopMcpServer();
+      const port = await preferenceService.get('mcpServerPort');
+      const requireToken = await preferenceService.get('mcpServerRequireToken');
+      const token = await preferenceService.get('mcpServerToken');
+      await startMcpServer(port, requireToken, token);
+    } finally {
+      startPromise = undefined;
     }
-    void stopMcpServer();
-    const port = await preferenceService.get('mcpServerPort');
-    const requireToken = await preferenceService.get('mcpServerRequireToken');
-    const token = await preferenceService.get('mcpServerToken');
-    await startMcpServer(port, requireToken, token);
   })();
   await startPromise;
   startPromise = undefined;

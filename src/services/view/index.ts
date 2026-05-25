@@ -279,8 +279,17 @@ export class View implements IViewService {
     const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
     const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
-      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) return;
+      // Reset the error flag BEFORE loading so that transient failures (e.g. worker
+      // not yet ready during parallel init) don't permanently block URL loading.
+      // The did-fail-load handler will re-set didFailLoadErrorMessage if the load
+      // genuinely fails — but we must give loadURL a chance to fire did-start-loading
+      // (which also clears the flag) before checking workspaceDidFailLoad.
       await this.workspaceService.updateMetaData(workspace.id, { didFailLoadErrorMessage: null, isLoading: true });
+      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
+        // Still marked as failed — the updateMetaData above may have been overridden
+        // by a concurrent error.  Don't retry: the view will show an error.
+        return;
+      }
       await view.webContents.loadURL(urlToLoad);
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
@@ -349,15 +358,38 @@ export class View implements IViewService {
     const key = `${workspaceID}-${windowName}`;
     this.customBoundsMap.delete(key);
     this.activelyShownViews.add(key);
-    // Ensure it's a child and brought to the front. Removing and re-adding forces
-    // Electron to properly render the view, preventing blank screen bugs when
-    // restoring a window from minimized/hidden state.
+    // Ensure the view is attached as a child. The remove-add sequence forces
+    // Electron to repaint, preventing blank screen bugs when restoring a window
+    // from minimized/hidden state. If the view is not yet attached, addChildView
+    // alone is enough; if it is attached, removing first ensures re-adding
+    // properly triggers the compositor.
+    let attached = false;
     try {
       browserWindow.contentView.removeChildView(view);
-    } catch { /* ignore if not attached */ }
+      attached = true;
+    } catch {
+      // View was not attached — normal for window-recreation or first-show.
+    }
     try {
       browserWindow.contentView.addChildView(view);
-    } catch { /* already added */ }
+      attached = true;
+    } catch (addError) {
+      // If removeChildView succeeded but addChildView fails, the view is
+      // orphaned (removed but not re-added). Log the error and attempt
+      // a second add in case the failure was transient.
+      if (attached) {
+        logger.error('showView: addChildView failed after successful remove, view may be orphaned', {
+          workspaceID,
+          windowName,
+          error: addError,
+        });
+        try {
+          browserWindow.contentView.addChildView(view);
+        } catch {
+          logger.error('showView: second addChildView attempt also failed', { workspaceID, windowName });
+        }
+      }
+    }
     // If the BrowserWindow was recreated, the resize listener is still bound to the
     // old BrowserWindow instance. Rebind it here so dragging/resizing the restored
     // window keeps the view filling the window.
@@ -366,6 +398,17 @@ export class View implements IViewService {
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     view.webContents.focus();
     browserWindow.setTitle(view.webContents.getTitle());
+    // When a workspace view moves from offscreen to onscreen, its webContents may
+    // still show about:blank if the initial loadURL was skipped (e.g. due to a
+    // transient load error flag). Reload the URL so the embedded wiki content is
+    // always visible when the view is shown.
+    const currentUrl = view.webContents.getURL();
+    if (!currentUrl || currentUrl === 'about:blank') {
+      const workspace = await this.workspaceService.get(workspaceID);
+      if (workspace !== undefined) {
+        await this.loadUrlForView(workspace, view);
+      }
+    }
     logger.info('[test-id-VIEW_SHOWN]', { workspaceID, windowName });
   }
 

@@ -589,7 +589,11 @@ export class Wiki implements IWikiService {
     // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
     // Must be done after terminateWorker/detachWorker so the workerAdapter proxy listeners remain intact during beforeExit/terminate.
     if (nativeWorker !== undefined) {
-      nativeWorker.removeAllListeners();
+      try {
+        nativeWorker.removeAllListeners();
+      } catch (error) {
+        logger.error('nativeWorker.removeAllListeners failed', { function: 'stopWiki', error });
+      }
     }
 
     delete this.wikiWorkers[id];

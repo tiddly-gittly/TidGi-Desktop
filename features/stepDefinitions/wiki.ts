@@ -1256,6 +1256,9 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
       if (!workspace) return { success: false, error: 'Workspace not found for id=' + workspaceId };
       try {
         await window.service.wiki.restartWiki(workspace);
+        // Reload the view so the embedded page reconnects to the new wiki worker.
+        // Without this the view may show stale content from the old worker.
+        await window.service.view.reloadViewsWebContents(workspace.id);
         return { success: true };
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
