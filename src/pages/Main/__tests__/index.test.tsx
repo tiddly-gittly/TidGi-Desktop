@@ -187,7 +187,7 @@ describe('Main Page', () => {
       workspacesSubject.next(
         createWorkspaces().map(workspace => ({
           ...workspace,
-          active: workspace.id === PageType.agent,
+          active: workspace.id === 'agent',
         })),
       );
     });
