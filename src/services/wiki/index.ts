@@ -556,7 +556,7 @@ export class Wiki implements IWikiService {
         new Promise((_, reject) => {
           setTimeout(() => {
             reject(new Error('beforeExit timeout'));
-          }, 5000);
+          }, 2000);
         }),
       ]);
     } catch (error) {
@@ -564,9 +564,16 @@ export class Wiki implements IWikiService {
     }
     try {
       logger.info(`terminateWorker for ${id}`);
-      await terminateWorker(nativeWorker);
+      await Promise.race([
+        terminateWorker(nativeWorker),
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error('terminateWorker timeout'));
+          }, 3000);
+        }),
+      ]);
     } catch (error) {
-      logger.error('terminateWorker failed', { function: 'stopWiki', error });
+      logger.error('terminateWorker failed or timed out', { function: 'stopWiki', error });
     }
     if (detachWorker !== undefined) {
       try {
