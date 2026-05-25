@@ -549,11 +549,8 @@ export class Wiki implements IWikiService {
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
 
-    // Fire beforeExit in the background — don't let nsfw.stop() hangs block stopWiki.
-    // The OS will clean up file watchers when the worker process is terminated.
-    worker.beforeExit().catch((error: unknown) => {
-      logger.error('wiki worker beforeExit failed', { function: 'stopWiki', error });
-    });
+    // Skip beforeExit — nsfw.stop() can deadlock the worker thread, causing
+    // worker.terminate() to hang indefinitely. The OS cleans up watchers on exit.
     try {
       logger.info(`terminateWorker for ${id}`);
       await Promise.race([
