@@ -10,6 +10,7 @@ Feature: Workspace Grouping
     And I wait for the page to load completely
     And the browser view should be loaded and visible
 
+  @calibrate
   Scenario: Ungrouping workspaces and emptying groups via own-group-header drag
     When I create new wiki workspaces with names:
       | Ungroup Alpha |
@@ -29,6 +30,7 @@ Feature: Workspace Grouping
     Then workspace "Ungroup Gamma" should be ungrouped
     And there should be 1 workspace groups
 
+  @calibrate
   Scenario: Dragging across top, bottom, and center zones covers grouped and ungrouped targets
     When I create new wiki workspaces with names:
       | Zone Test Alpha |
@@ -50,6 +52,7 @@ Feature: Workspace Grouping
     Then workspace "Zone Test Delta" should be ungrouped
     And workspaces "Zone Test Alpha" and "Zone Test Beta" should share a group
 
+  @calibrate
   Scenario: Dragging workspace between different groups after collapsing and re-expanding the source group
     When I create new wiki workspaces with names:
       | Cross Group Alpha |
@@ -66,6 +69,7 @@ Feature: Workspace Grouping
     Then workspaces "Cross Group Alpha" and "Cross Group Gamma" should share a group
     And workspace "Cross Group Beta" should be in a group
 
+  @calibrate
   Scenario: Reordering group headers and positioning before ungrouped workspaces
     When I create new wiki workspaces with names:
       | Group Order Alpha |
