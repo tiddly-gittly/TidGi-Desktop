@@ -113,6 +113,22 @@ async function executeInBrowserView<T>(
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
+      // If the view is currently navigating (e.g. after reloadViewsWebContents),
+      // executeJavaScript will time out. Wait for navigation to finish first.
+      if (targetWebContents.isLoading()) {
+        await new Promise<void>((resolve) => {
+          const onLoaded = () => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          };
+          targetWebContents.on('did-stop-loading', onLoaded);
+          // Failsafe: proceed even if the event never fires
+          setTimeout(() => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          }, 10_000);
+        });
+      }
       const result: T = await Promise.race([
         targetWebContents.executeJavaScript(scriptContent as string, true),
         new Promise<never>((_, reject) =>
