@@ -27,7 +27,15 @@ module.exports = {
     formatOptions: {
       snippetInterface: 'async-await',
     },
-    // sync.feature has steps that take longer than smoke; include it so calibration captures true worst-case.
-    paths: ['features/smoke.feature', 'features/sync.feature'],
+    // Include features with steps that are prone to timeout under heavy load
+    // (e.g., update workspace settings, watch-fs waits, git sync) so calibration
+    // captures the true worst-case per-step duration.
+    paths: [
+      'features/smoke.feature',
+      'features/sync.feature',
+      'features/filesystemPlugin.feature',
+      'features/crossWindowSync.feature',
+      'features/gitLog.feature',
+    ],
   },
 };
