@@ -302,21 +302,63 @@ export class View implements IViewService {
 
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
     const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
-    this.forEachView(async (view, id) => {
-      if (workspaceID !== undefined && id !== workspaceID) return;
-      if (!view.webContents) return;
-      if (workspaceID !== undefined) {
-        const workspace = await this.workspaceService.get(workspaceID);
-        if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
-          try {
-            await view.webContents.loadURL(workspace.lastUrl);
-          } catch (error) {
-            logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+    const reloadTasks: Promise<void>[] = [];
+
+    for (const [id, windowViews] of this.views.entries()) {
+      if (workspaceID !== undefined && id !== workspaceID) continue;
+
+      for (const [, view] of windowViews.entries()) {
+        if (!view.webContents) continue;
+
+        reloadTasks.push((async () => {
+          let targetUrl: string | undefined;
+          if (workspaceID !== undefined) {
+            const workspace = await this.workspaceService.get(workspaceID);
+            if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
+              targetUrl = workspace.lastUrl;
+            }
           }
-        }
+
+          // Wait for the navigation/reload to actually finish so callers
+          // (e.g. E2E executeJavaScript) don't race with an in-flight load.
+          await new Promise<void>((resolve, reject) => {
+            const onLoaded = () => {
+              view.webContents.off('did-stop-loading', onLoaded);
+              view.webContents.off('did-fail-load', onFailed);
+              resolve();
+            };
+            const onFailed = (_event: unknown, errorCode: number, errorDescription: string) => {
+              view.webContents.off('did-stop-loading', onLoaded);
+              view.webContents.off('did-fail-load', onFailed);
+              reject(new Error(`Reload failed: ${errorDescription} (${errorCode})`));
+            };
+            view.webContents.on('did-stop-loading', onLoaded);
+            view.webContents.on('did-fail-load', onFailed);
+
+            if (targetUrl) {
+              view.webContents.loadURL(targetUrl).catch((error: unknown) => {
+                view.webContents.off('did-stop-loading', onLoaded);
+                view.webContents.off('did-fail-load', onFailed);
+                const errorMessage = error instanceof Error ? `${error.message} ${error.stack ?? ''}` : String(error);
+                logger.warn(new ViewLoadUrlError(targetUrl, errorMessage));
+                resolve();
+              });
+            } else {
+              view.webContents.reload();
+            }
+
+            // Failsafe: resolve anyway after 30s so we don't hang forever
+            setTimeout(() => {
+              view.webContents.off('did-stop-loading', onLoaded);
+              view.webContents.off('did-fail-load', onFailed);
+              resolve();
+            }, 30_000);
+          });
+        })());
       }
-      view.webContents.reload();
-    });
+    }
+
+    await Promise.all(reloadTasks);
   }
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
