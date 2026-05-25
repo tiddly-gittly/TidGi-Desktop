@@ -546,11 +546,6 @@ export class Wiki implements IWikiService {
       return;
     }
 
-    // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker
-    if (nativeWorker !== undefined) {
-      nativeWorker.removeAllListeners();
-    }
-
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
 
@@ -580,6 +575,11 @@ export class Wiki implements IWikiService {
       } catch {
         /* ignore */
       }
+    }
+    // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
+    // Must be done after terminateWorker/detachWorker so the workerAdapter proxy listeners remain intact during beforeExit/terminate.
+    if (nativeWorker !== undefined) {
+      nativeWorker.removeAllListeners();
     }
 
     delete this.wikiWorkers[id];

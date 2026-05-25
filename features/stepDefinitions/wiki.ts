@@ -1262,7 +1262,6 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
           if (!workspace) return { success: false, error: 'Workspace not found for id=' + ${JSON.stringify(workspaceId)} };
           try {
             await window.service.wiki.restartWiki(workspace);
-            await window.service.view.reloadViewsWebContents(workspace.id);
             return { success: true };
           } catch (error) {
             return { success: false, error: error instanceof Error ? error.message : String(error) };
