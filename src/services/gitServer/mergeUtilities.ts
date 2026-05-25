@@ -41,7 +41,8 @@ export async function runGitCollectStdout(arguments_: string[], cwd: string, opt
  * - Body section (after the first blank line): merge both sides, keeping desktop lines plus unique mobile lines.
  */
 export function resolveTidConflictMarkers(content: string): string {
-  const lines = content.split('\n');
+  // Normalize line endings so CRLF (Windows) and lone CR (old Mac) are handled identically to LF.
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const resolved: string[] = [];
   let passedBlankLine = false;
   let lineIndex = 0;
@@ -101,7 +102,8 @@ export function resolveTidConflictMarkers(content: string): string {
  * Non-.tid fallback: prefer mobile ("theirs") for all conflict sections.
  */
 export function resolveConflictPreferMobile(content: string): string {
-  const lines = content.split('\n');
+  // Normalize line endings so CRLF (Windows) and lone CR (old Mac) are handled identically to LF.
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const resolved: string[] = [];
   let section: 'normal' | 'ours' | 'theirs' = 'normal';
   for (const line of lines) {
