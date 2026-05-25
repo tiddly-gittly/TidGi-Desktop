@@ -1251,24 +1251,16 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
 
     // Restart the wiki using the runtime-resolved workspace ID
-    const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
-      const windows = BrowserWindow.getAllWindows();
-      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
-      if (!mainWindow) throw new Error('Main window not found');
-
-      return await mainWindow.webContents.executeJavaScript(`
-        (async () => {
-          const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
-          if (!workspace) return { success: false, error: 'Workspace not found for id=' + ${JSON.stringify(workspaceId)} };
-          try {
-            await window.service.wiki.restartWiki(workspace);
-            return { success: true };
-          } catch (error) {
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
-          }
-        })();
-      `) as Promise<{ success: boolean; error?: string }>;
-    }, targetWorkspaceId);
+    const restartResult = await targetWindow.evaluate(async (workspaceId: string) => {
+      const workspace = await window.service.workspace.get(workspaceId);
+      if (!workspace) return { success: false, error: 'Workspace not found for id=' + workspaceId };
+      try {
+        await window.service.wiki.restartWiki(workspace);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }, targetWorkspaceId) as { success: boolean; error?: string };
 
     if (!restartResult.success) {
       throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);
