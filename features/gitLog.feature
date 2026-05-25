@@ -17,7 +17,7 @@ Feature: Git Log Window
     And I wait for SSE and watch-fs to be ready
     And I wait for "git initialization" log marker "[test-id-git-init-complete]"
 
-  @git
+  @git @calibrate
   Scenario: View git commit in Git Log window
     # Create a new tiddler file to trigger a git commit
     When I create file "{tmpDir}/wiki/tiddlers/GitLogTestTiddler.tid" with content:

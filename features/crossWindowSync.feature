@@ -13,7 +13,7 @@ Feature: Cross-Window Synchronization
     Then the browser view should be loaded and visible
     And I wait for "SSE backend ready" log marker "[test-id-SSE_READY]"
 
-  @crossWindowSync @crossWindowSync-basic
+  @crossWindowSync @crossWindowSync-basic @calibrate
   Scenario: Changes made to files should sync back to browser via SSE
     When I update workspace "wiki" settings:
       | property              | value |

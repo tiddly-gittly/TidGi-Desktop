@@ -3,7 +3,7 @@ Feature: TidGi Application Launch
   I want to launch TidGi successfully
   So that I can use the application
 
-  @smoke @logging
+  @smoke @logging @calibrate
   Scenario: Basic launch, preferences, and filesystem watch setup
     Given I start mock analytics server
     When I launch the TidGi application
@@ -61,7 +61,7 @@ Feature: TidGi Application Launch
       """
     Then I wait for tiddler "ProbeGamma" to be added by watch-fs
 
-  @smoke
+  @smoke @calibrate
   Scenario: Watcher re-index under accumulated file state
     # This scenario runs AFTER the first one, on a system where the
     # wiki has been restarted and the watcher must re-index files

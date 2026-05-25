@@ -27,15 +27,10 @@ module.exports = {
     formatOptions: {
       snippetInterface: 'async-await',
     },
-    // Include features with steps that are prone to timeout under heavy load
-    // (e.g., update workspace settings, watch-fs waits, git sync) so calibration
-    // captures the true worst-case per-step duration.
-    paths: [
-      'features/smoke.feature',
-      'features/sync.feature',
-      'features/filesystemPlugin.feature',
-      'features/crossWindowSync.feature',
-      'features/gitLog.feature',
-    ],
+    // Calibration discovers timeout-prone scenarios automatically via the
+    // @calibrate tag. Add @calibrate to any scenario whose steps are heavy
+    // (e.g., update workspace settings, watch-fs waits, git sync, restart).
+    paths: ['features/*.feature'],
+    tags: '@calibrate',
   },
 };
