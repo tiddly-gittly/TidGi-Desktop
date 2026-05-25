@@ -549,19 +549,11 @@ export class Wiki implements IWikiService {
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
 
-    try {
-      logger.info(`worker.beforeExit for ${id}`);
-      await Promise.race([
-        worker.beforeExit(),
-        new Promise((_, reject) => {
-          setTimeout(() => {
-            reject(new Error('beforeExit timeout'));
-          }, 2000);
-        }),
-      ]);
-    } catch (error) {
+    // Fire beforeExit in the background — don't let nsfw.stop() hangs block stopWiki.
+    // The OS will clean up file watchers when the worker process is terminated.
+    worker.beforeExit().catch((error: unknown) => {
       logger.error('wiki worker beforeExit failed', { function: 'stopWiki', error });
-    }
+    });
     try {
       logger.info(`terminateWorker for ${id}`);
       await Promise.race([
