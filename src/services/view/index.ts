@@ -319,41 +319,16 @@ export class View implements IViewService {
             }
           }
 
-          // Wait for the navigation/reload to actually finish so callers
-          // (e.g. E2E executeJavaScript) don't race with an in-flight load.
-          await new Promise<void>((resolve, reject) => {
-            const onLoaded = () => {
-              view.webContents.off('did-stop-loading', onLoaded);
-              view.webContents.off('did-fail-load', onFailed);
-              resolve();
-            };
-            const onFailed = (_event: unknown, errorCode: number, errorDescription: string) => {
-              view.webContents.off('did-stop-loading', onLoaded);
-              view.webContents.off('did-fail-load', onFailed);
-              reject(new Error(`Reload failed: ${errorDescription} (${errorCode})`));
-            };
-            view.webContents.on('did-stop-loading', onLoaded);
-            view.webContents.on('did-fail-load', onFailed);
-
-            if (targetUrl) {
-              view.webContents.loadURL(targetUrl).catch((error: unknown) => {
-                view.webContents.off('did-stop-loading', onLoaded);
-                view.webContents.off('did-fail-load', onFailed);
-                const errorMessage = error instanceof Error ? `${error.message} ${error.stack ?? ''}` : String(error);
-                logger.warn(new ViewLoadUrlError(targetUrl, errorMessage));
-                resolve();
-              });
-            } else {
-              view.webContents.reload();
+          if (targetUrl) {
+            try {
+              await view.webContents.loadURL(targetUrl);
+            } catch (error) {
+              const errorMessage = error instanceof Error ? `${error.message} ${error.stack ?? ''}` : String(error);
+              logger.warn(new ViewLoadUrlError(targetUrl, errorMessage));
             }
-
-            // Failsafe: resolve anyway after 30s so we don't hang forever
-            setTimeout(() => {
-              view.webContents.off('did-stop-loading', onLoaded);
-              view.webContents.off('did-fail-load', onFailed);
-              resolve();
-            }, 30_000);
-          });
+          } else {
+            view.webContents.reload();
+          }
         })());
       }
     }

@@ -113,31 +113,54 @@ async function executeInBrowserView<T>(
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
-      // If the view is currently navigating (e.g. after reloadViewsWebContents),
-      // executeJavaScript will time out. Wait for navigation to finish first.
-      if (targetWebContents.isLoading()) {
-        await new Promise<void>((resolve) => {
-          const onLoaded = () => {
-            targetWebContents.off('did-stop-loading', onLoaded);
-            resolve();
-          };
-          targetWebContents.on('did-stop-loading', onLoaded);
-          // Failsafe: proceed even if the event never fires
-          setTimeout(() => {
-            targetWebContents.off('did-stop-loading', onLoaded);
-            resolve();
-          }, 10_000);
-        });
+
+      // Retry once if the first attempt fails due to page navigation.
+      // reloadViewsWebContents may trigger a reload just before this call,
+      // or useInitialPage may navigate after workspace metadata changes.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        // Wait for any in-flight navigation to finish before executing.
+        if (targetWebContents.isLoading()) {
+          await new Promise<void>((resolve) => {
+            const onLoaded = () => {
+              targetWebContents.off('did-stop-loading', onLoaded);
+              resolve();
+            };
+            targetWebContents.on('did-stop-loading', onLoaded);
+            setTimeout(() => {
+              targetWebContents.off('did-stop-loading', onLoaded);
+              resolve();
+            }, 10_000);
+          });
+        }
+
+        try {
+          return await Promise.race([
+            targetWebContents.executeJavaScript(scriptContent as string, true),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => {
+                reject(new Error('executeInBrowserView timed out (page navigating?)'));
+              }, timeoutInMs as number)
+            ),
+          ]) as T;
+        } catch (error) {
+          const isNavigating = error instanceof Error && error.message.includes('page navigating');
+          if (!isNavigating || attempt >= 1) throw error;
+
+          // Navigation started after the isLoading() check. Wait for it to finish, then retry.
+          await new Promise<void>((resolve) => {
+            const onLoaded = () => {
+              targetWebContents.off('did-stop-loading', onLoaded);
+              resolve();
+            };
+            targetWebContents.on('did-stop-loading', onLoaded);
+            setTimeout(() => {
+              targetWebContents.off('did-stop-loading', onLoaded);
+              resolve();
+            }, 10_000);
+          });
+        }
       }
-      const result: T = await Promise.race([
-        targetWebContents.executeJavaScript(scriptContent as string, true),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => {
-            reject(new Error('executeInBrowserView timed out (page navigating?)'));
-          }, timeoutInMs as number)
-        ),
-      ]) as T;
-      return result;
+      throw new Error('executeInBrowserView: unreachable');
     },
     [webContentsId, script, timeoutMs],
   );
