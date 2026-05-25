@@ -570,3 +570,16 @@ When('I reopen the main window as second instance would', async function(this: A
   // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
   await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
 });
+
+When('I trigger deep link {string} as second instance would', async function(this: ApplicationWorld, deepLink: string) {
+  if (!this.app) throw new Error('Application is not launched');
+  await this.app.evaluate(({ app, BrowserWindow }, url: string) => {
+    app.emit('second-instance', /* event */ {}, /* argv */ [url], /* workingDirectory */ '', /* additionalData */ {});
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.show();
+      }
+    }
+  }, deepLink);
+  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
+});

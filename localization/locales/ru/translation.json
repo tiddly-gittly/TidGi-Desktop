@@ -501,6 +501,8 @@
     "NotificationsDetail": "Детали уведомлений",
     "NotificationsDisableSchedule": "Расписание отключения уведомлений",
     "NotificationsMuteAudio": "Отключить звук уведомлений",
+    "UnreadCountBadge": "Показывать значок непрочитанных сообщений на иконке приложения",
+    "OpenExternalAPISettings": "Открыть настройки AI API",
     "OpenAtLogin": "Открывать при входе",
     "OpenAtLoginMinimized": "Открывать при входе свернутым",
     "OpenLogFolder": "Открыть папку с логами",

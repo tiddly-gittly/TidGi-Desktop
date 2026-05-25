@@ -65,14 +65,16 @@ export function useInitialPage() {
     }
   }, [location, workspacesList, preferences, windowName, setLocation]);
 
-  // For tidgi mini window, also listen to active workspace changes
+  // Keep the visible route aligned with the active workspace so deep links,
+  // menu actions, and other non-sidebar activations land on the correct page.
   useEffect(() => {
-    if (windowName !== WindowNames.tidgiMiniWindow || !workspacesList || !preferences) {
+    if (!workspacesList) {
       return;
     }
 
-    // Determine target workspace using helper function
-    const targetWorkspace = getTidgiMiniWindowTargetWorkspace(workspacesList, preferences);
+    const targetWorkspace = windowName === WindowNames.tidgiMiniWindow
+      ? (preferences ? getTidgiMiniWindowTargetWorkspace(workspacesList, preferences) : undefined)
+      : workspacesList.find(workspace => workspace.active);
 
     if (!targetWorkspace) return;
 

@@ -2,8 +2,12 @@ import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
+import { PreferenceSections } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { app } from 'electron';
 import { inject, injectable } from 'inversify';
 import path from 'node:path';
@@ -56,12 +60,27 @@ export class DeepLinkService implements IDeepLinkService {
    * Handle link and open the workspace.
    * @param requestUrl like `tidgi://lxqsftvfppu_z4zbaadc0/#:Index` or `tidgi://lxqsftvfppu_z4zbaadc0/#%E6%96%B0%E6%9D%A1%E7%9B%AE`
    */
-  private readonly deepLinkHandler: (requestUrl: string, fromPendingQueue?: boolean) => Promise<void> = async (requestUrl, fromPendingQueue = false) => {
+  public readonly openDeepLink: (requestUrl: string, fromPendingQueue?: boolean) => Promise<void> = async (requestUrl, fromPendingQueue = false) => {
     logger.info(`Receiving deep link`, { requestUrl, function: 'deepLinkHandler' });
     const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
     try {
       // hostname is workspace id or name
       const { hostname, hash, pathname } = new URL(requestUrl);
+
+      // Handle tidgi://preferences/<sectionId> deep links
+      if (hostname === 'preferences') {
+        const sectionId = decodeURIComponent(pathname.replace(/^\//, '')) as PreferenceSections;
+        const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+        if (Object.values(PreferenceSections).includes(sectionId)) {
+          logger.info(`Open preferences via deep link`, { sectionId, function: 'deepLinkHandler' });
+          await windowService.open(WindowNames.preferences, { preferenceGotoTab: sectionId });
+        } else {
+          logger.info(`Open preferences window via deep link (no section)`, { function: 'deepLinkHandler' });
+          await windowService.open(WindowNames.preferences);
+        }
+        void analyticsService.track('deep_link.opened', { resolvedWorkspace: false, fromPendingQueue });
+        return;
+      }
       let workspace = await this.workspaceService.get(hostname);
       if (workspace === undefined) {
         logger.info(`Workspace not found, try get by name`, { hostname, function: 'deepLinkHandler' });
@@ -79,7 +98,29 @@ export class DeepLinkService implements IDeepLinkService {
           return;
         }
       }
-      let tiddlerName = hash.substring(1); // remove '#:'
+
+      if (workspace.pageType) {
+        logger.info(`Open page workspace deep link`, { workspaceId: workspace.id, function: 'deepLinkHandler' });
+        void analyticsService.track('deep_link.opened', {
+          resolvedWorkspace: true,
+          fromPendingQueue,
+        });
+        await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).setActiveWorkspaceView(workspace.id);
+        return;
+      }
+
+      const rawTiddlerName = hash.substring(1);
+      if (rawTiddlerName.length === 0) {
+        logger.info(`Open workspace deep link`, { workspaceId: workspace.id, function: 'deepLinkHandler' });
+        void analyticsService.track('deep_link.opened', {
+          resolvedWorkspace: true,
+          fromPendingQueue,
+        });
+        await this.workspaceService.openWorkspaceTiddler(workspace);
+        return;
+      }
+
+      let tiddlerName = rawTiddlerName; // remove '#:'
       if (tiddlerName.includes(':')) {
         tiddlerName = tiddlerName.split(':')[1];
       }
@@ -114,7 +155,7 @@ export class DeepLinkService implements IDeepLinkService {
       const url = this.pendingDeepLink;
       this.pendingDeepLink = undefined;
       logger.info(`Processing pending deep link`, { url, function: 'processPendingDeepLink' });
-      await this.deepLinkHandler(url, true);
+      await this.openDeepLink(url, true);
     }
   }
 
@@ -137,7 +178,7 @@ export class DeepLinkService implements IDeepLinkService {
   private setupMacOSHandler(): void {
     app.on('open-url', (_event, url) => {
       _event.preventDefault();
-      void this.deepLinkHandler(url);
+      void this.openDeepLink(url);
     });
   }
 
@@ -149,7 +190,7 @@ export class DeepLinkService implements IDeepLinkService {
       app.on('second-instance', (_event, commandLine) => {
         const url = commandLine.pop();
         if (url !== undefined && url !== '') {
-          void this.deepLinkHandler(url);
+          void this.openDeepLink(url);
         }
       });
 
@@ -162,10 +203,10 @@ export class DeepLinkService implements IDeepLinkService {
           logger.info(`Processing initial deep link from command line`, { protocolUrl, function: 'setupWindowsLinuxHandler' });
           // Process after app is ready
           if (app.isReady()) {
-            void this.deepLinkHandler(protocolUrl);
+            void this.openDeepLink(protocolUrl);
           } else {
             app.once('ready', () => {
-              void this.deepLinkHandler(protocolUrl);
+              void this.openDeepLink(protocolUrl);
             });
           }
         }

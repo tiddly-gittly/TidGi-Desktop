@@ -557,6 +557,8 @@
     "NotificationsDetail": "Control notifications pause time",
     "NotificationsDisableSchedule": "Automatically disable notifications by schedule:",
     "NotificationsMuteAudio": "Mute audio when notifications are paused",
+    "UnreadCountBadge": "Show unread count badge on app icon",
+    "OpenExternalAPISettings": "Open AI API Settings",
     "OpenAtLogin": "Open at login",
     "OpenAtLoginMinimized": "Yes, but minimized (MacOS)",
     "OpenLogFolder": "Open the Log folder",

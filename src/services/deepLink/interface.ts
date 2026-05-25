@@ -7,6 +7,13 @@ export interface IDeepLinkService {
    */
   initializeDeepLink(protocol: string): void;
   /**
+   * Open a deep link URL programmatically from within the app.
+   * Supports:
+   * - `tidgi://<workspaceId>/#:TiddlerName` — open a tiddler
+   * - `tidgi://preferences/<sectionId>` — open preferences window at a specific section
+   */
+  openDeepLink(url: string): Promise<void>;
+  /**
    * Process any pending deep link after workspaces are initialized.
    * Should be called after all workspaces are ready.
    */
@@ -17,6 +24,7 @@ export const DeepLinkServiceIPCDescriptor = {
   channel: 'DeepLinkChannel',
   properties: {
     initializeDeepLink: ProxyPropertyType.Function,
+    openDeepLink: ProxyPropertyType.Function,
     processPendingDeepLink: ProxyPropertyType.Function,
   },
 };
