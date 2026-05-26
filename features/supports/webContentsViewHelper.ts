@@ -99,7 +99,6 @@ async function executeInBrowserView<T>(
   app: ElectronApplication,
   script: string,
   page?: Page,
-  timeoutMs = 2000,
 ): Promise<T> {
   const webContentsId = await getFirstWebContentsView(app, page);
 
@@ -108,63 +107,32 @@ async function executeInBrowserView<T>(
   }
 
   return await app.evaluate(
-    async ({ webContents }, [id, scriptContent, timeoutInMs]) => {
+    async ({ webContents }, [id, scriptContent]) => {
       const targetWebContents = webContents.fromId(id as number);
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
 
-      // Retry once if the first attempt fails due to page navigation.
+      // Wait briefly for any in-flight navigation to finish before executing.
       // reloadViewsWebContents may trigger a reload just before this call,
       // or useInitialPage may navigate after workspace metadata changes.
-      // We use a short wait (1s) so the caller's backOff loop can retry
-      // many times within the Cucumber step timeout.
-      for (let attempt = 0; attempt < 2; attempt++) {
-        // Wait briefly for any in-flight navigation to finish before executing.
-        if (targetWebContents.isLoading()) {
-          await new Promise<void>((resolve) => {
-            const onLoaded = () => {
-              targetWebContents.off('did-stop-loading', onLoaded);
-              resolve();
-            };
-            targetWebContents.on('did-stop-loading', onLoaded);
-            setTimeout(() => {
-              targetWebContents.off('did-stop-loading', onLoaded);
-              resolve();
-            }, 1_000);
-          });
-        }
-
-        try {
-          return await Promise.race([
-            targetWebContents.executeJavaScript(scriptContent as string, true),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => {
-                reject(new Error('executeInBrowserView timed out (page navigating?)'));
-              }, timeoutInMs as number)
-            ),
-          ]) as T;
-        } catch (error) {
-          const isNavigating = error instanceof Error && error.message.includes('page navigating');
-          if (!isNavigating || attempt >= 1) throw error;
-
-          // Navigation started after the isLoading() check. Wait briefly, then retry.
-          await new Promise<void>((resolve) => {
-            const onLoaded = () => {
-              targetWebContents.off('did-stop-loading', onLoaded);
-              resolve();
-            };
-            targetWebContents.on('did-stop-loading', onLoaded);
-            setTimeout(() => {
-              targetWebContents.off('did-stop-loading', onLoaded);
-              resolve();
-            }, 1_000);
-          });
-        }
+      if (targetWebContents.isLoading()) {
+        await new Promise<void>((resolve) => {
+          const onLoaded = () => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          };
+          targetWebContents.on('did-stop-loading', onLoaded);
+          setTimeout(() => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          }, 1_000);
+        });
       }
-      throw new Error('executeInBrowserView: unreachable');
+
+      return await targetWebContents.executeJavaScript(scriptContent as string, true) as T;
     },
-    [webContentsId, script, timeoutMs],
+    [webContentsId, script],
   );
 }
 
