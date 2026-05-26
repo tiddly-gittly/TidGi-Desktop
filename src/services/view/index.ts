@@ -302,35 +302,21 @@ export class View implements IViewService {
 
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
     const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
-    const reloadTasks: Promise<void>[] = [];
-
-    for (const [id, windowViews] of this.views.entries()) {
-      if (workspaceID !== undefined && id !== workspaceID) continue;
-
-      for (const [, view] of windowViews.entries()) {
-        if (!view.webContents) continue;
-
-        reloadTasks.push((async () => {
-          const workspace = workspaceID !== undefined ? await this.workspaceService.get(workspaceID) : undefined;
-          const targetUrl = workspace && isWikiWorkspace(workspace)
-            ? (rememberLastPageVisited ? workspace.lastUrl : undefined) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id)
-            : undefined;
-
-          if (targetUrl) {
-            try {
-              await view.webContents.loadURL(targetUrl);
-            } catch (error) {
-              const errorMessage = error instanceof Error ? `${error.message} ${error.stack ?? ''}` : String(error);
-              logger.warn(new ViewLoadUrlError(targetUrl, errorMessage));
-            }
-          } else {
-            view.webContents.reload();
+    this.forEachView(async (view, id) => {
+      if (workspaceID !== undefined && id !== workspaceID) return;
+      if (!view.webContents) return;
+      if (workspaceID !== undefined) {
+        const workspace = await this.workspaceService.get(workspaceID);
+        if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
+          try {
+            await view.webContents.loadURL(workspace.lastUrl);
+          } catch (error) {
+            logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
           }
-        })());
+        }
       }
-    }
-
-    await Promise.all(reloadTasks);
+      view.webContents.reload();
+    });
   }
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
@@ -412,18 +398,6 @@ export class View implements IViewService {
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     view.webContents.focus();
     browserWindow.setTitle(view.webContents.getTitle());
-    // When a workspace view moves from offscreen to onscreen, its webContents may
-    // still show about:blank or an error page if the initial loadURL was skipped
-    // (e.g. due to a transient load error flag) or if a previous reload failed.
-    // Reload the URL so the embedded wiki content is always visible.
-    const currentUrl = view.webContents.getURL();
-    const didFailLoad = await this.workspaceService.workspaceDidFailLoad(workspaceID);
-    if (!currentUrl || currentUrl === 'about:blank' || didFailLoad) {
-      const workspace = await this.workspaceService.get(workspaceID);
-      if (workspace !== undefined) {
-        await this.loadUrlForView(workspace, view);
-      }
-    }
     logger.info('[test-id-VIEW_SHOWN]', { workspaceID, windowName });
   }
 
