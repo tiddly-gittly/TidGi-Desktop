@@ -145,7 +145,6 @@ export async function getTextContent(app: ElectronApplication, page?: Page): Pro
       app,
       'document.body.textContent || document.body.innerText || ""',
       page,
-      2000,
     );
   } catch {
     return null;
