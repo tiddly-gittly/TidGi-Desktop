@@ -118,7 +118,7 @@ export function resolveTidConflictMarkers(content: string, options: TidConflictO
       }
     } else if (mergeHeaderBodyConflicts) {
       // Header-starting conflict: check if it spans into the body
-      const { header: oursHeader, body: oursBody } = splitAtBlankLine(oursLines);
+      const { header: _oursHeader, body: oursBody } = splitAtBlankLine(oursLines);
       const { header: theirsHeader, body: theirsBody } = splitAtBlankLine(theirsLines);
 
       if (oursBody.length > 0 || theirsBody.length > 0) {
