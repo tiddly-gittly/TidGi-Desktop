@@ -512,30 +512,26 @@ export class Window implements IWindowService {
             });
           }
 
-          // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
-          // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
-          if (!isTest || !!process.env.SHOW_E2E_WINDOW) {
-            // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
-            await this.tidgiMiniWindowMenubar.showWindow();
-            // Wait until the OS actually marks the window as visible (needed in E2E tests where
-            // BrowserWindow.show() is asynchronous with respect to isVisible() returning true)
-            if (isTest) {
-              const win = this.tidgiMiniWindowMenubar.window;
-              if (win) {
-                await new Promise<void>((resolve) => {
-                  const check = () => {
-                    if (win.isVisible()) {
-                      resolve();
-                    } else {
-                      setTimeout(check, 50);
-                    }
-                  };
-                  check();
-                });
-              }
+          // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
+          await this.tidgiMiniWindowMenubar.showWindow();
+          // Wait until the OS actually marks the window as visible (needed in E2E tests where
+          // BrowserWindow.show() is asynchronous with respect to isVisible() returning true)
+          if (isTest) {
+            const win = this.tidgiMiniWindowMenubar.window;
+            if (win) {
+              await new Promise<void>((resolve) => {
+                const check = () => {
+                  if (win.isVisible()) {
+                    resolve();
+                  } else {
+                    setTimeout(check, 50);
+                  }
+                };
+                check();
+              });
             }
-            logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
           }
+          logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
         }
         return;
       }
@@ -545,9 +541,7 @@ export class Window implements IWindowService {
       if (enableIt) {
         logger.debug('[test-id-TIDGI_MINI_WINDOW_CREATED] TidGi mini window enabled', { function: 'openTidgiMiniWindow' });
         // After creating the tidgi mini window, show it if requested
-        // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
-        // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
-        if (showWindow && this.tidgiMiniWindowMenubar && (!isTest || !!process.env.SHOW_E2E_WINDOW)) {
+        if (showWindow && this.tidgiMiniWindowMenubar) {
           logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });
           await this.tidgiMiniWindowMenubar.showWindow();
         }
