@@ -117,8 +117,10 @@ async function executeInBrowserView<T>(
       // Retry once if the first attempt fails due to page navigation.
       // reloadViewsWebContents may trigger a reload just before this call,
       // or useInitialPage may navigate after workspace metadata changes.
+      // We use a short wait (1s) so the caller's backOff loop can retry
+      // many times within the Cucumber step timeout.
       for (let attempt = 0; attempt < 2; attempt++) {
-        // Wait for any in-flight navigation to finish before executing.
+        // Wait briefly for any in-flight navigation to finish before executing.
         if (targetWebContents.isLoading()) {
           await new Promise<void>((resolve) => {
             const onLoaded = () => {
@@ -129,7 +131,7 @@ async function executeInBrowserView<T>(
             setTimeout(() => {
               targetWebContents.off('did-stop-loading', onLoaded);
               resolve();
-            }, 10_000);
+            }, 1_000);
           });
         }
 
@@ -146,7 +148,7 @@ async function executeInBrowserView<T>(
           const isNavigating = error instanceof Error && error.message.includes('page navigating');
           if (!isNavigating || attempt >= 1) throw error;
 
-          // Navigation started after the isLoading() check. Wait for it to finish, then retry.
+          // Navigation started after the isLoading() check. Wait briefly, then retry.
           await new Promise<void>((resolve) => {
             const onLoaded = () => {
               targetWebContents.off('did-stop-loading', onLoaded);
@@ -156,7 +158,7 @@ async function executeInBrowserView<T>(
             setTimeout(() => {
               targetWebContents.off('did-stop-loading', onLoaded);
               resolve();
-            }, 10_000);
+            }, 1_000);
           });
         }
       }
