@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
  * When TIDGI_E2E_SHARD=N/M is set, split .feature files into N stable groups
@@ -41,8 +43,8 @@ function computeShardedPaths() {
 
   console.log(
     `[TIDGI_E2E_SHARD] Shard ${index}/${total}: ` +
-    `files ${start + 1}-${Math.min(start + chunkSize, allFiles.length)} of ${allFiles.length} ` +
-    `(${shardFiles.map(f => f.replace('.feature', '')).join(', ')})`
+      `files ${start + 1}-${Math.min(start + chunkSize, allFiles.length)} of ${allFiles.length} ` +
+      `(${shardFiles.map(f => f.replace('.feature', '')).join(', ')})`,
   );
 
   return shardFiles.map(f => `features/${f}`);
