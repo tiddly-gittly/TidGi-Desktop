@@ -1,5 +1,5 @@
 import * as Path from 'path';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment, import/no-unresolved
 // @ts-ignore
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
 
