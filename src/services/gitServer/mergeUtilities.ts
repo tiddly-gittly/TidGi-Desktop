@@ -35,12 +35,41 @@ export async function runGitCollectStdout(arguments_: string[], cwd: string, opt
   return stdout;
 }
 
+export interface TidConflictOptions {
+  /**
+   * When true and a conflict block starts in the header but contains a blank-line
+   * separator in BOTH ours and theirs, the block is split: header keeps theirs,
+   * body merges ours lines + unique theirs lines.
+   * Default false: entire block prefers theirs (add/add mobile-wins behaviour).
+   */
+  mergeHeaderBodyConflicts?: boolean;
+}
+
+/**
+ * Split a list of lines at the first blank line into [headerLines, bodyLines].
+ * The blank line itself is excluded from both parts.
+ */
+function splitAtBlankLine(lines: string[]): { header: string[]; body: string[] } {
+  const blankIndex = lines.indexOf('');
+  if (blankIndex === -1) {
+    return { header: lines, body: [] };
+  }
+  return {
+    header: lines.slice(0, blankIndex),
+    body: lines.slice(blankIndex + 1),
+  };
+}
+
 /**
  * .tid conflict resolution:
  * - Header section (before the first blank line): mobile ("theirs") wins entirely.
  * - Body section (after the first blank line): merge both sides, keeping desktop lines plus unique mobile lines.
+ * - When `options.mergeHeaderBodyConflicts` is true and a conflict block starts in
+ *   the header but contains a blank line in both ours/theirs, the block is split
+ *   at the blank line: header → theirs wins, body → merge ours + unique theirs.
  */
-export function resolveTidConflictMarkers(content: string): string {
+export function resolveTidConflictMarkers(content: string, options: TidConflictOptions = {}): string {
+  const { mergeHeaderBodyConflicts = false } = options;
   // Normalize line endings so CRLF (Windows) and lone CR (old Mac) are handled identically to LF.
   const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const resolved: string[] = [];
@@ -80,14 +109,38 @@ export function resolveTidConflictMarkers(content: string): string {
     }
 
     if (conflictIsInBody) {
+      // Body conflict: keep ours lines + unique theirs lines (existing behaviour)
       resolved.push(...oursLines);
       for (const theirsLine of theirsLines) {
         if (!oursLines.includes(theirsLine)) {
           resolved.push(theirsLine);
         }
       }
+    } else if (mergeHeaderBodyConflicts) {
+      // Header-starting conflict: check if it spans into the body
+      const { header: oursHeader, body: oursBody } = splitAtBlankLine(oursLines);
+      const { header: theirsHeader, body: theirsBody } = splitAtBlankLine(theirsLines);
+
+      if (oursBody.length > 0 || theirsBody.length > 0) {
+        // Conflict spans header + body — keep theirs header, merge bodies
+        resolved.push(...theirsHeader);
+        resolved.push(''); // blank-line separator
+        resolved.push(...oursBody);
+        for (const theirsBodyLine of theirsBody) {
+          if (!oursBody.includes(theirsBodyLine)) {
+            resolved.push(theirsBodyLine);
+          }
+        }
+        passedBlankLine = true;
+      } else {
+        // Purely header conflict — theirs wins
+        resolved.push(...theirsLines);
+        if (!passedBlankLine && theirsLines.includes('')) {
+          passedBlankLine = true;
+        }
+      }
     } else {
-      // "theirs" = mobile-incoming branch — mobile metadata wins
+      // Header-starting conflict without merge option: theirs wins (existing behaviour)
       resolved.push(...theirsLines);
       if (!passedBlankLine && theirsLines.includes('')) {
         passedBlankLine = true;
@@ -144,9 +197,22 @@ export async function resolveAllConflicts(repoPath: string): Promise<void> {
       continue;
     }
 
-    const resolved = file.endsWith('.tid')
-      ? resolveTidConflictMarkers(content)
-      : resolveConflictPreferMobile(content);
+    let resolved: string;
+    if (file.endsWith('.tid')) {
+      // Detect modify/modify (has common base = stage 1 exists in git ls-files -u).
+      // For add/add (no stage 1) we keep the existing mobile-wins behaviour.
+      const stageOutput = await runGitCollectStdout(['ls-files', '-u', '--', file], repoPath);
+      const hasCommonBase = stageOutput.trim().split('\n').filter(Boolean).some((stageLine) => {
+        const tabIndex = stageLine.lastIndexOf('\t');
+        if (tabIndex === -1) return false;
+        const beforeTab = stageLine.substring(0, tabIndex);
+        const lastSpace = beforeTab.lastIndexOf(' ');
+        return beforeTab.substring(lastSpace + 1) === '1';
+      });
+      resolved = resolveTidConflictMarkers(content, { mergeHeaderBodyConflicts: hasCommonBase });
+    } else {
+      resolved = resolveConflictPreferMobile(content);
+    }
 
     await fs.writeFile(fullPath, resolved, 'utf-8');
     await runGitCollectStdout(['add', file], repoPath);

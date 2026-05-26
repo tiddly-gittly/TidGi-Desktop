@@ -19,7 +19,7 @@ Feature: Git Sync
     And I wait for SSE and watch-fs to be ready
     And I wait for "git initialization" log marker "[test-id-git-init-complete]"
 
-  @git @sync @mobilesync @calibrate
+  @git @sync @mobilesync
   Scenario: Desktop cloud sync and mobile HTTP sync cover commit-push, diverged merge, and mobile conflict resolution
     # ══════════════════════════════════════════════════════════════════
     # Part 1: Sync to local remote via application menu (commit & push)
