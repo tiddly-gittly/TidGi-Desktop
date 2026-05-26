@@ -9,7 +9,7 @@ interface StepTiming {
 }
 
 function runSmokeCalibration(): void {
-  const CALIBRATION_RUNS = 4;
+  const CALIBRATION_RUNS = 1;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
   let maxTotalMs = 0;

@@ -5,7 +5,13 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-2022
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -16,48 +22,77 @@ jobs:
         uses: pnpm/action-setup@v6
         with:
           run_install: false
+
       - name: Install Node.js
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
           cache: 'pnpm'
 
-      # Install C++ build tools for native modules (nsfw, better-sqlite3)
-      - name: Install build dependencies
+      # Linux: Install C++ build tools for native modules (nsfw, better-sqlite3)
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      # Windows: Set up MSVC compiler for native modules (nsfw, better-sqlite3)
+      - name: Set up MSVC compiler (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Rebuild native modules for Electron
+      # Linux: electron-rebuild without MSVC
+      - name: Rebuild native modules for Electron (Linux)
+        if: runner.os == 'Linux'
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+
+      # Windows: electron-rebuild requires MSVC environment via cmd shell
+      - name: Rebuild native modules for Electron (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+
+      # registry-js is a Windows-only dependency — remove it on non-Windows to avoid install noise
+      - name: Remove Windows-only deps (Linux)
+        if: runner.os == 'Linux'
+        run: pnpm remove registry-js
 
       - name: Run linting
         run: pnpm run lint --max-warnings 0
 
-      # Install minimal Linux dependencies for Electron GUI testing https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
+      # Linux: Install headless GUI stack for Electron (xvfb), CJK fonts and locale for i18n tests
+      # https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
       - name: Install Linux GUI dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
           # Install Chinese fonts and locale support for i18n testing
           sudo apt-get install -y fonts-noto-cjk fonts-wqy-zenhei language-pack-zh-hans
           sudo locale-gen zh_CN.UTF-8
+
       - name: Run unit tests
         run: pnpm run test:unit
         env:
           CI: true
         timeout-minutes: 5
+
       - name: Prepare E2E
         run: pnpm run test:prepare-e2e
         env:
           CI: true
         timeout-minutes: 15
 
-      - name: Run E2E tests
-        # Calibration runs as part of test:e2e before the cucumber tests.
+      # Linux: Run E2E under xvfb for virtual display
+      - name: Run E2E tests (Linux)
+        if: runner.os == 'Linux'
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e 2>&1 | tee e2e-output.log
           E2E_EXIT=${PIPESTATUS[0]}
@@ -71,20 +106,33 @@ jobs:
           LC_ALL: zh_CN.UTF-8
         timeout-minutes: 60
 
-      # Upload test artifacts (screenshots, logs)
-      - name: Upload test artifacts
+      # Windows: Run E2E directly — Windows CI runners provide a display
+      - name: Run E2E tests (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          pnpm run test:e2e 2>&1 | tee e2e-output.log
+          E2E_EXIT=${PIPESTATUS[0]}
+          exit ${E2E_EXIT}
+        env:
+          CI: true
+        timeout-minutes: 60
+
+      # Upload test artifacts (screenshots, logs, settings)
+      - name: Collect test artifacts
         if: always()
         run: |
           mv test-artifacts test-artifacts-ci || true
           # Remove large cache folders to save space, keep only logs and settings
           find test-artifacts-ci -type d \( -name "Cache" -o -name "Code Cache" -o -name "GPUCache" -o -name "DawnGraphiteCache" -o -name "DawnWebGPUCache" -o -name "Crashpad" -o -name "cache-database" -o -name "DevToolsActivePort" -o -name "Dictionaries" -o -name "Local Storage" -o -name "Network Persistent State" -o -name "Partitions" -o -name "Session Storage" -o -name "Shared Dictionary" \) -exec rm -rf {} + || true
           echo "Cleaned up test-artifacts-ci cache folders"
+        shell: bash
         continue-on-error: true
-      
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: test-artifacts-ci
+          name: test-artifacts-ci-${{ matrix.os }}
           path: |
             test-artifacts-ci/**/logs/
             test-artifacts-ci/**/settings/
