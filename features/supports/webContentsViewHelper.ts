@@ -486,7 +486,6 @@ export async function executeTiddlyWikiCode<T>(
   app: ElectronApplication,
   code: string,
   page?: Page,
-  timeoutMs = 200,
 ): Promise<T | null> {
   let webContentsId = await getFirstWebContentsView(app, page);
 
@@ -505,28 +504,29 @@ export async function executeTiddlyWikiCode<T>(
   }
 
   return await app.evaluate(
-    async ({ webContents }, [id, codeContent, timeoutInMs]) => {
+    async ({ webContents }, [id, codeContent]) => {
       const targetWebContents = webContents.fromId(id as number);
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
-      /**
-       * executeJavaScript can hang indefinitely when the webContents is navigating
-       * (e.g. during a wiki restart retry loop). Race against a 200 ms timeout so
-       * backOff callers get fast failures and can retry until the page is ready.
-       * 200ms gives ~6 retries within the 5s Cucumber step budget even during a
-       * ~12s simplified-wiki restart (8s pre-wait + 3.5s for wiki to become ready).
-       */
-      const result: T = await Promise.race([
-        targetWebContents.executeJavaScript(codeContent as string, true),
-        new Promise<never>((_, reject) =>
+
+      // Wait briefly for any in-flight navigation to finish before executing.
+      if (targetWebContents.isLoading()) {
+        await new Promise<void>((resolve) => {
+          const onLoaded = () => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          };
+          targetWebContents.on('did-stop-loading', onLoaded);
           setTimeout(() => {
-            reject(new Error('executeJavaScript timed out (page navigating?)'));
-          }, timeoutInMs as number)
-        ),
-      ]) as T;
-      return result;
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          }, 1_000);
+        });
+      }
+
+      return await targetWebContents.executeJavaScript(codeContent as string, true) as T;
     },
-    [webContentsId, code, timeoutMs],
+    [webContentsId, code],
   );
 }

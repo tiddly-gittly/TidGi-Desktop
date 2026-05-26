@@ -21,3 +21,13 @@ pnpm exec cross-env SHOW_E2E_WINDOW=1 pnpm test:e2e --tags="@crossWindowSync"
 ## Global shortcut not working
 
 See `src/helpers/testKeyboardShortcuts.ts`
+
+## Monitoring CI Runs
+
+When you push E2E fixes, use `gh run watch` to wait for the CI workflow to complete instead of polling with `gh run list`:
+
+```bash
+gh run watch <run-id>
+```
+
+This streams the job logs live and exits when the run finishes, saving time and API calls compared to repeated polling.

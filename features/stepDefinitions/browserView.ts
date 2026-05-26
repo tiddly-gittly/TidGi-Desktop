@@ -62,7 +62,6 @@ async function assertBrowserViewBodyBackground(
       return { backgroundColor, paletteTitle };
     })()`,
     world.currentWindow,
-    200,
   );
 
   if (!colorInfo) {
@@ -566,7 +565,6 @@ Then('image {string} should be loaded in browser view', async function(this: App
               };
             })()`,
           this.currentWindow,
-          200,
         );
         lastDiagnostic = JSON.stringify(diagnostic);
         isImageLoaded = Boolean(diagnostic?.loaded);
