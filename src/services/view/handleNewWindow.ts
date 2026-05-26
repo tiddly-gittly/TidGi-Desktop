@@ -120,6 +120,9 @@ export function handleNewWindow(
       height: windowWithBrowserViewState.height,
       webPreferences,
       autoHideMenuBar: true,
+      // Keep the window hidden during E2E tests so it won't steal focus from the developer.
+      // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
+      ...(isTest && !process.env.SHOW_E2E_WINDOW ? { show: false } : {}),
     };
 
     if (isExternalLinkUsingJS) {

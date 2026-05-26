@@ -104,7 +104,7 @@ jobs:
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
-        timeout-minutes: 60
+        timeout-minutes: 30
 
       # Windows: Run E2E directly — Windows CI runners provide a display
       - name: Run E2E tests (Windows)
@@ -116,7 +116,7 @@ jobs:
           exit ${E2E_EXIT}
         env:
           CI: true
-        timeout-minutes: 60
+        timeout-minutes: 30
 
       # Upload test artifacts (screenshots, logs, settings)
       - name: Collect test artifacts
