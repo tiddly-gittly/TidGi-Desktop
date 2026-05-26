@@ -88,6 +88,59 @@ export class AnalyticsService implements IAnalyticsService {
     await databaseService.immediatelyStoreSettingsToFile();
   }
 
+  public async showDisclosureIfNeeded(): Promise<void> {
+    const { isTest } = await import('@/constants/environment');
+    if (isTest || !(await this.shouldShowDisclosure())) return;
+    const { dialog } = await import('electron');
+    const { i18n } = await import('@services/libs/i18n');
+    const result = await dialog.showMessageBox({
+      type: 'question',
+      title: i18n.t('AnalyticsDisclosure.Title'),
+      message: i18n.t('AnalyticsDisclosure.Message'),
+      detail: [
+        i18n.t('AnalyticsDisclosure.Description'),
+        '',
+        i18n.t('AnalyticsDisclosure.WeCollect'),
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectFeatureUsage')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectPlatform')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectErrors')}`,
+        '',
+        i18n.t('AnalyticsDisclosure.WeDoNotCollect'),
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectWikiContent')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPaths')}`,
+        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPersonalData')}`,
+        '',
+        i18n.t('AnalyticsDisclosure.ChangeAnytime'),
+      ].join('\n'),
+      buttons: [i18n.t('AnalyticsDisclosure.EnableAnalytics'), i18n.t('AnalyticsDisclosure.DisableAnalytics')],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    const analyticsEnabled = result.response === 0;
+    await this.preferenceService.set('analyticsEnabled', analyticsEnabled);
+    await this.recordDisclosureVersion();
+    if (analyticsEnabled) {
+      await this.track('analytics.disclosure_responded', { enabled: analyticsEnabled });
+    }
+  }
+
+  public async trackAppLaunch(): Promise<void> {
+    const retentionProperties = await this.getRetentionProperties();
+    void this.track('app.launched', {
+      platform: process.platform,
+      version: app.getVersion(),
+      ...retentionProperties,
+    });
+  }
+
+  public trackError(error: Error, source: string): void {
+    void this.track('error.unhandled', {
+      errorName: error.name || 'Error',
+      errorMessage: sanitizeErrorMessage(error),
+      errorSource: source,
+    });
+  }
+
   public async getRetentionProperties(): Promise<IAnalyticsEventProperties | undefined> {
     const enabled = await this.isEnabled();
     if (!enabled) {

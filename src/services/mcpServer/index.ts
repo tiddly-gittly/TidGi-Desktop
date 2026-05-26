@@ -40,6 +40,37 @@ export function stopMcpServer(): Promise<void> | undefined {
 let startPromise: Promise<void> | undefined;
 
 /**
+ * Initialize MCP server based on CLI flags, env vars, or preferences.
+ * Also watches preference changes to restart the server dynamically.
+ */
+export async function initializeMcpServer(preferenceService: IPreferenceService): Promise<void> {
+  // Parse --mcp-port CLI flag or MCP_PORT env
+  const mcpPortArgument = process.argv.find((a) => a.startsWith('--mcp-port='));
+  const mcpPort = mcpPortArgument ? mcpPortArgument.split('=')[1] : process.env.MCP_PORT;
+  if (mcpPort !== undefined) {
+    const port = Number.parseInt(mcpPort, 10);
+    void startMcpServer(Number.isNaN(port) ? undefined : port);
+  } else {
+    await restartMcpServerIfNeeded(preferenceService);
+  }
+  // Watch for preference changes
+  const previousMcpPrefs: { enabled?: boolean; port?: number; requireToken?: boolean; token?: string } = {};
+  preferenceService.preference$.subscribe(async (prefs) => {
+    if (!prefs) return;
+    const { mcpServerEnabled, mcpServerPort, mcpServerRequireToken, mcpServerToken } = prefs;
+    if (
+      mcpServerEnabled !== previousMcpPrefs.enabled || mcpServerPort !== previousMcpPrefs.port ||
+      mcpServerRequireToken !== previousMcpPrefs.requireToken || mcpServerToken !== previousMcpPrefs.token
+    ) {
+      Object.assign(previousMcpPrefs, { enabled: mcpServerEnabled, port: mcpServerPort, requireToken: mcpServerRequireToken, token: mcpServerToken });
+      restartMcpServerIfNeeded(preferenceService).catch((error: unknown) => {
+        logger.error('Failed to restart MCP server after preference change', { error });
+      });
+    }
+  });
+}
+
+/**
  * Read MCP preferences and start or stop the server accordingly.
  */
 export async function restartMcpServerIfNeeded(preferenceService: IPreferenceService): Promise<void> {

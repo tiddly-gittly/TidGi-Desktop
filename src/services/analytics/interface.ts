@@ -81,6 +81,25 @@ export interface IAnalyticsService {
    * so it won't be shown again on subsequent launches.
    */
   recordDisclosureVersion(): Promise<void>;
+
+  /**
+   * Show the analytics disclosure dialog if it hasn't been shown yet
+   * (or if a newer disclosure version requires re-confirmation).
+   * Skips in test environments.
+   */
+  showDisclosureIfNeeded(): Promise<void>;
+
+  /**
+   * Track the app.launched event with retention properties.
+   */
+  trackAppLaunch(): Promise<void>;
+
+  /**
+   * Track an unhandled error event with sanitized error info.
+   * @param error The error to track
+   * @param source The source of the error (e.g., 'app_ready', 'unhandled')
+   */
+  trackError(error: Error, source: string): void;
 }
 
 export const AnalyticsServiceIPCDescriptor = {

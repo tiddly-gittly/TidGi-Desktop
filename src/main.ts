@@ -3,7 +3,7 @@ import 'source-map-support/register';
 import 'reflect-metadata';
 import './helpers/singleInstance';
 import './services/database/configSetting';
-import { app, dialog, ipcMain, powerMonitor, protocol } from 'electron';
+import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import unhandled from 'electron-unhandled';
 import inspector from 'node:inspector';
 import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database/configSetting';
@@ -12,8 +12,9 @@ import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
-import { i18n, initRendererI18NHandler } from '@services/libs/i18n';
+import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
+import { initializeMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 
 // Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
@@ -25,7 +26,6 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { sanitizeErrorMessage } from '@services/analytics';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
@@ -233,95 +233,14 @@ const commonInit = async (): Promise<void> => {
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
 
-  // Start MCP server when --mcp-port flag is passed (e.g. `pnpm start:dev:mcp`).
-  // On Windows, the packaged binary may reject custom CLI flags; if neither
-  // --mcp-port nor MCP_PORT env var is set, check user preferences.
-  let mcpServerEnabled = false;
-  const mcpPortArgument = process.argv.find((argument) => argument.startsWith('--mcp-port='));
-  const mcpPortEnvironment = process.env.MCP_PORT;
-  const mcpPort = mcpPortArgument ? mcpPortArgument.split('=')[1] : mcpPortEnvironment;
-  if (mcpPort) {
-    const port = Number.parseInt(mcpPort, 10);
-    // Dynamic import to avoid loading MCP SDK during normal startup
-    const { startMcpServer } = await import('@services/mcpServer');
-    void startMcpServer(Number.isNaN(port) ? undefined : port);
-    mcpServerEnabled = true;
-  } else {
-    // Start MCP server if enabled via preferences (token auth is read inside restartMcpServerIfNeeded)
-    mcpServerEnabled = await preferenceService.get('mcpServerEnabled');
-    if (mcpServerEnabled) {
-      const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
-      await restartMcpServerIfNeeded(preferenceService);
-    }
-  }
+  // Initialize MCP server (CLI flags, env vars, or preferences)
+  await initializeMcpServer(preferenceService);
 
-  // Listen for MCP preference changes to start/stop the server dynamically
-  let previousMcpEnabled = mcpServerEnabled;
-  let previousMcpPort: number | undefined;
-  let previousMcpRequireToken: boolean | undefined;
-  let previousMcpToken: string | undefined;
-  preferenceService.preference$.subscribe(async (preferences) => {
-    if (!preferences) return;
-    const { mcpServerEnabled: enabled, mcpServerPort: port, mcpServerRequireToken: requireToken, mcpServerToken: token } = preferences;
-    // Only react if an MCP-related value actually changed
-    if (
-      enabled !== previousMcpEnabled ||
-      port !== previousMcpPort ||
-      requireToken !== previousMcpRequireToken ||
-      token !== previousMcpToken
-    ) {
-      previousMcpEnabled = enabled;
-      previousMcpPort = port;
-      previousMcpRequireToken = requireToken;
-      previousMcpToken = token;
-      const { restartMcpServerIfNeeded } = await import('@services/mcpServer');
-      restartMcpServerIfNeeded(preferenceService).catch((error: unknown) => {
-        logger.error('Failed to restart MCP server after preference change', { error });
-      });
-    }
-  });
-
-  // Track app launch event with retention properties
   // Show analytics disclosure dialog on first launch before sending any events
-  // Skip in test environments to avoid blocking E2E test execution
-  if (!isTest && await analyticsService.shouldShowDisclosure()) {
-    const result = await dialog.showMessageBox({
-      type: 'question',
-      title: i18n.t('AnalyticsDisclosure.Title'),
-      message: i18n.t('AnalyticsDisclosure.Message'),
-      detail: [
-        i18n.t('AnalyticsDisclosure.Description'),
-        '',
-        i18n.t('AnalyticsDisclosure.WeCollect'),
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectFeatureUsage')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectPlatform')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectErrors')}`,
-        '',
-        i18n.t('AnalyticsDisclosure.WeDoNotCollect'),
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectWikiContent')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPaths')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPersonalData')}`,
-        '',
-        i18n.t('AnalyticsDisclosure.ChangeAnytime'),
-      ].join('\n'),
-      buttons: [i18n.t('AnalyticsDisclosure.EnableAnalytics'), i18n.t('AnalyticsDisclosure.DisableAnalytics')],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    const analyticsEnabled = result.response === 0;
-    await preferenceService.set('analyticsEnabled', analyticsEnabled);
-    await analyticsService.recordDisclosureVersion();
-    if (analyticsEnabled) {
-      await analyticsService.track('analytics.disclosure_responded', { enabled: analyticsEnabled });
-    }
-  }
+  await analyticsService.showDisclosureIfNeeded();
 
-  const retentionProperties = await analyticsService.getRetentionProperties();
-  void analyticsService.track('app.launched', {
-    platform: process.platform,
-    version: app.getVersion(),
-    ...retentionProperties,
-  });
+  // Track app launch event
+  void analyticsService.trackAppLaunch();
 };
 
 /**
@@ -350,11 +269,7 @@ app.on('ready', async () => {
   } catch (error) {
     const error_ = error as Error;
     logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_ });
-    void analyticsService.track('error.unhandled', {
-      errorName: error_.name || 'Error',
-      errorMessage: sanitizeErrorMessage(error_),
-      errorSource: 'app_ready',
-    });
+    analyticsService.trackError(error_, 'app_ready');
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -396,11 +311,7 @@ unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
     logger.error('unhandled', { error });
-    void analyticsService.track('error.unhandled', {
-      errorName: error.name || 'Error',
-      errorMessage: sanitizeErrorMessage(error),
-      errorSource: 'unhandled',
-    });
+    analyticsService.trackError(error, 'unhandled');
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);
