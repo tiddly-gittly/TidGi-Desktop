@@ -297,6 +297,8 @@ Feature: Git Sync
       Line two from original.
       Desktop added this line.
       """
+    # Wait for watch-fs to detect the desktop edit before syncing
+    Then I wait for tiddler "Journal" to be updated by watch-fs
     When I create file "{tmpDir}/mobile-clone4/tiddlers/Journal.tid" with content:
       """
       created: 20250226090000000
