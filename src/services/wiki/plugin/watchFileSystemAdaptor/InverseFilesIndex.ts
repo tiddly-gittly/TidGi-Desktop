@@ -63,8 +63,11 @@ export class InverseFilesIndex {
    * @returns Sub-wiki info if file is in a sub-wiki, undefined otherwise
    */
   getSubWikiForFile(absoluteFilePath: string): ISubWikiInfo | undefined {
+    // Normalize paths for consistent comparison across platforms (e.g. Windows backslash vs Linux forward slash)
+    const normalizedFilePath = path.normalize(absoluteFilePath);
     for (const subWiki of this.subWikiMap.values()) {
-      if (absoluteFilePath.startsWith(subWiki.path)) {
+      const normalizedSubWikiPath = path.normalize(subWiki.path);
+      if (normalizedFilePath.startsWith(normalizedSubWikiPath)) {
         return subWiki;
       }
     }

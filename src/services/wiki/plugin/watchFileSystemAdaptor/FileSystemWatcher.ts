@@ -222,8 +222,11 @@ export class FileSystemWatcher {
       if (fileChange.cachedTiddlerFields) {
         // Still need to update boot.files for subsequent saves
         const hasMetaFile = fileChange.absolutePath.endsWith('.tid') ? false : fs.existsSync(`${fileChange.absolutePath}.meta`);
+        // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
+        // On Windows, this prevents mismatch between native backslashes and TiddlyWiki's forward-slash paths.
+        const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
         this.boot.files[title] = {
-          filepath: fileChange.absolutePath,
+          filepath: normalizedPath,
           type: (fileChange.cachedTiddlerFields.type as string) ?? 'application/x-tiddler',
           hasMetaFile,
           isEditableFile: true,
@@ -256,9 +259,10 @@ export class FileSystemWatcher {
 
       // Update boot.files so getTiddlerInfo() works correctly
       const { tiddlers: _, ...fileDescriptor } = tiddlersDescriptor;
-      const absoluteFilePath = fileChange.absolutePath;
+      // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
+      const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
       this.boot.files[title] = {
-        filepath: absoluteFilePath,
+        filepath: normalizedPath,
         type: fileDescriptor.type ?? 'application/x-tiddler',
         hasMetaFile: fileDescriptor.hasMetaFile ?? false,
         isEditableFile: fileDescriptor.isEditableFile ?? true,
@@ -293,8 +297,11 @@ export class FileSystemWatcher {
     this.titlesBeingSaved.delete(title);
     if (absoluteFilePath) {
       try {
-        const stat = fs.statSync(absoluteFilePath);
-        this.lastWriteStats.set(absoluteFilePath, { mtime: stat.mtimeMs, size: stat.size });
+        // Normalize to native path separators so that the key matches the format used
+        // in nsfw event handlers (which use path.join producing native separators).
+        const normalizedPath = path.normalize(absoluteFilePath);
+        const stat = fs.statSync(normalizedPath);
+        this.lastWriteStats.set(normalizedPath, { mtime: stat.mtimeMs, size: stat.size });
       } catch {
         // File may not exist (e.g. after delete) — that's fine
       }
