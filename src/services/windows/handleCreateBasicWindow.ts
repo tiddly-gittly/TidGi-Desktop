@@ -4,7 +4,7 @@ import { container } from '@services/container';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IThemeService } from '@services/theme/interface';
-import { app, BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import type { IWindowOpenConfig, IWindowService } from './interface';
 import { getMainWindowEntry } from './viteEntry';
 import { WindowMeta, WindowNames } from './WindowProperties';
@@ -60,13 +60,6 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
         // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
         if (!wasOpenedAsHidden && !isTest) {
           mainWindow.show();
-        } else if (!wasOpenedAsHidden && isTest && process.platform === 'win32' && !process.env.SHOW_E2E_WINDOW) {
-          // On Windows, hidden windows prevent WebContentsView rendering.
-          // Use offscreen coordinates instead of show: false.
-          const displays = screen.getAllDisplays();
-          const minX = Math.min(...displays.map(({ bounds }) => bounds.x));
-          mainWindow.setBounds({ x: minX - 1200, y: 0, width: 1200, height: 800 });
-          mainWindow.showInactive();
         }
         // ensure redux is loaded first
         // if not, redux might not be able catch changes sent from ipcMain
