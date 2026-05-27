@@ -59,13 +59,13 @@ jobs:
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
 
+      - name: Run linting
+        run: pnpm run lint --max-warnings 0
+
       # registry-js is a Windows-only dependency — remove it on non-Windows to avoid install noise
       - name: Remove Windows-only deps (Linux)
         if: runner.os == 'Linux'
         run: pnpm remove registry-js
-
-      - name: Run linting
-        run: pnpm run lint --max-warnings 0
 
       # Linux: Install headless GUI stack for Electron (xvfb), CJK fonts and locale for i18n tests
       # https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci

@@ -1,7 +1,6 @@
 import * as Path from 'path';
 // @ts-expect-error - registry-js is Windows-only
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
-/* eslint-disable @typescript-eslint/no-unsafe-member-access -- registry-js is Windows-only native dependency */
 
 import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
