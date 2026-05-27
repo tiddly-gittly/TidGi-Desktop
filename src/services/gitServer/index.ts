@@ -28,14 +28,23 @@ export class GitServerService implements IGitServerService {
   }
 
   private async ensureCommittedBeforeServe(repoPath: string): Promise<void> {
-    const statusOutput = await runGitCollectStdout(['status', '--porcelain'], repoPath);
-    if (statusOutput.trim().length === 0) return;
+    // Force index refresh with fsmonitor disabled — Git's fsmonitor/index caching
+    // on Windows can report a clean working tree even when files are dirty.
+    await runGit(['-c', 'core.fsmonitor=false', 'update-index', '--really-refresh'], repoPath);
 
-    const { exitCode: addCode, stderr: addStderr } = await runGit(['add', '-A'], repoPath);
+    // Stage with fsmonitor disabled to avoid Windows race conditions
+    const { exitCode: addCode, stderr: addStderr } = await runGit(
+      ['-c', 'core.fsmonitor=false', 'add', '-A'],
+      repoPath,
+    );
     if (addCode !== 0) {
       logger.warn('git add -A failed before mobile sync', { repoPath, addCode, addStderr });
       return;
     }
+
+    // Check if anything was actually staged (exit code 1 = changes exist)
+    const { exitCode: diffCode } = await runGit(['diff', '--cached', '--quiet'], repoPath);
+    if (diffCode === 0) return;
 
     const { exitCode: commitCode, stderr: commitStderr } = await runGit(
       ['commit', '-m', `Auto commit before mobile sync ${new Date().toISOString()}`],
