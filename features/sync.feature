@@ -299,6 +299,9 @@ Feature: Git Sync
       """
     # Wait for watch-fs to detect the desktop edit before syncing
     Then I wait for tiddler "Journal" to be updated by watch-fs
+    # Ensure desktop edit is committed before mobile sync arrives
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     When I create file "{tmpDir}/mobile-clone4/tiddlers/Journal.tid" with content:
       """
       created: 20250226090000000
