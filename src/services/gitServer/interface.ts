@@ -72,10 +72,10 @@ export interface IGitServerService {
    * needing TidGi Desktop code changes.
    * @param workspaceId workspace ID
    * @param gitArguments git command arguments (e.g. ['fetch', 'bundle.file', 'master:mobile-incoming'])
-   * @param env optional environment variables to merge with process.env for the git process
+   * @param environment optional environment variables to merge with process.env for the git process
    * @returns { exitCode, stdout, stderr }
    */
-  runGitCommand(workspaceId: string, gitArguments: string[], env?: Record<string, string>): Promise<{ exitCode: number | null; stdout: string; stderr: string }>;
+  runGitCommand(workspaceId: string, gitArguments: string[], environment?: Record<string, string>): Promise<{ exitCode: number | null; stdout: string; stderr: string }>;
 
   /**
    * Write a temporary file to the workspace's .git directory.
