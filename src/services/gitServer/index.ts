@@ -308,12 +308,13 @@ export class GitServerService implements IGitServerService {
   }
 
   // ── Generic git command runner for plugins ────────────────────────────
-  public async runGitCommand(workspaceId: string, gitArguments: string[]): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
+  public async runGitCommand(workspaceId: string, gitArguments: string[], env?: Record<string, string>): Promise<{ exitCode: number | null; stdout: string; stderr: string }> {
     const repoPath = await this.getWorkspaceRepoPath(workspaceId);
     if (!repoPath) {
       throw new Error(`Workspace ${workspaceId} not found`);
     }
-    return await runGit(gitArguments, repoPath);
+    const gitOptions = env ? { env: { ...process.env, ...env } } : undefined;
+    return await runGit(gitArguments, repoPath, gitOptions);
   }
 
   public async mergeAfterPush(workspaceId: string): Promise<void> {
