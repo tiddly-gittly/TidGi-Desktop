@@ -59,7 +59,7 @@ const ActionsWrapper = styled(Box)`
   gap: 12px;
 `;
 
-const FileStatusBadge = styled(Box)<{ $status?: GitFileStatus }>`
+const FileStatusBadge = styled(Box, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $status?: GitFileStatus }>`
   display: inline-block;
   font-size: 0.6rem;
   padding: 1px 4px;
