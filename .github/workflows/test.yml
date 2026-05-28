@@ -11,6 +11,10 @@ jobs:
         os:
           - ubuntu-latest
           - windows-2022
+        shard:
+          - 1
+          - 2
+          - 3
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -104,6 +108,8 @@ jobs:
           # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
+          # E2E test sharding — splits feature files across parallel CI runners
+          TIDGI_E2E_SHARD: 3/${{ matrix.shard }}
         timeout-minutes: 30
 
       # Windows: Run E2E directly — Windows CI runners provide a display
@@ -116,6 +122,8 @@ jobs:
           exit ${E2E_EXIT}
         env:
           CI: true
+          # E2E test sharding — splits feature files across parallel CI runners
+          TIDGI_E2E_SHARD: 3/${{ matrix.shard }}
         timeout-minutes: 30
 
       # Upload test artifacts (screenshots, logs, settings)
@@ -132,7 +140,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: test-artifacts-ci-${{ matrix.os }}
+          name: test-artifacts-ci-${{ matrix.os }}-${{ matrix.shard }}
           path: |
             test-artifacts-ci/**/logs/
             test-artifacts-ci/**/settings/
