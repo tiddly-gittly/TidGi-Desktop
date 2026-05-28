@@ -1,4 +1,4 @@
 creator: LinOnetwo
 title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor/TiddlersToNotSyncAcrossViews
 
-$:/layout
+$:/StoryList $:/HistoryList $:/layout
