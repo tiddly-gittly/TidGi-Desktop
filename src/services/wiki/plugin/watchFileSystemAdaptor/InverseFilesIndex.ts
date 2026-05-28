@@ -67,7 +67,10 @@ export class InverseFilesIndex {
     const normalizedFilePath = path.normalize(absoluteFilePath);
     for (const subWiki of this.subWikiMap.values()) {
       const normalizedSubWikiPath = path.normalize(subWiki.path);
-      if (normalizedFilePath.startsWith(normalizedSubWikiPath)) {
+      if (
+        normalizedFilePath.startsWith(normalizedSubWikiPath + path.sep) ||
+        normalizedFilePath === normalizedSubWikiPath
+      ) {
         return subWiki;
       }
     }

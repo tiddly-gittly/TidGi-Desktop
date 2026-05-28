@@ -24,11 +24,11 @@ const Container = styled(Box)`
 `;
 
 // Grid container for split view
-const SplitViewContainer = styled(Box)<{ $splitRatio: number }>`
+const SplitViewContainer = styled(Box, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $splitratio: number }>`
   display: grid;
   width: 100%;
   height: 100%;
-  grid-template-columns: ${props => props.$splitRatio}fr ${props => 100 - props.$splitRatio}fr;
+  grid-template-columns: ${props => props.$splitratio}fr ${props => 100 - props.$splitratio}fr;
   position: relative;
 `;
 
@@ -40,7 +40,7 @@ const SplitViewPane = styled(Box)`
 `;
 
 // Divider component between split panes
-const Divider = styled(Box)<{ $left: number }>`
+const Divider = styled(Box, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $left: number }>`
   position: absolute;
   top: 0;
   bottom: 0;
@@ -170,7 +170,7 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
 
   return (
     <Container>
-      <SplitViewContainer ref={containerReference} $splitRatio={temporarySplitRatio} data-testid='split-view-container'>
+      <SplitViewContainer ref={containerReference} $splitratio={temporarySplitRatio} data-testid='split-view-container'>
         {childTabs[0] && (
           <SplitViewPane>
             <TabContentView key={childTabs[0].id} tab={childTabs[0]} isSplitView={true} />

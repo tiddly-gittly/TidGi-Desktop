@@ -353,7 +353,9 @@ export function ServerOptions(props: ICustomSectionProps) {
               renderInput={(parameters: AutocompleteRenderInputParams) => (
                 <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />
               )}
-              renderOption={(props, option) => <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>}
+              renderOption={({ key: _key, ...props }, option) => (
+                <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>
+              )}
             />
           </ListItem>
         </List>
@@ -398,7 +400,7 @@ function ExcludedPluginsAutocomplete() {
           options={pluginsInWiki}
           value={excludedPlugins}
           limitTags={2}
-          renderOption={(props, option, { selected }) => (
+          renderOption={({ key: _key, ...props }, option, { selected }) => (
             <li {...props}>
               <Checkbox
                 icon={uncheckedIcon}

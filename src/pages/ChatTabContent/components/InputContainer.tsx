@@ -360,7 +360,7 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                   data-testid='attachment-autocomplete-input'
                 />
               )}
-              renderOption={(props, option) => {
+              renderOption={({ key: _key, ...props }, option) => {
                 const testId = option.testId || option.title.replace(/[^a-zA-Z0-9]/g, '_');
                 return (
                   <li {...props} data-testid={`attachment-option-${option.type}-${testId}`}>
