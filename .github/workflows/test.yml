@@ -83,6 +83,7 @@ jobs:
           sudo locale-gen zh_CN.UTF-8
 
       - name: Run unit tests
+        if: matrix.shard == 1
         run: pnpm run test:unit
         env:
           CI: true
@@ -92,7 +93,17 @@ jobs:
         run: pnpm run test:prepare-e2e
         env:
           CI: true
+          DEBUG: '*'
         timeout-minutes: 15
+
+      # Debug: see what electron-forge actually produced
+      - name: List packaging output
+        shell: bash
+        run: |
+          echo "=== out/ directory ==="
+          ls -la out/ 2>/dev/null || echo "out/ does not exist"
+          echo "=== out/TidGi-*-x64/ ==="
+          ls -laR out/TidGi-*-x64/ 2>/dev/null || echo "No TidGi-*-x64 directory"
 
       # Assert packaged executable exists so failures stop at packaging, not at E2E runtime
       - name: Verify packaged executable exists
