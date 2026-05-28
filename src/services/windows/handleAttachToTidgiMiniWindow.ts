@@ -55,9 +55,10 @@ export async function handleAttachToTidgiMiniWindow(
 
   // Create tidgi mini window-specific window configuration
   // Override titleBar settings from windowConfig with tidgi mini window-specific preference
+  const shouldKeepWindowPaintableForE2E = isTest && process.env.E2E_TEST === 'true' && process.platform === 'win32' && !process.env.SHOW_E2E_WINDOW;
   const tidgiMiniWindowConfig: BrowserWindowConstructorOptions = {
     ...windowConfig,
-    show: false,
+    show: shouldKeepWindowPaintableForE2E ? windowConfig.show : false,
     minHeight: 100,
     minWidth: 250,
     // Use tidgi mini window-specific titleBar setting instead of inheriting from main window

@@ -33,6 +33,7 @@ import { getPreloadPath } from './viteEntry';
 @injectable()
 export class Window implements IWindowService {
   private readonly windows = new Map<WindowNames, BrowserWindow>();
+  private readonly e2ePaintOnlyWindows = new WeakSet<BrowserWindow>();
   private windowMeta = {} as Partial<WindowMeta>;
   /** tidgi mini window version of main window, if user set attachToTidgiMiniWindow to true in preferences */
   private tidgiMiniWindowMenubar?: Menubar;
@@ -137,7 +138,11 @@ export class Window implements IWindowService {
    * Check if tidgi mini window is visible (open and showing on screen)
    */
   public async isTidgiMiniWindowOpen(): Promise<boolean> {
-    return this.tidgiMiniWindowMenubar?.window?.isVisible() ?? false;
+    const window = this.tidgiMiniWindowMenubar?.window;
+    if (window === undefined || window.isDestroyed() || !window.isVisible()) {
+      return false;
+    }
+    return !this.e2ePaintOnlyWindows.has(window);
   }
 
   /**
@@ -229,6 +234,11 @@ export class Window implements IWindowService {
       [WindowNames.auth]: 'TidGi [Auth]',
       [WindowNames.any]: 'TidGi [Browser]',
     };
+    const shouldKeepWindowPaintableForE2E = isTest && process.env.E2E_TEST === 'true' && process.platform === 'win32' && !process.env.SHOW_E2E_WINDOW && [
+      WindowNames.main,
+      WindowNames.secondary,
+      WindowNames.tidgiMiniWindow,
+    ].includes(windowName);
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
       ...windowWithBrowserViewConfig,
@@ -241,8 +251,13 @@ export class Window implements IWindowService {
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
       // Keep the window hidden during E2E tests so it won't steal focus from the developer.
       // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
-      // paintWhenInitiallyHidden defaults to true, so the renderer still paints.
-      ...(isTest && !process.env.SHOW_E2E_WINDOW ? { show: false } : {}),
+      // paintWhenInitiallyHidden defaults to true, but Windows WebContentsView hosts still
+      // need a shown BrowserWindow to expose reliable bounds during E2E.
+      ...(isTest && !process.env.SHOW_E2E_WINDOW
+        ? shouldKeepWindowPaintableForE2E
+          ? { show: true, x: -3000, y: -1000 }
+          : { show: false }
+        : {}),
       // https://www.electronjs.org/docs/latest/tutorial/custom-title-bar#add-native-window-controls-windows-linux
       ...(hideTitleBar && process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
       alwaysOnTop: windowName === WindowNames.tidgiMiniWindow ? tidgiMiniWindowAlwaysOnTop : alwaysOnTop,
@@ -271,6 +286,9 @@ export class Window implements IWindowService {
         throw new Error('TidgiMiniWindow failed to create window.');
       }
       newWindow = this.tidgiMiniWindowMenubar.window;
+      if (shouldKeepWindowPaintableForE2E) {
+        this.e2ePaintOnlyWindows.add(newWindow);
+      }
     } else {
       newWindow = await handleCreateBasicWindow(windowName, windowConfig, meta, config);
       if (isWindowWithBrowserView) {
@@ -463,6 +481,13 @@ export class Window implements IWindowService {
     }
   }
 
+  private markWindowShownForE2E(window: BrowserWindow | undefined): void {
+    if (window === undefined || window.isDestroyed()) {
+      return;
+    }
+    this.e2ePaintOnlyWindows.delete(window);
+  }
+
   public async openTidgiMiniWindow(enableIt = true, showWindow = true): Promise<void> {
     // Prevent concurrent operations on tidgi mini window
     if (this.tidgiMiniWindowOperationLock) {
@@ -514,6 +539,7 @@ export class Window implements IWindowService {
 
           // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
           await this.tidgiMiniWindowMenubar.showWindow();
+          this.markWindowShownForE2E(this.tidgiMiniWindowMenubar.window);
           // Wait until the OS actually marks the window as visible (needed in E2E tests where
           // BrowserWindow.show() is asynchronous with respect to isVisible() returning true)
           if (isTest) {
@@ -541,9 +567,11 @@ export class Window implements IWindowService {
       if (enableIt) {
         logger.debug('[test-id-TIDGI_MINI_WINDOW_CREATED] TidGi mini window enabled', { function: 'openTidgiMiniWindow' });
         // After creating the tidgi mini window, show it if requested
-        if (showWindow && this.tidgiMiniWindowMenubar) {
+        const menuBar = this.tidgiMiniWindowMenubar;
+        if (showWindow && menuBar) {
           logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });
-          await this.tidgiMiniWindowMenubar.showWindow();
+          await menuBar.showWindow();
+          this.markWindowShownForE2E(menuBar.window);
         }
       }
     } catch (error) {

@@ -94,6 +94,18 @@ jobs:
           CI: true
         timeout-minutes: 15
 
+      # Assert packaged executable exists so failures stop at packaging, not at E2E runtime
+      - name: Verify packaged executable exists
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            test -f "out/TidGi-win32-x64/tidgi.exe" || { echo "ERROR: Packaged executable not found at out/TidGi-win32-x64/tidgi.exe"; exit 1; }
+            echo "Verified: out/TidGi-win32-x64/tidgi.exe exists"
+          else
+            test -f "out/TidGi-linux-x64/tidgi" || { echo "ERROR: Packaged executable not found at out/TidGi-linux-x64/tidgi"; exit 1; }
+            echo "Verified: out/TidGi-linux-x64/tidgi exists"
+          fi
+
       # Linux: Run E2E under xvfb for virtual display
       - name: Run E2E tests (Linux)
         if: runner.os == 'Linux'

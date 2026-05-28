@@ -48,13 +48,12 @@ Sharding is **stable**: feature files are sorted alphabetically and divided even
 
 ### Calibration with shards
 
-Calibration (the preflight that discovers timeout values) is **not** affected by `TIDGI_E2E_SHARD` — it always runs all `@calibrate`-tagged scenarios across every feature file. The resulting `.calibration.json` is shared across all shards. Run calibration once before splitting:
+Calibration (the preflight that discovers timeout values) is **not** affected by `TIDGI_E2E_SHARD` — it always runs all `@calibrate`-tagged scenarios across every feature file. The resulting `.calibration.json` is shared across all shards.
+
+Calibration runs automatically as a preflight step when you invoke `pnpm test:e2e`, so no separate command is needed. Each sharded invocation runs its own calibration automatically (unless the implementation changes to support pre-shared calibration in the future):
 
 ```bash
-# Run calibration without sharding (or with any shard — it ignores TIDGI_E2E_SHARD)
-pnpm run cal:e2e
-
-# Then run shards in parallel, reusing the shared calibration
+# Run shards in parallel — each will auto-calibrate before running its subset of feature files
 TIDGI_E2E_SHARD=3/1 pnpm test:e2e &
 TIDGI_E2E_SHARD=3/2 pnpm test:e2e &
 TIDGI_E2E_SHARD=3/3 pnpm test:e2e &

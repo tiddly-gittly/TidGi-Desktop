@@ -85,7 +85,20 @@ export class ApplicationWorld {
     if (!this.app) return false;
     try {
       const browserWindow = await this.app.browserWindow(page);
-      return await browserWindow.evaluate((win: Electron.BrowserWindow) => win.isVisible());
+      return await browserWindow.evaluate((win: Electron.BrowserWindow) => {
+        if (!win.isVisible()) {
+          return false;
+        }
+        if (process.platform !== 'win32' || process.env.SHOW_E2E_WINDOW) {
+          return true;
+        }
+        const bounds = win.getBounds();
+        const isMiniWindow = win.getTitle().includes('Mini Window') || (bounds.width === 500 && bounds.height === 600);
+        if (!isMiniWindow) {
+          return true;
+        }
+        return win.webContents.executeJavaScript('window.service.window.isTidgiMiniWindowOpen?.() ?? false') as Promise<boolean>;
+      });
     } catch {
       return false;
     }

@@ -20,7 +20,9 @@ const DragOverlayContainer = styled(Box)`
   transition: background-color 0.15s ease;
 `;
 
-const WorkspaceDropZone = styled('div')<{ $bottom?: boolean; $center?: boolean }>`
+const WorkspaceDropZone = styled('div', {
+  shouldForwardProp: (propertyName) => !/^\$/.test(String(propertyName)),
+})<{ $bottom?: boolean; $center?: boolean }>`
   position: absolute;
   left: 0;
   right: 0;
