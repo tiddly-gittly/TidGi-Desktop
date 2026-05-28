@@ -99,20 +99,34 @@ export default (
 
     console.log('Copy dugite');
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true, recursive: true` here.
-    fs.copySync(
-      path.join(sourceNodeModulesFolder, 'dugite'),
-      path.join(cwd, 'node_modules', 'dugite'),
-      { dereference: false },
-    );
+    try {
+      fs.copySync(
+        path.join(sourceNodeModulesFolder, 'dugite'),
+        path.join(cwd, 'node_modules', 'dugite'),
+        { dereference: false },
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(
+        `Error copying dugite to dist, in afterPack.ts: ${errorMessage}`,
+      );
+    }
 
     if (platform === 'win32') {
       console.log('Copy registry-js (Windows only)');
       // registry-js has native binary that is loaded using relative path (../../build/Release/registry.node)
-      fs.copySync(
-        path.join(sourceNodeModulesFolder, 'registry-js'),
-        path.join(cwd, 'node_modules', 'registry-js'),
-        { dereference: true },
-      );
+      try {
+        fs.copySync(
+          path.join(sourceNodeModulesFolder, 'registry-js'),
+          path.join(cwd, 'node_modules', 'registry-js'),
+          { dereference: true },
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(
+          `Error copying registry-js to dist, in afterPack.ts: ${errorMessage}`,
+        );
+      }
     }
   }
 
