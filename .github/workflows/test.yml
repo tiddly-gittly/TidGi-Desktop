@@ -89,6 +89,13 @@ jobs:
           CI: true
         timeout-minutes: 5
 
+      # Diagnostic: test electron-packager directly to isolate CI packaging failure
+      - name: Test direct packager
+        run: node scripts/test-packager.js
+        env:
+          CI: true
+        timeout-minutes: 10
+
       - name: Prepare E2E
         run: pnpm run test:prepare-e2e
         env:
