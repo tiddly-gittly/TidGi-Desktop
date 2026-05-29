@@ -8,7 +8,29 @@ interface StepTiming {
   durationMs: number;
 }
 
+// Conservative fallback timeouts used when calibration cannot run (e.g. Windows CI).
+const FALLBACK_TOTAL_MS = 120_000;
+const FALLBACK_STEP_MS = 120_000;
+const FALLBACK_LAUNCH_MS = 60_000;
+const FALLBACK_WAIT_MS = 30_000;
+const FALLBACK_ELEMENT_MS = 10_000;
+const CALIBRATION_BUFFER_MS = 200;
+
 function runSmokeCalibration(): void {
+  // Windows CI cannot launch Chromium reliably enough for calibration.
+  // Writing fallback values directly avoids side effects from a failed run.
+  if (process.env.CI && process.platform === 'win32') {
+    console.warn('[Cal] Windows CI detected — skipping calibration, using fallback timeouts');
+    writeCalibrationResult(
+      FALLBACK_TOTAL_MS + CALIBRATION_BUFFER_MS,
+      FALLBACK_STEP_MS + CALIBRATION_BUFFER_MS,
+      FALLBACK_LAUNCH_MS + CALIBRATION_BUFFER_MS,
+      FALLBACK_WAIT_MS + CALIBRATION_BUFFER_MS,
+      FALLBACK_ELEMENT_MS + CALIBRATION_BUFFER_MS,
+    );
+    return;
+  }
+
   const CALIBRATION_RUNS = 1;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
@@ -66,14 +88,13 @@ function runSmokeCalibration(): void {
   // Zeroes cause every Cucumber step to time out immediately.
   if (maxTotalMs === 0) {
     console.warn('[Cal] all runs failed — using conservative fallback timeouts');
-    maxTotalMs = 120_000;
-    maxStepMs = 120_000;
-    maxLaunchStepMs = 60_000;
-    maxWaitStepMs = 30_000;
-    maxElementStepMs = 10_000;
+    maxTotalMs = FALLBACK_TOTAL_MS;
+    maxStepMs = FALLBACK_STEP_MS;
+    maxLaunchStepMs = FALLBACK_LAUNCH_MS;
+    maxWaitStepMs = FALLBACK_WAIT_MS;
+    maxElementStepMs = FALLBACK_ELEMENT_MS;
   }
 
-  const CALIBRATION_BUFFER_MS = 200;
   writeCalibrationResult(
     maxTotalMs + CALIBRATION_BUFFER_MS,
     maxStepMs + CALIBRATION_BUFFER_MS,
