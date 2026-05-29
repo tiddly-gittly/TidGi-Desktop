@@ -42,34 +42,56 @@ After(async function(this: ApplicationWorld, { pickle }) {
   // IMPORTANT: Close app FIRST before cleaning up files
   // This releases file locks so wiki folders can be deleted
   if (this.app) {
-    try {
-      // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
-      const allWindows = this.app.windows();
-
-      // Try to close windows gracefully with short timeout, then force close
-      await Promise.allSettled(
-        allWindows.map(async (window) => {
-          if (window.isClosed()) return;
-
-          try {
-            // Very short timeout for window close - we'll force close anyway
-            await Promise.race([
-              window.close(),
-              new Promise((_, reject) =>
-                setTimeout(() => {
-                  reject(new Error('Window close timeout'));
-                }, 1000)
-              ),
-            ]);
-          } catch {
-            // Window close failed or timed out, ignore and continue
-            // Force close will happen at app level
-          }
-        }),
-      );
-
-      // Try to close app gracefully with short timeout
+    if (process.platform === 'win32') {
+      // Windows: hard-kill the process tree FIRST, before any graceful close.
+      // window.close() -> windowAllClosed -> app.quit() enters before-quit,
+      // which prevents default and runs async cleanup. Our 1s/0.5s test timeouts
+      // inevitably interrupt that cleanup, leaving zombie child processes that
+      // contaminate subsequent scenarios. taskkill /T /F while the parent is still
+      // alive reliably terminates the whole tree.
+      if (this.appPid !== undefined) {
+        try {
+          const { execSync } = await import('child_process');
+          execSync(`taskkill /PID ${this.appPid} /T /F`, { stdio: 'ignore' });
+        } catch {
+          // Process already exited or kill failed — ignore
+        }
+        this.appPid = undefined;
+      }
+      // Best-effort Playwright handle cleanup after the process is dead.
       try {
+        await Promise.race([
+          this.app.context().close({ reason: 'Force cleanup after test' }),
+          new Promise((resolve) => setTimeout(resolve, 500)),
+        ]);
+      } catch {
+        // ignore
+      }
+    } else {
+      // Non-Windows: graceful close, then force close, then SIGKILL fallback.
+      try {
+        // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
+        const allWindows = this.app.windows();
+
+        await Promise.allSettled(
+          allWindows.map(async (window) => {
+            if (window.isClosed()) return;
+
+            try {
+              await Promise.race([
+                window.close(),
+                new Promise((_, reject) =>
+                  setTimeout(() => {
+                    reject(new Error('Window close timeout'));
+                  }, 1000)
+                ),
+              ]);
+            } catch {
+              // Window close failed or timed out, ignore and continue
+            }
+          }),
+        );
+
         await Promise.race([
           this.app.close(),
           new Promise((_, reject) =>
@@ -80,45 +102,31 @@ After(async function(this: ApplicationWorld, { pickle }) {
         ]);
       } catch {
         // App close failed or timed out, force close immediately
-      }
-    } catch {
-      // Any error in the try block, continue to force close
-    } finally {
-      // ALWAYS force close, regardless of success/failure above
-      // This ensures resources are freed even if graceful close hangs
-      try {
-        if (this.app) {
-          // Force close browser context - this kills all processes
+      } finally {
+        try {
           await Promise.race([
             this.app.context().close({ reason: 'Force cleanup after test' }),
-            new Promise((resolve) => setTimeout(resolve, 500)), // 500ms max for force close
+            new Promise((resolve) => setTimeout(resolve, 500)),
           ]);
-        }
-      } catch {
-        // Even force close can fail, but we don't care - move on
-      }
-
-      // Hard-kill fallback: if graceful + force close failed, terminate the specific PID
-      // to prevent zombie processes from accumulating across scenarios.
-      if (this.appPid !== undefined) {
-        try {
-          const { execSync } = await import('child_process');
-          if (process.platform === 'win32') {
-            execSync(`taskkill /PID ${this.appPid} /T /F`, { stdio: 'ignore' });
-          } else {
-            process.kill(this.appPid, 'SIGKILL');
-          }
         } catch {
-          // Process already exited or kill failed — ignore
+          // Even force close can fail, but we don't care - move on
         }
-        this.appPid = undefined;
-      }
 
-      // Clear references immediately
-      this.app = undefined;
-      this.mainWindow = undefined;
-      this.currentWindow = undefined;
+        if (this.appPid !== undefined) {
+          try {
+            process.kill(this.appPid, 'SIGKILL');
+          } catch {
+            // Process already exited or kill failed — ignore
+          }
+          this.appPid = undefined;
+        }
+      }
     }
+
+    // Clear references immediately
+    this.app = undefined;
+    this.mainWindow = undefined;
+    this.currentWindow = undefined;
   }
 
   // Stop mock analytics server if it was started for this scenario
