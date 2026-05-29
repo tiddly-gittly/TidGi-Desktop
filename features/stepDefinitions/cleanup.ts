@@ -19,6 +19,12 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
   const wikiTestRoot = path.resolve(scenarioRoot, 'wiki-test');
 
+  // Clean previous runs with the same slug so that calibration/preflight
+  // artifacts (userData, wiki-test, logs) never leak into the actual shard run.
+  if (await fs.pathExists(scenarioRoot)) {
+    await fs.remove(scenarioRoot);
+  }
+
   // Create necessary directories for this scenario
   await fs.ensureDir(logsDirectory);
   await fs.ensureDir(screenshotsDirectory);

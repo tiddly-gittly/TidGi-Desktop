@@ -234,7 +234,7 @@ export class Window implements IWindowService {
       [WindowNames.auth]: 'TidGi [Auth]',
       [WindowNames.any]: 'TidGi [Browser]',
     };
-    const shouldKeepWindowPaintableForE2E = isTest && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW && [
+    const shouldKeepWindowPaintableForE2E = isTest && process.platform === 'win32' && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW && [
       WindowNames.main,
       WindowNames.secondary,
       WindowNames.tidgiMiniWindow,
@@ -251,8 +251,8 @@ export class Window implements IWindowService {
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
       // Keep the window hidden during E2E tests so it won't steal focus from the developer.
       // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
-      // paintWhenInitiallyHidden defaults to true, but WebContentsView hosts need a shown
-      // BrowserWindow to expose reliable bounds during E2E on all platforms.
+      // On Windows, paintWhenInitiallyHidden defaults to true, but WebContentsView hosts need a shown
+      // BrowserWindow to expose reliable bounds during E2E — so we show it offscreen.
       ...(isTest && !process.env.SHOW_E2E_WINDOW
         ? shouldKeepWindowPaintableForE2E
           ? { show: true, x: -3000, y: -1000 }
