@@ -91,7 +91,23 @@ jobs:
 
       # Diagnostic: test electron-packager directly to isolate CI packaging failure
       - name: Test direct packager
-        run: node scripts/test-packager.js
+        run: |
+          node -e "
+            const packager = require('@electron/packager');
+            packager({
+              dir: process.cwd(),
+              out: './test-out',
+              platform: process.platform,
+              arch: 'x64',
+              overwrite: true,
+              quiet: false,
+            }).then(result => {
+              console.log('Direct packager result:', result);
+            }).catch(error => {
+              console.error('Direct packager error:', error);
+              process.exit(1);
+            });
+          "
         env:
           CI: true
         timeout-minutes: 10
