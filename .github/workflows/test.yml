@@ -30,7 +30,8 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: lts/*
+          # Node 24.16.0 breaks extract-zip/yauzl, causing Electron packaging to exit 0 with no output.
+          node-version: 24.15.0
           cache: 'pnpm'
 
       # Linux: Install C++ build tools for native modules (nsfw, better-sqlite3)
@@ -88,29 +89,6 @@ jobs:
         env:
           CI: true
         timeout-minutes: 5
-
-      # Diagnostic: test electron-packager directly to isolate CI packaging failure
-      - name: Test direct packager
-        run: |
-          node -e "
-            const packager = require('@electron/packager');
-            packager({
-              dir: process.cwd(),
-              out: './test-out',
-              platform: process.platform,
-              arch: 'x64',
-              overwrite: true,
-              quiet: false,
-            }).then(result => {
-              console.log('Direct packager result:', result);
-            }).catch(error => {
-              console.error('Direct packager error:', error);
-              process.exit(1);
-            });
-          "
-        env:
-          CI: true
-        timeout-minutes: 10
 
       - name: Prepare E2E
         run: pnpm run test:prepare-e2e

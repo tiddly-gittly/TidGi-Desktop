@@ -44,24 +44,6 @@ const config: ForgeConfig = {
     appBundleId: 'com.tidgi',
     afterPrune: [afterPack],
     beforeAsar: [beforeAsar],
-    afterExtract: [
-      (buildPath: string, _electronVersion: string, platform: string, arch: string, callback: (error?: Error) => void) => {
-        console.log(`[DIAG] afterExtract: buildPath=${buildPath}, platform=${platform}, arch=${arch}`);
-        callback();
-      },
-    ],
-    afterCopy: [
-      (buildPath: string, _electronVersion: string, platform: string, arch: string, callback: (error?: Error) => void) => {
-        console.log(`[DIAG] afterCopy: buildPath=${buildPath}, platform=${platform}, arch=${arch}`);
-        callback();
-      },
-    ],
-    afterComplete: [
-      (finalPath: string, _electronVersion: string, platform: string, arch: string, callback: (error?: Error) => void) => {
-        console.log(`[DIAG] afterComplete: finalPath=${finalPath}, platform=${platform}, arch=${arch}`);
-        callback();
-      },
-    ],
   },
   makers: [
     {

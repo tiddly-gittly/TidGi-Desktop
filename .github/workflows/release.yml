@@ -70,7 +70,8 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: lts/*
+          # Node 24.16.0 breaks extract-zip/yauzl, causing Electron packaging to exit 0 with no output.
+          node-version: 24.15.0
 
       # Set up MSVC compiler for native modules: nsfw, better-sqlite3
       - name: Set up MSVC compiler (Windows)
