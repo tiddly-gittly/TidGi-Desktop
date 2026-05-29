@@ -21,8 +21,25 @@ Before(async function(this: ApplicationWorld, { pickle }) {
 
   // Clean previous runs with the same slug so that calibration/preflight
   // artifacts (userData, wiki-test, logs) never leak into the actual shard run.
+  // On Windows, a recently-killed process may still hold file locks for a few
+  // hundred milliseconds, so we retry removal a few times before giving up.
   if (await fs.pathExists(scenarioRoot)) {
-    await fs.remove(scenarioRoot);
+    if (process.platform === 'win32') {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          await fs.remove(scenarioRoot);
+          break;
+        } catch {
+          if (attempt === 4) {
+            console.warn(`[cleanup] Could not remove ${scenarioRoot} after 5 attempts — proceeding anyway`);
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+      }
+    } else {
+      await fs.remove(scenarioRoot);
+    }
   }
 
   // Create necessary directories for this scenario
@@ -58,6 +75,9 @@ After(async function(this: ApplicationWorld, { pickle }) {
         }
         this.appPid = undefined;
       }
+      // Give Windows a moment to fully terminate processes and release file locks
+      // before the next scenario's Before hook tries to remove scenarioRoot.
+      await new Promise((resolve) => setTimeout(resolve, 500));
       // Best-effort Playwright handle cleanup after the process is dead.
       try {
         await Promise.race([
@@ -127,6 +147,27 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.app = undefined;
     this.mainWindow = undefined;
     this.currentWindow = undefined;
+  }
+
+  // Aggressive scenario artifact cleanup: remove the entire scenario root directory
+  // on Windows so that calibration runs cannot leak files into the real shard.
+  // On non-Windows the Before hook handles this, but doing it here too adds safety.
+  if (process.platform === 'win32') {
+    const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
+    if (await fs.pathExists(scenarioRoot)) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          await fs.remove(scenarioRoot);
+          break;
+        } catch {
+          if (attempt === 4) {
+            console.warn(`[cleanup] After hook could not remove ${scenarioRoot} after 5 attempts`);
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+      }
+    }
   }
 
   // Stop mock analytics server if it was started for this scenario
