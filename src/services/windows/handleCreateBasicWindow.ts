@@ -60,8 +60,8 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
         // Don't bring up window when running e2e test, otherwise it will annoy the developer who is doing other things.
         if (!wasOpenedAsHidden && !isTest) {
           mainWindow.show();
-        } else if (!wasOpenedAsHidden && isTest && process.env.E2E_TEST === 'true' && process.platform === 'win32' && !process.env.SHOW_E2E_WINDOW) {
-          // Windows E2E needs a shown BrowserWindow for WebContentsView bounds/rendering.
+        } else if (!wasOpenedAsHidden && isTest && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW) {
+          // E2E needs a shown BrowserWindow for WebContentsView bounds/rendering on all platforms.
           // The constructor keeps the configured size but places it offscreen.
           mainWindow.showInactive();
         }
