@@ -698,9 +698,9 @@ export class AgentInstanceService implements IAgentInstanceService {
     // duplicate React key and undoing the deletion.
     for (const messageId of messageIds) {
       const debounceKey = `${agentId}:${messageId}`;
-      const debouncedFn = this.debouncedUpdateFunctions.get(debounceKey);
-      if (debouncedFn) {
-        (debouncedFn as unknown as { cancel?: () => void }).cancel?.();
+      const debouncedFunction = this.debouncedUpdateFunctions.get(debounceKey);
+      if (debouncedFunction) {
+        (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
         this.debouncedUpdateFunctions.delete(debounceKey);
       }
     }

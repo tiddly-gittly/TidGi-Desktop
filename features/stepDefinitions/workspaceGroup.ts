@@ -257,15 +257,21 @@ async function dragLocatorToCoordinates(
       const yRatio = targetRect ? ((targetY - targetRect.y) / targetRect.height) : NaN;
       throw new Error(
         `Intent wait failed for ${targetWorkspaceId}. ` +
-        `Expected: "${expectedIntent ?? 'any-non-none'}", actual: "${actualIntent}". ` +
-        `Release coords: (${Math.round(targetX)}, ${Math.round(targetY)}). ` +
-        `elementFromPoint: ${elementAtPoint}. ` +
-        `Target rect: ${targetRect ? JSON.stringify({ x: Math.round(targetRect.x), y: Math.round(targetRect.y), w: Math.round(targetRect.width), h: Math.round(targetRect.height) }) : 'null'}. ` +
-        `Y ratio into target: ${Number.isNaN(yRatio) ? 'N/A' : yRatio.toFixed(3)} ` +
-        `(zone hint: ${expectedIntent === 'reorder-before' ? 'top 0.15' : expectedIntent === 'reorder-after' ? 'bottom 0.85' : expectedIntent === 'group' ? 'center 0.50' : 'unknown'}). ` +
-        `Source rect: ${sourceRect ? JSON.stringify({ x: Math.round(sourceRect.x), y: Math.round(sourceRect.y), w: Math.round(sourceRect.width), h: Math.round(sourceRect.height) }) : 'null'}. ` +
-        `DragOverlay visible: ${String(hasOverlay)}. ` +
-        `Original error: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
+          `Expected: "${expectedIntent ?? 'any-non-none'}", actual: "${actualIntent}". ` +
+          `Release coords: (${Math.round(targetX)}, ${Math.round(targetY)}). ` +
+          `elementFromPoint: ${elementAtPoint}. ` +
+          `Target rect: ${
+            targetRect ? JSON.stringify({ x: Math.round(targetRect.x), y: Math.round(targetRect.y), w: Math.round(targetRect.width), h: Math.round(targetRect.height) }) : 'null'
+          }. ` +
+          `Y ratio into target: ${Number.isNaN(yRatio) ? 'N/A' : yRatio.toFixed(3)} ` +
+          `(zone hint: ${
+            expectedIntent === 'reorder-before' ? 'top 0.15' : expectedIntent === 'reorder-after' ? 'bottom 0.85' : expectedIntent === 'group' ? 'center 0.50' : 'unknown'
+          }). ` +
+          `Source rect: ${
+            sourceRect ? JSON.stringify({ x: Math.round(sourceRect.x), y: Math.round(sourceRect.y), w: Math.round(sourceRect.width), h: Math.round(sourceRect.height) }) : 'null'
+          }. ` +
+          `DragOverlay visible: ${String(hasOverlay)}. ` +
+          `Original error: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
       );
     }
   }
@@ -340,13 +346,17 @@ async function dragLocatorAndHoldAtCoordinates(
       const yRatio = targetRect ? ((targetY - targetRect.y) / targetRect.height) : NaN;
       throw new Error(
         `Intent wait failed for ${targetWorkspaceId} (hold-mode). ` +
-        `Expected: "${expectedIntent ?? 'any-non-none'}", actual: "${actualIntent}". ` +
-        `Hold coords: (${Math.round(targetX)}, ${Math.round(targetY)}). ` +
-        `elementFromPoint: ${elementAtPoint}. ` +
-        `Target rect: ${targetRect ? JSON.stringify({ x: Math.round(targetRect.x), y: Math.round(targetRect.y), w: Math.round(targetRect.width), h: Math.round(targetRect.height) }) : 'null'}. ` +
-        `Y ratio into target: ${Number.isNaN(yRatio) ? 'N/A' : yRatio.toFixed(3)} ` +
-        `(zone hint: ${expectedIntent === 'reorder-before' ? 'top 0.15' : expectedIntent === 'reorder-after' ? 'bottom 0.85' : expectedIntent === 'group' ? 'center 0.50' : 'unknown'}). ` +
-        `Original error: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
+          `Expected: "${expectedIntent ?? 'any-non-none'}", actual: "${actualIntent}". ` +
+          `Hold coords: (${Math.round(targetX)}, ${Math.round(targetY)}). ` +
+          `elementFromPoint: ${elementAtPoint}. ` +
+          `Target rect: ${
+            targetRect ? JSON.stringify({ x: Math.round(targetRect.x), y: Math.round(targetRect.y), w: Math.round(targetRect.width), h: Math.round(targetRect.height) }) : 'null'
+          }. ` +
+          `Y ratio into target: ${Number.isNaN(yRatio) ? 'N/A' : yRatio.toFixed(3)} ` +
+          `(zone hint: ${
+            expectedIntent === 'reorder-before' ? 'top 0.15' : expectedIntent === 'reorder-after' ? 'bottom 0.85' : expectedIntent === 'group' ? 'center 0.50' : 'unknown'
+          }). ` +
+          `Original error: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
       );
     }
   }
@@ -457,11 +467,14 @@ async function getWorkspaceItemZoneCenter(
     throw new Error(result.error);
   }
 
-  const { targetX, targetY, rect, zone: resolvedZone, ratio, isTargetAtPoint, elementAtPointTag } = result as {
-    targetX: number; targetY: number;
+  const { targetX, targetY, rect, zone: _resolvedZone, ratio, isTargetAtPoint, elementAtPointTag } = result as {
+    targetX: number;
+    targetY: number;
     rect: { x: number; y: number; width: number; height: number };
-    zone: string; ratio: number;
-    isTargetAtPoint: boolean; elementAtPointTag: string;
+    zone: string;
+    ratio: number;
+    isTargetAtPoint: boolean;
+    elementAtPointTag: string;
   };
 
   // Diagnostic log for every zone resolution so flake investigations can
@@ -469,18 +482,18 @@ async function getWorkspaceItemZoneCenter(
   // present at that point before the mouse moved there.
   console.log(
     `[getWorkspaceItemZoneCenter] zone="${zone}" targetId="${targetWorkspaceId}" ` +
-    `coords=(${Math.round(targetX)},${Math.round(targetY)}) ` +
-    `rect={x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}} ` +
-    `ratio=${ratio.toFixed(3)} isTargetAtPoint=${String(isTargetAtPoint)} elementAtPoint=${elementAtPointTag}`,
+      `coords=(${Math.round(targetX)},${Math.round(targetY)}) ` +
+      `rect={x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}} ` +
+      `ratio=${ratio.toFixed(3)} isTargetAtPoint=${String(isTargetAtPoint)} elementAtPoint=${elementAtPointTag}`,
   );
 
   if (!isTargetAtPoint) {
     throw new Error(
       `Coordinate verification failed for ${itemSelector} at zone "${zone}". ` +
-      `Computed coords (${Math.round(targetX)}, ${Math.round(targetY)}) ` +
-      `land on <${elementAtPointTag}> instead of the target element. ` +
-      `Target rect: {x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}}. ` +
-      `This indicates a layout shift occurred during drag activation.`,
+        `Computed coords (${Math.round(targetX)}, ${Math.round(targetY)}) ` +
+        `land on <${elementAtPointTag}> instead of the target element. ` +
+        `Target rect: {x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}}. ` +
+        `This indicates a layout shift occurred during drag activation.`,
     );
   }
 
@@ -549,9 +562,15 @@ When('I hover workspace {string} over workspace {string}', async function(this: 
   // Sanity-check that the target workspace is fully rendered before dragging.
   const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-center"]`;
   await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
-  await dragLocatorAndHoldAtCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center');
-  }, targetWorkspace.id, 'group');
+  await dragLocatorAndHoldAtCoordinates(
+    this,
+    `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
+    async () => {
+      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center');
+    },
+    targetWorkspace.id,
+    'group',
+  );
 });
 
 When('I release the mouse', async function(this: ApplicationWorld) {
@@ -573,9 +592,15 @@ When('I drag workspace {string} to the top zone of workspace {string}', async fu
   const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-top"]`;
   await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
 
-  await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'top');
-  }, targetWorkspace.id, 'reorder-before');
+  await dragLocatorToCoordinates(
+    this,
+    `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
+    async () => {
+      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'top');
+    },
+    targetWorkspace.id,
+    'reorder-before',
+  );
 });
 
 When('I drag workspace {string} to the bottom zone of workspace {string}', async function(this: ApplicationWorld, sourceWorkspaceName: string, targetWorkspaceName: string) {
@@ -588,9 +613,15 @@ When('I drag workspace {string} to the bottom zone of workspace {string}', async
   // Sanity-check that the target workspace is fully rendered before dragging.
   const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-bottom"]`;
   await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
-  await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'bottom');
-  }, targetWorkspace.id, 'reorder-after');
+  await dragLocatorToCoordinates(
+    this,
+    `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
+    async () => {
+      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'bottom');
+    },
+    targetWorkspace.id,
+    'reorder-after',
+  );
 });
 
 When('I drag workspace {string} onto the header of its current group', async function(this: ApplicationWorld, workspaceName: string) {

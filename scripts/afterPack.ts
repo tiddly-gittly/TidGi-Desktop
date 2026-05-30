@@ -41,7 +41,7 @@ export default (
   _electronVersion: string,
   platform: string,
   arch: string,
-  callback: (err?: Error) => void,
+  callback: (error?: Error) => void,
 ): void => {
   const failures = new Set<string>();
   let unexpectedError: unknown = null;
@@ -155,18 +155,22 @@ export default (
     // Report critical copy failures first — they have the most actionable diagnostics.
     // Fall back to any unexpected hook error so the overall packaging fails fast
     // instead of silently producing a corrupted build.
-    const missingCritical = [...failures].filter(pkg => CRITICAL_PACKAGES.includes(pkg));
+    const missingCritical = [...failures].filter(package_ => CRITICAL_PACKAGES.includes(package_));
     if (missingCritical.length > 0) {
       const error = new Error(
         `afterPack: critical dependencies failed to copy: ${missingCritical.join(', ')}. ` +
-        `The packaged app will crash at runtime. Check build logs for details.`,
+          `The packaged app will crash at runtime. Check build logs for details.`,
       );
       console.error(error.message);
       callback(error);
     } else if (unexpectedError !== null) {
       const error = unexpectedError instanceof Error
         ? unexpectedError
-        : new Error(String(unexpectedError));
+        : new Error(
+          typeof unexpectedError === 'string'
+            ? unexpectedError
+            : JSON.stringify(unexpectedError),
+        );
       callback(error);
     } else {
       callback();
