@@ -1,5 +1,4 @@
 import * as Path from 'path';
-// @ts-expect-error - registry-js is Windows-only
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
 
 import { logger } from '@services/libs/log';

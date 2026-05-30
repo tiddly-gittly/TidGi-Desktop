@@ -467,7 +467,7 @@ async function getWorkspaceItemZoneCenter(
     throw new Error(result.error);
   }
 
-  const { targetX, targetY, rect, zone: _resolvedZone, ratio, isTargetAtPoint, elementAtPointTag } = result as {
+  const { targetX, targetY, rect, ratio, isTargetAtPoint, elementAtPointTag } = result as {
     targetX: number;
     targetY: number;
     rect: { x: number; y: number; width: number; height: number };

@@ -199,6 +199,56 @@ function getReorderIntentFromPointer({
   return relativeY < rect.height / 2 ? 'reorder-before' : 'reorder-after';
 }
 
+function escapeCssString(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[\n\r\f]/g, (character) => {
+      switch (character) {
+        case '\n': {
+          return '\\a ';
+        }
+        case '\r': {
+          return '\\d ';
+        }
+        case '\f': {
+          return '\\c ';
+        }
+        default: {
+          return character;
+        }
+      }
+    });
+}
+
+/**
+ * Resolve the live DOM rect of a sortable item (workspace or group header).
+ * dnd-kit's `over.rect` can be stale after DOM mutations (e.g. transforms
+ * during drag activation), while collision detection still yields the correct
+ * `over.id`. This helper queries the current DOM position for intent-zone
+ * math and falls back to the cached rect only when the element is absent.
+ */
+function getLiveSortableRect(
+  overId: string,
+  fallbackRect: { top: number; height: number } | null | undefined,
+): { top: number; height: number } | null {
+  const testId = overId.startsWith('group-')
+    ? `workspace-group-${overId.slice('group-'.length)}`
+    : `workspace-item-${overId}`;
+  const element = document.querySelector<HTMLElement>(`[data-testid="${escapeCssString(testId)}"]`);
+
+  if (!element) {
+    return fallbackRect ?? null;
+  }
+
+  const { top, height } = element.getBoundingClientRect();
+  if (height <= 0) {
+    return fallbackRect ?? null;
+  }
+
+  return { top, height };
+}
+
 // ─── SortableGroupHeader ─────────────────────────────────────────────
 
 function SortableGroupHeader({ group, onToggleCollapse }: SortableGroupHeaderProps): React.JSX.Element {
@@ -422,8 +472,9 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
    * When the pointer overlaps its own group header, that header must outrank nearby workspaces so
    * the drop result matches the ungroup affordance the user is aiming at.
    *
-   * Note: MeasuringStrategy.Always ensures droppable rects are always fresh, eliminating the need
-   * for manual DOM rect fallbacks.
+   * Note: MeasuringStrategy.Always asks dnd-kit to remeasure droppables during drag, but the
+   * `over.rect` attached to a drag event can still reflect stale cached state while transforms or
+   * overlay changes are active. Intent-zone math therefore queries the live DOM rect explicitly.
    */
   // Track the actual pointer Y during drag for accurate zone calculations.
   // dnd-kit's event.delta is scrollAdjustedTranslate (modified by modifiers
@@ -755,8 +806,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // dnd-kit caches droppable rects and may return stale positions after DOM
       // mutations (e.g. workspaces moving between ungrouped/grouped sections).
       // The over.id itself is still correct (collision detection resolves the
-      // right target), but over.rect can be stale. Query the live DOM rect of
-      // the known target workspace to compute accurate zone boundaries.
+      // right target), but over.rect can be stale. We query the live DOM rect
+      // via getLiveSortableRect so intent-zone math uses the current frame.
       const activeRect = active.rect.current.translated;
       // Use the actual pointer Y computed from the initial pointerdown position
       const pointerY = pointerYReference.current ?? (activeRect
@@ -764,7 +815,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
       const referenceY = pointerY;
 
-      const overRect = over?.rect ?? null;
+      const overRect = getLiveSortableRect(overId, over?.rect);
       const resolvedOverId = overId;
       const resolvedOverWorkspace = overWorkspace;
 
@@ -810,7 +861,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
     if (activeType === 'group' && overType === 'group') {
       const overId = effectiveOverId;
-      const overRect = over?.rect ?? null;
+      const overRect = getLiveSortableRect(overId, over?.rect);
 
       if (!overRect) {
         return {
@@ -839,7 +890,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
     if (activeType === 'group' && overType === 'workspace') {
       const overId = effectiveOverId;
-      const overRect = over?.rect ?? null;
+      const overRect = getLiveSortableRect(overId, over?.rect);
 
       if (!overRect) {
         return {

@@ -61,7 +61,7 @@ export default (
         fs.copySync(
           path.join(sourceNodeModulesFolder, 'zx'),
           path.join(cwd, 'node_modules', 'zx'),
-          { dereference: true, recursive: true },
+          { dereference: true },
         );
       } catch (error) {
         console.error(`Error copying zx to dist: ${error instanceof Error ? error.message : String(error)}`);
@@ -164,13 +164,14 @@ export default (
       console.error(error.message);
       callback(error);
     } else if (unexpectedError !== null) {
-      const error = unexpectedError instanceof Error
-        ? unexpectedError
-        : new Error(
-          typeof unexpectedError === 'string'
-            ? unexpectedError
-            : JSON.stringify(unexpectedError),
-        );
+      let error: Error;
+      if (unexpectedError instanceof Error) {
+        error = unexpectedError;
+      } else if (typeof unexpectedError === 'string') {
+        error = new Error(unexpectedError);
+      } else {
+        error = new Error(JSON.stringify(unexpectedError));
+      }
       callback(error);
     } else {
       callback();
