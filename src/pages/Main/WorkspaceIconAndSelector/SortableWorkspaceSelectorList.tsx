@@ -1121,7 +1121,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         </SortableContext>
         <DragOverlay dropAnimation={null}>
           {(activeWorkspace !== undefined || activeGroup !== undefined) && (
-            <div data-testid="dnd-drag-overlay">
+            <div data-testid='dnd-drag-overlay'>
               {activeWorkspace && (
                 <DragOverlayWorkspaceItem
                   workspace={activeWorkspace}

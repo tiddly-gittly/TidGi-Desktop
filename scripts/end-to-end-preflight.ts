@@ -76,7 +76,7 @@ function runSmokeCalibration(): void {
     if (process.env.CI === 'true') {
       throw new Error(
         '[Cal] FATAL: All calibration runs failed in CI. ' +
-        'Downstream shards cannot use calibration — fix the @calibrate scenarios and re-run.',
+          'Downstream shards cannot use calibration — fix the @calibrate scenarios and re-run.',
       );
     }
     // Local-only fallback: conservative defaults let local debugging proceed
