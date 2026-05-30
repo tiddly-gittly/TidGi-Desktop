@@ -426,6 +426,14 @@ async function getWorkspaceItemZoneCenter(
   const itemLocator = world.currentWindow.locator(itemSelector);
   await itemLocator.waitFor({ state: 'visible' });
 
+  // Scroll the target into the viewport before measuring coordinates.
+  // On smaller CI displays, drag operations can push grouped/collapsed
+  // workspace items past the visible scroll boundary, making the computed
+  // drop-point land outside the viewport and failing elementFromPoint.
+  await world.currentWindow.evaluate((selector: string) => {
+    document.querySelector(selector)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, itemSelector);
+
   const result = await world.currentWindow.evaluate(({ selector, zone: z }: { selector: string; zone: string }) => {
     const element = document.querySelector(selector);
     if (!element) {
