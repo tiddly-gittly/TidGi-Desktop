@@ -28,6 +28,31 @@ interface IWorkspaceOrGroupOrderEntry {
   type: 'workspace' | 'group';
 }
 
+interface ITargetCoordinates {
+  targetX: number;
+  targetY: number;
+}
+
+interface IResolveTargetCoordinatesOptions {
+  verifyElementAtPoint?: boolean;
+}
+
+type TResolveTargetCoordinates = (options?: IResolveTargetCoordinatesOptions) => Promise<ITargetCoordinates>;
+
+function getSortableTargetSelector(targetId: string): string {
+  return targetId.startsWith('group-')
+    ? `[data-testid="workspace-group-${targetId.slice('group-'.length)}"]`
+    : `[data-testid="workspace-item-${targetId}"]`;
+}
+
+function getDragIntentSelector(targetId: string, expectedIntent?: string): string {
+  const targetSelector = getSortableTargetSelector(targetId);
+  if (expectedIntent !== undefined) {
+    return `${targetSelector}[data-drag-intent="${expectedIntent}"], ${targetSelector} [data-drag-intent="${expectedIntent}"]`;
+  }
+  return `${targetSelector}[data-drag-intent]:not([data-drag-intent="none"]), ${targetSelector} [data-drag-intent]:not([data-drag-intent="none"])`;
+}
+
 async function getAllWikiWorkspaces(world: ApplicationWorld): Promise<ITestWorkspace[]> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
@@ -168,7 +193,7 @@ async function waitForGroupedWorkspaceDomState(world: ApplicationWorld, groupId:
 async function dragLocatorToCoordinates(
   world: ApplicationWorld,
   sourceSelector: string,
-  resolveTargetCoordinates: () => Promise<{ targetX: number; targetY: number }>,
+  resolveTargetCoordinates: TResolveTargetCoordinates,
   targetWorkspaceId?: string,
   expectedIntent?: string,
 ): Promise<void> {
@@ -200,11 +225,13 @@ async function dragLocatorToCoordinates(
 
   // Compute target center late, after drag activation, so coordinates reflect
   // the current layout.
-  const { targetX, targetY } = await resolveTargetCoordinates();
+  let { targetX, targetY } = await resolveTargetCoordinates();
 
   // Smooth movement to the target — the intermediate pointer positions
   // give dnd-kit enough update opportunities for collision detection.
   await world.currentWindow.mouse.move(targetX, targetY, { steps: 10 });
+
+  ({ targetX, targetY } = await resolveCoordinatesAfterDragLayoutSettles(world, resolveTargetCoordinates, targetX, targetY));
 
   // Wait for dnd-kit collision detection to resolve on the target workspace.
   // When the pointer is over a recognized drop target the drag-intent
@@ -214,26 +241,18 @@ async function dragLocatorToCoordinates(
   // intent is still transitioning between zones.
   if (targetWorkspaceId !== undefined) {
     try {
-      if (expectedIntent !== undefined) {
-        await world.currentWindow.locator(
-          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent="${expectedIntent}"]`,
-        ).waitFor({ state: 'attached', timeout: 3000 });
-      } else {
-        await world.currentWindow.locator(
-          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent]:not([data-drag-intent="none"])`,
-        ).waitFor({ state: 'attached', timeout: 3000 });
-      }
+      await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).waitFor({ state: 'attached', timeout: 3000 });
     } catch (originalError) {
       // Collect diagnostic information before re-throwing, so failures
       // include the actual DOM state at the time of the timeout.
-      const targetItemSelector = `[data-testid="workspace-item-${targetWorkspaceId}"]`;
+      const targetItemSelector = getSortableTargetSelector(targetWorkspaceId);
       let actualIntent = 'not-found';
       let targetRect: { x: number; y: number; width: number; height: number } | null = null;
       let sourceRect: { x: number; y: number; width: number; height: number } | null = null;
       let hasOverlay = false;
       let elementAtPoint = 'unknown';
       try {
-        actualIntent = (await world.currentWindow.locator(`${targetItemSelector} [data-drag-intent]`).getAttribute('data-drag-intent')) ?? 'null-attribute';
+        actualIntent = (await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId)).first().getAttribute('data-drag-intent')) ?? 'null-attribute';
       } catch { /* ignore */ }
       try {
         targetRect = await world.currentWindow.locator(targetItemSelector).boundingBox();
@@ -282,7 +301,7 @@ async function dragLocatorToCoordinates(
 async function dragLocatorAndHoldAtCoordinates(
   world: ApplicationWorld,
   sourceSelector: string,
-  resolveTargetCoordinates: () => Promise<{ targetX: number; targetY: number }>,
+  resolveTargetCoordinates: TResolveTargetCoordinates,
   targetWorkspaceId?: string,
   expectedIntent?: string,
 ): Promise<void> {
@@ -308,26 +327,19 @@ async function dragLocatorAndHoldAtCoordinates(
 
   await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: 3000 });
 
-  const { targetX, targetY } = await resolveTargetCoordinates();
+  let { targetX, targetY } = await resolveTargetCoordinates();
   await world.currentWindow.mouse.move(targetX, targetY, { steps: 10 });
+  ({ targetX, targetY } = await resolveCoordinatesAfterDragLayoutSettles(world, resolveTargetCoordinates, targetX, targetY));
 
   if (targetWorkspaceId !== undefined) {
     try {
-      if (expectedIntent !== undefined) {
-        await world.currentWindow.locator(
-          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent="${expectedIntent}"]`,
-        ).waitFor({ state: 'attached', timeout: 3000 });
-      } else {
-        await world.currentWindow.locator(
-          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent]:not([data-drag-intent="none"])`,
-        ).waitFor({ state: 'attached', timeout: 3000 });
-      }
+      await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).waitFor({ state: 'attached', timeout: 3000 });
     } catch (originalError) {
-      const targetItemSelector = `[data-testid="workspace-item-${targetWorkspaceId}"]`;
+      const targetItemSelector = getSortableTargetSelector(targetWorkspaceId);
       let actualIntent = 'not-found';
       let targetRect: { x: number; y: number; width: number; height: number } | null = null;
       try {
-        actualIntent = (await world.currentWindow.locator(`${targetItemSelector} [data-drag-intent]`).getAttribute('data-drag-intent')) ?? 'null-attribute';
+        actualIntent = (await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId)).first().getAttribute('data-drag-intent')) ?? 'null-attribute';
       } catch { /* ignore */ }
       try {
         targetRect = await world.currentWindow.locator(targetItemSelector).boundingBox();
@@ -362,13 +374,62 @@ async function dragLocatorAndHoldAtCoordinates(
   }
 }
 
+async function resolveCoordinatesAfterDragLayoutSettles(
+  world: ApplicationWorld,
+  resolveTargetCoordinates: TResolveTargetCoordinates,
+  currentTargetX: number,
+  currentTargetY: number,
+): Promise<ITargetCoordinates> {
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+
+  let resolvedCoordinates = { targetX: currentTargetX, targetY: currentTargetY };
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await world.currentWindow.evaluate(async () => {
+      await new Promise<void>(resolve =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            resolve();
+          })
+        )
+      );
+    });
+
+    const settledCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: false });
+    const deltaX = Math.abs(settledCoordinates.targetX - resolvedCoordinates.targetX);
+    const deltaY = Math.abs(settledCoordinates.targetY - resolvedCoordinates.targetY);
+
+    resolvedCoordinates = settledCoordinates;
+
+    if (deltaX <= 1 && deltaY <= 1) {
+      return resolvedCoordinates;
+    }
+
+    await world.currentWindow.mouse.move(resolvedCoordinates.targetX, resolvedCoordinates.targetY, { steps: 5 });
+  }
+
+  return resolvedCoordinates;
+}
+
 async function getLocatorCenter(
   world: ApplicationWorld,
   targetSelector: string,
 ): Promise<{ targetX: number; targetY: number }> {
+  return getLocatorVerticalPoint(world, targetSelector, 0.5);
+}
+
+async function getLocatorVerticalPoint(
+  world: ApplicationWorld,
+  targetSelector: string,
+  yRatio: number,
+): Promise<{ targetX: number; targetY: number }> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
   }
+
+  await world.currentWindow.locator(targetSelector).scrollIntoViewIfNeeded();
 
   for (let attempt = 0; attempt < 4; attempt++) {
     const rect = await world.currentWindow.evaluate((selector: string) => {
@@ -381,7 +442,7 @@ async function getLocatorCenter(
     if (rect) {
       return {
         targetX: rect.x + rect.width / 2,
-        targetY: rect.y + rect.height / 2,
+        targetY: rect.y + rect.height * yRatio,
       };
     }
 
@@ -417,6 +478,7 @@ async function getWorkspaceItemZoneCenter(
   world: ApplicationWorld,
   targetWorkspaceId: string,
   zone: 'top' | 'center' | 'bottom',
+  options: IResolveTargetCoordinatesOptions = {},
 ): Promise<{ targetX: number; targetY: number }> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
@@ -425,6 +487,7 @@ async function getWorkspaceItemZoneCenter(
   const itemSelector = `[data-testid="workspace-item-${targetWorkspaceId}"]`;
   const itemLocator = world.currentWindow.locator(itemSelector);
   await itemLocator.waitFor({ state: 'visible' });
+  await itemLocator.scrollIntoViewIfNeeded();
 
   const result = await world.currentWindow.evaluate(({ selector, zone: z }: { selector: string; zone: string }) => {
     const element = document.querySelector(selector);
@@ -492,7 +555,7 @@ async function getWorkspaceItemZoneCenter(
       `ratio=${ratio.toFixed(3)} isTargetAtPoint=${String(isTargetAtPoint)} elementAtPoint=${elementAtPointTag}`,
   );
 
-  if (!isTargetAtPoint && isRectInViewport) {
+  if (options.verifyElementAtPoint !== false && !isTargetAtPoint && isRectInViewport) {
     throw new Error(
       `Coordinate verification failed for ${itemSelector} at zone "${zone}". ` +
         `Computed coords (${Math.round(targetX)}, ${Math.round(targetY)}) ` +
@@ -560,7 +623,7 @@ When('I drag workspace {string} onto workspace {string}', async function(this: A
   await dragLocatorToCoordinates(
     this,
     `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
-    async () => getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center'),
+    async options => getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center', options),
     targetWorkspace.id,
     'group',
   );
@@ -579,8 +642,8 @@ When('I hover workspace {string} over workspace {string}', async function(this: 
   await dragLocatorAndHoldAtCoordinates(
     this,
     `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
-    async () => {
-      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center');
+    async options => {
+      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center', options);
     },
     targetWorkspace.id,
     'group',
@@ -609,8 +672,8 @@ When('I drag workspace {string} to the top zone of workspace {string}', async fu
   await dragLocatorToCoordinates(
     this,
     `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
-    async () => {
-      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'top');
+    async options => {
+      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'top', options);
     },
     targetWorkspace.id,
     'reorder-before',
@@ -630,8 +693,8 @@ When('I drag workspace {string} to the bottom zone of workspace {string}', async
   await dragLocatorToCoordinates(
     this,
     `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
-    async () => {
-      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'bottom');
+    async options => {
+      return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'bottom', options);
     },
     targetWorkspace.id,
     'reorder-after',
@@ -661,6 +724,7 @@ When('I drag workspace {string} onto the header of its current group', async fun
     this,
     sourceSelector,
     async () => getLocatorCenter(this, groupHeaderSelector),
+    `group-${workspace.groupId}`,
   );
 });
 
@@ -803,9 +867,15 @@ When('I drag group header {string} onto group header {string}', async function(t
   const targetLocator = this.currentWindow.locator(targetSelector);
   await targetLocator.waitFor({ state: 'visible' });
 
-  await dragLocatorToCoordinates(this, sourceSelector, async () => {
-    return await getLocatorCenter(this, targetSelector);
-  });
+  await dragLocatorToCoordinates(
+    this,
+    sourceSelector,
+    async () => {
+      return await getLocatorVerticalPoint(this, targetSelector, 0.05);
+    },
+    `group-${targetGroup.id}`,
+    'reorder-before',
+  );
 });
 
 When('I drag group header {string} onto workspace {string}', async function(this: ApplicationWorld, sourceGroupName: string, targetWorkspaceName: string) {

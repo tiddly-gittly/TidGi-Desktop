@@ -305,6 +305,7 @@ function SortableGroupHeader({ group, onToggleCollapse }: SortableGroupHeaderPro
       {...attributes}
       {...listeners}
       data-testid={`workspace-group-${group.id}`}
+      data-drag-intent={dragIntent ?? 'none'}
     >
       {group.collapsed ? <ChevronRightIcon fontSize='small' /> : <ExpandMoreIcon fontSize='small' />}
       <Avatar
