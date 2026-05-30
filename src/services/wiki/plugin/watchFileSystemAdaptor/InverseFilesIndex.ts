@@ -2,6 +2,10 @@ import type nsfw from 'nsfw';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 
+function normalizeIndexPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
 export type IBootFilesIndexItemWithTitle = IFileInfo & { tiddlerTitle: string };
 
 export interface ISubWikiInfo {
@@ -87,7 +91,7 @@ export class InverseFilesIndex {
     const subWiki = this.getSubWikiForFile(absoluteFilePath);
     if (subWiki) {
       return {
-        relativePath: path.relative(subWiki.path, absoluteFilePath),
+        relativePath: normalizeIndexPath(path.relative(subWiki.path, absoluteFilePath)),
         watcherType: 'sub',
         subWikiId: subWiki.id,
       };
@@ -95,7 +99,7 @@ export class InverseFilesIndex {
 
     // Otherwise, it belongs to main wiki
     return {
-      relativePath: path.relative(this.mainWikiPath, absoluteFilePath),
+      relativePath: normalizeIndexPath(path.relative(this.mainWikiPath, absoluteFilePath)),
       watcherType: 'main',
     };
   }
@@ -104,7 +108,7 @@ export class InverseFilesIndex {
    * Set or update tiddler information for a file path
    */
   set(filePath: string, fileDescriptor: IBootFilesIndexItemWithTitle): void {
-    this.index.set(filePath, fileDescriptor);
+    this.index.set(normalizeIndexPath(filePath), fileDescriptor);
   }
 
   /**
@@ -112,21 +116,21 @@ export class InverseFilesIndex {
    * @returns The file descriptor or undefined if not found
    */
   get(filePath: string): IBootFilesIndexItemWithTitle | undefined {
-    return this.index.get(filePath);
+    return this.index.get(normalizeIndexPath(filePath));
   }
 
   /**
    * Check if a file path exists in the index
    */
   has(filePath: string): boolean {
-    return this.index.has(filePath);
+    return this.index.has(normalizeIndexPath(filePath));
   }
 
   /**
    * Remove a file path from the index
    */
   delete(filePath: string): boolean {
-    return this.index.delete(filePath);
+    return this.index.delete(normalizeIndexPath(filePath));
   }
 
   /**
@@ -134,9 +138,10 @@ export class InverseFilesIndex {
    * @throws Error if file path not found in index
    */
   getTitleByPath(filePath: string): string {
-    const item = this.index.get(filePath);
+    const normalizedFilePath = normalizeIndexPath(filePath);
+    const item = this.index.get(normalizedFilePath);
     if (!item) {
-      throw new Error(`${filePath}\n↑ not existed in InverseFilesIndex`);
+      throw new Error(`${normalizedFilePath}\n↑ not existed in InverseFilesIndex`);
     }
     return item.tiddlerTitle;
   }

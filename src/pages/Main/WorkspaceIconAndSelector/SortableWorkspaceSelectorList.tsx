@@ -896,10 +896,17 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const updateDragStateFromEvent = useCallback((event: DragMoveEvent | DragOverEvent) => {
     const nextDragState = deriveDragState(event);
 
-    // Only cache group/ungroup intents that are not sensitive to minor pointer drift.
-    // Reorder intents (before/after) depend on exact pointer position within the target rect,
-    // so caching them can cause handleDragEnd to use a stale intent when the pointer
-    // briefly crossed a boundary during smooth mouse movement.
+    // Update the ref immediately so handleDragEnd always reads the latest
+    // computed state regardless of whether the debounced React render has
+    // completed. This eliminates the timing gap where handleDragEnd fires
+    // before the setTimeout callback runs, causing it to fall back to
+    // deriveDragState(DragEndEvent) which may not have accurate collision data.
+    dragStateReference.current = nextDragState;
+
+    // Cache group/ungroup intents for handleDragEnd fallback.
+    // Reorder intents (before/after) depend on exact pointer position within
+    // the target rect, so caching them can cause handleDragEnd to use a stale
+    // intent when the pointer briefly crossed a boundary during smooth movement.
     if (
       nextDragState.activeId !== null &&
       nextDragState.overId !== null &&
@@ -908,23 +915,19 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       lastResolvedDragStateReference.current = nextDragState;
     }
 
-    // Do NOT update dragStateReference.current here.
-    // applyDragState updates it when setDragState actually fires, so the equality
-    // check inside applyDragState works correctly. If we updated the ref early,
-    // the debounced applyDragState would see the same state and skip the render,
-    // breaking visual feedback (drag intent) during drag.
-
     // Debounce the React state update to prevent "Maximum update depth exceeded"
     // when rapid onDragMove/onDragOver events fire in quick succession.
     // See https://github.com/clauderic/dnd-kit/issues/900
+    // Use setDragState directly instead of applyDragState to bypass the equality
+    // check (which compares against dragStateReference.current, now always equal).
     if (dragStateTimeoutReference.current !== null) {
       clearTimeout(dragStateTimeoutReference.current);
     }
     dragStateTimeoutReference.current = window.setTimeout(() => {
       dragStateTimeoutReference.current = null;
-      applyDragState(nextDragState);
+      setDragState(nextDragState);
     }, 0);
-  }, [applyDragState, deriveDragState]);
+  }, [deriveDragState]);
 
   const handleDragMove = useCallback((event: DragMoveEvent) => {
     updateDragStateFromEvent(event);
@@ -1071,7 +1074,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         sensors={dndSensors}
         collisionDetection={customCollisionDetection}
         modifiers={[restrictToVerticalAxis]}
-        measuring={{ droppable: { strategy: MeasuringStrategy.BeforeDragging } }}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragOver={handleDragOver}
@@ -1117,14 +1120,18 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
           })}
         </SortableContext>
         <DragOverlay dropAnimation={null}>
-          {activeWorkspace && (
-            <DragOverlayWorkspaceItem
-              workspace={activeWorkspace}
-              showSideBarIcon={showSideBarIcon}
-              showSideBarText={showSideBarText}
-            />
+          {(activeWorkspace !== undefined || activeGroup !== undefined) && (
+            <div data-testid="dnd-drag-overlay">
+              {activeWorkspace && (
+                <DragOverlayWorkspaceItem
+                  workspace={activeWorkspace}
+                  showSideBarIcon={showSideBarIcon}
+                  showSideBarText={showSideBarText}
+                />
+              )}
+              {activeGroup && <DragOverlayGroupHeaderItem group={activeGroup} />}
+            </div>
           )}
-          {activeGroup && <DragOverlayGroupHeaderItem group={activeGroup} />}
         </DragOverlay>
       </DndContext>
     </DragContext.Provider>

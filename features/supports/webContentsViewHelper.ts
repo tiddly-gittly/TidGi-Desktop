@@ -14,6 +14,19 @@ async function getWindowUrl(page: Page | undefined): Promise<string | undefined>
   }
 }
 
+async function getWindowId(app: ElectronApplication, page: Page | undefined): Promise<number | undefined> {
+  if (!page || page.isClosed()) {
+    return undefined;
+  }
+
+  try {
+    const browserWindow = await app.browserWindow(page);
+    return await browserWindow.evaluate((window: Electron.BrowserWindow) => window.id);
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Get the active WebContentsView from the target window.
  * When multiple wiki views exist, the LAST child is preferred because
@@ -21,7 +34,8 @@ async function getWindowUrl(page: Page | undefined): Promise<string | undefined>
  */
 async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
   const pageUrl = await getWindowUrl(page);
-  return await app.evaluate(async ({ BrowserWindow }, targetPageUrl?: string) => {
+  const pageWindowId = await getWindowId(app, page);
+  return await app.evaluate(async ({ BrowserWindow }, target?: { pageUrl?: string; windowId?: number }) => {
     const allWindows = BrowserWindow.getAllWindows();
 
     const getViewIdFromWindow = (window: Electron.BrowserWindow) => {
@@ -59,13 +73,19 @@ async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
       return candidateInfos[0]?.id ?? null;
     };
 
-    if (targetPageUrl) {
-      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getURL() === targetPageUrl);
+    if (target?.windowId !== undefined) {
+      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.id === target.windowId);
+      if (!targetWindow) {
+        return null;
+      }
+
+      return getViewIdFromWindow(targetWindow);
+    }
+
+    if (target?.pageUrl) {
+      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getURL() === target.pageUrl);
       if (targetWindow) {
-        const targetViewId = getViewIdFromWindow(targetWindow);
-        if (targetViewId) {
-          return targetViewId;
-        }
+        return getViewIdFromWindow(targetWindow);
       }
     }
 
@@ -89,7 +109,7 @@ async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
     }
 
     return null;
-  }, pageUrl);
+  }, { pageUrl, windowId: pageWindowId });
 }
 
 /**

@@ -35,6 +35,10 @@ const GIT_NOTIFICATION_DELAY_MS = 1000;
  */
 const SYNCER_TRIGGER_DELAY_MS = 200;
 
+function normalizeIndexPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
 export interface IUpdatedTiddlers {
   deletions: string[];
   modifications: string[];
@@ -313,7 +317,7 @@ export class FileSystemWatcher {
    * Update the inverse index after a tiddler is saved
    */
   updateIndexAfterSave(title: string, fileInfo: IFileInfo): void {
-    const fileRelativePath = path.relative(this.watchPathBase, fileInfo.filepath);
+    const fileRelativePath = normalizeIndexPath(path.relative(this.watchPathBase, fileInfo.filepath));
     this.inverseFilesIndex.set(fileRelativePath, {
       ...fileInfo,
       filepath: fileRelativePath,
@@ -325,7 +329,7 @@ export class FileSystemWatcher {
    * Remove a tiddler from the inverse index after deletion
    */
   removeFromIndex(absoluteFilePath: string): void {
-    const fileRelativePath = path.relative(this.watchPathBase, absoluteFilePath);
+    const fileRelativePath = normalizeIndexPath(path.relative(this.watchPathBase, absoluteFilePath));
     this.inverseFilesIndex.delete(fileRelativePath);
   }
 
@@ -396,7 +400,7 @@ export class FileSystemWatcher {
     for (const tiddlerTitle in initialLoadedFiles) {
       if (Object.hasOwn(initialLoadedFiles, tiddlerTitle)) {
         const fileDescriptor = initialLoadedFiles[tiddlerTitle];
-        const fileRelativePath = path.relative(this.watchPathBase, fileDescriptor.filepath);
+        const fileRelativePath = normalizeIndexPath(path.relative(this.watchPathBase, fileDescriptor.filepath));
         this.inverseFilesIndex.set(fileRelativePath, { ...fileDescriptor, filepath: fileRelativePath, tiddlerTitle });
       }
     }
@@ -530,7 +534,7 @@ export class FileSystemWatcher {
       // Compute relative path
       const subWikiInfo = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
       const basePath = subWikiInfo ? subWikiInfo.path : this.watchPathBase;
-      const fileRelativePath = path.relative(basePath, fileAbsolutePath);
+      const fileRelativePath = normalizeIndexPath(path.relative(basePath, fileAbsolutePath));
       const fileExtension = path.extname(fileRelativePath);
 
       // Handle events
@@ -544,7 +548,7 @@ export class FileSystemWatcher {
           const oldFileAbsPath = path.join(directory, event.oldFile);
           const oldSubWikiInfo = this.inverseFilesIndex.getSubWikiForFile(oldFileAbsPath);
           const oldBasePath = oldSubWikiInfo ? oldSubWikiInfo.path : this.watchPathBase;
-          const oldFileRelativePath = path.relative(oldBasePath, oldFileAbsPath);
+          const oldFileRelativePath = normalizeIndexPath(path.relative(oldBasePath, oldFileAbsPath));
           const oldFileExtension = path.extname(oldFileRelativePath);
           this.handleFileDelete(oldFileAbsPath, oldFileRelativePath, oldFileExtension);
 
@@ -552,7 +556,7 @@ export class FileSystemWatcher {
           const newFileAbsPath = path.join(newDirectory, event.newFile);
           const newSubWikiInfo = this.inverseFilesIndex.getSubWikiForFile(newFileAbsPath);
           const newBasePath = newSubWikiInfo ? newSubWikiInfo.path : this.watchPathBase;
-          const newFileRelativePath = path.relative(newBasePath, newFileAbsPath);
+          const newFileRelativePath = normalizeIndexPath(path.relative(newBasePath, newFileAbsPath));
           const newFileExtension = path.extname(newFileRelativePath);
           this.handleFileAddOrChange(newFileAbsPath, newFileRelativePath, newFileExtension, 'add');
         }

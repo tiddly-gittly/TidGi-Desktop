@@ -39,6 +39,7 @@ Feature: TidGi Application Launch
       modified: 20250226070000000
       title: ProbeAlpha
       tags: calibration
+
       Alpha probe
       """
     Then I wait for tiddler "ProbeAlpha" to be added by watch-fs
@@ -48,6 +49,7 @@ Feature: TidGi Application Launch
       modified: 20250226070000000
       title: ProbeBeta
       tags: calibration
+
       Beta probe
       """
     Then I wait for tiddler "ProbeBeta" to be added by watch-fs
@@ -57,6 +59,7 @@ Feature: TidGi Application Launch
       modified: 20250226070000000
       title: ProbeGamma
       tags: calibration
+
       Gamma probe
       """
     Then I wait for tiddler "ProbeGamma" to be added by watch-fs
@@ -75,4 +78,3 @@ Feature: TidGi Application Launch
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
-

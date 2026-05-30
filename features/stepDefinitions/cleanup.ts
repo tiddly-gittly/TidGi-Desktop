@@ -22,23 +22,47 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   // Clean previous runs with the same slug so that calibration/preflight
   // artifacts (userData, wiki-test, logs) never leak into the actual shard run.
   // On Windows, a recently-killed process may still hold file locks for a few
-  // hundred milliseconds, so we retry removal a few times before giving up.
+  // hundred milliseconds, so we retry removal a few times before falling back
+  // to quarantine. If both removal and quarantine fail, fail fast — never
+  // proceed with a dirty scenario root that could contaminate the shard.
   if (await fs.pathExists(scenarioRoot)) {
-    if (process.platform === 'win32') {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        try {
-          await fs.remove(scenarioRoot);
-          break;
-        } catch {
-          if (attempt === 4) {
-            console.warn(`[cleanup] Could not remove ${scenarioRoot} after 5 attempts — proceeding anyway`);
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 200));
+    const maxRemoveAttempts = process.platform === 'win32' ? 5 : 2;
+    const removeRetryDelayMs = 200;
+    let removed = false;
+    let lastRemoveError: unknown;
+
+    for (let attempt = 0; attempt < maxRemoveAttempts; attempt++) {
+      try {
+        await fs.remove(scenarioRoot);
+        removed = true;
+        break;
+      } catch (error) {
+        lastRemoveError = error;
+        if (attempt < maxRemoveAttempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, removeRetryDelayMs));
         }
       }
-    } else {
-      await fs.remove(scenarioRoot);
+    }
+
+    if (!removed) {
+      // Removal failed — try to quarantine (rename) the dirty root so we can
+      // proceed with a clean root while preserving the old artifacts on disk
+      // for post-mortem debugging.
+      const quarantineSlug = `${this.scenarioSlug}-quarantine-${Date.now()}`;
+      const quarantinePath = path.resolve(process.cwd(), 'test-artifacts', quarantineSlug);
+      try {
+        await fs.move(scenarioRoot, quarantinePath, { overwrite: false });
+        console.warn(
+          `[cleanup] Could not remove ${scenarioRoot} — moved to quarantine at ${quarantinePath}`,
+        );
+        // Ensure quarantine dirs exist so subsequent ensureDir calls work for the clean root.
+      } catch (quarantineError) {
+        throw new Error(
+          `[cleanup] Failed to remove dirty scenario root ${scenarioRoot} and quarantine also failed. ` +
+            `Remove error: ${String(lastRemoveError)}. Quarantine error: ${String(quarantineError)}. ` +
+            `Please manually clean up ${scenarioRoot}.`,
+        );
+      }
     }
   }
 
@@ -147,27 +171,6 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.app = undefined;
     this.mainWindow = undefined;
     this.currentWindow = undefined;
-  }
-
-  // Aggressive scenario artifact cleanup: remove the entire scenario root directory
-  // on Windows so that calibration runs cannot leak files into the real shard.
-  // On non-Windows the Before hook handles this, but doing it here too adds safety.
-  if (process.platform === 'win32') {
-    const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
-    if (await fs.pathExists(scenarioRoot)) {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        try {
-          await fs.remove(scenarioRoot);
-          break;
-        } catch {
-          if (attempt === 4) {
-            console.warn(`[cleanup] After hook could not remove ${scenarioRoot} after 5 attempts`);
-            break;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-      }
-    }
   }
 
   // Stop mock analytics server if it was started for this scenario

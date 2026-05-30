@@ -9,7 +9,9 @@ interface StepTiming {
 }
 
 function runSmokeCalibration(): void {
-  const CALIBRATION_RUNS = 1;
+  // Two complete calibration runs to capture CI machine variance without
+  // excessive build time. A single run can hide a slow step on a cold cache.
+  const CALIBRATION_RUNS = 2;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
 
   let maxTotalMs = 0;
@@ -20,7 +22,6 @@ function runSmokeCalibration(): void {
 
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
-    let success = false;
 
     try {
       execSync(
@@ -31,15 +32,22 @@ function runSmokeCalibration(): void {
           env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
         },
       );
-      success = true;
     } catch {
-      console.warn(`[Calibration] run ${runIndex + 1}/${CALIBRATION_RUNS} failed, skipping results`);
+      // Non-zero exit means at least one @calibrate scenario failed.
+      // Partial calibration is unsafe: excluding a failed heavy calibrator
+      // under-measures the timeout and shifts the real failure downstream.
+      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS} failed (non-zero exit) — skipping entire run`);
+      continue;
     }
 
-    if (!success) continue;
+    // Only extract timings from complete successful runs — cucumber exited zero.
+    const steps = extractStepTimings(outputFile);
+    if (steps.length === 0) {
+      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS}: cucumber exited zero but no step timings found — skipping`);
+      continue;
+    }
 
     const totalMs = Date.now() - startedAt;
-    const steps = extractStepTimings(outputFile);
 
     if (totalMs > maxTotalMs) maxTotalMs = totalMs;
 
@@ -57,15 +65,24 @@ function runSmokeCalibration(): void {
     }
 
     // Step timeout = worst composite: a single step may involve launch + wait + click.
-    maxStepMs = Math.max(maxStepMs, maxLaunchStepMs + maxWaitStepMs + maxElementStepMs);
+    const compositeMs = maxLaunchStepMs + maxWaitStepMs + maxElementStepMs;
+    if (compositeMs > maxStepMs) maxStepMs = compositeMs;
 
     console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
   }
 
-  // If all runs failed, use safe conservative defaults instead of zeroes.
-  // Zeroes cause every Cucumber step to time out immediately.
+  // Fail fast in CI: partial calibration is unsafe for downstream shards.
   if (maxTotalMs === 0) {
-    console.warn('[Cal] all runs failed — using conservative fallback timeouts');
+    if (process.env.CI === 'true') {
+      throw new Error(
+        '[Cal] FATAL: All calibration runs failed in CI. ' +
+        'Downstream shards cannot use calibration — fix the @calibrate scenarios and re-run.',
+      );
+    }
+    // Local-only fallback: conservative defaults let local debugging proceed
+    // when calibration is unavailable, but they must never reach CI.
+    console.warn('[Cal] WARNING: All calibration runs failed — using conservative local fallback timeouts (NOT safe for CI)');
+    console.warn('[Cal] Fallback: T=120s S=120s L=60s W=30s E=10s');
     maxTotalMs = 120_000;
     maxStepMs = 120_000;
     maxLaunchStepMs = 60_000;
@@ -73,7 +90,9 @@ function runSmokeCalibration(): void {
     maxElementStepMs = 10_000;
   }
 
-  const CALIBRATION_BUFFER_MS = 200;
+  // 3 s buffer absorbs measurement noise and per-machine clock variance.
+  // Derived empirically from observed across-run jitter, not a timeout multiplier.
+  const CALIBRATION_BUFFER_MS = 3000;
   writeCalibrationResult(
     maxTotalMs + CALIBRATION_BUFFER_MS,
     maxStepMs + CALIBRATION_BUFFER_MS,

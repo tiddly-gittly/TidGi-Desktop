@@ -142,11 +142,43 @@ export class ApplicationWorld {
       // Main window is the first/primary window, typically showing guide, agent, help, or wiki pages
       // It's the window that opens on app launch
       const allWindows = pages.filter(page => !page.isClosed());
-      if (allWindows.length > 0) {
-        // Return the first window (main window is always the first one created)
+      if (allWindows.length === 0) {
+        return undefined;
+      }
+      if (allWindows.length === 1) {
         return allWindows[0];
       }
-      return undefined;
+      // Multiple windows (e.g. tidgi mini window is also open).  allWindows[0] is not
+      // always the main window — Electron may order them differently after a window is
+      // recreated.  Exclude the mini window by its known dimensions/title so we return
+      // the actual main window, not the mini one.
+      try {
+        const miniWindowDimensions = checkWindowDimension(WindowNames.tidgiMiniWindow);
+        for (const page of allWindows) {
+          try {
+            const bw = await this.app.browserWindow(page);
+            const isMini = await bw.evaluate(
+              (win: Electron.BrowserWindow, dims: { width: number; height: number }) => {
+                const bounds = win.getBounds();
+                return (
+                  win.getTitle().includes('Mini Window') ||
+                  (bounds.width === dims.width && bounds.height === dims.height)
+                );
+              },
+              miniWindowDimensions,
+            );
+            if (!isMini) {
+              return page;
+            }
+          } catch {
+            // browserWindow() may fail for pages not yet attached — skip
+            continue;
+          }
+        }
+      } catch {
+        // If Electron API fails, fallback to first window
+      }
+      return allWindows[0];
     } else if (windowName === WindowNames.tidgiMiniWindow) {
       // Special handling for tidgi mini window
       // First try to find by Electron window dimensions (more reliable than title)

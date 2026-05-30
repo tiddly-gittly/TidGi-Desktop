@@ -152,10 +152,25 @@ async function waitForGroupedWorkspaceDomState(world: ApplicationWorld, groupId:
   }, BACKOFF_OPTIONS);
 }
 
+/**
+ * Perform a pointer drag from `sourceSelector` to a target whose center is
+ * resolved by `resolveTargetCoordinates`.  Waits for dnd-kit to acknowledge
+ * the drag (DragOverlay appears) and, when `targetWorkspaceId` is provided,
+ * for the target workspace to show the expected drag intent before dropping.
+ *
+ * When `expectedIntent` is provided the helper waits for that exact value
+ * (e.g. 'reorder-before', 'group').  Otherwise it falls back to waiting for
+ * any non-'none' intent.
+ *
+ * This replaces blind retry loops and fixed sleeps with condition-based
+ * waits, making the drag deterministic regardless of machine speed.
+ */
 async function dragLocatorToCoordinates(
   world: ApplicationWorld,
   sourceSelector: string,
   resolveTargetCoordinates: () => Promise<{ targetX: number; targetY: number }>,
+  targetWorkspaceId?: string,
+  expectedIntent?: string,
 ): Promise<void> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
@@ -173,28 +188,86 @@ async function dragLocatorToCoordinates(
   const startX = sourceBox.x + sourceBox.width / 2;
   const startY = sourceBox.y + sourceBox.height / 2;
 
-  const initialTargetCoordinates = await resolveTargetCoordinates();
-
+  // Position pointer at source center and start drag
   await world.currentWindow.mouse.move(startX, startY);
   await world.currentWindow.mouse.down();
-  // Small initial movement to satisfy dnd-kit PointerSensor activationConstraint (distance: 8)
-  await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
 
-  // Move to target with a short smooth path
-  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 3 });
+  // Activate dnd-kit PointerSensor (activationConstraint distance: 8)
+  await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 10 });
 
-  // Re-track the target in case the DOM shifted during the drag (e.g. due to
-  // visual reordering). Keep adjusting the mouse until the target stabilises
-  // or we hit a reasonable attempt limit.
-  let previousTargetCoordinates = await resolveTargetCoordinates();
-  for (let attempt = 0; attempt < 5; attempt++) {
-    await world.currentWindow.mouse.move(previousTargetCoordinates.targetX, previousTargetCoordinates.targetY, { steps: 1 });
-    const currentTargetCoordinates = await resolveTargetCoordinates();
-    const delta = Math.abs(currentTargetCoordinates.targetY - previousTargetCoordinates.targetY);
-    if (delta < 3) {
-      break;
+  // Wait for dnd-kit to acknowledge the drag — the DragOverlay portal appears in the DOM
+  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: 3000 });
+
+  // Compute target center late, after drag activation, so coordinates reflect
+  // the current layout.
+  const { targetX, targetY } = await resolveTargetCoordinates();
+
+  // Smooth movement to the target — the intermediate pointer positions
+  // give dnd-kit enough update opportunities for collision detection.
+  await world.currentWindow.mouse.move(targetX, targetY, { steps: 10 });
+
+  // Wait for dnd-kit collision detection to resolve on the target workspace.
+  // When the pointer is over a recognized drop target the drag-intent
+  // attribute changes from 'none' to the detected intent.  Waiting for the
+  // exact expected value (not just non-none) ensures the intent has fully
+  // settled before releasing — prevents the drop from firing while the
+  // intent is still transitioning between zones.
+  if (targetWorkspaceId !== undefined) {
+    try {
+      if (expectedIntent !== undefined) {
+        await world.currentWindow.locator(
+          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent="${expectedIntent}"]`,
+        ).waitFor({ state: 'attached', timeout: 3000 });
+      } else {
+        await world.currentWindow.locator(
+          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent]:not([data-drag-intent="none"])`,
+        ).waitFor({ state: 'attached', timeout: 3000 });
+      }
+    } catch (originalError) {
+      // Collect diagnostic information before re-throwing, so failures
+      // include the actual DOM state at the time of the timeout.
+      const targetItemSelector = `[data-testid="workspace-item-${targetWorkspaceId}"]`;
+      let actualIntent = 'not-found';
+      let targetRect: { x: number; y: number; width: number; height: number } | null = null;
+      let sourceRect: { x: number; y: number; width: number; height: number } | null = null;
+      let hasOverlay = false;
+      let elementAtPoint = 'unknown';
+      try {
+        actualIntent = (await world.currentWindow.locator(`${targetItemSelector} [data-drag-intent]`).getAttribute('data-drag-intent')) ?? 'null-attribute';
+      } catch { /* ignore */ }
+      try {
+        targetRect = await world.currentWindow.locator(targetItemSelector).boundingBox();
+      } catch { /* ignore */ }
+      try {
+        sourceRect = await world.currentWindow.locator(sourceSelector).boundingBox();
+      } catch { /* ignore */ }
+      try {
+        hasOverlay = (await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').count()) > 0;
+      } catch { /* ignore */ }
+      try {
+        const elementTag = await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
+          const element = document.elementFromPoint(x, y);
+          if (!element) return 'null';
+          const testid = element.getAttribute('data-testid');
+          const dragIntent = element.getAttribute('data-drag-intent');
+          return `${element.tagName.toLowerCase()}${testid ? `[data-testid="${testid}"]` : ''}${dragIntent ? `[data-drag-intent="${dragIntent}"]` : ''}`;
+        }, { x: targetX, y: targetY });
+        elementAtPoint = elementTag ?? 'null';
+      } catch { /* ignore */ }
+      const yRatio = targetRect ? ((targetY - targetRect.y) / targetRect.height) : NaN;
+      throw new Error(
+        `Intent wait failed for ${targetWorkspaceId}. ` +
+        `Expected: "${expectedIntent ?? 'any-non-none'}", actual: "${actualIntent}". ` +
+        `Release coords: (${Math.round(targetX)}, ${Math.round(targetY)}). ` +
+        `elementFromPoint: ${elementAtPoint}. ` +
+        `Target rect: ${targetRect ? JSON.stringify({ x: Math.round(targetRect.x), y: Math.round(targetRect.y), w: Math.round(targetRect.width), h: Math.round(targetRect.height) }) : 'null'}. ` +
+        `Y ratio into target: ${Number.isNaN(yRatio) ? 'N/A' : yRatio.toFixed(3)} ` +
+        `(zone hint: ${expectedIntent === 'reorder-before' ? 'top 0.15' : expectedIntent === 'reorder-after' ? 'bottom 0.85' : expectedIntent === 'group' ? 'center 0.50' : 'unknown'}). ` +
+        `Source rect: ${sourceRect ? JSON.stringify({ x: Math.round(sourceRect.x), y: Math.round(sourceRect.y), w: Math.round(sourceRect.width), h: Math.round(sourceRect.height) }) : 'null'}. ` +
+        `DragOverlay visible: ${String(hasOverlay)}. ` +
+        `Original error: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
+      );
     }
-    previousTargetCoordinates = currentTargetCoordinates;
   }
 
   await world.currentWindow.mouse.up();
@@ -204,6 +277,8 @@ async function dragLocatorAndHoldAtCoordinates(
   world: ApplicationWorld,
   sourceSelector: string,
   resolveTargetCoordinates: () => Promise<{ targetX: number; targetY: number }>,
+  targetWorkspaceId?: string,
+  expectedIntent?: string,
 ): Promise<void> {
   if (!world.currentWindow) {
     throw new Error('Current window not set');
@@ -220,12 +295,61 @@ async function dragLocatorAndHoldAtCoordinates(
 
   const startX = sourceBox.x + sourceBox.width / 2;
   const startY = sourceBox.y + sourceBox.height / 2;
+
   await world.currentWindow.mouse.move(startX, startY);
   await world.currentWindow.mouse.down();
-  await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 6 });
-  const initialTargetCoordinates = await resolveTargetCoordinates();
-  await world.currentWindow.mouse.move(initialTargetCoordinates.targetX, initialTargetCoordinates.targetY, { steps: 3 });
-  await world.currentWindow.waitForTimeout(40);
+  await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 10 });
+
+  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: 3000 });
+
+  const { targetX, targetY } = await resolveTargetCoordinates();
+  await world.currentWindow.mouse.move(targetX, targetY, { steps: 10 });
+
+  if (targetWorkspaceId !== undefined) {
+    try {
+      if (expectedIntent !== undefined) {
+        await world.currentWindow.locator(
+          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent="${expectedIntent}"]`,
+        ).waitFor({ state: 'attached', timeout: 3000 });
+      } else {
+        await world.currentWindow.locator(
+          `[data-testid="workspace-item-${targetWorkspaceId}"] [data-drag-intent]:not([data-drag-intent="none"])`,
+        ).waitFor({ state: 'attached', timeout: 3000 });
+      }
+    } catch (originalError) {
+      const targetItemSelector = `[data-testid="workspace-item-${targetWorkspaceId}"]`;
+      let actualIntent = 'not-found';
+      let targetRect: { x: number; y: number; width: number; height: number } | null = null;
+      try {
+        actualIntent = (await world.currentWindow.locator(`${targetItemSelector} [data-drag-intent]`).getAttribute('data-drag-intent')) ?? 'null-attribute';
+      } catch { /* ignore */ }
+      try {
+        targetRect = await world.currentWindow.locator(targetItemSelector).boundingBox();
+      } catch { /* ignore */ }
+      let elementAtPoint = 'unknown';
+      try {
+        const elementTag = await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
+          const element = document.elementFromPoint(x, y);
+          if (!element) return 'null';
+          const testid = element.getAttribute('data-testid');
+          const dragIntent = element.getAttribute('data-drag-intent');
+          return `${element.tagName.toLowerCase()}${testid ? `[data-testid="${testid}"]` : ''}${dragIntent ? `[data-drag-intent="${dragIntent}"]` : ''}`;
+        }, { x: targetX, y: targetY });
+        elementAtPoint = elementTag ?? 'null';
+      } catch { /* ignore */ }
+      const yRatio = targetRect ? ((targetY - targetRect.y) / targetRect.height) : NaN;
+      throw new Error(
+        `Intent wait failed for ${targetWorkspaceId} (hold-mode). ` +
+        `Expected: "${expectedIntent ?? 'any-non-none'}", actual: "${actualIntent}". ` +
+        `Hold coords: (${Math.round(targetX)}, ${Math.round(targetY)}). ` +
+        `elementFromPoint: ${elementAtPoint}. ` +
+        `Target rect: ${targetRect ? JSON.stringify({ x: Math.round(targetRect.x), y: Math.round(targetRect.y), w: Math.round(targetRect.width), h: Math.round(targetRect.height) }) : 'null'}. ` +
+        `Y ratio into target: ${Number.isNaN(yRatio) ? 'N/A' : yRatio.toFixed(3)} ` +
+        `(zone hint: ${expectedIntent === 'reorder-before' ? 'top 0.15' : expectedIntent === 'reorder-after' ? 'bottom 0.85' : expectedIntent === 'group' ? 'center 0.50' : 'unknown'}). ` +
+        `Original error: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
+      );
+    }
+  }
 }
 
 async function getLocatorCenter(
@@ -264,6 +388,103 @@ async function getLocatorCenter(
   }
 
   throw new Error(`Could not read bounding box for ${targetSelector}`);
+}
+
+/**
+ * Resolve deterministic drop-zone coordinates from the workspace item's own
+ * bounding box.  The computation runs inside the browser page so that
+ * getBoundingClientRect, elementFromPoint, and the eventual pointermove all
+ * share the same layout frame — eliminating the timing gap where a layout
+ * shift (e.g. dnd-kit scale transform on the target) could move the element
+ * between the boundingBox read and mouse.move.
+ *
+ * Zones map to:
+ *   top    — 15% from the top (well within the top-third BeforeDragging boundary)
+ *   center — 50% (group-intent trigger zone)
+ *   bottom — 85% from the top (well within the bottom-third AfterDragging boundary)
+ */
+async function getWorkspaceItemZoneCenter(
+  world: ApplicationWorld,
+  targetWorkspaceId: string,
+  zone: 'top' | 'center' | 'bottom',
+): Promise<{ targetX: number; targetY: number }> {
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+
+  const itemSelector = `[data-testid="workspace-item-${targetWorkspaceId}"]`;
+  const itemLocator = world.currentWindow.locator(itemSelector);
+  await itemLocator.waitFor({ state: 'visible' });
+
+  const result = await world.currentWindow.evaluate(({ selector, zone: z }: { selector: string; zone: string }) => {
+    const element = document.querySelector(selector);
+    if (!element) {
+      return { error: `Element not found: ${selector}` };
+    }
+    const rect = element.getBoundingClientRect();
+    const targetX = rect.left + rect.width / 2;
+    let targetY: number;
+    if (z === 'top') {
+      targetY = rect.top + rect.height * 0.15;
+    } else if (z === 'bottom') {
+      targetY = rect.top + rect.height * 0.85;
+    } else {
+      targetY = rect.top + rect.height * 0.5;
+    }
+
+    // Verify the target item is actually at the computed point.
+    // If the element has moved due to a layout shift (e.g. drag-intent
+    // transform:scale), elementFromPoint will return a different element
+    // and the test should fail fast instead of producing a misleading intent.
+    const elementAtPoint = document.elementFromPoint(targetX, targetY);
+    const isTargetAtPoint = elementAtPoint !== null && elementAtPoint.closest(selector) !== null;
+
+    return {
+      targetX,
+      targetY,
+      rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+      zone: z,
+      ratio: rect.height > 0 ? (targetY - rect.top) / rect.height : 0,
+      isTargetAtPoint,
+      elementAtPointTag: elementAtPoint?.tagName?.toLowerCase() ?? 'null',
+    };
+  }, { selector: itemSelector, zone });
+
+  if (!result || typeof result !== 'object') {
+    throw new Error(`evaluate returned unexpected value for ${itemSelector}`);
+  }
+  if ('error' in result && typeof result.error === 'string') {
+    throw new Error(result.error);
+  }
+
+  const { targetX, targetY, rect, zone: resolvedZone, ratio, isTargetAtPoint, elementAtPointTag } = result as {
+    targetX: number; targetY: number;
+    rect: { x: number; y: number; width: number; height: number };
+    zone: string; ratio: number;
+    isTargetAtPoint: boolean; elementAtPointTag: string;
+  };
+
+  // Diagnostic log for every zone resolution so flake investigations can
+  // see exactly what coordinates were computed and whether the target was
+  // present at that point before the mouse moved there.
+  console.log(
+    `[getWorkspaceItemZoneCenter] zone="${zone}" targetId="${targetWorkspaceId}" ` +
+    `coords=(${Math.round(targetX)},${Math.round(targetY)}) ` +
+    `rect={x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}} ` +
+    `ratio=${ratio.toFixed(3)} isTargetAtPoint=${String(isTargetAtPoint)} elementAtPoint=${elementAtPointTag}`,
+  );
+
+  if (!isTargetAtPoint) {
+    throw new Error(
+      `Coordinate verification failed for ${itemSelector} at zone "${zone}". ` +
+      `Computed coords (${Math.round(targetX)}, ${Math.round(targetY)}) ` +
+      `land on <${elementAtPointTag}> instead of the target element. ` +
+      `Target rect: {x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}}. ` +
+      `This indicates a layout shift occurred during drag activation.`,
+    );
+  }
+
+  return { targetX, targetY };
 }
 
 Given('workspace group {string} contains workspaces:', async function(this: ApplicationWorld, groupName: string, dataTable: DataTable) {
@@ -305,14 +526,16 @@ When('I drag workspace {string} onto workspace {string}', async function(this: A
 
   const sourceWorkspace = await getWorkspaceByName(this, sourceWorkspaceName);
   const targetWorkspace = await getWorkspaceByName(this, targetWorkspaceName);
-  const targetSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-center"]`;
-  const targetLocator = this.currentWindow.locator(targetSelector);
-  await targetLocator.waitFor({ state: 'visible' });
+  // Sanity-check that the target workspace is fully rendered before dragging.
+  const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-center"]`;
+  await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
 
   await dragLocatorToCoordinates(
     this,
     `[data-testid="workspace-item-${sourceWorkspace.id}"]`,
-    async () => getLocatorCenter(this, targetSelector),
+    async () => getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center'),
+    targetWorkspace.id,
+    'group',
   );
 });
 
@@ -323,12 +546,12 @@ When('I hover workspace {string} over workspace {string}', async function(this: 
 
   const sourceWorkspace = await getWorkspaceByName(this, sourceWorkspaceName);
   const targetWorkspace = await getWorkspaceByName(this, targetWorkspaceName);
-  const targetSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-center"]`;
-  const targetLocator = this.currentWindow.locator(targetSelector);
-  await targetLocator.waitFor({ state: 'visible' });
+  // Sanity-check that the target workspace is fully rendered before dragging.
+  const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-center"]`;
+  await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
   await dragLocatorAndHoldAtCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(this, targetSelector);
-  });
+    return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'center');
+  }, targetWorkspace.id, 'group');
 });
 
 When('I release the mouse', async function(this: ApplicationWorld) {
@@ -346,13 +569,13 @@ When('I drag workspace {string} to the top zone of workspace {string}', async fu
 
   const sourceWorkspace = await getWorkspaceByName(this, sourceWorkspaceName);
   const targetWorkspace = await getWorkspaceByName(this, targetWorkspaceName);
-  const targetSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-top"]`;
-  const targetLocator = this.currentWindow.locator(targetSelector);
-  await targetLocator.waitFor({ state: 'visible' });
+  // Sanity-check that the target workspace is fully rendered before dragging.
+  const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-top"]`;
+  await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
 
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(this, targetSelector);
-  });
+    return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'top');
+  }, targetWorkspace.id, 'reorder-before');
 });
 
 When('I drag workspace {string} to the bottom zone of workspace {string}', async function(this: ApplicationWorld, sourceWorkspaceName: string, targetWorkspaceName: string) {
@@ -362,12 +585,12 @@ When('I drag workspace {string} to the bottom zone of workspace {string}', async
 
   const sourceWorkspace = await getWorkspaceByName(this, sourceWorkspaceName);
   const targetWorkspace = await getWorkspaceByName(this, targetWorkspaceName);
-  const targetSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-bottom"]`;
-  const targetLocator = this.currentWindow.locator(targetSelector);
-  await targetLocator.waitFor({ state: 'visible' });
+  // Sanity-check that the target workspace is fully rendered before dragging.
+  const dropZoneSelector = `[data-testid="workspace-drop-zone-${targetWorkspace.id}-bottom"]`;
+  await this.currentWindow.locator(dropZoneSelector).waitFor({ state: 'visible' });
   await dragLocatorToCoordinates(this, `[data-testid="workspace-item-${sourceWorkspace.id}"]`, async () => {
-    return getLocatorCenter(this, targetSelector);
-  });
+    return getWorkspaceItemZoneCenter(this, targetWorkspace.id, 'bottom');
+  }, targetWorkspace.id, 'reorder-after');
 });
 
 When('I drag workspace {string} onto the header of its current group', async function(this: ApplicationWorld, workspaceName: string) {
@@ -559,7 +782,7 @@ When('I drag group header {string} onto workspace {string}', async function(this
 
   await dragLocatorToCoordinates(this, sourceSelector, async () => {
     return await getLocatorCenter(this, targetSelector);
-  });
+  }, targetWorkspace.id);
 });
 
 Then('group {string} should appear before group {string}', async function(this: ApplicationWorld, firstGroupName: string, secondGroupName: string) {

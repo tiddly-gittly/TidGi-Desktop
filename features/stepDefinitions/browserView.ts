@@ -134,11 +134,22 @@ Then('I should see {string} in the browser view content', async function(this: A
         throw new Error(`Expected text "${expectedText}" not found`);
       }
     },
-    BACKOFF_OPTIONS,
+    {
+      ...BACKOFF_OPTIONS,
+      numOfAttempts: Math.max(1, Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 5000) / 1200)),
+      startingDelay: BROWSER_VIEW_RETRY_DELAY_MS,
+      maxDelay: BROWSER_VIEW_RETRY_DELAY_MS,
+    },
   ).catch(async () => {
+    let viewUrl: string;
+    try {
+      viewUrl = this.currentWindow?.url() ?? 'no-url';
+    } catch {
+      viewUrl = 'no-page';
+    }
     const finalContent = await getTextContent(this.app!, this.currentWindow);
     throw new Error(
-      `Expected text "${expectedText}" not found in browser view content. Actual content: ${finalContent ? finalContent.substring(0, 200) + '...' : 'null'}`,
+      `Expected text "${expectedText}" not found in browser view content (view=${viewUrl}). Actual content: ${finalContent ? finalContent.substring(0, 200) + '...' : 'null'}`,
     );
   });
 });
@@ -161,9 +172,15 @@ Then('I should see {string} in the browser view DOM', async function(this: Appli
     },
     BACKOFF_OPTIONS,
   ).catch(async () => {
+    let viewUrl: string;
+    try {
+      viewUrl = this.currentWindow?.url() ?? 'no-url';
+    } catch {
+      viewUrl = 'no-page';
+    }
     const finalDomContent = await getDOMContent(this.app!, this.currentWindow);
     throw new Error(
-      `Expected text "${expectedText}" not found in browser view DOM. Actual DOM: ${finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'}`,
+      `Expected text "${expectedText}" not found in browser view DOM (view=${viewUrl}). Actual DOM: ${finalDomContent ? finalDomContent.substring(0, 200) + '...' : 'null'}`,
     );
   });
 });
@@ -180,7 +197,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
   // Use a longer retry window because WebContentsView creation is async and can take
   // several seconds after workspace activation. Each attempt is fast (< 10ms) when the
   // view doesn't exist yet, so we need many more attempts to cover the full wait budget.
-  const longRetryAttempts = Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / BROWSER_VIEW_RETRY_DELAY_MS);
+  const longRetryAttempts = Math.max(1, Math.floor((CUCUMBER_GLOBAL_TIMEOUT - 4000) / BROWSER_VIEW_RETRY_DELAY_MS));
 
   await backOff(
     async () => {
@@ -400,19 +417,49 @@ When('I open tiddler {string} in browser view', async function(this: Application
    * (webContents navigating), then needs a delay before the next try.
    * Flat 200 ms gives ~12 attempts in the 5 s Cucumber step budget, which is
    * enough to bridge the gap when the wiki becomes ready late into the step.
+   *
+   * After addToStory + pageWidget.refresh, verify the tiddler element is
+   * actually visible in the story DOM. On Windows, DOM layout can lag behind
+   * the synchronous refresh call, so we check offsetParent !== null to
+   * confirm the element is rendered and not detached/display:none.
    */
+  const escapedTitleForJs = JSON.stringify(tiddlerTitle);
   await backOff(
     async () => {
-      await executeTiddlyWikiCode(
+      const result = await executeTiddlyWikiCode<{ success: boolean; error?: string }>(
         this.app!,
         `(function() {
-          const title = "${tiddlerTitle.replace(/"/g, '\\"')}";
+          const title = ${escapedTitleForJs};
+          const tiddler = $tw?.wiki?.getTiddler(title);
+          if (!tiddler) {
+            return { success: false, error: 'Tiddler not loaded: ' + title };
+          }
           try { if ($tw?.wiki?.removeFromStory) $tw.wiki.removeFromStory(title); } catch {}
-          $tw.wiki.addToStory(title);
-          return true;
+          $tw.wiki.addToStory(title, undefined, '$:/StoryList', { openLinkFromOutsideRiver: 'top' });
+          if ($tw?.pageWidgetNode?.refresh) {
+            const changes = Object.create(null);
+            changes['$:/StoryList'] = { modified: true, normal: true };
+            changes[title] = { modified: true, normal: true };
+            $tw.pageWidgetNode.refresh(changes);
+          }
+          $tw.hooks?.invokeHook?.('th-page-refreshed');
+
+          // Verify the tiddler is visible in the story DOM
+          var element = document.querySelector('[data-tiddler-title="' + title.replace(/"/g, '\\\\"') + '"]');
+          if (!element || element.offsetParent === null) {
+            return { success: false, error: 'Tiddler not visible in story DOM: ' + title };
+          }
+          var storyText = (element.textContent || '').trim();
+          if (!storyText) {
+            return { success: false, error: 'Tiddler has no visible content: ' + title };
+          }
+          return { success: true };
         })()`,
         this.currentWindow,
       );
+      if (!result?.success) {
+        throw new Error(result?.error ?? `Failed to open tiddler ${tiddlerTitle}`);
+      }
     },
     { ...BACKOFF_OPTIONS, numOfAttempts: 8, startingDelay: 200, timeMultiple: 1, maxDelay: 200 },
   ).catch((error: unknown) => {
