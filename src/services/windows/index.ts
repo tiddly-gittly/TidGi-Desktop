@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 import { inject, injectable } from 'inversify';
 import { Menubar } from 'menubar';
@@ -22,6 +22,7 @@ import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
 import type { IThemeService } from '@services/theme/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { getTidgiMiniWindowTargetWorkspace } from '@services/workspacesView/utilities';
 import { handleAttachToTidgiMiniWindow } from './handleAttachToTidgiMiniWindow';
 import { handleCreateBasicWindow } from './handleCreateBasicWindow';
@@ -502,7 +503,23 @@ export class Window implements IWindowService {
         logger.debug('TidGi mini window is already enabled, bring it to front', { function: 'openTidgiMiniWindow' });
         if (showWindow) {
           // Before showing, get the target workspace
-          const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
+          let { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
+
+          // Fallback: if no active workspace is set yet (e.g. during startup after cleanup),
+          // use the first available wiki workspace so the mini window always has a view.
+          if (!targetWorkspaceId) {
+            const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+            const allWorkspaces = await workspaceService.getWorkspacesAsList();
+            const firstWiki = allWorkspaces.find((w) => isWikiWorkspace(w));
+            if (firstWiki) {
+              targetWorkspaceId = firstWiki.id;
+              shouldSync = true;
+              logger.info('openTidgiMiniWindow: no active workspace, falling back to first wiki', {
+                function: 'openTidgiMiniWindow',
+                targetWorkspaceId,
+              });
+            }
+          }
 
           logger.info('openTidgiMiniWindow: preparing to show window', {
             function: 'openTidgiMiniWindow',
@@ -539,6 +556,23 @@ export class Window implements IWindowService {
 
           // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
           await this.tidgiMiniWindowMenubar.showWindow();
+
+          // In E2E mode menubar.showWindow() calculates a tray-based position that can place
+          // the window on-screen. Re-apply off-screen coordinates so Playwright can still
+          // interact with it without overlapping the main window.
+          if (isTest && this.tidgiMiniWindowMenubar.window !== undefined) {
+            const win = this.tidgiMiniWindowMenubar.window;
+            const { width, height } = win.getBounds();
+            const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+            const safeW = currentScreen.workAreaSize.width + 200;
+            const safeH = currentScreen.workAreaSize.height + 200;
+            win.setBounds({ x: -safeW, y: -safeH, width, height });
+            logger.info('openTidgiMiniWindow: re-applied E2E off-screen bounds after showWindow', {
+              function: 'openTidgiMiniWindow',
+              bounds: { x: -safeW, y: -safeH, width, height },
+            });
+          }
+
           this.markWindowShownForE2E(this.tidgiMiniWindowMenubar.window);
           // Wait until the OS actually marks the window as visible (needed in E2E tests where
           // BrowserWindow.show() is asynchronous with respect to isVisible() returning true)

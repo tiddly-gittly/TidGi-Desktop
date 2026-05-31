@@ -14,7 +14,7 @@ import { MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
-import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
+import { type IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
@@ -213,7 +213,19 @@ export class View implements IViewService {
 
     // Set initial bounds: active or secondary/mini → visible; inactive main → offscreen
     if (workspace.active || windowName !== WindowNames.main) {
-      const contentSize = browserWindow.getContentSize();
+      let contentSize = browserWindow.getContentSize();
+      // On Windows Server CI getContentSize() can return [0,0] for a window that was
+      // just created off-screen. Use the configured default dimensions so the view
+      // does not get zero-sized bounds (which prevents the compositor from painting it).
+      if (contentSize[0] === 0 && contentSize[1] === 0) {
+        const defaults = windowDimension[windowName];
+        contentSize = [defaults?.width ?? 800, defaults?.height ?? 600];
+        logger.warn('createViewAndAttach: getContentSize returned [0,0], using fallback dimensions', {
+          function: 'createViewAndAttach',
+          windowName,
+          fallback: { width: contentSize[0], height: contentSize[1] },
+        });
+      }
       view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     } else {
       this.moveOffscreen(view, browserWindow);
@@ -457,9 +469,13 @@ export class View implements IViewService {
       view.setBounds(this.customBoundsMap.get(key)!);
       return;
     }
-    const contentSize = browserWindow.getContentSize();
-    // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
-    if (contentSize[0] === 0 && contentSize[1] === 0) return;
+    let contentSize = browserWindow.getContentSize();
+    // Window is minimized on Windows — getContentSize() returns [0,0]. Use fallback
+    // dimensions so the view doesn't keep stale or zero-sized bounds.
+    if (contentSize[0] === 0 && contentSize[1] === 0) {
+      const defaults = windowDimension[windowName];
+      contentSize = [defaults?.width ?? 800, defaults?.height ?? 600];
+    }
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
   }
 
