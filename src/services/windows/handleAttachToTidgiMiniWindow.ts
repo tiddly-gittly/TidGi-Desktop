@@ -119,6 +119,12 @@ export async function handleAttachToTidgiMiniWindow(
           logger.warn('Failed to focus view in tidgi mini window', { function: 'handleAttachToTidgiMiniWindow', error });
         }
       });
+      // Remove menubar's blur auto-hide listener in E2E tests: it fires a 100 ms
+      // timeout that hides the window when focus is lost, which races with
+      // Playwright visibility checks and causes flaky "window not visible" failures.
+      if (isTest) {
+        tidgiMiniWindow.window.removeAllListeners('blur');
+      }
       tidgiMiniWindow.window.removeAllListeners('close');
       tidgiMiniWindow.window.on('close', (event) => {
         event.preventDefault();

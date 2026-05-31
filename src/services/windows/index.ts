@@ -557,6 +557,19 @@ export class Window implements IWindowService {
               });
             }
           }
+
+          // After the host BrowserWindow becomes visible, force-attach/repaint the mini-window
+          // view via showView().  realignActiveWorkspace() only calls realignView (bounds-only);
+          // Electron 41 often needs the remove/add/focus sequence to paint a WebContentsView
+          // that was attached while the window was hidden/offscreen.
+          if (targetWorkspaceId) {
+            const viewService = container.get<IViewService>(serviceIdentifier.View);
+            const miniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+            if (miniView) {
+              await viewService.showView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+            }
+          }
+
           logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
         }
         return;

@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
-import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
+import { WindowNames } from '../../src/services/windows/WindowProperties';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
@@ -56,15 +56,6 @@ export function checkWindowName(windowType: string): WindowNames {
   throw new Error(`Window type "${windowType}" is not a valid WindowNames. Check the WindowNames enum in WindowProperties.ts. Available: ${Object.keys(WindowNames).join(', ')}`);
 }
 
-// Helper function to get window dimensions and ensure they are valid
-export function checkWindowDimension(windowName: WindowNames): { width: number; height: number } {
-  const targetDimensions = windowDimension[windowName];
-  if (!targetDimensions.width || !targetDimensions.height) {
-    throw new Error(`Window "${windowName}" does not have valid dimensions defined in windowDimension`);
-  }
-  return targetDimensions as { width: number; height: number };
-}
-
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
   appLaunchPromise: Promise<void> | undefined;
@@ -92,12 +83,17 @@ export class ApplicationWorld {
         if (process.platform !== 'win32' || process.env.SHOW_E2E_WINDOW) {
           return true;
         }
-        const bounds = win.getBounds();
-        const isMiniWindow = win.getTitle().includes('Mini Window') || (bounds.width === 500 && bounds.height === 600);
-        if (!isMiniWindow) {
-          return true;
-        }
-        return win.webContents.executeJavaScript('window.service.window.isTidgiMiniWindowOpen?.() ?? false') as Promise<boolean>;
+        // For the tidgi mini window, consult the actual window service in the main process
+        // (via renderer IPC) to decide visibility. This correctly accounts for the
+        // e2ePaintOnlyWindows mechanism. Use window.meta().windowName (set from
+        // process.argv at creation time) instead of mutable title or dimensions.
+        return win.webContents.executeJavaScript(`
+          (() => {
+            const windowName = window.meta?.()?.windowName;
+            if (windowName !== 'tidgiMiniWindow') return true;
+            return window.service?.window?.isTidgiMiniWindowOpen?.() ?? false;
+          })()
+        `) as Promise<boolean>;
       });
     } catch {
       return false;
@@ -148,89 +144,39 @@ export class ApplicationWorld {
       if (allWindows.length === 1) {
         return allWindows[0];
       }
-      // Multiple windows (e.g. tidgi mini window is also open).  allWindows[0] is not
-      // always the main window — Electron may order them differently after a window is
-      // recreated.  Exclude the mini window by its known dimensions/title so we return
-      // the actual main window, not the mini one.
-      try {
-        const miniWindowDimensions = checkWindowDimension(WindowNames.tidgiMiniWindow);
-        for (const page of allWindows) {
-          try {
-            const bw = await this.app.browserWindow(page);
-            const isMini = await bw.evaluate(
-              (win: Electron.BrowserWindow, dims: { width: number; height: number }) => {
-                const bounds = win.getBounds();
-                return (
-                  win.getTitle().includes('Mini Window') ||
-                  (bounds.width === dims.width && bounds.height === dims.height)
-                );
-              },
-              miniWindowDimensions,
-            );
-            if (!isMini) {
-              return page;
-            }
-          } catch {
-            // browserWindow() may fail for pages not yet attached — skip
-            continue;
-          }
-        }
-      } catch {
-        // If Electron API fails, fallback to first window
-      }
-      return allWindows[0];
-    } else if (windowName === WindowNames.tidgiMiniWindow) {
-      // Special handling for tidgi mini window
-      // First try to find by Electron window dimensions (more reliable than title)
-      const windowDimensions = checkWindowDimension(windowName);
-      try {
-        const electronWindowInfo = await this.app.evaluate(
-          async ({ BrowserWindow }, searchParameters: { size: { width: number; height: number }; titleHint: string }) => {
-            const allWindows = BrowserWindow.getAllWindows();
-            // First try: match by title hint (BrowserWindow.title, set in WindowProperties)
-            const byTitle = allWindows.find(win => win.getTitle().includes(searchParameters.titleHint));
-            if (byTitle) return { id: byTitle.id };
-            // Second try: match by dimensions
-            const bySize = allWindows.find(win => {
-              const bounds = win.getBounds();
-              return bounds.width === searchParameters.size.width && bounds.height === searchParameters.size.height;
-            });
-            return bySize ? { id: bySize.id } : null;
-          },
-          { size: windowDimensions, titleHint: 'Mini Window' },
-        );
-
-        if (electronWindowInfo) {
-          // Match Playwright page by comparing its underlying BrowserWindow ID.
-          // Title matching is unreliable because the mini window loads the same index.html
-          // as the main window, and document.title may not yet reflect the window type.
-          const nonClosedPages = pages.filter(page => !page.isClosed());
-          for (const page of nonClosedPages) {
-            try {
-              const bw = await this.app.browserWindow(page);
-              const bwId = await bw.evaluate((win: Electron.BrowserWindow) => win.id);
-              if (bwId === electronWindowInfo.id) {
-                return page;
-              }
-            } catch {
-              continue;
-            }
-          }
-        }
-      } catch {
-        // If Electron API fails, fallback to title matching
-      }
-
-      // Fallback: Match by window title (covers cases where title IS set by the React app)
-      const allWindows = pages.filter(page => !page.isClosed());
+      // Multiple windows — find the one whose preload marker identifies it as main window.
+      // This avoids unreliable title/dimension heuristics.
       for (const page of allWindows) {
         try {
-          const title = await page.title();
-          if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+          const metaWindowName = await page.evaluate(() => {
+            const windowWithMeta = window as Window & { meta?: () => { windowName?: string } };
+            return windowWithMeta.meta?.()?.windowName;
+          }) as WindowNames | undefined;
+          if (metaWindowName === WindowNames.main) {
             return page;
           }
         } catch {
-          // Page might be closed or not ready, continue to next
+          continue;
+        }
+      }
+      // Fallback: if meta lookup fails for all pages, return the first one.
+      return allWindows[0];
+    } else if (windowName === WindowNames.tidgiMiniWindow) {
+      // Identify the tidgi mini window by its immutable windowName marker from the preload script.
+      // The preload reads process.argv (set via additionalArguments at BrowserWindow creation) and
+      // exposes window.meta().windowName via contextBridge. This is reliable because it does not
+      // depend on mutable title or restored window dimensions.
+      for (const page of pages.filter(p => !p.isClosed())) {
+        try {
+          const metaWindowName = await page.evaluate(() => {
+            const windowWithMeta = window as Window & { meta?: () => { windowName?: string } };
+            return windowWithMeta.meta?.()?.windowName;
+          }) as WindowNames | undefined;
+          if (metaWindowName === WindowNames.tidgiMiniWindow) {
+            return page;
+          }
+        } catch {
+          // page.evaluate may fail if the renderer isn't ready yet — skip and try next
           continue;
         }
       }
