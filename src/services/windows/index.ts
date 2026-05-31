@@ -558,15 +558,23 @@ export class Window implements IWindowService {
             }
           }
 
-          // After the host BrowserWindow becomes visible, force-attach/repaint the mini-window
-          // view via showView().  realignActiveWorkspace() only calls realignView (bounds-only);
-          // Electron 41 often needs the remove/add/focus sequence to paint a WebContentsView
-          // that was attached while the window was hidden/offscreen.
+          // After the host BrowserWindow becomes visible, ensure the mini-window view is
+          // attached and focused.  If the view is already attached (common in E2E where the
+          // window is kept visible off-screen), skip the remove/add repaint sequence;
+          // on Windows Server that sequence can occasionally orphan the view.
           if (targetWorkspaceId) {
             const viewService = container.get<IViewService>(serviceIdentifier.View);
             const miniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
-            if (miniView) {
-              await viewService.showView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+            const miniWindow = this.tidgiMiniWindowMenubar?.window;
+            if (miniView && miniWindow !== undefined && !miniWindow.isDestroyed()) {
+              const children = (miniWindow.contentView as unknown as { children?: typeof miniView[] }).children ?? [];
+              const isAttached = children.some((child) => child === miniView);
+              if (isAttached) {
+                await viewService.realignView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+                miniView.webContents.focus();
+              } else {
+                await viewService.showView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+              }
             }
           }
 
