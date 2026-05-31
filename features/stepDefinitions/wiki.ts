@@ -765,8 +765,19 @@ When('I create file {string} with content:', async function(this: ApplicationWor
   // Ensure directory exists
   await fs.ensureDir(path.dirname(actualPath));
 
-  // Write the file with the provided content
-  await fs.writeFile(actualPath, content, 'utf-8');
+  if (await fs.pathExists(actualPath)) {
+    await fs.writeFile(actualPath, content, 'utf-8');
+    return;
+  }
+
+  // nsfw should never observe a half-written tiddler in test-created files.
+  const temporaryPath = path.join(getWikiTestRootPath(this), `.atomic-write-${Date.now()}-${path.basename(actualPath)}`);
+  try {
+    await fs.writeFile(temporaryPath, content, 'utf-8');
+    await fs.rename(temporaryPath, actualPath);
+  } finally {
+    await fs.remove(temporaryPath);
+  }
 });
 
 When('I modify file {string} to contain {string}', async function(this: ApplicationWorld, filePath: string, content: string) {

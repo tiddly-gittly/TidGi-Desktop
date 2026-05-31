@@ -540,7 +540,10 @@ export class FileSystemWatcher {
       // Handle events
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
         this.cancelPendingDeletion(fileAbsolutePath);
-        this.handleFileAddOrChange(fileAbsolutePath, fileRelativePath, fileExtension, action === nsfw.actions.CREATED ? 'add' : 'change');
+        // Atomic overwrites may arrive as CREATED even though the tiddler is already tracked.
+        const isNewFile = !this.inverseFilesIndex.has(fileRelativePath);
+        const changeType = action === nsfw.actions.CREATED && isNewFile ? 'add' : 'change';
+        this.handleFileAddOrChange(fileAbsolutePath, fileRelativePath, fileExtension, changeType);
       } else if (action === nsfw.actions.DELETED) {
         this.scheduleDeletion(fileAbsolutePath, fileRelativePath, fileExtension);
       } else if (action === nsfw.actions.RENAMED) {
@@ -558,7 +561,9 @@ export class FileSystemWatcher {
           const newBasePath = newSubWikiInfo ? newSubWikiInfo.path : this.watchPathBase;
           const newFileRelativePath = normalizeIndexPath(path.relative(newBasePath, newFileAbsPath));
           const newFileExtension = path.extname(newFileRelativePath);
-          this.handleFileAddOrChange(newFileAbsPath, newFileRelativePath, newFileExtension, 'add');
+          // Atomic rename should preserve update semantics for already-tracked tiddlers.
+          const changeType = this.inverseFilesIndex.has(newFileRelativePath) ? 'change' : 'add';
+          this.handleFileAddOrChange(newFileAbsPath, newFileRelativePath, newFileExtension, changeType);
         }
       }
     }
