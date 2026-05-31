@@ -159,6 +159,14 @@ export class View implements IViewService {
     }
     const browserWindow = this.windowService.get(windowName);
     if (browserWindow === undefined) {
+      // The tidgi mini window is created asynchronously by the menubar library and may
+      // not be ready during early app startup. Skip gracefully — it will be created
+      // lazily when openTidgiMiniWindow() shows the window (which already handles
+      // missing views by calling addView on-demand).
+      if (windowName === WindowNames.tidgiMiniWindow) {
+        logger.warn(`addView: ${windowName} is not ready yet, skipping view creation for workspace ${workspace.id}`);
+        return;
+      }
       throw new Error(`Browser window ${windowName} is not ready for workspace ${workspace.id}`);
     }
     const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
