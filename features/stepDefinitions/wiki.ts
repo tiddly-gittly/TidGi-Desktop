@@ -1261,7 +1261,8 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     // Clear log markers to ensure we wait for fresh ones after restart
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
 
-    const waitForAutoRestart = settingsUpdate.enableFileSystemWatch === true
+    const canUseAutoRestart = fsSettingChanged && !('enableHTTPAPI' in settingsUpdate);
+    const waitForAutoRestart = canUseAutoRestart && settingsUpdate.enableFileSystemWatch === true
       ? waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after automatic restart', 2_000).then(() => true).catch(() => false)
       : Promise.resolve(false);
     const autoRestartCompleted = await waitForAutoRestart;
