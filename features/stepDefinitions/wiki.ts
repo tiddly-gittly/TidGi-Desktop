@@ -1261,6 +1261,12 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     // Clear log markers to ensure we wait for fresh ones after restart
     await clearLogLinesContaining(this, '[test-id-WATCH_FS_STABILIZED]');
 
+    const waitForAutoRestart = settingsUpdate.enableFileSystemWatch === true
+      ? waitForLogMarker(this, '[test-id-WATCH_FS_STABILIZED]', 'watch-fs did not stabilize after automatic restart', 2_000).then(() => true).catch(() => false)
+      : Promise.resolve(false);
+    const autoRestartCompleted = await waitForAutoRestart;
+    if (autoRestartCompleted) return;
+
     // Restart the wiki using the runtime-resolved workspace ID
     const restartResult = await targetWindow.evaluate(async (workspaceId: string) => {
       const workspace = await window.service.workspace.get(workspaceId);
