@@ -80,7 +80,7 @@ export class ApplicationWorld {
         if (!win.isVisible()) {
           return false;
         }
-        if (process.platform !== 'win32' || process.env.SHOW_E2E_WINDOW) {
+        if ((process.platform !== 'win32' && process.platform !== 'linux') || process.env.SHOW_E2E_WINDOW) {
           return true;
         }
         // For the tidgi mini window, consult the actual window service in the main process
