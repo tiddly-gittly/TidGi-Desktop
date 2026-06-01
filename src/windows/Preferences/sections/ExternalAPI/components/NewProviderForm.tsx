@@ -44,6 +44,7 @@ export function NewProviderForm({
       <FormControl fullWidth margin='normal'>
         <InputLabel id='default-provider-label'>{t('Preference.SelectDefaultProvider')}</InputLabel>
         <Select
+          data-testid='new-provider-preset-select'
           labelId='default-provider-label'
           value={selectedDefaultProvider}
           onChange={(event) => {
@@ -77,6 +78,7 @@ export function NewProviderForm({
       <FormControl fullWidth margin='normal'>
         <InputLabel id='provider-class-label'>{t('Preference.ProviderClass')}</InputLabel>
         <Select
+          data-testid='new-provider-class-select'
           labelId='provider-class-label'
           value={formState.providerClass}
           onChange={(event) => {
