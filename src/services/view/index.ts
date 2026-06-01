@@ -451,11 +451,22 @@ export class View implements IViewService {
       } catch { /* already added */ }
       view.setBounds(bounds);
     } else {
+      const previousCustomBounds = this.customBoundsMap.get(key);
       this.customBoundsMap.delete(key);
-      // Only move offscreen if the view is NOT currently shown via showView().
+      // Only move offscreen if the view is still at the previous custom bounds.
       // This prevents a late-arriving WikiEmbedTabContent cleanup from hiding
       // a view that showView() has already placed at full-window bounds.
-      if (!this.activelyShownViews.has(key)) {
+      if (previousCustomBounds !== undefined) {
+        const currentBounds = view.getBounds();
+        if (
+          currentBounds.x === previousCustomBounds.x &&
+          currentBounds.y === previousCustomBounds.y &&
+          currentBounds.width === previousCustomBounds.width &&
+          currentBounds.height === previousCustomBounds.height
+        ) {
+          this.moveOffscreen(view, browserWindow);
+        }
+      } else if (!this.activelyShownViews.has(key)) {
         this.moveOffscreen(view, browserWindow);
       }
     }
