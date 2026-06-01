@@ -17,7 +17,7 @@ import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { isMac } from '@/helpers/system';
+import { isLinux, isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
@@ -38,8 +38,8 @@ export class Window implements IWindowService {
   private windowMeta = {} as Partial<WindowMeta>;
   /** tidgi mini window version of main window, if user set attachToTidgiMiniWindow to true in preferences */
   private tidgiMiniWindowMenubar?: Menubar;
-  /** Lock to prevent concurrent tidgi mini window operations */
-  private tidgiMiniWindowOperationLock = false;
+  /** Promise-based lock to serialize tidgi mini window operations */
+  private tidgiMiniWindowOperationLock: Promise<void> | undefined;
   /** Debounce timer for main window state save on hide */
   private mainWindowHideSaveTimer?: ReturnType<typeof setTimeout>;
 
@@ -235,7 +235,7 @@ export class Window implements IWindowService {
       [WindowNames.auth]: 'TidGi [Auth]',
       [WindowNames.any]: 'TidGi [Browser]',
     };
-    const shouldKeepWindowPaintableForE2E = isTest && process.platform === 'win32' && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW && [
+    const shouldKeepWindowPaintableForE2E = isTest && (process.platform === 'win32' || isLinux) && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW && [
       WindowNames.main,
       WindowNames.secondary,
       WindowNames.tidgiMiniWindow,
@@ -489,195 +489,206 @@ export class Window implements IWindowService {
     this.e2ePaintOnlyWindows.delete(window);
   }
 
-  public async openTidgiMiniWindow(enableIt = true, showWindow = true): Promise<void> {
-    // Prevent concurrent operations on tidgi mini window
-    if (this.tidgiMiniWindowOperationLock) {
-      logger.warn('TidGi mini window operation already in progress, skipping', { function: 'openTidgiMiniWindow' });
-      return;
+  /**
+   * Serialize tidgi mini window operations so concurrent open/close/toggle
+   * requests chain instead of being dropped.
+   */
+  private async runWithTidgiMiniWindowLock<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = this.tidgiMiniWindowOperationLock;
+    const promise = (async () => {
+      if (previous !== undefined) {
+        try {
+          await previous;
+        } catch {
+          // await previous operation to complete, regardless of success or failure
+        }
+      }
+      return await operation();
+    })();
+    const lock = promise.then(
+      () => {
+        if (this.tidgiMiniWindowOperationLock === lock) {
+          this.tidgiMiniWindowOperationLock = undefined;
+        }
+      },
+      () => {
+        if (this.tidgiMiniWindowOperationLock === lock) {
+          this.tidgiMiniWindowOperationLock = undefined;
+        }
+      },
+    );
+    this.tidgiMiniWindowOperationLock = lock;
+    return promise;
+  }
+
+  private async finishShowingTidgiMiniWindow(menuBar: Menubar, targetWorkspaceId?: string): Promise<void> {
+    await menuBar.showWindow();
+
+    if (isTest && menuBar.window !== undefined) {
+      const win = menuBar.window;
+      const { width, height } = win.getBounds();
+      const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+      const safeW = currentScreen.workAreaSize.width + 200;
+      const safeH = currentScreen.workAreaSize.height + 200;
+      win.setBounds({ x: -safeW, y: -safeH, width, height });
+      logger.info('openTidgiMiniWindow: re-applied E2E off-screen bounds after showWindow', {
+        function: 'openTidgiMiniWindow',
+        bounds: { x: -safeW, y: -safeH, width, height },
+      });
     }
-    this.tidgiMiniWindowOperationLock = true;
 
-    try {
-      // Check if tidgi mini window is already enabled
-      if (this.tidgiMiniWindowMenubar?.window !== undefined) {
-        logger.debug('TidGi mini window is already enabled, bring it to front', { function: 'openTidgiMiniWindow' });
-        if (showWindow) {
-          // Before showing, get the target workspace
-          let { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
+    this.markWindowShownForE2E(menuBar.window);
+    if (isTest) {
+      const win = menuBar.window;
+      if (win) {
+        await new Promise<void>((resolve) => {
+          const check = () => {
+            if (win.isVisible()) {
+              resolve();
+            } else {
+              setTimeout(check, 50);
+            }
+          };
+          check();
+        });
+      }
+    }
 
-          // Fallback: if no active workspace is set yet (e.g. during startup after cleanup),
-          // use the first available wiki workspace so the mini window always has a view.
-          if (!targetWorkspaceId) {
-            const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-            const allWorkspaces = await workspaceService.getWorkspacesAsList();
-            const firstWiki = allWorkspaces.find((w) => isWikiWorkspace(w));
-            if (firstWiki) {
-              targetWorkspaceId = firstWiki.id;
-              shouldSync = true;
-              logger.info('openTidgiMiniWindow: no active workspace, falling back to first wiki', {
+    if (targetWorkspaceId) {
+      const viewService = container.get<IViewService>(serviceIdentifier.View);
+      const miniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+      const miniWindow = menuBar.window;
+      if (miniView && miniWindow !== undefined && !miniWindow.isDestroyed()) {
+        const children = (miniWindow.contentView as unknown as { children?: typeof miniView[] }).children ?? [];
+        const isAttached = children.some((child) => child === miniView);
+        if (isAttached) {
+          await viewService.realignView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+          miniView.webContents.focus();
+        } else {
+          await viewService.showView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
+        }
+      }
+    }
+
+    logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
+  }
+
+  public async openTidgiMiniWindow(enableIt = true, showWindow = true): Promise<void> {
+    return this.runWithTidgiMiniWindowLock(async () => {
+      try {
+        // Check if tidgi mini window is already enabled
+        if (this.tidgiMiniWindowMenubar?.window !== undefined) {
+          logger.debug('TidGi mini window is already enabled, bring it to front', { function: 'openTidgiMiniWindow' });
+          if (showWindow) {
+            // Before showing, get the target workspace
+            let { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
+
+            // Fallback: if no active workspace is set yet (e.g. during startup after cleanup),
+            // use the first available wiki workspace so the mini window always has a view.
+            if (!targetWorkspaceId) {
+              const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+              const allWorkspaces = await workspaceService.getWorkspacesAsList();
+              const firstWiki = allWorkspaces.find((w) => isWikiWorkspace(w));
+              if (firstWiki) {
+                targetWorkspaceId = firstWiki.id;
+                shouldSync = true;
+                logger.info('openTidgiMiniWindow: no active workspace, falling back to first wiki', {
+                  function: 'openTidgiMiniWindow',
+                  targetWorkspaceId,
+                });
+              }
+            }
+
+            logger.info('openTidgiMiniWindow: preparing to show window', {
+              function: 'openTidgiMiniWindow',
+              shouldSync,
+              targetWorkspaceId,
+            });
+
+            // Ensure view exists for the target workspace before realigning
+            if (targetWorkspaceId) {
+              const targetWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(targetWorkspaceId);
+              if (targetWorkspace && !targetWorkspace.pageType) {
+                // This is a wiki workspace - ensure it has a view for tidgi mini window
+                const viewService = container.get<IViewService>(serviceIdentifier.View);
+                const existingView = viewService.getView(targetWorkspace.id, WindowNames.tidgiMiniWindow);
+                if (!existingView) {
+                  logger.info('openTidgiMiniWindow: creating missing tidgi mini window view', {
+                    function: 'openTidgiMiniWindow',
+                    workspaceId: targetWorkspace.id,
+                  });
+                  await viewService.addView(targetWorkspace, WindowNames.tidgiMiniWindow);
+                }
+              }
+
+              logger.info('openTidgiMiniWindow: calling realignActiveWorkspace', {
+                function: 'openTidgiMiniWindow',
+                targetWorkspaceId,
+              });
+              await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspaceId);
+              logger.info('openTidgiMiniWindow: realignActiveWorkspace completed', {
                 function: 'openTidgiMiniWindow',
                 targetWorkspaceId,
               });
             }
+
+            await this.finishShowingTidgiMiniWindow(this.tidgiMiniWindowMenubar, targetWorkspaceId);
           }
-
-          logger.info('openTidgiMiniWindow: preparing to show window', {
-            function: 'openTidgiMiniWindow',
-            shouldSync,
-            targetWorkspaceId,
-          });
-
-          // Ensure view exists for the target workspace before realigning
-          if (targetWorkspaceId) {
-            const targetWorkspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(targetWorkspaceId);
-            if (targetWorkspace && !targetWorkspace.pageType) {
-              // This is a wiki workspace - ensure it has a view for tidgi mini window
-              const viewService = container.get<IViewService>(serviceIdentifier.View);
-              const existingView = viewService.getView(targetWorkspace.id, WindowNames.tidgiMiniWindow);
-              if (!existingView) {
-                logger.info('openTidgiMiniWindow: creating missing tidgi mini window view', {
-                  function: 'openTidgiMiniWindow',
-                  workspaceId: targetWorkspace.id,
-                });
-                await viewService.addView(targetWorkspace, WindowNames.tidgiMiniWindow);
-              }
-            }
-
-            logger.info('openTidgiMiniWindow: calling realignActiveWorkspace', {
-              function: 'openTidgiMiniWindow',
-              targetWorkspaceId,
-            });
-            await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspaceId);
-            logger.info('openTidgiMiniWindow: realignActiveWorkspace completed', {
-              function: 'openTidgiMiniWindow',
-              targetWorkspaceId,
-            });
-          }
-
-          // Use menuBar.showWindow() instead of direct window.show() for proper tidgi mini window behavior
-          await this.tidgiMiniWindowMenubar.showWindow();
-
-          // In E2E mode menubar.showWindow() calculates a tray-based position that can place
-          // the window on-screen. Re-apply off-screen coordinates so Playwright can still
-          // interact with it without overlapping the main window.
-          if (isTest && this.tidgiMiniWindowMenubar.window !== undefined) {
-            const win = this.tidgiMiniWindowMenubar.window;
-            const { width, height } = win.getBounds();
-            const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-            const safeW = currentScreen.workAreaSize.width + 200;
-            const safeH = currentScreen.workAreaSize.height + 200;
-            win.setBounds({ x: -safeW, y: -safeH, width, height });
-            logger.info('openTidgiMiniWindow: re-applied E2E off-screen bounds after showWindow', {
-              function: 'openTidgiMiniWindow',
-              bounds: { x: -safeW, y: -safeH, width, height },
-            });
-          }
-
-          this.markWindowShownForE2E(this.tidgiMiniWindowMenubar.window);
-          // Wait until the OS actually marks the window as visible (needed in E2E tests where
-          // BrowserWindow.show() is asynchronous with respect to isVisible() returning true)
-          if (isTest) {
-            const win = this.tidgiMiniWindowMenubar.window;
-            if (win) {
-              await new Promise<void>((resolve) => {
-                const check = () => {
-                  if (win.isVisible()) {
-                    resolve();
-                  } else {
-                    setTimeout(check, 50);
-                  }
-                };
-                check();
-              });
-            }
-          }
-
-          // After the host BrowserWindow becomes visible, ensure the mini-window view is
-          // attached and focused.  If the view is already attached (common in E2E where the
-          // window is kept visible off-screen), skip the remove/add repaint sequence;
-          // on Windows Server that sequence can occasionally orphan the view.
-          if (targetWorkspaceId) {
-            const viewService = container.get<IViewService>(serviceIdentifier.View);
-            const miniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
-            const miniWindow = this.tidgiMiniWindowMenubar?.window;
-            if (miniView && miniWindow !== undefined && !miniWindow.isDestroyed()) {
-              const children = (miniWindow.contentView as unknown as { children?: typeof miniView[] }).children ?? [];
-              const isAttached = children.some((child) => child === miniView);
-              if (isAttached) {
-                await viewService.realignView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
-                miniView.webContents.focus();
-              } else {
-                await viewService.showView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
-              }
-            }
-          }
-
-          logger.info('[test-id-TIDGI_MINI_WINDOW_SHOWN] TidGi mini window showWindow called', { function: 'openTidgiMiniWindow' });
+          return;
         }
-        return;
-      }
 
-      // Create tidgi mini window (create and open when enableIt is true)
-      await this.open(WindowNames.tidgiMiniWindow);
-      if (enableIt) {
-        logger.debug('[test-id-TIDGI_MINI_WINDOW_CREATED] TidGi mini window enabled', { function: 'openTidgiMiniWindow' });
-        // After creating the tidgi mini window, show it if requested
-        const menuBar = this.tidgiMiniWindowMenubar;
-        if (showWindow && menuBar) {
-          logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });
-          await menuBar.showWindow();
-          this.markWindowShownForE2E(menuBar.window);
+        // Create tidgi mini window (create and open when enableIt is true)
+        await this.open(WindowNames.tidgiMiniWindow);
+        if (enableIt) {
+          logger.debug('[test-id-TIDGI_MINI_WINDOW_CREATED] TidGi mini window enabled', { function: 'openTidgiMiniWindow' });
+          // After creating the tidgi mini window, show it if requested
+          const menuBar = this.tidgiMiniWindowMenubar;
+          if (showWindow && menuBar) {
+            logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });
+            await this.finishShowingTidgiMiniWindow(menuBar);
+          }
         }
+      } catch (error) {
+        logger.error('Failed to open tidgi mini window', { error, function: 'openTidgiMiniWindow' });
+        throw error;
       }
-    } catch (error) {
-      logger.error('Failed to open tidgi mini window', { error, function: 'openTidgiMiniWindow' });
-      throw error;
-    } finally {
-      this.tidgiMiniWindowOperationLock = false;
-    }
+    });
   }
 
   public async closeTidgiMiniWindow(disableIt = false): Promise<void> {
-    // Prevent concurrent operations on tidgi mini window
-    if (this.tidgiMiniWindowOperationLock) {
-      logger.warn('TidGi mini window operation already in progress, skipping', { function: 'closeTidgiMiniWindow' });
-      return;
-    }
-    this.tidgiMiniWindowOperationLock = true;
-
-    try {
-      // Check if tidgi mini window exists
-      if (this.tidgiMiniWindowMenubar === undefined) {
-        logger.debug('TidGi mini window is already disabled', { function: 'closeTidgiMiniWindow' });
-        return;
-      }
-      const menuBar = this.tidgiMiniWindowMenubar;
-      if (disableIt) {
-        // Fully destroy tidgi mini window: destroy window and tray, then clear reference
-        if (menuBar.window) {
-          // remove custom close listener so destroy will actually close
-          menuBar.window.removeAllListeners('close');
-          menuBar.window.destroy();
+    return this.runWithTidgiMiniWindowLock(async () => {
+      try {
+        // Check if tidgi mini window exists
+        if (this.tidgiMiniWindowMenubar === undefined) {
+          logger.debug('TidGi mini window is already disabled', { function: 'closeTidgiMiniWindow' });
+          return;
         }
-        // hide app on mac if needed
-        menuBar.app?.hide?.();
-        if (menuBar.tray && !menuBar.tray.isDestroyed()) {
-          menuBar.tray.destroy();
+        const menuBar = this.tidgiMiniWindowMenubar;
+        if (disableIt) {
+          // Fully destroy tidgi mini window: destroy window and tray, then clear reference
+          if (menuBar.window) {
+            // remove custom close listener so destroy will actually close
+            menuBar.window.removeAllListeners('close');
+            menuBar.window.destroy();
+          }
+          // hide app on mac if needed
+          menuBar.app?.hide?.();
+          if (menuBar.tray && !menuBar.tray.isDestroyed()) {
+            menuBar.tray.destroy();
+          }
+          this.tidgiMiniWindowMenubar = undefined;
+          logger.debug('TidGi mini window disabled successfully without restart', { function: 'closeTidgiMiniWindow' });
+        } else {
+          // Only hide the tidgi mini window (keep tray and instance for re-open)
+          // Use menuBar.hideWindow() for proper tidgi mini window behavior
+          menuBar.hideWindow();
+          logger.debug('TidGi mini window closed (kept enabled)', { function: 'closeTidgiMiniWindow' });
         }
-        this.tidgiMiniWindowMenubar = undefined;
-        logger.debug('TidGi mini window disabled successfully without restart', { function: 'closeTidgiMiniWindow' });
-      } else {
-        // Only hide the tidgi mini window (keep tray and instance for re-open)
-        // Use menuBar.hideWindow() for proper tidgi mini window behavior
-        menuBar.hideWindow();
-        logger.debug('TidGi mini window closed (kept enabled)', { function: 'closeTidgiMiniWindow' });
+      } catch (error) {
+        logger.error('Failed to close tidgi mini window', { error });
+        throw error;
       }
-    } catch (error) {
-      logger.error('Failed to close tidgi mini window', { error });
-      throw error;
-    } finally {
-      this.tidgiMiniWindowOperationLock = false;
-    }
+    });
   }
 
   /**

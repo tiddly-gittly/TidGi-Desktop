@@ -1,6 +1,6 @@
 import { isTest } from '@/constants/environment';
 import { TIDGI_MINI_WINDOW_ICON_PATH } from '@/constants/paths';
-import { isMac } from '@/helpers/system';
+import { isLinux, isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -55,7 +55,7 @@ export async function handleAttachToTidgiMiniWindow(
 
   // Create tidgi mini window-specific window configuration
   // Override titleBar settings from windowConfig with tidgi mini window-specific preference
-  const shouldKeepWindowPaintableForE2E = isTest && process.platform === 'win32' && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW;
+  const shouldKeepWindowPaintableForE2E = isTest && (process.platform === 'win32' || isLinux) && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW;
   const tidgiMiniWindowConfig: BrowserWindowConstructorOptions = {
     ...windowConfig,
     show: shouldKeepWindowPaintableForE2E ? windowConfig.show : false,
