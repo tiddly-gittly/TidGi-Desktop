@@ -190,7 +190,7 @@
     "vite": "^7.2.4",
     "vite-bundle-analyzer": "^1.2.3",
     "vite-plugin-monaco-editor": "^1.1.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.0"
   },
   "pnpm": {
     "overrides": {
