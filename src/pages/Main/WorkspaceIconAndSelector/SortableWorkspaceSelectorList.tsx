@@ -141,10 +141,6 @@ interface SortableGroupHeaderProps {
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-function isGroupableWorkspace(workspace: IWorkspaceWithMetadata | undefined): boolean {
-  return workspace !== undefined && !workspace.pageType;
-}
-
 function getGroupInitial(name: string): string {
   if (!name) return 'G';
   const first = name.trim().charAt(0);
@@ -816,7 +812,6 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
       const overRect = over?.rect ?? null;
       const resolvedOverId = overId;
-      const resolvedOverWorkspace = overWorkspace;
 
       if (!overRect || !resolvedOverId) {
         return {
@@ -829,17 +824,27 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         };
       }
 
-      const isSameGroup = activeWorkspace?.groupId && resolvedOverWorkspace?.groupId && activeWorkspace.groupId === resolvedOverWorkspace.groupId;
-      const canGroup = !isSameGroup && isGroupableWorkspace(activeWorkspace) && isGroupableWorkspace(resolvedOverWorkspace);
+      // Fallback to sortable data if workspace is not in canonical list (e.g., stale state during rapid updates).
+      const activeGroupId = activeWorkspace?.groupId ?? (active.data.current as { groupId?: string | null } | undefined)?.groupId;
+      const overGroupId = overWorkspace?.groupId ?? (overData as { groupId?: string | null } | undefined)?.groupId;
+      const activePageType = activeWorkspace?.pageType ?? (active.data.current as { pageType?: string } | undefined)?.pageType;
+      const overPageType = overWorkspace?.pageType ?? (overData as { pageType?: string } | undefined)?.pageType;
+
+      const isSameGroup = activeGroupId && overGroupId && activeGroupId === overGroupId;
+      const canGroup = !isSameGroup && !activePageType && !overPageType;
       let intent: TDragIntent;
 
+      const liveRect = _getLiveSortableRect(resolvedOverId, overRect);
+      // Keep dnd-kit's coordinate frame for pointer-vs-top math, but refresh
+      // height from the DOM so stale cached heights do not skew zone boundaries.
+      const intentRect = { top: overRect.top, height: liveRect?.height ?? overRect.height };
       const reorderIntent = getReorderIntentFromPointer({
         pointerY: referenceY,
-        rect: overRect,
+        rect: intentRect,
       });
-      const relativeY = Math.min(Math.max(referenceY - overRect.top, 0), overRect.height);
-      const beforeBoundary = overRect.height / 3;
-      const afterBoundary = overRect.height - beforeBoundary;
+      const relativeY = Math.min(Math.max(referenceY - intentRect.top, 0), intentRect.height);
+      const beforeBoundary = intentRect.height / 3;
+      const afterBoundary = intentRect.height - beforeBoundary;
 
       if (relativeY > beforeBoundary && relativeY < afterBoundary && canGroup) {
         intent = 'group';

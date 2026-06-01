@@ -756,6 +756,43 @@ Then('I wait for tiddler {string} to be deleted by watch-fs', async function(thi
   );
 });
 
+/**
+ * Poll disk until a tiddler .tid file exists and contains expected text.
+ * Replaces watch-fs log-marker waits for browser-originated writes, which are
+ * self-writes through the syncer and correctly suppressed by watch-fs echo prevention.
+ */
+Then('tiddler {string} in workspace {string} should be saved to disk with text {string}', async function(
+  this: ApplicationWorld,
+  tiddlerTitle: string,
+  workspaceName: string,
+  expectedText: string,
+) {
+  const wikiPath = getWikiTestWikiPath(this);
+  const tiddlerPath = path.join(wikiPath, 'tiddlers', `${tiddlerTitle}.tid`);
+
+  try {
+    await backOff(
+      async () => {
+        if (!await fs.pathExists(tiddlerPath)) {
+          throw new Error(`Tiddler file not found yet: ${tiddlerPath}`);
+        }
+        const content = await fs.readFile(tiddlerPath, 'utf-8');
+        if (!content.includes(expectedText)) {
+          throw new Error(`Tiddler file does not contain expected text yet: ${tiddlerPath}`);
+        }
+      },
+      BACKOFF_OPTIONS,
+    );
+  } catch {
+    const exists = await fs.pathExists(tiddlerPath);
+    const content = exists ? await fs.readFile(tiddlerPath, 'utf-8') : '(file does not exist)';
+    throw new Error(
+      `Tiddler "${tiddlerTitle}" was not saved to disk with text "${expectedText}" in workspace "${workspaceName}". ` +
+        `Path: ${tiddlerPath}\nFile content:\n${content}`,
+    );
+  }
+});
+
 // File manipulation step definitions
 
 When('I create file {string} with content:', async function(this: ApplicationWorld, filePath: string, content: string) {

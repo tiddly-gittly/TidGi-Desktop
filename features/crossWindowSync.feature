@@ -22,7 +22,7 @@ Feature: Cross-Window Synchronization
     # Edit Index tiddler in window A via TW syncer (this triggers save to server → disk)
     When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'Index', text: 'CrossWindowSyncTestContent123'}))"
     # Wait for the syncer to save the tiddler to disk via server, so window B sees it
-    Then I wait for tiddler "Index" to be updated by watch-fs
+    Then tiddler "Index" in workspace "wiki" should be saved to disk with text "CrossWindowSyncTestContent123"
     
     # Open workspace in a new window (window B)
     When I open workspace "wiki" in a new window

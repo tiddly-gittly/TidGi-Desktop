@@ -48,11 +48,11 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const hibernated = isWiki ? workspace.hibernated : false;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
 
-  // Only pass groupId in data to keep the reference stable when workspaces$
-  // emits new objects with identical groupId values. Passing the whole
-  // workspace object caused dnd-kit useSortable to re-register on every
-  // emission, triggering an infinite render loop.
-  const sortableData = useMemo(() => ({ type: 'workspace' as const, groupId: workspace.groupId }), [workspace.groupId]);
+  // Only pass minimal fields in data to keep the reference stable when workspaces$
+  // emits new objects with identical values. Passing the whole workspace object
+  // caused dnd-kit useSortable to re-register on every emission, triggering an
+  // infinite render loop.
+  const sortableData = useMemo(() => ({ type: 'workspace' as const, groupId: workspace.groupId, pageType: workspace.pageType }), [workspace.groupId, workspace.pageType]);
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id,
     data: sortableData,
