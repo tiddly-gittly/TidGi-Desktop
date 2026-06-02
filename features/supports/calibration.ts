@@ -9,7 +9,7 @@ import path from 'path';
  * for each type. No hardcoded timeout values anywhere.
  */
 
-const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
+const CALIBRATION_FILE = path.resolve(process.cwd(), '.calibration.json');
 
 type CalibrationRecord = {
   /** Total wall-clock time of slowest calibration run → CUCUMBER_GLOBAL_TIMEOUT */

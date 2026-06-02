@@ -79,3 +79,4 @@ tsconfig.test.json.tsbuildinfo
 test-artifacts-ci.zip
 cucumber-report.json
 .codenomad/
+.calibration.json
