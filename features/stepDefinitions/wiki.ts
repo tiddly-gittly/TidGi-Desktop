@@ -1056,9 +1056,8 @@ async function createWikiWorkspace(world: ApplicationWorld, workspaceName: strin
       // Add all files and create initial commit
       await gitExec(['add', '.'], wikiPath);
       await gitExec(['commit', '-m', 'Initial commit'], wikiPath);
-    } catch (error) {
+    } catch {
       // Git initialization is not critical for the test, continue anyway
-      console.log('Git initialization skipped:', (error as Error).message);
     }
   }
 
@@ -1836,21 +1835,15 @@ When('I open workspace {string} in a new window', async function(this: Applicati
         const result = await mainWindow.webContents.executeJavaScript(`
           (async () => {
             try {
-              console.log('[test] Getting workspaces list...');
               const workspaces = await window.service.workspace.getWorkspacesAsList();
-              console.log('[test] Found workspaces:', workspaces.length);
               const workspace = workspaces.find(w => w.name === ${JSON.stringify(name)});
               if (!workspace) {
                 return { success: false, error: 'Workspace not found: ' + ${JSON.stringify(name)} };
               }
-              console.log('[test] Found workspace:', workspace.name, workspace.id);
               const lastUrl = workspace.lastUrl || workspace.homeUrl;
-              console.log('[test] Opening window with URL:', lastUrl);
               await window.service.workspaceView.openWorkspaceWindowWithView(workspace, { uri: lastUrl });
-              console.log('[test] Window opened successfully');
               return { success: true };
             } catch (err) {
-              console.error('[test] Error:', err);
               return { success: false, error: err instanceof Error ? err.message : String(err) };
             }
           })();

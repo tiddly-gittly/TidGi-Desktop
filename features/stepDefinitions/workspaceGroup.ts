@@ -585,26 +585,15 @@ async function getWorkspaceItemZoneCenter(
     throw new Error(result.error);
   }
 
-  const { targetX, targetY, rect, ratio, isTargetAtPoint, isRectInViewport, elementAtPointTag } = result as {
+  const { targetX, targetY, rect, isTargetAtPoint, isRectInViewport, elementAtPointTag } = result as {
     targetX: number;
     targetY: number;
     rect: { x: number; y: number; width: number; height: number };
     zone: string;
-    ratio: number;
     isTargetAtPoint: boolean;
     isRectInViewport: boolean;
     elementAtPointTag: string;
   };
-
-  // Diagnostic log for every zone resolution so flake investigations can
-  // see exactly what coordinates were computed and whether the target was
-  // present at that point before the mouse moved there.
-  console.log(
-    `[getWorkspaceItemZoneCenter] zone="${zone}" targetId="${targetWorkspaceId}" ` +
-      `coords=(${Math.round(targetX)},${Math.round(targetY)}) ` +
-      `rect={x:${Math.round(rect.x)},y:${Math.round(rect.y)},w:${Math.round(rect.width)},h:${Math.round(rect.height)}} ` +
-      `ratio=${ratio.toFixed(3)} isTargetAtPoint=${String(isTargetAtPoint)} elementAtPoint=${elementAtPointTag}`,
-  );
 
   if (options.verifyElementAtPoint !== false && !isTargetAtPoint && isRectInViewport) {
     throw new Error(
@@ -617,12 +606,7 @@ async function getWorkspaceItemZoneCenter(
   }
 
   if (!isTargetAtPoint && !isRectInViewport) {
-    console.warn(
-      `[getWorkspaceItemZoneCenter] Target ${itemSelector} is outside the viewport (rect y=${Math.round(rect.y)}, window height=${
-        typeof window !== 'undefined' ? window.innerHeight : 'unknown'
-      }). ` +
-        `Proceeding with computed coordinates (${Math.round(targetX)}, ${Math.round(targetY)}) — drag movement may scroll it into view.`,
-    );
+    // Target is outside the viewport — drag movement may scroll it into view.
   }
 
   return { targetX, targetY };
