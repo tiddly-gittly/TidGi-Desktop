@@ -4,7 +4,45 @@ on:
   workflow_call:
 
 jobs:
-  test:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          # Node 24.16.0 breaks extract-zip/yauzl, causing Electron packaging to exit 0 with no output.
+          node-version: 24.15.0
+          cache: 'pnpm'
+
+      - name: Install build dependencies (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Rebuild native modules for Electron
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+
+      - name: Run unit tests
+        run: pnpm run test:unit
+        env:
+          CI: true
+        timeout-minutes: 5
+
+  e2e:
+    needs: unit
     strategy:
       fail-fast: false
       matrix:
@@ -82,13 +120,6 @@ jobs:
           # Install Chinese fonts and locale support for i18n testing
           sudo apt-get install -y fonts-noto-cjk fonts-wqy-zenhei language-pack-zh-hans
           sudo locale-gen zh_CN.UTF-8
-
-      - name: Run unit tests
-        if: matrix.shard == 1
-        run: pnpm run test:unit
-        env:
-          CI: true
-        timeout-minutes: 5
 
       - name: Prepare E2E
         run: pnpm run test:prepare-e2e

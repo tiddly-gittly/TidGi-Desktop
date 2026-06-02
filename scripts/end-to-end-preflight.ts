@@ -79,40 +79,24 @@ function runSmokeCalibration(): void {
     console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
   }
 
-  // Fail fast in CI: partial calibration is unsafe for downstream shards.
+  // Partial calibration is unsafe for downstream shards and local debugging alike.
   if (maxTotalMs === 0) {
-    if (process.env.CI === 'true') {
-      throw new Error(
-        '[Cal] FATAL: All calibration runs failed in CI. ' +
-          'Downstream shards cannot use calibration — fix the @calibrate scenarios and re-run.',
-      );
-    }
-    // Local-only fallback: conservative defaults let local debugging proceed
-    // when calibration is unavailable, but they must never reach CI.
-    console.warn('[Cal] WARNING: All calibration runs failed — using conservative local fallback timeouts (NOT safe for CI)');
-    console.warn('[Cal] Fallback: T=120s S=120s L=60s W=30s E=10s');
-    maxTotalMs = 120_000;
-    maxStepMs = 120_000;
-    maxLaunchStepMs = 60_000;
-    maxWaitStepMs = 30_000;
-    maxElementStepMs = 10_000;
+    throw new Error(
+      '[Cal] FATAL: All calibration runs failed. ' +
+        'Downstream scenarios cannot use calibration — fix the @calibrate scenarios and re-run.',
+    );
   }
 
-  // 3 s buffer absorbs measurement noise and per-machine clock variance.
-  // Derived empirically from observed across-run jitter, not a timeout multiplier.
-  const CALIBRATION_BUFFER_MS = 3000;
   writeCalibrationResult(
-    maxTotalMs + CALIBRATION_BUFFER_MS,
-    maxStepMs + CALIBRATION_BUFFER_MS,
-    maxLaunchStepMs + CALIBRATION_BUFFER_MS,
-    maxWaitStepMs + CALIBRATION_BUFFER_MS,
-    maxElementStepMs + CALIBRATION_BUFFER_MS,
+    maxTotalMs,
+    maxStepMs,
+    maxLaunchStepMs,
+    maxWaitStepMs,
+    maxElementStepMs,
   );
 
   console.log(
-    `[Cal] stored: S=${maxStepMs + CALIBRATION_BUFFER_MS}ms L=${maxLaunchStepMs + CALIBRATION_BUFFER_MS}ms W=${maxWaitStepMs + CALIBRATION_BUFFER_MS}ms E=${
-      maxElementStepMs + CALIBRATION_BUFFER_MS
-    }ms`,
+    `[Cal] stored: S=${maxStepMs}ms L=${maxLaunchStepMs}ms W=${maxWaitStepMs}ms E=${maxElementStepMs}ms`,
   );
 }
 
