@@ -8,6 +8,14 @@ interface StepTiming {
   durationMs: number;
 }
 
+interface CalibrationSamples {
+  totalMs: number[];
+  stepMs: number[];
+  launchMs: number[];
+  waitMs: number[];
+  elementMs: number[];
+}
+
 function runSmokeCalibration(): void {
   // Two complete calibration runs to capture CI machine variance without
   // excessive build time. A single run can hide a slow step on a cold cache.
@@ -15,11 +23,13 @@ function runSmokeCalibration(): void {
   const calibrationArtifactsDirectory = path.resolve(process.cwd(), 'test-artifacts');
   const cucumberBin = path.resolve(process.cwd(), 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
 
-  let maxTotalMs = 0;
-  let maxStepMs = 0;
-  let maxLaunchStepMs = 0;
-  let maxWaitStepMs = 0;
-  let maxElementStepMs = 0;
+  const samples: CalibrationSamples = {
+    totalMs: [],
+    stepMs: [],
+    launchMs: [],
+    waitMs: [],
+    elementMs: [],
+  };
 
   fs.mkdirSync(calibrationArtifactsDirectory, { recursive: true });
 
@@ -56,48 +66,94 @@ function runSmokeCalibration(): void {
     }
 
     const totalMs = Date.now() - startedAt;
-
-    if (totalMs > maxTotalMs) maxTotalMs = totalMs;
+    let runMaxStepMs = 0;
+    let runMaxLaunchStepMs = 0;
+    let runMaxWaitStepMs = 0;
+    let runMaxElementStepMs = 0;
 
     for (const step of steps) {
-      if (step.durationMs > maxStepMs) maxStepMs = step.durationMs;
-      if (isLaunchStep(step.name) && step.durationMs > maxLaunchStepMs) {
-        maxLaunchStepMs = step.durationMs;
+      if (step.durationMs > runMaxStepMs) runMaxStepMs = step.durationMs;
+      if (isLaunchStep(step.name) && step.durationMs > runMaxLaunchStepMs) {
+        runMaxLaunchStepMs = step.durationMs;
       }
-      if (isWaitStep(step.name) && step.durationMs > maxWaitStepMs) {
-        maxWaitStepMs = step.durationMs;
+      if (isWaitStep(step.name) && step.durationMs > runMaxWaitStepMs) {
+        runMaxWaitStepMs = step.durationMs;
       }
-      if (isElementStep(step.name) && step.durationMs > maxElementStepMs) {
-        maxElementStepMs = step.durationMs;
+      if (isElementStep(step.name) && step.durationMs > runMaxElementStepMs) {
+        runMaxElementStepMs = step.durationMs;
       }
     }
 
     // Step timeout = worst composite: a single step may involve launch + wait + click.
-    const compositeMs = maxLaunchStepMs + maxWaitStepMs + maxElementStepMs;
-    if (compositeMs > maxStepMs) maxStepMs = compositeMs;
+    const runCompositeMs = runMaxLaunchStepMs + runMaxWaitStepMs + runMaxElementStepMs;
+    if (runCompositeMs > runMaxStepMs) runMaxStepMs = runCompositeMs;
 
-    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${maxStepMs} L=${maxLaunchStepMs} W=${maxWaitStepMs} E=${maxElementStepMs}`);
+    samples.totalMs.push(totalMs);
+    samples.stepMs.push(runMaxStepMs);
+    samples.launchMs.push(runMaxLaunchStepMs);
+    samples.waitMs.push(runMaxWaitStepMs);
+    samples.elementMs.push(runMaxElementStepMs);
+
+    console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${runMaxStepMs} L=${runMaxLaunchStepMs} W=${runMaxWaitStepMs} E=${runMaxElementStepMs}`);
   }
 
   // Partial calibration is unsafe for downstream shards and local debugging alike.
-  if (maxTotalMs === 0) {
+  if (samples.totalMs.length === 0) {
     throw new Error(
       '[Cal] FATAL: All calibration runs failed. ' +
         'Downstream scenarios cannot use calibration — fix the @calibrate scenarios and re-run.',
     );
   }
 
-  writeCalibrationResult(
-    maxTotalMs,
-    maxStepMs,
-    maxLaunchStepMs,
-    maxWaitStepMs,
-    maxElementStepMs,
-  );
+  const observed = {
+    totalMs: getObservedMax(samples.totalMs) ?? 0,
+    stepMs: getObservedMax(samples.stepMs) ?? 0,
+    launchMs: getObservedMax(samples.launchMs) ?? 0,
+    waitMs: getObservedMax(samples.waitMs) ?? 0,
+    elementMs: getObservedMax(samples.elementMs) ?? 0,
+  };
+
+  const stepMs = deriveMeasuredTimeoutBudget(samples.stepMs) ?? observed.stepMs;
+  const totalMs = deriveMeasuredTimeoutBudget(samples.totalMs) ?? observed.totalMs;
+  const launchMs = deriveMeasuredTimeoutBudget(samples.launchMs) ?? stepMs;
+  const waitMs = deriveMeasuredTimeoutBudget(samples.waitMs) ?? stepMs;
+  const elementMs = deriveMeasuredTimeoutBudget(samples.elementMs) ?? stepMs;
+
+  writeCalibrationResult({
+    totalMs,
+    stepMs,
+    launchMs,
+    waitMs,
+    elementMs,
+    observed,
+    sampleCount: samples.totalMs.length,
+  });
 
   console.log(
-    `[Cal] stored: S=${maxStepMs}ms L=${maxLaunchStepMs}ms W=${maxWaitStepMs}ms E=${maxElementStepMs}ms`,
+    `[Cal] stored: S=${stepMs}ms L=${launchMs}ms W=${waitMs}ms E=${elementMs}ms ` +
+      `(observed S=${observed.stepMs}ms L=${observed.launchMs}ms W=${observed.waitMs}ms E=${observed.elementMs}ms, samples=${samples.totalMs.length})`,
   );
+}
+
+function getObservedMax(samples: number[]): number | null {
+  const validSamples = samples.filter(sample => Number.isFinite(sample) && sample > 0);
+  if (validSamples.length === 0) return null;
+  return Math.max(...validSamples);
+}
+
+function deriveMeasuredTimeoutBudget(samples: number[]): number | null {
+  const validSamples = samples.filter(sample => Number.isFinite(sample) && sample > 0);
+  if (validSamples.length === 0) return null;
+
+  const observedMax = Math.max(...validSamples);
+  const observedMin = Math.min(...validSamples);
+  const average = validSamples.reduce((total, sample) => total + sample, 0) / validSamples.length;
+  const maxDeviation = validSamples.reduce((currentMax, sample) => Math.max(currentMax, Math.abs(sample - average)), 0);
+  const sampleSpread = observedMax - observedMin;
+  const sampleScarcityMargin = observedMax / validSamples.length;
+  const measuredMargin = Math.max(sampleSpread, maxDeviation, sampleScarcityMargin);
+
+  return Math.ceil(observedMax + measuredMargin);
 }
 
 function extractStepTimings(jsonFilePath: string): StepTiming[] {

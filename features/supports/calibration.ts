@@ -12,18 +12,28 @@ import path from 'path';
 const CALIBRATION_FILE = path.resolve(process.cwd(), '.calibration.json');
 
 type CalibrationRecord = {
-  /** Total wall-clock time of slowest calibration run → CUCUMBER_GLOBAL_TIMEOUT */
+  /** Total wall-clock budget from calibration runs, kept for diagnostics. */
   totalMs: number;
-  /** Max of ALL individual steps across all runs — fallback when per-type measurements are missing. */
+  /** Step timeout budget derived from measured calibration runs. */
   stepMs: number;
-  /** Max of launch/browser-view steps → HEAVY_PLAYWRIGHT_TIMEOUT */
+  /** Launch/browser-view timeout budget derived from measured calibration runs. */
   launchMs: number;
-  /** Max of wait/log/SSE/watch-fs steps — measured, reserved for future per-category timeout. */
+  /** Wait/log/SSE/watch-fs budget, measured for future per-category timeout. */
   waitMs: number;
-  /** Max of click/type/check steps → PLAYWRIGHT_TIMEOUT */
+  /** Click/type/check timeout budget derived from measured calibration runs. */
   elementMs: number;
+  observed?: {
+    totalMs: number;
+    stepMs: number;
+    launchMs: number;
+    waitMs: number;
+    elementMs: number;
+  };
+  sampleCount?: number;
   recordedAt: number;
 };
+
+type CalibrationWriteInput = Omit<CalibrationRecord, 'recordedAt'>;
 
 let cachedRecord: CalibrationRecord | null = null;
 
@@ -38,6 +48,8 @@ function readCalibrationRecord(): CalibrationRecord | null {
       launchMs: parsed.launchMs ?? parsed.stepMs,
       waitMs: parsed.waitMs ?? parsed.stepMs,
       elementMs: parsed.elementMs ?? parsed.stepMs,
+      observed: parsed.observed,
+      sampleCount: parsed.sampleCount,
       recordedAt: typeof parsed.recordedAt === 'number' ? parsed.recordedAt : Date.now(),
     };
   } catch {
@@ -45,23 +57,13 @@ function readCalibrationRecord(): CalibrationRecord | null {
   }
 }
 
-export function writeCalibrationResult(
-  totalMs: number,
-  stepMs: number,
-  launchMs: number,
-  waitMs: number,
-  elementMs: number,
-): void {
+export function writeCalibrationResult(result: CalibrationWriteInput): void {
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
   fs.writeFileSync(
     CALIBRATION_FILE,
     JSON.stringify(
       {
-        totalMs,
-        stepMs,
-        launchMs,
-        waitMs,
-        elementMs,
+        ...result,
         recordedAt: Date.now(),
       } satisfies CalibrationRecord,
       null,
