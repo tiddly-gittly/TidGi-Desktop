@@ -102,15 +102,12 @@ After(async function(this: ApplicationWorld, { pickle }) {
       // Give Windows a moment to fully terminate processes and release file locks
       // before the next scenario's Before hook tries to remove scenarioRoot.
       await new Promise((resolve) => setTimeout(resolve, 500));
-      // Best-effort Playwright handle cleanup after the process is dead.
-      try {
-        await Promise.race([
-          this.app.context().close({ reason: 'Force cleanup after test' }),
-          new Promise((resolve) => setTimeout(resolve, 500)),
-        ]);
-      } catch {
-        // ignore
-      }
+      // After taskkill, the Electron process is dead. Do NOT call
+      // this.app.context().close() — Playwright's context() method communicates
+      // with the browser via CDP pipe synchronously and hangs indefinitely when
+      // the process is already killed. Promise.race timeout cannot rescue this
+      // because .context() is evaluated before entering the race.
+      // The process tree is already terminated; there is nothing left to close.
     } else {
       // Non-Windows: graceful close, then force close, then SIGKILL fallback.
       try {
