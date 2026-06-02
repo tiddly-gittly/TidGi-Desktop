@@ -150,4 +150,28 @@ describe('DeepLinkService – preferences URL routing', () => {
       );
     }
   });
+
+  it('preserves valid TiddlyWiki characters in tiddler names', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://test-wiki-1/#:My%5BTitle%5D');
+
+    expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
+    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('My[Title]');
+  });
+
+  it('preserves innocent < characters while stripping actual HTML tags', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://test-wiki-1/#:5%20%3C%2010');
+
+    expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
+    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('5 < 10');
+  });
+
+  it('strips HTML tags from tiddler names', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://test-wiki-1/#:%3Cdiv%3Etest%3C/div%3E');
+
+    expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
+    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('test');
+  });
 });

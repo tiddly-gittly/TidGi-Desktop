@@ -18,7 +18,7 @@ function getAnalyticsEnvironmentOverrides(): { analyticsEnabled: boolean; analyt
   // site_id is safe to embed publicly — Rybbit's /api/track is a public endpoint
   // that only needs site_id (same as the data-site-id in <script> tags on websites).
   return {
-    analyticsEnabled: true,
+    analyticsEnabled: false,
     analyticsHost: 'https://analytics.tidgi.fun',
     analyticsHostname: 'desktop.tidgi.fun',
     analyticsSiteId: '189dd97a8d37',

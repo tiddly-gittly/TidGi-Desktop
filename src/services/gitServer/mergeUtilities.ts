@@ -202,12 +202,12 @@ export async function resolveAllConflicts(repoPath: string): Promise<void> {
       // Detect modify/modify (has common base = stage 1 exists in git ls-files -u).
       // For add/add (no stage 1) we keep the existing mobile-wins behaviour.
       const stageOutput = await runGitCollectStdout(['ls-files', '-u', '--', file], repoPath);
-      const hasCommonBase = stageOutput.trim().split('\n').filter(Boolean).some((stageLine) => {
+      const hasCommonBase = stageOutput.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n').filter(Boolean).some((stageLine) => {
         const tabIndex = stageLine.lastIndexOf('\t');
         if (tabIndex === -1) return false;
         const beforeTab = stageLine.substring(0, tabIndex);
         const lastSpace = beforeTab.lastIndexOf(' ');
-        return beforeTab.substring(lastSpace + 1) === '1';
+        return beforeTab.substring(lastSpace + 1).trim() === '1';
       });
       resolved = resolveTidConflictMarkers(content, { mergeHeaderBodyConflicts: hasCommonBase });
     } else {

@@ -36,3 +36,46 @@ export class SSEClientTransport {
     this.url = _url;
   }
 }
+
+export class McpServer {
+  constructor(readonly info: unknown, readonly options?: unknown) {}
+  registerTool(_name: string, _schema: unknown, _handler: unknown) {}
+  async connect(_transport: unknown) {}
+  async close() {}
+  get server() {
+    return this;
+  }
+  async sendLoggingMessage(_message: unknown, _sessionId?: unknown) {}
+}
+
+export class StreamableHTTPServerTransport {
+  constructor(readonly options?: unknown) {}
+  async handleRequest(_request: unknown, _response: unknown, _parsedBody?: unknown) {
+    const response = _response as {
+      writeHead: (status: number, headers: Record<string, string>) => void;
+      end: (data: string) => void;
+    };
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ jsonrpc: '2.0', id: null, result: {} }));
+  }
+  async close() {}
+  get sessionId() {
+    return undefined;
+  }
+  set onclose(_handler: unknown) {}
+  get onclose() {
+    return undefined;
+  }
+  set onerror(_handler: unknown) {}
+  get onerror() {
+    return undefined;
+  }
+  set onmessage(_handler: unknown) {}
+  get onmessage() {
+    return undefined;
+  }
+  async start() {}
+  async send(_message: unknown, _options?: unknown) {}
+  closeSSEStream(_requestId?: unknown) {}
+  closeStandaloneSSEStream() {}
+}

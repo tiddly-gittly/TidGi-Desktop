@@ -20,6 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Avatar, Collapse, styled, Tooltip } from '@mui/material';
+import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -759,7 +760,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   }, [interleavedSidebarItems, persistInterleavedSidebarOrder]);
 
   const createGroupWithWorkspaces = useCallback(async (workspaceIds: string[], order: number) => {
-    const newGroupId = `group-${Date.now()}`;
+    const newGroupId = nanoid();
     const newGroup: IWorkspaceGroup = {
       id: newGroupId,
       name: t('WorkspaceGroup.DefaultGroupName', { number: canonicalGroups.length + 1 }),

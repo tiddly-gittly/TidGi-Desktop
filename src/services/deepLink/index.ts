@@ -38,11 +38,8 @@ export class DeepLinkService implements IDeepLinkService {
     // Replace newlines and tabs with spaces to prevent breaking out of string context
     sanitized = sanitized.replace(/[\r\n\t]/g, ' ');
 
-    // Remove HTML tags to prevent XSS
-    sanitized = sanitized.replace(/<\/?[^>]+(>|$)/g, '');
-
-    // Remove TiddlyWiki special characters that could cause parsing issues
-    sanitized = sanitized.replace(/[|[\]{}]/g, '');
+    // Remove HTML tags to prevent XSS while preserving innocent '<' / '>' characters
+    sanitized = sanitized.replace(/<\/?[a-zA-Z][^>]*>/g, '');
 
     // Trim whitespace
     sanitized = sanitized.trim();

@@ -91,14 +91,17 @@ vi.mock('electron', () => {
     // Provide version and name used by ContextService
     getVersion: () => '0.0.0',
     name: 'TidGi',
+    on: vi.fn(),
   };
 
   return {
     default: {
       app: mockApp,
+      net: { fetch: vi.fn() },
     },
     // Also provide named export `app` to satisfy `import { app } from 'electron'`
     app: mockApp,
+    net: { fetch: vi.fn() },
   };
 });
 

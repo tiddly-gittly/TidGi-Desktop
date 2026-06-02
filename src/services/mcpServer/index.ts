@@ -8,10 +8,15 @@ let server: http.Server | undefined;
 
 export async function startMcpServer(port: number = DEFAULT_MCP_SERVER_PORT, requireToken = false, token = ''): Promise<void> {
   if (server !== undefined) return;
+  const normalizedToken = token.trim();
+  if (requireToken && !normalizedToken) {
+    logger.warn('MCP server not started: mcpServerRequireToken is true but mcpServerToken is empty');
+    return;
+  }
   // Dynamic import to avoid loading @modelcontextprotocol/sdk at module init time
   // (static imports in server.ts → sdkAdapter.ts chain would hang Electron startup on CI)
   const { createMcpHttpServer } = await import('./server');
-  server = createMcpHttpServer(requireToken && token ? { requireToken: true, token } : undefined);
+  server = createMcpHttpServer(requireToken ? { requireToken: true, token: normalizedToken } : undefined);
   server.listen(port, '127.0.0.1', () => {
     logger.info(`TidGi MCP server listening on http://127.0.0.1:${port}/mcp`);
   });

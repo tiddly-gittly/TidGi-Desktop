@@ -302,3 +302,120 @@ describe('Preferences - All Sections Rendering', () => {
     });
   });
 });
+
+// ─── Search mode ──────────────────────────────────────────────────────
+
+describe('Preferences - Search Mode', () => {
+  let preferenceSubject: BehaviorSubject<IPreferences | undefined>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    preferenceSubject = new BehaviorSubject<IPreferences | undefined>(
+      createMockPreference(),
+    );
+
+    Object.defineProperty(window.observables.preference, 'preference$', {
+      value: preferenceSubject.asObservable(),
+      writable: true,
+    });
+
+    Object.defineProperty(window.observables, 'systemPreference', {
+      value: {
+        systemPreference$: new BehaviorSubject({}).asObservable(),
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(window.service.context, 'get', {
+      value: vi.fn().mockImplementation(async (key: string) => {
+        const contextValues: Record<string, string> = {
+          platform: 'win32',
+        };
+        return contextValues[key] ?? '';
+      }),
+      writable: true,
+    });
+
+    Object.defineProperty(window.service.preference, 'set', {
+      value: vi.fn(async (key: string, value: unknown) => {
+        const current = preferenceSubject.value;
+        if (current) {
+          preferenceSubject.next({ ...current, [key]: value });
+        }
+      }),
+      writable: true,
+    });
+
+    // Minimal service mocks for search mode rendering
+    Object.defineProperty(window.service.workspace, 'getWorkspacesAsList', {
+      value: vi.fn().mockResolvedValue([]),
+      writable: true,
+    });
+    Object.defineProperty(window.service.native, 'openPath', {
+      value: vi.fn().mockResolvedValue(undefined),
+      writable: true,
+    });
+    Object.defineProperty(window.service.native, 'openURI', {
+      value: vi.fn().mockResolvedValue(undefined),
+      writable: true,
+    });
+    Object.defineProperty(window.service.native, 'registerKeyboardShortcut', {
+      value: vi.fn().mockResolvedValue(undefined),
+      writable: true,
+    });
+    Object.defineProperty(window.service.native, 'unregisterKeyboardShortcut', {
+      value: vi.fn().mockResolvedValue(undefined),
+      writable: true,
+    });
+    Object.defineProperty(window.service.auth, 'get', {
+      value: vi.fn().mockResolvedValue('TestUser'),
+      writable: true,
+    });
+  });
+
+  const renderSearch = async (query: string) => {
+    const sectionRefs = new Map<string, React.RefObject<HTMLSpanElement | null>>();
+    return render(
+      <TestWrapper>
+        <AllSectionsRenderer
+          onNeedsRestart={() => {}}
+          sectionRefs={sectionRefs}
+          query={query}
+        />
+      </TestWrapper>,
+    );
+  };
+
+  it('should render fallback info card for unregistered custom items in search mode', async () => {
+    await renderSearch('aiagent');
+
+    await waitFor(() => {
+      const highlightMarks = screen.getAllByText((content, element) => element?.tagName === 'MARK' && /AIAgent/i.test(content));
+      expect(highlightMarks.length).toBeGreaterThan(0);
+    });
+
+    expect(screen.getByText('Preference.OpenDatabaseFolder')).toBeInTheDocument();
+    expect(screen.getByText('Preference.DeleteAgentDatabase')).toBeInTheDocument();
+  });
+
+  it('should render search results for registered custom items without crashing', async () => {
+    await renderSearch('openatlogin');
+
+    await waitFor(() => {
+      expect(screen.getByText('Preference.System')).toBeInTheDocument();
+    });
+
+    const openAtLoginText = screen.getAllByText(/Preference\.OpenAtLogin/i);
+    expect(openAtLoginText.length).toBeGreaterThan(0);
+  });
+
+  it('should show no-results message when query matches nothing', async () => {
+    await renderSearch('xyznonexistent');
+
+    await waitFor(() => {
+      expect(screen.getByText(/No settings found/i)).toBeInTheDocument();
+    });
+  });
+});

@@ -13,7 +13,6 @@ import { getSideEffect } from '@services/preferences/definitions/sideEffects';
 import type {
   IActionItem,
   IBooleanPreferenceItem,
-  ICustomItem,
   IEnumPreferenceItem,
   IFragmentListItem,
   INumberPreferenceItem,
@@ -45,7 +44,7 @@ function matchesPlatform(condition: PlatformCondition | undefined, platform: str
 /** Return the English translation for a key — used for search matching independent of UI language. */
 function txEn(key: string, ns?: string): string {
   try {
-    return ns ? (i18next.t(key, { lng: 'en', ns })) : (i18next.t(key, { lng: 'en' }));
+    return (ns ? i18next.t(key, { lng: 'en', ns }) : i18next.t(key, { lng: 'en' })) ?? '';
   } catch {
     return '';
   }
@@ -308,15 +307,6 @@ function ActionItem({ item, query = '' }: { item: IActionItem; query?: string })
   );
 }
 
-function CustomItemWrapper({ item, onNeedsRestart }: { item: ICustomItem; onNeedsRestart: () => void }): React.JSX.Element | null {
-  const Component = getCustomComponent(item.componentId);
-  if (!Component) {
-    console.warn(`Custom component not registered: ${item.componentId}`);
-    return null;
-  }
-  return <Component onNeedsRestart={onNeedsRestart} />;
-}
-
 function FragmentListItem({ item, onNeedsRestart }: { item: IFragmentListItem; onNeedsRestart: () => void }): React.JSX.Element | null {
   const ItemComponent = getCustomComponent(item.itemComponentId);
   if (!ItemComponent) {
@@ -341,6 +331,8 @@ function ItemRenderer({
   preference: IPreferences;
   query?: string;
 }): React.JSX.Element | null {
+  const { t } = useTranslation(['translation', 'agent']);
+
   if (item.type === 'divider') return query ? null : <Divider />;
   if ('platform' in item && !matchesPlatform(item.platform, platform)) return null;
 
@@ -359,14 +351,31 @@ function ItemRenderer({
       return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'action':
       return <ActionItem item={item} query={query} />;
-    case 'custom':
+    case 'custom': {
+      const Component = getCustomComponent(item.componentId);
       if (query) {
-        const Component = getCustomComponent(item.componentId);
         if (Component) {
           return <Component onNeedsRestart={onNeedsRestart} />;
         }
+        // Fallback when custom component is unavailable in search mode:
+        // preserve the item in results with highlighted title/description.
+        const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+        const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
+        return (
+          <ListItem>
+            <ListItemText
+              primary={<HighlightText text={primaryText} query={query} />}
+              secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+            />
+          </ListItem>
+        );
       }
-      return <CustomItemWrapper item={item} onNeedsRestart={onNeedsRestart} />;
+      if (!Component) {
+        console.warn(`Custom component not registered: ${item.componentId}`);
+        return null;
+      }
+      return <Component onNeedsRestart={onNeedsRestart} />;
+    }
     case 'fragment-list':
       return <FragmentListItem item={item} onNeedsRestart={onNeedsRestart} />;
     default:

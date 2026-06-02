@@ -55,8 +55,6 @@ function extractToken(request: IncomingMessage): string | undefined {
 }
 
 export function createMcpHttpServer(authConfig?: McpAuthConfig): http.Server {
-  const mcpServer = createMcpServerWithTools();
-
   return http.createServer(async (httpRequest: IncomingMessage, response: ServerResponse) => {
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
@@ -76,7 +74,7 @@ export function createMcpHttpServer(authConfig?: McpAuthConfig): http.Server {
     // /mcp POST — handle both /mcp and /mcp?token=…
     const urlPath = httpRequest.url?.split('?')[0];
     if (urlPath === '/mcp' && httpRequest.method === 'POST') {
-      if (authConfig?.requireToken && authConfig.token) {
+      if (authConfig?.requireToken) {
         const providedToken = extractToken(httpRequest);
         if (!providedToken || !isValidToken(authConfig.token)(providedToken)) {
           response.writeHead(401, { 'Content-Type': 'application/json' });
@@ -85,25 +83,26 @@ export function createMcpHttpServer(authConfig?: McpAuthConfig): http.Server {
         }
       }
 
+      const mcpServer = createMcpServerWithTools();
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
         enableJsonResponse: true,
       });
+      response.on('close', () => {
+        void transport.close();
+        void mcpServer.close();
+      });
       try {
         await mcpServer.connect(transport);
-        await transport.handleRequest(httpRequest, response, () => {
-          response.writeHead(200, { 'Content-Type': 'application/json' });
-          response.end(JSON.stringify({ success: true }));
-        });
+        await transport.handleRequest(httpRequest, response);
       } catch (error) {
         logger.error('MCP transport error', { error });
-        response.writeHead(500, { 'Content-Type': 'application/json' });
-        response.end(JSON.stringify({ error: 'Internal Server Error' }));
+        if (!response.headersSent) {
+          response.writeHead(500, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ error: 'Internal Server Error' }));
+        }
       }
 
-      httpRequest.on('close', () => {
-        void transport.close();
-      });
       return;
     }
 

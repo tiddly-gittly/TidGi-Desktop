@@ -59,6 +59,11 @@ export class AnalyticsService implements IAnalyticsService {
       return false;
     }
 
+    // Block tracking until explicit disclosure, except when tests/dev tooling route analytics to an override host.
+    if (!process.env.TIDGI_ANALYTICS_HOST && await this.shouldShowDisclosure()) {
+      return false;
+    }
+
     const [analyticsHost, analyticsHostname, analyticsSiteId] = await Promise.all([
       this.preferenceService.get('analyticsHost'),
       this.preferenceService.get('analyticsHostname'),
