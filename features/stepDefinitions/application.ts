@@ -372,14 +372,10 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
       ),
     ]);
   } catch {
-    try {
-      await Promise.race([
-        world.app.context().close({ reason: 'Relaunch application in scenario' }),
-        new Promise(resolve => setTimeout(resolve, 500)),
-      ]);
-    } catch {
-      // ignore
-    }
+    // context().close() removed — same reason as cleanup.ts After hook:
+    // Playwright context() communicates via CDP pipe synchronously and hangs
+    // indefinitely when the Electron process is already dead/taskkill'd.
+    // Promise.race timeout cannot rescue this.
   } finally {
     // Hard-kill fallback: if the process is still alive, force terminate it via PID
     // to prevent zombie processes from accumulating across scenarios.
