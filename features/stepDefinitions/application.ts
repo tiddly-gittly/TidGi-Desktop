@@ -350,6 +350,28 @@ Given('I mock system palette as {string}', function(this: ApplicationWorld, pale
   this.launchEnvOverrides.TIDGI_E2E_MOCK_SYSTEM_PALETTE = palette;
 });
 
+async function isTidGiRunning(world: ApplicationWorld): Promise<boolean> {
+  const pid = world.appPid;
+  if (pid === undefined) return false;
+  // On Windows, verify via tasklist; on other platforms use process.kill(0).
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = await import('child_process');
+      execSync(`tasklist /FI "PID eq ${pid}" /NH`, { stdio: 'ignore' });
+      return true;
+    } catch {
+      // tasklist returns non-zero if process not found
+      return false;
+    }
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   // If launch is still in progress, wait it settle before closing.
   if (world.appLaunchPromise) {
@@ -376,10 +398,13 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
     // Playwright context() communicates via CDP pipe synchronously and hangs
     // indefinitely when the Electron process is already dead/taskkill'd.
     // Promise.race timeout cannot rescue this.
-  } finally {
-    // Hard-kill fallback: if the process is still alive, force terminate it via PID
-    // to prevent zombie processes from accumulating across scenarios.
-    if (world.appPid !== undefined) {
+    // Instead, fall through to hard-kill below.
+  }
+
+  // Always clean up world state — wrap in its own try/catch so a failure in
+  // isTidGiRunning or taskkill never prevents reference clearance.
+  try {
+    if (world.appPid !== undefined && await isTidGiRunning(world)) {
       try {
         const { execSync } = await import('child_process');
         if (process.platform === 'win32') {
@@ -390,12 +415,27 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
       } catch {
         // Process already exited or kill failed — ignore
       }
-      world.appPid = undefined;
     }
+  } catch {
+    // isTidGiRunning may throw if the Playwright handle is in an invalid
+    // state; swallow it and proceed to clear references regardless.
+  } finally {
+    world.appPid = undefined;
     world.appLaunchPromise = undefined;
     world.app = undefined;
     world.mainWindow = undefined;
     world.currentWindow = undefined;
+  }
+}
+
+/**
+ * Close TidGi if any instance is currently running.  Safe to call when no
+ * instance is active — does nothing in that case.  Used as a Background
+ * guard so scenarios always start with a clean process state.
+ */
+async function closeTidGiIfRunning(world: ApplicationWorld): Promise<void> {
+  if (await isTidGiRunning(world)) {
+    await closeTidGiApplication(world);
   }
 }
 
