@@ -428,17 +428,6 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   }
 }
 
-/**
- * Close TidGi if any instance is currently running.  Safe to call when no
- * instance is active — does nothing in that case.  Used as a Background
- * guard so scenarios always start with a clean process state.
- */
-async function closeTidGiIfRunning(world: ApplicationWorld): Promise<void> {
-  if (await isTidGiRunning(world)) {
-    await closeTidGiApplication(world);
-  }
-}
-
 AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pickleStep, result }) {
   if (!this.app) return;
 
