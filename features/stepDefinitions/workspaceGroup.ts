@@ -5,6 +5,7 @@ import type { IWorkspaceGroup } from '../../src/services/workspaces/interface';
 // Pull in renderer window type declarations so Playwright page.evaluate callbacks
 // can access window.service with proper typing.
 import type {} from '../../src/preload/index';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 const BACKOFF_OPTIONS = {
@@ -221,7 +222,7 @@ async function dragLocatorToCoordinates(
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 10 });
 
   // Wait for dnd-kit to acknowledge the drag — the DragOverlay portal appears in the DOM
-  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: 3000 });
+  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
   // Compute target center late, after drag activation, so coordinates reflect
   // the current layout.
@@ -241,7 +242,7 @@ async function dragLocatorToCoordinates(
   // intent is still transitioning between zones.
   if (targetWorkspaceId !== undefined) {
     try {
-      await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).waitFor({ state: 'attached', timeout: 3000 });
+      await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).waitFor({ state: 'attached', timeout: CUCUMBER_GLOBAL_TIMEOUT });
     } catch (originalError) {
       // Collect diagnostic information before re-throwing, so failures
       // include the actual DOM state at the time of the timeout.
@@ -325,7 +326,7 @@ async function dragLocatorAndHoldAtCoordinates(
   await world.currentWindow.mouse.down();
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 10 });
 
-  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: 3000 });
+  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
   let { targetX, targetY } = await resolveTargetCoordinates();
   await world.currentWindow.mouse.move(targetX, targetY, { steps: 10 });
@@ -333,7 +334,7 @@ async function dragLocatorAndHoldAtCoordinates(
 
   if (targetWorkspaceId !== undefined) {
     try {
-      await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).waitFor({ state: 'attached', timeout: 3000 });
+      await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).waitFor({ state: 'attached', timeout: CUCUMBER_GLOBAL_TIMEOUT });
     } catch (originalError) {
       const targetItemSelector = getSortableTargetSelector(targetWorkspaceId);
       let actualIntent = 'not-found';

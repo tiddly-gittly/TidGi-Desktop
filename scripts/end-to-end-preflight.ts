@@ -12,7 +12,7 @@ function runSmokeCalibration(): void {
   // Two complete calibration runs to capture CI machine variance without
   // excessive build time. A single run can hide a slow step on a cold cache.
   const CALIBRATION_RUNS = 2;
-  const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
+  const calibrationArtifactsDirectory = path.resolve(process.cwd(), 'test-artifacts');
   const cucumberBin = path.resolve(process.cwd(), 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
 
   let maxTotalMs = 0;
@@ -21,13 +21,19 @@ function runSmokeCalibration(): void {
   let maxWaitStepMs = 0;
   let maxElementStepMs = 0;
 
+  fs.mkdirSync(calibrationArtifactsDirectory, { recursive: true });
+
   for (let runIndex = 0; runIndex < CALIBRATION_RUNS; runIndex++) {
     const startedAt = Date.now();
+    const outputFileRelative = path.join('test-artifacts', `.calibration-raw-${runIndex + 1}.json`);
+    const outputFile = path.resolve(process.cwd(), outputFileRelative);
+
+    fs.rmSync(outputFile, { force: true });
 
     try {
       execFileSync(
         process.execPath,
-        [cucumberBin, '--config', 'features/cucumber.config.js', '--profile', 'calibration', '--format', `json:${outputFile}`, '--exit'],
+        [cucumberBin, '--config', 'features/cucumber.config.js', '--profile', 'calibration', '--format', `json:${outputFileRelative}`, '--exit'],
         {
           stdio: 'inherit',
           cwd: process.cwd(),

@@ -337,7 +337,9 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
         // Swallow — this is a known Playwright race condition
         return;
       }
-      // For other rejections, let them propagate normally
+      setImmediate(() => {
+        throw reason instanceof Error ? reason : new Error(String(reason));
+      });
     });
     processWithDialogFlag.__dialogRejectionHandlerInstalled = true;
   }
