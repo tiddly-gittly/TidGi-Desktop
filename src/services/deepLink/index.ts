@@ -22,7 +22,7 @@ export class DeepLinkService implements IDeepLinkService {
   ) {}
   /**
    * Sanitize tiddler name to prevent injection attacks.
-   * This escapes potentially dangerous characters while preserving the original content.
+   * This escapes potentially dangerous characters while preserving readable content.
    * TiddlyWiki recommends avoiding: | [ ] { } in tiddler titles
    *
    * And in the place that use this (wikiOperations/executor/scripts/*.ts), we also use JSON.stringify to exclude "`".
@@ -38,8 +38,8 @@ export class DeepLinkService implements IDeepLinkService {
     // Replace newlines and tabs with spaces to prevent breaking out of string context
     sanitized = sanitized.replace(/[\r\n\t]/g, ' ');
 
-    // Remove HTML tags to prevent XSS while preserving innocent '<' / '>' characters
-    sanitized = sanitized.replace(/<\/?[a-zA-Z][^>]*>/g, '');
+    // Neutralize HTML delimiters one character at a time so overlapping tags cannot survive.
+    sanitized = sanitized.replace(/[<>]/g, character => character === '<' ? '\uFF1C' : '\uFF1E');
 
     // Trim whitespace
     sanitized = sanitized.trim();

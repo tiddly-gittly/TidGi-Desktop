@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
@@ -13,6 +13,7 @@ function runSmokeCalibration(): void {
   // excessive build time. A single run can hide a slow step on a cold cache.
   const CALIBRATION_RUNS = 2;
   const outputFile = path.resolve(process.cwd(), 'test-artifacts', '.calibration-raw.json');
+  const cucumberBin = path.resolve(process.cwd(), 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
 
   let maxTotalMs = 0;
   let maxStepMs = 0;
@@ -24,8 +25,9 @@ function runSmokeCalibration(): void {
     const startedAt = Date.now();
 
     try {
-      execSync(
-        `cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --profile calibration --format json:${outputFile} --exit`,
+      execFileSync(
+        process.execPath,
+        [cucumberBin, '--config', 'features/cucumber.config.js', '--profile', 'calibration', '--format', `json:${outputFile}`, '--exit'],
         {
           stdio: 'inherit',
           cwd: process.cwd(),

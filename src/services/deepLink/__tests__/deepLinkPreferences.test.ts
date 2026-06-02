@@ -159,19 +159,27 @@ describe('DeepLinkService – preferences URL routing', () => {
     expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('My[Title]');
   });
 
-  it('preserves innocent < characters while stripping actual HTML tags', async () => {
+  it('neutralizes innocent < characters without dropping the readable text', async () => {
     const service = makeService();
     await service.openDeepLink('tidgi://test-wiki-1/#:5%20%3C%2010');
 
     expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
-    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('5 < 10');
+    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('5 \uFF1C 10');
   });
 
-  it('strips HTML tags from tiddler names', async () => {
+  it('neutralizes HTML tags in tiddler names', async () => {
     const service = makeService();
     await service.openDeepLink('tidgi://test-wiki-1/#:%3Cdiv%3Etest%3C/div%3E');
 
     expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
-    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('test');
+    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('\uFF1Cdiv\uFF1Etest\uFF1C/div\uFF1E');
+  });
+
+  it('neutralizes overlapping HTML-like input', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://test-wiki-1/#:%3Cscript%3Cscript%3Ealert(1)%3C/script%3E');
+
+    expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
+    expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('\uFF1Cscript\uFF1Cscript\uFF1Ealert(1)\uFF1C/script\uFF1E');
   });
 });
