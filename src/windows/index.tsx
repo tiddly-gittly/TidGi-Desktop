@@ -5,6 +5,7 @@ import { Route, Switch, useLocation } from 'wouter';
 
 const AboutPage = lazy(() => import('./About'));
 const DialogAddWorkspace = lazy(() => import('./AddWorkspace'));
+const AnalyticsDisclosure = lazy(() => import('./AnalyticsDisclosure'));
 const EditWorkspace = lazy(() => import('./EditWorkspace'));
 const GitHistory = lazy(() => import('./GitLog'));
 const Main = lazy(() => import('../pages/Main'));
@@ -28,6 +29,7 @@ export function Pages(): React.JSX.Element {
       <Switch>
         <Route path={`/${WindowNames.about}`} component={AboutPage} />
         <Route path={`/${WindowNames.addWorkspace}`} component={DialogAddWorkspace} />
+        <Route path={`/${WindowNames.analyticsDisclosure}`} component={AnalyticsDisclosure} />
         <Route path={`/${WindowNames.editWorkspace}`} component={EditWorkspace} />
         <Route path={`/${WindowNames.gitHistory}`} component={GitHistory} />
         <Route path={`/${WindowNames.notifications}`} component={DialogNotifications} />

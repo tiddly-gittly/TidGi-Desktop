@@ -7,7 +7,7 @@ import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
@@ -63,6 +63,16 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   const [previewAgentId, setPreviewAgentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [promptSchema, setPromptSchema] = useState<RJSFSchema | null>(null);
+  const temporaryAgentDefinitionIdReference = useRef<string | null>(tab.agentDefId ?? null);
+  const previewAgentIdReference = useRef<string | null>(null);
+
+  useEffect(() => {
+    temporaryAgentDefinitionIdReference.current = temporaryAgentDefinition?.id ?? tab.agentDefId ?? null;
+  }, [tab.agentDefId, temporaryAgentDefinition?.id]);
+
+  useEffect(() => {
+    previewAgentIdReference.current = previewAgentId;
+  }, [previewAgentId]);
 
   // Restore state from backend when component mounts
   useEffect(() => {
@@ -173,26 +183,30 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   // Cleanup when component unmounts or tab closes
   useEffect(() => {
     return () => {
-      // Cleanup temporary agent definition and preview agent when tab closes
+      // Cleanup temporary agent definition and preview agent when tab closes.
+      // Delete preview agent instance BEFORE definition to avoid FK constraint failures.
       const cleanup = async () => {
-        if (temporaryAgentDefinition?.id && temporaryAgentDefinition.id.startsWith('temp-')) {
+        const currentPreviewAgentId = previewAgentIdReference.current;
+        const currentTemporaryAgentDefinitionId = temporaryAgentDefinitionIdReference.current;
+
+        if (currentPreviewAgentId) {
           try {
-            await window.service.agentDefinition.deleteAgentDef(temporaryAgentDefinition.id);
-          } catch (error) {
-            console.error('Failed to cleanup temporary agent definition:', error);
-          }
-        }
-        if (previewAgentId) {
-          try {
-            await window.service.agentInstance.deleteAgent(previewAgentId);
+            await window.service.agentInstance.deleteAgent(currentPreviewAgentId);
           } catch (error) {
             console.error('Failed to cleanup preview agent:', error);
+          }
+        }
+        if (currentTemporaryAgentDefinitionId?.startsWith('temp-')) {
+          try {
+            await window.service.agentDefinition.deleteAgentDef(currentTemporaryAgentDefinitionId);
+          } catch (error) {
+            console.error('Failed to cleanup temporary agent definition:', error);
           }
         }
       };
       void cleanup();
     };
-  }, [temporaryAgentDefinition?.id, previewAgentId]);
+  }, []);
 
   const handleNext = async () => {
     if (currentStep < STEPS.length - 1) {

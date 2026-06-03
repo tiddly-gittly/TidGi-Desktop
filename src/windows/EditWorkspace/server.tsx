@@ -158,6 +158,7 @@ export function ServerOptions(props: ICustomSectionProps) {
           >
             <ListItemText
               primary={t('EditWorkspace.TokenAuth')}
+              slotProps={{ secondary: { component: 'div' } }}
               secondary={
                 <>
                   <div>{t('EditWorkspace.TokenAuthDescription')}</div>
@@ -172,6 +173,7 @@ export function ServerOptions(props: ICustomSectionProps) {
                 <TextField
                   id='outlined-full-width'
                   label={t('EditWorkspace.TokenAuthCurrentToken')}
+                  slotProps={{ formHelperText: { component: 'div' } }}
                   helperText={
                     <AuthTokenTextAndButtonContainer>
                       <div>{t('EditWorkspace.TokenAuthCurrentTokenDescription')}</div>{' '}
@@ -351,7 +353,9 @@ export function ServerOptions(props: ICustomSectionProps) {
               renderInput={(parameters: AutocompleteRenderInputParams) => (
                 <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />
               )}
-              renderOption={(props, option) => <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>}
+              renderOption={({ key: _key, ...props }, option) => (
+                <li {...props}>{t(`EditWorkspace.WikiRootTiddlerItems.${String(option).replace('$:/core/save/', '')}`)} ({String(option)})</li>
+              )}
             />
           </ListItem>
         </List>
@@ -396,7 +400,7 @@ function ExcludedPluginsAutocomplete() {
           options={pluginsInWiki}
           value={excludedPlugins}
           limitTags={2}
-          renderOption={(props, option, { selected }) => (
+          renderOption={({ key: _key, ...props }, option, { selected }) => (
             <li {...props}>
               <Checkbox
                 icon={uncheckedIcon}

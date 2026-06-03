@@ -4,8 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { PageType } from '@/constants/pageTypes';
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import { PreferenceSections } from '@services/preferences/interface';
 import type { EmbeddingStatus } from '@services/wikiEmbedding/interface';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 
@@ -24,6 +26,7 @@ export function Search(
   const [_embeddingStatuses, _setEmbeddingStatuses] = useState<WorkspaceEmbeddingStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [workspaceStatuses, setWorkspaceStatuses] = useState<WorkspaceEmbeddingStatus[]>([]);
+  const [showOpenSettingsButton, setShowOpenSettingsButton] = useState(false);
   const pollingIntervalReference = useRef<NodeJS.Timeout | null>(null);
 
   const workspaces = usePromiseValue(async () => {
@@ -136,6 +139,7 @@ export function Search(
           message: t('Preference.SearchEmbeddingNoAIConfigError'),
           severity: 'error',
         });
+        setShowOpenSettingsButton(true);
         return;
       }
 
@@ -264,6 +268,20 @@ export function Search(
   return (
     <>
       <SectionTitle ref={props.sectionRef}>{t('Preference.Search')}</SectionTitle>
+      {showOpenSettingsButton && (
+        <div style={{ padding: '0 16px 8px' }}>
+          <Button
+            size='small'
+            variant='outlined'
+            color='primary'
+            onClick={async () => {
+              await window.service.deepLink.openDeepLink(`${TIDGI_PROTOCOL_SCHEME}://preferences/${PreferenceSections.externalAPI}`);
+            }}
+          >
+            {t('Preference.OpenExternalAPISettings')}
+          </Button>
+        </div>
+      )}
       <Paper elevation={0}>
         <List dense disablePadding>
           {loading

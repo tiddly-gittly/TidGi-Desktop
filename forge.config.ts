@@ -17,6 +17,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     name: 'TidGi',
     executableName: 'tidgi',
+    quiet: false,
     win32metadata: {
       CompanyName: 'TiddlyWiki Community',
       OriginalFilename: 'TidGi Desktop',

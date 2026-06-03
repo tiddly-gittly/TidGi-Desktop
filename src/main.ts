@@ -14,6 +14,7 @@ import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
+import { initializeMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 
 // Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
@@ -25,12 +26,14 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IThemeService } from '@services/theme/interface';
@@ -73,6 +76,7 @@ protocol.registerSchemesAsPrivileged([
 bindServiceAndProxy();
 
 // Get services - DO NOT use them until commonInit() is called
+const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
@@ -98,6 +102,11 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
+    // Dynamic import to avoid loading MCP SDK at startup
+    try {
+      const { stopMcpServer } = await import('@services/mcpServer');
+      void stopMcpServer();
+    } catch { /* not loaded */ }
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
@@ -223,6 +232,15 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
+
+  // Initialize MCP server (CLI flags, env vars, or preferences)
+  await initializeMcpServer(preferenceService);
+
+  // Show analytics disclosure dialog on first launch before sending any events
+  await analyticsService.showDisclosureIfNeeded();
+
+  // Track app launch event
+  void analyticsService.trackAppLaunch();
 };
 
 /**
@@ -249,7 +267,9 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    logger.error('Error during app ready handler', { function: "app.on('ready')", error });
+    const error_ = error as Error;
+    logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_ });
+    analyticsService.trackError(error_, 'app_ready');
   }
 });
 app.on(MainChannel.windowAllClosed, async () => {
@@ -291,6 +311,7 @@ unhandled({
   showDialog: !isDevelopmentOrTest,
   logger: (error: Error) => {
     logger.error('unhandled', { error });
+    analyticsService.trackError(error, 'unhandled');
   },
   reportButton: (error) => {
     reportErrorToGithubWithTemplates(error);

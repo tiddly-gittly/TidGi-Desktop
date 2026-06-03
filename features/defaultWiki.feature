@@ -5,7 +5,8 @@ Feature: TidGi Default Wiki
 
   @wiki @create-main-workspace @root-tiddler
   Scenario: Default wiki content, create new workspace, and configure root tiddler
-    Given I cleanup test wiki so it could create a new one on start
+    Given I start mock analytics server
+    And I cleanup test wiki so it could create a new one on start
     When I launch the TidGi application
     And I wait for the page to load completely
 
@@ -33,6 +34,9 @@ Feature: TidGi Default Wiki
     When I type "wiki2" in "wiki folder name input" element with selector "label:has-text('即将新建的知识库文件夹名') + div input"
     When I click on a "create wiki button" element with selector "button:has-text('创建知识库')"
     Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
+    Then I should see analytics events:
+      | event_name        | isSubWiki | hasGitUrl |
+      | workspace.created | *boolean* | *boolean* |
     When I switch to "main" window
     Then I should see a "wiki2 workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"

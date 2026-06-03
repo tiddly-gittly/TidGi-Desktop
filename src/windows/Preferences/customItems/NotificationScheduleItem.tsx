@@ -1,5 +1,6 @@
 import { Switch } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { renderTimeViewClock } from '@mui/x-date-pickers/timeViewRenderers';
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '@/components/ListItem';
@@ -32,6 +33,10 @@ export function NotificationScheduleItem(): React.JSX.Element | null {
             await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true });
           }}
           disabled={!preference.pauseNotificationsBySchedule}
+          viewRenderers={{
+            hours: renderTimeViewClock,
+            minutes: renderTimeViewClock,
+          }}
         />
         <TimePicker
           label='to'
@@ -48,6 +53,10 @@ export function NotificationScheduleItem(): React.JSX.Element | null {
             await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true });
           }}
           disabled={!preference.pauseNotificationsBySchedule}
+          viewRenderers={{
+            hours: renderTimeViewClock,
+            minutes: renderTimeViewClock,
+          }}
         />
       </TimePickerContainer>
       ({window.Intl.DateTimeFormat().resolvedOptions().timeZone})

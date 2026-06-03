@@ -1,6 +1,4 @@
 import * as Path from 'path';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
 
 import { logger } from '@services/libs/log';

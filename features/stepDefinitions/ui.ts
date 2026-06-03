@@ -2,7 +2,7 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
-import { PLAYWRIGHT_SHORT_TIMEOUT, PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 When('I wait for {float} seconds', async function(seconds: number) {
@@ -32,16 +32,14 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 
   let currentWindow = this.currentWindow;
   if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_TIMEOUT });
+    currentWindow = await this.app.firstWindow({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
     this.mainWindow = this.mainWindow ?? currentWindow;
     this.currentWindow = currentWindow;
   }
-  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: PLAYWRIGHT_TIMEOUT });
-  // Short networkidle gives workspace-creation and other startup IPC time to finish
-  // without blocking on long-lived connections. 3s is intentionally different from
-  // PLAYWRIGHT_TIMEOUT — this is just a grace period, not a hard requirement.
+  await currentWindow?.waitForLoadState('domcontentloaded', { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+  // Short grace period for network idle during startup. Fails silently — DOM is ready.
   try {
-    await currentWindow?.waitForLoadState('networkidle', { timeout: 3000 });
+    await currentWindow?.waitForLoadState('networkidle', { timeout: CUCUMBER_GLOBAL_TIMEOUT });
   } catch {
     // Ignore – DOM is already ready.
   }
@@ -50,7 +48,7 @@ When('I wait for the page to load completely', async function(this: ApplicationW
 Then('I should see a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
   let currentWindow = this.currentWindow;
   if ((!currentWindow || currentWindow.isClosed()) && this.app) {
-    currentWindow = await this.app.firstWindow({ timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    currentWindow = await this.app.firstWindow({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
     this.mainWindow = this.mainWindow ?? currentWindow;
     this.currentWindow = currentWindow;
   }
@@ -59,7 +57,7 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
     const isVisible = await currentWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -86,7 +84,7 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
   // Check all elements in parallel for better performance
   await Promise.all(dataRows.map(async ([elementComment, selector]) => {
     try {
-      await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+      await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
       const isVisible = await currentWindow.isVisible(selector);
       if (!isVisible) {
         errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -109,7 +107,7 @@ Then('I should not see a(n) {string} element with selector {string}', async func
   try {
     const element = currentWindow.locator(selector).first();
     // Wait for element to be hidden/detached (handles race conditions after state changes)
-    await element.waitFor({ state: 'hidden', timeout: PLAYWRIGHT_TIMEOUT });
+    await element.waitFor({ state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
   } catch (error) {
     if (error instanceof Error && error.message.includes('timeout')) {
       // Element still visible after timeout — get parent HTML for debugging
@@ -182,7 +180,7 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 
   try {
-    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -190,6 +188,25 @@ When('I click on a(n) {string} element with selector {string}', async function(t
     await targetWindow.click(selector);
   } catch (error) {
     throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
+  }
+});
+
+Then('the {string} element with selector {string} should be unchecked', async function(this: ApplicationWorld, elementComment: string, selector: string) {
+  const targetWindow = await this.getWindow('current');
+
+  if (!targetWindow) {
+    throw new Error(`Window "current" is not available`);
+  }
+
+  try {
+    const locator = targetWindow.locator(selector);
+    await locator.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    const isChecked = await locator.isChecked();
+    if (isChecked) {
+      throw new Error(`Element "${elementComment}" with selector "${selector}" is checked, expected unchecked`);
+    }
+  } catch (error) {
+    throw new Error(`Failed to verify ${elementComment} with selector "${selector}" is unchecked: ${error as Error}`);
   }
 });
 
@@ -211,7 +228,7 @@ When('I click on {string} elements with selectors:', async function(this: Applic
   // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
   for (const [elementComment, selector] of dataRows) {
     try {
-      await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+      await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
       const isVisible = await targetWindow.isVisible(selector);
       if (!isVisible) {
         errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -234,7 +251,7 @@ When('I ctrl-click on a(n) {string} element with selector {string}', async funct
     throw new Error(`Window "current" is not available`);
   }
   try {
-    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -253,7 +270,7 @@ When('I right-click on a(n) {string} element with selector {string}', async func
   }
 
   try {
-    await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
@@ -270,7 +287,7 @@ When('I click all {string} elements matching selector {string}', async function(
 
   // Wait for at least one element to appear in DOM (even if hidden)
   try {
-    await win.locator(selector).first().waitFor({ state: 'attached', timeout: PLAYWRIGHT_TIMEOUT });
+    await win.locator(selector).first().waitFor({ state: 'attached', timeout: CUCUMBER_GLOBAL_TIMEOUT });
   } catch {
     throw new Error(`No elements found for ${elementComment} with selector "${selector}" within timeout`);
   }
@@ -282,7 +299,7 @@ When('I click all {string} elements matching selector {string}', async function(
   for (let index = count - 1; index >= 0; index--) {
     try {
       await locator.nth(index).scrollIntoViewIfNeeded().catch(() => {});
-      await locator.nth(index).click({ force: true, timeout: 3000 });
+      await locator.nth(index).click({ force: true, timeout: CUCUMBER_GLOBAL_TIMEOUT });
       // Brief pause for the UI to settle after each close
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
@@ -300,7 +317,7 @@ When('I type {string} in {string} element with selector {string}', async functio
   const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
     await currentWindow.locator(selector).fill(actualText);
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
@@ -331,7 +348,7 @@ When('I type in {string} elements with selectors:', async function(this: Applica
     const actualText = text.replace('{tmpDir}', getWikiTestRootPath(this));
 
     try {
-      await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+      await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
       const element = currentWindow.locator(selector);
       await element.fill(actualText);
     } catch (error) {
@@ -351,7 +368,7 @@ When('I clear text in {string} element with selector {string}', async function(t
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
     const element = currentWindow.locator(selector);
     await element.clear();
   } catch (error) {
@@ -488,7 +505,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     // Try input first, then fall back to wrapper
     const hasDirectInput = await currentWindow.locator(directInputSelector).count() > 0;
     const containerSelector = hasDirectInput ? directInputSelector : wrapperSelector;
-    await currentWindow.waitForSelector(containerSelector, { timeout: PLAYWRIGHT_TIMEOUT });
+    await currentWindow.waitForSelector(containerSelector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
     // Click the combobox to open the dropdown
     const clicked = await currentWindow.evaluate((testId) => {
@@ -523,11 +540,8 @@ When('I select {string} from MUI Select with test id {string}', async function(t
       throw new Error(`Failed to click: ${JSON.stringify(clicked)}`);
     }
 
-    // Wait a bit for the menu to appear
-    await currentWindow.waitForTimeout(500);
-
     // Wait for the menu to appear
-    await currentWindow.waitForSelector('[role="listbox"]', { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
     // Try to click on the option with the specified value (data-value attribute)
     // If not found, try to find by text content
@@ -568,7 +582,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     }
 
     // Wait for the menu to close
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
   } catch (error) {
     throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
   }
@@ -598,7 +612,7 @@ When('I print DOM structure of element with selector {string}', async function(t
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+    await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
     const elementInfo = await currentWindow.evaluate((sel) => {
       const element = document.querySelector(sel);

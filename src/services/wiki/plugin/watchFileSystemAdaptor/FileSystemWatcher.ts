@@ -35,6 +35,10 @@ const GIT_NOTIFICATION_DELAY_MS = 1000;
  */
 const SYNCER_TRIGGER_DELAY_MS = 200;
 
+function normalizeIndexPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
 export interface IUpdatedTiddlers {
   deletions: string[];
   modifications: string[];
@@ -222,8 +226,11 @@ export class FileSystemWatcher {
       if (fileChange.cachedTiddlerFields) {
         // Still need to update boot.files for subsequent saves
         const hasMetaFile = fileChange.absolutePath.endsWith('.tid') ? false : fs.existsSync(`${fileChange.absolutePath}.meta`);
+        // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
+        // On Windows, this prevents mismatch between native backslashes and TiddlyWiki's forward-slash paths.
+        const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
         this.boot.files[title] = {
-          filepath: fileChange.absolutePath,
+          filepath: normalizedPath,
           type: (fileChange.cachedTiddlerFields.type as string) ?? 'application/x-tiddler',
           hasMetaFile,
           isEditableFile: true,
@@ -256,9 +263,10 @@ export class FileSystemWatcher {
 
       // Update boot.files so getTiddlerInfo() works correctly
       const { tiddlers: _, ...fileDescriptor } = tiddlersDescriptor;
-      const absoluteFilePath = fileChange.absolutePath;
+      // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
+      const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
       this.boot.files[title] = {
-        filepath: absoluteFilePath,
+        filepath: normalizedPath,
         type: fileDescriptor.type ?? 'application/x-tiddler',
         hasMetaFile: fileDescriptor.hasMetaFile ?? false,
         isEditableFile: fileDescriptor.isEditableFile ?? true,
@@ -293,8 +301,11 @@ export class FileSystemWatcher {
     this.titlesBeingSaved.delete(title);
     if (absoluteFilePath) {
       try {
-        const stat = fs.statSync(absoluteFilePath);
-        this.lastWriteStats.set(absoluteFilePath, { mtime: stat.mtimeMs, size: stat.size });
+        // Normalize to native path separators so that the key matches the format used
+        // in nsfw event handlers (which use path.join producing native separators).
+        const normalizedPath = path.normalize(absoluteFilePath);
+        const stat = fs.statSync(normalizedPath);
+        this.lastWriteStats.set(normalizedPath, { mtime: stat.mtimeMs, size: stat.size });
       } catch {
         // File may not exist (e.g. after delete) — that's fine
       }
@@ -306,7 +317,7 @@ export class FileSystemWatcher {
    * Update the inverse index after a tiddler is saved
    */
   updateIndexAfterSave(title: string, fileInfo: IFileInfo): void {
-    const fileRelativePath = path.relative(this.watchPathBase, fileInfo.filepath);
+    const fileRelativePath = normalizeIndexPath(path.relative(this.watchPathBase, fileInfo.filepath));
     this.inverseFilesIndex.set(fileRelativePath, {
       ...fileInfo,
       filepath: fileRelativePath,
@@ -318,7 +329,7 @@ export class FileSystemWatcher {
    * Remove a tiddler from the inverse index after deletion
    */
   removeFromIndex(absoluteFilePath: string): void {
-    const fileRelativePath = path.relative(this.watchPathBase, absoluteFilePath);
+    const fileRelativePath = normalizeIndexPath(path.relative(this.watchPathBase, absoluteFilePath));
     this.inverseFilesIndex.delete(fileRelativePath);
   }
 
@@ -389,7 +400,7 @@ export class FileSystemWatcher {
     for (const tiddlerTitle in initialLoadedFiles) {
       if (Object.hasOwn(initialLoadedFiles, tiddlerTitle)) {
         const fileDescriptor = initialLoadedFiles[tiddlerTitle];
-        const fileRelativePath = path.relative(this.watchPathBase, fileDescriptor.filepath);
+        const fileRelativePath = normalizeIndexPath(path.relative(this.watchPathBase, fileDescriptor.filepath));
         this.inverseFilesIndex.set(fileRelativePath, { ...fileDescriptor, filepath: fileRelativePath, tiddlerTitle });
       }
     }
@@ -523,13 +534,16 @@ export class FileSystemWatcher {
       // Compute relative path
       const subWikiInfo = this.inverseFilesIndex.getSubWikiForFile(fileAbsolutePath);
       const basePath = subWikiInfo ? subWikiInfo.path : this.watchPathBase;
-      const fileRelativePath = path.relative(basePath, fileAbsolutePath);
+      const fileRelativePath = normalizeIndexPath(path.relative(basePath, fileAbsolutePath));
       const fileExtension = path.extname(fileRelativePath);
 
       // Handle events
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
         this.cancelPendingDeletion(fileAbsolutePath);
-        this.handleFileAddOrChange(fileAbsolutePath, fileRelativePath, fileExtension, action === nsfw.actions.CREATED ? 'add' : 'change');
+        // Atomic overwrites may arrive as CREATED even though the tiddler is already tracked.
+        const isNewFile = !this.inverseFilesIndex.has(fileRelativePath);
+        const changeType = action === nsfw.actions.CREATED && isNewFile ? 'add' : 'change';
+        this.handleFileAddOrChange(fileAbsolutePath, fileRelativePath, fileExtension, changeType);
       } else if (action === nsfw.actions.DELETED) {
         this.scheduleDeletion(fileAbsolutePath, fileRelativePath, fileExtension);
       } else if (action === nsfw.actions.RENAMED) {
@@ -537,7 +551,7 @@ export class FileSystemWatcher {
           const oldFileAbsPath = path.join(directory, event.oldFile);
           const oldSubWikiInfo = this.inverseFilesIndex.getSubWikiForFile(oldFileAbsPath);
           const oldBasePath = oldSubWikiInfo ? oldSubWikiInfo.path : this.watchPathBase;
-          const oldFileRelativePath = path.relative(oldBasePath, oldFileAbsPath);
+          const oldFileRelativePath = normalizeIndexPath(path.relative(oldBasePath, oldFileAbsPath));
           const oldFileExtension = path.extname(oldFileRelativePath);
           this.handleFileDelete(oldFileAbsPath, oldFileRelativePath, oldFileExtension);
 
@@ -545,9 +559,11 @@ export class FileSystemWatcher {
           const newFileAbsPath = path.join(newDirectory, event.newFile);
           const newSubWikiInfo = this.inverseFilesIndex.getSubWikiForFile(newFileAbsPath);
           const newBasePath = newSubWikiInfo ? newSubWikiInfo.path : this.watchPathBase;
-          const newFileRelativePath = path.relative(newBasePath, newFileAbsPath);
+          const newFileRelativePath = normalizeIndexPath(path.relative(newBasePath, newFileAbsPath));
           const newFileExtension = path.extname(newFileRelativePath);
-          this.handleFileAddOrChange(newFileAbsPath, newFileRelativePath, newFileExtension, 'add');
+          // Atomic rename should preserve update semantics for already-tracked tiddlers.
+          const changeType = this.inverseFilesIndex.has(newFileRelativePath) ? 'change' : 'add';
+          this.handleFileAddOrChange(newFileAbsPath, newFileRelativePath, newFileExtension, changeType);
         }
       }
     }

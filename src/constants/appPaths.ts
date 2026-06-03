@@ -20,17 +20,25 @@ import { DEFAULT_FIRST_WIKI_FOLDER_PATH as PATHS_DEFAULT_FIRST_WIKI_FOLDER_PATH,
 const isPackaged = process.resourcesPath && !process.resourcesPath.includes('electron');
 
 /**
- * Parse --test-scenario=xxx argument from command line
- * This is used to isolate test data per scenario in E2E tests
+ * Parse test scenario identifier from environment variable or CLI argument.
+ * On Windows Electron rejects custom CLI flags, so E2E tests pass TIDGI_TEST_SCENARIO via env.
+ * This is used to isolate test data per scenario in E2E tests.
  */
 function getTestScenarioSlug(): string | undefined {
+  // Use bracket notation to prevent Vite/esbuild from stripping the runtime env var.
+  const environmentScenario = process.env['TIDGI_TEST_SCENARIO'];
+  if (environmentScenario) {
+    const slug = slugify(environmentScenario, 60);
+    return slug === 'unknown' ? undefined : slug;
+  }
+
+  // Fallback to CLI argument for legacy compatibility
   const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
   if (!scenarioArgument) return undefined;
 
   const rawName = scenarioArgument.split('=')[1];
   if (!rawName) return undefined;
 
-  // Use shared slugify function for consistent behavior across codebase
   const slug = slugify(rawName, 60);
   return slug === 'unknown' ? undefined : slug;
 }

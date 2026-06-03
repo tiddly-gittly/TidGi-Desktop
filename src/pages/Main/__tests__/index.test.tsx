@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -20,43 +20,46 @@ const preferencesSubject = new BehaviorSubject({
 });
 
 const pageTypes = [PageType.agent, PageType.help, PageType.guide, PageType.add];
-const workspacesSubject = new BehaviorSubject([
-  // Regular wiki workspaces
-  {
-    id: 'workspace-1',
-    name: '我的维基',
-    order: 0,
-    picturePath: '/mock-icon1.png',
-    gitUrl: 'https://github.com/test/repo1.git',
-    wikiFolderLocation: '/path/to/wiki1',
-    homeUrl: 'tidgi://workspace/workspace-1/',
-    port: 5212,
-    metadata: {},
-  },
-  {
-    id: 'workspace-2',
-    name: '工作笔记',
-    order: 1,
-    picturePath: '/mock-icon2.png',
-    gitUrl: 'https://github.com/test/repo2.git',
-    wikiFolderLocation: '/path/to/wiki2',
-    homeUrl: 'tidgi://workspace/workspace-2/',
-    isSubWiki: true,
-    mainWikiID: 'workspace-1',
-    mainWikiToLink: '/path/to/wiki1',
-    port: 5213,
-    tagNames: ['WorkNotes'],
-    metadata: { badgeCount: 5 },
-  },
-  // Built-in page workspaces generated from pageTypes
-  ...pageTypes.entries().map(([index, pageType]) => ({
-    id: pageType,
-    name: pageType,
-    pageType,
-    order: index + 2,
-    metadata: {},
-  })),
-]);
+
+function createWorkspaces() {
+  return [
+    {
+      id: 'workspace-1',
+      name: '我的维基',
+      order: 0,
+      picturePath: '/mock-icon1.png',
+      gitUrl: 'https://github.com/test/repo1.git',
+      wikiFolderLocation: '/path/to/wiki1',
+      homeUrl: 'tidgi://workspace/workspace-1/',
+      port: 5212,
+      metadata: {},
+    },
+    {
+      id: 'workspace-2',
+      name: '工作笔记',
+      order: 1,
+      picturePath: '/mock-icon2.png',
+      gitUrl: 'https://github.com/test/repo2.git',
+      wikiFolderLocation: '/path/to/wiki2',
+      homeUrl: 'tidgi://workspace/workspace-2/',
+      isSubWiki: true,
+      mainWikiID: 'workspace-1',
+      mainWikiToLink: '/path/to/wiki1',
+      port: 5213,
+      tagNames: ['WorkNotes'],
+      metadata: { badgeCount: 5 },
+    },
+    ...pageTypes.entries().map(([index, pageType]) => ({
+      id: pageType,
+      name: pageType,
+      pageType,
+      order: index + 2,
+      metadata: {},
+    })),
+  ];
+}
+
+const workspacesSubject = new BehaviorSubject(createWorkspaces());
 
 // Override the global workspaces$ observable with our test-specific data
 Object.defineProperty(window.observables.workspace, 'workspaces$', {
@@ -99,6 +102,7 @@ describe('Main Page', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    workspacesSubject.next(createWorkspaces());
     renderMain();
     // Wait for at least one guide-page to render
     await screen.findByTestId('guide-page');
@@ -173,6 +177,22 @@ describe('Main Page', () => {
     // Only one agent-page should exist
     const agents = screen.getAllByTestId('agent-page');
     expect(agents.length).toBe(1);
+    expect(screen.queryAllByTestId('guide-page').length).toBe(0);
+  });
+
+  it('should switch to Agent page when active workspace changes outside the sidebar', async () => {
+    await screen.findByTestId('guide-page');
+
+    await act(async () => {
+      workspacesSubject.next(
+        createWorkspaces().map(workspace => ({
+          ...workspace,
+          active: workspace.id === 'agent',
+        })),
+      );
+    });
+
+    expect(await screen.findByTestId('agent-page')).toBeInTheDocument();
     expect(screen.queryAllByTestId('guide-page').length).toBe(0);
   });
 });

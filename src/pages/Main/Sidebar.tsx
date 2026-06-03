@@ -92,38 +92,40 @@ export function SideBar(): React.JSX.Element {
   const { showSideBarText, showSideBarIcon } = preferences;
 
   return (
-    <SidebarContainer data-testid='main-sidebar'>
-      <SidebarTop $titleBar={titleBar}>
-        {workspacesList === undefined
-          ? <div>{t('Loading')}</div>
-          : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
-      </SidebarTop>
-      <SideBarEnd>
-        {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
+    <>
+      <SidebarContainer data-testid='main-sidebar'>
+        <SidebarTop $titleBar={titleBar}>
+          {workspacesList === undefined
+            ? <div>{t('Loading')}</div>
+            : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
+        </SidebarTop>
+        <SideBarEnd>
+          {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
+            <IconButton
+              id='update-available'
+              aria-label={t('SideBar.UpdateAvailable')}
+              onClick={async () => {
+                await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+              }}
+            >
+              <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement='top'>
+                <UpgradeIcon />
+              </Tooltip>
+            </IconButton>
+          )}
           <IconButton
-            id='update-available'
-            aria-label={t('SideBar.UpdateAvailable')}
+            id='open-preferences-button'
+            aria-label={t('SideBar.Preferences')}
             onClick={async () => {
-              await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+              await window.service.window.open(WindowNames.preferences);
             }}
           >
-            <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement='top'>
-              <UpgradeIcon />
+            <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement='top'>
+              <SettingsIcon />
             </Tooltip>
           </IconButton>
-        )}
-        <IconButton
-          id='open-preferences-button'
-          aria-label={t('SideBar.Preferences')}
-          onClick={async () => {
-            await window.service.window.open(WindowNames.preferences);
-          }}
-        >
-          <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement='top'>
-            <SettingsIcon />
-          </Tooltip>
-        </IconButton>
-      </SideBarEnd>
-    </SidebarContainer>
+        </SideBarEnd>
+      </SidebarContainer>
+    </>
   );
 }

@@ -143,6 +143,8 @@ export interface INativeService {
   getProcessInfo(): Promise<IProcessInfo>;
   /** Start a periodic (30 s) background loop that writes memory snapshots to the log file. Only called from main process, not exposed via IPC. */
   startProcessMonitoring(): void;
+  /** Generate a random 32-char hex token for MCP server auth and save it to the mcpServerToken preference. */
+  generateMcpToken(): Promise<string>;
 }
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
@@ -175,5 +177,6 @@ export const NativeServiceIPCDescriptor = {
     quit: ProxyPropertyType.Function,
     showElectronMessageBox: ProxyPropertyType.Function,
     getProcessInfo: ProxyPropertyType.Function,
+    generateMcpToken: ProxyPropertyType.Function,
   },
 };

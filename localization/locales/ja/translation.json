@@ -501,6 +501,8 @@
     "NotificationsDetail": "通知一時停止時間を設定",
     "NotificationsDisableSchedule": "時間による通知の自動無効化：",
     "NotificationsMuteAudio": "一時停止通知時にワークスペースもミュートする",
+    "UnreadCountBadge": "アプリアイコンに未読件数バッジを表示する",
+    "OpenExternalAPISettings": "AI API 設定を開く",
     "OpenAtLogin": "起動時に自動実行",
     "OpenAtLoginMinimized": "起動時に自動で開き、最小化する (MacOS)",
     "OpenLogFolder": "ログフォルダを開く",

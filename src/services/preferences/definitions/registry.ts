@@ -21,10 +21,12 @@ import type {
   ISectionDefinition,
   IStringArrayPreferenceItem,
   IStringPreferenceItem,
+  ITextPreferenceItem,
   PreferenceItemDefinition,
 } from './types';
 import { updatesSection } from './updates';
 import { wikiSection } from './wiki';
+import { workspaceGroupsSection } from './workspaceGroups';
 
 /**
  * Ordered list of all sections. Display order matches array order.
@@ -39,6 +41,7 @@ export const allSections: ISectionDefinition[] = [
   notificationsSection,
   systemSection,
   languagesSection,
+  workspaceGroupsSection,
   developersSection,
   downloadsSection,
   networkSection,
@@ -54,7 +57,7 @@ export const sectionById = new Map<string, ISectionDefinition>(allSections.map((
 /**
  * Type guard: is this a preference-backed item (has a `key`)?
  */
-export type PreferenceItem = IBooleanPreferenceItem | IEnumPreferenceItem | INumberPreferenceItem | IStringPreferenceItem | IStringArrayPreferenceItem;
+export type PreferenceItem = IBooleanPreferenceItem | IEnumPreferenceItem | INumberPreferenceItem | IStringPreferenceItem | IStringArrayPreferenceItem | ITextPreferenceItem;
 
 export function isPreferenceItem(item: PreferenceItemDefinition): item is PreferenceItem {
   return item.type.startsWith('preference-');

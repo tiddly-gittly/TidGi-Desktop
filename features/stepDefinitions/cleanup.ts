@@ -1,6 +1,7 @@
 import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
+import type { MockAnalyticsServer } from '../supports/mockAnalytics';
 import { makeSlugPath } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
@@ -11,11 +12,59 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   // Initialize scenario-specific paths
   this.scenarioName = pickle.name;
   this.scenarioSlug = makeSlugPath(pickle.name, 60);
+  this.scenarioTags = pickle.tags.map((tag) => tag.name);
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);
   const logsDirectory = path.resolve(scenarioRoot, 'userData-test', 'logs');
   const screenshotsDirectory = path.resolve(logsDirectory, 'screenshots');
   const wikiTestRoot = path.resolve(scenarioRoot, 'wiki-test');
+
+  // Clean previous runs with the same slug so that calibration/preflight
+  // artifacts (userData, wiki-test, logs) never leak into the actual shard run.
+  // On Windows, a recently-killed process may still hold file locks for a few
+  // hundred milliseconds, so we retry removal a few times before falling back
+  // to quarantine. If both removal and quarantine fail, fail fast — never
+  // proceed with a dirty scenario root that could contaminate the shard.
+  if (await fs.pathExists(scenarioRoot)) {
+    const maxRemoveAttempts = process.platform === 'win32' ? 5 : 2;
+    const removeRetryDelayMs = 200;
+    let removed = false;
+    let lastRemoveError: unknown;
+
+    for (let attempt = 0; attempt < maxRemoveAttempts; attempt++) {
+      try {
+        await fs.remove(scenarioRoot);
+        removed = true;
+        break;
+      } catch (error) {
+        lastRemoveError = error;
+        if (attempt < maxRemoveAttempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, removeRetryDelayMs));
+        }
+      }
+    }
+
+    if (!removed) {
+      // Removal failed — try to quarantine (rename) the dirty root so we can
+      // proceed with a clean root while preserving the old artifacts on disk
+      // for post-mortem debugging.
+      const quarantineSlug = `${this.scenarioSlug}-quarantine-${Date.now()}`;
+      const quarantinePath = path.resolve(process.cwd(), 'test-artifacts', quarantineSlug);
+      try {
+        await fs.move(scenarioRoot, quarantinePath, { overwrite: false });
+        console.warn(
+          `[cleanup] Could not remove ${scenarioRoot} — moved to quarantine at ${quarantinePath}`,
+        );
+        // Ensure quarantine dirs exist so subsequent ensureDir calls work for the clean root.
+      } catch (quarantineError) {
+        throw new Error(
+          `[cleanup] Failed to remove dirty scenario root ${scenarioRoot} and quarantine also failed. ` +
+            `Remove error: ${String(lastRemoveError)}. Quarantine error: ${String(quarantineError)}. ` +
+            `Please manually clean up ${scenarioRoot}.`,
+        );
+      }
+    }
+  }
 
   // Create necessary directories for this scenario
   await fs.ensureDir(logsDirectory);
@@ -34,34 +83,64 @@ After(async function(this: ApplicationWorld, { pickle }) {
   // IMPORTANT: Close app FIRST before cleaning up files
   // This releases file locks so wiki folders can be deleted
   if (this.app) {
-    try {
-      // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
-      const allWindows = this.app.windows();
-
-      // Try to close windows gracefully with short timeout, then force close
-      await Promise.allSettled(
-        allWindows.map(async (window) => {
-          if (window.isClosed()) return;
-
-          try {
-            // Very short timeout for window close - we'll force close anyway
-            await Promise.race([
-              window.close(),
-              new Promise((_, reject) =>
-                setTimeout(() => {
-                  reject(new Error('Window close timeout'));
-                }, 1000)
-              ),
-            ]);
-          } catch {
-            // Window close failed or timed out, ignore and continue
-            // Force close will happen at app level
-          }
-        }),
-      );
-
-      // Try to close app gracefully with short timeout
+    if (process.platform === 'win32') {
+      // Windows: hard-kill the process tree FIRST, before any graceful close.
+      // window.close() -> windowAllClosed -> app.quit() enters before-quit,
+      // which prevents default and runs async cleanup. Our 1s/0.5s test timeouts
+      // inevitably interrupt that cleanup, leaving zombie child processes that
+      // contaminate subsequent scenarios. taskkill /T /F while the parent is still
+      // alive reliably terminates the whole tree.
+      if (this.appPid !== undefined) {
+        try {
+          const { execSync } = await import('child_process');
+          execSync(`taskkill /PID ${this.appPid} /T /F`, { stdio: 'ignore' });
+        } catch {
+          // Process already exited or kill failed — ignore
+        }
+        this.appPid = undefined;
+      }
+      // Fallback: kill any remaining tidgi.exe processes by image name.
+      // The PID-based kill above may miss detached child processes (e.g. wiki
+      // workers spawned by the mini window test). Since scenarios run
+      // sequentially, no other TidGi should be alive at this point.
       try {
+        const { execSync } = await import('child_process');
+        execSync('taskkill /IM tidgi.exe /T /F', { stdio: 'ignore' });
+      } catch { /* no process found — fine */ }
+      // Give Windows a moment to fully terminate processes and release file locks
+      // before the next scenario's Before hook tries to remove scenarioRoot.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      // After taskkill, the Electron process is dead. Do NOT call
+      // this.app.context().close() — Playwright's context() method communicates
+      // with the browser via CDP pipe synchronously and hangs indefinitely when
+      // the process is already killed. Promise.race timeout cannot rescue this
+      // because .context() is evaluated before entering the race.
+      // The process tree is already terminated; there is nothing left to close.
+    } else {
+      // Non-Windows: graceful close, then force close, then SIGKILL fallback.
+      try {
+        // Close all windows including tidgi mini window before closing the app, otherwise it might hang, and refused to exit until ctrl+C
+        const allWindows = this.app.windows();
+
+        await Promise.allSettled(
+          allWindows.map(async (window) => {
+            if (window.isClosed()) return;
+
+            try {
+              await Promise.race([
+                window.close(),
+                new Promise((_, reject) =>
+                  setTimeout(() => {
+                    reject(new Error('Window close timeout'));
+                  }, 1000)
+                ),
+              ]);
+            } catch {
+              // Window close failed or timed out, ignore and continue
+            }
+          }),
+        );
+
         await Promise.race([
           this.app.close(),
           new Promise((_, reject) =>
@@ -72,29 +151,53 @@ After(async function(this: ApplicationWorld, { pickle }) {
         ]);
       } catch {
         // App close failed or timed out, force close immediately
-      }
-    } catch {
-      // Any error in the try block, continue to force close
-    } finally {
-      // ALWAYS force close, regardless of success/failure above
-      // This ensures resources are freed even if graceful close hangs
-      try {
-        if (this.app) {
-          // Force close browser context - this kills all processes
+      } finally {
+        try {
           await Promise.race([
             this.app.context().close({ reason: 'Force cleanup after test' }),
-            new Promise((resolve) => setTimeout(resolve, 500)), // 500ms max for force close
+            new Promise((resolve) => setTimeout(resolve, 500)),
           ]);
+        } catch {
+          // Even force close can fail, but we don't care - move on
         }
-      } catch {
-        // Even force close can fail, but we don't care - move on
-      }
 
-      // Clear references immediately
-      this.app = undefined;
-      this.mainWindow = undefined;
-      this.currentWindow = undefined;
+        if (this.appPid !== undefined) {
+          try {
+            process.kill(this.appPid, 'SIGKILL');
+          } catch {
+            // Process already exited or kill failed — ignore
+          }
+          this.appPid = undefined;
+        }
+      }
     }
+
+    // Clear references immediately
+    this.app = undefined;
+    this.mainWindow = undefined;
+    this.currentWindow = undefined;
+  }
+
+  // Windows: ensure NO tidgi.exe processes survive between scenarios.
+  // Even if the PID-based kill above succeeded, detached child processes
+  // (wiki workers, mini window helpers) may still be alive. Since scenarios
+  // run sequentially, killing by image name is safe here.
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = await import('child_process');
+      execSync('taskkill /IM tidgi.exe /T /F', { stdio: 'ignore' });
+    } catch { /* no process found — fine */ }
+  }
+
+  // Stop mock analytics server if it was started for this scenario
+  const mockAnalyticsServer = (this as unknown as Record<string, unknown>).mockAnalyticsServer as MockAnalyticsServer | undefined;
+  if (mockAnalyticsServer) {
+    try {
+      await mockAnalyticsServer.stop();
+    } catch {
+      // Server may already be stopped — ignore
+    }
+    (this as unknown as Record<string, unknown>).mockAnalyticsServer = undefined;
   }
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);

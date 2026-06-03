@@ -1,13 +1,17 @@
 import { useTranslation } from 'react-i18next';
 
 import { Alert, LinearProgress, Snackbar, Typography } from '@mui/material';
+import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import { CloseButton, ReportErrorFabButton, WikiLocation } from './FormComponents';
 import { useCloneWiki, useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useWikiCreationProgress } from './useIndicator';
 
 export function CloneWikiDoneButton(
-  { form, isCreateMainWorkspace, errorInWhichComponentSetter, useTidgiConfig }: IWikiWorkspaceFormProps & { useTidgiConfig: boolean },
+  { form, isCreateMainWorkspace, errorInWhichComponentSetter, useTidgiConfig, selectedImportConfig }: IWikiWorkspaceFormProps & {
+    useTidgiConfig: boolean;
+    selectedImportConfig?: Partial<ISyncableWikiConfig>;
+  },
 ): React.JSX.Element {
   const { t } = useTranslation();
   const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(
@@ -15,7 +19,7 @@ export function CloneWikiDoneButton(
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, useTidgiConfig, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
+  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, useTidgiConfig, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter, selectedImportConfig);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (

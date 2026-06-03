@@ -164,6 +164,7 @@ const defaultWorkspaces: IWorkspace[] = [
     excludedPlugins: wikiWorkspaceDefaultValues.excludedPlugins,
     enableFileSystemWatch: wikiWorkspaceDefaultValues.enableFileSystemWatch,
     hibernateWhenUnused: wikiWorkspaceDefaultValues.hibernateWhenUnused,
+    useTidgiConfigSync: true,
   },
   {
     id: 'test-wiki-2',
@@ -194,5 +195,6 @@ const defaultWorkspaces: IWorkspace[] = [
     excludedPlugins: wikiWorkspaceDefaultValues.excludedPlugins,
     enableFileSystemWatch: wikiWorkspaceDefaultValues.enableFileSystemWatch,
     hibernateWhenUnused: wikiWorkspaceDefaultValues.hibernateWhenUnused,
+    useTidgiConfigSync: true,
   },
 ];

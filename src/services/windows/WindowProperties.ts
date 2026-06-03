@@ -5,6 +5,7 @@ import { IWorkspace } from '@services/workspaces/interface';
 export enum WindowNames {
   about = 'about',
   addWorkspace = 'addWorkspace',
+  analyticsDisclosure = 'analyticsDisclosure',
   /**
    * Open any website URL, this is a popup window that user can open a help resource.
    */
@@ -59,6 +60,10 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     width: 400,
     height: 420,
   },
+  [WindowNames.analyticsDisclosure]: {
+    width: 440,
+    height: 520,
+  },
   [WindowNames.auth]: {
     width: 400,
     height: 220,
@@ -80,8 +85,8 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 800,
   },
   [WindowNames.preferences]: {
-    width: 840,
-    height: 700,
+    width: 960,
+    height: 800,
   },
   [WindowNames.notifications]: {
     width: 400,
@@ -105,6 +110,7 @@ export interface IPreferenceWindowMeta {
 export interface WindowMeta {
   [WindowNames.about]: undefined;
   [WindowNames.addWorkspace]: { addWorkspaceTab?: CreateWorkspaceTabs };
+  [WindowNames.analyticsDisclosure]: undefined;
   [WindowNames.any]: { uri?: string };
   [WindowNames.auth]: undefined;
   [WindowNames.editWorkspace]: { workspaceID?: string };

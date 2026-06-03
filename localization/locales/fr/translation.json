@@ -502,6 +502,8 @@
     "NotificationsDetail": "Contrôler le temps de pause des notifications",
     "NotificationsDisableSchedule": "Désactiver automatiquement les notifications selon un horaire :",
     "NotificationsMuteAudio": "Couper le son lorsque les notifications sont en pause",
+    "UnreadCountBadge": "Afficher le badge du nombre de messages non lus sur l'icône de l'application",
+    "OpenExternalAPISettings": "Ouvrir les paramètres de l'API IA",
     "OpenAtLogin": "Ouvrir à la connexion",
     "OpenAtLoginMinimized": "Oui, mais minimisé (MacOS)",
     "OpenLogFolder": "Ouvrir le dossier de journal",

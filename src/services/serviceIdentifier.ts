@@ -2,6 +2,7 @@ export default {
   AgentBrowser: Symbol.for('AgentBrowser'),
   AgentDefinition: Symbol.for('AgentDefinition'),
   AgentInstance: Symbol.for('AgentInstance'),
+  Analytics: Symbol.for('Analytics'),
   Authentication: Symbol.for('Authentication'),
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),

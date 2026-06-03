@@ -104,7 +104,7 @@ export const LoadingContainer = styled(Box)`
   height: 100%;
 `;
 
-export const FileChip = styled(Box)<{ $status?: GitFileStatus }>`
+export const FileChip = styled(Box, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $status?: GitFileStatus }>`
   display: inline-block;
   font-size: 0.7rem;
   font-family: monospace;

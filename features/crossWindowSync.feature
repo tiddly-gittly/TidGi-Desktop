@@ -4,7 +4,8 @@ Feature: Cross-Window Synchronization
   So that I can view consistent content across all windows
 
   Background:
-    Given I cleanup test wiki so it could create a new one on start
+    Given I start mock analytics server
+    And I cleanup test wiki so it could create a new one on start
     And I launch the TidGi application
     And I wait for the page to load completely
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
@@ -12,7 +13,7 @@ Feature: Cross-Window Synchronization
     Then the browser view should be loaded and visible
     And I wait for "SSE backend ready" log marker "[test-id-SSE_READY]"
 
-  @crossWindowSync @crossWindowSync-basic
+  @crossWindowSync @crossWindowSync-basic @calibrate
   Scenario: Changes made to files should sync back to browser via SSE
     When I update workspace "wiki" settings:
       | property              | value |
@@ -21,7 +22,7 @@ Feature: Cross-Window Synchronization
     # Edit Index tiddler in window A via TW syncer (this triggers save to server → disk)
     When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'Index', text: 'CrossWindowSyncTestContent123'}))"
     # Wait for the syncer to save the tiddler to disk via server, so window B sees it
-    Then I wait for tiddler "Index" to be updated by watch-fs
+    Then tiddler "Index" in workspace "wiki" should be saved to disk with text "CrossWindowSyncTestContent123"
     
     # Open workspace in a new window (window B)
     When I open workspace "wiki" in a new window
@@ -30,3 +31,10 @@ Feature: Cross-Window Synchronization
     When I switch to the newest window
     Then the browser view should be loaded and visible
     Then I should see "CrossWindowSyncTestContent123" in the browser view content
+    # Verify analytics events were tracked throughout the scenario
+    Then I should see analytics events:
+      | event_name                     | platform   | version    | firstLaunchDate | isFirstLaunch | isSubWiki | hasGitUrl |
+      | app.launched                   | *string*   | *string*   | *exists*        | *boolean*     |           |           |
+      | workspace.created              |            |            |                 |               | *boolean* | *boolean* |
+      | workspace.activated            |            |            |                 |               | *boolean* |           |
+      | workspace.opened_in_new_window |            |            |                 |               | *boolean* |           |

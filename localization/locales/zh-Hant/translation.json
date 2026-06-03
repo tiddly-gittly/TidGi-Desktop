@@ -505,6 +505,8 @@
     "NotificationsDetail": "設置通知暫停時間",
     "NotificationsDisableSchedule": "按時間自動禁用通知：",
     "NotificationsMuteAudio": "暫停通知時也同時靜音工作區",
+    "UnreadCountBadge": "在應用程式圖示上顯示未讀數量徽章",
+    "OpenExternalAPISettings": "打開 AI API 設定",
     "OpenAtLogin": "開機自啟",
     "OpenAtLoginMinimized": "開機自啟並最小化(MacOS)",
     "OpenLogFolder": "打開Log文件夾",

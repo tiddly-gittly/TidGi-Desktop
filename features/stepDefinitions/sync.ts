@@ -18,11 +18,21 @@ function cleanupPathBestEffort(targetPath: string): void {
 async function getWorkspaceInfo(world: ApplicationWorld, workspaceName: string): Promise<{ id: string; port: number }> {
   const settings = await fs.readJson(getSettingsPath(world)) as { workspaces?: Record<string, IWorkspace> };
   const workspaces = settings.workspaces ?? {};
+  // First pass: prefer exact name match
+  for (const [id, workspace] of Object.entries(workspaces)) {
+    if ('wikiFolderLocation' in workspace) {
+      const wikiWorkspace = workspace;
+      if (wikiWorkspace.name === workspaceName) {
+        return { id, port: wikiWorkspace.port ?? 5212 };
+      }
+    }
+  }
+  // Second pass: fallback to folder basename match
   for (const [id, workspace] of Object.entries(workspaces)) {
     if ('wikiFolderLocation' in workspace) {
       const wikiWorkspace = workspace;
       const folderName = path.basename(wikiWorkspace.wikiFolderLocation);
-      if (folderName === workspaceName || wikiWorkspace.name === workspaceName) {
+      if (folderName === workspaceName) {
         return { id, port: wikiWorkspace.port ?? 5212 };
       }
     }

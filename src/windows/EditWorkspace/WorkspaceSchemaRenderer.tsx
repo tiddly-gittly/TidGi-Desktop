@@ -31,7 +31,7 @@ import { getCustomComponent } from './workspaceCustomComponentRegistry';
 /** Return the English translation for a key — used for search matching. */
 function txEn(key: string, ns?: string): string {
   try {
-    return ns ? (i18next.t(key, { lng: 'en', ns })) : (i18next.t(key, { lng: 'en' }));
+    return (ns ? i18next.t(key, { lng: 'en', ns }) : i18next.t(key, { lng: 'en' })) ?? '';
   } catch {
     return '';
   }

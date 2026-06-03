@@ -1,4 +1,7 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
+import { sanitizeErrorMessage } from '@services/analytics';
+import type { IAnalyticsService } from '@services/analytics/interface';
+import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { app, shell } from 'electron';
 import newGithubIssueUrl, { type Options as OpenNewGitHubIssueOptions } from 'new-github-issue-url';
@@ -57,7 +60,22 @@ ${process.platform} ${os.release()}
 Locale: ${app.getLocale()}
 `.trim();
 
+/**
+ * Replace absolute file paths in error strings with `<redacted>` to prevent
+ * leaking the user's home directory or project structure in GitHub issues.
+ */
+function sanitizePaths(text: string): string {
+  return text
+    .replace(/[A-Za-z]:\\[\s\S]*?(?=\n|\s{2,}|$)/gi, '<redacted>')
+    .replace(/\/(?:home|Users)\/[\s\S]*?(?=\n|\s{2,}|$)/g, '<redacted>');
+}
+
 export function reportErrorToGithubWithTemplates(error: Error): void {
+  const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+  void analyticsService.track('error.report_requested', {
+    errorName: error.name || 'Error',
+    errorMessage: sanitizeErrorMessage(error),
+  });
   void import('@services/container')
     .then(({ container }) => {
       const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
@@ -69,20 +87,24 @@ export function reportErrorToGithubWithTemplates(error: Error): void {
         logger.error(`Failed to open LOG_FOLDER in reportErrorToGithubWithTemplates`, { error });
       });
     });
+
+  const sanitizedMessage = sanitizePaths(error.message ?? '');
+  const sanitizedStack = sanitizePaths(error.stack ?? '');
+
   openNewGitHubIssue({
     user: 'tiddly-gittly',
     repo: 'TidGi-Desktop',
     template: 'bug.yml',
-    title: `bug: ${(error.message ?? '').substring(0, 100)}`,
+    title: `bug: ${sanitizedMessage.substring(0, 100)}`,
     body: `### Environment 环境信息
 
 ${debugInfo()}
 
 ### Description 描述
 
-${(error.message ?? '')}
+${sanitizedMessage}
 
-${(error.stack ?? '')}
+${sanitizedStack}
 
 ### Steps to Reproduce 复现方式
 

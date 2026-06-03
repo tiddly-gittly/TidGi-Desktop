@@ -4,7 +4,7 @@ import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.js
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import { AgentDefinitionEntity } from '@services/database/schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity } from '@services/database/schema/agent';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -99,13 +99,14 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     expect(typeof exampleAgent!.agentFrameworkConfig).toBe('object');
   });
 
-  it('should return only database data without fallback to defaultAgents', async () => {
+  it('should merge default agent fields when database stores only user overrides', async () => {
     // Get the real database repository that the service uses
     const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const realDataSource = await realDatabaseService.getDatabase('agent');
     const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
 
-    // Save only minimal record (id only) to test new behavior
+    // Save only minimal record (id only). Nullable fields mean "inherit from
+    // the built-in default agent", while the raw DB row stays minimal.
     const example = (defaultAgents as unknown as AgentDefinition[])[0];
     await agentDefRepo.save({
       id: example.id,
@@ -115,15 +116,14 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
 
     const found = defs.find(d => d.id === example.id);
     expect(found).toBeDefined();
-    // With new behavior, only id should be present, other fields should be undefined or empty
     expect(found!.id).toBe(example.id);
-    expect(found!.agentFrameworkID).toBeUndefined();
-    expect(found!.name).toBeUndefined();
-    expect(found!.description).toBeUndefined();
-    expect(found!.avatarUrl).toBeUndefined();
-    expect(found!.agentFrameworkConfig).toEqual({});
-    expect(found!.aiApiConfig).toBeUndefined();
-    expect(found!.agentTools).toBeUndefined();
+    expect(found!.agentFrameworkID).toBe(example.agentFrameworkID);
+    expect(found!.name).toBe(example.name);
+    expect(found!.description).toBe(example.description);
+    expect(found!.avatarUrl).toBe(example.avatarUrl);
+    expect(found!.agentFrameworkConfig).toEqual(example.agentFrameworkConfig);
+    expect(found!.aiApiConfig).toEqual(example.aiApiConfig);
+    expect(found!.agentTools).toEqual(example.agentTools);
   });
 
   it('should have only id field populated when directly querying database entity for build-in agent', async () => {
@@ -187,5 +187,57 @@ describe('AgentDefinitionService getAgentDefs integration', () => {
     // Should still return default agents and not throw
     const templates = await agentDefinitionService.getAgentTemplates();
     expect(templates.length).toBe((defaultAgents as unknown as AgentDefinition[]).length);
+  });
+
+  it('should reject deleteAgentDef for non-temporary IDs', async () => {
+    await expect(agentDefinitionService.deleteAgentDef('real-agent-id')).rejects.toThrow(
+      'Refusing to delete non-temporary agent definition via cleanup path',
+    );
+  });
+
+  it('should delete temporary agent definition and dependent instances', async () => {
+    const realDatabaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const realDataSource = await realDatabaseService.getDatabase('agent');
+    const agentDefRepo = realDataSource.getRepository(AgentDefinitionEntity);
+    const instanceRepo = realDataSource.getRepository(AgentInstanceEntity);
+
+    // Create a temp agent definition
+    const tempId = 'temp-test-agent';
+    await agentDefRepo.save({
+      id: tempId,
+      name: 'Temp Agent',
+      agentFrameworkID: 'test-framework',
+    });
+
+    // Create a dependent instance
+    const instanceId = 'test-instance';
+    await instanceRepo.save({
+      id: instanceId,
+      agentDefId: tempId,
+      name: 'Test Instance',
+      status: { state: 'completed' },
+    });
+
+    // Mock agentInstanceService.deleteAgent to perform DB deletion without full lifecycle teardown
+    const serviceWithPrivate = agentDefinitionService as unknown as {
+      agentInstanceService: { deleteAgent: (...args: unknown[]) => Promise<unknown> };
+    };
+    const deleteAgentMock = vi.fn().mockImplementation(async (instanceId: string) => {
+      await instanceRepo.delete(instanceId);
+    });
+    serviceWithPrivate.agentInstanceService.deleteAgent = deleteAgentMock;
+
+    await agentDefinitionService.deleteAgentDef(tempId);
+
+    // Verify instance service was called for cleanup
+    expect(deleteAgentMock).toHaveBeenCalledWith(instanceId);
+
+    // Verify definition is removed
+    const remainingDef = await agentDefRepo.findOne({ where: { id: tempId } });
+    expect(remainingDef).toBeNull();
+
+    // Verify instance is removed
+    const remainingInstance = await instanceRepo.findOne({ where: { id: instanceId } });
+    expect(remainingInstance).toBeNull();
   });
 });

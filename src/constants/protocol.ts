@@ -1,9 +1,9 @@
-import { isTest } from './environment';
-
 /**
- * Protocol scheme used for deep linking
- * Test mode uses a different protocol to avoid conflicts with production
+ * Protocol scheme used for deep linking.
  *
- * Note: This file is for main process only, not for renderer/shared code
+ * Keep this file renderer-safe: do not import `environment.ts` here because that
+ * transitively imports Electron-only code via `isElectronDevelopment`.
  */
-export const TIDGI_PROTOCOL_SCHEME = isTest ? 'tidgi-test' : 'tidgi';
+const isTestProtocol = process.env.NODE_ENV === 'test' || process.env.TIDGI_TEST_SCENARIO !== undefined;
+
+export const TIDGI_PROTOCOL_SCHEME = isTestProtocol ? 'tidgi-test' : 'tidgi';

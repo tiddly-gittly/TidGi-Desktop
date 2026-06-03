@@ -15,8 +15,10 @@ interface SectionSideBarProps {
 const SideBar = styled('div')`
   position: fixed;
   width: 200px;
+  height: 100vh;
   background-color: ${({ theme }) => theme.palette.background.default};
   color: ${({ theme }) => theme.palette.text.primary};
+  overflow-y: auto;
 `;
 const ListItemIcon = styled(ListItemIconRaw)`
   color: ${({ theme }) => theme.palette.text.primary};

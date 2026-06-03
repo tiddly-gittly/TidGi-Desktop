@@ -1,5 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { Box, styled } from '@mui/material';
 import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
@@ -11,7 +11,25 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { getSimplifiedWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { isWikiWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { useDragContext } from './SortableWorkspaceSelectorList';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
+
+const DragOverlayContainer = styled(Box)`
+  position: relative;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+`;
+
+const WorkspaceDropZone = styled('div', {
+  shouldForwardProp: (propertyName) => !/^\$/.test(String(propertyName)),
+})<{ $bottom?: boolean; $center?: boolean }>`
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: auto;
+  z-index: 2;
+  background: transparent;
+`;
 
 export interface ISortableItemProps {
   index: number;
@@ -24,15 +42,30 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const { t } = useTranslation();
   const { active, id, name, picturePath, pageType } = workspace;
   const preference = usePreferenceObservable();
+  const dragContext = useDragContext();
 
   const isWiki = isWikiWorkspace(workspace);
   const hibernated = isWiki ? workspace.hibernated : false;
   const transparentBackground = isWiki ? workspace.transparentBackground : false;
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  // Only pass minimal fields in data to keep the reference stable when workspaces$
+  // emits new objects with identical values. Passing the whole workspace object
+  // caused dnd-kit useSortable to re-register on every emission, triggering an
+  // infinite render loop.
+  const sortableData = useMemo(() => ({ type: 'workspace' as const, groupId: workspace.groupId, pageType: workspace.pageType }), [workspace.groupId, workspace.pageType]);
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+    id,
+    data: sortableData,
+  });
+
+  const isDragOverTarget = dragContext.overId === id;
+  const dragIntent = isDragOverTarget ? dragContext.intent : null;
+  const isAnyDragActive = dragContext.activeId !== null;
+
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition ?? undefined,
+    transform: 'translate3d(0, 0, 0)',
+    transition: 'none',
+    opacity: isDragging ? 0 : undefined,
   };
   const [workspaceClickedLoading, workspaceClickedLoadingSetter] = useState(false);
   const [, setLocation] = useLocation();
@@ -65,6 +98,10 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   }, [isMiniWindow, preference?.tidgiMiniWindowFixedWorkspaceId, id, active]);
 
   const onWorkspaceClick = useCallback(async () => {
+    if (isAnyDragActive) {
+      return;
+    }
+
     workspaceClickedLoadingSetter(true);
     try {
       // Special "add" workspace always opens add workspace window
@@ -96,7 +133,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     } finally {
       workspaceClickedLoadingSetter(false);
     }
-  }, [id, setLocation, workspace, isMiniWindow]);
+  }, [id, isAnyDragActive, isMiniWindow, setLocation, workspace]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
@@ -117,8 +154,21 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     },
     [t, workspace],
   );
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
+    <DragOverlayContainer
+      ref={(node) => {
+        setNodeRef(node as HTMLElement | null);
+      }}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onContextMenu={onWorkspaceContextMenu}
+      data-testid={`workspace-item-${id}`}
+    >
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-top`} style={{ top: 0, height: '33%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-center`} $center style={{ top: '33%', height: '34%', pointerEvents: 'none' }} />
+      <WorkspaceDropZone data-testid={`workspace-drop-zone-${id}-bottom`} $bottom style={{ bottom: 0, height: '33%', pointerEvents: 'none' }} />
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
         restarting={workspace.metadata.isRestarting}
@@ -135,7 +185,8 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         index={index}
         hibernated={hibernated}
         showSidebarTexts={showSidebarTexts}
+        dragIntent={dragIntent}
       />
-    </div>
+    </DragOverlayContainer>
   );
 }

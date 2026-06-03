@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import { PreferenceSections } from '@services/preferences/interface';
 import type { EmbeddingStatus } from '@services/wikiEmbedding/interface';
 import { Paper, SectionTitle } from '../../Preferences/PreferenceComponents';
 import { useWorkspaceForm } from '../WorkspaceFormContext';
@@ -21,6 +23,7 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
   const [status, setStatus] = useState<WorkspaceEmbeddingStatus>({});
   const [loading, setLoading] = useState(false);
   const [infoMessage, setInfoMessage] = useState<string | undefined>(undefined);
+  const [showOpenSettingsButton, setShowOpenSettingsButton] = useState(false);
   const pollingIntervalReference = useRef<NodeJS.Timeout | null>(null);
 
   const loadStatus = async () => {
@@ -72,13 +75,16 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
       const aiConfig = await window.service.externalAPI.getAIConfig();
       if (!aiConfig.default?.provider && !aiConfig.embedding?.provider) {
         setInfoMessage(t('Preference.SearchEmbeddingNoAIConfigError'));
+        setShowOpenSettingsButton(true);
         return;
       }
       if (!aiConfig.embedding?.model) {
         setInfoMessage(t('Preference.SearchEmbeddingNoEmbeddingModelError'));
+        setShowOpenSettingsButton(true);
         return;
       }
       setInfoMessage(undefined);
+      setShowOpenSettingsButton(false);
       setStatus(previous => ({ ...previous, status: 'generating', progress: { total: 0, completed: 0 } }));
       await window.service.wikiEmbedding.generateEmbeddings(workspaceId, aiConfig, false);
       await loadStatus();
@@ -187,9 +193,24 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
                   )}
 
                   {infoMessage && (
-                    <Typography variant='body2' color='error' style={{ marginTop: 8 }}>
-                      {infoMessage}
-                    </Typography>
+                    <div style={{ marginTop: 8 }}>
+                      <Typography variant='body2' color='error'>
+                        {infoMessage}
+                      </Typography>
+                      {showOpenSettingsButton && (
+                        <Button
+                          size='small'
+                          variant='text'
+                          color='primary'
+                          style={{ marginTop: 4, padding: 0 }}
+                          onClick={async () => {
+                            await window.service.deepLink.openDeepLink(`${TIDGI_PROTOCOL_SCHEME}://preferences/${PreferenceSections.externalAPI}`);
+                          }}
+                        >
+                          {t('Preference.OpenExternalAPISettings')}
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </ListItem>
