@@ -148,11 +148,13 @@ function deriveMeasuredTimeoutBudget(samples: number[]): number | null {
 
   const observedMax = Math.max(...validSamples);
   const observedMin = Math.min(...validSamples);
-  const average = validSamples.reduce((total, sample) => total + sample, 0) / validSamples.length;
-  const maxDeviation = validSamples.reduce((currentMax, sample) => Math.max(currentMax, Math.abs(sample - average)), 0);
-  const sampleSpread = observedMax - observedMin;
-  const sampleScarcityMargin = observedMax / validSamples.length;
-  const measuredMargin = Math.max(sampleSpread, maxDeviation, sampleScarcityMargin);
+  // The spread between runs is the primary error signal — CI jitter, cold-cache
+  // variance, and background noise all manifest as inter-run differences.
+  const spread = observedMax - observedMin;
+  // Enforce a minimum 10 % margin so that two nearly-identical runs still
+  // provide a safety cushion for one-off spikes.
+  const minMargin = Math.ceil(observedMax * 0.1);
+  const measuredMargin = Math.max(spread, minMargin);
 
   return Math.ceil(observedMax + measuredMargin);
 }
