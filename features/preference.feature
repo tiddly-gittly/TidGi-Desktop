@@ -66,7 +66,7 @@ Feature: TidGi Preference
       | element description           | selector                                   |
       | add provider button           | [data-testid='add-new-provider-button']    |
       | select from preset dropdown   | [data-testid='new-provider-preset-select'] |
-      | comfyui preset option         | li:has-text('comfyui')                     |
+      | comfyui preset option         | li[role='option']:has-text('comfyui')      |
       | add provider submit button    | [data-testid='add-provider-submit-button'] |
       | provider tab comfyui          | button[role='tab']:has-text('comfyui')     |
       | add model button              | [data-testid='add-new-model-button']       |
