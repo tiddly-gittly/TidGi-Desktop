@@ -27,7 +27,7 @@ import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/wo
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
-import { AlreadyExistError, CopyWikiTemplateError, DoubleWikiInstanceError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
+import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
