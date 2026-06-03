@@ -76,6 +76,12 @@ Click "OK" ↓
 
 ![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
 
+Or you could start the Terminal from launchpad, and run [the command](https://apple.stackexchange.com/questions/202169/how-can-i-open-an-app-from-an-unidentified-developer-without-using-the-gui) below, make sure your terminal's "working dir" has the tidgi app
+
+```sh
+xattr -dr com.apple.quarantine "tidgi.app"
+```
+
 </details>
 
 ## Related Posts About TidGi
