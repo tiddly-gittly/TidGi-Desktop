@@ -52,6 +52,7 @@ from {background-color: #dddddd;}
 `;
 interface IAvatarProps {
   $addAvatar?: boolean;
+  $dragIntent?: 'group' | 'ungroup' | 'reorder-before' | 'reorder-after' | null;
   $highlightAdd?: boolean;
   $large?: boolean;
   $transparent?: boolean;
@@ -69,6 +70,7 @@ const Avatar = styled('div', { shouldForwardProp: (property) => !/^\$/.test(Stri
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  transition: background-color 0.15s ease, outline 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   ${is('$large')`
     height: 44px;
     width: 44px;
@@ -90,6 +92,12 @@ const Avatar = styled('div', { shouldForwardProp: (property) => !/^\$/.test(Stri
   ${is('$addAvatar')`
     background-color: transparent;
   `}
+  ${({ $dragIntent, theme }) =>
+  $dragIntent === 'group'
+    ? `background-color: ${theme.palette.primary.light} !important; outline: 2px solid ${theme.palette.primary.main}; box-shadow: 0 0 0 4px ${theme.palette.primary.main}33; transform: scale(1.06);`
+    : $dragIntent === 'ungroup'
+    ? `background-color: ${theme.palette.error.light} !important; outline: 2px solid ${theme.palette.error.main}; box-shadow: 0 0 0 4px ${theme.palette.error.main}33; transform: scale(1.06);`
+    : ''}
 `;
 
 const AvatarPicture = styled('img', { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $large?: boolean }>`
@@ -123,6 +131,7 @@ interface Props {
   active?: boolean;
   badgeCount?: number;
   customIcon?: React.ReactElement;
+  dragIntent?: 'group' | 'ungroup' | 'reorder-before' | 'reorder-after' | null;
   hibernated?: boolean;
   id: string;
   index?: number;
@@ -142,6 +151,7 @@ export function WorkspaceSelectorBase({
   restarting: loading = false,
   badgeCount = 0,
   customIcon,
+  dragIntent = null,
   hibernated = false,
   showSideBarIcon = true,
   id,
@@ -161,6 +171,7 @@ export function WorkspaceSelectorBase({
       $transparent={transparentBackground}
       $addAvatar={id === 'add'}
       $highlightAdd={index === 0}
+      $dragIntent={dragIntent}
       id={id === 'add' ? 'add-workspace-button' : id === 'guide' ? 'guide-workspace-button' : `workspace-avatar-${id}`}
     >
       {id === 'add'
@@ -191,6 +202,7 @@ export function WorkspaceSelectorBase({
       onClick={workspaceClickedLoading ? () => {} : onClick}
       data-testid={pageType ? `workspace-${pageType}` : `workspace-${id}`}
       data-active={active ? 'true' : 'false'}
+      data-drag-intent={dragIntent ?? 'none'}
       data-hibernated={hibernated ? 'true' : 'false'}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>

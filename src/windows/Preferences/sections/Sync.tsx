@@ -1,5 +1,6 @@
 import { Divider, List, Switch, TextField } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { renderTimeViewClock } from '@mui/x-date-pickers/timeViewRenderers';
 import { useTranslation } from 'react-i18next';
 
 import { TokenForm } from '../../../components/TokenForm';
@@ -68,10 +69,10 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                     onChange={async (date) => {
                       if (date === null) throw new Error(`date is null`);
                       // Extract hours, minutes, seconds from the date and convert to milliseconds
-                      // This is timezone-independent because we're just extracting time components
-                      const hours = date.getHours();
-                      const minutes = date.getMinutes();
-                      const seconds = date.getSeconds();
+                      // Must use UTC methods because the Date was constructed with Date.UTC
+                      const hours = date.getUTCHours();
+                      const minutes = date.getUTCMinutes();
+                      const seconds = date.getUTCSeconds();
                       const intervalMs = (hours * 60 * 60 + minutes * 60 + seconds) * 1000;
                       await window.service.preference.set('syncDebounceInterval', intervalMs);
                       props.onNeedsRestart();
@@ -81,6 +82,11 @@ export function Sync(props: ICustomSectionProps): React.JSX.Element {
                     }}
                     onOpen={async () => {
                       await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true });
+                    }}
+                    viewRenderers={{
+                      hours: renderTimeViewClock,
+                      minutes: renderTimeViewClock,
+                      seconds: renderTimeViewClock,
                     }}
                   />
                 </TimePickerContainer>

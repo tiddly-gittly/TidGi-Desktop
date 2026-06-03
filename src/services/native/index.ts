@@ -1,6 +1,7 @@
 import { app, dialog, globalShortcut, ipcMain, MessageBoxOptions, shell, webContents } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
+import { randomBytes } from 'node:crypto';
 import path from 'path';
 import { Observable } from 'rxjs';
 
@@ -565,5 +566,13 @@ ${message.message}
         });
       }
     }, 30_000);
+  }
+
+  public async generateMcpToken(): Promise<string> {
+    const token = randomBytes(16).toString('hex'); // 32-char hex
+    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+    await preferenceService.set('mcpServerToken', token);
+    logger.info('Generated and saved new MCP auth token');
+    return token;
   }
 }

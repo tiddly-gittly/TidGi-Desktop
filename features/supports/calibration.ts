@@ -2,48 +2,54 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * E2E performance calibration to determine dynamic timeout multiplier.
+ * E2E performance calibration — every timeout value comes from measurement.
  *
- * Why this exists: E2E tests involve CPU, I/O, Electron startup, and rendering.
- * A pure CPU benchmark doesn't capture the full performance picture. Instead,
- * each `pnpm test:e2e` run first measures a representative smoke scenario and
- * writes the result to a temporary calibration file. The main E2E run then
- * reads that file before loading timeout constants.
+ * Preflight runs smoke test 4×, extracts per-step durations from cucumber JSON,
+ * classifies by operation type. Timeouts are set to the measured worst case
+ * for each type. No hardcoded timeout values anywhere.
  */
 
-/** Reference duration for smoke test on GitHub Actions (measured empirically). */
-const REFERENCE_SMOKE_DURATION_MS = 8000; // ~8s on CI
-
-/**
- * Upper bound: don't let very slow machines wait more than 5× the reference
- * budget, otherwise the whole suite becomes impractically slow to debug.
- */
-const MAX_MULTIPLIER = 5.0;
-
-const CALIBRATION_FILE = path.resolve(process.cwd(), 'test-artifacts', '.calibration.json');
+const CALIBRATION_FILE = path.resolve(process.cwd(), '.calibration.json');
 
 type CalibrationRecord = {
-  measuredMs: number;
-  multiplier: number;
+  /** Total wall-clock budget from calibration runs, kept for diagnostics. */
+  totalMs: number;
+  /** Step timeout budget derived from measured calibration runs. */
+  stepMs: number;
+  /** Launch/browser-view timeout budget derived from measured calibration runs. */
+  launchMs: number;
+  /** Wait/log/SSE/watch-fs budget, measured for future per-category timeout. */
+  waitMs: number;
+  /** Click/type/check timeout budget derived from measured calibration runs. */
+  elementMs: number;
+  observed?: {
+    totalMs: number;
+    stepMs: number;
+    launchMs: number;
+    waitMs: number;
+    elementMs: number;
+  };
+  sampleCount?: number;
   recordedAt: number;
 };
 
-let cachedMultiplier: number | null = null;
+type CalibrationWriteInput = Omit<CalibrationRecord, 'recordedAt'>;
+
+let cachedRecord: CalibrationRecord | null = null;
 
 function readCalibrationRecord(): CalibrationRecord | null {
   try {
-    if (!fs.existsSync(CALIBRATION_FILE)) {
-      return null;
-    }
-
+    if (!fs.existsSync(CALIBRATION_FILE)) return null;
     const parsed = JSON.parse(fs.readFileSync(CALIBRATION_FILE, 'utf-8')) as Partial<CalibrationRecord>;
-    if (typeof parsed.multiplier !== 'number' || typeof parsed.measuredMs !== 'number') {
-      return null;
-    }
-
+    if (typeof parsed.stepMs !== 'number') return null;
     return {
-      measuredMs: parsed.measuredMs,
-      multiplier: parsed.multiplier,
+      totalMs: parsed.totalMs ?? 0,
+      stepMs: parsed.stepMs,
+      launchMs: parsed.launchMs ?? parsed.stepMs,
+      waitMs: parsed.waitMs ?? parsed.stepMs,
+      elementMs: parsed.elementMs ?? parsed.stepMs,
+      observed: parsed.observed,
+      sampleCount: parsed.sampleCount,
       recordedAt: typeof parsed.recordedAt === 'number' ? parsed.recordedAt : Date.now(),
     };
   } catch {
@@ -51,17 +57,13 @@ function readCalibrationRecord(): CalibrationRecord | null {
   }
 }
 
-export function writeCalibrationResult(actualDurationMs: number): number {
-  const raw = actualDurationMs / REFERENCE_SMOKE_DURATION_MS;
-  const multiplier = Math.min(MAX_MULTIPLIER, Math.max(1.0, raw));
-
+export function writeCalibrationResult(result: CalibrationWriteInput): void {
   fs.mkdirSync(path.dirname(CALIBRATION_FILE), { recursive: true });
   fs.writeFileSync(
     CALIBRATION_FILE,
     JSON.stringify(
       {
-        measuredMs: actualDurationMs,
-        multiplier,
+        ...result,
         recordedAt: Date.now(),
       } satisfies CalibrationRecord,
       null,
@@ -69,49 +71,36 @@ export function writeCalibrationResult(actualDurationMs: number): number {
     ),
     'utf-8',
   );
-
-  return multiplier;
 }
 
-/**
- * Load calibration result that was computed before cucumber started.
- */
-export function setCalibrationResult(actualDurationMs: number): void {
-  cachedMultiplier = writeCalibrationResult(actualDurationMs);
-}
+// During calibration preflight, use a generous timeout that is safe for Node.js setTimeout
+// AND Playwright Chromium CDP. Node.js 32-bit signed max is 2^31-1 (2147483647 ≈ 24.8d),
+// but Playwright CDP may overflow values above 2^30. 5 minutes is safe and enough.
+const NO_TIMEOUT = 300_000;
 
-/**
- * Get the performance multiplier for timeout scaling.
- * Returns calibrated value if smoke test has run, otherwise returns a conservative fallback.
- */
-export function getPerformanceMultiplier(): number {
-  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
-    return MAX_MULTIPLIER;
-  }
-
-  if (cachedMultiplier !== null) {
-    return cachedMultiplier;
-  }
-
+function requireRecord(): CalibrationRecord {
+  if (cachedRecord !== null) return cachedRecord;
   const record = readCalibrationRecord();
   if (record) {
-    cachedMultiplier = record.multiplier;
-    return cachedMultiplier;
+    cachedRecord = record;
+    return record;
   }
-
-  // Fallback if calibration preflight did not run.
-  console.warn(
-    '[E2E Calibration] Calibration file not found, using fallback multiplier 3.0×',
+  throw new Error(
+    'E2E calibration file is missing.\nRun `pnpm test:e2e` to generate it — the calibration preflight runs automatically.',
   );
-  console.warn(
-    '[E2E Calibration] Expected preflight calibration to run before cucumber startup',
-  );
-  return 3.0;
 }
 
-/**
- * Check if calibration has been performed.
- */
-export function isCalibrated(): boolean {
-  return cachedMultiplier !== null || readCalibrationRecord() !== null;
+export function getMeasuredStepTimeoutMs(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
+  return requireRecord().stepMs;
+}
+
+export function getMeasuredLaunchTimeoutMs(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
+  return requireRecord().launchMs;
+}
+
+export function getMeasuredElementTimeoutMs(): number {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
+  return requireRecord().elementMs;
 }

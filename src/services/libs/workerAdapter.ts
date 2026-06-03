@@ -168,7 +168,9 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
 }
 
 /**
- * Worker-side message handler
+ * Worker-side message handler. Messages are processed sequentially so async
+ * operations (e.g. git commands) do not interleave on the same repo.
+ *
  * Usage in worker: handleWorkerMessages({ methodName: implementation });
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -230,6 +232,10 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
             } as WorkerMessage);
           },
         });
+        // Note: we do NOT await Observable completion — some Observables (e.g.
+        // startNodeJSWiki) never complete, they only emit next values. Awaiting
+        // would permanently block the message handler. Per-workspace git
+        // serialization is handled by operationLocks in GitService instead.
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
         // Handle Promise

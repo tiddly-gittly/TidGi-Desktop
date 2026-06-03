@@ -40,6 +40,7 @@ Object.defineProperty(window, 'observables', {
     },
     workspace: {
       workspaces$: new BehaviorSubject([]).asObservable(),
+      groups$: new BehaviorSubject({}).asObservable(),
     },
     updater: {
       updaterMetaData$: new BehaviorSubject(undefined).asObservable(),

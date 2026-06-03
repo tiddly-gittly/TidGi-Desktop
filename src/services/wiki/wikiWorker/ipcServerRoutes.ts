@@ -296,8 +296,22 @@ export class IpcServerRoutes {
   //    ██    ██ ███ ██            ██      ██ ██
   //    ██     ███ ███        ███████ ███████ ███████
   /**
+   * Check if a title should be persisted to disk but NOT synced between views via SSE.
+   * Unlike TiddlersToNotSave (which prevents both disk save AND SSE sync by skipping the IPC call),
+   * this list only prevents SSE broadcast while still allowing the tiddler to reach the worker
+   * and be persisted to the file system. This separation is necessary for titles like
+   * `$:/layout` that need to survive app restarts but should remain independent per window.
+   */
+  private shouldNotSyncAcrossViews(title: string): boolean {
+    const text = this.wikiInstance.wiki.getTiddlerText('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/TiddlersToNotSyncAcrossViews') ?? '';
+    const titles = text.split(/\s+/).filter(Boolean);
+    return titles.includes(title);
+  }
+
+  /**
    * Install a single change listener on the wiki instance if not done yet.
-   * Broadcasts ALL changes to the shared Subject (no ipcPendingTitles filtering).
+   * Broadcasts changes to the shared Subject, skipping titles configured in
+   * TiddlersToNotSyncAcrossViews (persisted but not synced between windows).
    * Echo prevention is handled by each frontend subscriber via lastSavedRevisions.
    */
   private installChangeListener(): void {
@@ -309,6 +323,11 @@ export class IpcServerRoutes {
       let hasChanges = false;
 
       for (const title in changes) {
+        // Skip titles configured to not sync between views
+        // (e.g. $:/layout which should persist to disk but remain window-local)
+        if (this.shouldNotSyncAcrossViews(title)) {
+          continue;
+        }
         enrichedChanges[title] = {
           ...changes[title],
           revision: this.wikiInstance.wiki.getChangeCount(title),

@@ -1,7 +1,8 @@
 import { Box, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import { keyframes, styled, Theme } from '@mui/material/styles';
+import { useUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '../ListItem';
@@ -56,18 +57,41 @@ interface Props {
  * Create storage provider's token.
  * @returns
  */
+const allStorageServices = [
+  SupportedStorageServices.github,
+  SupportedStorageServices.codeberg,
+  SupportedStorageServices.gitea,
+  SupportedStorageServices.testOAuth,
+];
+
+function getDefaultStorageService(userInfo: ReturnType<typeof useUserInfoObservable>): SupportedStorageServices {
+  // Prioritize services that user has logged into
+  if (userInfo) {
+    for (const service of allStorageServices) {
+      const token = userInfo[`${service}-token`];
+      if (typeof token === 'string' && token.length > 0) {
+        return service;
+      }
+    }
+  }
+  return SupportedStorageServices.github;
+}
+
 export function TokenForm({ storageProvider, storageProviderSetter }: Props): React.JSX.Element {
   const { t } = useTranslation();
-  const [internalTab, internalTabSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
+  const userInfo = useUserInfoObservable();
+  const defaultService = useMemo(() => getDefaultStorageService(userInfo), [userInfo]);
+  const [internalTab, internalTabSetter] = useState<SupportedStorageServices>(defaultService);
   // use external controls if provided
   const currentTab = storageProvider ?? internalTab;
   const currentTabSetter = storageProviderSetter ?? internalTabSetter;
-  // update storageProvider to be an online service, if this Component is opened
+  // Sync internal tab when userInfo loads and no external control is provided
   useEffect(() => {
-    if (storageProvider === SupportedStorageServices.local && typeof storageProviderSetter === 'function') {
-      storageProviderSetter(SupportedStorageServices.github);
+    if (storageProvider === undefined && userInfo !== undefined) {
+      const service = getDefaultStorageService(userInfo);
+      internalTabSetter(service);
     }
-  }, [storageProvider, storageProviderSetter]);
+  }, [storageProvider, userInfo]);
   return (
     <Container>
       <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />

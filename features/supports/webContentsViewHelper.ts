@@ -14,6 +14,19 @@ async function getWindowUrl(page: Page | undefined): Promise<string | undefined>
   }
 }
 
+async function getWindowId(app: ElectronApplication, page: Page | undefined): Promise<number | undefined> {
+  if (!page || page.isClosed()) {
+    return undefined;
+  }
+
+  try {
+    const browserWindow = await app.browserWindow(page);
+    return await browserWindow.evaluate((window: Electron.BrowserWindow) => window.id);
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Get the active WebContentsView from the target window.
  * When multiple wiki views exist, the LAST child is preferred because
@@ -21,7 +34,8 @@ async function getWindowUrl(page: Page | undefined): Promise<string | undefined>
  */
 async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
   const pageUrl = await getWindowUrl(page);
-  return await app.evaluate(async ({ BrowserWindow }, targetPageUrl?: string) => {
+  const pageWindowId = await getWindowId(app, page);
+  return await app.evaluate(async ({ BrowserWindow }, target?: { pageUrl?: string; windowId?: number }) => {
     const allWindows = BrowserWindow.getAllWindows();
 
     const getViewIdFromWindow = (window: Electron.BrowserWindow) => {
@@ -59,13 +73,19 @@ async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
       return candidateInfos[0]?.id ?? null;
     };
 
-    if (targetPageUrl) {
-      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getURL() === targetPageUrl);
+    if (target?.windowId !== undefined) {
+      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.id === target.windowId);
+      if (!targetWindow) {
+        return null;
+      }
+
+      return getViewIdFromWindow(targetWindow);
+    }
+
+    if (target?.pageUrl) {
+      const targetWindow = allWindows.find(w => !w.isDestroyed() && w.webContents?.getURL() === target.pageUrl);
       if (targetWindow) {
-        const targetViewId = getViewIdFromWindow(targetWindow);
-        if (targetViewId) {
-          return targetViewId;
-        }
+        return getViewIdFromWindow(targetWindow);
       }
     }
 
@@ -89,7 +109,7 @@ async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
     }
 
     return null;
-  }, pageUrl);
+  }, { pageUrl, windowId: pageWindowId });
 }
 
 /**
@@ -99,7 +119,6 @@ async function executeInBrowserView<T>(
   app: ElectronApplication,
   script: string,
   page?: Page,
-  timeoutMs = 2000,
 ): Promise<T> {
   const webContentsId = await getFirstWebContentsView(app, page);
 
@@ -108,22 +127,32 @@ async function executeInBrowserView<T>(
   }
 
   return await app.evaluate(
-    async ({ webContents }, [id, scriptContent, timeoutInMs]) => {
+    async ({ webContents }, [id, scriptContent]) => {
       const targetWebContents = webContents.fromId(id as number);
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
-      const result: T = await Promise.race([
-        targetWebContents.executeJavaScript(scriptContent as string, true),
-        new Promise<never>((_, reject) =>
+
+      // Wait briefly for any in-flight navigation to finish before executing.
+      // reloadViewsWebContents may trigger a reload just before this call,
+      // or useInitialPage may navigate after workspace metadata changes.
+      if (targetWebContents.isLoading()) {
+        await new Promise<void>((resolve) => {
+          const onLoaded = () => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          };
+          targetWebContents.on('did-stop-loading', onLoaded);
           setTimeout(() => {
-            reject(new Error('executeInBrowserView timed out (page navigating?)'));
-          }, timeoutInMs as number)
-        ),
-      ]) as T;
-      return result;
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          }, 1_000);
+        });
+      }
+
+      return await targetWebContents.executeJavaScript(scriptContent as string, true) as T;
     },
-    [webContentsId, script, timeoutMs],
+    [webContentsId, script],
   );
 }
 
@@ -136,7 +165,6 @@ export async function getTextContent(app: ElectronApplication, page?: Page): Pro
       app,
       'document.body.textContent || document.body.innerText || ""',
       page,
-      2000,
     );
   } catch {
     return null;
@@ -478,7 +506,6 @@ export async function executeTiddlyWikiCode<T>(
   app: ElectronApplication,
   code: string,
   page?: Page,
-  timeoutMs = 200,
 ): Promise<T | null> {
   let webContentsId = await getFirstWebContentsView(app, page);
 
@@ -497,28 +524,29 @@ export async function executeTiddlyWikiCode<T>(
   }
 
   return await app.evaluate(
-    async ({ webContents }, [id, codeContent, timeoutInMs]) => {
+    async ({ webContents }, [id, codeContent]) => {
       const targetWebContents = webContents.fromId(id as number);
       if (!targetWebContents) {
         throw new Error('WebContents not found');
       }
-      /**
-       * executeJavaScript can hang indefinitely when the webContents is navigating
-       * (e.g. during a wiki restart retry loop). Race against a 200 ms timeout so
-       * backOff callers get fast failures and can retry until the page is ready.
-       * 200ms gives ~6 retries within the 5s Cucumber step budget even during a
-       * ~12s simplified-wiki restart (8s pre-wait + 3.5s for wiki to become ready).
-       */
-      const result: T = await Promise.race([
-        targetWebContents.executeJavaScript(codeContent as string, true),
-        new Promise<never>((_, reject) =>
+
+      // Wait briefly for any in-flight navigation to finish before executing.
+      if (targetWebContents.isLoading()) {
+        await new Promise<void>((resolve) => {
+          const onLoaded = () => {
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          };
+          targetWebContents.on('did-stop-loading', onLoaded);
           setTimeout(() => {
-            reject(new Error('executeJavaScript timed out (page navigating?)'));
-          }, timeoutInMs as number)
-        ),
-      ]) as T;
-      return result;
+            targetWebContents.off('did-stop-loading', onLoaded);
+            resolve();
+          }, 1_000);
+        });
+      }
+
+      return await targetWebContents.executeJavaScript(codeContent as string, true) as T;
     },
-    [webContentsId, code, timeoutMs],
+    [webContentsId, code],
   );
 }

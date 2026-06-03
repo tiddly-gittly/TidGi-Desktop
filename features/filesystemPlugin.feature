@@ -16,7 +16,7 @@ Feature: Filesystem Plugin
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
 
-  @file-watching
+  @file-watching @calibrate
   Scenario: File lifecycle - create, modify, rename, field-edit, and delete syncs to wiki
     # --- Part 1: External file creation ---
     When I create file "{tmpDir}/wiki/tiddlers/WatchTestTiddler.tid" with content:

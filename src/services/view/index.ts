@@ -14,7 +14,7 @@ import { MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
-import { type IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
+import { type IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
@@ -159,6 +159,14 @@ export class View implements IViewService {
     }
     const browserWindow = this.windowService.get(windowName);
     if (browserWindow === undefined) {
+      // The tidgi mini window is created asynchronously by the menubar library and may
+      // not be ready during early app startup. Skip gracefully — it will be created
+      // lazily when openTidgiMiniWindow() shows the window (which already handles
+      // missing views by calling addView on-demand).
+      if (windowName === WindowNames.tidgiMiniWindow) {
+        logger.warn(`addView: ${windowName} is not ready yet, skipping view creation for workspace ${workspace.id}`);
+        return;
+      }
       throw new Error(`Browser window ${windowName} is not ready for workspace ${workspace.id}`);
     }
     const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
@@ -213,7 +221,19 @@ export class View implements IViewService {
 
     // Set initial bounds: active or secondary/mini → visible; inactive main → offscreen
     if (workspace.active || windowName !== WindowNames.main) {
-      const contentSize = browserWindow.getContentSize();
+      let contentSize = browserWindow.getContentSize();
+      // On Windows Server CI getContentSize() can return [0,0] for a window that was
+      // just created off-screen. Use the configured default dimensions so the view
+      // does not get zero-sized bounds (which prevents the compositor from painting it).
+      if (contentSize[0] === 0 && contentSize[1] === 0) {
+        const defaults = windowDimension[windowName];
+        contentSize = [defaults?.width ?? 800, defaults?.height ?? 600];
+        logger.warn('createViewAndAttach: getContentSize returned [0,0], using fallback dimensions', {
+          function: 'createViewAndAttach',
+          windowName,
+          fallback: { width: contentSize[0], height: contentSize[1] },
+        });
+      }
       view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     } else {
       this.moveOffscreen(view, browserWindow);
@@ -279,8 +299,17 @@ export class View implements IViewService {
     const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
     const urlToLoad = uri || (rememberLastPageVisited ? lastUrl : homeUrl) || homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
-      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) return;
+      // Reset the error flag BEFORE loading so that transient failures (e.g. worker
+      // not yet ready during parallel init) don't permanently block URL loading.
+      // The did-fail-load handler will re-set didFailLoadErrorMessage if the load
+      // genuinely fails — but we must give loadURL a chance to fire did-start-loading
+      // (which also clears the flag) before checking workspaceDidFailLoad.
       await this.workspaceService.updateMetaData(workspace.id, { didFailLoadErrorMessage: null, isLoading: true });
+      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
+        // Still marked as failed — the updateMetaData above may have been overridden
+        // by a concurrent error.  Don't retry: the view will show an error.
+        return;
+      }
       await view.webContents.loadURL(urlToLoad);
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
@@ -349,15 +378,38 @@ export class View implements IViewService {
     const key = `${workspaceID}-${windowName}`;
     this.customBoundsMap.delete(key);
     this.activelyShownViews.add(key);
-    // Ensure it's a child and brought to the front. Removing and re-adding forces
-    // Electron to properly render the view, preventing blank screen bugs when
-    // restoring a window from minimized/hidden state.
+    // Ensure the view is attached as a child. The remove-add sequence forces
+    // Electron to repaint, preventing blank screen bugs when restoring a window
+    // from minimized/hidden state. If the view is not yet attached, addChildView
+    // alone is enough; if it is attached, removing first ensures re-adding
+    // properly triggers the compositor.
+    let attached = false;
     try {
       browserWindow.contentView.removeChildView(view);
-    } catch { /* ignore if not attached */ }
+      attached = true;
+    } catch {
+      // View was not attached — normal for window-recreation or first-show.
+    }
     try {
       browserWindow.contentView.addChildView(view);
-    } catch { /* already added */ }
+      attached = true;
+    } catch (addError) {
+      // If removeChildView succeeded but addChildView fails, the view is
+      // orphaned (removed but not re-added). Log the error and attempt
+      // a second add in case the failure was transient.
+      if (attached) {
+        logger.error('showView: addChildView failed after successful remove, view may be orphaned', {
+          workspaceID,
+          windowName,
+          error: addError,
+        });
+        try {
+          browserWindow.contentView.addChildView(view);
+        } catch {
+          logger.error('showView: second addChildView attempt also failed', { workspaceID, windowName });
+        }
+      }
+    }
     // If the BrowserWindow was recreated, the resize listener is still bound to the
     // old BrowserWindow instance. Rebind it here so dragging/resizing the restored
     // window keeps the view filling the window.
@@ -399,11 +451,22 @@ export class View implements IViewService {
       } catch { /* already added */ }
       view.setBounds(bounds);
     } else {
+      const previousCustomBounds = this.customBoundsMap.get(key);
       this.customBoundsMap.delete(key);
-      // Only move offscreen if the view is NOT currently shown via showView().
+      // Only move offscreen if the view is still at the previous custom bounds.
       // This prevents a late-arriving WikiEmbedTabContent cleanup from hiding
       // a view that showView() has already placed at full-window bounds.
-      if (!this.activelyShownViews.has(key)) {
+      if (previousCustomBounds !== undefined) {
+        const currentBounds = view.getBounds();
+        if (
+          currentBounds.x === previousCustomBounds.x &&
+          currentBounds.y === previousCustomBounds.y &&
+          currentBounds.width === previousCustomBounds.width &&
+          currentBounds.height === previousCustomBounds.height
+        ) {
+          this.moveOffscreen(view, browserWindow);
+        }
+      } else if (!this.activelyShownViews.has(key)) {
         this.moveOffscreen(view, browserWindow);
       }
     }
@@ -425,9 +488,13 @@ export class View implements IViewService {
       view.setBounds(this.customBoundsMap.get(key)!);
       return;
     }
-    const contentSize = browserWindow.getContentSize();
-    // Window is minimized on Windows — getContentSize() returns [0,0]. Skip to avoid wiping view bounds.
-    if (contentSize[0] === 0 && contentSize[1] === 0) return;
+    let contentSize = browserWindow.getContentSize();
+    // Window is minimized on Windows — getContentSize() returns [0,0]. Use fallback
+    // dimensions so the view doesn't keep stale or zero-sized bounds.
+    if (contentSize[0] === 0 && contentSize[1] === 0) {
+      const defaults = windowDimension[windowName];
+      contentSize = [defaults?.width ?? 800, defaults?.height ?? 600];
+    }
     view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
   }
 

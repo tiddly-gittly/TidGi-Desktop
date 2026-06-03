@@ -1,6 +1,6 @@
 import { isTest } from '@/constants/environment';
 import { TIDGI_MINI_WINDOW_ICON_PATH } from '@/constants/paths';
-import { isMac } from '@/helpers/system';
+import { isLinux, isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -55,9 +55,10 @@ export async function handleAttachToTidgiMiniWindow(
 
   // Create tidgi mini window-specific window configuration
   // Override titleBar settings from windowConfig with tidgi mini window-specific preference
+  const shouldKeepWindowPaintableForE2E = isTest && (process.platform === 'win32' || isLinux) && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW;
   const tidgiMiniWindowConfig: BrowserWindowConstructorOptions = {
     ...windowConfig,
-    show: false,
+    show: shouldKeepWindowPaintableForE2E ? windowConfig.show : false,
     minHeight: 100,
     minWidth: 250,
     // Use tidgi mini window-specific titleBar setting instead of inheriting from main window
@@ -118,6 +119,12 @@ export async function handleAttachToTidgiMiniWindow(
           logger.warn('Failed to focus view in tidgi mini window', { function: 'handleAttachToTidgiMiniWindow', error });
         }
       });
+      // Remove menubar's blur auto-hide listener in E2E tests: it fires a 100 ms
+      // timeout that hides the window when focus is lost, which races with
+      // Playwright visibility checks and causes flaky "window not visible" failures.
+      if (isTest) {
+        tidgiMiniWindow.window.removeAllListeners('blur');
+      }
       tidgiMiniWindow.window.removeAllListeners('close');
       tidgiMiniWindow.window.on('close', (event) => {
         event.preventDefault();

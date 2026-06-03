@@ -1,49 +1,20 @@
 import { When } from '@cucumber/cucumber';
-import { WebContentsView } from 'electron';
-import type { ElectronApplication } from 'playwright';
+import { backOff } from 'exponential-backoff';
 import type { ApplicationWorld } from './application';
-import { checkWindowDimension, checkWindowName } from './application';
 
-// Helper function to get browser view info from Electron window
-async function getBrowserViewInfo(
-  app: ElectronApplication,
-  dimensions: { width: number; height: number },
-): Promise<{ view?: { x: number; y: number; width: number; height: number }; windowContent?: { width: number; height: number }; hasView: boolean }> {
-  return app.evaluate(async ({ BrowserWindow }, dimensions: { width: number; height: number }) => {
-    const windows = BrowserWindow.getAllWindows();
+function isViewWithinBounds(
+  view: { x: number; y: number; width: number; height: number },
+  windowContent: { width: number; height: number },
+): boolean {
+  const viewRight = view.x + view.width;
+  const viewBottom = view.y + view.height;
 
-    // Find the target window by dimensions
-    const targetWindow = windows.find(win => {
-      const bounds = win.getBounds();
-      return bounds.width === dimensions.width && bounds.height === dimensions.height;
-    });
-
-    if (!targetWindow) {
-      return { hasView: false };
-    }
-
-    // Get all child views (WebContentsView instances) attached to this specific window
-    if (targetWindow.contentView && 'children' in targetWindow.contentView) {
-      const views = targetWindow.contentView.children || [];
-
-      for (const view of views) {
-        // Type guard to check if view is a WebContentsView
-        if (view && view.constructor.name === 'WebContentsView') {
-          const webContentsView = view as WebContentsView;
-          const viewBounds = webContentsView.getBounds();
-          const windowContentBounds = targetWindow.getContentBounds();
-
-          return {
-            view: viewBounds,
-            windowContent: windowContentBounds,
-            hasView: true,
-          };
-        }
-      }
-    }
-
-    return { hasView: false };
-  }, dimensions);
+  return view.x >= 0 &&
+    view.y >= 0 &&
+    viewRight <= windowContent.width &&
+    viewBottom <= windowContent.height &&
+    view.width > 0 &&
+    view.height > 0;
 }
 
 When('I confirm the {string} window exists', async function(this: ApplicationWorld, windowType: string) {
@@ -116,38 +87,42 @@ When('I confirm the {string} window browser view is positioned within visible wi
     throw new Error(`Window "${windowType}" is not available or has been closed`);
   }
 
-  // Get the window dimensions to identify it - must match a defined WindowNames
-  const windowName = checkWindowName(windowType);
-  const windowDimensions = checkWindowDimension(windowName);
+  const browserWindow = await this.app.browserWindow(targetWindow);
 
-  // Get browser view bounds for the specific window type
-  const viewInfo = await getBrowserViewInfo(this.app, windowDimensions);
+  // Retry with backoff: browser view repositioning can lag behind DOM updates
+  await backOff(async () => {
+    const viewInfo = await browserWindow.evaluate((win: Electron.BrowserWindow) => {
+      const children = 'children' in win.contentView ? (win.contentView.children || []) : [];
+      const webContentsViews = children
+        .filter((child) => child && child.constructor.name === 'WebContentsView')
+        .map((child) => (child as Electron.WebContentsView).getBounds());
+      return {
+        views: webContentsViews,
+        content: win.getContentBounds(),
+      };
+    });
 
-  if (!viewInfo.hasView || !viewInfo.view || !viewInfo.windowContent) {
-    throw new Error(`No browser view found in "${windowType}" window`);
-  }
+    if (viewInfo.views.length === 0) {
+      throw new Error(`No browser view found in "${windowType}" window (retrying)`);
+    }
 
-  // Check if browser view is within window content bounds
-  // View coordinates are relative to the window, so we check if they're within the content area
-  const viewRight = viewInfo.view.x + viewInfo.view.width;
-  const viewBottom = viewInfo.view.y + viewInfo.view.height;
-  const contentWidth = viewInfo.windowContent.width;
-  const contentHeight = viewInfo.windowContent.height;
+    const visibleView = viewInfo.views.find((view) => isViewWithinBounds(view, viewInfo.content));
 
-  const isWithinBounds = viewInfo.view.x >= 0 &&
-    viewInfo.view.y >= 0 &&
-    viewRight <= contentWidth &&
-    viewBottom <= contentHeight &&
-    viewInfo.view.width > 0 &&
-    viewInfo.view.height > 0;
-
-  if (!isWithinBounds) {
-    throw new Error(
-      `Browser view is not positioned within visible window bounds.\n` +
-        `View: {x: ${viewInfo.view.x}, y: ${viewInfo.view.y}, width: ${viewInfo.view.width}, height: ${viewInfo.view.height}}, ` +
-        `Window content: {width: ${contentWidth}, height: ${contentHeight}}`,
-    );
-  }
+    if (!visibleView) {
+      const sampledView = viewInfo.views[0];
+      throw new Error(
+        `Browser view is not positioned within visible window bounds (retrying).\n` +
+          `Views: ${JSON.stringify(viewInfo.views)}, ` +
+          `Window content: {width: ${viewInfo.content.width}, height: ${viewInfo.content.height}}` +
+          (sampledView ? `, First view: {x: ${sampledView.x}, y: ${sampledView.y}, width: ${sampledView.width}, height: ${sampledView.height}}` : ''),
+      );
+    }
+  }, {
+    numOfAttempts: 10,
+    startingDelay: 200,
+    timeMultiple: 1,
+    maxDelay: 500,
+  });
 });
 
 When('I confirm the {string} window browser view is not positioned within visible window bounds', async function(this: ApplicationWorld, windowType: string) {
@@ -160,39 +135,42 @@ When('I confirm the {string} window browser view is not positioned within visibl
     throw new Error(`Window "${windowType}" is not available or has been closed`);
   }
 
-  // Get the window dimensions to identify it - must match a defined WindowNames
-  const windowName = checkWindowName(windowType);
-  const windowDimensions = checkWindowDimension(windowName);
+  const browserWindow = await this.app.browserWindow(targetWindow);
 
-  // Get browser view bounds for the specific window type
-  const viewInfo = await getBrowserViewInfo(this.app, windowDimensions);
+  // Retry with backoff: browser view hiding can lag behind workspace switching
+  await backOff(async () => {
+    const viewInfo = await browserWindow.evaluate((win: Electron.BrowserWindow) => {
+      const children = 'children' in win.contentView ? (win.contentView.children || []) : [];
+      const webContentsViews = children
+        .filter((child) => child && child.constructor.name === 'WebContentsView')
+        .map((child) => (child as Electron.WebContentsView).getBounds());
+      return {
+        views: webContentsViews,
+        content: win.getContentBounds(),
+      };
+    });
 
-  if (!viewInfo.hasView || !viewInfo.view || !viewInfo.windowContent) {
-    // No view found is acceptable for this check - means it's definitely not visible
-    return;
-  }
+    if (viewInfo.views.length === 0) {
+      // No view found is acceptable for this check
+      return;
+    }
 
-  // Check if browser view is OUTSIDE window content bounds
-  // View coordinates are relative to the window, so we check if they're outside the content area
-  const viewRight = viewInfo.view.x + viewInfo.view.width;
-  const viewBottom = viewInfo.view.y + viewInfo.view.height;
-  const contentWidth = viewInfo.windowContent.width;
-  const contentHeight = viewInfo.windowContent.height;
+    const visibleView = viewInfo.views.find((view) => isViewWithinBounds(view, viewInfo.content));
 
-  const isWithinBounds = viewInfo.view.x >= 0 &&
-    viewInfo.view.y >= 0 &&
-    viewRight <= contentWidth &&
-    viewBottom <= contentHeight &&
-    viewInfo.view.width > 0 &&
-    viewInfo.view.height > 0;
-
-  if (isWithinBounds) {
-    throw new Error(
-      `Browser view IS positioned within visible window bounds, but expected it to be outside.\n` +
-        `View: {x: ${viewInfo.view.x}, y: ${viewInfo.view.y}, width: ${viewInfo.view.width}, height: ${viewInfo.view.height}}, ` +
-        `Window content: {width: ${contentWidth}, height: ${contentHeight}}`,
-    );
-  }
+    if (visibleView) {
+      throw new Error(
+        `Browser view IS positioned within visible window bounds, but expected it to be outside (retrying).\n` +
+          `Visible view: {x: ${visibleView.x}, y: ${visibleView.y}, width: ${visibleView.width}, height: ${visibleView.height}}, ` +
+          `All views: ${JSON.stringify(viewInfo.views)}, ` +
+          `Window content: {width: ${viewInfo.content.width}, height: ${viewInfo.content.height}}`,
+      );
+    }
+  }, {
+    numOfAttempts: 5,
+    startingDelay: 200,
+    timeMultiple: 1,
+    maxDelay: 500,
+  });
 });
 
 When('I resize the {string} window to {int}x{int}', async function(this: ApplicationWorld, windowType: string, width: number, height: number) {

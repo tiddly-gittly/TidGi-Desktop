@@ -4,11 +4,11 @@ import fs from 'fs-extra';
 import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
-import { windowDimension, WindowNames } from '../../src/services/windows/WindowProperties';
+import { WindowNames } from '../../src/services/windows/WindowProperties';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
-import { PLAYWRIGHT_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
 
 /**
@@ -56,15 +56,6 @@ export function checkWindowName(windowType: string): WindowNames {
   throw new Error(`Window type "${windowType}" is not a valid WindowNames. Check the WindowNames enum in WindowProperties.ts. Available: ${Object.keys(WindowNames).join(', ')}`);
 }
 
-// Helper function to get window dimensions and ensure they are valid
-export function checkWindowDimension(windowName: WindowNames): { width: number; height: number } {
-  const targetDimensions = windowDimension[windowName];
-  if (!targetDimensions.width || !targetDimensions.height) {
-    throw new Error(`Window "${windowName}" does not have valid dimensions defined in windowDimension`);
-  }
-  return targetDimensions as { width: number; height: number };
-}
-
 export class ApplicationWorld {
   app: ElectronApplication | undefined;
   appLaunchPromise: Promise<void> | undefined;
@@ -75,7 +66,9 @@ export class ApplicationWorld {
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
+  scenarioTags: string[] = [];
   providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
+  appPid: number | undefined; // Playwright Electron process PID for hard-kill cleanup
   launchEnvOverrides: Record<string, string> = {};
 
   // Helper method to check if window is visible
@@ -83,7 +76,25 @@ export class ApplicationWorld {
     if (!this.app) return false;
     try {
       const browserWindow = await this.app.browserWindow(page);
-      return await browserWindow.evaluate((win: Electron.BrowserWindow) => win.isVisible());
+      return await browserWindow.evaluate((win: Electron.BrowserWindow) => {
+        if (!win.isVisible()) {
+          return false;
+        }
+        if ((process.platform !== 'win32' && process.platform !== 'linux') || process.env.SHOW_E2E_WINDOW) {
+          return true;
+        }
+        // For the tidgi mini window, consult the actual window service in the main process
+        // (via renderer IPC) to decide visibility. This correctly accounts for the
+        // e2ePaintOnlyWindows mechanism. Use window.meta().windowName (set from
+        // process.argv at creation time) instead of mutable title or dimensions.
+        return win.webContents.executeJavaScript(`
+          (() => {
+            const windowName = window.meta?.()?.windowName;
+            if (windowName !== 'tidgiMiniWindow') return true;
+            return window.service?.window?.isTidgiMiniWindowOpen?.() ?? false;
+          })()
+        `) as Promise<boolean>;
+      });
     } catch {
       return false;
     }
@@ -127,63 +138,45 @@ export class ApplicationWorld {
       // Main window is the first/primary window, typically showing guide, agent, help, or wiki pages
       // It's the window that opens on app launch
       const allWindows = pages.filter(page => !page.isClosed());
-      if (allWindows.length > 0) {
-        // Return the first window (main window is always the first one created)
+      if (allWindows.length === 0) {
+        return undefined;
+      }
+      if (allWindows.length === 1) {
         return allWindows[0];
       }
-      return undefined;
-    } else if (windowName === WindowNames.tidgiMiniWindow) {
-      // Special handling for tidgi mini window
-      // First try to find by Electron window dimensions (more reliable than title)
-      const windowDimensions = checkWindowDimension(windowName);
-      try {
-        const electronWindowInfo = await this.app.evaluate(
-          async ({ BrowserWindow }, searchParameters: { size: { width: number; height: number }; titleHint: string }) => {
-            const allWindows = BrowserWindow.getAllWindows();
-            // First try: match by title hint (BrowserWindow.title, set in WindowProperties)
-            const byTitle = allWindows.find(win => win.getTitle().includes(searchParameters.titleHint));
-            if (byTitle) return { id: byTitle.id };
-            // Second try: match by dimensions
-            const bySize = allWindows.find(win => {
-              const bounds = win.getBounds();
-              return bounds.width === searchParameters.size.width && bounds.height === searchParameters.size.height;
-            });
-            return bySize ? { id: bySize.id } : null;
-          },
-          { size: windowDimensions, titleHint: 'Mini Window' },
-        );
-
-        if (electronWindowInfo) {
-          // Match Playwright page by comparing its underlying BrowserWindow ID.
-          // Title matching is unreliable because the mini window loads the same index.html
-          // as the main window, and document.title may not yet reflect the window type.
-          const nonClosedPages = pages.filter(page => !page.isClosed());
-          for (const page of nonClosedPages) {
-            try {
-              const bw = await this.app.browserWindow(page);
-              const bwId = await bw.evaluate((win: Electron.BrowserWindow) => win.id);
-              if (bwId === electronWindowInfo.id) {
-                return page;
-              }
-            } catch {
-              continue;
-            }
-          }
-        }
-      } catch {
-        // If Electron API fails, fallback to title matching
-      }
-
-      // Fallback: Match by window title (covers cases where title IS set by the React app)
-      const allWindows = pages.filter(page => !page.isClosed());
+      // Multiple windows — find the one whose preload marker identifies it as main window.
+      // This avoids unreliable title/dimension heuristics.
       for (const page of allWindows) {
         try {
-          const title = await page.title();
-          if (title.includes('太记小窗') || title.includes('TidGi Mini Window') || title.includes('TidGiMiniWindow')) {
+          const metaWindowName = await page.evaluate(() => {
+            const windowWithMeta = window as Window & { meta?: () => { windowName?: string } };
+            return windowWithMeta.meta?.()?.windowName;
+          }) as WindowNames | undefined;
+          if (metaWindowName === WindowNames.main) {
             return page;
           }
         } catch {
-          // Page might be closed or not ready, continue to next
+          continue;
+        }
+      }
+      // Fallback: if meta lookup fails for all pages, return the first one.
+      return allWindows[0];
+    } else if (windowName === WindowNames.tidgiMiniWindow) {
+      // Identify the tidgi mini window by its immutable windowName marker from the preload script.
+      // The preload reads process.argv (set via additionalArguments at BrowserWindow creation) and
+      // exposes window.meta().windowName via contextBridge. This is reliable because it does not
+      // depend on mutable title or restored window dimensions.
+      for (const page of pages.filter(p => !p.isClosed())) {
+        try {
+          const metaWindowName = await page.evaluate(() => {
+            const windowWithMeta = window as Window & { meta?: () => { windowName?: string } };
+            return windowWithMeta.meta?.()?.windowName;
+          }) as WindowNames | undefined;
+          if (metaWindowName === WindowNames.tidgiMiniWindow) {
+            return page;
+          }
+        } catch {
+          // page.evaluate may fail if the renderer isn't ready yet — skip and try next
           continue;
         }
       }
@@ -234,10 +227,9 @@ setWorldConstructor(ApplicationWorld);
 async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
   const packedAppPath = getPackedAppPath();
 
-  world.app = await electron.launch({
+  const app = await electron.launch({
     executablePath: packedAppPath,
     args: [
-      `--test-scenario=${world.scenarioSlug}`,
       '--no-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
@@ -268,29 +260,87 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
         ]
         : []),
     ],
-    env: {
-      ...process.env,
-      ...world.launchEnvOverrides,
-      NODE_ENV: 'test',
-      E2E_TEST: 'true',
-      LANG: process.env.LANG || 'zh-Hans.UTF-8',
-      LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
-      LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
-      ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
-      ...(process.env.CI && {
-        ELECTRON_ENABLE_LOGGING: 'true',
-        ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
-      }),
-    },
+    env: (() => {
+      const environment: Record<string, string> = {
+        ...process.env as Record<string, string>,
+        ...world.launchEnvOverrides,
+        NODE_ENV: 'test',
+        TIDGI_TEST_SCENARIO: world.scenarioSlug,
+        E2E_TEST: 'true',
+        LANG: process.env.LANG || 'zh-Hans.UTF-8',
+        LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
+        LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+        ...(process.env.CI && {
+          ELECTRON_ENABLE_LOGGING: 'true',
+          ELECTRON_DISABLE_HARDWARE_ACCELERATION: 'true',
+        }),
+      };
+      // When ELECTRON_RUN_AS_NODE is set, Electron runs in Node mode instead of GUI mode.
+      // Unit tests set this for vitest, but E2E tests need Electron to launch as a GUI app.
+      // Delete it from the child process env so Playwright can find the browser window.
+      delete environment.ELECTRON_RUN_AS_NODE;
+      return environment;
+    })(),
     cwd: process.cwd(),
-    timeout: PLAYWRIGHT_TIMEOUT,
+    timeout: CUCUMBER_GLOBAL_TIMEOUT,
   });
+
+  world.app = app;
+  // Record the PID so cleanup can hard-kill the specific process if graceful close fails.
+  world.appPid = app.process().pid;
 
   // Do not block launch step on firstWindow; this can exceed Cucumber's 5s step timeout.
   // Window acquisition is handled in "I wait for the page to load completely".
-  const openedWindows = world.app.windows().filter(page => !page.isClosed());
+  const openedWindows = app.windows().filter(page => !page.isClosed());
   world.mainWindow = openedWindows[0];
   world.currentWindow = world.mainWindow;
+
+  // Attach pageerror/console listeners to all renderer pages so we can capture React errors.
+  const trackedPages = new Set<string>();
+  const attachListeners = (page: import('playwright').Page) => {
+    const key = page.url();
+    if (trackedPages.has(key)) return;
+    trackedPages.add(key);
+    page.on('pageerror', (error: Error) => {
+      console.error(`[RENDERER ERROR @ ${key}] ${error.name}: ${error.message}\n${error.stack ?? ''}`);
+    });
+    // Silently ignore renderer console errors — 401/404/GraphQL errors are
+    // expected in the test environment and would pollute Cucumber progress output.
+    page.on('console', () => {});
+  };
+  for (const page of openedWindows) attachListeners(page);
+  const windowTracker = setInterval(() => {
+    if (!world.app) {
+      clearInterval(windowTracker);
+      return;
+    }
+    for (const page of world.app.windows().filter(p => !p.isClosed())) {
+      attachListeners(page);
+    }
+  }, 500);
+  // Stop tracking after 2 minutes (test duration upper bound)
+  setTimeout(() => {
+    clearInterval(windowTracker);
+  }, 120_000);
+
+  // Suppress "No dialog is showing" unhandled rejections from Playwright's
+  // DialogManager. Playwright auto-closes dialogs via CDP but doesn't catch
+  // the rejection when the dialog already closed (race condition). The
+  // unhandled rejection then propagates to whatever Playwright action was running.
+  const processWithDialogFlag = process as NodeJS.Process & { __dialogRejectionHandlerInstalled?: boolean };
+  if (!processWithDialogFlag.__dialogRejectionHandlerInstalled) {
+    process.on('unhandledRejection', (reason: unknown) => {
+      if (reason instanceof Error && reason.message.includes('handleJavaScriptDialog')) {
+        // Swallow — this is a known Playwright race condition
+        return;
+      }
+      setImmediate(() => {
+        throw reason instanceof Error ? reason : new Error(String(reason));
+      });
+    });
+    processWithDialogFlag.__dialogRejectionHandlerInstalled = true;
+  }
 }
 
 Given('I mock system palette as {string}', function(this: ApplicationWorld, palette: string) {
@@ -299,6 +349,28 @@ Given('I mock system palette as {string}', function(this: ApplicationWorld, pale
   }
   this.launchEnvOverrides.TIDGI_E2E_MOCK_SYSTEM_PALETTE = palette;
 });
+
+async function isTidGiRunning(world: ApplicationWorld): Promise<boolean> {
+  const pid = world.appPid;
+  if (pid === undefined) return false;
+  // On Windows, verify via tasklist; on other platforms use process.kill(0).
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = await import('child_process');
+      execSync(`tasklist /FI "PID eq ${pid}" /NH`, { stdio: 'ignore' });
+      return true;
+    } catch {
+      // tasklist returns non-zero if process not found
+      return false;
+    }
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   // If launch is still in progress, wait it settle before closing.
@@ -322,15 +394,33 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
       ),
     ]);
   } catch {
-    try {
-      await Promise.race([
-        world.app.context().close({ reason: 'Relaunch application in scenario' }),
-        new Promise(resolve => setTimeout(resolve, 500)),
-      ]);
-    } catch {
-      // ignore
+    // context().close() removed — same reason as cleanup.ts After hook:
+    // Playwright context() communicates via CDP pipe synchronously and hangs
+    // indefinitely when the Electron process is already dead/taskkill'd.
+    // Promise.race timeout cannot rescue this.
+    // Instead, fall through to hard-kill below.
+  }
+
+  // Always clean up world state — wrap in its own try/catch so a failure in
+  // isTidGiRunning or taskkill never prevents reference clearance.
+  try {
+    if (world.appPid !== undefined && await isTidGiRunning(world)) {
+      try {
+        const { execSync } = await import('child_process');
+        if (process.platform === 'win32') {
+          execSync(`taskkill /PID ${world.appPid} /T /F`, { stdio: 'ignore' });
+        } else {
+          process.kill(world.appPid, 'SIGKILL');
+        }
+      } catch {
+        // Process already exited or kill failed — ignore
+      }
     }
+  } catch {
+    // isTidGiRunning may throw if the Playwright handle is in an invalid
+    // state; swallow it and proceed to clear references regardless.
   } finally {
+    world.appPid = undefined;
     world.appLaunchPromise = undefined;
     world.app = undefined;
     world.mainWindow = undefined;
@@ -381,6 +471,7 @@ When('I launch the TidGi application', async function(this: ApplicationWorld) {
   this.appLaunchPromise = launchTidGiApplication(this).catch((error: unknown) => {
     throw error;
   });
+  await this.appLaunchPromise;
 });
 
 When('I close the TidGi application', async function(this: ApplicationWorld) {
@@ -493,5 +584,18 @@ When('I reopen the main window as second instance would', async function(this: A
     }
   });
   // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
+  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
+});
+
+When('I trigger deep link {string} as second instance would', async function(this: ApplicationWorld, deepLink: string) {
+  if (!this.app) throw new Error('Application is not launched');
+  await this.app.evaluate(({ app, BrowserWindow }, url: string) => {
+    app.emit('second-instance', /* event */ {}, /* argv */ [url], /* workingDirectory */ '', /* additionalData */ {});
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.show();
+      }
+    }
+  }, deepLink);
   await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
 });

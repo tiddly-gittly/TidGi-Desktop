@@ -34,6 +34,7 @@ export function useInitialPage() {
   const workspacesList = useWorkspacesListObservable();
   const preferences = usePreferenceObservable();
   const hasInitialized = useRef(false);
+  const lastActiveWorkspaceId = useRef<string | undefined>(undefined);
   const windowName = window.meta().windowName;
 
   useEffect(() => {
@@ -65,16 +66,26 @@ export function useInitialPage() {
     }
   }, [location, workspacesList, preferences, windowName, setLocation]);
 
-  // For tidgi mini window, also listen to active workspace changes
+  // Keep the visible route aligned with the active workspace so deep links,
+  // menu actions, and other non-sidebar activations land on the correct page.
+  // We track the last active workspace ID to avoid re-navigating when only
+  // workspace metadata (e.g. settings) changes — which would interrupt the
+  // browser view and cause E2E executeJavaScript timeouts.
   useEffect(() => {
-    if (windowName !== WindowNames.tidgiMiniWindow || !workspacesList || !preferences) {
+    if (!workspacesList) {
       return;
     }
 
-    // Determine target workspace using helper function
-    const targetWorkspace = getTidgiMiniWindowTargetWorkspace(workspacesList, preferences);
+    const targetWorkspace = windowName === WindowNames.tidgiMiniWindow
+      ? (preferences ? getTidgiMiniWindowTargetWorkspace(workspacesList, preferences) : undefined)
+      : workspacesList.find(workspace => workspace.active);
 
     if (!targetWorkspace) return;
+
+    // Skip if the active workspace hasn't actually changed — prevents spurious
+    // navigation when unrelated workspace properties are updated.
+    if (targetWorkspace.id === lastActiveWorkspaceId.current) return;
+    lastActiveWorkspaceId.current = targetWorkspace.id;
 
     // Navigate to the target workspace's page
     let targetPath = '/';

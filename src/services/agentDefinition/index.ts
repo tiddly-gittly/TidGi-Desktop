@@ -8,11 +8,33 @@ import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.js
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import { AgentDefinitionEntity } from '@services/database/schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { getWikiAgentTemplates } from './getAgentDefinitionTemplatesFromWikis';
 import type { AgentDefinition, IAgentDefinitionService } from './interface';
+
+const defaultAgentsList = defaultAgents as AgentDefinition[];
+
+function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
+  return value?.trim() ? value : fallback;
+}
+
+function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
+  const defaultAgent = defaultAgentsList.find(agent => agent.id === entity.id);
+
+  return {
+    id: entity.id,
+    name: mergeTextOverride(entity.name, defaultAgent?.name),
+    description: mergeTextOverride(entity.description, defaultAgent?.description),
+    avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
+    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID),
+    agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? {},
+    aiApiConfig: entity.aiApiConfig ?? defaultAgent?.aiApiConfig,
+    agentTools: entity.agentTools ?? defaultAgent?.agentTools,
+    heartbeat: entity.heartbeat ?? defaultAgent?.heartbeat,
+  };
+}
 
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {
@@ -70,7 +92,6 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       const existingCount = await this.agentDefRepository.count();
       if (existingCount === 0) {
         logger.info('Agent database is empty, initializing with default agents');
-        const defaultAgentsList = defaultAgents as AgentDefinition[];
         // Create agent definition entities with complete data from taskAgents.json
         const agentDefinitionEntities = defaultAgentsList.map(defaultAgent =>
           this.agentDefRepository!.create({
@@ -144,7 +165,10 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         throw new Error(`Agent definition not found: ${agent.id}`);
       }
 
-      const pickedProperties = pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']);
+      const pickedProperties = Object.fromEntries(
+        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']))
+          .filter(([, value]) => value !== undefined),
+      );
       Object.assign(existingAgent, pickedProperties);
 
       await this.agentDefRepository!.save(existingAgent);
@@ -167,17 +191,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       const agentDefsFromDB = await this.agentDefRepository!.find();
 
       // Convert entities to agent definitions
-      const agentDefs: AgentDefinition[] = agentDefsFromDB.map(entity => ({
-        id: entity.id,
-        name: entity.name || undefined,
-        description: entity.description || undefined,
-        avatarUrl: entity.avatarUrl || undefined,
-        agentFrameworkID: entity.agentFrameworkID || undefined,
-        agentFrameworkConfig: entity.agentFrameworkConfig || {},
-        aiApiConfig: entity.aiApiConfig || undefined,
-        agentTools: entity.agentTools || undefined,
-        heartbeat: entity.heartbeat || undefined,
-      }));
+      const agentDefs: AgentDefinition[] = agentDefsFromDB.map(mergeWithDefaultAgent);
 
       return agentDefs;
     } catch (error) {
@@ -209,32 +223,45 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       }
 
       // Convert entity to agent definition
-      const agentDefinition: AgentDefinition = {
-        id: entity.id,
-        name: entity.name || undefined,
-        description: entity.description || undefined,
-        avatarUrl: entity.avatarUrl || undefined,
-        agentFrameworkID: entity.agentFrameworkID || undefined,
-        agentFrameworkConfig: entity.agentFrameworkConfig || {},
-        aiApiConfig: entity.aiApiConfig || undefined,
-        agentTools: entity.agentTools || undefined,
-        heartbeat: entity.heartbeat || undefined,
-      };
-
-      return agentDefinition;
+      return mergeWithDefaultAgent(entity);
     } catch (error) {
       logger.error(`Failed to get agent definition: ${error as Error}`);
       throw error;
     }
   }
 
-  // Delete agent definition and all associated instances
-  // Note: This will delegate instance deletion to AgentInstanceService
+  // Delete agent definition and all associated instances.
+  // Deletes dependent agent instances first to avoid FK constraint failures.
   public async deleteAgentDef(id: string): Promise<void> {
     this.ensureRepositories();
 
+    if (!id.startsWith('temp-')) {
+      throw new Error(`Refusing to delete non-temporary agent definition via cleanup path: ${id}`);
+    }
+
     try {
-      // Delete the agent definition - instances will be handled by cleanup processes
+      // Delete dependent agent instances before the definition. Use AgentInstanceService
+      // so runtime resources (heartbeats, alarms, scheduled tasks, MCP clients, and
+      // subscriptions) are cleaned up together with database rows.
+      const instanceRepo = this.dataSource!.getRepository(AgentInstanceEntity);
+      const scheduledTaskRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
+      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+
+      const dependentInstances = await instanceRepo.find({
+        where: { agentDefId: id },
+      });
+
+      for (const instance of dependentInstances) {
+        await agentInstanceService.deleteAgent(instance.id);
+      }
+
+      await scheduledTaskRepo.delete({ agentDefinitionId: id });
+
+      if (dependentInstances.length > 0) {
+        logger.info(`Cleaned up ${dependentInstances.length} dependent agent instances before deleting definition: ${id}`);
+      }
+
+      // Now safe to delete the agent definition
       await this.agentDefRepository!.delete(id);
       logger.info(`Deleted agent definition: ${id}`);
     } catch (error) {
@@ -248,7 +275,6 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       const templates: AgentDefinition[] = [];
 
       // Add default agents from JSON
-      const defaultAgentsList = defaultAgents as AgentDefinition[];
       templates.push(...defaultAgentsList);
 
       // Get templates from active main workspaces

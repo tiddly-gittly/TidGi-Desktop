@@ -89,18 +89,33 @@ export const LOCALIZATION_FOLDER = isPackaged
 // For E2E tests without scenario, use cwd/wiki-test (legacy)
 
 /**
- * Parse --test-scenario=xxx argument from command line
+ * Parse test scenario identifier from environment variable or CLI argument.
+ * On Windows Electron rejects custom CLI flags, so E2E tests pass TIDGI_TEST_SCENARIO via env.
  * Note: Cannot import slugify from helpers due to circular dependency,
  * so we use a local version. Consider restructuring imports if this becomes problematic.
  */
 function getTestScenarioSlugForWiki(): string | undefined {
+  // Use bracket notation to prevent Vite/esbuild from stripping the runtime env var.
+  const environmentScenario = process.env['TIDGI_TEST_SCENARIO'];
+  if (environmentScenario) {
+    let s = environmentScenario.normalize('NFKC');
+    s = s.replace(/\./g, '');
+    let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-');
+    slug = slug.replace(/-+/g, '-');
+    slug = slug.replace(/\s+/g, ' ').trim();
+    slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
+    if (slug.length > 60) slug = slug.substring(0, 60).trim();
+    slug = slug.replace(/[-\s]+$/g, '');
+    return slug || undefined;
+  }
+
+  // Fallback to CLI argument for legacy compatibility
   const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
   if (!scenarioArgument) return undefined;
 
   const rawName = scenarioArgument.split('=')[1];
   if (!rawName) return undefined;
 
-  // Local slugify implementation to avoid circular dependency
   let s = rawName.normalize('NFKC');
   s = s.replace(/\./g, '');
   let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-');

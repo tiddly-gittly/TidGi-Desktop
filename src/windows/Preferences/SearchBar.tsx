@@ -30,6 +30,7 @@ export function SearchBar({ value, onChange, inputRef }: SearchBarProps): React.
       onChange={(event) => {
         onChange(event.target.value);
       }}
+      data-testid='preferences-search-input'
       placeholder={t('Preference.SearchPlaceholder')}
       variant='outlined'
       size='small'

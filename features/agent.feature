@@ -30,6 +30,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Step 2: Click search box and wait for autocomplete
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    And I wait for 1 seconds for "agent suggestions to load"
     # Step 3: Select agent from autocomplete (not new tab)
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
@@ -58,6 +59,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Step 2: Click search box and wait for autocomplete
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    And I wait for 1 seconds for "agent suggestions to load"
     # Step 3: Select agent from autocomplete (not new tab)
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"

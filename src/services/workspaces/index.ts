@@ -11,6 +11,7 @@ import { map } from 'rxjs/operators';
 import { WikiChannel } from '@/constants/channels';
 import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
 import { getDefaultTidGiUrl } from '@/constants/urls';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -25,6 +26,7 @@ import type {
   INewWikiWorkspaceConfig,
   IWikiWorkspace,
   IWorkspace,
+  IWorkspaceGroup,
   IWorkspaceMetaData,
   IWorkspaceService,
   IWorkspacesWithMetadata,
@@ -50,6 +52,8 @@ export class Workspace implements IWorkspaceService {
     await registerMenu();
   }
 
+  private previousWorkspacesWithMetadata: IWorkspacesWithMetadata | undefined;
+
   public getWorkspacesWithMetadata(): IWorkspacesWithMetadata {
     return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => {
       // Only wiki workspaces can have metadata, dedicated workspaces are filtered out
@@ -61,7 +65,16 @@ export class Workspace implements IWorkspaceService {
   }
 
   public updateWorkspaceSubject(): void {
-    this.workspaces$.next(this.getWorkspacesWithMetadata());
+    const next = this.getWorkspacesWithMetadata();
+    // Skip emission when nothing actually changed to break infinite render loops
+    // caused by unstable object references in renderer-side dnd-kit hooks.
+    if (this.previousWorkspacesWithMetadata !== undefined && isEqual(this.previousWorkspacesWithMetadata, next)) {
+      return;
+    }
+    this.previousWorkspacesWithMetadata = next;
+    this.workspaces$.next(next);
+    // Also initialize groups observable
+    this.getGroupsSync();
   }
 
   /**
@@ -207,7 +220,6 @@ export class Workspace implements IWorkspaceService {
   public async set(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     const workspaceToSave = this.sanitizeWorkspace(workspace);
-    await this.reactBeforeWorkspaceChanged(workspaceToSave);
 
     // Capture previous in-memory state for precise syncable-field diffing.
     const previousWorkspace = workspaces[id];
@@ -215,8 +227,10 @@ export class Workspace implements IWorkspaceService {
     // Transactional persistence: write to disk first, then update memory/UI only on success.
     // This prevents false "saved" feedback when disk writes fail.
 
-    // Write tidgi.config.json only when syncable fields actually changed.
-    if (isWikiWorkspace(workspaceToSave)) {
+    const shouldSyncToTidgiConfig = isWikiWorkspace(workspaceToSave) && workspaceToSave.useTidgiConfigSync;
+
+    // Write tidgi.config.json only when syncable fields actually changed AND workspace uses tidgi.config.json sync.
+    if (shouldSyncToTidgiConfig) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
       const previousSyncableConfig = previousWorkspace !== undefined && isWikiWorkspace(previousWorkspace)
         ? extractSyncableConfig(previousWorkspace)
@@ -227,10 +241,11 @@ export class Workspace implements IWorkspaceService {
       }
     }
 
-    // Persist to settings.json first, stripping syncable fields when tidgi.config.json exists.
+    // Persist to settings.json first, stripping syncable fields when tidgi.config.json exists AND workspace uses it.
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
-    currentSettingsWorkspaces[id] = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined
+    const hasTidgiConfigFile = isWikiWorkspace(workspaceToSave) && readTidgiConfigSync(workspaceToSave.wikiFolderLocation) !== undefined;
+    currentSettingsWorkspaces[id] = shouldSyncToTidgiConfig && hasTidgiConfigFile
       ? removeSyncableFields(workspaceToSave) as IWorkspace
       : workspaceToSave;
     databaseService.setSetting('workspaces', currentSettingsWorkspaces);
@@ -304,8 +319,10 @@ export class Workspace implements IWorkspaceService {
     // Read syncable config from tidgi.config.json if it exists
     // Only apply synced config during initial load, not during updates
     // (to avoid overwriting user's changes with old file content)
+    // Skip tidgi.config.json if workspace is configured to not use it (e.g. secondary workspace pointing to same wiki folder)
     let workspaceWithSyncedConfig = workspaceToSanitize;
-    if (applySyncedConfig) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
+    if (applySyncedConfig && workspaceToSanitize.useTidgiConfigSync !== false) {
       try {
         const syncedConfig = readTidgiConfigSync(workspaceToSanitize.wikiFolderLocation);
         if (syncedConfig) {
@@ -379,34 +396,6 @@ export class Workspace implements IWorkspaceService {
       hasSyncedConfig: workspaceWithSyncedConfig !== workspaceToSanitize,
     });
     return result;
-  }
-
-  /**
-   * Do some side effect before config change, update other services or filesystem, with new and old values
-   * This happened after values sanitized
-   * @param newWorkspaceConfig new workspace settings
-   */
-  private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
-    if (!isWikiWorkspace(newWorkspaceConfig)) return;
-
-    const existedWorkspace = this.getSync(newWorkspaceConfig.id);
-    const { id, tagNames } = newWorkspaceConfig;
-    // when update tagNames of subWiki
-    if (
-      existedWorkspace !== undefined && isWikiWorkspace(existedWorkspace) && existedWorkspace.isSubWiki && tagNames.length > 0 &&
-      JSON.stringify(existedWorkspace.tagNames) !== JSON.stringify(tagNames)
-    ) {
-      const { mainWikiToLink } = existedWorkspace;
-      if (typeof mainWikiToLink !== 'string') {
-        throw new TypeError(
-          `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${
-            JSON.stringify(
-              this.workspaces,
-            )
-          }`,
-        );
-      }
-    }
   }
 
   public async getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined> {
@@ -553,21 +542,14 @@ export class Workspace implements IWorkspaceService {
 
   /**
    * Compute the order for a newly created wiki workspace so it appears at
-   * the TOP of the regular-workspace section (before page workspaces).
-   * Shifts all existing non-page workspaces down by 1 to make room.
+   * the BOTTOM of the regular-workspace section (after existing page workspaces).
    */
   private async getNextInsertOrder(): Promise<number> {
     const all = await this.getWorkspacesAsList();
     const regularWorkspaces = all.filter(w => !w.pageType);
     if (regularWorkspaces.length === 0) return 0;
-    const minOrder = Math.min(...regularWorkspaces.map(w => w.order));
-    // Shift every existing workspace's order up by 1
-    for (const ws of all) {
-      if (ws.order >= minOrder) {
-        await this.set(ws.id, { ...ws, order: ws.order + 1 });
-      }
-    }
-    return minOrder;
+    const maxOrder = Math.max(...regularWorkspaces.map(w => w.order));
+    return maxOrder + 1;
   }
 
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
@@ -608,10 +590,18 @@ export class Workspace implements IWorkspaceService {
       lastNodeJSArgv: [],
       order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : await this.getNextInsertOrder(),
       picturePath: null,
+      useTidgiConfigSync: useTidgiConfig ?? true,
     };
 
     await this.set(newID, newWorkspace, true);
     logger.info(`[test-id-WORKSPACE_CREATED] Workspace created`, { workspaceId: newID, workspaceName: newWorkspace.name, wikiFolderLocation: newWorkspace.wikiFolderLocation });
+
+    // Track workspace creation event
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('workspace.created', {
+      isSubWiki: newWorkspace.isSubWiki ?? false,
+      hasGitUrl: Boolean(newWorkspace.gitUrl),
+    });
 
     return newWorkspace;
   }
@@ -755,5 +745,126 @@ export class Workspace implements IWorkspaceService {
       return false;
     }
     return workspaceToken === token;
+  }
+
+  // Workspace group methods
+  private groups: Record<string, IWorkspaceGroup> | undefined;
+  public groups$ = new BehaviorSubject<Record<string, IWorkspaceGroup> | undefined>(undefined);
+  private previousGroups: Record<string, IWorkspaceGroup> | undefined;
+
+  private emitGroups(next: Record<string, IWorkspaceGroup> | undefined): void {
+    // Skip emission when nothing actually changed to break infinite render loops.
+    if (this.previousGroups !== undefined && next !== undefined && isEqual(this.previousGroups, next)) {
+      return;
+    }
+    this.previousGroups = next;
+    this.groups$.next(next);
+  }
+
+  private getGroupsSync(): Record<string, IWorkspaceGroup> {
+    if (this.groups === undefined) {
+      const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+      const groupsFromDisk = databaseService.getSetting('workspaceGroups') ?? {};
+      if (typeof groupsFromDisk === 'object' && !Array.isArray(groupsFromDisk)) {
+        this.groups = groupsFromDisk;
+      } else {
+        this.groups = {};
+      }
+      // Initialize the observable with current groups
+      this.emitGroups(this.groups);
+    }
+    return this.groups;
+  }
+
+  public async getGroups(): Promise<Record<string, IWorkspaceGroup>> {
+    return this.getGroupsSync();
+  }
+
+  public async getGroupsAsList(): Promise<IWorkspaceGroup[]> {
+    const groups = this.getGroupsSync();
+    return Object.values(groups).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  public async getGroup(id: string): Promise<IWorkspaceGroup | undefined> {
+    const groups = this.getGroupsSync();
+    return groups[id];
+  }
+
+  public async setGroup(id: string, group: IWorkspaceGroup): Promise<void> {
+    const groups = this.getGroupsSync();
+    const isNew = !groups[id];
+    const nextGroups = { ...groups, [id]: group };
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('workspaceGroups', nextGroups);
+    this.groups = nextGroups;
+    this.emitGroups(nextGroups);
+    if (isNew) {
+      const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+      void analyticsService.track('workspace.group.created', { groupCount: Object.keys(nextGroups).length });
+    }
+  }
+
+  public async removeGroup(id: string): Promise<void> {
+    const groups = this.getGroupsSync();
+    const { [id]: _, ...nextGroups } = groups;
+    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+    databaseService.setSetting('workspaceGroups', nextGroups);
+    this.groups = nextGroups;
+    this.emitGroups(nextGroups);
+
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('workspace.group.deleted', { groupCount: Object.keys(nextGroups).length });
+
+    // Move workspaces in this group to ungrouped
+    const workspaces = this.getWorkspacesSync();
+    const workspacesToUpdate: Record<string, IWorkspace> = {};
+    for (const [workspaceId, workspace] of Object.entries(workspaces)) {
+      if (workspace.groupId === id) {
+        workspacesToUpdate[workspaceId] = { ...workspace, groupId: null };
+      }
+    }
+    if (Object.keys(workspacesToUpdate).length > 0) {
+      await this.setWorkspaces(workspacesToUpdate);
+    }
+  }
+
+  public async moveWorkspaceToGroup(workspaceId: string, groupId: string | null, autoDisband = true): Promise<void> {
+    const workspace = await this.get(workspaceId);
+    if (!workspace) {
+      throw new Error(`Workspace ${workspaceId} not found`);
+    }
+
+    const oldGroupId = workspace.groupId;
+    await this.update(workspaceId, { groupId });
+
+    const groups = this.getGroupsSync();
+    const groupCount = Object.keys(groups).length;
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    if (groupId) {
+      void analyticsService.track('workspace.moved_to_group', { groupId, groupCount });
+    } else {
+      void analyticsService.track('workspace.moved_out_of_group', { groupCount });
+    }
+
+    // Auto-disband old group only when explicitly allowed (e.g. drag operations).
+    // Right-click or settings removal should not trigger auto-disband,
+    // matching the requirement that only dragging out the last workspace truly cancels a group.
+    if (autoDisband && oldGroupId) {
+      await this.disbandGroupIfEmpty(oldGroupId);
+    }
+  }
+
+  /**
+   * Disband group if it has zero workspaces left.
+   * Groups are only removed when they become completely empty,
+   * not when dropping from 2→1 workspaces.
+   */
+  private async disbandGroupIfEmpty(groupId: string): Promise<void> {
+    const workspaces = this.getWorkspacesSync();
+    const workspacesInGroup = Object.values(workspaces).filter(w => w.groupId === groupId);
+
+    if (workspacesInGroup.length === 0) {
+      await this.removeGroup(groupId);
+    }
   }
 }

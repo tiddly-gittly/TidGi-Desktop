@@ -19,6 +19,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { FlatNamespace, TFunction } from 'i18next';
+import { nanoid } from 'nanoid';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
 import { isWikiWorkspace } from './interface';
@@ -36,7 +37,10 @@ interface IWorkspaceMenuRequiredServices {
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open' | 'get'>;
-  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler'>;
+  workspace: Pick<
+    IWorkspaceService,
+    'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'getWorkspacesAsList' | 'openWorkspaceTiddler' | 'getGroupsAsList' | 'setGroup' | 'moveWorkspaceToGroup' | 'removeGroup'
+  >;
   workspaceView: Pick<
     IWorkspaceViewService,
     | 'wakeUpWorkspaceView'
@@ -103,6 +107,49 @@ export async function getSimplifiedWorkspaceMenuTemplate(
       await service.window.open(WindowNames.editWorkspace, { workspaceID: id });
     },
   });
+
+  // Workspace group management
+  const groups = await service.workspace.getGroupsAsList();
+  if (workspace.groupId) {
+    // Workspace is in a group - show "Remove from Group"
+    template.push({
+      label: t('WorkspaceGroup.RemoveFromGroup'),
+      click: async () => {
+        // Pass autoDisband=false so right-click removal never auto-deletes the group.
+        // Only dragging out the last workspace should truly cancel a group.
+        await service.workspace.moveWorkspaceToGroup(id, null, false);
+      },
+    });
+  } else {
+    // Workspace is not in a group - show "Create Group" and "Move to Group" (if groups exist)
+    template.push({
+      label: t('WorkspaceGroup.CreateGroup'),
+      click: async () => {
+        const newGroupId = nanoid();
+        const ungroupedWorkspaces = (await service.workspace.getWorkspacesAsList()).filter(workspaceToCheck => !workspaceToCheck.pageType && !workspaceToCheck.groupId);
+        const maxUngroupedOrder = ungroupedWorkspaces.reduce((maxOrder, workspaceToCheck) => Math.max(maxOrder, workspaceToCheck.order ?? 0), -1);
+        await service.workspace.setGroup(newGroupId, {
+          id: newGroupId,
+          name: t('WorkspaceGroup.DefaultGroupName', { number: groups.length + 1 }),
+          collapsed: false,
+          order: Math.max(maxUngroupedOrder + groups.length + 1, groups.length),
+        });
+        await service.workspace.moveWorkspaceToGroup(id, newGroupId);
+      },
+    });
+
+    if (groups.length > 0) {
+      template.push({
+        label: t('WorkspaceGroup.MoveToGroup'),
+        submenu: groups.map((group) => ({
+          label: group.name,
+          click: async () => {
+            await service.workspace.moveWorkspaceToGroup(id, group.id);
+          },
+        })),
+      });
+    }
+  }
 
   // View git history (always visible for wiki workspaces)
   template.push({

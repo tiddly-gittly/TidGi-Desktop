@@ -6,6 +6,7 @@ import {
   AccordionSummary,
   AppBar,
   Box,
+  Button,
   Checkbox,
   FormControlLabel,
   Paper as PaperRaw,
@@ -32,8 +33,10 @@ import { IErrorInWhichComponent, useWikiWorkspaceForm } from './useForm';
 import { TokenForm } from '@/components/TokenForm';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import { CreateWorkspaceTabs } from './constants';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
+import { ImportConfigDialog } from './ImportConfigDialog';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
 
@@ -89,9 +92,26 @@ export default function AddWorkspace(): React.JSX.Element {
   const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const [useTidgiConfig, useTidgiConfigSetter] = useState(true);
+  const [selectedImportConfig, selectedImportConfigSetter] = useState<Partial<ISyncableWikiConfig> | undefined>(undefined);
+  const [importConfigDialogOpen, importConfigDialogOpenSetter] = useState(false);
   const form = useWikiWorkspaceForm();
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList());
+
+  // Keep imported config scoped to the current import flow so it cannot bleed into another tab.
+  useEffect(() => {
+    selectedImportConfigSetter(undefined);
+  }, [currentTab]);
+
+  // When user explicitly disables tidgi.config sync, discard any config that was
+  // eagerly loaded while the checkbox was still checked. Otherwise the imported
+  // workspace accidentally inherits synced fields (e.g. name, readOnlyMode) even
+  // though it should be local-only.
+  useEffect(() => {
+    if (!useTidgiConfig) {
+      selectedImportConfigSetter(undefined);
+    }
+  }, [useTidgiConfig]);
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
   const { storageProvider, storageProviderSetter, wikiFolderName } = form;
@@ -162,6 +182,7 @@ export default function AddWorkspace(): React.JSX.Element {
             control={
               <Checkbox
                 checked={useTidgiConfig}
+                data-testid='use-tidgi-config-checkbox'
                 onChange={(event) => {
                   useTidgiConfigSetter(event.target.checked);
                 }}
@@ -170,8 +191,35 @@ export default function AddWorkspace(): React.JSX.Element {
             label={t('AddWorkspace.UseTidgiConfigWhenImport')}
           />
           <Typography variant='body2'>{t('AddWorkspace.UseTidgiConfigWhenImportDescription')}</Typography>
+          {!useTidgiConfig && (
+            <Button
+              variant='outlined'
+              size='small'
+              onClick={() => {
+                importConfigDialogOpenSetter(true);
+              }}
+              disabled={!form.wikiFolderLocation}
+              sx={{ mt: 1 }}
+            >
+              {selectedImportConfig && Object.keys(selectedImportConfig).length > 0
+                ? t('AddWorkspace.ImportConfigSelected', { count: Object.keys(selectedImportConfig).length })
+                : t('AddWorkspace.SelectConfigToImport')}
+            </Button>
+          )}
         </TidgiConfigImportOptions>
       )}
+
+      <ImportConfigDialog
+        open={importConfigDialogOpen}
+        wikiFolderLocation={form.wikiFolderLocation}
+        onClose={() => {
+          importConfigDialogOpenSetter(false);
+        }}
+        onConfirm={(config) => {
+          selectedImportConfigSetter(config);
+          importConfigDialogOpenSetter(false);
+        }}
+      />
 
       {currentTab === CreateWorkspaceTabs.CreateNewWiki && (
         <TabPanel>
@@ -185,7 +233,7 @@ export default function AddWorkspace(): React.JSX.Element {
         <TabPanel>
           <Container>
             <CloneWikiForm {...formProps} />
-            <CloneWikiDoneButton {...formProps} useTidgiConfig={useTidgiConfig} />
+            <CloneWikiDoneButton {...formProps} useTidgiConfig={useTidgiConfig} selectedImportConfig={selectedImportConfig} />
           </Container>
         </TabPanel>
       )}
@@ -198,7 +246,7 @@ export default function AddWorkspace(): React.JSX.Element {
               useTidgiConfig={useTidgiConfig}
               isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
             />
-            <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} />
+            <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} selectedImportConfig={selectedImportConfig} />
           </Container>
         </TabPanel>
       )}

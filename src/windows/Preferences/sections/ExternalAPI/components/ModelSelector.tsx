@@ -39,7 +39,7 @@ export function ModelSelector({ selectedModel, modelOptions, onChange, onClear, 
       options={filteredModelOptions}
       groupBy={(option) => option[0].provider}
       getOptionLabel={(option) => option[1].caption || option[1].name}
-      renderOption={(props, option) => {
+      renderOption={({ key: _key, ...props }, option) => {
         const modelInfo = option[1];
         return (
           <li {...props}>

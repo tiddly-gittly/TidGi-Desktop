@@ -14,6 +14,10 @@ export interface IPreferences {
   aiGenerateBackupTitleTimeout: number;
   allowPrerelease: boolean;
   alwaysOnTop: boolean;
+  analyticsEnabled: boolean;
+  analyticsHost: string;
+  analyticsHostname: string;
+  analyticsSiteId: string;
   askForDownloadPath: boolean;
   disableAntiAntiLeech: boolean;
   disableAntiAntiLeechForUrls: string[];
@@ -24,6 +28,10 @@ export interface IPreferences {
   ignoreCertificateErrors: boolean;
   keyboardShortcuts: Record<string, string>;
   language: string;
+  mcpServerEnabled: boolean;
+  mcpServerPort: number;
+  mcpServerRequireToken: boolean;
+  mcpServerToken: string;
   pauseNotifications?: string;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;
@@ -70,6 +78,7 @@ export enum PreferenceSections {
   wiki = 'wiki',
   externalAPI = 'externalAPI',
   aiAgent = 'aiAgent',
+  workspaceGroups = 'workspaceGroups',
 }
 
 /**

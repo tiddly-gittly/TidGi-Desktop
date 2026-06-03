@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
 import { WikiChannel } from '@/constants/channels';
+import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -58,6 +59,11 @@ export class ThemeService implements IThemeService {
     nativeTheme.themeSource = themeSource;
     await this.preferenceService.set('themeSource', themeSource);
     this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
+    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+    void analyticsService.track('theme.changed', {
+      themeSource,
+      darkMode: this.shouldUseDarkColorsSync(),
+    });
     await this.updateActiveWikiTheme();
   }
 

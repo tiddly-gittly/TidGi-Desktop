@@ -1,7 +1,6 @@
-import { useTranslation } from 'react-i18next';
-
 import { Alert, LinearProgress, Snackbar, Typography } from '@mui/material';
-
+import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
+import { useTranslation } from 'react-i18next';
 import { CloseButton, ReportErrorFabButton, WikiLocation } from './FormComponents';
 import { useExistedWiki, useValidateExistedWiki } from './useExistedWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
@@ -12,8 +11,14 @@ export function ExistedWikiDoneButton({
   isCreateMainWorkspace,
   isCreateSyncedWorkspace,
   useTidgiConfig,
+  selectedImportConfig,
   errorInWhichComponentSetter,
-}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean; useTidgiConfig: boolean }): React.JSX.Element {
+}: IWikiWorkspaceFormProps & {
+  isCreateMainWorkspace: boolean;
+  isCreateSyncedWorkspace: boolean;
+  useTidgiConfig: boolean;
+  selectedImportConfig?: Partial<ISyncableWikiConfig>;
+}): React.JSX.Element {
   const { t } = useTranslation();
   const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(
     isCreateMainWorkspace,
@@ -21,7 +26,16 @@ export function ExistedWikiDoneButton({
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, useTidgiConfig, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
+  const onSubmit = useExistedWiki(
+    isCreateMainWorkspace,
+    isCreateSyncedWorkspace,
+    form,
+    useTidgiConfig,
+    wikiCreationMessageSetter,
+    hasErrorSetter,
+    errorInWhichComponentSetter,
+    selectedImportConfig,
+  );
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (

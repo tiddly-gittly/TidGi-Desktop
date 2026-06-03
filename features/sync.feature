@@ -4,7 +4,8 @@ Feature: Git Sync
   So that I can backup and share my content
 
   Background:
-    Given I cleanup test wiki so it could create a new one on start
+    Given I start mock analytics server
+    And I cleanup test wiki so it could create a new one on start
     And I launch the TidGi application
     And I wait for the page to load completely
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
@@ -18,7 +19,7 @@ Feature: Git Sync
     And I wait for SSE and watch-fs to be ready
     And I wait for "git initialization" log marker "[test-id-git-init-complete]"
 
-  @git @sync @mobilesync
+  @git @sync @mobilesync @calibrate
   Scenario: Desktop cloud sync and mobile HTTP sync cover commit-push, diverged merge, and mobile conflict resolution
     # ══════════════════════════════════════════════════════════════════
     # Part 1: Sync to local remote via application menu (commit & push)
@@ -296,6 +297,11 @@ Feature: Git Sync
       Line two from original.
       Desktop added this line.
       """
+    # Wait for watch-fs to detect the desktop edit before syncing
+    Then I wait for tiddler "Journal" to be updated by watch-fs
+    # Ensure desktop edit is committed before mobile sync arrives
+    When I click menu "同步和备份 > 立即本地Git备份"
+    Then I wait for "git commit completed" log marker "[test-id-git-commit-complete]"
     When I create file "{tmpDir}/mobile-clone4/tiddlers/Journal.tid" with content:
       """
       created: 20250226090000000
@@ -313,3 +319,6 @@ Feature: Git Sync
     And file "{tmpDir}/wiki/tiddlers/Journal.tid" should contain text "Desktop added this line."
     And file "{tmpDir}/wiki/tiddlers/Journal.tid" should contain text "Line one from original."
     And file "{tmpDir}/wiki/tiddlers/Journal.tid" should not contain text "<<<<<<<"
+    Then I should see analytics events:
+      | event_name    |
+      | sync.completed |

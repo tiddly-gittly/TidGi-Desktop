@@ -1,9 +1,11 @@
 import { Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { useEffect, useRef } from 'react';
 import { TabListDropdown } from '../components/TabBar/TabListDropdown';
 import { TEMP_TAB_ID_PREFIX } from '../constants/tab';
 import { useTabStore } from '../store/tabStore';
-import { TabState, TabType } from '../types/tab';
+import { TabItem, TabState, TabType } from '../types/tab';
 
 import { TabContentView } from './TabContentView';
 import { NewTabContent } from './TabTypes/NewTabContent';
@@ -26,8 +28,40 @@ const FallbackHeader = styled(Box)`
   border-bottom: 1px solid ${props => props.theme.palette.divider};
 `;
 
+function getWikiEmbedWorkspaceIds(tab: TabItem): string[] {
+  if (tab.type === TabType.WIKI_EMBED) {
+    return [(tab).workspaceId];
+  }
+  if (tab.type === TabType.SPLIT_VIEW) {
+    return (tab).childTabs.flatMap(getWikiEmbedWorkspaceIds);
+  }
+  return [];
+}
+
 export const TabContentArea: React.FC = () => {
   const { tabs, activeTabId } = useTabStore();
+  const previousActiveTabIdReference = useRef<string | null>(null);
+  const tabsReference = useRef(tabs);
+  tabsReference.current = tabs;
+
+  useEffect(() => {
+    const previousId = previousActiveTabIdReference.current;
+    previousActiveTabIdReference.current = activeTabId;
+
+    if (previousId === null || previousId === activeTabId) return;
+
+    const previousTab = tabsReference.current.find(tab => tab.id === previousId);
+    if (previousTab === undefined) return;
+
+    for (const workspaceId of getWikiEmbedWorkspaceIds(previousTab)) {
+      void window.service.view.setViewBounds(workspaceId, WindowNames.main, undefined).catch((error: unknown) => {
+        void window.service.native.log('warn', 'TabContentArea: failed to clear wiki embed bounds on tab switch', {
+          workspaceId,
+          error: String(error),
+        });
+      });
+    }
+  }, [activeTabId]);
 
   // Get the current active tab
   const activeTab = activeTabId ? tabs.find(tab => tab.id === activeTabId) : null;

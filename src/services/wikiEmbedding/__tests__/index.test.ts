@@ -75,6 +75,7 @@ describe('WikiEmbeddingService Integration Tests', () => {
       excludedPlugins: wikiWorkspaceDefaultValues.excludedPlugins,
       enableFileSystemWatch: wikiWorkspaceDefaultValues.enableFileSystemWatch,
       hibernateWhenUnused: wikiWorkspaceDefaultValues.hibernateWhenUnused,
+      useTidgiConfigSync: true,
       storageService: SupportedStorageServices.local,
     });
 

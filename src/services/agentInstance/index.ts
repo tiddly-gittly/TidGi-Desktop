@@ -691,6 +691,20 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
     if (messageIds.length === 0) return;
 
+    // Cancel pending debounced writes for the deleted messages.
+    // Without this, a debounced update scheduled via debounceUpdateMessage can fire
+    // after the DB row is gone, enter the "create" branch, and re-create the message.
+    // The frontend would then re-add it via the onNewMessage callback, causing a
+    // duplicate React key and undoing the deletion.
+    for (const messageId of messageIds) {
+      const debounceKey = `${agentId}:${messageId}`;
+      const debouncedFunction = this.debouncedUpdateFunctions.get(debounceKey);
+      if (debouncedFunction) {
+        (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
+        this.debouncedUpdateFunctions.delete(debounceKey);
+      }
+    }
+
     await this.agentMessageRepository.delete(messageIds);
 
     // Also update the in-memory agent messages list

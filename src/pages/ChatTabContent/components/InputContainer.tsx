@@ -351,6 +351,14 @@ export const InputContainer: React.FC<InputContainerProps> = ({
               slotProps={{
                 listbox: attachmentListboxSlotProps,
               }}
+              renderGroup={(groupParameters) => (
+                <li key={groupParameters.key}>
+                  <Box component='span' sx={{ px: 2, py: 1, display: 'block', fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary', textTransform: 'uppercase' }}>
+                    {groupParameters.group}
+                  </Box>
+                  <ul style={{ padding: 0 }}>{groupParameters.children}</ul>
+                </li>
+              )}
               renderInput={(parameters) => (
                 <TextField
                   {...parameters}
@@ -360,10 +368,10 @@ export const InputContainer: React.FC<InputContainerProps> = ({
                   data-testid='attachment-autocomplete-input'
                 />
               )}
-              renderOption={(props, option) => {
+              renderOption={({ key: _key, ...props }, option) => {
                 const testId = option.testId || option.title.replace(/[^a-zA-Z0-9]/g, '_');
                 return (
-                  <li {...props} data-testid={`attachment-option-${option.type}-${testId}`}>
+                  <li {...props} key={option.testId || option.title} data-testid={`attachment-option-${option.type}-${testId}`}>
                     {option.title}
                   </li>
                 );

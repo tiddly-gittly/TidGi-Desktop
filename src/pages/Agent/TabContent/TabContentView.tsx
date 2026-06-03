@@ -23,7 +23,7 @@ interface TabContentViewProps {
 }
 
 /** Content container styled component */
-const ContentContainer = styled(Box)<{ $splitview?: boolean }>`
+const ContentContainer = styled(Box, { shouldForwardProp: (property) => !/^\$/.test(String(property)) })<{ $splitview?: boolean }>`
   display: flex;
   flex-direction: column;
   height: 100%;
