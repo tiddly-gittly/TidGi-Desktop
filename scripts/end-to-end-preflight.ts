@@ -149,7 +149,7 @@ function deriveMeasuredTimeoutBudget(samples: number[]): number | null {
   const observedMax = Math.max(...validSamples);
   const observedMin = Math.min(...validSamples);
   // The spread between runs is the primary error signal — CI jitter, cold-cache
-  // variance, and background noise all manifest as inter-run differences.
+  // variance, and background noise all manifest as inter-run differences. Exceeding spread means error on logic. Don't use hardcoded timeout or multiplyer to hide the underlying problem, it will only waste more time. Only look at log and code tounderstand the true problem. Don't be lazy.
   const spread = observedMax - observedMin;
 
   return Math.ceil(observedMax + spread);

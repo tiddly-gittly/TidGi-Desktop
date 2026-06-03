@@ -1183,9 +1183,6 @@ When('I restart workspace {string}', async function(this: ApplicationWorld, work
         }) || null;
         if (!workspace) return { success: false, error: 'Workspace not found' };
         try {
-          // Stop wiki first to prevent "started same wiki twice" error
-          // when a previous restart or auto-restart is still in progress.
-          try { await window.service.wiki.stopWiki(workspace.id); } catch { /* ignore if not running */ }
           await window.service.wiki.restartWiki(workspace);
           // Reload view to show fresh content from disk after wiki restart
           await window.service.view.reloadViewsWebContents(workspace.id);

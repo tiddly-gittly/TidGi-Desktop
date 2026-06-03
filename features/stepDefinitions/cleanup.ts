@@ -99,6 +99,14 @@ After(async function(this: ApplicationWorld, { pickle }) {
         }
         this.appPid = undefined;
       }
+      // Fallback: kill any remaining tidgi.exe processes by image name.
+      // The PID-based kill above may miss detached child processes (e.g. wiki
+      // workers spawned by the mini window test). Since scenarios run
+      // sequentially, no other TidGi should be alive at this point.
+      try {
+        const { execSync } = await import('child_process');
+        execSync('taskkill /IM tidgi.exe /T /F', { stdio: 'ignore' });
+      } catch { /* no process found — fine */ }
       // Give Windows a moment to fully terminate processes and release file locks
       // before the next scenario's Before hook tries to remove scenarioRoot.
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -168,6 +176,17 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.app = undefined;
     this.mainWindow = undefined;
     this.currentWindow = undefined;
+  }
+
+  // Windows: ensure NO tidgi.exe processes survive between scenarios.
+  // Even if the PID-based kill above succeeded, detached child processes
+  // (wiki workers, mini window helpers) may still be alive. Since scenarios
+  // run sequentially, killing by image name is safe here.
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = await import('child_process');
+      execSync('taskkill /IM tidgi.exe /T /F', { stdio: 'ignore' });
+    } catch { /* no process found — fine */ }
   }
 
   // Stop mock analytics server if it was started for this scenario

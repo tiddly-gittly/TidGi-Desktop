@@ -1,0 +1,22 @@
+
+> tidgi@0.13.0 test:e2e E:\dongwu\Github\TidGi-Desktop
+> rimraf -- ./test-artifacts && cross-env NODE_ENV=test tsx scripts/developmentMkdir.ts && cross-env NODE_ENV=test tsx scripts/end-to-end-preflight.ts && cross-env NODE_ENV=test cucumber-js --config features/cucumber.config.js --exit "--tags" "@workspace-group"
+
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] Failed to load resource: the server responded with a status of 401 ()
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] GraphQL Hooks Error
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] Failed to load resource: the server responded with a status of 401 ()
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] GraphQL Hooks Error
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] Failed to load resource: the server responded with a status of 401 ()
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] GraphQL Hooks Error
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] Failed to load resource: the server responded with a status of 401 ()
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] GraphQL Hooks Error
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] Failed to load resource: the server responded with a status of 401 ()
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] GraphQL Hooks Error
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] Failed to load resource: the server responded with a status of 401 ()
+[RENDERER CONSOLE ERROR @ file:///E:/dongwu/Github/TidGi-Desktop/out/TidGi-win32-x64/resources/app.asar/.vite/renderer/index.html#/editWorkspace] GraphQL Hooks Error
+....................................................................................................................................................................................................................................................................................................................................................................
+
+11 scenarios (11 passed)
+334 steps (334 passed)
+7m40.695s (executing steps: 7m40.520s)
+[Cal] #1/2: T=473021 S=32547 L=9670 W=9111 E=13766
