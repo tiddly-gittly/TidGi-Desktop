@@ -32,7 +32,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     And I type "帮我整理笔记" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see an "ask question container" element with selector "[data-testid='ask-question-container']"
+    Then I should see an "ask question container" element with selector "[data-testid='ask-question-container']:has-text('approach')"
     And I should see "question text and two full-width options" elements with selectors:
       | element description | selector                                                      |
       | question text       | *:has-text('Which approach do you prefer?')                   |
