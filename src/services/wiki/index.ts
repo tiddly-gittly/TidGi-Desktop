@@ -141,8 +141,8 @@ export class Wiki implements IWikiService {
     }
     const previousWorker = this.getWorker(workspaceID);
     if (previousWorker !== undefined) {
-      logger.error(new DoubleWikiInstanceError(workspaceID).message, { stack: new Error('stack').stack?.replace('Error:', '') ?? 'no stack' });
-      await this.stopWiki(workspaceID);
+      logger.warn(`Wiki worker for ${workspaceID} already running — skipping duplicate startWiki call`);
+      return;
     }
     // use Promise to handle worker callbacks
     const workspace = await workspaceService.get(workspaceID);
