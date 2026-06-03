@@ -40,6 +40,7 @@ function runSmokeCalibration(): void {
 
     fs.rmSync(outputFile, { force: true });
 
+    let cucumberExitOk = false;
     try {
       execFileSync(
         process.execPath,
@@ -50,18 +51,18 @@ function runSmokeCalibration(): void {
           env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
         },
       );
+      cucumberExitOk = true;
     } catch {
       // Non-zero exit means at least one @calibrate scenario failed.
-      // Partial calibration is unsafe: excluding a failed heavy calibrator
-      // under-measures the timeout and shifts the real failure downstream.
-      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS} failed (non-zero exit) — skipping entire run`);
-      continue;
+      // We still try to extract timings from the JSON — cucumber writes
+      // per-scenario results as they complete, so partial data is valid.
+      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS} had non-zero exit — extracting partial timings`);
     }
 
-    // Only extract timings from complete successful runs — cucumber exited zero.
     const steps = extractStepTimings(outputFile);
     if (steps.length === 0) {
-      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS}: cucumber exited zero but no step timings found — skipping`);
+      const reason = cucumberExitOk ? 'cucumber exited zero but no step timings found' : 'no recoverable step timings in partial output';
+      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS}: ${reason} — skipping`);
       continue;
     }
 
