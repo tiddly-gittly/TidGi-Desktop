@@ -64,6 +64,12 @@
 
 ![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
 
+或者你可以从启动台启动终端，并运行下方的[命令](https://apple.stackexchange.com/questions/202169/how-can-i-open-an-app-from-an-unidentified-developer-without-using-the-gui)，确保你的终端「工作目录」中有太记应用程序。
+
+```sh
+xattr -dr com.apple.quarantine "tidgi.app"
+```
+
 </details>
 
 ## 相关介绍
