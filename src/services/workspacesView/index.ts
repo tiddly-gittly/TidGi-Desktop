@@ -216,21 +216,31 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     // For tidgi mini window, decide which workspace to show based on preferences
     const tidgiMiniWindowTask = (async () => {
-      const tidgiMiniWindow = await this.preferenceService.get('tidgiMiniWindow');
-      if (!tidgiMiniWindow) {
-        return;
+      try {
+        const tidgiMiniWindow = await this.preferenceService.get('tidgiMiniWindow');
+        if (!tidgiMiniWindow) {
+          return;
+        }
+        const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspace.id);
+        // If syncing with main window, use the current workspace
+        if (shouldSync) {
+          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
+          return;
+        }
+        // If not syncing and a fixed workspace is set, only add view if this IS the fixed workspace
+        if (targetWorkspaceId && workspace.id === targetWorkspaceId) {
+          await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
+        }
+        // If not syncing and no fixed workspace is set, don't add any view (user needs to select one)
+      } catch (error) {
+        // Gracefully handle errors during tidgi mini window view creation at startup.
+        // The view will be created lazily when openTidgiMiniWindow() shows the window.
+        logger.warn('addViewForAllBrowserViews: tidgi mini window view creation deferred', {
+          function: 'addViewForAllBrowserViews',
+          workspaceId: workspace.id,
+          error: String(error),
+        });
       }
-      const { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace(workspace.id);
-      // If syncing with main window, use the current workspace
-      if (shouldSync) {
-        await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
-        return;
-      }
-      // If not syncing and a fixed workspace is set, only add view if this IS the fixed workspace
-      if (targetWorkspaceId && workspace.id === targetWorkspaceId) {
-        await container.get<IViewService>(serviceIdentifier.View).addView(workspace, WindowNames.tidgiMiniWindow);
-      }
-      // If not syncing and no fixed workspace is set, don't add any view (user needs to select one)
     })();
 
     await Promise.all([mainTask, tidgiMiniWindowTask]);
