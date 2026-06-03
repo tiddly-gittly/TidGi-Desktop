@@ -41,6 +41,9 @@ jobs:
           CI: true
         timeout-minutes: 5
 
+      - name: Run linting
+        run: pnpm run lint --max-warnings 0
+
   e2e:
     needs: unit
     strategy:
@@ -101,9 +104,6 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
-
-      - name: Run linting
-        run: pnpm run lint --max-warnings 0
 
       # registry-js is a Windows-only dependency — remove it on non-Windows to avoid install noise
       - name: Remove Windows-only deps (Linux)
