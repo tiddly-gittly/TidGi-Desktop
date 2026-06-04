@@ -499,7 +499,7 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
 
   const newPreferences = existing.preferences || {};
 
-  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
+  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences }, { spaces: 2 });
 });
 
 // Version with datatable for advanced configuration
@@ -582,7 +582,7 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
     ...(aiGenerateBackupTitleTimeout !== undefined ? { aiGenerateBackupTitleTimeout } : {}),
   };
 
-  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences } as ISettingFile, { spaces: 2 });
+  fs.writeJsonSync(settingsPath, { ...existing, aiSettings: newAi, preferences: newPreferences }, { spaces: 2 });
 });
 
 async function clearAISettings(scenarioRoot?: string) {

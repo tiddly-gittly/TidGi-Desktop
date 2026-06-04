@@ -4,12 +4,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Note: global mocks from src/__tests__/setup-vitest.ts provide container and logger
-import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
-import type { AgentInstance } from '../../interface';
 import type { PromptConcatHookContext } from '../types';
 
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -38,7 +36,7 @@ describe('workspacesListTool', () => {
             messages: [],
             status: { state: 'working', modified: new Date() },
             created: new Date(),
-          } as AgentInstance,
+          },
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
         } as AgentFrameworkContext,
@@ -59,7 +57,7 @@ describe('workspacesListTool', () => {
             targetId: 'target-prompt',
             position: 'after' as const,
           },
-        } as unknown as IPromptConcatTool,
+        },
       };
 
       await hooks.processPrompts.promise(context);
@@ -85,7 +83,7 @@ describe('workspacesListTool', () => {
             messages: [],
             status: { state: 'working', modified: new Date() },
             created: new Date(),
-          } as AgentInstance,
+          },
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
         } as AgentFrameworkContext,
@@ -106,7 +104,7 @@ describe('workspacesListTool', () => {
             targetId: 'target-prompt',
             position: 'before' as const,
           },
-        } as unknown as IPromptConcatTool,
+        },
       };
 
       await hooks.processPrompts.promise(context);
@@ -129,7 +127,7 @@ describe('workspacesListTool', () => {
             messages: [],
             status: { state: 'working', modified: new Date() },
             created: new Date(),
-          } as AgentInstance,
+          },
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
         } as AgentFrameworkContext,
@@ -141,7 +139,7 @@ describe('workspacesListTool', () => {
             children: [],
           },
         ],
-        toolConfig: { id: 'test-plugin', toolId: 'otherPlugin', forbidOverrides: false } as unknown as IPromptConcatTool,
+        toolConfig: { id: 'test-plugin', toolId: 'otherPlugin', forbidOverrides: false },
       };
 
       await hooks.processPrompts.promise(context);
@@ -153,7 +151,7 @@ describe('workspacesListTool', () => {
     it('should handle empty workspaces list', async () => {
       // Override the workspace service implementation returned by the global container mock
       const workspaceService = container.get<Partial<IWorkspaceService>>(serviceIdentifier.Workspace);
-      workspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([]) as unknown as IWorkspaceService['getWorkspacesAsList'];
+      workspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([]);
 
       const hooks = createAgentFrameworkHooks();
       workspacesListTool(hooks);
@@ -166,7 +164,7 @@ describe('workspacesListTool', () => {
             messages: [],
             status: { state: 'working', modified: new Date() },
             created: new Date(),
-          } as AgentInstance,
+          },
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
         } as AgentFrameworkContext,
@@ -187,7 +185,7 @@ describe('workspacesListTool', () => {
             targetId: 'target-prompt',
             position: 'after' as const,
           },
-        } as unknown as IPromptConcatTool,
+        },
       };
 
       await hooks.processPrompts.promise(context);
@@ -211,7 +209,7 @@ describe('workspacesListTool', () => {
             messages: [],
             status: { state: 'working', modified: new Date() },
             created: new Date(),
-          } as AgentInstance,
+          },
           agentDef: { id: 'test-agent-def', name: 'test-agent-def' } as unknown,
           isCancelled: () => false,
         } as AgentFrameworkContext,
@@ -232,7 +230,7 @@ describe('workspacesListTool', () => {
             targetId: 'non-existent-prompt',
             position: 'after' as const,
           },
-        } as unknown as IPromptConcatTool,
+        },
       };
 
       await hooks.processPrompts.promise(context);

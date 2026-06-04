@@ -29,7 +29,7 @@ describe('AnalyticsService', () => {
   });
 
   afterEach(() => {
-    container.rebindSync(serviceIdentifier.Database).toConstantValue(originalDatabase as IDatabaseService);
+    container.rebindSync(serviceIdentifier.Database).toConstantValue(originalDatabase);
   });
 
   it('isEnabled returns false when analyticsEnabled preference is false', async () => {

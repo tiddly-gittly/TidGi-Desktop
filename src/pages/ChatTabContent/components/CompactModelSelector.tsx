@@ -25,7 +25,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({
   const agent = useAgentChatStore((state) => state.agent);
 
   // Use the AI config management hook with both agent instance ID and definition ID
-  const { config, providers = [], handleModelChange } = useAIConfigManagement({
+  const { config, providers, handleModelChange } = useAIConfigManagement({
     agentId: agent?.id,
     agentDefId,
   });

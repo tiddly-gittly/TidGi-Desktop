@@ -28,7 +28,7 @@ export function registerToolDefinition<
     description: toolDefinition.description,
   });
 
-  toolRegistry.set(toolDefinition.toolId, toolDefinition as DefinedTool);
+  toolRegistry.set(toolDefinition.toolId, toolDefinition);
   return toolDefinition;
 }
 

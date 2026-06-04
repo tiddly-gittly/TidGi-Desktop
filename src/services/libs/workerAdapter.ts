@@ -128,7 +128,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
                 id,
                 method,
                 args: serializedArguments,
-              } as WorkerMessage);
+              });
             } catch (error) {
               console.error(`[workerAdapter] postMessage failed for Observable method ${method}:`, error);
               console.error(`[workerAdapter] Arguments:`, serializedArguments);
@@ -154,7 +154,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
                 id,
                 method,
                 args: serializedArguments,
-              } as WorkerMessage);
+              });
             } catch (error) {
               console.error(`[workerAdapter] postMessage failed for Promise method ${method}:`, error);
               console.error(`[workerAdapter] Arguments:`, serializedArguments);
@@ -196,15 +196,14 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
           message: `Method '${method}' not found in worker`,
           name: 'MethodNotFoundError',
         },
-      } as WorkerMessage);
+      });
       return;
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const result = implementation(...(args || []));
+      // Worker methods are registered dynamically, so the runtime result needs explicit narrowing below.
+      const result: unknown = implementation(...(args || []));
       // Check if result is Observable
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
         (result as Observable<unknown>).subscribe({
           next: (value: unknown) => {
@@ -212,7 +211,7 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
               type: 'stream',
               id,
               result: value,
-            } as WorkerMessage);
+            });
           },
           error: (error: Error) => {
             parentPort.postMessage({
@@ -223,20 +222,19 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
                 stack: error.stack,
                 name: error.name,
               },
-            } as WorkerMessage);
+            });
           },
           complete: () => {
             parentPort.postMessage({
               type: 'complete',
               id,
-            } as WorkerMessage);
+            });
           },
         });
         // Note: we do NOT await Observable completion — some Observables (e.g.
         // startNodeJSWiki) never complete, they only emit next values. Awaiting
         // would permanently block the message handler. Per-workspace git
         // serialization is handled by operationLocks in GitService instead.
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
         // Handle Promise
         const resolvedValue = await (result as Promise<unknown>);
@@ -244,14 +242,14 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
           type: 'response',
           id,
           result: resolvedValue,
-        } as WorkerMessage);
+        });
       } else {
         // Handle synchronous result
         parentPort.postMessage({
           type: 'response',
           id,
           result,
-        } as WorkerMessage);
+        });
       }
     } catch (error) {
       const error_ = error as Error;
@@ -263,7 +261,7 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
           stack: error_.stack,
           name: error_.name,
         },
-      } as WorkerMessage);
+      });
     }
   });
 }

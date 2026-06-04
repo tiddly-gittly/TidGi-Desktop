@@ -52,7 +52,7 @@ Given('I configure tidgi mini window and disable runOnBackground', async functio
     tidgiMiniWindow: true,
     runOnBackground: false,
   };
-  const finalSettings = { ...existing, preferences: updatedPreferences } as ISettingFile;
+  const finalSettings = { ...existing, preferences: updatedPreferences };
   await fs.writeJson(settingsPath, finalSettings, { spaces: 2 });
 });
 

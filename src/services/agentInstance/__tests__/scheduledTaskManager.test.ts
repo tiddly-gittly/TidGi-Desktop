@@ -36,7 +36,7 @@ function makeEntity(overrides: Partial<ScheduledTaskEntity> = {}): ScheduledTask
     created: new Date(),
     updated: new Date(),
     ...overrides,
-  } as ScheduledTaskEntity;
+  };
 }
 
 function makeRepo(entities: ScheduledTaskEntity[] = []): Repository<ScheduledTaskEntity> {
@@ -54,14 +54,14 @@ function makeRepo(entities: ScheduledTaskEntity[] = []): Repository<ScheduledTas
       const id = options?.where?.id;
       return id ? (store.get(id) ?? null) : null;
     }),
-    create: vi.fn((data: Partial<ScheduledTaskEntity>) => (Object.assign(makeEntity(), data) as ScheduledTaskEntity)),
+    create: vi.fn((data: Partial<ScheduledTaskEntity>) => (Object.assign(makeEntity(), data))),
     save: vi.fn(async (entity: ScheduledTaskEntity) => {
       store.set(entity.id, entity);
       return entity;
     }),
     update: vi.fn(async (id: string, data: Partial<ScheduledTaskEntity>) => {
       const existing = store.get(id);
-      if (existing) store.set(id, Object.assign({}, existing, data) as ScheduledTaskEntity);
+      if (existing) store.set(id, Object.assign({}, existing, data));
     }),
     delete: vi.fn(async (id: string) => {
       store.delete(id);

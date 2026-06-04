@@ -45,7 +45,7 @@ describe('promptConcatStream with image', () => {
         metadata: {
           file: { path: '/path/to/image.png', name: 'image.png' },
         },
-      } as AgentInstanceMessage,
+      },
     ];
 
     const context: AgentFrameworkContext = {
@@ -118,7 +118,7 @@ describe('promptConcatStream with image', () => {
         metadata: {
           file: { path: '/path/to/image.png' },
         },
-      } as AgentInstanceMessage,
+      },
     ];
 
     const context: AgentFrameworkContext = {

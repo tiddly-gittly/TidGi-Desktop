@@ -69,7 +69,7 @@ function htmlToText(html: string): string {
 }
 
 async function executeWebFetch(parameters: z.infer<typeof WebFetchToolSchema>, maxContentLength: number): Promise<ToolExecutionResult> {
-  const { url, extractText = true } = parameters;
+  const { url, extractText } = parameters;
 
   // Validate URL
   let parsedUrl: URL;

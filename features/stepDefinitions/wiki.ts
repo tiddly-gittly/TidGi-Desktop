@@ -1262,7 +1262,7 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
       found = workspaces.find(ws => !ws.pageType && !('isSubWiki' in ws && ws.isSubWiki));
     }
     return found || null;
-  }, workspaceName) as IWorkspace | null;
+  }, workspaceName);
 
   if (!runtimeWorkspace) {
     throw new Error(`No workspace found with name: ${workspaceName}`);
@@ -1328,7 +1328,7 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
         })()
       `;
       return (await mainWindow.webContents.executeJavaScript(script)) as { success: boolean; error?: string };
-    }, targetWorkspaceId) as { success: boolean; error?: string };
+    }, targetWorkspaceId);
 
     if (!restartResult.success) {
       throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);

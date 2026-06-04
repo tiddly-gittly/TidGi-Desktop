@@ -13,12 +13,11 @@ import type { IWikiService } from '@services/wiki/interface';
 import { matchToolCalling } from '@services/agentDefinition/responsePatternUtility';
 import type { IPromptConcatTool } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { AIStreamResponse } from '@services/externalAPI/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { AgentFrameworkContext } from '../../agentFrameworks/utilities/type';
 import type { AgentInstance } from '../../interface';
 import { createAgentFrameworkHooks } from '../index';
-import type { AIResponseContext, PromptConcatHookContext, ToolActions } from '../types';
+import type { AIResponseContext, PromptConcatHookContext } from '../types';
 import { wikiOperationTool } from '../wikiOperation';
 import { workspacesListTool } from '../workspacesList';
 
@@ -59,7 +58,7 @@ const makeAgentFrameworkContext = (agentId = 'test-agent'): AgentFrameworkContex
     status: { state: 'working', modified: new Date() },
     created: new Date(),
   } as unknown as AgentInstance,
-  agentDef: { id: 'test-agent-def', name: 'test-agent-def', agentFrameworkConfig: {} } as unknown as { id: string; name: string; agentFrameworkConfig: Record<string, unknown> },
+  agentDef: { id: 'test-agent-def', name: 'test-agent-def', agentFrameworkConfig: {} },
   isCancelled: () => false,
 });
 
@@ -104,7 +103,7 @@ describe('wikiOperationTool', () => {
           targetId: 'target-prompt',
           position: 'after' as const,
         },
-      } as unknown as IPromptConcatTool,
+      },
     };
 
     await hooks.processPrompts.promise(workspacesContext);
@@ -193,12 +192,12 @@ describe('wikiOperationTool', () => {
 
       const responseCtx: AIResponseContext = {
         agentFrameworkContext,
-        toolConfig: context.agentFrameworkConfig.plugins[0] as unknown as IPromptConcatTool,
+        toolConfig: context.agentFrameworkConfig.plugins[0],
         agentFrameworkConfig: context.agentFrameworkConfig,
-        response: { requestId: 'r-disabled', content: context.response.content, status: 'done' } as AIStreamResponse,
+        response: { requestId: 'r-disabled', content: context.response.content, status: 'done' },
         requestId: 'r-disabled',
         isFinal: true,
-        actions: {} as ToolActions,
+        actions: {},
       };
 
       await hooks.responseComplete.promise(responseCtx);
@@ -273,12 +272,12 @@ describe('wikiOperationTool', () => {
 
       const responseCtx: AIResponseContext = {
         agentFrameworkContext,
-        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0],
         agentFrameworkConfig: context.agentFrameworkConfig,
-        response: { requestId: 'r-create', content: context.response.content, status: 'done' } as AIStreamResponse,
+        response: { requestId: 'r-create', content: context.response.content, status: 'done' },
         requestId: 'r-create',
         isFinal: true,
-        actions: {} as ToolActions,
+        actions: {},
       };
 
       await hooks.responseComplete.promise(responseCtx);
@@ -338,10 +337,10 @@ describe('wikiOperationTool', () => {
 
       const respCtx2: AIResponseContext = {
         agentFrameworkContext,
-        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0],
         agentFrameworkConfig: context.agentFrameworkConfig,
-        response: { requestId: 'r-update', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as ToolActions,
+        response: { requestId: 'r-update', content: context.response.content, status: 'done' },
+        actions: {},
         requestId: 'r-update',
         isFinal: true,
       };
@@ -397,10 +396,10 @@ describe('wikiOperationTool', () => {
 
       const respCtx3: AIResponseContext = {
         agentFrameworkContext,
-        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0],
         agentFrameworkConfig: context.agentFrameworkConfig,
-        response: { requestId: 'r-delete', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as ToolActions,
+        response: { requestId: 'r-delete', content: context.response.content, status: 'done' },
+        actions: {},
         requestId: 'r-delete',
         isFinal: true,
       };
@@ -454,10 +453,10 @@ describe('wikiOperationTool', () => {
 
       const respCtx4: AIResponseContext = {
         agentFrameworkContext,
-        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0],
         agentFrameworkConfig: context.agentFrameworkConfig,
-        response: { requestId: 'r-error', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as ToolActions,
+        response: { requestId: 'r-error', content: context.response.content, status: 'done' },
+        actions: {},
         requestId: 'r-error',
         isFinal: true,
       };
@@ -492,10 +491,10 @@ describe('wikiOperationTool', () => {
 
       await hooks.responseComplete.promise({
         agentFrameworkContext,
-        toolConfig: context.agentFrameworkConfig?.plugins?.[0] as unknown as IPromptConcatTool,
+        toolConfig: context.agentFrameworkConfig?.plugins?.[0],
         agentFrameworkConfig: context.agentFrameworkConfig,
-        response: { requestId: 'r-none', content: context.response.content, status: 'done' } as AIStreamResponse,
-        actions: {} as ToolActions,
+        response: { requestId: 'r-none', content: context.response.content, status: 'done' },
+        actions: {},
         requestId: 'r-none',
         isFinal: true,
       });

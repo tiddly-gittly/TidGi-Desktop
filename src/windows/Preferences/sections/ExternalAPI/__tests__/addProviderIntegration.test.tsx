@@ -7,20 +7,20 @@ import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSc
 import { lightTheme } from '@services/theme/defaultTheme';
 import { BehaviorSubject } from 'rxjs';
 
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ExternalAPI } from '../index';
 
 // Mock data
 const mockLanguageModel: ModelInfo = {
   name: 'gpt-4o',
   caption: 'GPT-4o',
-  features: ['language' as ModelFeature, 'reasoning' as ModelFeature],
+  features: ['language', 'reasoning'],
 };
 
 const mockEmbeddingModel: ModelInfo = {
   name: 'text-embedding-3-small',
   caption: 'Text Embedding 3 Small',
-  features: ['embedding' as ModelFeature],
+  features: ['embedding'],
 };
 
 const mockProvider: AIProviderConfig = {

@@ -19,7 +19,7 @@ if (typeof document !== 'undefined') {
       _options?: IdleRequestOptions,
     ) =>
       window.setTimeout(() => {
-        callback({ timeRemaining: () => 50, didTimeout: false } as IdleDeadline);
+        callback({ timeRemaining: () => 50, didTimeout: false });
       }, 0);
     (window as unknown as Record<string, unknown>).cancelIdleCallback = (id: number) => {
       window.clearTimeout(id);

@@ -9,6 +9,6 @@ import type { IPrompt } from '../promptConcat/promptConcatSchema';
  */
 export function normalizeRole(role: string): NonNullable<IPrompt['role']> {
   if (role === 'agent') return 'assistant' as const;
-  if (role === 'user' || role === 'assistant' || role === 'system') return role as NonNullable<IPrompt['role']>;
+  if (role === 'user' || role === 'assistant' || role === 'system') return role;
   return 'user' as const;
 }

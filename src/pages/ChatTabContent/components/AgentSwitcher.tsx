@@ -125,7 +125,7 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
               size='small'
               options={agentDefs}
               getOptionLabel={(option) => option.name ?? option.id}
-              value={currentDefinition ?? (agentDefs[0] as AgentDefinition | undefined) ?? { id: '', agentFrameworkConfig: {} } as AgentDefinition}
+              value={currentDefinition ?? (agentDefs[0]) ?? { id: '', agentFrameworkConfig: {} }}
               onChange={(_event, value) => {
                 handleSelect(value);
               }}

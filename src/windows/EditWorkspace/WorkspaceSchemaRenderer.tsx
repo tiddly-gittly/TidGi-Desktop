@@ -406,7 +406,7 @@ export function AllWorkspaceSectionsRenderer({
           sectionTitleCurrent.includes(q) ||
           sectionKeyLower.includes(q)
         ) {
-          hits.push({ item: item as GenericSettingItemDefinition & { titleKey: string }, section });
+          hits.push({ item: item, section });
         }
       }
     }

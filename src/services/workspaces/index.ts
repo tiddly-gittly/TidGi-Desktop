@@ -58,7 +58,7 @@ export class Workspace implements IWorkspaceService {
     return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => {
       // Only wiki workspaces can have metadata, dedicated workspaces are filtered out
       if (!isWikiWorkspace(workspace)) {
-        return { ...workspace, metadata: this.getMetaDataSync(id) } as IWorkspaceWithMetadata;
+        return { ...workspace, metadata: this.getMetaDataSync(id) };
       }
       return { ...workspace, metadata: this.getMetaDataSync(id) };
     });

@@ -121,7 +121,7 @@ async function executeWikiSearch(
   parameters: WikiSearchToolParameters,
   aiConfig?: AiAPIConfig,
 ): Promise<ToolExecutionResult> {
-  const { workspaceName, searchType = 'filter', filter, query, limit = 10, threshold = 0.7 } = parameters;
+  const { workspaceName, searchType, filter, query, limit, threshold } = parameters;
 
   try {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -258,7 +258,7 @@ async function executeWikiUpdateEmbeddings(
   parameters: WikiUpdateEmbeddingsToolParameters,
   aiConfig?: AiAPIConfig,
 ): Promise<ToolExecutionResult> {
-  const { workspaceName, forceUpdate = false } = parameters;
+  const { workspaceName, forceUpdate } = parameters;
 
   try {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);

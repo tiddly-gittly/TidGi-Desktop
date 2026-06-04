@@ -121,7 +121,7 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
   const submitAnswer = useCallback((answer: string) => {
     if (questionId && message.agentId && window.service?.agentInstance) {
       // resolveAskQuestion sends the answer as a tool result (same turn), not as a new user message
-      void (window.service.agentInstance.resolveAskQuestion as (agentId: string, questionId: string, answer: string) => Promise<void>)(message.agentId, questionId, answer);
+      void (window.service.agentInstance.resolveAskQuestion)(message.agentId, questionId, answer);
     } else {
       // Fallback for legacy messages without questionId
       void sendMessage(answer);

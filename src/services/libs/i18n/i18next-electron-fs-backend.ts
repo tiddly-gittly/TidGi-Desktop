@@ -16,7 +16,7 @@ function mergeNestedI18NObject<T extends Record<string, unknown>>(object: T, pat
   for (let index = tokens.length - 2; index >= 0; index--) {
     temporary = { [tokens[index]]: temporary };
   }
-  return merge(object, temporary) as T;
+  return merge(object, temporary);
 }
 // Safe interpolate wrapper: avoid using `any` on interpolator and provide a fallback
 type InterpolatorLike = { interpolate: (template: string, variables: Record<string, unknown>, options?: unknown, postProcess?: unknown) => string };
@@ -174,7 +174,7 @@ export class Backend implements BackendModule {
         const callback_ = entry?.callback;
         this.readCallbacks[payload.key] = undefined;
         if (callback_ !== null && typeof callback_ === 'function') {
-          callback_(null, result as Readonly<Record<string, unknown>>);
+          callback_(null, result);
         }
       }
     });
@@ -284,10 +284,10 @@ export class Backend implements BackendModule {
     this.requestFileRead(filename, (error?: unknown, data?: unknown) => {
       type ReadCallbackParameters = Parameters<ReadCallback>;
       if (error) {
-        callback(error as unknown as ReadCallbackParameters[0], false as unknown as ReadCallbackParameters[1]);
+        callback(error as unknown as ReadCallbackParameters[0], false);
         return;
       }
-      callback(null as unknown as ReadCallbackParameters[0], data as ReadCallbackParameters[1]);
+      callback(null, data as ReadCallbackParameters[1]);
     });
   }
 

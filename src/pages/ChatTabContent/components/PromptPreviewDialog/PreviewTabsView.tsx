@@ -64,7 +64,7 @@ const FlatContent = memo<{ isFullScreen: boolean }>(({ isFullScreen }) => {
   // Memoize formatted preview to prevent unnecessary recalculations
   const formattedFlatPrompts = useMemo(() => {
     return flatPrompts?.map((message: ModelMessage) => ({
-      role: message.role as string,
+      role: message.role,
       content: getFormattedContent(message.content),
     }));
   }, [flatPrompts]);

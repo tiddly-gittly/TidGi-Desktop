@@ -99,7 +99,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     }
 
     const newRootData = structuredClone(formContext.rootFormData);
-    let parent: Record<string | number, unknown> | undefined = newRootData as Record<string | number, unknown>;
+    let parent: Record<string | number, unknown> | undefined = newRootData;
     for (let pathIndex = 0; pathIndex < pathSegments.length - 1; pathIndex += 1) {
       parent = parent?.[pathSegments[pathIndex]] as Record<string | number, unknown> | undefined;
       if (!parent) return;
