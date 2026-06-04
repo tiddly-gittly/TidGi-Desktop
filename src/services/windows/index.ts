@@ -366,11 +366,11 @@ export class Window implements IWindowService {
   }
 
   public async getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined> {
-    return this.windowMeta[windowName] as WindowMeta[N];
+    return this.windowMeta[windowName];
   }
 
   public getWindowMetaSync<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined {
-    return this.windowMeta[windowName] as WindowMeta[N] | undefined;
+    return this.windowMeta[windowName];
   }
 
   /**
@@ -735,6 +735,10 @@ export class Window implements IWindowService {
     const tidgiMiniWindowEnabled = await this.preferenceService.get('tidgiMiniWindow');
     if (!tidgiMiniWindowEnabled) {
       logger.debug('TidGi mini window is disabled, skipping initialization', { function: 'initializeTidgiMiniWindow' });
+      return;
+    }
+    if (this.tidgiMiniWindowOperationLock !== undefined) {
+      logger.info('TidGi mini window initialization deferred because another operation is in progress', { function: 'initializeTidgiMiniWindow' });
       return;
     }
 
