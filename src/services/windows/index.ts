@@ -649,14 +649,13 @@ export class Window implements IWindowService {
             // creation (e.g. when initializeTidgiMiniWindow was skipped due to a lock
             // or menubar not being ready, and the first actual show comes from a toggle).
             const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-            let { shouldSync, targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
+            let { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
 
             if (!targetWorkspaceId) {
               const allWorkspaces = await workspaceService.getWorkspacesAsList();
               const firstWiki = allWorkspaces.find((w) => isWikiWorkspace(w));
               if (firstWiki) {
                 targetWorkspaceId = firstWiki.id;
-                shouldSync = true;
                 logger.info('openTidgiMiniWindow (first-create): no active workspace, falling back to first wiki', {
                   function: 'openTidgiMiniWindow',
                   targetWorkspaceId,
@@ -677,8 +676,8 @@ export class Window implements IWindowService {
                   });
                   await viewService.addView(targetWorkspace, WindowNames.tidgiMiniWindow);
                 }
-                await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspaceId);
               }
+              await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspaceId);
             }
 
             logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });

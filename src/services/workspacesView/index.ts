@@ -238,7 +238,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         logger.warn('addViewForAllBrowserViews: tidgi mini window view creation deferred', {
           function: 'addViewForAllBrowserViews',
           workspaceId: workspace.id,
-          error: String(error),
+          error,
         });
       }
     })();
