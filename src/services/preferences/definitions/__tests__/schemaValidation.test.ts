@@ -43,11 +43,11 @@ describe('Section Definition Schema Validation', () => {
     for (const section of allSections) {
       for (const item of section.items) {
         if ('key' in item && item.type.startsWith('preference-')) {
-          const existing = seen.get(item.key as string);
+          const existing = seen.get(item.key);
           if (existing) {
             throw new Error(`Duplicate preference key "${item.key}" in sections "${existing}" and "${section.id}"`);
           }
-          seen.set(item.key as string, section.id);
+          seen.set(item.key, section.id);
         }
       }
     }

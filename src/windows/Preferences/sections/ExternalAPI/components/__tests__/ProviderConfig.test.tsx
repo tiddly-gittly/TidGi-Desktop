@@ -5,20 +5,20 @@ import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ProviderConfig } from '../ProviderConfig';
 
 // Mock data
 const mockLanguageModel: ModelInfo = {
   name: 'gpt-4',
   caption: 'GPT-4 Language Model',
-  features: ['language' as ModelFeature],
+  features: ['language'],
 };
 
 const mockEmbeddingModel: ModelInfo = {
   name: 'text-embedding-3-small',
   caption: 'OpenAI Embedding Model',
-  features: ['embedding' as ModelFeature],
+  features: ['embedding'],
 };
 
 const mockProvider: AIProviderConfig = {

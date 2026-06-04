@@ -27,7 +27,7 @@ function getTidGiService(): typeof $tw.tidgi.service {
 
   twWithExtensions.tidgi = twWithExtensions.tidgi ?? {};
   twWithExtensions.tidgi.service = twWithExtensions.tidgi.service ?? serviceFromTw;
-  return serviceFromTw as typeof $tw.tidgi.service;
+  return serviceFromTw;
 }
 
 class TidGiIPCSyncAdaptor {

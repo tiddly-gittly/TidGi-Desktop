@@ -123,7 +123,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     }
 
     const messages = [{ id: 'test', role: 'user' as const, content: 'Hello world', created: new Date(), modified: new Date(), agentId: 'test' }];
-    const observable = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig } as never, messages);
+    const observable = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig }, messages);
 
     let finalState: unknown;
     await new Promise<void>((resolve) => {
@@ -165,7 +165,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     const messages = [{ id: 'test', role: 'user' as const, content: 'Hello world', created: new Date(), modified: new Date(), agentId: 'test' }];
 
     // Pass agentFrameworkConfig wrapped (same shape used elsewhere)
-    const observable = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig } as never, messages);
+    const observable = window.observables.agentInstance.concatPrompt({ agentFrameworkConfig }, messages);
 
     const results: unknown[] = [];
     let finalResult: { flatPrompts: ModelMessage[]; processedPrompts: IPrompt[] } | undefined;

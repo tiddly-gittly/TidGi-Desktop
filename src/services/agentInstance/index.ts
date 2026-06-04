@@ -1125,7 +1125,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             isCancelled: () => false,
           };
 
-          const streamGenerator = promptConcatStream(promptDescription as AgentPromptDescription, messages, frameworkContext);
+          const streamGenerator = promptConcatStream(promptDescription, messages, frameworkContext);
           for await (const state of streamGenerator) {
             observer.next(state);
             if (state.isComplete) {

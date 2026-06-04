@@ -99,7 +99,7 @@ export function buildZodSchema(): z.ZodObject<Record<string, z.ZodType>> {
   shape.pauseNotificationsByScheduleTo = z.string();
   // Language is managed by a custom selector
   shape.language = z.string();
-  return z.object(shape) as z.ZodObject<Record<string, z.ZodType>>;
+  return z.object(shape);
 }
 
 /** The derived Zod schema — replaces the old zodSchema.ts */

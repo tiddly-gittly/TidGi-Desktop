@@ -32,7 +32,7 @@ const RecentToolSchema = z.object({
 });
 
 async function executeRecent(parameters: z.infer<typeof RecentToolSchema>): Promise<ToolExecutionResult> {
-  const { workspaceName, limit = 20, daysAgo } = parameters;
+  const { workspaceName, limit, daysAgo } = parameters;
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 

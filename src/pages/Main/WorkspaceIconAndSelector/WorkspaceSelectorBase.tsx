@@ -153,7 +153,7 @@ export function WorkspaceSelectorBase({
   customIcon,
   dragIntent = null,
   hibernated = false,
-  showSideBarIcon = true,
+  showSideBarIcon,
   id,
   index = 0,
   pageType,

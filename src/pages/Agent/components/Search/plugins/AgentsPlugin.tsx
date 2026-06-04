@@ -132,7 +132,7 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
             try {
               // If custom onSelect callback is provided, use it
               if (options.onSelect) {
-                options.onSelect(item as AgentDefinition);
+                options.onSelect(item);
                 return;
               }
 

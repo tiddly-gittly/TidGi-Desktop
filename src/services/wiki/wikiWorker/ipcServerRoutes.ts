@@ -30,8 +30,9 @@ export interface IWikiServerStatusObject {
   tiddlywiki_version: string;
   username: string;
 }
+export type ISkinnyTiddlerFields = Partial<Omit<ITiddlerFields, 'text'>> & { title: string };
 export interface IWikiServerRouteResponse {
-  data?: string | Buffer | Array<Omit<ITiddlerFields, 'text'>> | IWikiServerStatusObject | ITiddlerFields;
+  data?: string | Buffer | ISkinnyTiddlerFields[] | IWikiServerStatusObject | ITiddlerFields;
   headers?: Record<string, string>;
   statusCode?: number;
 }
@@ -210,7 +211,7 @@ export class IpcServerRoutes {
     }
     tiddlerFields.bag = 'default';
     tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf8' }, data: tiddlerFields as ITiddlerFields };
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf8' }, data: tiddlerFields };
   }
 
   async getTiddlersJSON(
@@ -223,23 +224,23 @@ export class IpcServerRoutes {
       filter += '+[!is[system]]';
     }
     const titles = this.wikiInstance.wiki.filterTiddlers(filter);
-    const tiddlers: Array<Omit<ITiddlerFields, 'text'>> = options?.toTiddler === false
-      ? titles.map(title => ({ title }))
-      : titles.map(title => {
+    const tiddlers: ISkinnyTiddlerFields[] = options?.toTiddler === false
+      ? titles.map((title): ISkinnyTiddlerFields => ({ title }))
+      : titles.flatMap((title): ISkinnyTiddlerFields[] => {
         const tiddler = this.wikiInstance.wiki.getTiddler(title);
         if (tiddler === undefined) {
-          return tiddler;
+          return [];
         }
-        const tiddlerFields = omit(tiddler.fields, excludeFields) as Record<string, string | number>;
+        const tiddlerFields: Record<string, unknown> = omit(tiddler.fields, excludeFields);
+        const changeCount = this.wikiInstance.wiki.getChangeCount(title);
         // only add revision if it > 0 or exists
-
-        if (this.wikiInstance.wiki.getChangeCount(title)) {
-          tiddlerFields.revision = String(this.wikiInstance.wiki.getChangeCount(title));
-        }
-        tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
-        return tiddlerFields as Omit<ITiddlerFields, 'text'>;
-      })
-        .filter((item): item is Omit<ITiddlerFields, 'text'> => item !== undefined);
+        return [{
+          ...tiddlerFields,
+          title,
+          type: typeof tiddlerFields.type === 'string' ? tiddlerFields.type : 'text/vnd.tiddlywiki',
+          ...(changeCount ? { revision: String(changeCount) } : {}),
+        }];
+      });
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: tiddlers };
   }
 

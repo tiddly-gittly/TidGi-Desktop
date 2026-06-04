@@ -85,7 +85,7 @@ function BooleanItem({
           checked={value}
           onChange={async (event) => {
             const newValue = event.target.checked;
-            await window.service.preference.set(item.key, newValue as IPreferences[typeof item.key]);
+            await window.service.preference.set(item.key, newValue);
             if (item.sideEffectId) {
               const sideEffect = getSideEffect(item.sideEffectId);
               if (sideEffect) {
@@ -132,7 +132,7 @@ function EnumItem({
           value={value}
           onChange={async (event) => {
             const newValue = event.target.value;
-            await window.service.preference.set(item.key, newValue as IPreferences[typeof item.key]);
+            await window.service.preference.set(item.key, newValue);
             if (item.sideEffectId) {
               const sideEffect = getSideEffect(item.sideEffectId);
               if (sideEffect) {
@@ -185,7 +185,7 @@ function NumberItem({
           onChange={async (event) => {
             const newValue = Number(event.target.value);
             if (!Number.isNaN(newValue)) {
-              await window.service.preference.set(item.key, newValue as IPreferences[typeof item.key]);
+              await window.service.preference.set(item.key, newValue);
               if (item.needsRestart) {
                 onNeedsRestart();
               }
@@ -229,7 +229,7 @@ function StringItem({
         value={value}
         multiline={item.multiline}
         onChange={async (event) => {
-          await window.service.preference.set(item.key, event.target.value as IPreferences[typeof item.key]);
+          await window.service.preference.set(item.key, event.target.value);
           if (item.needsRestart) {
             onNeedsRestart();
           }
@@ -276,7 +276,7 @@ function StringArrayItem({
         }}
         onBlur={async () => {
           const newArray = localValue.split('\n').map((s) => s.trim()).filter(Boolean);
-          await window.service.preference.set(item.key, newArray as IPreferences[typeof item.key]);
+          await window.service.preference.set(item.key, newArray);
           if (item.needsRestart) {
             onNeedsRestart();
           }

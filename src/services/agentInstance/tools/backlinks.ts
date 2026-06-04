@@ -33,7 +33,7 @@ const BacklinksToolSchema = z.object({
 });
 
 async function executeBacklinks(parameters: z.infer<typeof BacklinksToolSchema>): Promise<ToolExecutionResult> {
-  const { workspaceName, title, limit = 20 } = parameters;
+  const { workspaceName, title, limit } = parameters;
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 

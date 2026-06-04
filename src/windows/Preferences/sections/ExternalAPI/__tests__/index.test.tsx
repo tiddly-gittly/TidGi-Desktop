@@ -8,44 +8,44 @@ import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSc
 import { lightTheme } from '@services/theme/defaultTheme';
 import { BehaviorSubject } from 'rxjs';
 
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ExternalAPI } from '../index';
 
 // Mock data
 const mockLanguageModel: ModelInfo = {
   name: 'gpt-4',
   caption: 'GPT-4 Language Model',
-  features: ['language' as ModelFeature],
+  features: ['language'],
 };
 
 const mockEmbeddingModel: ModelInfo = {
   name: 'text-embedding-3-small',
   caption: 'OpenAI Embedding Model',
-  features: ['embedding' as ModelFeature],
+  features: ['embedding'],
 };
 
 const mockSpeechModel: ModelInfo = {
   name: 'gpt-speech',
   caption: 'GPT Speech',
-  features: ['speech' as ModelFeature],
+  features: ['speech'],
 };
 
 const mockImageModel: ModelInfo = {
   name: 'dall-e',
   caption: 'DALL-E',
-  features: ['imageGeneration' as ModelFeature],
+  features: ['imageGeneration'],
 };
 
 const mockTranscriptionsModel: ModelInfo = {
   name: 'whisper',
   caption: 'Whisper',
-  features: ['transcriptions' as ModelFeature],
+  features: ['transcriptions'],
 };
 
 const mockFreeModel: ModelInfo = {
   name: 'gpt-free',
   caption: 'GPT Free',
-  features: ['free' as ModelFeature],
+  features: ['free'],
 };
 
 const mockProvider: AIProviderConfig = {
@@ -227,7 +227,7 @@ describe('ExternalAPI Component', () => {
     const clearButton = modelSelector.parentElement?.querySelector('button[title*="Clear"], button[aria-label*="clear"], svg[data-testid="ClearIcon"]');
 
     if (clearButton) {
-      await user.click(clearButton as HTMLElement);
+      await user.click(clearButton);
 
       // Verify default field is deleted
       await waitFor(() => {
@@ -286,7 +286,7 @@ describe('ExternalAPI Component', () => {
     const clearButton = modelSelector.parentElement?.querySelector('button[title*="Clear"], button[aria-label*="clear"], svg[data-testid="ClearIcon"]');
 
     if (clearButton) {
-      await user.click(clearButton as HTMLElement);
+      await user.click(clearButton);
 
       // Should delete default field
       await waitFor(() => {
@@ -323,7 +323,7 @@ describe('ExternalAPI Component', () => {
     const clearButton = embeddingSelector.parentElement?.querySelector('button[title*="Clear"], button[aria-label*="clear"], svg[data-testid="ClearIcon"]');
 
     if (clearButton) {
-      await user.click(clearButton as HTMLElement);
+      await user.click(clearButton);
 
       // Verify the delete API was called
       await waitFor(() => {

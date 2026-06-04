@@ -62,7 +62,7 @@ async function getAllWikiWorkspaces(world: ApplicationWorld): Promise<ITestWorks
   }
   return await world.currentWindow.evaluate(async () => {
     const all = await window.service.workspace.getWorkspacesAsList();
-    return all.filter(workspace => !workspace.pageType) as ITestWorkspace[];
+    return all.filter(workspace => !workspace.pageType);
   });
 }
 

@@ -30,7 +30,7 @@ export const useTranslation = () => ({
     if (typeof options === 'object' && options?.defaultValue) return options.defaultValue;
 
     // Return the key with interpolated values for testing
-    return interpolateTemplate(key, options as TranslationOptions);
+    return interpolateTemplate(key, options);
   },
   i18n: {
     changeLanguage: vi.fn(),
@@ -42,7 +42,7 @@ export const getI18n = () => ({
     if (typeof options === 'object' && options?.defaultValue) return options.defaultValue;
 
     // Return the key with interpolated values for testing
-    return interpolateTemplate(key, options as TranslationOptions);
+    return interpolateTemplate(key, options);
   },
   changeLanguage: vi.fn(),
 });

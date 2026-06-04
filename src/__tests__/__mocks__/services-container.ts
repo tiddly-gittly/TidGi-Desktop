@@ -83,10 +83,10 @@ export const serviceInstances: {
   externalAPI: {
     getAIConfig: vi.fn(async () => ({ default: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
     getAIProviders: vi.fn(async () => []),
-    generateFromAI: vi.fn(async function*() {
+    generateFromAI: vi.fn(async function*(): AsyncGenerator<AIStreamResponse, void, unknown> {
       // harmless await for linter
       await Promise.resolve();
-      yield { requestId: 'r0', content: '', status: 'start' } as AIStreamResponse;
+      yield { requestId: 'r0', content: '', status: 'start' };
       return;
     }),
     streamFromAI: vi.fn((_messages, _config) =>

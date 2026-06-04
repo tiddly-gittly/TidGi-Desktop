@@ -32,7 +32,7 @@ export const remoteMethods = {
     void ipcRenderer.removeListener(WindowChannel.askAIWithSelection, handleAskAI),
   /** Trigger askAIWithSelection locally in renderer, bypassing main-process round-trip. Used by workspace-icon right-click menu. */
   triggerAskAIWithSelection: (data: IAskAIWithSelectionData): void => {
-    ipcRenderer.emit(WindowChannel.askAIWithSelection, {} as Electron.IpcRendererEvent, data);
+    ipcRenderer.emit(WindowChannel.askAIWithSelection, {}, data);
   },
   registerUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void): void =>
     void ipcRenderer.on(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),

@@ -69,7 +69,7 @@ export const defaultPreferences: IPreferences = {
   syncOnlyWhenNoDraft: true,
   aiGenerateBackupTitle: true,
   aiGenerateBackupTitleTimeout: 1500,
-  themeSource: 'system' as 'system' | 'light' | 'dark',
+  themeSource: 'system',
   tidgiMiniWindow: false,
   tidgiMiniWindowAlwaysOnTop: false,
   tidgiMiniWindowFixedWorkspaceId: '',

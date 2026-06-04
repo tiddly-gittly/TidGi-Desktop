@@ -22,7 +22,7 @@ export const agentActions = (
     const orderedIds: string[] = [];
 
     // Split agent data into agent without messages and message Map
-    const { messages = [], ...agentWithoutMessages } = fullAgent;
+    const { messages, ...agentWithoutMessages } = fullAgent;
 
     // Sort messages by modified time in ascending order
     const sortedMessages = [...messages].sort((a, b) => {
@@ -56,7 +56,7 @@ export const agentActions = (
     }
 
     return {
-      agent: agentWithoutMessages as AgentWithoutMessages,
+      agent: agentWithoutMessages,
       agentDef: agentDefinition,
       messages: messagesMap,
       orderedMessageIds: orderedIds,

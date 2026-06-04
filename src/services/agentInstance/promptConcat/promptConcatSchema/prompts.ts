@@ -77,4 +77,4 @@ export const PromptSchema: z.ZodType<IPrompt> = z.object({
 }).meta({
   title: t('Schema.Prompt.Title'),
   description: t('Schema.Prompt.Description'),
-}) as z.ZodType<IPrompt>;
+});

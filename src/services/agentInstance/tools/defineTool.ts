@@ -100,7 +100,7 @@ export function defineTool<
           }
 
           // Parse and validate config
-          const config = configSchema.parse(rawConfig) as z.infer<TConfigSchema>;
+          const config = configSchema.parse(rawConfig);
 
           // Build handler context with utilities
           const handlerContext: ToolHandlerContext<TConfigSchema> = {
@@ -246,7 +246,7 @@ export function defineTool<
           let config: z.infer<TConfigSchema> | undefined;
           if (rawConfig) {
             try {
-              config = configSchema.parse(rawConfig) as z.infer<TConfigSchema>;
+              config = configSchema.parse(rawConfig);
             } catch (parseError) {
               logger.warn(`Failed to parse config for ${toolId}`, { parseError });
             }
@@ -654,7 +654,7 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
             return;
           }
 
-          const config = configSchema.parse(rawConfig) as z.infer<TConfigSchema>;
+          const config = configSchema.parse(rawConfig);
 
           const handlerContext: PostProcessHandlerContext<TConfigSchema> = {
             config,

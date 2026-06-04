@@ -253,9 +253,9 @@ export class FileSystemWatcher {
       const tiddler = tiddlers.find(t => t.title === title);
       if (!tiddler) {
         // Title doesn't match - might be renamed, return first tiddler
-        callback(null, tiddlers[0] as unknown as Record<string, unknown>);
+        callback(null, tiddlers[0]);
       } else {
-        callback(null, tiddler as unknown as Record<string, unknown>);
+        callback(null, tiddler);
       }
 
       // Remove from pending loads
@@ -635,7 +635,7 @@ export class FileSystemWatcher {
         absolutePath: actualFileAbsPath,
         relativePath: actualFileRelativePath,
         type: changeType,
-        cachedTiddlerFields: tiddler as unknown as Record<string, unknown>,
+        cachedTiddlerFields: tiddler,
       });
 
       // Update inverse index

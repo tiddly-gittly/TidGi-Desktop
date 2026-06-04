@@ -288,7 +288,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
       global.$tw.boot.files['TestTiddler'] = fileInfo;
 
       mockUtils.deleteTiddlerFile.mockImplementation((_f, cb) => {
-        cb('String error' as unknown as Error);
+        cb('String error');
       });
 
       const callback = vi.fn();
@@ -310,7 +310,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
       global.$tw.boot.files['TestTiddler'] = fileInfo;
 
       mockUtils.deleteTiddlerFile.mockImplementation((_f, cb) => {
-        cb({ weird: 'object' } as unknown as Error);
+        cb({ weird: 'object' });
       });
 
       const callback = vi.fn();

@@ -161,9 +161,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                     window.service.view.getViewsInfo(),
                   ]);
                   setDiagData({
-                    processInfo: processInfoResult as unknown as IProcessInfo,
-                    workersInfo: workersInfoResult as unknown as IWorkerInfo[],
-                    viewsInfo: viewsInfoResult as unknown as IViewInfo[],
+                    processInfo: processInfoResult,
+                    workersInfo: workersInfoResult,
+                    viewsInfo: viewsInfoResult,
                   });
                   setDiagOpen(true);
                 }}
@@ -317,9 +317,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                 window.service.view.getViewsInfo(),
               ]);
               setDiagData({
-                processInfo: processInfoResult as unknown as IProcessInfo,
-                workersInfo: workersInfoResult as unknown as IWorkerInfo[],
-                viewsInfo: viewsInfoResult as unknown as IViewInfo[],
+                processInfo: processInfoResult,
+                workersInfo: workersInfoResult,
+                viewsInfo: viewsInfoResult,
               });
             }}
           >

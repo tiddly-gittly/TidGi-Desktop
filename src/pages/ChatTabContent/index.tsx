@@ -184,7 +184,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
     try {
       const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
       // Update tab with new agent - this triggers useEffect[tab.agentId] which handles subscription cleanup/setup
-      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefinitionId, title: newAgent.name } as Partial<TabItem>);
+      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefinitionId, title: newAgent.name });
       // Load the new agent into the store
       await fetchAgent(newAgent.id);
     } catch (error) {
