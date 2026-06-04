@@ -4,7 +4,6 @@ import { native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
-import { defaultServerIP } from '@/constants/urls';
 import type { TidgiService } from '@/types/tidgi-tw';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
@@ -49,7 +48,7 @@ async function bootWiki(
     enableHTTPAPI,
     authToken,
     constants: { TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLY_WIKI_BOOT_PATH },
-    excludedPlugins = [],
+    excludedPlugins,
     homePath,
     https,
     readOnlyMode,
@@ -57,8 +56,8 @@ async function bootWiki(
     shouldUseDarkColors,
     useWikiFolderAsTiddlersPath = false,
     subWikis = [],
-    tiddlyWikiHost = defaultServerIP,
-    tiddlyWikiPort = 5112,
+    tiddlyWikiHost,
+    tiddlyWikiPort,
     tokenAuth,
     userName,
     workspace,

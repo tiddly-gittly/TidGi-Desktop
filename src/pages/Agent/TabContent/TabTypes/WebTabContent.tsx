@@ -86,7 +86,7 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
   }, []);
 
   /** Handle address bar form submission */
-  const handleUrlSubmit = useCallback((event: React.FormEvent) => {
+  const handleUrlSubmit = useCallback((event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     updateTabData(tab.id, { url: inputUrl });
   }, [tab.id, inputUrl, updateTabData]);

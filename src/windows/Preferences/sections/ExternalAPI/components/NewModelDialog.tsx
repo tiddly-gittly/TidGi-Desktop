@@ -80,7 +80,7 @@ export function NewModelDialog({
         if (selectedModel) {
           onModelFormChange('name', selectedModel.name);
           onModelFormChange('caption', selectedModel.caption || '');
-          onModelFormChange('features', selectedModel.features || ['language' as ModelFeature]);
+          onModelFormChange('features', selectedModel.features || ['language']);
         }
       }
     }
@@ -191,7 +191,7 @@ export function NewModelDialog({
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                     <TextField
                       label={t('Preference.WorkflowFilePath', { ns: 'agent' })}
-                      value={(newModelForm.parameters?.workflowPath as string) || ''}
+                      value={(newModelForm.parameters?.workflowPath) || ''}
                       onChange={(event) => {
                         const parameters = { ...(newModelForm.parameters || {}), workflowPath: event.target.value };
                         onModelFormChange('parameters', parameters);

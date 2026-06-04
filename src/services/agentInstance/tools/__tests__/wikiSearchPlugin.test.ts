@@ -172,15 +172,15 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
           messages: [],
           status: { state: 'working' as const, modified: new Date() },
           created: new Date(),
-        } as AgentInstance,
-        agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} } as AgentDefinition,
+        },
+        agentDef: { id: 'test', name: 'test', agentFrameworkConfig: {} },
         isCancelled: () => false,
       };
       const hookContext: PromptConcatHookContext = {
         agentFrameworkContext: handlerCtx,
-        toolConfig: wikiPlugin as IPromptConcatTool,
+        toolConfig: wikiPlugin,
         prompts: prompts as IPrompt[],
-        messages: context.messages as AgentInstanceMessage[],
+        messages: context.messages,
       };
       await hooks.processPrompts.promise(hookContext);
 
@@ -513,7 +513,7 @@ describe('Wiki Search Plugin - Comprehensive Tests', () => {
 
       const context: AIResponseContext = {
         agentFrameworkContext: handlerCtx,
-        toolConfig: { id: 'test-plugin', toolId: 'wikiSearch' } as IPromptConcatTool,
+        toolConfig: { id: 'test-plugin', toolId: 'wikiSearch' },
         response: { requestId: 'test-request-345', content: 'Just a regular response without any tool calls', status: 'done' },
         requestId: 'test-request',
         isFinal: true,

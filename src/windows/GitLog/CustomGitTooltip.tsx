@@ -127,7 +127,7 @@ export function CustomGitTooltip({ commit, borderColour, backgroundColour, t }: 
         <Box sx={{ marginTop: '4px' }}>
           {displayFiles.map((file, index) => {
             // Handle both string and object file formats
-            const filePath = typeof file === 'string' ? file : (file as unknown as FileObject).path || '';
+            const filePath = typeof file === 'string' ? file : (file).path || '';
             const fileName = filePath.split('/').pop() || filePath;
             return (
               <Typography

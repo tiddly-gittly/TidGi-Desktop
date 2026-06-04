@@ -44,7 +44,7 @@ const ListTiddlersToolSchema = z.object({
 });
 
 async function executeListTiddlers(parameters: z.infer<typeof ListTiddlersToolSchema>): Promise<ToolExecutionResult> {
-  const { workspaceName, filter, offset = 0, limit: rawLimit = 50, fields: _fields = ['title', 'tags', 'modified'] } = parameters;
+  const { workspaceName, filter, offset, limit: rawLimit, fields: _fields } = parameters;
   const limit = Math.min(rawLimit, 200); // Cap at 200
 
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);

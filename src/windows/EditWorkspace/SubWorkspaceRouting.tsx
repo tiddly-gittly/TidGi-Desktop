@@ -17,7 +17,7 @@ export function SubWorkspaceRouting(props: ICustomSectionProps): React.JSX.Eleme
   const { sectionRef } = props;
   const { workspace: rawWorkspace, workspaceSetter: rawSetter } = useWorkspaceForm();
   const workspace = rawWorkspace;
-  const workspaceSetter = rawSetter as (ws: IWikiWorkspace, needsRestart?: boolean) => void;
+  const workspaceSetter = rawSetter;
   const [tagInputValue, setTagInputValue] = useState<string>('');
 
   const {

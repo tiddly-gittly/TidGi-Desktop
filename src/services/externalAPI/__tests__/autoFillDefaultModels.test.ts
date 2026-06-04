@@ -1,5 +1,5 @@
 import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { AIProviderConfig, IExternalAPIService, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, IExternalAPIService, ModelInfo } from '@services/externalAPI/interface';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,7 +17,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
   const mockLanguageModel: ModelInfo = {
     name: 'gpt-4',
     caption: 'GPT-4 Language Model',
-    features: ['language' as ModelFeature],
+    features: ['language'],
   };
 
   beforeEach(() => {

@@ -366,11 +366,11 @@ export class Window implements IWindowService {
   }
 
   public async getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined> {
-    return this.windowMeta[windowName] as WindowMeta[N];
+    return this.windowMeta[windowName];
   }
 
   public getWindowMetaSync<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined {
-    return this.windowMeta[windowName] as WindowMeta[N] | undefined;
+    return this.windowMeta[windowName];
   }
 
   /**
@@ -644,8 +644,44 @@ export class Window implements IWindowService {
           // After creating the tidgi mini window, show it if requested
           const menuBar = this.tidgiMiniWindowMenubar;
           if (showWindow && menuBar) {
+            // Resolve target workspace — same logic as the "already enabled" path above.
+            // This ensures the view is created for the target workspace even on first
+            // creation (e.g. when initializeTidgiMiniWindow was skipped due to a lock
+            // or menubar not being ready, and the first actual show comes from a toggle).
+            const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+            let { targetWorkspaceId } = await getTidgiMiniWindowTargetWorkspace();
+
+            if (!targetWorkspaceId) {
+              const allWorkspaces = await workspaceService.getWorkspacesAsList();
+              const firstWiki = allWorkspaces.find((w) => isWikiWorkspace(w));
+              if (firstWiki) {
+                targetWorkspaceId = firstWiki.id;
+                logger.info('openTidgiMiniWindow (first-create): no active workspace, falling back to first wiki', {
+                  function: 'openTidgiMiniWindow',
+                  targetWorkspaceId,
+                });
+              }
+            }
+
+            // Ensure view exists for the target workspace
+            if (targetWorkspaceId) {
+              const targetWorkspace = await workspaceService.get(targetWorkspaceId);
+              if (targetWorkspace && !targetWorkspace.pageType) {
+                const viewService = container.get<IViewService>(serviceIdentifier.View);
+                const existingView = viewService.getView(targetWorkspace.id, WindowNames.tidgiMiniWindow);
+                if (!existingView) {
+                  logger.info('openTidgiMiniWindow (first-create): creating view for target workspace', {
+                    function: 'openTidgiMiniWindow',
+                    workspaceId: targetWorkspace.id,
+                  });
+                  await viewService.addView(targetWorkspace, WindowNames.tidgiMiniWindow);
+                }
+              }
+              await container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).realignActiveWorkspace(targetWorkspaceId);
+            }
+
             logger.debug('Showing newly created tidgi mini window', { function: 'openTidgiMiniWindow' });
-            await this.finishShowingTidgiMiniWindow(menuBar);
+            await this.finishShowingTidgiMiniWindow(menuBar, targetWorkspaceId);
           }
         }
       } catch (error) {
@@ -699,6 +735,10 @@ export class Window implements IWindowService {
     const tidgiMiniWindowEnabled = await this.preferenceService.get('tidgiMiniWindow');
     if (!tidgiMiniWindowEnabled) {
       logger.debug('TidGi mini window is disabled, skipping initialization', { function: 'initializeTidgiMiniWindow' });
+      return;
+    }
+    if (this.tidgiMiniWindowOperationLock !== undefined) {
+      logger.info('TidGi mini window initialization deferred because another operation is in progress', { function: 'initializeTidgiMiniWindow' });
       return;
     }
 

@@ -33,7 +33,7 @@ const TocToolSchema = z.object({
 });
 
 async function executeToc(parameters: z.infer<typeof TocToolSchema>): Promise<ToolExecutionResult> {
-  const { workspaceName, rootTitle, depth = 3 } = parameters;
+  const { workspaceName, rootTitle, depth } = parameters;
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 

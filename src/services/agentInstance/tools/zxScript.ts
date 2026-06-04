@@ -40,7 +40,7 @@ const ZxScriptToolSchema = z.object({
 });
 
 async function executeZxScript(parameters: z.infer<typeof ZxScriptToolSchema>): Promise<ToolExecutionResult> {
-  const { workspaceName, script, fileName = 'agent-script.mjs' } = parameters;
+  const { workspaceName, script, fileName } = parameters;
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 

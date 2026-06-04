@@ -83,7 +83,7 @@ export function SearchBar({ onSearch, disabled = false, currentSearchParams }: I
   }, [currentSearchParams]);
 
   const handleModeChange = (event: SelectChangeEvent<SearchMode>) => {
-    const newMode = event.target.value as SearchMode;
+    const newMode = event.target.value;
     setMode(newMode);
 
     // Auto-trigger search when switching to none mode (clear search)

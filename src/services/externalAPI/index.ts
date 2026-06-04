@@ -390,7 +390,7 @@ export class ExternalAPIService implements IExternalAPIService {
         // For other values, let lodash handle the merge
         return undefined;
       },
-    ) as typeof this.userSettings.defaultConfig;
+    );
 
     this.saveSettingsToDatabase();
 

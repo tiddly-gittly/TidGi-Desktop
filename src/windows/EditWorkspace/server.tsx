@@ -42,7 +42,7 @@ export function ServerOptions(props: ICustomSectionProps) {
     rootTiddler,
     lastNodeJSArgv,
     enableHTTPAPI,
-    readOnlyMode = false,
+    readOnlyMode,
     tokenAuth,
     authToken,
     userName,

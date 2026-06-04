@@ -38,8 +38,8 @@ describe('wikiTemplates helpers', () => {
     } as unknown as { wikiOperationInServer: (channel: unknown, workspaceId: string, args?: unknown) => Promise<unknown> };
 
     vi.spyOn(container, 'get').mockImplementation((id: unknown) => {
-      if (id === serviceIdentifier.Workspace) return mockWorkspaceService as unknown;
-      if (id === serviceIdentifier.Wiki) return mockWikiService as unknown;
+      if (id === serviceIdentifier.Workspace) return mockWorkspaceService;
+      if (id === serviceIdentifier.Wiki) return mockWikiService;
       throw new Error('unexpected');
     });
 

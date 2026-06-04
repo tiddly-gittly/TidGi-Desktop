@@ -122,13 +122,13 @@ export default function EditWorkspace(): React.JSX.Element {
       </Helmet>
       <SearchBar value={searchQuery} onChange={setSearchQuery} inputRef={searchInputReference} />
       {wikiWorkspace && (
-        <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter as (ws: typeof wikiWorkspace, nr?: boolean) => void}>
+        <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter}>
           {!isSearching && <WorkspaceSectionSideBar sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />}
           <Inner>
             <AllWorkspaceSectionsRenderer
               query={searchQuery}
               workspace={wikiWorkspace}
-              workspaceSetter={workspaceSetter as (ws: typeof wikiWorkspace, nr?: boolean) => void}
+              workspaceSetter={workspaceSetter}
               onNeedsRestart={requestRestartCountDown}
               sectionRefs={sectionReferences}
               hiddenSections={hiddenSections}

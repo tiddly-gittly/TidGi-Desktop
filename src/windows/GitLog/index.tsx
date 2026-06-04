@@ -76,7 +76,7 @@ export default function GitHistory(): React.JSX.Element {
   } = useGitHistoryState();
 
   // Determine theme mode for react-git-log
-  const gitLogTheme = theme.palette.mode as 'light' | 'dark';
+  const gitLogTheme = theme.palette.mode;
 
   const showSnackbar = useCallback(
     (message: string, severity: 'success' | 'error' | 'info' = 'info') => {

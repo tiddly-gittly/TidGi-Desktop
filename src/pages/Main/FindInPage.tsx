@@ -89,8 +89,10 @@ export default function FindInPage(): React.JSX.Element | null {
               void window.service.window.stopFindInPage();
             }
           }}
-          onInput={(event: React.FormEvent<HTMLInputElement>) => {
-            const value = event.currentTarget.value;
+          onInput={(event: React.SyntheticEvent<HTMLDivElement>) => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+            const value = target.value;
             if (typeof value !== 'string') return;
             textSetter(value);
             if (value.length > 0) {
