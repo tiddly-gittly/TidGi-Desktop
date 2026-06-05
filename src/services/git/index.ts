@@ -45,6 +45,8 @@ export class Git implements IGitService {
   /**
    * Acquire a per-workspace lock to serialize git operations.
    * Returns a release function that must be called in a finally block.
+   * Includes a timeout so that if a previous operation is stuck (e.g. due to a hibernated workspace or a hung git process),
+   * the current operation fails fast instead of blocking indefinitely.
    */
   private async acquireOperationLock(workspaceID: string): Promise<() => void> {
     let release: () => void;
@@ -56,7 +58,13 @@ export class Git implements IGitService {
     this.operationLocks.set(workspaceID, promise);
 
     if (previousLock !== undefined) {
-      await previousLock;
+      const LOCK_TIMEOUT_MS = 30_000;
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Previous git operation is still running for workspace ${workspaceID} after ${LOCK_TIMEOUT_MS}ms`));
+        }, LOCK_TIMEOUT_MS);
+      });
+      await Promise.race([previousLock, timeoutPromise]);
     }
 
     return () => {
@@ -285,6 +293,10 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     const workspaceID = workspace.id;
+    if (workspace.hibernated) {
+      logger.warn('commitAndSync skipped because workspace is hibernated', { workspaceID });
+      return false;
+    }
     const releaseLock = await this.acquireOperationLock(workspaceID);
     try {
       // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever
@@ -343,6 +355,10 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     const workspaceID = workspace.id;
+    if (workspace.hibernated) {
+      logger.warn('forcePull skipped because workspace is hibernated', { workspaceID });
+      return false;
+    }
     const releaseLock = await this.acquireOperationLock(workspaceID);
     try {
       const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
