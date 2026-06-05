@@ -184,7 +184,7 @@ Feature: Sub-Wiki Functionality
     # Verify the setting was saved to settings.json
     Then settings.json should have workspace "SubWikiSettings" with "includeTagTree" set to "true"
 
-  @subwiki @subwiki-create-ui
+  @subwiki @subwiki-create-ui @calibrate
   Scenario: Create sub-wiki workspace via UI
     # This tests creating a sub-wiki through the Add Workspace UI
     Given I cleanup test wiki so it could create a new one on start
