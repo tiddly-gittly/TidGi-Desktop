@@ -10,7 +10,7 @@
  */
 import type { IFileInfo, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { IFileChange } from '../FileSystemWatcher';
+import { FileSystemWatcher, type IFileChange } from '../FileSystemWatcher';
 
 // Mock TiddlyWiki global
 const mockLogger = {
@@ -74,10 +74,16 @@ vi.mock('@services/wiki/wikiWorker/services', () => ({
 }));
 
 describe('FileSystemWatcher - loadTiddler file format type preservation', () => {
+  let watcher: FileSystemWatcher;
+  let mockWiki: Wiki;
+
   beforeEach(() => {
     vi.clearAllMocks();
 
-    const _mockWiki = {
+    // @ts-expect-error - Setting up global for testing
+    global.$tw.boot.files = {};
+
+    mockWiki = {
       getTiddlerText: vi.fn((title: string) => {
         if (title === '$:/info/tidgi/useWikiFolderAsTiddlersPath') return 'no';
         return '';
@@ -85,12 +91,36 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       tiddlerExists: vi.fn(() => false),
       getTiddler: vi.fn(() => undefined),
     } as unknown as Wiki;
+
+    watcher = new FileSystemWatcher({
+      wiki: mockWiki,
+      // @ts-expect-error - Setting up global for testing
+      boot: global.$tw.boot,
+      logger: mockLogger as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      workspaceID: 'test-workspace',
+    });
   });
+
+  /**
+   * Helper to inject a pendingFileLoads entry and call loadTiddler.
+   * Returns the boot.files entry that was set by loadTiddler.
+   */
+  function injectAndLoad(fileChange: IFileChange): IFileInfo {
+    // Inject the file change into pendingFileLoads
+    (watcher as any).pendingFileLoads.set(fileChange.cachedTiddlerFields?.title ?? 'Test', fileChange); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    const title = fileChange.cachedTiddlerFields?.title as string;
+    let result: IFileInfo | null = null;
+    watcher.loadTiddler(title, (_err, _fields) => {
+      // loadTiddler sets boot.files[title] as a side effect
+      result = (global.$tw.boot.files as Record<string, IFileInfo>)[title];
+    });
+    return result!;
+  }
 
   describe('Type preservation with cached tiddler fields', () => {
     it('should use fileDescriptor.type (application/x-tiddler) not tiddler.type (text/markdown) for .tid files', () => {
-      // Simulate a .tid file containing a markdown tiddler
-      const fileChange: IFileChange = {
+      const bootFileInfo = injectAndLoad({
         absolutePath: '/test/wiki/tiddlers/my-note.tid',
         relativePath: 'my-note.tid',
         type: 'change',
@@ -105,28 +135,15 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
           hasMetaFile: false,
           isEditableFile: true,
         },
-      };
+      });
 
-      // Simulate what loadTiddler does with cached fields
-      const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
-
-      // The FIXED code: use cachedFileDescriptor.type
-      const fileType = fileChange.cachedFileDescriptor?.type ?? 'application/x-tiddler';
-
-      const bootFileEntry = {
-        filepath: normalizedPath,
-        type: fileType,
-        hasMetaFile: fileChange.cachedFileDescriptor?.hasMetaFile ?? false,
-        isEditableFile: fileChange.cachedFileDescriptor?.isEditableFile ?? true,
-      };
-
-      // Verify the type is the file format type, not the content type
-      expect(bootFileEntry.type).toBe('application/x-tiddler');
-      expect(bootFileEntry.type).not.toBe('text/markdown');
+      // Verify loadTiddler set the file format type, not the content type
+      expect(bootFileInfo.type).toBe('application/x-tiddler');
+      expect(bootFileInfo.type).not.toBe('text/markdown');
     });
 
     it('should use application/json type for .json files', () => {
-      const fileChange: IFileChange = {
+      const bootFileInfo = injectAndLoad({
         absolutePath: '/test/wiki/tiddlers/my-data.json',
         relativePath: 'my-data.json',
         type: 'change',
@@ -141,14 +158,13 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
           hasMetaFile: false,
           isEditableFile: true,
         },
-      };
+      });
 
-      const fileType = fileChange.cachedFileDescriptor?.type ?? 'application/x-tiddler';
-      expect(fileType).toBe('application/json');
+      expect(bootFileInfo.type).toBe('application/json');
     });
 
     it('should fall back to extension-based inference when cachedFileDescriptor is missing', () => {
-      const fileChange: IFileChange = {
+      const bootFileInfo = injectAndLoad({
         absolutePath: '/test/wiki/tiddlers/my-note.tid',
         relativePath: 'my-note.tid',
         type: 'change',
@@ -158,26 +174,14 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
           type: 'text/markdown',
         },
         // No cachedFileDescriptor!
-      };
+      });
 
-      // Simulate inferFileTypeFromExtension
-      const extension = '.tid';
-      const inferFileType = (ext: string): string => {
-        switch (ext) {
-          case '.json':
-            return 'application/json';
-          case '.tid':
-          default:
-            return 'application/x-tiddler';
-        }
-      };
-
-      const fileType = fileChange.cachedFileDescriptor?.type ?? inferFileType(extension);
-      expect(fileType).toBe('application/x-tiddler');
+      // Should infer application/x-tiddler from .tid extension
+      expect(bootFileInfo.type).toBe('application/x-tiddler');
     });
 
     it('should infer application/json for .json extension when cachedFileDescriptor is missing', () => {
-      const fileChange: IFileChange = {
+      const bootFileInfo = injectAndLoad({
         absolutePath: '/test/wiki/tiddlers/data.json',
         relativePath: 'data.json',
         type: 'change',
@@ -186,21 +190,9 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
           text: '{}',
           type: 'application/json',
         },
-      };
+      });
 
-      const extension = '.json';
-      const inferFileType = (ext: string): string => {
-        switch (ext) {
-          case '.json':
-            return 'application/json';
-          case '.tid':
-          default:
-            return 'application/x-tiddler';
-        }
-      };
-
-      const fileType = fileChange.cachedFileDescriptor?.type ?? inferFileType(extension);
-      expect(fileType).toBe('application/json');
+      expect(bootFileInfo.type).toBe('application/json');
     });
   });
 
@@ -213,36 +205,64 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       // 4. tiddler.type = 'text/markdown' (content type)
       // 5. OLD BUG: boot.files[title].type = 'text/markdown' → next save = JSON!
       // 6. FIX: boot.files[title].type = 'application/x-tiddler' → next save = .tid ✓
+      const bootFileInfo = injectAndLoad({
+        absolutePath: '/test/wiki/tiddlers/my-note.tid',
+        relativePath: 'my-note.tid',
+        type: 'change',
+        cachedTiddlerFields: {
+          title: 'My Note',
+          text: '# Hello',
+          type: 'text/markdown',
+        },
+        cachedFileDescriptor: {
+          type: 'application/x-tiddler',
+          hasMetaFile: false,
+          isEditableFile: true,
+        },
+      });
 
-      const fileDescriptorType = 'application/x-tiddler';
-
-      // Demonstrate the bug: using tiddler content type instead of file format type
-      // would cause saveTiddlerToFile() to save as JSON
-      expect('text/markdown').not.toBe('application/x-tiddler'); // Different types!
-
-      // NEW (fixed) code uses file format type:
-      const newFileType = fileDescriptorType ?? 'application/x-tiddler';
-      expect(newFileType).toBe('application/x-tiddler'); // CORRECT! This preserves .tid format
+      expect(bootFileInfo.type).toBe('application/x-tiddler');
+      expect(bootFileInfo.type).not.toBe('text/markdown');
     });
 
     it('should NOT change .tid to .json when tiddler has type text/plain', () => {
-      const fileDescriptorType = 'application/x-tiddler';
+      const bootFileInfo = injectAndLoad({
+        absolutePath: '/test/wiki/tiddlers/plain-note.tid',
+        relativePath: 'plain-note.tid',
+        type: 'change',
+        cachedTiddlerFields: {
+          title: 'Plain Note',
+          text: 'Just plain text',
+          type: 'text/plain',
+        },
+        cachedFileDescriptor: {
+          type: 'application/x-tiddler',
+          hasMetaFile: false,
+          isEditableFile: true,
+        },
+      });
 
-      const newFileType = fileDescriptorType ?? 'application/x-tiddler';
-      expect(newFileType).toBe('application/x-tiddler');
+      expect(bootFileInfo.type).toBe('application/x-tiddler');
     });
 
-    it('should NOT change .tid to .json when tiddler has type image/png (with .meta)', () => {
-      // For binary tiddlers with .meta files, the file format is still 'application/x-tiddler'
-      // or the tiddler type itself, but with hasMetaFile = true
-      const fileDescriptorType = 'image/png';
-      const hasMetaFile = true;
+    it('should preserve image/png type for binary tiddlers with .meta', () => {
+      const bootFileInfo = injectAndLoad({
+        absolutePath: '/test/wiki/tiddlers/photo.png',
+        relativePath: 'photo.png',
+        type: 'change',
+        cachedTiddlerFields: {
+          title: 'photo.png',
+          type: 'image/png',
+        },
+        cachedFileDescriptor: {
+          type: 'image/png',
+          hasMetaFile: true,
+          isEditableFile: true,
+        },
+      });
 
-      // With .meta file, the body file uses the tiddler type for encoding
-      // but the file format decision is based on hasMetaFile, not type
-      const newFileType = fileDescriptorType ?? 'application/x-tiddler';
-      expect(newFileType).toBe('image/png');
-      expect(hasMetaFile).toBe(true); // Body + .meta file format
+      expect(bootFileInfo.type).toBe('image/png');
+      expect(bootFileInfo.hasMetaFile).toBe(true);
     });
   });
 });

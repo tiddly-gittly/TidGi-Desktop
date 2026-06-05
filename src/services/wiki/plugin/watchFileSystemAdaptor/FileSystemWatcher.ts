@@ -284,7 +284,9 @@ export class FileSystemWatcher {
       const { tiddlers: _, ...fileDescriptor } = tiddlersDescriptor;
       // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
       const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
-      // Validate file type: ensure it's a recognized file format type, not a content type
+      // Use fileDescriptor.type (the file format type from $tw.loadTiddlersFromFile)
+      // rather than tiddler.type (the content type). Falls back to extension-based
+      // inference when fileDescriptor.type is unavailable.
       const fileType = (fileDescriptor.type as string) ?? this.inferFileTypeFromExtension(fileChange.absolutePath);
       this.boot.files[title] = {
         filepath: normalizedPath,
