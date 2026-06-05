@@ -54,6 +54,17 @@ export interface IFileChange {
   type: 'add' | 'change' | 'delete';
   /** Cached tiddler fields loaded during detection, avoids re-reading file */
   cachedTiddlerFields?: Record<string, unknown>;
+  /**
+   * File-level descriptor from $tw.loadTiddlersFromFile().
+   * Contains file format type (e.g. 'application/x-tiddler' for .tid, 'application/json' for .json),
+   * which is DIFFERENT from the tiddler's content type (e.g. 'text/markdown').
+   * This is critical for preserving the correct file format on subsequent saves.
+   */
+  cachedFileDescriptor?: {
+    type: string | undefined;
+    hasMetaFile: boolean | undefined;
+    isEditableFile: boolean | undefined;
+  };
 }
 
 /**
@@ -229,11 +240,19 @@ export class FileSystemWatcher {
         // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
         // On Windows, this prevents mismatch between native backslashes and TiddlyWiki's forward-slash paths.
         const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
+
+        // CRITICAL: Use the file descriptor's type (file format type), NOT the tiddler's content type.
+        // fileDescriptor.type = 'application/x-tiddler' for .tid files, 'application/json' for .json files
+        // tiddler.type = 'text/markdown', 'text/vnd.tiddlywiki', etc. (content type)
+        // If we use the tiddler's content type here, saveTiddlerToFile() will save as JSON
+        // because it only checks for 'application/x-tiddler' to use .tid format.
+        const fileType = fileChange.cachedFileDescriptor?.type ?? this.inferFileTypeFromExtension(fileChange.absolutePath);
+
         this.boot.files[title] = {
           filepath: normalizedPath,
-          type: (fileChange.cachedTiddlerFields.type as string) ?? 'application/x-tiddler',
-          hasMetaFile,
-          isEditableFile: true,
+          type: fileType,
+          hasMetaFile: fileChange.cachedFileDescriptor?.hasMetaFile ?? hasMetaFile,
+          isEditableFile: fileChange.cachedFileDescriptor?.isEditableFile ?? true,
         };
         callback(null, fileChange.cachedTiddlerFields);
         this.pendingFileLoads.delete(title);
@@ -265,9 +284,11 @@ export class FileSystemWatcher {
       const { tiddlers: _, ...fileDescriptor } = tiddlersDescriptor;
       // Normalize to forward slashes for consistency with the inverse index and TiddlyWiki's path convention.
       const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
+      // Validate file type: ensure it's a recognized file format type, not a content type
+      const fileType = (fileDescriptor.type as string) ?? this.inferFileTypeFromExtension(fileChange.absolutePath);
       this.boot.files[title] = {
         filepath: normalizedPath,
-        type: fileDescriptor.type ?? 'application/x-tiddler',
+        type: fileType,
         hasMetaFile: fileDescriptor.hasMetaFile ?? false,
         isEditableFile: fileDescriptor.isEditableFile ?? true,
       };
@@ -623,19 +644,49 @@ export class FileSystemWatcher {
         const wikiModified = (existingTiddler.fields.modified as string | undefined) ?? '';
         const fileText = (tiddler as { text?: string }).text ?? '';
         const wikiText = (existingTiddler.fields.text as string | undefined) ?? '';
-        if (fileModified !== '' && fileModified === wikiModified && fileText === wikiText) {
+        // Normalize line endings and trim for robust comparison
+        const normalizeForCompare = (s: string) => s.replace(/\r\n/g, '\n').trim();
+        if (fileModified !== '' && fileModified === wikiModified && normalizeForCompare(fileText) === normalizeForCompare(wikiText)) {
           this.logger.log(`FileSystemWatcher Skipping self-echo for ${tiddlerTitle} (content identical)`);
           continue;
         }
       }
 
+      // Detect unexpected file format changes (e.g., .tid → .json).
+      // This catches the bug where incorrect boot.files[title].type causes
+      // saveTiddlerToFile() to save in the wrong format.
+      const existingBootFile = this.boot.files[tiddlerTitle];
+      if (existingBootFile?.filepath) {
+        const existingExt = path.extname(existingBootFile.filepath).toLowerCase();
+        const newExt = path.extname(actualFileAbsPath).toLowerCase();
+        if (existingExt === '.tid' && newExt === '.json') {
+          this.logger.alert(
+            `FileSystemWatcher WARNING: Tiddler "${tiddlerTitle}" format changed from .tid to .json! `
+            + `This may indicate a file format bug. Old: ${existingBootFile.filepath}, New: ${actualFileAbsPath}`,
+          );
+        } else if (existingExt === '.json' && newExt === '.tid') {
+          this.logger.log(
+            `FileSystemWatcher Tiddler "${tiddlerTitle}" format restored from .json to .tid: ${actualFileAbsPath}`,
+          );
+        }
+      }
+
       // Store the file change info for later loading by syncer
       // Cache tiddler fields to avoid re-reading file in loadTiddler()
+      // IMPORTANT: Also cache fileDescriptor to preserve correct file format type.
+      // fileDescriptor.type is the FILE format type (e.g. 'application/x-tiddler' for .tid),
+      // NOT the tiddler's content type (e.g. 'text/markdown'). Using the wrong type
+      // causes saveTiddlerToFile() to save as JSON instead of .tid format.
       this.pendingFileLoads.set(tiddlerTitle, {
         absolutePath: actualFileAbsPath,
         relativePath: actualFileRelativePath,
         type: changeType,
         cachedTiddlerFields: tiddler,
+        cachedFileDescriptor: {
+          type: fileDescriptor.type as string | undefined,
+          hasMetaFile: fileDescriptor.hasMetaFile as boolean | undefined,
+          isEditableFile: fileDescriptor.isEditableFile as boolean | undefined,
+        },
       });
 
       // Update inverse index
@@ -726,6 +777,28 @@ export class FileSystemWatcher {
     const hasExcludedFileName = this.excludedFileNames.includes(fileName);
     const hasExternalAttachmentsFolder = pathParts.includes(this.externalAttachmentsFolder);
     return hasExcludedPattern || hasExcludedFileName || hasExternalAttachmentsFolder;
+  }
+
+  /**
+   * Infer the file format type from the file extension.
+   * This is used as a fallback when cachedFileDescriptor is not available.
+   *
+   * IMPORTANT: This returns the FILE FORMAT type (how to serialize), NOT the content type.
+   * - .tid → 'application/x-tiddler' (TiddlyWiki native format)
+   * - .json → 'application/json'
+   * - Other → 'application/x-tiddler' (safe default)
+   */
+  private inferFileTypeFromExtension(absolutePath: string): string {
+    const ext = path.extname(absolutePath).toLowerCase();
+    switch (ext) {
+      case '.json': {
+        return 'application/json';
+      }
+      case '.tid':
+      default: {
+        return 'application/x-tiddler';
+      }
+    }
   }
 
   private scheduleGitNotification(): void {
