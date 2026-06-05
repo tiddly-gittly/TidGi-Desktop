@@ -3,7 +3,10 @@
  * Supports updating the heartbeat schedule, tool approvals, and system prompt config.
  * Operates with approval mode "confirm" by default (user must approve each change).
  */
+import { container } from '@services/container';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { t } from '@services/libs/i18n/placeholder';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { z } from 'zod/v4';
 import { registerToolDefinition } from './defineTool';
 
@@ -82,8 +85,6 @@ const editAgentDefinitionDefinition = registerToolDefinition({
 
     if (toolCall.toolId === 'edit-heartbeat') {
       await executeToolCall('edit-heartbeat', async (parameters) => {
-        const { container } = await import('@services/container');
-        const serviceIdentifier = (await import('@services/serviceIdentifier')).default;
         const agentInstanceService = container.get<import('../interface').IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
         await agentInstanceService.setBackgroundHeartbeat(agentId, {
@@ -106,15 +107,12 @@ const editAgentDefinitionDefinition = registerToolDefinition({
 
     if (toolCall.toolId === 'edit-agent-prompt-config') {
       await executeToolCall('edit-agent-prompt-config', async (parameters) => {
-        const { container } = await import('@services/container');
-        const serviceIdentifier = (await import('@services/serviceIdentifier')).default;
         const agentInstanceService = container.get<import('../interface').IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
         const agent = await agentInstanceService.getAgent(agentId);
         if (!agent) throw new Error(`Agent not found: ${agentId}`);
 
-        const { container: iocContainer } = await import('@services/container');
-        const agentDefinitionService = iocContainer.get<import('@services/agentDefinition/interface').IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+        const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
 
         const agentDefinition = await agentDefinitionService.getAgentDef(agent.agentDefId);
         if (!agentDefinition) throw new Error(`Agent definition not found: ${agent.agentDefId}`);

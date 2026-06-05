@@ -14,7 +14,7 @@ import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
-import { initializeMcpServer } from '@services/mcpServer';
+import { initializeMcpServer, stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 
 // Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
@@ -102,9 +102,8 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
     logger.info('App before-quit - tidgi mini window closed');
-    // Dynamic import to avoid loading MCP SDK at startup
+    // MCP server may not be loaded if MCP is not configured
     try {
-      const { stopMcpServer } = await import('@services/mcpServer');
       void stopMcpServer();
     } catch { /* not loaded */ }
     // Stop all wiki workers FIRST - must be sequential
