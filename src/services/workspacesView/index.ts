@@ -316,12 +316,21 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
     if (workspace !== undefined) {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+
+      // Also update sub-workspaces hibernated state so their icons restore together with the main workspace.
+      // Sub-workspaces don't have their own wiki service or views — they share the main workspace's,
+      // so only the UI flag needs to be updated.
+      const subWorkspaces = await workspaceService.getSubWorkspacesAsList(workspaceID);
+      const hibernatedSubWorkspaces = subWorkspaces.filter(sw => sw.hibernated);
+
       // First, update workspace state and start wiki server
       await Promise.all([
-        container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
-          hibernated: false,
-        }),
+        workspaceService.update(workspaceID, { hibernated: false }),
         this.authService.getUserName(workspace).then(userName => container.get<IWikiService>(serviceIdentifier.Wiki).startWiki(workspaceID, userName)),
+        ...hibernatedSubWorkspaces.map(async (subWorkspace) => {
+          await workspaceService.update(subWorkspace.id, { hibernated: false });
+        }),
       ]);
 
       // Then add view after wiki server is ready and workspace is marked as not hibernated
@@ -337,10 +346,19 @@ export class WorkspaceView implements IWorkspaceViewService {
       active: String(workspace?.active),
     });
     if (workspace !== undefined && !workspace.active) {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+
+      // Also update sub-workspaces hibernated state so their icons turn gray together with the main workspace.
+      // Sub-workspaces don't have their own wiki service or views — they share the main workspace's,
+      // so only the UI flag needs to be updated.
+      const subWorkspaces = await workspaceService.getSubWorkspacesAsList(workspaceID);
+      const subWorkspaceIDs = subWorkspaces.filter(sw => !sw.active).map(sw => sw.id);
+
       await Promise.all([
         container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceID),
-        container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
-          hibernated: true,
+        workspaceService.update(workspaceID, { hibernated: true }),
+        ...subWorkspaceIDs.map(async (subID) => {
+          await workspaceService.update(subID, { hibernated: true });
         }),
       ]);
       container.get<IViewService>(serviceIdentifier.View).destroyAllViewsOfWorkspace(workspaceID);
