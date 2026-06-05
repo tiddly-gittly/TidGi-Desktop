@@ -77,7 +77,6 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _mockWiki = {
       getTiddlerText: vi.fn((title: string) => {
         if (title === '$:/info/tidgi/useWikiFolderAsTiddlersPath') return 'no';
@@ -165,9 +164,11 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       const extension = '.tid';
       const inferFileType = (ext: string): string => {
         switch (ext) {
-          case '.json': return 'application/json';
+          case '.json':
+            return 'application/json';
           case '.tid':
-          default: return 'application/x-tiddler';
+          default:
+            return 'application/x-tiddler';
         }
       };
 
@@ -190,9 +191,11 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       const extension = '.json';
       const inferFileType = (ext: string): string => {
         switch (ext) {
-          case '.json': return 'application/json';
+          case '.json':
+            return 'application/json';
           case '.tid':
-          default: return 'application/x-tiddler';
+          default:
+            return 'application/x-tiddler';
         }
       };
 

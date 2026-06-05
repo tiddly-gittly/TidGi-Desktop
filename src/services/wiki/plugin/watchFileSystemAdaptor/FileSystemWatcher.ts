@@ -661,8 +661,8 @@ export class FileSystemWatcher {
         const newExtension = path.extname(actualFileAbsPath).toLowerCase();
         if (existingExtension === '.tid' && newExtension === '.json') {
           this.logger.alert(
-            `FileSystemWatcher WARNING: Tiddler "${tiddlerTitle}" format changed from .tid to .json! `
-            + `This may indicate a file format bug. Old: ${existingBootFile.filepath}, New: ${actualFileAbsPath}`,
+            `FileSystemWatcher WARNING: Tiddler "${tiddlerTitle}" format changed from .tid to .json! ` +
+              `This may indicate a file format bug. Old: ${existingBootFile.filepath}, New: ${actualFileAbsPath}`,
           );
         } else if (existingExtension === '.json' && newExtension === '.tid') {
           this.logger.log(
