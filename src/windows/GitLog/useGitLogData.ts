@@ -1,4 +1,5 @@
 import type { IWorkspace } from '@services/workspaces/interface';
+import { SupportedStorageServices } from '@services/types';
 import useObservable from 'beautiful-react-hooks/useObservable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filter } from 'rxjs/operators';
@@ -180,11 +181,15 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         void window.service.native.log('debug', '[DEBUG] getGitLog completed', { entryCount: result.entries.length });
 
         // Get unpushed commit hashes in parallel with loading files
-        const unpushedHashesPromise = window.service.git.callGitOp(
-          'getUnpushedCommitHashes',
-          workspaceInfo.wikiFolderLocation,
-          workspaceInfo.gitUrl,
-        );
+        // For local workspaces, skip this — users should convert to cloud workspace if they want remote sync.
+        const isLocalWorkspace = workspaceInfo.storageService === SupportedStorageServices.local;
+        const unpushedHashesPromise = isLocalWorkspace
+          ? Promise.resolve(new Set<string>())
+          : window.service.git.callGitOp(
+            'getUnpushedCommitHashes',
+            workspaceInfo.wikiFolderLocation,
+            workspaceInfo.gitUrl,
+          );
 
         // Load files for each commit
         const entriesWithFiles = await Promise.all(

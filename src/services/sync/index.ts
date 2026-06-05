@@ -48,10 +48,9 @@ export class Sync implements ISyncService {
     const { force = false } = options ?? {};
     const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
     const mainWorkspace = isSubWiki ? workspaceService.getMainWorkspace(workspace) : undefined;
-    const hasRemoteAndAuth = typeof gitUrl === 'string' && userInfo !== undefined;
     const analyticsBaseProperties = {
       storage: storageService,
-      commitOnly: storageService === SupportedStorageServices.local && !hasRemoteAndAuth,
+      commitOnly: storageService === SupportedStorageServices.local,
       force,
     };
     if (isSubWiki && mainWorkspace === undefined) {
@@ -70,8 +69,8 @@ export class Sync implements ISyncService {
       return;
     }
     void analyticsService.track('sync.triggered', analyticsBaseProperties);
-    if (storageService === SupportedStorageServices.local && !hasRemoteAndAuth) {
-      // for local workspace without remote or without auth, commitOnly, no sync and no force pull.
+    if (storageService === SupportedStorageServices.local) {
+      // for local workspace, commitOnly, no sync and no force pull.
       const hasChanges = await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true, commitMessage: localCommitMessage });
       void analyticsService.track('sync.completed', {
         ...analyticsBaseProperties,
