@@ -4,7 +4,7 @@
  */
 
 import { isMac } from '@/helpers/system';
-import { clipboard, Menu, MenuItem, shell, WebContents } from 'electron';
+import { clipboard, Menu, MenuItem, nativeImage, net, shell, WebContents } from 'electron';
 import i18next from 'i18next';
 import type { IOnContextMenuInfo } from '../interface';
 
@@ -274,6 +274,20 @@ export default class ContextMenuBuilder {
         clipboard.writeText(menuInfo.srcURL!);
       },
     });
+    const copyImage = new MenuItem({
+      label: this.stringTable.copy(),
+      click: () => {
+        net.fetch(menuInfo.srcURL!).then(async (response) => {
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const image = nativeImage.createFromBuffer(buffer);
+          clipboard.writeImage(image);
+        }).catch((error: unknown) => {
+          console.error('Failed to copy image to clipboard', error);
+        });
+      },
+    });
+    menu.append(copyImage);
     menu.append(copyImageUrl);
     return menu;
   }
