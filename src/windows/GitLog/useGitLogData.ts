@@ -1,5 +1,5 @@
-import type { IWorkspace } from '@services/workspaces/interface';
 import { SupportedStorageServices } from '@services/types';
+import type { IWorkspace } from '@services/workspaces/interface';
 import useObservable from 'beautiful-react-hooks/useObservable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filter } from 'rxjs/operators';

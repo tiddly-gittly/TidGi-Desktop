@@ -338,9 +338,7 @@ export default function GitHistory(): React.JSX.Element {
                 renderTooltip={renderTooltip}
               />
             )}
-            {viewMode === 'syncSettings' && workspaceInfo && 'wikiFolderLocation' in workspaceInfo && (
-              <GitLogSyncSettings workspace={workspaceInfo as unknown as import('@services/workspaces/interface').IWikiWorkspace} />
-            )}
+            {viewMode === 'syncSettings' && workspaceInfo && 'wikiFolderLocation' in workspaceInfo && <GitLogSyncSettings workspace={workspaceInfo} />}
           </TabContent>
         </GitLogWrapper>
         <DetailsWrapper>
@@ -353,36 +351,36 @@ export default function GitHistory(): React.JSX.Element {
               </DetailsPanelWrapper>
             )
             : workspaceInfo
-              ? (
-                <DetailsPanelWrapper>
-                  <CommitDetailsPanel
-                    commit={selectedCommit ?? null}
-                    selectedCommits={selectedCommits}
-                    workspaceID={workspaceInfo.id}
-                    storageService={'storageService' in workspaceInfo ? workspaceInfo.storageService : SupportedStorageServices.local}
-                    showSnackbar={showSnackbar}
-                    onFileSelect={handleFileSelect}
-                    selectedFile={selectedFile}
-                    selectedFiles={selectedFiles}
-                    onCommitSuccess={handleCommitSuccess}
-                    onRevertSuccess={handleRevertSuccess}
-                    onUndoSuccess={handleUndoSuccess}
-                    isLatestCommit={selectedCommit?.hash === entries.find((entry) => entry.hash !== '')?.hash}
-                  />
-                </DetailsPanelWrapper>
-              )
-              : (
-                <DetailsPanelWrapper
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                  }}
-                >
-                  <CircularProgress />
-                </DetailsPanelWrapper>
-              )}
+            ? (
+              <DetailsPanelWrapper>
+                <CommitDetailsPanel
+                  commit={selectedCommit ?? null}
+                  selectedCommits={selectedCommits}
+                  workspaceID={workspaceInfo.id}
+                  storageService={'storageService' in workspaceInfo ? workspaceInfo.storageService : SupportedStorageServices.local}
+                  showSnackbar={showSnackbar}
+                  onFileSelect={handleFileSelect}
+                  selectedFile={selectedFile}
+                  selectedFiles={selectedFiles}
+                  onCommitSuccess={handleCommitSuccess}
+                  onRevertSuccess={handleRevertSuccess}
+                  onUndoSuccess={handleUndoSuccess}
+                  isLatestCommit={selectedCommit?.hash === entries.find((entry) => entry.hash !== '')?.hash}
+                />
+              </DetailsPanelWrapper>
+            )
+            : (
+              <DetailsPanelWrapper
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                }}
+              >
+                <CircularProgress />
+              </DetailsPanelWrapper>
+            )}
         </DetailsWrapper>
 
         <DiffPanelWrapper>
@@ -395,29 +393,29 @@ export default function GitHistory(): React.JSX.Element {
               </Box>
             )
             : workspaceInfo
-              ? (
-                <FileDiffPanel
-                  commitHash={selectedCommit?.hash || ''}
-                  filePath={selectedFile}
-                  selectedFiles={selectedFiles}
-                  workspaceID={workspaceInfo.id}
-                  onDiscardSuccess={handleFileActionSuccess}
-                  showSnackbar={showSnackbar}
-                />
-              )
-              : (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    width: '100%',
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              )}
+            ? (
+              <FileDiffPanel
+                commitHash={selectedCommit?.hash || ''}
+                filePath={selectedFile}
+                selectedFiles={selectedFiles}
+                workspaceID={workspaceInfo.id}
+                onDiscardSuccess={handleFileActionSuccess}
+                showSnackbar={showSnackbar}
+              />
+            )
+            : (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  width: '100%',
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            )}
         </DiffPanelWrapper>
       </ContentWrapper>
 

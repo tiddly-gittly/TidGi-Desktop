@@ -6,8 +6,8 @@ import { ListItem } from '@/components/ListItem';
 import { TokenForm } from '@/components/TokenForm';
 import { SupportedStorageServices } from '@services/types';
 import { type IWikiWorkspace } from '@services/workspaces/interface';
-import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
+import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 
 const SettingsContainer = styled('div')`
   padding: 16px;
