@@ -644,8 +644,8 @@ export class FileSystemWatcher {
         const wikiModified = (existingTiddler.fields.modified as string | undefined) ?? '';
         const fileText = (tiddler as { text?: string }).text ?? '';
         const wikiText = (existingTiddler.fields.text as string | undefined) ?? '';
-        // Normalize line endings and trim for robust comparison
-        const normalizeForCompare = (s: string) => s.replace(/\r\n/g, '\n').trim();
+        // Normalize line endings for robust comparison
+        const normalizeForCompare = (s: string) => s.replace(/\r\n/g, '\n');
         if (fileModified !== '' && fileModified === wikiModified && normalizeForCompare(fileText) === normalizeForCompare(wikiText)) {
           this.logger.log(`FileSystemWatcher Skipping self-echo for ${tiddlerTitle} (content identical)`);
           continue;
@@ -657,14 +657,14 @@ export class FileSystemWatcher {
       // saveTiddlerToFile() to save in the wrong format.
       const existingBootFile = this.boot.files[tiddlerTitle];
       if (existingBootFile?.filepath) {
-        const existingExt = path.extname(existingBootFile.filepath).toLowerCase();
-        const newExt = path.extname(actualFileAbsPath).toLowerCase();
-        if (existingExt === '.tid' && newExt === '.json') {
+        const existingExtension = path.extname(existingBootFile.filepath).toLowerCase();
+        const newExtension = path.extname(actualFileAbsPath).toLowerCase();
+        if (existingExtension === '.tid' && newExtension === '.json') {
           this.logger.alert(
             `FileSystemWatcher WARNING: Tiddler "${tiddlerTitle}" format changed from .tid to .json! `
             + `This may indicate a file format bug. Old: ${existingBootFile.filepath}, New: ${actualFileAbsPath}`,
           );
-        } else if (existingExt === '.json' && newExt === '.tid') {
+        } else if (existingExtension === '.json' && newExtension === '.tid') {
           this.logger.log(
             `FileSystemWatcher Tiddler "${tiddlerTitle}" format restored from .json to .tid: ${actualFileAbsPath}`,
           );
@@ -683,9 +683,9 @@ export class FileSystemWatcher {
         type: changeType,
         cachedTiddlerFields: tiddler,
         cachedFileDescriptor: {
-          type: fileDescriptor.type as string | undefined,
-          hasMetaFile: fileDescriptor.hasMetaFile as boolean | undefined,
-          isEditableFile: fileDescriptor.isEditableFile as boolean | undefined,
+          type: fileDescriptor.type ?? undefined,
+          hasMetaFile: fileDescriptor.hasMetaFile ?? undefined,
+          isEditableFile: fileDescriptor.isEditableFile ?? undefined,
         },
       });
 
@@ -789,8 +789,8 @@ export class FileSystemWatcher {
    * - Other → 'application/x-tiddler' (safe default)
    */
   private inferFileTypeFromExtension(absolutePath: string): string {
-    const ext = path.extname(absolutePath).toLowerCase();
-    switch (ext) {
+    const extension = path.extname(absolutePath).toLowerCase();
+    switch (extension) {
       case '.json': {
         return 'application/json';
       }

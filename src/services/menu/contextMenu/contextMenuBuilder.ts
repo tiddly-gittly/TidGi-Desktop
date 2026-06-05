@@ -275,12 +275,14 @@ export default class ContextMenuBuilder {
       },
     });
     const copyImage = new MenuItem({
-      label: this.stringTable.copy(),
+      label: this.stringTable.copyImage(),
       click: () => {
         net.fetch(menuInfo.srcURL!).then(async (response) => {
+          if (!response.ok) throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
           const arrayBuffer = await response.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
           const image = nativeImage.createFromBuffer(buffer);
+          if (image.isEmpty()) throw new Error('Failed to decode image from fetched bytes');
           clipboard.writeImage(image);
         }).catch((error: unknown) => {
           console.error('Failed to copy image to clipboard', error);

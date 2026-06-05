@@ -74,19 +74,11 @@ vi.mock('@services/wiki/wikiWorker/services', () => ({
 }));
 
 describe('FileSystemWatcher - loadTiddler file format type preservation', () => {
-  let mockWiki: Wiki;
-  let mockBoot: typeof $tw.boot;
-
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockBoot = {
-      wikiTiddlersPath: '/test/wiki/tiddlers',
-      wikiPath: '/test/wiki',
-      files: {} as Record<string, IFileInfo>,
-    } as unknown as typeof $tw.boot;
-
-    mockWiki = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _mockWiki = {
       getTiddlerText: vi.fn((title: string) => {
         if (title === '$:/info/tidgi/useWikiFolderAsTiddlersPath') return 'no';
         return '';
@@ -117,8 +109,6 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       };
 
       // Simulate what loadTiddler does with cached fields
-      const title = 'My Note';
-      const hasMetaFile = false;
       const normalizedPath = fileChange.absolutePath.replace(/\\/g, '/');
 
       // The FIXED code: use cachedFileDescriptor.type
@@ -127,7 +117,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       const bootFileEntry = {
         filepath: normalizedPath,
         type: fileType,
-        hasMetaFile: fileChange.cachedFileDescriptor?.hasMetaFile ?? hasMetaFile,
+        hasMetaFile: fileChange.cachedFileDescriptor?.hasMetaFile ?? false,
         isEditableFile: fileChange.cachedFileDescriptor?.isEditableFile ?? true,
       };
 
@@ -172,7 +162,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       };
 
       // Simulate inferFileTypeFromExtension
-      const ext = '.tid';
+      const extension = '.tid';
       const inferFileType = (ext: string): string => {
         switch (ext) {
           case '.json': return 'application/json';
@@ -181,7 +171,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
         }
       };
 
-      const fileType = fileChange.cachedFileDescriptor?.type ?? inferFileType(ext);
+      const fileType = fileChange.cachedFileDescriptor?.type ?? inferFileType(extension);
       expect(fileType).toBe('application/x-tiddler');
     });
 
@@ -197,7 +187,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
         },
       };
 
-      const ext = '.json';
+      const extension = '.json';
       const inferFileType = (ext: string): string => {
         switch (ext) {
           case '.json': return 'application/json';
@@ -206,7 +196,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
         }
       };
 
-      const fileType = fileChange.cachedFileDescriptor?.type ?? inferFileType(ext);
+      const fileType = fileChange.cachedFileDescriptor?.type ?? inferFileType(extension);
       expect(fileType).toBe('application/json');
     });
   });
@@ -222,20 +212,18 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
       // 6. FIX: boot.files[title].type = 'application/x-tiddler' → next save = .tid ✓
 
       const fileDescriptorType = 'application/x-tiddler';
-      const tiddlerContentType = 'text/markdown';
 
-      // OLD (buggy) code would use:
-      const oldFileType = tiddlerContentType ?? 'application/x-tiddler';
-      expect(oldFileType).toBe('text/markdown'); // BUG! This causes JSON format
+      // Demonstrate the bug: using tiddler content type instead of file format type
+      // would cause saveTiddlerToFile() to save as JSON
+      expect('text/markdown').not.toBe('application/x-tiddler'); // Different types!
 
-      // NEW (fixed) code uses:
+      // NEW (fixed) code uses file format type:
       const newFileType = fileDescriptorType ?? 'application/x-tiddler';
       expect(newFileType).toBe('application/x-tiddler'); // CORRECT! This preserves .tid format
     });
 
     it('should NOT change .tid to .json when tiddler has type text/plain', () => {
       const fileDescriptorType = 'application/x-tiddler';
-      const tiddlerContentType = 'text/plain';
 
       const newFileType = fileDescriptorType ?? 'application/x-tiddler';
       expect(newFileType).toBe('application/x-tiddler');
