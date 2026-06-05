@@ -49,23 +49,31 @@ export class Git implements IGitService {
    * the current operation fails fast instead of blocking indefinitely.
    */
   private async acquireOperationLock(workspaceID: string): Promise<() => void> {
+    const previousLock = this.operationLocks.get(workspaceID);
+
+    if (previousLock !== undefined) {
+      const LOCK_TIMEOUT_MS = 30_000;
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error(`Previous git operation is still running for workspace ${workspaceID} after ${LOCK_TIMEOUT_MS}ms`));
+        }, LOCK_TIMEOUT_MS);
+      });
+      try {
+        await Promise.race([previousLock, timeoutPromise]);
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
+    }
+
+    // Only set the new lock after the previous one has been successfully released.
+    // This prevents a dead lock if the timeout above rejects — the new promise
+    // would never be resolved if it were set before the await.
     let release: () => void;
     const promise = new Promise<void>((resolve) => {
       release = resolve;
     });
-
-    const previousLock = this.operationLocks.get(workspaceID);
     this.operationLocks.set(workspaceID, promise);
-
-    if (previousLock !== undefined) {
-      const LOCK_TIMEOUT_MS = 30_000;
-      const timeoutPromise = new Promise<void>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Previous git operation is still running for workspace ${workspaceID} after ${LOCK_TIMEOUT_MS}ms`));
-        }, LOCK_TIMEOUT_MS);
-      });
-      await Promise.race([previousLock, timeoutPromise]);
-    }
 
     return () => {
       release!();
