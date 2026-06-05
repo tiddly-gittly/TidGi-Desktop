@@ -58,6 +58,20 @@ export class WorkspaceView implements IWorkspaceViewService {
     await mapSeries(sortedList, async (workspace) => {
       await this.initializeWorkspaceView(workspace);
     });
+
+    // After all main workspaces have resolved their hibernated state,
+    // sync sub-workspaces to match their main workspace.
+    // Sub-workspaces have no wiki service, no view, and no independent behavior —
+    // their hibernated flag is purely a UI indicator that must follow the main workspace.
+    for (const workspace of workspacesList) {
+      if (!isWikiWorkspace(workspace) || !workspace.isSubWiki || typeof workspace.mainWikiID !== 'string') continue;
+      const mainWorkspace = await workspaceService.get(workspace.mainWikiID);
+      if (mainWorkspace === undefined || !isWikiWorkspace(mainWorkspace)) continue;
+      if (mainWorkspace.hibernated !== workspace.hibernated) {
+        await workspaceService.update(workspace.id, { hibernated: mainWorkspace.hibernated });
+      }
+    }
+
     wikiService.setAllWikiStartLockOff();
   }
 
@@ -103,6 +117,13 @@ export class WorkspaceView implements IWorkspaceViewService {
     });
     if (followHibernateSettingWhenInit) {
       const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+
+      // Sub-workspaces have no wiki service, no view, and no independent behavior.
+      // Their hibernated state is synced in initializeAllWorkspaceView after main workspaces are resolved.
+      if (isWikiWorkspace(workspace) && workspace.isSubWiki) {
+        return;
+      }
+
       if ((hibernateUnusedWorkspacesAtLaunch || (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused)) && !workspace.active) {
         logger.debug(
           `initializeWorkspaceView() quit because ${
