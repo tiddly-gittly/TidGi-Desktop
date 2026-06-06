@@ -29,6 +29,10 @@ export class Sync implements ISyncService {
       logger.warn('syncWikiIfNeeded called on non-wiki workspace', { workspaceId: workspace.id });
       return;
     }
+    if (workspace.hibernated) {
+      logger.warn('syncWikiIfNeeded skipped because workspace is hibernated', { workspaceId: workspace.id });
+      return;
+    }
     logger.info('syncWikiIfNeeded started', { workspaceId: workspace.id, storageService: workspace.storageService, force: options?.force });
 
     // Get Layer 3 services

@@ -184,7 +184,7 @@ Feature: Sub-Wiki Functionality
     # Verify the setting was saved to settings.json
     Then settings.json should have workspace "SubWikiSettings" with "includeTagTree" set to "true"
 
-  @subwiki @subwiki-create-ui
+  @subwiki @subwiki-create-ui @calibrate
   Scenario: Create sub-wiki workspace via UI
     # This tests creating a sub-wiki through the Add Workspace UI
     Given I cleanup test wiki so it could create a new one on start
@@ -210,6 +210,11 @@ Feature: Sub-Wiki Functionality
     # Add tag using Autocomplete - type and press Enter to add the tag
     And I type "UITestTag" in "tag name input" element with selector "[data-testid='tagname-autocomplete-input']"
     And I press "Enter" key
+    And I clear log lines containing:
+      | [test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] |
+      | [test-id-WATCH_FS_STABILIZED]                |
+      | [test-id-SSE_READY]                          |
+      | [test-id-VIEW_LOADED]                        |
     And I click on a "create sub workspace button" element with selector "button.MuiButton-colorSecondary"
     And I switch to "main" window
     Then I should see a "SubWikiUI workspace" element with selector "div[data-testid^='workspace-']:has-text('SubWikiUI')"

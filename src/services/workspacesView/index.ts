@@ -15,6 +15,7 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
+import { SubWikiSMainWikiNotExistError } from '@services/wiki/error';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -58,6 +59,20 @@ export class WorkspaceView implements IWorkspaceViewService {
     await mapSeries(sortedList, async (workspace) => {
       await this.initializeWorkspaceView(workspace);
     });
+
+    // After all main workspaces have resolved their hibernated state,
+    // sync sub-workspaces to match their main workspace.
+    // Sub-workspaces have no wiki service, no view, and no independent behavior —
+    // their hibernated flag is purely a UI indicator that must follow the main workspace.
+    for (const workspace of workspacesList) {
+      if (!isWikiWorkspace(workspace) || !workspace.isSubWiki || typeof workspace.mainWikiID !== 'string') continue;
+      const mainWorkspace = await workspaceService.get(workspace.mainWikiID);
+      if (mainWorkspace === undefined || !isWikiWorkspace(mainWorkspace)) continue;
+      if (mainWorkspace.hibernated !== workspace.hibernated) {
+        await workspaceService.update(workspace.id, { hibernated: mainWorkspace.hibernated });
+      }
+    }
+
     wikiService.setAllWikiStartLockOff();
   }
 
@@ -101,8 +116,20 @@ export class WorkspaceView implements IWorkspaceViewService {
       options: JSON.stringify(options),
       function: 'initializeWorkspaceView',
     });
+    if (isWikiWorkspace(workspace) && workspace.isSubWiki) {
+      if (isNew && typeof workspace.mainWikiID === 'string' && !wikiService.checkWikiStartLock(workspace.mainWikiID)) {
+        const mainWorkspace = await workspaceService.get(workspace.mainWikiID);
+        if (mainWorkspace === undefined || !isWikiWorkspace(mainWorkspace) || mainWorkspace.isSubWiki) {
+          throw new SubWikiSMainWikiNotExistError(workspace.name ?? workspace.id, workspace.mainWikiID);
+        }
+        await this.restartWorkspaceViewService(workspace.mainWikiID);
+        logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID: workspace.mainWikiID, subWikiID: workspace.id });
+      }
+      return;
+    }
     if (followHibernateSettingWhenInit) {
       const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+
       if ((hibernateUnusedWorkspacesAtLaunch || (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused)) && !workspace.active) {
         logger.debug(
           `initializeWorkspaceView() quit because ${
@@ -316,12 +343,21 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
     if (workspace !== undefined) {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+
+      // Also update sub-workspaces hibernated state so their icons restore together with the main workspace.
+      // Sub-workspaces don't have their own wiki service or views — they share the main workspace's,
+      // so only the UI flag needs to be updated.
+      const subWorkspaces = await workspaceService.getSubWorkspacesAsList(workspaceID);
+      const hibernatedSubWorkspaces = subWorkspaces.filter(sw => sw.hibernated);
+
       // First, update workspace state and start wiki server
       await Promise.all([
-        container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
-          hibernated: false,
-        }),
+        workspaceService.update(workspaceID, { hibernated: false }),
         this.authService.getUserName(workspace).then(userName => container.get<IWikiService>(serviceIdentifier.Wiki).startWiki(workspaceID, userName)),
+        ...hibernatedSubWorkspaces.map(async (subWorkspace) => {
+          await workspaceService.update(subWorkspace.id, { hibernated: false });
+        }),
       ]);
 
       // Then add view after wiki server is ready and workspace is marked as not hibernated
@@ -337,10 +373,19 @@ export class WorkspaceView implements IWorkspaceViewService {
       active: String(workspace?.active),
     });
     if (workspace !== undefined && !workspace.active) {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+
+      // Also update sub-workspaces hibernated state so their icons turn gray together with the main workspace.
+      // Sub-workspaces don't have their own wiki service or views — they share the main workspace's,
+      // so only the UI flag needs to be updated.
+      const subWorkspaces = await workspaceService.getSubWorkspacesAsList(workspaceID);
+      const subWorkspaceIDs = subWorkspaces.filter(sw => !sw.active).map(sw => sw.id);
+
       await Promise.all([
         container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceID),
-        container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
-          hibernated: true,
+        workspaceService.update(workspaceID, { hibernated: true }),
+        ...subWorkspaceIDs.map(async (subID) => {
+          await workspaceService.update(subID, { hibernated: true });
         }),
       ]);
       container.get<IViewService>(serviceIdentifier.View).destroyAllViewsOfWorkspace(workspaceID);

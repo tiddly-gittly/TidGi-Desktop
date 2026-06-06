@@ -3,6 +3,7 @@ import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import * as callProvider from '@services/externalAPI/callProviderAPI';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentInstanceService } from '..';
@@ -39,7 +40,7 @@ describe('AgentInstance failure path - external API logs on error', () => {
     });
 
     // Enable debug logs
-    const pref = container.get<import('@services/preferences/interface').IPreferenceService>(serviceIdentifier.Preference);
+    const pref = container.get<IPreferenceService>(serviceIdentifier.Preference);
     await pref.set('externalAPIDebug', true);
 
     // Configure AI settings provider/model

@@ -5,7 +5,7 @@
  */
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import { AgentInstanceEntity } from '@services/database/schema/agent';
+import { AgentInstanceEntity, type ScheduleConfig } from '@services/database/schema/agent';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -327,7 +327,7 @@ const alarmClockDefinition = registerToolDefinition({
     if (toolCall.toolId === 'schedule-task') {
       await executeToolCall('schedule-task', async (parameters) => {
         const { addTask } = await import('../scheduledTaskManager');
-        let schedule: import('@services/database/schema/agent').ScheduleConfig;
+        let schedule: ScheduleConfig;
 
         if (parameters.kind === 'interval') {
           const intervalSeconds = Math.max(60, parameters.intervalSeconds ?? 300);

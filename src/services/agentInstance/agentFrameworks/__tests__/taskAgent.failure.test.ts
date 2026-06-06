@@ -4,6 +4,7 @@ import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import * as callProvider from '@services/externalAPI/callProviderAPI';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../../interface';
@@ -68,7 +69,7 @@ describe('basicPromptConcatHandler - failure path persists error message and log
     });
 
     // Ensure external API debug is on so logs are attempted
-    const pref = container.get<import('@services/preferences/interface').IPreferenceService>(serviceIdentifier.Preference);
+    const pref = container.get<IPreferenceService>(serviceIdentifier.Preference);
     await pref.set('externalAPIDebug', true);
 
     // Ensure AI provider settings present so ExternalAPI can resolve providerConfig

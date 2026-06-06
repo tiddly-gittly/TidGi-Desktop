@@ -351,6 +351,8 @@
     "UndoCommit": "Undo this commit",
     "Undoing": "Undoing...",
     "Syncing": "Synchronizing...",
+    "SyncSettings": "Sync Settings",
+    "SyncSettingsDescription": "After changing sync settings here, unpushed commits can be pushed to remote.",
     "SearchCommits": "Search commits...",
     "SearchMode": "Search Mode",
     "SelectCommit": "Select a submission to view details",

@@ -6,8 +6,7 @@ import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentInstance } from '@services/agentInstance/interface';
-import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import type { AgentInstance, AgentInstanceLatestStatus, IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -182,7 +181,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
 
     // Track agent updates to capture the AI message ID
     let aiMessageId: string | undefined;
-    const messageUpdates: (import('@services/agentInstance/interface').AgentInstanceLatestStatus | undefined)[] = [];
+    const messageUpdates: (AgentInstanceLatestStatus | undefined)[] = [];
     let messageSubscription: import('rxjs').Subscription | undefined;
 
     const agentSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id).subscribe(update => {

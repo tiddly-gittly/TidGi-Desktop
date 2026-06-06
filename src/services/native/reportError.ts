@@ -2,6 +2,7 @@ import { LOG_FOLDER } from '@/constants/appPaths';
 import { sanitizeErrorMessage } from '@services/analytics';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
+import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { app, shell } from 'electron';
 import newGithubIssueUrl, { type Options as OpenNewGitHubIssueOptions } from 'new-github-issue-url';
@@ -76,17 +77,11 @@ export function reportErrorToGithubWithTemplates(error: Error): void {
     errorName: error.name || 'Error',
     errorMessage: sanitizeErrorMessage(error),
   });
-  void import('@services/container')
-    .then(({ container }) => {
-      const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-      return nativeService.openPath(LOG_FOLDER, true);
-    })
-    .catch(async (error_: unknown) => {
-      const error = error_ as Error;
-      await import('@services/libs/log').then(({ logger }) => {
-        logger.error(`Failed to open LOG_FOLDER in reportErrorToGithubWithTemplates`, { error });
-      });
-    });
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+  void nativeService.openPath(LOG_FOLDER, true).catch((error_: unknown) => {
+    const error = error_ as Error;
+    logger.error(`Failed to open LOG_FOLDER in reportErrorToGithubWithTemplates`, { error });
+  });
 
   const sanitizedMessage = sanitizePaths(error.message ?? '');
   const sanitizedStack = sanitizePaths(error.stack ?? '');

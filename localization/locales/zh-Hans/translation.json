@@ -348,6 +348,8 @@
     "UndoCommit": "撤回此提交",
     "Undoing": "撤回中...",
     "Syncing": "同步中...",
+    "SyncSettings": "同步设置",
+    "SyncSettingsDescription": "在此修改仓库同步设置后，未推送的提交将可以推送到远程。",
     "SearchCommits": "搜索提交记录...",
     "SearchMode": "搜索模式",
     "SelectCommit": "选择一个提交来查看详情",

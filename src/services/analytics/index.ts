@@ -1,9 +1,11 @@
-import { app, net } from 'electron';
+import { app, dialog, net } from 'electron';
 import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
 
+import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import type { IAnalyticsSecretSettings, IDatabaseService } from '@services/database/interface';
+import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -94,10 +96,7 @@ export class AnalyticsService implements IAnalyticsService {
   }
 
   public async showDisclosureIfNeeded(): Promise<void> {
-    const { isTest } = await import('@/constants/environment');
     if (isTest || !(await this.shouldShowDisclosure())) return;
-    const { dialog } = await import('electron');
-    const { i18n } = await import('@services/libs/i18n');
     const result = await dialog.showMessageBox({
       type: 'question',
       title: i18n.t('AnalyticsDisclosure.Title'),
