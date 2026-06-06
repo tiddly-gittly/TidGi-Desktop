@@ -305,8 +305,9 @@ export class Git implements IGitService {
       logger.warn('commitAndSync skipped because workspace is hibernated', { workspaceID });
       return false;
     }
-    const releaseLock = await this.acquireOperationLock(workspaceID);
+    let releaseLock: (() => void) | undefined;
     try {
+      releaseLock = await this.acquireOperationLock(workspaceID);
       // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever
       if (!workspace.isSubWiki) {
         try {
@@ -351,7 +352,7 @@ export class Git implements IGitService {
       // Return false on sync failure - no successful changes were made
       return false;
     } finally {
-      releaseLock();
+      releaseLock?.();
     }
   }
 
@@ -367,15 +368,20 @@ export class Git implements IGitService {
       logger.warn('forcePull skipped because workspace is hibernated', { workspaceID });
       return false;
     }
-    const releaseLock = await this.acquireOperationLock(workspaceID);
+    let releaseLock: (() => void) | undefined;
     try {
+      releaseLock = await this.acquireOperationLock(workspaceID);
       const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
       // Notify git state change
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
       return hasChanges;
+    } catch (error: unknown) {
+      const error_ = error as Error;
+      this.createFailedNotification(error_.message, workspaceIDToShowNotification);
+      return false;
     } finally {
-      releaseLock();
+      releaseLock?.();
     }
   }
 
