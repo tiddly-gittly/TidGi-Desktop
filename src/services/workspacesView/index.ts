@@ -15,6 +15,7 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
+import { SubWikiSMainWikiNotExistError } from '@services/wiki/error';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -119,7 +120,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       if (isNew && typeof workspace.mainWikiID === 'string' && !wikiService.checkWikiStartLock(workspace.mainWikiID)) {
         const mainWorkspace = await workspaceService.get(workspace.mainWikiID);
         if (mainWorkspace === undefined || !isWikiWorkspace(mainWorkspace) || mainWorkspace.isSubWiki) {
-          throw new Error(`Main wiki ${workspace.mainWikiID} for sub-wiki ${workspace.name ?? workspace.id} does not exist`);
+          throw new SubWikiSMainWikiNotExistError(workspace.name ?? workspace.id, workspace.mainWikiID);
         }
         await this.restartWorkspaceViewService(workspace.mainWikiID);
         logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID: workspace.mainWikiID, subWikiID: workspace.id });

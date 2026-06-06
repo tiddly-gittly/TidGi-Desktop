@@ -836,7 +836,9 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       let intent: TDragIntent;
 
       const liveRect = _getLiveSortableRect(resolvedOverId, overRect);
-      const intentRect = liveRect ?? overRect;
+      // Keep dnd-kit's coordinate frame for pointer-vs-top math, but refresh
+      // height from the DOM so stale cached heights do not skew zone boundaries.
+      const intentRect = { top: overRect.top, height: liveRect?.height ?? overRect.height };
       const reorderIntent = getReorderIntentFromPointer({
         pointerY: referenceY,
         rect: intentRect,
