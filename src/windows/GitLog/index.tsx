@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportedStorageServices } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { WindowMeta } from '@services/windows/WindowProperties';
 import { AllBranchesView } from './AllBranchesView';
@@ -17,6 +18,7 @@ import { CommitDetailsPanel } from './CommitDetailsPanel';
 import { CurrentBranchView } from './CurrentBranchView';
 import { CustomGitTooltip } from './CustomGitTooltip';
 import { FileDiffPanel } from './FileDiffPanel';
+import { GitLogSyncSettings } from './GitLogSyncSettings';
 import { ContentWrapper, DetailsPanelWrapper, DetailsWrapper, DiffPanelWrapper, GitLogWrapper, LoadingContainer, Root, TabContent, TabsContainer } from './styles';
 import { useCommitDetails } from './useCommitDetails';
 import { useCommitSelection, useGitHistoryState, useInfiniteScroll, useSyncHandler } from './useGitHistoryLogic';
@@ -296,56 +298,66 @@ export default function GitHistory(): React.JSX.Element {
           <TabsContainer>
             <Tabs
               value={viewMode}
-              onChange={(_event, newValue: 'current' | 'all') => {
+              onChange={(_event, newValue: 'current' | 'all' | 'syncSettings') => {
                 setViewMode(newValue);
               }}
             >
               <Tab label={currentBranch || 'master'} value='current' />
               <Tab label={t('GitLog.AllBranches')} value='all' />
+              <Tab label={t('GitLog.SyncSettings')} value='syncSettings' />
             </Tabs>
           </TabsContainer>
 
           <TabContent>
-            {viewMode === 'current'
-              ? (
-                <CurrentBranchView
-                  entries={entries}
-                  loading={loading}
-                  loadingMore={loadingMore}
-                  hasMore={hasMore}
-                  selectedCommitHashes={selectedCommitHashes}
-                  currentSearchParameters={currentSearchParameters}
-                  onSearch={handleSearch}
-                  onSelectCommit={handleCommitClick}
-                  onSyncClick={handleSyncClick}
-                  isRowLoaded={isRowLoaded}
-                  loadMoreRows={loadMoreRows}
-                />
-              )
-              : (
-                <AllBranchesView
-                  entries={entries}
-                  currentBranch={currentBranch}
-                  theme={gitLogTheme}
-                  onSelectCommit={(entry) => {
-                    setSelectedCommit(entry);
-                    setSelectedCommitHashes([entry.hash]);
-                    setCommitSelectionAnchorHash(entry.hash);
-                    setSelectedFile(null);
-                  }}
-                  renderTooltip={renderTooltip}
-                />
-              )}
+            {viewMode === 'current' && (
+              <CurrentBranchView
+                entries={entries}
+                loading={loading}
+                loadingMore={loadingMore}
+                hasMore={hasMore}
+                selectedCommitHashes={selectedCommitHashes}
+                currentSearchParameters={currentSearchParameters}
+                onSearch={handleSearch}
+                onSelectCommit={handleCommitClick}
+                onSyncClick={handleSyncClick}
+                isRowLoaded={isRowLoaded}
+                loadMoreRows={loadMoreRows}
+              />
+            )}
+            {viewMode === 'all' && (
+              <AllBranchesView
+                entries={entries}
+                currentBranch={currentBranch}
+                theme={gitLogTheme}
+                onSelectCommit={(entry) => {
+                  setSelectedCommit(entry);
+                  setSelectedCommitHashes([entry.hash]);
+                  setCommitSelectionAnchorHash(entry.hash);
+                  setSelectedFile(null);
+                }}
+                renderTooltip={renderTooltip}
+              />
+            )}
+            {viewMode === 'syncSettings' && workspaceInfo && 'wikiFolderLocation' in workspaceInfo && <GitLogSyncSettings workspace={workspaceInfo} />}
           </TabContent>
         </GitLogWrapper>
         <DetailsWrapper>
-          {workspaceInfo
+          {viewMode === 'syncSettings'
+            ? (
+              <DetailsPanelWrapper sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+                <Typography variant='body2' color='textSecondary'>
+                  {t('GitLog.SyncSettingsDescription')}
+                </Typography>
+              </DetailsPanelWrapper>
+            )
+            : workspaceInfo
             ? (
               <DetailsPanelWrapper>
                 <CommitDetailsPanel
                   commit={selectedCommit ?? null}
                   selectedCommits={selectedCommits}
                   workspaceID={workspaceInfo.id}
+                  storageService={'storageService' in workspaceInfo ? workspaceInfo.storageService : SupportedStorageServices.local}
                   showSnackbar={showSnackbar}
                   onFileSelect={handleFileSelect}
                   selectedFile={selectedFile}
@@ -372,7 +384,15 @@ export default function GitHistory(): React.JSX.Element {
         </DetailsWrapper>
 
         <DiffPanelWrapper>
-          {workspaceInfo
+          {viewMode === 'syncSettings'
+            ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
+                <Typography variant='body2' color='textSecondary'>
+                  {t('GitLog.SyncSettingsDescription')}
+                </Typography>
+              </Box>
+            )
+            : workspaceInfo
             ? (
               <FileDiffPanel
                 commitHash={selectedCommit?.hash || ''}

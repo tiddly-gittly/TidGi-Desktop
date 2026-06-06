@@ -14,7 +14,7 @@ import type { PromptConcatStreamState } from '@services/agentInstance/promptConc
 import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -91,7 +91,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
 
       // Initialize the unified ScheduledTaskManager
-      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
       const stmRepo = this.dataSource.getRepository(ScheduledTaskEntity);
       initScheduledTaskManager(stmRepo, this);
       this.scheduledTaskRepositoryReady = true;
@@ -189,7 +188,6 @@ export class AgentInstanceService implements IAgentInstanceService {
   private async restoreScheduledTaskManagerTasks(): Promise<void> {
     if (!this.scheduledTaskRepositoryReady || !this.agentInstanceRepository) return;
     try {
-      const { ScheduledTaskEntity } = await import('@services/database/schema/agent');
       const stmRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
 
       const isVolatile = async (agentInstanceId: string): Promise<boolean> => {

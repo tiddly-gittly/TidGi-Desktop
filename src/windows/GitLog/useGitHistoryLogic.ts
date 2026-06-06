@@ -16,8 +16,8 @@ interface IUseGitHistoryStateReturn {
   setSelectedFiles: Dispatch<SetStateAction<string[]>>;
   fileSelectionAnchor: string | null;
   setFileSelectionAnchor: Dispatch<SetStateAction<string | null>>;
-  viewMode: 'current' | 'all';
-  setViewMode: Dispatch<SetStateAction<'current' | 'all'>>;
+  viewMode: 'current' | 'all' | 'syncSettings';
+  setViewMode: Dispatch<SetStateAction<'current' | 'all' | 'syncSettings'>>;
   shouldSelectFirst: boolean;
   setShouldSelectFirst: Dispatch<SetStateAction<boolean>>;
   currentSearchParameters: ISearchParameters;
@@ -32,7 +32,7 @@ export function useGitHistoryState(): IUseGitHistoryStateReturn {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [fileSelectionAnchor, setFileSelectionAnchor] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'current' | 'all'>('current');
+  const [viewMode, setViewMode] = useState<'current' | 'all' | 'syncSettings'>('current');
   const [shouldSelectFirst, setShouldSelectFirst] = useState(false);
   const [currentSearchParameters, setCurrentSearchParameters] = useState<ISearchParameters>({
     mode: 'none',

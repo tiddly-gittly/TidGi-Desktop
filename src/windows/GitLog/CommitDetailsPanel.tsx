@@ -18,6 +18,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SupportedStorageServices } from '@services/types';
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 
@@ -74,6 +75,7 @@ interface ICommitDetailsPanelProps {
   commit: GitLogEntry | null;
   isLatestCommit?: boolean;
   workspaceID: string;
+  storageService: import('@services/types').SupportedStorageServices;
   onCommitSuccess?: () => void;
   showSnackbar?: (message: string, severity?: 'success' | 'error' | 'info') => void;
   onFileSelect?: (file: string | null, event?: React.MouseEvent) => void;
@@ -89,6 +91,7 @@ export function CommitDetailsPanel(
     commit,
     isLatestCommit: _isLatestCommit,
     workspaceID,
+    storageService,
     onCommitSuccess,
     showSnackbar,
     onFileSelect,
@@ -539,7 +542,7 @@ export function CommitDetailsPanel(
 
           {!isUncommitted && (
             <>
-              {!hasMultipleCommitsSelected && commit.isUnpushed && (
+              {!hasMultipleCommitsSelected && commit.isUnpushed && storageService !== SupportedStorageServices.local && (
                 <Button
                   variant='contained'
                   color='warning'

@@ -45,19 +45,35 @@ export class Git implements IGitService {
   /**
    * Acquire a per-workspace lock to serialize git operations.
    * Returns a release function that must be called in a finally block.
+   * Includes a timeout so that if a previous operation is stuck (e.g. due to a hibernated workspace or a hung git process),
+   * the current operation fails fast instead of blocking indefinitely.
    */
   private async acquireOperationLock(workspaceID: string): Promise<() => void> {
+    const previousLock = this.operationLocks.get(workspaceID);
+
+    if (previousLock !== undefined) {
+      const LOCK_TIMEOUT_MS = 30_000;
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error(`Previous git operation is still running for workspace ${workspaceID} after ${LOCK_TIMEOUT_MS}ms`));
+        }, LOCK_TIMEOUT_MS);
+      });
+      try {
+        await Promise.race([previousLock, timeoutPromise]);
+      } finally {
+        clearTimeout(timeoutHandle);
+      }
+    }
+
+    // Only set the new lock after the previous one has been successfully released.
+    // This prevents a dead lock if the timeout above rejects — the new promise
+    // would never be resolved if it were set before the await.
     let release: () => void;
     const promise = new Promise<void>((resolve) => {
       release = resolve;
     });
-
-    const previousLock = this.operationLocks.get(workspaceID);
     this.operationLocks.set(workspaceID, promise);
-
-    if (previousLock !== undefined) {
-      await previousLock;
-    }
 
     return () => {
       release!();
@@ -285,8 +301,13 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     const workspaceID = workspace.id;
-    const releaseLock = await this.acquireOperationLock(workspaceID);
+    if (workspace.hibernated) {
+      logger.warn('commitAndSync skipped because workspace is hibernated', { workspaceID });
+      return false;
+    }
+    let releaseLock: (() => void) | undefined;
     try {
+      releaseLock = await this.acquireOperationLock(workspaceID);
       // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever
       if (!workspace.isSubWiki) {
         try {
@@ -331,7 +352,7 @@ export class Git implements IGitService {
       // Return false on sync failure - no successful changes were made
       return false;
     } finally {
-      releaseLock();
+      releaseLock?.();
     }
   }
 
@@ -343,15 +364,24 @@ export class Git implements IGitService {
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     const workspaceID = workspace.id;
-    const releaseLock = await this.acquireOperationLock(workspaceID);
+    if (workspace.hibernated) {
+      logger.warn('forcePull skipped because workspace is hibernated', { workspaceID });
+      return false;
+    }
+    let releaseLock: (() => void) | undefined;
     try {
+      releaseLock = await this.acquireOperationLock(workspaceID);
       const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
       // Notify git state change
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
       return hasChanges;
+    } catch (error: unknown) {
+      const error_ = error as Error;
+      this.createFailedNotification(error_.message, workspaceIDToShowNotification);
+      return false;
     } finally {
-      releaseLock();
+      releaseLock?.();
     }
   }
 

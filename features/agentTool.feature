@@ -55,7 +55,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I click on a "Programming checkbox" element with selector "[data-testid='ask-question-option-1']"
     Then I should see a "submit button" element with selector "[data-testid='ask-question-multiselect-submit']"
     When I click on a "submit button" element with selector "[data-testid='ask-question-multiselect-submit']"
-    Then I should see an "agent response" element with selector "[data-testid='message-bubble']:has-text('AI')"
+    Then I should see an "agent response after multi-select" element with selector "[data-testid='message-bubble']:has-text('两个标签')"
     # ── Part 3: text freeform ──
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     And I type "创建一个自定义标题的笔记" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -67,7 +67,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
       | submit button       | [data-testid='ask-question-submit']       |
     When I type "My Custom Title" in "freeform input" element with selector "[data-testid='ask-question-text-input'] textarea:not([readonly])"
     And I click on a "submit button" element with selector "[data-testid='ask-question-submit']"
-    Then I should see an "agent response" element with selector "[data-testid='message-bubble']:has-text('My Custom Title')"
+    Then I should see an "agent response after text input" element with selector "[data-testid='message-bubble']:has-text('标题为')"
 
   @agentTool @mockOpenAI
   Scenario: Turn action bar — delete, retry, and rollback-hidden in one session
