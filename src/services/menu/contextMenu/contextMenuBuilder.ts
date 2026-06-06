@@ -4,6 +4,7 @@
  */
 
 import { isMac } from '@/helpers/system';
+import { logger } from '@services/libs/log';
 import { clipboard, Menu, MenuItem, nativeImage, net, shell, WebContents } from 'electron';
 import i18next from 'i18next';
 import type { IOnContextMenuInfo } from '../interface';
@@ -285,7 +286,7 @@ export default class ContextMenuBuilder {
           if (image.isEmpty()) throw new Error('Failed to decode image from fetched bytes');
           clipboard.writeImage(image);
         }).catch((error: unknown) => {
-          console.error('Failed to copy image to clipboard', error);
+          logger.error('Failed to copy image to clipboard', { error, srcURL: menuInfo.srcURL });
         });
       },
     });
