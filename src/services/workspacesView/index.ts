@@ -115,14 +115,19 @@ export class WorkspaceView implements IWorkspaceViewService {
       options: JSON.stringify(options),
       function: 'initializeWorkspaceView',
     });
+    if (isWikiWorkspace(workspace) && workspace.isSubWiki) {
+      if (isNew && typeof workspace.mainWikiID === 'string' && !wikiService.checkWikiStartLock(workspace.mainWikiID)) {
+        const mainWorkspace = await workspaceService.get(workspace.mainWikiID);
+        if (mainWorkspace === undefined || !isWikiWorkspace(mainWorkspace) || mainWorkspace.isSubWiki) {
+          throw new Error(`Main wiki ${workspace.mainWikiID} for sub-wiki ${workspace.name ?? workspace.id} does not exist`);
+        }
+        await this.restartWorkspaceViewService(workspace.mainWikiID);
+        logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID: workspace.mainWikiID, subWikiID: workspace.id });
+      }
+      return;
+    }
     if (followHibernateSettingWhenInit) {
       const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
-
-      // Sub-workspaces have no wiki service, no view, and no independent behavior.
-      // Their hibernated state is synced in initializeAllWorkspaceView after main workspaces are resolved.
-      if (isWikiWorkspace(workspace) && workspace.isSubWiki) {
-        return;
-      }
 
       if ((hibernateUnusedWorkspacesAtLaunch || (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused)) && !workspace.active) {
         logger.debug(

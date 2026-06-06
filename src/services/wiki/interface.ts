@@ -89,7 +89,7 @@ export interface IWikiService {
     workspaceID: string,
     arguments_: Parameters<IWorkerWikiOperations[OP]>,
   ): Promise<ReturnType<IWorkerWikiOperations[OP]>>;
-  /** handle start/restart of wiki/subwiki, will handle wiki sync too */
+  /** handle startup and sync for wiki workspaces with workers */
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export interface IWorkerInfo {

@@ -27,7 +27,7 @@ import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/wo
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
-import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
+import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
 import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
@@ -858,59 +858,45 @@ export class Wiki implements IWikiService {
     if (!isWikiWorkspace(workspace)) {
       return;
     }
-    const { id, isSubWiki, name, mainWikiID } = workspace;
+    const { id, isSubWiki } = workspace;
+
+    if (isSubWiki) {
+      return;
+    }
 
     const userName = await this.authService.getUserName(workspace);
 
-    // if is main wiki
-    if (isSubWiki) {
-      // if is private repo wiki
-      // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
-      if (typeof mainWikiID === 'string' && !this.checkWikiStartLock(mainWikiID)) {
-        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-        const mainWorkspace = await workspaceService.get(mainWikiID);
-        if (mainWorkspace === undefined) {
-          throw new SubWikiSMainWikiNotExistError(name ?? id, mainWikiID);
-        }
-        // Use restartWorkspaceViewService to restart wiki worker and reload frontend view
-        const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-        await workspaceViewService.restartWorkspaceViewService(mainWikiID);
-        // Log that main wiki restart is complete after creating sub-wiki
-        logger.debug('[test-id-MAIN_WIKI_RESTARTED_AFTER_SUBWIKI] Main wiki restarted after sub-wiki creation', { mainWikiID, subWikiID: id });
-      }
+    if (this.getWorker(id) !== undefined) {
+      logger.debug('skip duplicate startWiki because worker already exists', {
+        function: 'wikiStartup',
+        workspaceId: id,
+      });
     } else {
-      if (this.getWorker(id) !== undefined) {
-        logger.debug('skip duplicate startWiki because worker already exists', {
-          function: 'wikiStartup',
+      try {
+        logger.debug('calling startWiki', {
+          function: 'startWiki',
+        });
+        await this.startWiki(id, userName);
+        logger.info('[test-id-WIKI_WORKER_STARTED] Wiki worker started successfully', {
+          function: 'startWiki',
           workspaceId: id,
         });
-      } else {
-        try {
-          logger.debug('calling startWiki', {
-            function: 'startWiki',
-          });
-          await this.startWiki(id, userName);
-          logger.info('[test-id-WIKI_WORKER_STARTED] Wiki worker started successfully', {
-            function: 'startWiki',
-            workspaceId: id,
-          });
-        } catch (error) {
-          logger.warn('startWiki failed', { function: 'startWiki', error });
-          if (error instanceof WikiRuntimeError && error.retry) {
-            logger.warn('startWiki retry', { function: 'startWiki', error });
-            // don't want it to throw here again, so no await here.
+      } catch (error) {
+        logger.warn('startWiki failed', { function: 'startWiki', error });
+        if (error instanceof WikiRuntimeError && error.retry) {
+          logger.warn('startWiki retry', { function: 'startWiki', error });
+          // don't want it to throw here again, so no await here.
 
-            const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-            return workspaceViewService.restartWorkspaceViewService(id);
-          } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
-            // https://github.com/andywer/threads.js/issues/426
-            // wait some time and restart the wiki will solve this
-            logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
-            await this.restartWiki(workspace);
-          } else {
-            logger.warn('unexpected error, throw it', { function: 'startWiki' });
-            throw error;
-          }
+          const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+          return workspaceViewService.restartWorkspaceViewService(id);
+        } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
+          // https://github.com/andywer/threads.js/issues/426
+          // wait some time and restart the wiki will solve this
+          logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
+          await this.restartWiki(workspace);
+        } else {
+          logger.warn('unexpected error, throw it', { function: 'startWiki' });
+          throw error;
         }
       }
     }
