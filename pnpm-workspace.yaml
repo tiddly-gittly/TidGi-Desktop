@@ -1,6 +1,10 @@
 packages:
   - packages/*
 
+overrides:
+  prebuild-install: latest
+  node-addon-api: "^7.1.1"
+
 onlyBuiltDependencies:
   - "@swc/core"
   - better-sqlite3
@@ -14,3 +18,14 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 nodeLinker: hoisted
+
+allowBuilds:
+  '@swc/core': set this to true or false
+  better-sqlite3: set this to true or false
+  dprint: set this to true or false
+  dugite: set this to true or false
+  electron-winstaller: set this to true or false
+  esbuild: set this to true or false
+  nsfw: set this to true or false
+  registry-js: set this to true or false
+  unrs-resolver: set this to true or false

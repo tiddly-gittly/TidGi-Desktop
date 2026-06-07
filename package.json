@@ -195,23 +195,5 @@
     "vite-plugin-monaco-editor": "^1.1.0",
     "vitest": "^4.1.8"
   },
-  "pnpm": {
-    "overrides": {
-      "prebuild-install": "latest",
-      "node-addon-api": "^7.1.1"
-    },
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "better-sqlite3",
-      "dprint",
-      "dugite",
-      "electron",
-      "electron-winstaller",
-      "esbuild",
-      "nsfw",
-      "registry-js",
-      "unrs-resolver"
-    ]
-  },
   "private": false
 }
