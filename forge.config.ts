@@ -1,11 +1,9 @@
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { VitePlugin } from '@electron-forge/plugin-vite';
-// @ts-expect-error - shared-types types may not be available externally
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { readJsonSync } from 'fs-extra';
 import path from 'path';
 import afterPack from './scripts/afterPack';
-import beforeAsar from './scripts/beforeAsar';
 
 const packageJson = readJsonSync(path.join(__dirname, 'package.json')) as { description: string };
 const supportedLanguages = readJsonSync(path.join(__dirname, 'localization', 'supportedLanguages.json')) as Record<string, string>;
@@ -43,8 +41,9 @@ const config: ForgeConfig = {
       electronLanguages: supportedLanguageCodes,
     },
     appBundleId: 'com.tidgi',
-    afterPrune: [afterPack],
-    beforeAsar: [beforeAsar],
+  },
+  hooks: {
+    packageAfterPrune: afterPack,
   },
   makers: [
     {

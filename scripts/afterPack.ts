@@ -36,13 +36,13 @@ function copyWithTracking(
  * @param arch x64
  * @param callback Callback to signal completion, receives Error if critical deps missing
  */
-export default (
+export default async (
+  _forgeConfig: unknown,
   buildPath: string,
   _electronVersion: string,
   platform: string,
   arch: string,
-  callback: (error?: Error) => void,
-): void => {
+): Promise<void> => {
   const failures = new Set<string>();
   let unexpectedError: unknown = null;
 
@@ -162,7 +162,7 @@ export default (
           `The packaged app will crash at runtime. Check build logs for details.`,
       );
       console.error(error.message);
-      callback(error);
+      throw error;
     } else if (unexpectedError !== null) {
       let error: Error;
       if (unexpectedError instanceof Error) {
@@ -172,9 +172,7 @@ export default (
       } else {
         error = new Error(JSON.stringify(unexpectedError));
       }
-      callback(error);
-    } else {
-      callback();
+      throw error;
     }
   }
 };
