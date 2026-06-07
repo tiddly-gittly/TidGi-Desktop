@@ -49,16 +49,17 @@ export default defineConfig({
       // Force use CommonJS version of i18next-fs-backend to avoid top-level await in ESM version
       'i18next-fs-backend': path.resolve(__dirname, './node_modules/i18next-fs-backend/cjs/index.js'),
       'i18next-electron-fs-backend': path.resolve(__dirname, './node_modules/i18next-electron-fs-backend/cjs/index.js'),
+      // rotating-file-stream v3 is pure ESM — force CJS dist + commonjsOptions to prevent e.a() wrapper
+      'rotating-file-stream': path.resolve(__dirname, './node_modules/rotating-file-stream/dist/cjs/index.js'),
     },
   },
   build: {
-    lib: {
-      formats: ['es'],
-    },
     commonjsOptions: {
       // Don't transpile dynamic requires in better-sqlite3 (it dynamically loads .node files). "Ignore" means leave them as-is.
       // The .node files will be handled by `scripts/afterPack.js` and `SQLITE_BINARY_PATH` in `src/constants/paths.ts`
       ignoreDynamicRequires: true,
+      // rotating-file-stream v3 is pure ESM and has no package.json side effects — force CJS to prevent e.a() wrapper
+      include: [/node_modules\/rotating-file-stream/],
     },
     rollupOptions: {
       external: [
