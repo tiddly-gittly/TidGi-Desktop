@@ -87,7 +87,7 @@ export async function registerMenu(): Promise<void> {
       visible: hasActiveSyncableWorkspace,
       enabled: async () => {
         const online = await contextService.isOnline();
-        return online && await hasActiveSyncableWorkspace();
+        return online && (await hasActiveSyncableWorkspace());
       },
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
@@ -101,11 +101,11 @@ export async function registerMenu(): Promise<void> {
       id: 'sync-now-ai',
       visible: async () => {
         const online = await contextService.isOnline();
-        return online && await isAIEnabled() && await hasActiveSyncableWorkspace();
+        return online && (await isAIEnabled()) && (await hasActiveSyncableWorkspace());
       },
       enabled: async () => {
         const online = await contextService.isOnline();
-        return online && await isAIEnabled() && await hasActiveSyncableWorkspace();
+        return online && (await isAIEnabled()) && (await hasActiveSyncableWorkspace());
       },
       click: async () => {
         const activeWorkspace = await workspaceService.getActiveWorkspace();
