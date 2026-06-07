@@ -158,23 +158,27 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 
 ## ESM/CJS Interop Issues
 
-Vite 8 uses Rolldown which may break ESM→CJS interop for class-based modules. If a dependency's prototype methods stop working at runtime (TypeError: x is not a function), add a CJS alias in `vite.main.config.ts`:
+### Forge v8 / Vite 8 Strategy
 
-```ts
-// Example: rotating-file-stream v3 class methods broke under Rolldown ESM→CJS interop
-resolve: {
-  alias: {
-    'rotating-file-stream': path.resolve(__dirname, './node_modules/rotating-file-stream/dist/cjs/index.js'),
-  },
-},
-```
+Forge v8 plugin-vite defaults main process output to CJS (`formats: ['cjs']`). **Do not** override to ESM — CJS is the recommended path.
 
-Similarly, pure ESM packages with top-level await must be externalized:
-```ts
-rollupOptions: {
-  external: ['electron-unhandled', 'default-gateway'],
-},
-```
+Rolldown (Vite 8's bundler) can't correctly bundle certain packages into CJS:
+
+| Package | Issue | Solution |
+|---------|-------|----------|
+| `rotating-file-stream` (pure ESM) | Rolldown wraps `require("rotating-file-stream")` with `e.a()` interop, breaking class methods | **External** — Node.js native `require()` uses its `"exports.require"` CJS entry |
+| `moment` (CJS, default export as function) | Rolldown wraps `moment()` into namespace object `{default: fn}`, not callable | **External** — Node.js loads the native CJS function export |
+| `electron-unhandled` v5 (pure ESM, top-level await) | Can't bundle into CJS, can't `require()` from CJS | **Bridge module** (`src/services/libs/electronUnhandledBridge.ts`) using dynamic `import()` |
+| `default-gateway` v7 (pure ESM) | Used via dynamic `import()` for platform-specific sub-paths; v7 removed sub-paths | **External + code migration** to v7 unified API (`gateway4()`) |
+
+### Upgrade Notes (2026-06)
+
+All previously-blocked ESM packages are now upgraded:
+- `date-fns`: 3.6.0 → 4.4.0
+- `default-gateway`: 6.0.3 → 7.2.2 (API migrated from platform-specific `import('default-gateway/sunos')` to unified `gateway4()`)
+- `electron-unhandled`: 4.0.1 → 5.0.0 (bridge module for dynamic import)
+
+`electron` is intentionally held at 41.7.1 — Electron 42+ breaks `better-sqlite3` V8 API compatibility.
 
 ## Code Tour
 

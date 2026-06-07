@@ -104,12 +104,24 @@ export function NewWikiForm({
             freeSolo
             options={availableTags}
             value={form.tagNames}
+            inputValue={tagInputValue}
             onInputChange={(_event, newInputValue) => {
               setTagInputValue(newInputValue);
             }}
             onChange={(_event, newValue) => {
               form.tagNamesSetter(newValue);
               setTagInputValue('');
+            }}
+            onKeyDown={(event) => {
+              // MUI v9: Explicitly handle Enter in freeSolo mode to add typed text as a tag.
+              if (event.key === 'Enter' && tagInputValue.trim().length > 0) {
+                event.preventDefault();
+                const newTag = tagInputValue.trim();
+                if (!form.tagNames.includes(newTag)) {
+                  form.tagNamesSetter([...form.tagNames, newTag]);
+                }
+                setTagInputValue('');
+              }
             }}
             slotProps={{
               chip: {

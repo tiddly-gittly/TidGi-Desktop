@@ -67,7 +67,7 @@ export default async (
         console.error(`Error copying zx to dist: ${error instanceof Error ? error.message : String(error)}`);
       }
 
-      const packagePathsToCopyDereferenced: Array<{ segments: string[]; critical: string | null }> = [
+      const packagePathsToCopyDereferenced: Array<{ segments: string[]; critical: string | null; dereference?: boolean }> = [
         { segments: ['tiddlywiki', 'package.json'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'boot'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'core'], critical: 'tiddlywiki' },
@@ -82,6 +82,14 @@ export default async (
         { segments: ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'], critical: 'better-sqlite3' },
         // nsfw native module
         { segments: ['nsfw', 'build', 'Release', 'nsfw.node'], critical: 'nsfw' },
+        // moment: CJS function export, must be external in Vite config.
+        // pnpm creates hardlinks on Windows — use dereference: false to avoid chmod failures.
+        { segments: ['moment'], critical: null, dereference: false },
+        // rotating-file-stream: pure ESM, external for Node.js native require().
+        // Only need the CJS dist + package.json for export resolution.
+        { segments: ['rotating-file-stream', 'package.json'], critical: null },
+        { segments: ['rotating-file-stream', 'dist', 'cjs', 'index.js'], critical: null },
+        { segments: ['rotating-file-stream', 'dist', 'cjs', 'package.json'], critical: null },
         // sqlite-vec: non-critical vector search extension
         { segments: ['sqlite-vec', 'package.json'], critical: null },
         { segments: ['sqlite-vec', 'index.cjs'], critical: null },
@@ -94,19 +102,20 @@ export default async (
       }
 
       console.log('Copying packagePathsToCopyDereferenced');
-      for (const { segments, critical } of packagePathsToCopyDereferenced) {
+      for (const { segments, critical, dereference = true } of packagePathsToCopyDereferenced) {
         const source = path.resolve(sourceNodeModulesFolder, ...segments);
         const destination = path.resolve(cwd, 'node_modules', ...segments);
         const criticalPackage = critical ?? segments[0];
+        const copyOptions = { dereference };
         // some binary may not exist in other platforms, so allow failing for non-critical packages
         if (critical === null) {
           try {
-            fs.copySync(source, destination, { dereference: true });
+            fs.copySync(source, destination, copyOptions);
           } catch {
             // non-critical, platform-specific binary may not exist — allowed to fail silently
           }
         } else {
-          copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
+          copyWithTracking(source, destination, copyOptions, criticalPackage, failures);
         }
       }
 

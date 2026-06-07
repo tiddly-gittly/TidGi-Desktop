@@ -1,5 +1,5 @@
 import ip from 'ipaddr.js';
-import { networkInterfaces, platform, type } from 'os';
+import { networkInterfaces } from 'os';
 
 /**
  * Copy from https://github.com/sindresorhus/internal-ip, to fix silverwind/default-gateway 's bug
@@ -86,54 +86,15 @@ export async function internalIpV4(): Promise<string | undefined> {
   return 'localhost';
 }
 
-const supportedPlatforms = new Set(['aix', 'android', 'darwin', 'freebsd', 'linux', 'openbsd', 'sunos', 'win32']);
-
 /**
- * Copy from https://github.com/silverwind/default-gateway 's index.js, to fix its weird behavior on windows. Its require statement will always require sunos
- * @returns
+ * Get the default IPv4 gateway using default-gateway.
+ * v7 unified the API: no more platform-specific sub-path imports.
  */
-async function defaultGatewayV4(): Promise<IDefaultGatewayInfo | undefined> {
-  const plat = platform();
-
-  if (supportedPlatforms.has(plat)) {
-    let gatewayQueryFileName: NodeJS.Platform | 'ibmi' = plat;
-    if (plat === 'aix') {
-      gatewayQueryFileName = type() === 'OS400' ? 'ibmi' : 'sunos'; // AIX `netstat` output is compatible with Solaris
-    }
-
-    switch (gatewayQueryFileName) {
-      case 'ibmi': {
-        const defaultGateway = await import('default-gateway/ibmi');
-        return await defaultGateway.v4();
-      }
-      case 'android': {
-        const defaultGateway = await import('default-gateway/android');
-        return await defaultGateway.v4();
-      }
-      case 'darwin': {
-        const defaultGateway = await import('default-gateway/darwin');
-        return await defaultGateway.v4();
-      }
-      case 'freebsd': {
-        const defaultGateway = await import('default-gateway/freebsd');
-        return await defaultGateway.v4();
-      }
-      case 'linux': {
-        const defaultGateway = await import('default-gateway/linux');
-        return await defaultGateway.v4();
-      }
-      case 'openbsd': {
-        const defaultGateway = await import('default-gateway/openbsd');
-        return await defaultGateway.v4();
-      }
-      case 'sunos': {
-        const defaultGateway = await import('default-gateway/sunos');
-        return await defaultGateway.v4();
-      }
-      case 'win32': {
-        const defaultGateway = await import('default-gateway/win32');
-        return await defaultGateway.v4();
-      }
-    }
+async function defaultGatewayV4(): Promise<{ gateway: string; version: number; int: string | null } | undefined> {
+  try {
+    const defaultGateway = await import('default-gateway');
+    return await defaultGateway.gateway4();
+  } catch {
+    return undefined;
   }
 }
