@@ -11,3 +11,4 @@ allowBuilds:
   nsfw: set this to true or false
   registry-js: set this to true or false
   unrs-resolver: set this to true or false
+nodeLinker: hoisted
