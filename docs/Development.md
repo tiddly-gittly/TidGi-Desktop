@@ -156,15 +156,25 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 - [sqlite-vec](https://github.com/asg017/sqlite-vec): The path from its method `getLoadablePath` maybe incorrect after electron app packaged. (It will be in `.webpack/main/index.js` in the dist folder instead of in `node_modules/sqlite-vec` folder.)
   - Still need to install its `optionalDependencies` like `sqlite-vec-darwin-x64` in package.json
 
-## Don't upgrade these dependency
+## ESM/CJS Interop Issues
 
-### pure ESM
+Vite 8 uses Rolldown which may break ESM→CJS interop for class-based modules. If a dependency's prototype methods stop working at runtime (TypeError: x is not a function), add a CJS alias in `vite.main.config.ts`:
 
-Electron forge webpack don't support pure ESM yet
+```ts
+// Example: rotating-file-stream v3 class methods broke under Rolldown ESM→CJS interop
+resolve: {
+  alias: {
+    'rotating-file-stream': path.resolve(__dirname, './node_modules/rotating-file-stream/dist/cjs/index.js'),
+  },
+},
+```
 
-- default-gateway
-- electron-unhandled
-- date-fns
+Similarly, pure ESM packages with top-level await must be externalized:
+```ts
+rollupOptions: {
+  external: ['electron-unhandled', 'default-gateway'],
+},
+```
 
 ## Code Tour
 

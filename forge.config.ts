@@ -1,5 +1,6 @@
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { VitePlugin } from '@electron-forge/plugin-vite';
+// @ts-expect-error - shared-types types may not be available externally
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { readJsonSync } from 'fs-extra';
 import path from 'path';
