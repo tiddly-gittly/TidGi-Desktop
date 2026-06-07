@@ -161,27 +161,26 @@ export default async (
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Unexpected error in afterPack hook: ${errorMessage}`);
   } finally {
-    // Report critical copy failures first — they have the most actionable diagnostics.
-    // Fall back to any unexpected hook error so the overall packaging fails fast
-    // instead of silently producing a corrupted build.
+    // Collect errors but don't throw inside finally — store and throw after.
+    let postError: Error | null = null;
     const missingCritical = [...failures].filter(package_ => CRITICAL_PACKAGES.includes(package_));
     if (missingCritical.length > 0) {
-      const error = new Error(
+      postError = new Error(
         `afterPack: critical dependencies failed to copy: ${missingCritical.join(', ')}. ` +
           `The packaged app will crash at runtime. Check build logs for details.`,
       );
-      console.error(error.message);
-      throw error;
+      console.error(postError.message);
     } else if (unexpectedError !== null) {
-      let error: Error;
       if (unexpectedError instanceof Error) {
-        error = unexpectedError;
+        postError = unexpectedError;
       } else if (typeof unexpectedError === 'string') {
-        error = new Error(unexpectedError);
+        postError = new Error(unexpectedError);
       } else {
-        error = new Error(JSON.stringify(unexpectedError));
+        postError = new Error(JSON.stringify(unexpectedError));
       }
-      throw error;
+    }
+    if (postError !== null) {
+      throw postError;
     }
   }
 };

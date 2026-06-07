@@ -15,14 +15,14 @@
 import { spawnSync } from 'child_process';
 import path from 'path';
 
-const cucumberArgs = process.argv.slice(2);
+const cucumberArguments = process.argv.slice(2);
 
 // ── Validation phase ──
-validateArgs(cucumberArgs);
+validateArguments(cucumberArguments);
 
 // ── Execution phase ──
 const cucumberBin = path.resolve(process.cwd(), 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
-const result = spawnSync(process.execPath, [cucumberBin, '--config', 'features/cucumber.config.js', '--exit', ...cucumberArgs], {
+const result = spawnSync(process.execPath, [cucumberBin, '--config', 'features/cucumber.config.js', '--exit', ...cucumberArguments], {
   stdio: 'inherit',
   cwd: process.cwd(),
   env: process.env,
@@ -56,15 +56,15 @@ function validateArgs(args: string[]): void {
   // pnpm transforms the '--tags=...' into '--tags ...' and, together
   // with cross-env, injects  '--tags' and '@smoke or @preference' as two
   // separate argv entries. Detect that and accept the pair.
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--tags' && i + 1 < args.length) {
+  for (let index = 0; index < arguments_.length; index++) {
+    if (arguments_[index] === '--tags' && index + 1 < arguments_.length) {
       // cross-env deconstructed --tags=VALUE into two args. The next arg
       // is the value; skip the value check for the standalone flag.
-      i += 1; // skip value
+      index += 1; // skip value
       continue;
     }
-    if (args[i].startsWith('--tags=')) {
-      const tagValue = args[i].slice('--tags='.length);
+    if (arguments_[index].startsWith('--tags=')) {
+      const tagValue = arguments_[index].slice('--tags='.length);
       if (tagValue.length > 0 && !tagValue.startsWith('@') && !tagValue.startsWith('not ')) {
         fail(
           `Invalid tag expression "${tagValue}"`,
@@ -92,10 +92,10 @@ function validateArgs(args: string[]): void {
     '--no-strict', '--publish', '--publish-quiet',
   ];
 
-  for (const arg of args) {
-    if (arg.startsWith('--') && !knownPrefixes.some((p) => arg.startsWith(p))) {
+  for (const argument of arguments_) {
+    if (argument.startsWith('--') && !knownPrefixes.some((prefix) => argument.startsWith(prefix))) {
       fail(
-        `Unknown cucumber option "${arg}"`,
+        `Unknown cucumber option "${argument}"`,
         'Supported options:',
         '  --tags=@name       Run scenarios with this tag',
         '  --profile=name     Use a specific cucumber profile',
