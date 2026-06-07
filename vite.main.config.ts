@@ -49,11 +49,12 @@ export default defineConfig({
       // Force use CommonJS version of i18next-fs-backend to avoid top-level await in ESM version
       'i18next-fs-backend': path.resolve(__dirname, './node_modules/i18next-fs-backend/cjs/index.js'),
       'i18next-electron-fs-backend': path.resolve(__dirname, './node_modules/i18next-electron-fs-backend/cjs/index.js'),
-      // Force CJS dist — rotating-file-stream v3 is pure ESM, Rolldown breaks its class methods
-      'rotating-file-stream': path.resolve(__dirname, './node_modules/rotating-file-stream/dist/cjs/index.js'),
     },
   },
   build: {
+    lib: {
+      formats: ['es'],
+    },
     commonjsOptions: {
       // Don't transpile dynamic requires in better-sqlite3 (it dynamically loads .node files). "Ignore" means leave them as-is.
       // The .node files will be handled by `scripts/afterPack.js` and `SQLITE_BINARY_PATH` in `src/constants/paths.ts`
@@ -78,7 +79,7 @@ export default defineConfig({
         '@modelcontextprotocol/sdk',
         /^@modelcontextprotocol\/sdk\//,
 
-        // Pure ESM packages with top-level await - must be external for CJS build target
+        // Pure ESM packages with top-level await — safe in ESM output format
         'electron-unhandled',
         'default-gateway',
 
