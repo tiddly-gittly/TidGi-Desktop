@@ -52,7 +52,9 @@ export function NewWikiForm({
           }}
           endIcon={<FolderIcon />}
         >
-          <Typography variant='button' display='inline'>
+          <Typography variant='button' sx={{
+            display: 'inline'
+          }}>
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
@@ -120,7 +122,7 @@ export function NewWikiForm({
                 {...parameters}
                 label={t('AddWorkspace.TagName')}
                 helperText={tagHelperText}
-                slotProps={{ htmlInput: { ...parameters.inputProps, 'data-testid': 'tagname-autocomplete-input' } }}
+                slotProps={{ htmlInput: { 'data-testid': 'tagname-autocomplete-input' } as React.InputHTMLAttributes<HTMLInputElement> }}
               />
             )}
           />

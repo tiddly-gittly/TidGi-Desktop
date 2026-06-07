@@ -412,7 +412,11 @@ export function AllWorkspaceSectionsRenderer({
     }
     if (hits.length === 0) {
       return (
-        <Typography color='text.secondary' sx={{ mt: 2 }}>
+        <Typography
+          sx={{
+            color: 'text.secondary',
+            mt: 2
+          }}>
           {t('Preference.SearchNoResult', { defaultValue: 'No settings found for "{{query}}"', query })}
         </Typography>
       );

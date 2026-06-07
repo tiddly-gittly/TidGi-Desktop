@@ -215,7 +215,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
         </Box>
 
         {settings.toolRules.length === 0 && (
-          <Typography variant='body2' color='text.secondary'>
+          <Typography variant='body2' sx={{
+            color: 'text.secondary'
+          }}>
             No per-tool rules configured. All tools use the global timeout and auto-approval.
           </Typography>
         )}
@@ -287,7 +289,9 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
             {/* Pattern editing (only when selected) */}
             {editingToolIndex === index && (
               <Box sx={{ mt: 1 }}>
-                <Typography variant='caption' color='text.secondary'>
+                <Typography variant='caption' sx={{
+                  color: 'text.secondary'
+                }}>
                   Patterns: deny patterns block execution, allow patterns skip approval.
                 </Typography>
 

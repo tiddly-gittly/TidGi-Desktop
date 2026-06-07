@@ -83,7 +83,9 @@ export const TokenPieChart: React.FC<TokenPieChartProps> = memo(({ breakdown, si
 
   const tooltipContent = (
     <Box sx={{ p: 0.5 }}>
-      <Typography variant='caption' fontWeight='bold'>
+      <Typography variant='caption' sx={{
+        fontWeight: 'bold'
+      }}>
         Context Window: {breakdown.total.toLocaleString()} / {breakdown.limit.toLocaleString()} tokens ({percentage}%)
       </Typography>
       {CATEGORIES.map(cat => {

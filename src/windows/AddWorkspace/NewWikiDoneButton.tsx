@@ -42,11 +42,12 @@ export function NewWikiDoneButton({
       >
         <Alert severity='info'>{wikiCreationMessage}</Alert>
       </Snackbar>
-
       {isCreateMainWorkspace
         ? (
           <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
-            <Typography variant='body1' display='inline'>
+            <Typography variant='body1' sx={{
+              display: 'inline'
+            }}>
               {t('AddWorkspace.CreateWiki')}
             </Typography>
             <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
@@ -54,11 +55,15 @@ export function NewWikiDoneButton({
         )
         : (
           <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
-            <Typography variant='body1' display='inline'>
+            <Typography variant='body1' sx={{
+              display: 'inline'
+            }}>
               {t('AddWorkspace.CreateWiki')}
             </Typography>
             <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
-            <Typography variant='body1' display='inline'>
+            <Typography variant='body1' sx={{
+              display: 'inline'
+            }}>
               {t('AddWorkspace.AndLinkToMainWorkspace')}
             </Typography>
           </CloseButton>

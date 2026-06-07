@@ -107,14 +107,17 @@ export const EditDiffRenderer: React.FC<MessageRendererProps> = memo(({ message 
         </Typography>
         {data.linesAdded > 0 && <Chip label={`+${data.linesAdded}`} size='small' color='success' variant='outlined' sx={{ fontWeight: 700, fontSize: '0.75rem' }} />}
         {data.linesRemoved > 0 && <Chip label={`-${data.linesRemoved}`} size='small' color='error' variant='outlined' sx={{ fontWeight: 700, fontSize: '0.75rem' }} />}
-        <Typography variant='caption' color='text.secondary'>
+        <Typography variant='caption' sx={{
+          color: 'text.secondary'
+        }}>
           in {data.workspaceName}
         </Typography>
       </DiffHeader>
-
       <Accordion disableGutters elevation={0} sx={{ mt: 1, background: 'transparent', '&:before': { display: 'none' } }}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 28, p: 0 }}>
-          <Typography variant='caption' color='text.secondary'>Show diff</Typography>
+          <Typography variant='caption' sx={{
+            color: 'text.secondary'
+          }}>Show diff</Typography>
         </AccordionSummary>
         <AccordionDetails sx={{ p: 0 }}>
           <DiffCodeBlock>

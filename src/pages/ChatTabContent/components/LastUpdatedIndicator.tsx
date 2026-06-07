@@ -27,7 +27,9 @@ export const LastUpdatedIndicator: React.FC<LastUpdatedIndicatorProps> = memo(({
         justifyContent: 'flex-end',
       }}
     >
-      <Typography variant='caption' color='text.secondary'>
+      <Typography variant='caption' sx={{
+        color: 'text.secondary'
+      }}>
         {t('Prompt.LastUpdated')}: {lastUpdated.toLocaleTimeString()}
       </Typography>
     </Box>

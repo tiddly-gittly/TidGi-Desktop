@@ -163,7 +163,9 @@ export const SplitViewTabContent: React.FC<SplitViewTabContentProps> = ({ tab })
   if (childTabs.length === 0) {
     return (
       <Container>
-        <Box p={2}>{t('SplitView.NoTabs')}</Box>
+        <Box sx={{
+          p: 2
+        }}>{t('SplitView.NoTabs')}</Box>
       </Container>
     );
   }

@@ -40,7 +40,14 @@ export const SoftLinkToMainWikiSelect = styled((props: React.ComponentProps<type
 `;
 export const SubWikiTagAutoComplete = styled((props: React.ComponentProps<typeof Autocomplete>) => <Autocomplete {...props} />)``;
 export const WikiLocation = styled((props: { children?: ReactNode } & React.ComponentProps<typeof Typography>) => (
-  <Typography variant='body2' noWrap display='inline' align='center' {...props} />
+  <Typography
+    variant='body2'
+    noWrap
+    align='center'
+    {...props}
+    sx={[{
+      display: 'inline'
+    }, ...(Array.isArray(props.sx) ? props.sx : [props.sx])]} />
 ))`
   direction: rtl;
   text-transform: none;

@@ -99,17 +99,16 @@ export const ToolApprovalRenderer: React.FC<MessageRendererProps> = memo(({ mess
     <ApprovalContainer>
       <ApprovalHeader>
         <SecurityIcon color='warning' fontSize='small' />
-        <Typography variant='subtitle2' color='warning.main'>Tool Approval Required</Typography>
+        <Typography variant='subtitle2' sx={{
+          color: 'warning.main'
+        }}>Tool Approval Required</Typography>
       </ApprovalHeader>
-
       <Typography variant='body2'>
         The agent wants to execute: <strong>{data.toolName}</strong>
       </Typography>
-
       <ParametersBox>
         {JSON.stringify(data.parameters, null, 2)}
       </ParametersBox>
-
       {decision === null && (
         <ButtonsContainer>
           <Button

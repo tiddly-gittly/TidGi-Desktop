@@ -82,14 +82,23 @@ export function CurrentBranchView({
           />
         )
         : (
-          <Box p={2}>
+          <Box sx={{
+            p: 2
+          }}>
             <Typography>{t('GitLog.NoCommits')}</Typography>
           </Box>
         )}
       {loadingMore && (
-        <Box p={2} display='flex' justifyContent='center'>
+        <Box
+          sx={{
+            p: 2,
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
           <CircularProgress size={24} />
-          <Typography ml={1}>{t('GitLog.LoadingMore')}</Typography>
+          <Typography sx={{
+            ml: 1
+          }}>{t('GitLog.LoadingMore')}</Typography>
         </Box>
       )}
     </>

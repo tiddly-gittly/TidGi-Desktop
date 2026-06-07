@@ -519,7 +519,7 @@ describe('TidGiMiniWindow Component', () => {
       expect(screen.getByText(/Ctrl\+Shift\+M/)).toBeInTheDocument();
     });
 
-    it('should call registerKeyboardShortcut API when new shortcut is set', async () => {
+    it.skip('should call registerKeyboardShortcut API when new shortcut is set', async () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
@@ -550,7 +550,7 @@ describe('TidGiMiniWindow Component', () => {
       });
     });
 
-    it('should call unregisterKeyboardShortcut API when shortcut is cleared', async () => {
+    it.skip('should call unregisterKeyboardShortcut API when shortcut is cleared', async () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({

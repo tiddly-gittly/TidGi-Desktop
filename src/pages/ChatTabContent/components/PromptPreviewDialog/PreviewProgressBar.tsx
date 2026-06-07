@@ -63,7 +63,9 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
   return (
     <Box sx={{ width: '100%', mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant='body2' color='text.secondary'>
+        <Typography variant='body2' sx={{
+          color: 'text.secondary'
+        }}>
           {previewCurrentStep}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -75,12 +77,13 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
               color='primary'
             />
           )}
-          <Typography variant='body2' color='text.secondary'>
+          <Typography variant='body2' sx={{
+            color: 'text.secondary'
+          }}>
             {progressPercentage}%
           </Typography>
         </Box>
       </Box>
-
       <LinearProgress
         variant='determinate'
         value={progressPercentage}
@@ -92,8 +95,13 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
           },
         }}
       />
-
-      <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block' }}>
+      <Typography
+        variant='caption'
+        sx={{
+          color: 'text.secondary',
+          mt: 1,
+          display: 'block'
+        }}>
         ⚡ Live preview - this is not the final version and is still loading
       </Typography>
     </Box>

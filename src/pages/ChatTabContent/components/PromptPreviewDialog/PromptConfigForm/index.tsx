@@ -125,7 +125,9 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
           <Typography variant='h6' color='error' gutterBottom>
             {t('Prompt.SchemaNotProvided')}
           </Typography>
-          <Typography variant='body2' color='text.secondary'>
+          <Typography variant='body2' sx={{
+            color: 'text.secondary'
+          }}>
             {t('Prompt.SchemaNotProvidedDescription')}
           </Typography>
         </Paper>

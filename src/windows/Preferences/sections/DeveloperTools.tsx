@@ -248,7 +248,6 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
           )}
         </List>
       </Paper>
-
       <Dialog
         open={deleteDialogOpen}
         onClose={() => {
@@ -295,7 +294,6 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Unified Process & Debug Panel dialog */}
       <Dialog
         open={diagOpen}
@@ -332,7 +330,13 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
             : (
               <>
                 {/* Section 1: Node.js main process memory */}
-                <Typography variant='subtitle1' fontWeight='bold' gutterBottom sx={{ mt: 1 }}>
+                <Typography
+                  variant='subtitle1'
+                  gutterBottom
+                  sx={{
+                    fontWeight: 'bold',
+                    mt: 1
+                  }}>
                   {`${t('Preference.ProcessInfoMainNode')} — PID ${diagData.processInfo.mainNode.pid}`}
                 </Typography>
                 <TableContainer sx={{ mb: 3 }}>
@@ -377,7 +381,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                 </TableContainer>
 
                 {/* Section 2: Wiki worker_threads (share main process PID, listed separately) */}
-                <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
+                <Typography variant='subtitle1' gutterBottom sx={{
+                  fontWeight: 'bold'
+                }}>
                   {t('Preference.WorkerDebugPanel')}
                 </Typography>
                 <TableContainer sx={{ mb: 3 }}>
@@ -409,8 +415,12 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                       {diagData.workersInfo.map((info) => (
                         <TableRow key={info.workspaceID}>
                           <TableCell>
-                            <Typography variant='body2' fontWeight='bold'>{info.workspaceName}</Typography>
-                            <Typography variant='caption' color='text.secondary'>{info.workspaceID.slice(0, 8)}</Typography>
+                            <Typography variant='body2' sx={{
+                              fontWeight: 'bold'
+                            }}>{info.workspaceName}</Typography>
+                            <Typography variant='caption' sx={{
+                              color: 'text.secondary'
+                            }}>{info.workspaceID.slice(0, 8)}</Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant='body2'>{info.isRunning && info.threadId > 0 ? info.threadId : '-'}</Typography>
@@ -430,13 +440,17 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                               ? (
                                 <Typography
                                   variant='body2'
-                                  fontWeight='bold'
                                   color={info.rss_MB > 500 ? 'error' : info.rss_MB > 200 ? 'warning.main' : 'success.main'}
+                                  sx={{
+                                    fontWeight: 'bold'
+                                  }}
                                 >
                                   {`${info.rss_MB} MB`}
                                 </Typography>
                               )
-                              : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                              : <Typography variant='caption' sx={{
+                              color: 'text.secondary'
+                            }}>-</Typography>}
                           </TableCell>
                           <TableCell>
                             {info.heapUsed_MB >= 0
@@ -445,7 +459,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                                   {`${info.heapUsed_MB} / ${info.heapTotal_MB} MB`}
                                 </Typography>
                               )
-                              : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                              : <Typography variant='caption' sx={{
+                              color: 'text.secondary'
+                            }}>-</Typography>}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -464,7 +480,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                       {diagData.workersInfo.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={7} align='center'>
-                            <Typography color='text.secondary'>{t('Preference.WorkerDebugEmpty')}</Typography>
+                            <Typography sx={{
+                              color: 'text.secondary'
+                            }}>{t('Preference.WorkerDebugEmpty')}</Typography>
                           </TableCell>
                         </TableRow>
                       )}
@@ -473,7 +491,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                 </TableContainer>
 
                 {/* Section 3: Renderer processes — correlate OS renderer PID with WebContentsView registry */}
-                <Typography variant='subtitle1' fontWeight='bold' gutterBottom>
+                <Typography variant='subtitle1' gutterBottom sx={{
+                  fontWeight: 'bold'
+                }}>
                   {t('Preference.ProcessInfoRenderers')}
                 </Typography>
                 <TableContainer>
@@ -520,11 +540,15 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                                   {matchingView !== undefined
                                     ? (
                                       <>
-                                        <Typography variant='body2' fontWeight='bold'>{matchingView.workspaceName}</Typography>
+                                        <Typography variant='body2' sx={{
+                                          fontWeight: 'bold'
+                                        }}>{matchingView.workspaceName}</Typography>
                                         <Chip label={matchingView.windowName} size='small' sx={{ mt: 0.5 }} />
                                       </>
                                     )
-                                    : <Typography variant='caption' color='text.secondary'>{renderer.title || '-'}</Typography>}
+                                    : <Typography variant='caption' sx={{
+                                    color: 'text.secondary'
+                                  }}>{renderer.title || '-'}</Typography>}
                                 </TableCell>
                                 <TableCell>
                                   <Chip label={renderer.type} size='small' />
@@ -534,12 +558,14 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                                     ? (
                                       <Typography
                                         variant='body2'
-                                        fontWeight='bold'
                                         color={renderer.private_KB > 500_000
                                           ? 'error'
                                           : renderer.private_KB > 200_000
                                           ? 'warning.main'
                                           : 'success.main'}
+                                        sx={{
+                                          fontWeight: 'bold'
+                                        }}
                                       >
                                         {`${Math.round(renderer.private_KB / 1024)} MB`}
                                       </Typography>
@@ -548,34 +574,42 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                                     ? (
                                       <Typography
                                         variant='body2'
-                                        fontWeight='bold'
                                         color={renderer.workingSet_KB > 500_000
                                           ? 'error'
                                           : renderer.workingSet_KB > 200_000
                                           ? 'warning.main'
                                           : 'success.main'}
+                                        sx={{
+                                          fontWeight: 'bold'
+                                        }}
                                       >
                                         {`~${Math.round(renderer.workingSet_KB / 1024)} MB`}
                                       </Typography>
                                     )
-                                    : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                                    : <Typography variant='caption' sx={{
+                                    color: 'text.secondary'
+                                  }}>-</Typography>}
                                 </TableCell>
                                 <TableCell>
                                   {renderer.cpu_percent >= 0
                                     ? (
                                       <Typography
                                         variant='body2'
-                                        fontWeight='bold'
                                         color={renderer.cpu_percent > 20
                                           ? 'error'
                                           : renderer.cpu_percent > 5
                                           ? 'warning.main'
                                           : 'text.primary'}
+                                        sx={{
+                                          fontWeight: 'bold'
+                                        }}
                                       >
                                         {`${renderer.cpu_percent.toFixed(1)} %`}
                                       </Typography>
                                     )
-                                    : <Typography variant='caption' color='text.secondary'>-</Typography>}
+                                    : <Typography variant='caption' sx={{
+                                    color: 'text.secondary'
+                                  }}>-</Typography>}
                                 </TableCell>
                                 <TableCell>
                                   {matchingView !== undefined
@@ -624,7 +658,9 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
                       {diagData.processInfo.renderers.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={8} align='center'>
-                            <Typography color='text.secondary'>{t('Preference.ProcessInfoRenderersEmpty')}</Typography>
+                            <Typography sx={{
+                              color: 'text.secondary'
+                            }}>{t('Preference.ProcessInfoRenderersEmpty')}</Typography>
                           </TableCell>
                         </TableRow>
                       )}
@@ -644,7 +680,6 @@ export function DeveloperTools(props: ICustomSectionProps): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Snackbar
         open={copiedSnackbarOpen}
         autoHideDuration={2000}
