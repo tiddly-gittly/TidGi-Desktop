@@ -9,7 +9,7 @@ import path from 'path';
 // Packages whose absence makes the app non-functional at runtime.
 // If any of these fail to copy, packaging itself should fail so that the
 // problem is caught before deployment, not discovered by a user crash.
-const CRITICAL_PACKAGES = ['tiddlywiki', 'better-sqlite3', 'nsfw', 'dugite'];
+const CRITICAL_PACKAGES = ['tiddlywiki', 'better-sqlite3', 'nsfw', 'dugite', 'rotating-file-stream'];
 
 function copyWithTracking(
   source: string,
@@ -86,6 +86,8 @@ export default (
         { segments: ['sqlite-vec', 'package.json'], critical: null },
         { segments: ['sqlite-vec', 'index.cjs'], critical: null },
         { segments: [`sqlite-vec-${platform === 'win32' ? 'windows' : platform}-${arch}`], critical: null },
+        // rotating-file-stream v3 pure ESM — must copy CJS dist and patch type
+        { segments: ['rotating-file-stream'], critical: 'rotating-file-stream' },
       ];
 
       // macOS only: copy app-path binary for finding apps (non-critical)
@@ -108,6 +110,15 @@ export default (
         } else {
           copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
         }
+      }
+
+      // Patch rotating-file-stream package.json: strip "type":"module" so require() works in CJS
+      const rfsPkgPath = path.join(cwd, 'node_modules', 'rotating-file-stream', 'package.json');
+      if (fs.existsSync(rfsPkgPath)) {
+        const rfsPkg = fs.readJsonSync(rfsPkgPath) as Record<string, unknown>;
+        delete rfsPkg.type;
+        fs.writeJsonSync(rfsPkgPath, rfsPkg, { spaces: 2 });
+        console.log('Patched rotating-file-stream package.json: removed "type":"module"');
       }
 
       // MCP SDK — non-critical

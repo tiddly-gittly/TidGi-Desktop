@@ -49,6 +49,8 @@ export default defineConfig({
       // Force use CommonJS version of i18next-fs-backend to avoid top-level await in ESM version
       'i18next-fs-backend': path.resolve(__dirname, './node_modules/i18next-fs-backend/cjs/index.js'),
       'i18next-electron-fs-backend': path.resolve(__dirname, './node_modules/i18next-electron-fs-backend/cjs/index.js'),
+      // rotating-file-stream v3 is pure ESM — its class methods break under Rolldown CJS interop
+      'rotating-file-stream': path.resolve(__dirname, './node_modules/rotating-file-stream/dist/cjs/index.js'),
     },
   },
   build: {
@@ -75,6 +77,13 @@ export default defineConfig({
         // MCP SDK is dynamically imported and may not be installed
         '@modelcontextprotocol/sdk',
         /^@modelcontextprotocol\/sdk\//,
+
+        // Pure ESM packages with top-level await - must be external for CJS build target
+        'electron-unhandled',
+        'default-gateway',
+
+        // Pure ESM packages whose class APIs break under Rolldown CJS interop
+        'rotating-file-stream',
 
         // TypeORM's optional peer dependencies (dynamically read from package.json)
         // Use RegExp to match both package name and sub-paths (e.g., @sap/hana-client/extension/Stream)
