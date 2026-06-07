@@ -85,9 +85,10 @@ export default defineConfig({
         'default-gateway',
 
         // TypeORM's optional peer dependencies (dynamically read from package.json)
-        // Use RegExp to match both package name and sub-paths (e.g., @sap/hana-client/extension/Stream)
-        // We only use better-sqlite3, so external all others to avoid "module not found" errors
+        // Use RegExp to match both package name and sub-paths
         ...typeormOptionalDepsRegex,
+        // Additional typeorm driver deps not in peerDependenciesMeta
+        'expo-sqlite',
       ],
     },
   },
