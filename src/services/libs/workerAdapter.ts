@@ -70,12 +70,13 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
     }
   });
 
-  worker.on('error', (error) => {
+  worker.on('error', (error: unknown) => {
+    const err = error instanceof Error ? error : new Error(String(error));
     // Reject all pending calls
     for (const [id, pending] of pendingCalls.entries()) {
-      pending.reject(error);
+      pending.reject(err);
       if (pending.subject) {
-        pending.subject.error(error);
+        pending.subject.error(err);
       }
       pendingCalls.delete(id);
     }

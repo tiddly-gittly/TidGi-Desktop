@@ -25,11 +25,11 @@ describe('AnalyticsService', () => {
       immediatelyStoreSettingsToFile: vi.fn().mockResolvedValue(undefined),
     } as unknown as IDatabaseService;
     originalDatabase = container.get(serviceIdentifier.Database);
-    container.rebindSync(serviceIdentifier.Database).toConstantValue(mockDatabase);
+    container.rebind(serviceIdentifier.Database).toConstantValue(mockDatabase);
   });
 
   afterEach(() => {
-    container.rebindSync(serviceIdentifier.Database).toConstantValue(originalDatabase);
+    container.rebind(serviceIdentifier.Database).toConstantValue(originalDatabase);
   });
 
   it('isEnabled returns false when analyticsEnabled preference is false', async () => {

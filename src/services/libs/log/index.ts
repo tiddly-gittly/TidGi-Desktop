@@ -2,7 +2,9 @@ import { LOG_FOLDER } from '@/constants/appPaths';
 import { serializeError } from 'serialize-error';
 import winston, { format } from 'winston';
 import 'winston-daily-rotate-file';
-import type { TransformableInfo } from 'logform';
+// logform types are provided by winston's dependency
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TransformableInfo = any;
 import RendererTransport from './rendererTransport';
 
 /**
