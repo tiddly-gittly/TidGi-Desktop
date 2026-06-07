@@ -28,6 +28,22 @@ export default defineConfig({
       ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-main' })]
       : []),
     workerPlugin(),
+    // Strip Rolldown ESM→CJS interop wrapper for rotating-file-stream.
+    // Its class methods (getDate/getStream) break when wrapped by e.a().
+    {
+      name: 'fix-rotating-file-stream-cjs',
+      enforce: 'post',
+      generateBundle(_, bundle) {
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type === 'chunk') {
+            chunk.code = chunk.code.replace(
+              /require\("rotating-file-stream"\);\s*(\w+)=e\.a\(\1\)/g,
+              'require("rotating-file-stream")',
+            );
+          }
+        }
+      },
+    },
     swc.vite({
       jsc: {
         parser: {
@@ -49,8 +65,6 @@ export default defineConfig({
       // Force use CommonJS version of i18next-fs-backend to avoid top-level await in ESM version
       'i18next-fs-backend': path.resolve(__dirname, './node_modules/i18next-fs-backend/cjs/index.js'),
       'i18next-electron-fs-backend': path.resolve(__dirname, './node_modules/i18next-electron-fs-backend/cjs/index.js'),
-      // rotating-file-stream v3 is pure ESM — its class methods break under Rolldown CJS interop
-      'rotating-file-stream': path.resolve(__dirname, './node_modules/rotating-file-stream/dist/cjs/index.js'),
     },
   },
   build: {
