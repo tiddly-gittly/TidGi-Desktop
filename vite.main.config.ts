@@ -28,6 +28,23 @@ export default defineConfig({
       ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-main' })]
       : []),
     workerPlugin(),
+    // rotating-file-stream@3 is pure ESM. Rolldown adds e.a() wrapper on all
+    // CJS require() calls for ESM modules, breaking class methods (getDate/getStream).
+    // Strip the wrapper post-build — the CJS dist handles CJS interop itself.
+    {
+      name: 'strip-rolldown-esm-wrapper-for-rfs',
+      enforce: 'post',
+      generateBundle(_, bundle) {
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type === 'chunk') {
+            chunk.code = chunk.code.replace(
+              /require\("rotating-file-stream"\);\s*[\w$]+=e\.a\([\w$]+\)/g,
+              'require("rotating-file-stream")',
+            );
+          }
+        }
+      },
+    },
     swc.vite({
       jsc: {
         parser: {
