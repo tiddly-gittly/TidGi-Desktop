@@ -79,10 +79,7 @@ export default defineConfig({
         'electron-unhandled',
         // rotating-file-stream@3 is pure ESM ("type":"module") but has a CJS dist.
         // External it so Node.js native require() uses its "exports.require" CJS entry.
-        'rotating-file-stream', // moment is a CJS package whose default export is a function (moment()).
-        // Rolldown wraps it as a namespace object. External so Node.js loads the native
-        // CJS function export. afterPack.ts copies it to the packaged app.
-        'moment',
+        'rotating-file-stream',
         ...typeormOptionalDepsRegex,
         'expo-sqlite',
       ],

@@ -4,6 +4,9 @@ packages:
 overrides:
   prebuild-install: latest
   node-addon-api: "^7.1.1"
+  # file-stream-rotator 1.0.0 removes the moment dependency.
+  # winston-daily-rotate-file hasn't updated its range yet, so override it here.
+  file-stream-rotator: 1.0.0
 
 onlyBuiltDependencies:
   - "@swc/core"

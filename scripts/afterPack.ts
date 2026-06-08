@@ -82,9 +82,6 @@ export default async (
         { segments: ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'], critical: 'better-sqlite3' },
         // nsfw native module
         { segments: ['nsfw', 'build', 'Release', 'nsfw.node'], critical: 'nsfw' },
-        // moment: CJS function export, must be external in Vite config.
-        // pnpm creates hardlinks on Windows — use dereference: false to avoid chmod failures.
-        { segments: ['moment'], critical: null, dereference: false },
         // rotating-file-stream: pure ESM, external for Node.js native require().
         // Only need the CJS dist + package.json for export resolution.
         { segments: ['rotating-file-stream', 'package.json'], critical: null },

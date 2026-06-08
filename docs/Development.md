@@ -160,23 +160,15 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 
 ### Forge v8 / Vite 8 Strategy
 
-Forge v8 plugin-vite defaults main process output to CJS (`formats: ['cjs']`). **Do not** override to ESM — CJS is the recommended path.
+Forge v8 plugin-vite defaults main process output to CJS (`formats: ['cjs']`), which is the recommended path.
 
 Rolldown (Vite 8's bundler) can't correctly bundle certain packages into CJS:
 
-| Package | Issue | Solution |
-|---------|-------|----------|
-| `rotating-file-stream` (pure ESM) | Rolldown wraps `require("rotating-file-stream")` with `e.a()` interop, breaking class methods | **External** — Node.js native `require()` uses its `"exports.require"` CJS entry |
-| `moment` (CJS, default export as function) | Rolldown wraps `moment()` into namespace object `{default: fn}`, not callable | **External** — Node.js loads the native CJS function export |
-| `electron-unhandled` v5 (pure ESM, top-level await) | Can't bundle into CJS, can't `require()` from CJS | **Bridge module** (`src/services/libs/electronUnhandledBridge.ts`) using dynamic `import()` |
-| `default-gateway` v7 (pure ESM) | Used via dynamic `import()` for platform-specific sub-paths; v7 removed sub-paths | **External + code migration** to v7 unified API (`gateway4()`) |
-
-### Upgrade Notes (2026-06)
-
-All previously-blocked ESM packages are now upgraded:
-- `date-fns`: 3.6.0 → 4.4.0
-- `default-gateway`: 6.0.3 → 7.2.2 (API migrated from platform-specific `import('default-gateway/sunos')` to unified `gateway4()`)
-- `electron-unhandled`: 4.0.1 → 5.0.0 (bridge module for dynamic import)
+| Package                                             | Issue                                                                                         | Solution                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `rotating-file-stream` (pure ESM)                   | Rolldown wraps `require("rotating-file-stream")` with `e.a()` interop, breaking class methods | **External** — Node.js native `require()` uses its `"exports.require"` CJS entry            |
+| `electron-unhandled` v5 (pure ESM, top-level await) | Can't bundle into CJS, can't `require()` from CJS                                             | **Bridge module** (`src/services/libs/electronUnhandledBridge.ts`) using dynamic `import()` |
+| `default-gateway` v7 (pure ESM)                     | Used via dynamic `import()` for platform-specific sub-paths; v7 removed sub-paths             | **External + code migration** to v7 unified API (`gateway4()`)                              |
 
 `electron` is intentionally held at 41.7.1 — Electron 42+ breaks `better-sqlite3` V8 API compatibility.
 
