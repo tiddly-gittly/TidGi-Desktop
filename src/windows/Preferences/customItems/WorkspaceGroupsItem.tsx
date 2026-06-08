@@ -177,9 +177,12 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                         <Typography variant='body2' sx={{ fontWeight: 500 }}>
                           {group.name}
                         </Typography>
-                        <Typography variant='caption' sx={{
-                          color: 'text.secondary'
-                        }}>
+                        <Typography
+                          variant='caption'
+                          sx={{
+                            color: 'text.secondary',
+                          }}
+                        >
                           {t('WorkspaceGroup.WorkspaceCount', { count: workspacesInGroup.length })}
                         </Typography>
                       </Box>

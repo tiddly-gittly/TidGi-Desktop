@@ -122,9 +122,12 @@ export const ErrorMessageRenderer: React.FC<MessageRendererProps> = ({ message }
       <ErrorContent elevation={0}>
         <ErrorHeader>
           <WarningAmberIcon sx={{ mr: 1 }} />
-          <Typography variant='subtitle1' sx={{
-            fontWeight: 'bold'
-          }}>
+          <Typography
+            variant='subtitle1'
+            sx={{
+              fontWeight: 'bold',
+            }}
+          >
             {t('Chat.ConfigError.Title')}
           </Typography>
         </ErrorHeader>

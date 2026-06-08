@@ -143,9 +143,12 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
               <ListItem>
                 <div style={{ width: '100%' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <Typography variant='body2' sx={{
-                      color: 'text.secondary'
-                    }}>
+                    <Typography
+                      variant='body2'
+                      sx={{
+                        color: 'text.secondary',
+                      }}
+                    >
                       {getStatusText()}
                     </Typography>
                     <div>
@@ -187,9 +190,13 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
                   )}
 
                   {status.lastUpdated && status.status !== 'idle' && (
-                    <Typography variant='caption' style={{ display: 'block', marginTop: 4 }} sx={{
-                      color: 'text.secondary'
-                    }}>
+                    <Typography
+                      variant='caption'
+                      style={{ display: 'block', marginTop: 4 }}
+                      sx={{
+                        color: 'text.secondary',
+                      }}
+                    >
                       {t('Preference.SearchEmbeddingLastUpdated', {
                         time: status.lastUpdated.toLocaleString(),
                       })}

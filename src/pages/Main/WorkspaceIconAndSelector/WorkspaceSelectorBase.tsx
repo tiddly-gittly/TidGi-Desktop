@@ -180,7 +180,9 @@ export function WorkspaceSelectorBase({
           ? (
             '※'
           )
-          : customIcon || <AvatarPicture alt='Icon' data-large={!showSidebarTexts ? 'true' : 'false'} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
+          : customIcon || (
+            <AvatarPicture alt='Icon' data-large={!showSidebarTexts ? 'true' : 'false'} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />
+          ))}
     </Avatar>
   );
   if (loading) {

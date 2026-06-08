@@ -142,8 +142,9 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 1
-          }}>
+            gap: 1,
+          }}
+        >
           <BugReportIcon color='primary' />
           <Box>
             <Typography variant='h6'>
@@ -188,16 +189,20 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 2
-                        }}>
+                          gap: 2,
+                        }}
+                      >
                         <StatusChip
                           status={log.status}
                           label={getStatusText(log.status)}
                           size='small'
                         />
-                        <Typography variant='body2' sx={{
-                          fontWeight: 'bold'
-                        }}>
+                        <Typography
+                          variant='body2'
+                          sx={{
+                            fontWeight: 'bold',
+                          }}
+                        >
                           {log.requestMetadata.provider} / {log.requestMetadata.model}
                         </Typography>
                         <Typography variant='caption' color='textSecondary'>
@@ -208,8 +213,9 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 1
-                        }}>
+                          gap: 1,
+                        }}
+                      >
                         {log.responseMetadata?.duration && (
                           <Chip
                             label={`${log.responseMetadata.duration}ms`}
@@ -231,8 +237,9 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                       sx={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 2
-                      }}>
+                        gap: 2,
+                      }}
+                    >
                       {/* Request Details */}
                       <Box>
                         <Typography variant='subtitle2' gutterBottom>

@@ -383,9 +383,11 @@ export function CommitDetailsPanel(
 
   const renderDetailsTab = () => (
     <TabContent>
-      <Box sx={{
-        mb: 1
-      }}>
+      <Box
+        sx={{
+          mb: 1,
+        }}
+      >
         <Typography variant='caption' color='textSecondary'>
           {t('GitLog.Hash')}
         </Typography>
@@ -396,15 +398,18 @@ export function CommitDetailsPanel(
             fontSize: '0.75rem',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>
+            whiteSpace: 'nowrap',
+          }}
+        >
           {commit.hash}
         </Typography>
       </Box>
 
-      <Box sx={{
-        mb: 1
-      }}>
+      <Box
+        sx={{
+          mb: 1,
+        }}
+      >
         <Typography variant='caption' color='textSecondary'>
           {t('GitLog.Message')}
         </Typography>
@@ -414,9 +419,11 @@ export function CommitDetailsPanel(
       </Box>
 
       {hasMultipleCommitsSelected && (
-        <Box sx={{
-          mb: 1
-        }}>
+        <Box
+          sx={{
+            mb: 1,
+          }}
+        >
           <Typography variant='caption' color='textSecondary'>
             Selected commits
           </Typography>
@@ -425,9 +432,11 @@ export function CommitDetailsPanel(
       )}
 
       {commit.author && (
-        <Box sx={{
-          mb: 1
-        }}>
+        <Box
+          sx={{
+            mb: 1,
+          }}
+        >
           <Typography variant='caption' color='textSecondary'>
             {t('GitLog.Author')}
           </Typography>
@@ -445,15 +454,20 @@ export function CommitDetailsPanel(
         </Box>
       )}
 
-      <Box sx={{
-        mb: 1
-      }}>
+      <Box
+        sx={{
+          mb: 1,
+        }}
+      >
         <Typography variant='caption' color='textSecondary'>
           {t('GitLog.Date')}
         </Typography>
-        <Typography variant='body2' sx={{
-          fontSize: '0.875rem'
-        }}>
+        <Typography
+          variant='body2'
+          sx={{
+            fontSize: '0.875rem',
+          }}
+        >
           {commit.committerDate}
         </Typography>
       </Box>
@@ -652,9 +666,12 @@ export function CommitDetailsPanel(
               setNewCommitMessage(event.target.value);
             }}
           />
-          <Typography variant='caption' sx={{
-            color: 'text.secondary'
-          }}>
+          <Typography
+            variant='caption'
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {t('GitLog.EditCommitMessageHint')}
           </Typography>
         </DialogContent>

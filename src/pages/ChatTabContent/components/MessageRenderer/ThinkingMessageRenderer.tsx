@@ -127,8 +127,9 @@ export const ThinkingMessageRenderer: React.FC<MessageRendererProps> = ({ messag
               variant='body2'
               sx={{
                 color: 'text.secondary',
-                fontWeight: 'medium'
-              }}>
+                fontWeight: 'medium',
+              }}
+            >
               {t('Agent.ThinkingProcess')}
             </Typography>
             <IconButton size='small' sx={{ ml: 1 }}>
@@ -138,9 +139,12 @@ export const ThinkingMessageRenderer: React.FC<MessageRendererProps> = ({ messag
 
           <Collapse in={expanded}>
             <ThinkingContent elevation={0}>
-              <Typography variant='body2' sx={{
-                whiteSpace: 'pre-wrap'
-              }}>
+              <Typography
+                variant='body2'
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
                 {thinkingContent}
               </Typography>
             </ThinkingContent>

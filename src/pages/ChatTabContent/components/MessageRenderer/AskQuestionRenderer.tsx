@@ -193,9 +193,14 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
     <QuestionContainer data-testid='ask-question-container'>
       <QuestionHeader>
         <QuestionMarkIcon color='info' fontSize='small' />
-        <Typography variant='subtitle2' sx={{
-          color: 'info.main'
-        }}>Agent Question</Typography>
+        <Typography
+          variant='subtitle2'
+          sx={{
+            color: 'info.main',
+          }}
+        >
+          Agent Question
+        </Typography>
       </QuestionHeader>
       <Typography variant='body1' sx={{ whiteSpace: 'pre-wrap' }}>{data.question}</Typography>
       {/* Single-select: full-width option buttons — removed from DOM once answered */}
@@ -248,8 +253,9 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
                       sx={{
                         color: 'text.secondary',
                         display: 'block',
-                        mt: 0.25
-                      }}>
+                        mt: 0.25,
+                      }}
+                    >
                       {option.description}
                     </Typography>
                   )}
@@ -307,8 +313,9 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
           sx={{
             color: 'text.secondary',
             mt: 1,
-            display: 'block'
-          }}>
+            display: 'block',
+          }}
+        >
           Answer submitted — waiting for agent...
         </Typography>
       )}

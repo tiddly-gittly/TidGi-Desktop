@@ -301,9 +301,12 @@ export function Search(
                 <ListItem key={workspace.workspaceId}>
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <Typography variant='subtitle2' sx={{
-                        fontWeight: 'medium'
-                      }}>
+                      <Typography
+                        variant='subtitle2'
+                        sx={{
+                          fontWeight: 'medium',
+                        }}
+                      >
                         {workspace.workspaceName}
                       </Typography>
                       <div>
@@ -335,9 +338,12 @@ export function Search(
                       </div>
                     </div>
 
-                    <Typography variant='body2' sx={{
-                      color: 'text.secondary'
-                    }}>
+                    <Typography
+                      variant='body2'
+                      sx={{
+                        color: 'text.secondary',
+                      }}
+                    >
                       {getStatusText(workspace)}
                     </Typography>
 
@@ -350,9 +356,13 @@ export function Search(
                     )}
 
                     {workspace.lastUpdated && workspace.status !== 'idle' && (
-                      <Typography variant='caption' style={{ display: 'block', marginTop: 4 }} sx={{
-                        color: 'text.secondary'
-                      }}>
+                      <Typography
+                        variant='caption'
+                        style={{ display: 'block', marginTop: 4 }}
+                        sx={{
+                          color: 'text.secondary',
+                        }}
+                      >
                         {t('Preference.SearchEmbeddingLastUpdated', {
                           time: workspace.lastUpdated.toLocaleString(),
                         })}

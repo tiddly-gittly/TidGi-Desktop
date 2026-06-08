@@ -1,17 +1,17 @@
-import SettingsIcon from '@mui/icons-material/Settings';
-import UpgradeIcon from '@mui/icons-material/Upgrade';
-import { css, styled } from '@mui/material/styles';
-import { t } from 'i18next';
-import SimpleBar from 'simplebar-react';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';
+import SettingsIcon from '@mui/icons-material/Settings';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
+import { css, styled } from '@mui/material/styles';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { t } from 'i18next';
+import SimpleBar from 'simplebar-react';
 
 const sideBarStyle = css`
   height: 100%;

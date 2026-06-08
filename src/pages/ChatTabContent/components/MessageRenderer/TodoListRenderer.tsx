@@ -125,14 +125,20 @@ export const TodoListRenderer: React.FC<MessageRendererProps> = memo(({ message 
     <TodoContainer>
       <TodoHeader>
         <TaskAltIcon color='primary' fontSize='small' />
-        <Typography variant='subtitle2' sx={{
-          color: 'primary.main'
-        }}>
+        <Typography
+          variant='subtitle2'
+          sx={{
+            color: 'primary.main',
+          }}
+        >
           Agent Plan
         </Typography>
-        <Typography variant='caption' sx={{
-          color: 'text.secondary'
-        }}>
+        <Typography
+          variant='caption'
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {completed}/{total} done
         </Typography>
       </TodoHeader>
@@ -158,9 +164,14 @@ export const TodoListRenderer: React.FC<MessageRendererProps> = memo(({ message 
           value={pct}
           sx={{ flex: 1, height: 6, borderRadius: 3 }}
         />
-        <Typography variant='caption' sx={{
-          color: 'text.secondary'
-        }}>{pct}%</Typography>
+        <Typography
+          variant='caption'
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
+          {pct}%
+        </Typography>
       </ProgressRow>
     </TodoContainer>
   );

@@ -62,9 +62,12 @@ export function ExistedWikiDoneButton({
       {isCreateMainWorkspace
         ? (
           <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
-            <Typography variant='body1' sx={{
-              display: 'inline'
-            }}>
+            <Typography
+              variant='body1'
+              sx={{
+                display: 'inline',
+              }}
+            >
               {t('AddWorkspace.ImportWiki')}
             </Typography>
             <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
@@ -72,15 +75,21 @@ export function ExistedWikiDoneButton({
         )
         : (
           <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
-            <Typography variant='body1' sx={{
-              display: 'inline'
-            }}>
+            <Typography
+              variant='body1'
+              sx={{
+                display: 'inline',
+              }}
+            >
               {t('AddWorkspace.ImportWiki')}
             </Typography>
             <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
-            <Typography variant='body1' sx={{
-              display: 'inline'
-            }}>
+            <Typography
+              variant='body1'
+              sx={{
+                display: 'inline',
+              }}
+            >
               {t('AddWorkspace.AndLinkToMainWorkspace')}
             </Typography>
           </CloseButton>

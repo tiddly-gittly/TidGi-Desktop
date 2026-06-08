@@ -52,9 +52,12 @@ export function NewWikiForm({
           }}
           endIcon={<FolderIcon />}
         >
-          <Typography variant='button' sx={{
-            display: 'inline'
-          }}>
+          <Typography
+            variant='button'
+            sx={{
+              display: 'inline',
+            }}
+          >
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>

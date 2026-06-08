@@ -45,12 +45,15 @@ export const WikiLocation = styled((props: { children?: ReactNode } & React.Comp
     noWrap
     align='center'
     {...props}
-    sx={[{
-      display: 'inline'
-    }, ...(Array.isArray(props.sx)
-      ? (props.sx as Array<Record<string, unknown>>)
-      : [props.sx as Record<string, unknown>]
-    )]} />
+    sx={[
+      {
+        display: 'inline',
+      },
+      ...(Array.isArray(props.sx)
+        ? (props.sx as Array<Record<string, unknown>>)
+        : [props.sx as Record<string, unknown>]),
+    ]}
+  />
 ))`
   direction: rtl;
   text-transform: none;

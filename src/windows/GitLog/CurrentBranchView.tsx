@@ -82,9 +82,11 @@ export function CurrentBranchView({
           />
         )
         : (
-          <Box sx={{
-            p: 2
-          }}>
+          <Box
+            sx={{
+              p: 2,
+            }}
+          >
             <Typography>{t('GitLog.NoCommits')}</Typography>
           </Box>
         )}
@@ -93,12 +95,17 @@ export function CurrentBranchView({
           sx={{
             p: 2,
             display: 'flex',
-            justifyContent: 'center'
-          }}>
+            justifyContent: 'center',
+          }}
+        >
           <CircularProgress size={24} />
-          <Typography sx={{
-            ml: 1
-          }}>{t('GitLog.LoadingMore')}</Typography>
+          <Typography
+            sx={{
+              ml: 1,
+            }}
+          >
+            {t('GitLog.LoadingMore')}
+          </Typography>
         </Box>
       )}
     </>

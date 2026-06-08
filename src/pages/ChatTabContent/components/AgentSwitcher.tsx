@@ -163,8 +163,9 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
                       noWrap
                       sx={{
                         color: 'text.secondary',
-                        maxWidth: '100%'
-                      }}>
+                        maxWidth: '100%',
+                      }}
+                    >
                       {option.description}
                     </Typography>
                   )}

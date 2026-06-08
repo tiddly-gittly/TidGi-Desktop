@@ -111,8 +111,9 @@ export function CommitTableRow({ commit, selected, commitDate, onSelect, onSyncC
             variant='body2'
             sx={{
               color: 'text.secondary',
-              cursor: 'default'
-            }}>
+              cursor: 'default',
+            }}
+          >
             {formatDistanceToNow(commitDate, { addSuffix: true, locale: i18n.language.startsWith('zh') ? zhCN : enUS })}
           </Typography>
         </Tooltip>

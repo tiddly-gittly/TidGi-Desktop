@@ -20,12 +20,16 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ message }) => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: 300,
-        gap: 2
-      }}>
+        gap: 2,
+      }}
+    >
       <CircularProgress />
-      <Typography variant='body2' sx={{
-        color: 'text.secondary'
-      }}>
+      <Typography
+        variant='body2'
+        sx={{
+          color: 'text.secondary',
+        }}
+      >
         {message || t('Prompt.Loading')}
       </Typography>
       <Typography
@@ -34,8 +38,9 @@ export const LoadingView: React.FC<LoadingViewProps> = ({ message }) => {
           color: 'text.secondary',
           mt: 1,
           maxWidth: '80%',
-          textAlign: 'center'
-        }}>
+          textAlign: 'center',
+        }}
+      >
         {t('Prompt.AutoRefresh')}
       </Typography>
     </Box>

@@ -320,9 +320,13 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             <Typography variant='h6' gutterBottom>
               {t('CreateAgent.SetupAgent')}
             </Typography>
-            <Typography variant='body2' gutterBottom sx={{
-              color: 'text.secondary'
-            }}>
+            <Typography
+              variant='body2'
+              gutterBottom
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {t('CreateAgent.SetupAgentDescription')}
             </Typography>
             {/* Agent Name Input - placed above template search */}
@@ -351,9 +355,13 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
               <Typography variant='subtitle1' gutterBottom>
                 {t('CreateAgent.SelectTemplate')}
               </Typography>
-              <Typography variant='body2' gutterBottom sx={{
-                color: 'text.secondary'
-              }}>
+              <Typography
+                variant='body2'
+                gutterBottom
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {t('CreateAgent.SelectTemplateDescription')}
               </Typography>
               <TemplateSearch
@@ -365,9 +373,12 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                 <Box sx={{ marginTop: 2, padding: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                   <Typography variant='subtitle2'>{t('CreateAgent.SelectedTemplate')}: {selectedTemplate.name}</Typography>
                   {selectedTemplate.description && (
-                    <Typography variant='body2' sx={{
-                      color: 'text.secondary'
-                    }}>
+                    <Typography
+                      variant='body2'
+                      sx={{
+                        color: 'text.secondary',
+                      }}
+                    >
                       {selectedTemplate.description}
                     </Typography>
                   )}
@@ -383,9 +394,13 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             <Typography variant='h6' gutterBottom data-testid='edit-prompt-title'>
               {t('CreateAgent.EditPrompt')}
             </Typography>
-            <Typography variant='body2' gutterBottom sx={{
-              color: 'text.secondary'
-            }}>
+            <Typography
+              variant='body2'
+              gutterBottom
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {t('CreateAgent.EditPromptDescription')}
             </Typography>
             {temporaryAgentDefinition && promptSchema
@@ -405,9 +420,12 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                 </Box>
               )
               : (
-                <Typography variant='body2' sx={{
-                  color: 'text.secondary'
-                }}>
+                <Typography
+                  variant='body2'
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {t('CreateAgent.NoTemplateSelected')}
                 </Typography>
               )}
@@ -420,9 +438,13 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             <Typography variant='h6' gutterBottom>
               {t('CreateAgent.ImmediateUse')}
             </Typography>
-            <Typography variant='body2' gutterBottom sx={{
-              color: 'text.secondary'
-            }}>
+            <Typography
+              variant='body2'
+              gutterBottom
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               {t('CreateAgent.ImmediateUseDescription')}
             </Typography>
             {temporaryAgentDefinition && previewAgentId
@@ -443,9 +465,12 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                 </Box>
               )
               : (
-                <Typography variant='body2' sx={{
-                  color: 'text.secondary'
-                }}>
+                <Typography
+                  variant='body2'
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {isLoading ? t('CreateAgent.CreatingPreview') : t('CreateAgent.NoTemplateSelected')}
                 </Typography>
               )}

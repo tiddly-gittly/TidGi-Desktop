@@ -415,8 +415,9 @@ export function AllWorkspaceSectionsRenderer({
         <Typography
           sx={{
             color: 'text.secondary',
-            mt: 2
-          }}>
+            mt: 2,
+          }}
+        >
           {t('Preference.SearchNoResult', { defaultValue: 'No settings found for "{{query}}"', query })}
         </Typography>
       );

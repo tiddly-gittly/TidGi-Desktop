@@ -11,9 +11,9 @@ import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
+import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
-import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initializeMcpServer, stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 

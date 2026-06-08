@@ -304,17 +304,21 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             color: 'text.secondary',
             px: 2,
             pb: 1,
-            fontSize: '0.8rem'
-          }}>
+            fontSize: '0.8rem',
+          }}
+        >
           {t('Preference.ScheduledTasksDescription', 'Periodically wake agents on a schedule (interval or cron). Tasks survive app restarts.')}
         </Typography>
 
         {scheduledTasks.length === 0
           ? (
             <Box sx={{ px: 2, py: 2, textAlign: 'center' }}>
-              <Typography variant='body2' sx={{
-                color: 'text.secondary'
-              }}>
+              <Typography
+                variant='body2'
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {t('Preference.NoScheduledTasks', 'No scheduled tasks. Add one to periodically wake an agent.')}
               </Typography>
             </Box>
@@ -515,8 +519,9 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                   sx={{
                     color: 'text.secondary',
                     display: 'block',
-                    mt: 0.5
-                  }}>
+                    mt: 0.5,
+                  }}
+                >
                   {'Next runs: '}
                   {cronPreviewDates.map(d => new Date(d).toLocaleString()).join(' → ')}
                 </Typography>

@@ -40,9 +40,12 @@ export function MainSubWikiDescription({
         }
         label={label}
       />
-      <Typography variant='body2' sx={{
-        display: 'inline'
-      }}>
+      <Typography
+        variant='body2'
+        sx={{
+          display: 'inline',
+        }}
+      >
         {description}
       </Typography>
     </Container>
@@ -77,9 +80,12 @@ export function SyncedWikiDescription({
         }
         label={label}
       />
-      <Typography variant='body2' sx={{
-        display: 'inline'
-      }}>
+      <Typography
+        variant='body2'
+        sx={{
+          display: 'inline',
+        }}
+      >
         {description}
       </Typography>
     </Container>
