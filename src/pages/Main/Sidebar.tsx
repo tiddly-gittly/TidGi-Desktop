@@ -3,8 +3,6 @@ import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { css, styled } from '@mui/material/styles';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
-import is, { isNot } from 'typescript-styled-is';
-
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';

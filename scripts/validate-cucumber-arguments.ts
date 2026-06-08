@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * E2E argument validator + cucumber-js launcher.
+ * Cucumber argument validator + cucumber-js launcher.
  *
  * Background: npm/pnpm append extra args ONLY to the last command in the
  * `&&` chain. This script is placed as the final command so it receives
@@ -15,10 +15,10 @@
 import { spawnSync } from 'child_process';
 import path from 'path';
 
-const cucumberArguments = process.argv.slice(2);
+const cucumberArguments: string[] = process.argv.slice(2);
 
 // ── Validation phase ──
-validateArguments(cucumberArguments);
+validateCucumberArguments(cucumberArguments);
 
 // ── Execution phase ──
 const cucumberBin = path.resolve(process.cwd(), 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
@@ -32,12 +32,12 @@ process.exit(result.status ?? 1);
 
 // ── Validators ──
 
-function validateArgs(args: string[]): void {
-  if (args.length === 0) return; // Running all tests is intentional
+function validateCucumberArguments(arguments_: string[]): void {
+  if (arguments_.length === 0) return; // Running all tests is intentional
 
   // Pattern 1: Literal `--` passed as a cucumber arg.
   // Someone wrote `pnpm test:e2e -- --tags=@smoke` and the `--` leaked through.
-  if (args.includes('--')) {
+  if (arguments_.includes('--')) {
     fail(
       'Literal "--" in cucumber arguments',
       'You may have used:',
@@ -57,14 +57,15 @@ function validateArgs(args: string[]): void {
   // with cross-env, injects  '--tags' and '@smoke or @preference' as two
   // separate argv entries. Detect that and accept the pair.
   for (let index = 0; index < arguments_.length; index++) {
-    if (arguments_[index] === '--tags' && index + 1 < arguments_.length) {
+    const currentArgument = arguments_[index];
+    if (currentArgument === '--tags' && index + 1 < arguments_.length) {
       // cross-env deconstructed --tags=VALUE into two args. The next arg
       // is the value; skip the value check for the standalone flag.
       index += 1; // skip value
       continue;
     }
-    if (arguments_[index].startsWith('--tags=')) {
-      const tagValue = arguments_[index].slice('--tags='.length);
+    if (typeof currentArgument === 'string' && currentArgument.startsWith('--tags=')) {
+      const tagValue = currentArgument.slice('--tags='.length);
       if (tagValue.length > 0 && !tagValue.startsWith('@') && !tagValue.startsWith('not ')) {
         fail(
           `Invalid tag expression "${tagValue}"`,
@@ -93,7 +94,7 @@ function validateArgs(args: string[]): void {
   ];
 
   for (const argument of arguments_) {
-    if (argument.startsWith('--') && !knownPrefixes.some((prefix) => argument.startsWith(prefix))) {
+    if (typeof argument === 'string' && argument.startsWith('--') && !knownPrefixes.some((prefix) => argument.startsWith(prefix))) {
       fail(
         `Unknown cucumber option "${argument}"`,
         'Supported options:',

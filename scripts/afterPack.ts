@@ -160,27 +160,27 @@ export default async (
     unexpectedError = error;
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Unexpected error in afterPack hook: ${errorMessage}`);
-  } finally {
-    // Collect errors but don't throw inside finally — store and throw after.
-    let postError: Error | null = null;
-    const missingCritical = [...failures].filter(package_ => CRITICAL_PACKAGES.includes(package_));
-    if (missingCritical.length > 0) {
-      postError = new Error(
-        `afterPack: critical dependencies failed to copy: ${missingCritical.join(', ')}. ` +
-          `The packaged app will crash at runtime. Check build logs for details.`,
-      );
-      console.error(postError.message);
-    } else if (unexpectedError !== null) {
-      if (unexpectedError instanceof Error) {
-        postError = unexpectedError;
-      } else if (typeof unexpectedError === 'string') {
-        postError = new Error(unexpectedError);
-      } else {
-        postError = new Error(JSON.stringify(unexpectedError));
-      }
+  }
+
+  // Collect errors from the try block and throw if anything critical failed.
+  let postError: Error | null = null;
+  const missingCritical = [...failures].filter(package_ => CRITICAL_PACKAGES.includes(package_));
+  if (missingCritical.length > 0) {
+    postError = new Error(
+      `afterPack: critical dependencies failed to copy: ${missingCritical.join(', ')}. ` +
+        `The packaged app will crash at runtime. Check build logs for details.`,
+    );
+    console.error(postError.message);
+  } else if (unexpectedError !== null) {
+    if (unexpectedError instanceof Error) {
+      postError = unexpectedError;
+    } else if (typeof unexpectedError === 'string') {
+      postError = new Error(unexpectedError);
+    } else {
+      postError = new Error(JSON.stringify(unexpectedError));
     }
-    if (postError !== null) {
-      throw postError;
-    }
+  }
+  if (postError !== null) {
+    throw postError;
   }
 };

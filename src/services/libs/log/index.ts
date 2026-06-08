@@ -24,6 +24,7 @@ const errorSerializer = format((info: TransformableInfo) => {
       infoRecord.error = `${error?.message ?? ''} stack: ${error?.stack ?? ''}`;
     }
   }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return info;
 });
 
