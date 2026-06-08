@@ -201,7 +201,6 @@ export function WorkspaceSelectorBase({
       data-workspace-clicked-loading={workspaceClickedLoading ? 'true' : 'false'}
       onClick={workspaceClickedLoading ? () => {} : onClick}
       data-testid={pageType ? `workspace-${pageType}` : `workspace-${id}`}
-      data-drag-intent={dragIntent ?? 'none'}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {icon}
