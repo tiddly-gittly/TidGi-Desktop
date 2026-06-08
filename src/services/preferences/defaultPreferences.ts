@@ -46,7 +46,7 @@ export const defaultPreferences: IPreferences = {
   language: 'zh-Hans',
   mcpServerEnabled: false,
   mcpServerPort: 38385,
-  mcpServerRequireToken: true,
+  mcpServerRequireToken: false,
   mcpServerToken: '',
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,
