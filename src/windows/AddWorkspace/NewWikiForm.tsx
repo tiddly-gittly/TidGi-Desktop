@@ -131,21 +131,25 @@ export function NewWikiForm({
                 variant: 'outlined',
               },
             }}
-            renderInput={(parameters: AutocompleteRenderInputParams) => (
-              <LocationPickerInput
-                {...parameters}
-                error={errorInWhichComponent.tagNames}
-                label={t('AddWorkspace.TagName')}
-                helperText={tagHelperText}
-                slotProps={{
-                  ...parameters.slotProps,
-                  htmlInput: {
-                    ...((parameters.slotProps?.htmlInput ?? {}) as React.InputHTMLAttributes<HTMLInputElement>),
-                    'data-testid': 'tagname-autocomplete-input',
-                  },
-                }}
-              />
-            )}
+            renderInput={(parameters: AutocompleteRenderInputParams) => {
+              const { slotProps: parametersSlotProps, ...otherParameters } = parameters;
+              const htmlInput = (parametersSlotProps?.htmlInput ?? {}) as React.InputHTMLAttributes<HTMLInputElement>;
+              return (
+                <LocationPickerInput
+                  {...otherParameters}
+                  error={errorInWhichComponent.tagNames}
+                  label={t('AddWorkspace.TagName')}
+                  helperText={tagHelperText}
+                  slotProps={{
+                    ...parametersSlotProps,
+                    htmlInput: {
+                      ...htmlInput,
+                      'data-testid': 'tagname-autocomplete-input',
+                    },
+                  }}
+                />
+              );
+            }}
           />
         </>
       )}

@@ -41,14 +41,14 @@ describe('AnalyticsService', () => {
     expect(await service.isEnabled()).toBe(false);
   });
 
-  it('isEnabled returns false when disclosure has not been recorded', async () => {
+  it('isEnabled returns true when enabled and configured even if disclosure has not been recorded', async () => {
     preferenceStore.analyticsEnabled = true;
     preferenceStore.analyticsHost = 'https://analytics.tidgi.fun';
     preferenceStore.analyticsHostname = 'desktop.tidgi.fun';
     preferenceStore.analyticsSiteId = '189dd97a8d37';
     (mockDatabase.getSetting as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
     const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
-    expect(await service.isEnabled()).toBe(false);
+    expect(await service.isEnabled()).toBe(true);
   });
 
   it('isEnabled returns true when enabled and disclosure recorded', async () => {
