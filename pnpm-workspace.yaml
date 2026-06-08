@@ -8,6 +8,12 @@ overrides:
   # winston-daily-rotate-file hasn't updated its range yet, so override it here.
   file-stream-rotator: 1.0.0
 
+peerDependencyRules:
+  ignoreMissing:
+    - moment
+    - moment-hijri
+    - moment-jalaali
+
 onlyBuiltDependencies:
   - "@swc/core"
   - better-sqlite3
