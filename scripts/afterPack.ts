@@ -36,13 +36,13 @@ function copyWithTracking(
  * @param arch x64
  * @param callback Callback to signal completion, receives Error if critical deps missing
  */
-export default (
+export default async (
+  _forgeConfig: unknown,
   buildPath: string,
   _electronVersion: string,
   platform: string,
   arch: string,
-  callback: (error?: Error) => void,
-): void => {
+): Promise<void> => {
   const failures = new Set<string>();
   let unexpectedError: unknown = null;
 
@@ -67,7 +67,7 @@ export default (
         console.error(`Error copying zx to dist: ${error instanceof Error ? error.message : String(error)}`);
       }
 
-      const packagePathsToCopyDereferenced: Array<{ segments: string[]; critical: string | null }> = [
+      const packagePathsToCopyDereferenced: Array<{ segments: string[]; critical: string | null; dereference?: boolean }> = [
         { segments: ['tiddlywiki', 'package.json'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'boot'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'core'], critical: 'tiddlywiki' },
@@ -82,6 +82,11 @@ export default (
         { segments: ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'], critical: 'better-sqlite3' },
         // nsfw native module
         { segments: ['nsfw', 'build', 'Release', 'nsfw.node'], critical: 'nsfw' },
+        // rotating-file-stream: pure ESM, external for Node.js native require().
+        // Only need the CJS dist + package.json for export resolution.
+        { segments: ['rotating-file-stream', 'package.json'], critical: null },
+        { segments: ['rotating-file-stream', 'dist', 'cjs', 'index.js'], critical: null },
+        { segments: ['rotating-file-stream', 'dist', 'cjs', 'package.json'], critical: null },
         // sqlite-vec: non-critical vector search extension
         { segments: ['sqlite-vec', 'package.json'], critical: null },
         { segments: ['sqlite-vec', 'index.cjs'], critical: null },
@@ -94,30 +99,37 @@ export default (
       }
 
       console.log('Copying packagePathsToCopyDereferenced');
-      for (const { segments, critical } of packagePathsToCopyDereferenced) {
+      for (const { segments, critical, dereference = true } of packagePathsToCopyDereferenced) {
         const source = path.resolve(sourceNodeModulesFolder, ...segments);
         const destination = path.resolve(cwd, 'node_modules', ...segments);
         const criticalPackage = critical ?? segments[0];
+        const copyOptions = { dereference };
         // some binary may not exist in other platforms, so allow failing for non-critical packages
         if (critical === null) {
           try {
-            fs.copySync(source, destination, { dereference: true });
+            fs.copySync(source, destination, copyOptions);
           } catch {
             // non-critical, platform-specific binary may not exist — allowed to fail silently
           }
         } else {
-          copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
+          copyWithTracking(source, destination, copyOptions, criticalPackage, failures);
         }
       }
 
       // MCP SDK — non-critical
       console.log('Copy @modelcontextprotocol/sdk');
+      const mcpSdkDestination = path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk');
       try {
         fs.copySync(
           path.join(sourceNodeModulesFolder, '@modelcontextprotocol', 'sdk'),
-          path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk'),
+          mcpSdkDestination,
           { dereference: true },
         );
+        // The SDK package has "type": "module", so Node.js treats all .js files as ESM.
+        // Its CJS dist lives under dist/cjs/ with .js extensions, which breaks require()
+        // at runtime. Override the type for the CJS subtree so require() works in the
+        // packaged Electron app.
+        fs.writeJsonSync(path.join(mcpSdkDestination, 'dist', 'cjs', 'package.json'), { type: 'commonjs' });
       } catch (error) {
         console.error(`Error copying @modelcontextprotocol/sdk: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -151,30 +163,27 @@ export default (
     unexpectedError = error;
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Unexpected error in afterPack hook: ${errorMessage}`);
-  } finally {
-    // Report critical copy failures first — they have the most actionable diagnostics.
-    // Fall back to any unexpected hook error so the overall packaging fails fast
-    // instead of silently producing a corrupted build.
-    const missingCritical = [...failures].filter(package_ => CRITICAL_PACKAGES.includes(package_));
-    if (missingCritical.length > 0) {
-      const error = new Error(
-        `afterPack: critical dependencies failed to copy: ${missingCritical.join(', ')}. ` +
-          `The packaged app will crash at runtime. Check build logs for details.`,
-      );
-      console.error(error.message);
-      callback(error);
-    } else if (unexpectedError !== null) {
-      let error: Error;
-      if (unexpectedError instanceof Error) {
-        error = unexpectedError;
-      } else if (typeof unexpectedError === 'string') {
-        error = new Error(unexpectedError);
-      } else {
-        error = new Error(JSON.stringify(unexpectedError));
-      }
-      callback(error);
+  }
+
+  // Collect errors from the try block and throw if anything critical failed.
+  let postError: Error | null = null;
+  const missingCritical = [...failures].filter(package_ => CRITICAL_PACKAGES.includes(package_));
+  if (missingCritical.length > 0) {
+    postError = new Error(
+      `afterPack: critical dependencies failed to copy: ${missingCritical.join(', ')}. ` +
+        `The packaged app will crash at runtime. Check build logs for details.`,
+    );
+    console.error(postError.message);
+  } else if (unexpectedError !== null) {
+    if (unexpectedError instanceof Error) {
+      postError = unexpectedError;
+    } else if (typeof unexpectedError === 'string') {
+      postError = new Error(unexpectedError);
     } else {
-      callback();
+      postError = new Error(JSON.stringify(unexpectedError));
     }
+  }
+  if (postError !== null) {
+    throw postError;
   }
 };

@@ -138,7 +138,13 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
       }}
     >
       <StyledDialogTitle>
-        <Box display='flex' alignItems='center' gap={1}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
           <BugReportIcon color='primary' />
           <Box>
             <Typography variant='h6'>
@@ -155,7 +161,6 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
           <CloseIcon />
         </IconButton>
       </StyledDialogTitle>
-
       <DialogContent>
         {loading ? <Typography>{t('Loading')}</Typography> : logs.length === 0
           ? (
@@ -180,20 +185,37 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                 <Accordion key={log.id} defaultExpanded={index === 0}>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <LogHeader sx={{ width: '100%', mr: 2 }}>
-                      <Box display='flex' alignItems='center' gap={2}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
+                        }}
+                      >
                         <StatusChip
                           status={log.status}
                           label={getStatusText(log.status)}
                           size='small'
                         />
-                        <Typography variant='body2' fontWeight='bold'>
+                        <Typography
+                          variant='body2'
+                          sx={{
+                            fontWeight: 'bold',
+                          }}
+                        >
                           {log.requestMetadata.provider} / {log.requestMetadata.model}
                         </Typography>
                         <Typography variant='caption' color='textSecondary'>
                           {formatTime(log.createdAt)}
                         </Typography>
                       </Box>
-                      <Box display='flex' alignItems='center' gap={1}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
                         {log.responseMetadata?.duration && (
                           <Chip
                             label={`${log.responseMetadata.duration}ms`}
@@ -211,7 +233,13 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                   </AccordionSummary>
 
                   <AccordionDetails>
-                    <Box display='flex' flexDirection='column' gap={2}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                      }}
+                    >
                       {/* Request Details */}
                       <Box>
                         <Typography variant='subtitle2' gutterBottom>

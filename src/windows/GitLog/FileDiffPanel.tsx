@@ -404,7 +404,12 @@ export function FileDiffPanel(
   const renderActionsPanel = () => (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
       {isBatchFileSelection && (
-        <Typography variant='body2' color='text.secondary'>
+        <Typography
+          variant='body2'
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {selectedPaths.length} files selected
         </Typography>
       )}

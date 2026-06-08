@@ -1,11 +1,9 @@
-import { app, dialog, net } from 'electron';
+import { app, net } from 'electron';
 import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
 
-import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import type { IAnalyticsSecretSettings, IDatabaseService } from '@services/database/interface';
-import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -14,7 +12,6 @@ import { sanitizeErrorMessage } from './utilities';
 
 export { sanitizeErrorMessage };
 
-const CURRENT_ANALYTICS_DISCLOSURE_VERSION = 1;
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
 const DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -61,11 +58,6 @@ export class AnalyticsService implements IAnalyticsService {
       return false;
     }
 
-    // Block tracking until explicit disclosure, except when tests/dev tooling route analytics to an override host.
-    if (!process.env.TIDGI_ANALYTICS_HOST && await this.shouldShowDisclosure()) {
-      return false;
-    }
-
     const [analyticsHost, analyticsHostname, analyticsSiteId] = await Promise.all([
       this.preferenceService.get('analyticsHost'),
       this.preferenceService.get('analyticsHostname'),
@@ -76,56 +68,6 @@ export class AnalyticsService implements IAnalyticsService {
 
   public async clearPendingEvents(): Promise<void> {
     this.queuedEvents.length = 0;
-  }
-
-  public async shouldShowDisclosure(): Promise<boolean> {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const secrets = databaseService.getSetting(ANALYTICS_SETTINGS_KEY);
-    const recordedVersion = secrets?.analyticsDisclosureVersion;
-    return recordedVersion === undefined || recordedVersion < CURRENT_ANALYTICS_DISCLOSURE_VERSION;
-  }
-
-  public async recordDisclosureVersion(): Promise<void> {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const secrets = this.getAnalyticsSecrets(databaseService);
-    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, {
-      ...secrets,
-      analyticsDisclosureVersion: CURRENT_ANALYTICS_DISCLOSURE_VERSION,
-    });
-    await databaseService.immediatelyStoreSettingsToFile();
-  }
-
-  public async showDisclosureIfNeeded(): Promise<void> {
-    if (isTest || !(await this.shouldShowDisclosure())) return;
-    const result = await dialog.showMessageBox({
-      type: 'question',
-      title: i18n.t('AnalyticsDisclosure.Title'),
-      message: i18n.t('AnalyticsDisclosure.Message'),
-      detail: [
-        i18n.t('AnalyticsDisclosure.Description'),
-        '',
-        i18n.t('AnalyticsDisclosure.WeCollect'),
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectFeatureUsage')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectPlatform')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.CollectErrors')}`,
-        '',
-        i18n.t('AnalyticsDisclosure.WeDoNotCollect'),
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectWikiContent')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPaths')}`,
-        `  \u2022 ${i18n.t('AnalyticsDisclosure.NotCollectPersonalData')}`,
-        '',
-        i18n.t('AnalyticsDisclosure.ChangeAnytime'),
-      ].join('\n'),
-      buttons: [i18n.t('AnalyticsDisclosure.EnableAnalytics'), i18n.t('AnalyticsDisclosure.DisableAnalytics')],
-      defaultId: 0,
-      cancelId: 1,
-    });
-    const analyticsEnabled = result.response === 0;
-    await this.preferenceService.set('analyticsEnabled', analyticsEnabled);
-    await this.recordDisclosureVersion();
-    if (analyticsEnabled) {
-      await this.track('analytics.disclosure_responded', { enabled: analyticsEnabled });
-    }
   }
 
   public async trackAppLaunch(): Promise<void> {

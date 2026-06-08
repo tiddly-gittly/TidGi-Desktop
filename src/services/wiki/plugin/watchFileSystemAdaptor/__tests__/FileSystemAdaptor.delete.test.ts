@@ -18,7 +18,9 @@ const mockLogger = {
 };
 
 const mockUtils = {
-  Logger: vi.fn(() => mockLogger),
+  Logger: vi.fn(function() {
+    return mockLogger;
+  }),
   createDirectory: vi.fn(),
   generateTiddlerFileInfo: vi.fn(),
   saveTiddlerToFile: vi.fn(),

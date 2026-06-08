@@ -10,7 +10,7 @@
  */
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CopyAllIcon from '@mui/icons-material/CopyAll';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import ReplayIcon from '@mui/icons-material/Replay';
 import RestoreIcon from '@mui/icons-material/Restore';
 import { Box, Chip, CircularProgress, IconButton, Tooltip } from '@mui/material';

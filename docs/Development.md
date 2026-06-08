@@ -156,15 +156,21 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 - [sqlite-vec](https://github.com/asg017/sqlite-vec): The path from its method `getLoadablePath` maybe incorrect after electron app packaged. (It will be in `.webpack/main/index.js` in the dist folder instead of in `node_modules/sqlite-vec` folder.)
   - Still need to install its `optionalDependencies` like `sqlite-vec-darwin-x64` in package.json
 
-## Don't upgrade these dependency
+## ESM/CJS Interop Issues
 
-### pure ESM
+### Forge v8 / Vite 8 Strategy
 
-Electron forge webpack don't support pure ESM yet
+Forge v8 plugin-vite defaults main process output to CJS (`formats: ['cjs']`), which is the recommended path.
 
-- default-gateway
-- electron-unhandled
-- date-fns
+Rolldown (Vite 8's bundler) can't correctly bundle certain packages into CJS:
+
+| Package                                             | Issue                                                                                         | Solution                                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `rotating-file-stream` (pure ESM)                   | Rolldown wraps `require("rotating-file-stream")` with `e.a()` interop, breaking class methods | **External** — Node.js native `require()` uses its `"exports.require"` CJS entry            |
+| `electron-unhandled` v5 (pure ESM, top-level await) | Can't bundle into CJS, can't `require()` from CJS                                             | **Bridge module** (`src/services/libs/electronUnhandledBridge.ts`) using dynamic `import()` |
+| `default-gateway` v7 (pure ESM)                     | Used via dynamic `import()` for platform-specific sub-paths; v7 removed sub-paths             | **External + code migration** to v7 unified API (`gateway4()`)                              |
+
+`electron` is intentionally held at 41.7.1 — Electron 42+ breaks `better-sqlite3` V8 API compatibility.
 
 ## Code Tour
 

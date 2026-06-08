@@ -74,7 +74,7 @@ export async function getAgent(
 ): Promise<AgentInstance | undefined> {
   const instanceEntity = await agentInstanceRepo.findOne({
     where: { id: agentId },
-    relations: ['messages'],
+    relations: { messages: true },
     order: { messages: { modified: 'ASC' } },
   });
   if (!instanceEntity) return undefined;
@@ -95,7 +95,7 @@ export async function updateAgent(
 ): Promise<AgentInstance> {
   const instanceEntity = await agentInstanceRepo.findOne({
     where: { id: agentId },
-    relations: ['messages'],
+    relations: { messages: true },
     order: { messages: { modified: 'ASC' } },
   });
 

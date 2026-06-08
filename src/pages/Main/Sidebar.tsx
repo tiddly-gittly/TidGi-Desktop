@@ -1,19 +1,17 @@
-import SettingsIcon from '@mui/icons-material/Settings';
-import UpgradeIcon from '@mui/icons-material/Upgrade';
-import { css, styled } from '@mui/material/styles';
-import { t } from 'i18next';
-import SimpleBar from 'simplebar-react';
-import is, { isNot } from 'typescript-styled-is';
-
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { SortableWorkspaceSelectorList } from '@/pages/Main/WorkspaceIconAndSelector';
+import SettingsIcon from '@mui/icons-material/Settings';
+import UpgradeIcon from '@mui/icons-material/Upgrade';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
+import { css, styled } from '@mui/material/styles';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { t } from 'i18next';
+import SimpleBar from 'simplebar-react';
 
 const sideBarStyle = css`
   height: 100%;
@@ -43,19 +41,17 @@ const SidebarWithStyle = styled(SimpleBar)`
   background-color: ${({ theme }) => theme.palette.background.default};
 `;
 
-const SidebarTop = styled('div')<{ $titleBar?: boolean }>`
+const SidebarTop = styled('div')`
   overflow-y: scroll;
   &::-webkit-scrollbar {
     width: 0;
   }
   flex: 1;
   width: 100%;
-  ${is('$titleBar')`
+  padding-top: 30px;
+  &[data-titleBar] {
     padding-top: 0;
-  `}
-  ${isNot('$titleBar')`
-    padding-top: 30px;
-  `}
+  }
 `;
 const SideBarEnd = styled('div')`
   display: flex;
@@ -71,13 +67,13 @@ const IconButton = styled(IconButtonRaw)`
   color: ${({ theme }) => theme.palette.action.active};
 `;
 
-const SidebarContainer = ({ children, ...props }: { children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
+const SidebarContainer = ({ children, 'data-testid': dataTestId }: { children: React.ReactNode; 'data-testid'?: string }): React.JSX.Element => {
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   // use native scroll bar on macOS
   if (platform === 'darwin') {
-    return <SidebarRoot {...props}>{children}</SidebarRoot>;
+    return <SidebarRoot data-testid={dataTestId}>{children}</SidebarRoot>;
   }
-  return <SidebarWithStyle {...props}>{children}</SidebarWithStyle>;
+  return <SidebarWithStyle data-testid={dataTestId}>{children}</SidebarWithStyle>;
 };
 
 export function SideBar(): React.JSX.Element {
@@ -94,7 +90,7 @@ export function SideBar(): React.JSX.Element {
   return (
     <>
       <SidebarContainer data-testid='main-sidebar'>
-        <SidebarTop $titleBar={titleBar}>
+        <SidebarTop data-titleBar={titleBar ? '' : undefined}>
           {workspacesList === undefined
             ? <div>{t('Loading')}</div>
             : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}

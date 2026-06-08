@@ -47,7 +47,12 @@ export function ImportHtmlWikiForm({
           }}
           endIcon={<FolderIcon />}
         >
-          <Typography variant='button' display='inline'>
+          <Typography
+            variant='button'
+            sx={{
+              display: 'inline',
+            }}
+          >
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
@@ -72,7 +77,12 @@ export function ImportHtmlWikiForm({
           }}
           endIcon={<FolderIcon />}
         >
-          <Typography variant='button' display='inline'>
+          <Typography
+            variant='button'
+            sx={{
+              display: 'inline',
+            }}
+          >
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>

@@ -92,22 +92,6 @@
     "WorkspaceUserName": "工作区编辑者名",
     "WorkspaceUserNameDetail": "在知识库中使用的编辑者名，将在创建或编辑条目时填入 creator 字段。工作区内设置的编辑者名，将覆盖设置里配的全局的默认编辑者名。这方便你通过创建多个配了不同编辑者名的工作区，在同一个知识库里用不同的身份创建条目。"
   },
-  "AnalyticsDisclosure": {
-    "Title": "匿名使用分析",
-    "Message": "帮助改进太记",
-    "Description": "太记可以发送匿名、粗粒度的桌面端使用分析数据，以帮助改进应用。",
-    "WeCollect": "我们会收集：",
-    "CollectFeatureUsage": "功能使用情况（如工作区创建、同步触发、主题变更）",
-    "CollectPlatform": "平台信息（操作系统、应用版本）",
-    "CollectErrors": "错误报告（已匿名化）",
-    "WeDoNotCollect": "我们不会收集：",
-    "NotCollectWikiContent": "知识库内容、条目名称或笔记数据",
-    "NotCollectPaths": "文件路径或文件夹名称",
-    "NotCollectPersonalData": "个人信息、令牌或凭证",
-    "ChangeAnytime": "您可以随时在「设置 > 隐私和安全」中开启或关闭分析功能。",
-    "DisableAnalytics": "关闭分析",
-    "EnableAnalytics": "启用分析"
-  },
   "Cancel": "取消",
   "ClickForDetails": "点击了解详情",
   "Confirm": "确认",

@@ -46,7 +46,12 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
           }}
           endIcon={<FolderIcon />}
         >
-          <Typography variant='button' display='inline'>
+          <Typography
+            variant='button'
+            sx={{
+              display: 'inline',
+            }}
+          >
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>

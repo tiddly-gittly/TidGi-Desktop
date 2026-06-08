@@ -107,7 +107,13 @@ export function CommitTableRow({ commit, selected, commitDate, onSelect, onSyncC
       </CellBox>
       <CellBox sx={{ width: '20%' }}>
         <Tooltip title={commitDate.toLocaleString()}>
-          <Typography variant='body2' color='text.secondary' sx={{ cursor: 'default' }}>
+          <Typography
+            variant='body2'
+            sx={{
+              color: 'text.secondary',
+              cursor: 'default',
+            }}
+          >
             {formatDistanceToNow(commitDate, { addSuffix: true, locale: i18n.language.startsWith('zh') ? zhCN : enUS })}
           </Typography>
         </Tooltip>

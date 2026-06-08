@@ -7,7 +7,6 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { DataSource } from 'typeorm';
 
 export interface IAnalyticsSecretSettings {
-  analyticsDisclosureVersion?: number;
   deviceFirstLaunchDate?: string;
   deviceLastLaunchDate?: string;
   /**

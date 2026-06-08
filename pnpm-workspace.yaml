@@ -1,2 +1,45 @@
 packages:
   - packages/*
+
+overrides:
+  prebuild-install: latest
+  node-addon-api: "^7.1.1"
+  # file-stream-rotator 1.0.0 removes the moment dependency.
+  # winston-daily-rotate-file hasn't updated its range yet, so override it here.
+  file-stream-rotator: 1.0.0
+
+peerDependencyRules:
+  ignoreMissing:
+    - moment
+    - moment-hijri
+    - moment-jalaali
+
+onlyBuiltDependencies:
+  - "@swc/core"
+  - better-sqlite3
+  - dprint
+  - dugite
+  - electron
+  - electron-winstaller
+  - esbuild
+  - nsfw
+  - registry-js
+  - unrs-resolver
+
+nodeLinker: hoisted
+
+allowBuilds:
+  '@swc/core': true
+  better-sqlite3: true
+  dprint: true
+  dugite: true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  nsfw: true
+  registry-js: true
+  unrs-resolver: true
+
+# pnpm 11 blocks exotic subdependencies by default. Allow them for @reforged/maker-appimage git deps.
+# Duplicated from .npmrc because CI occasionally fails to read .npmrc for this setting.
+blockExoticSubdeps: false

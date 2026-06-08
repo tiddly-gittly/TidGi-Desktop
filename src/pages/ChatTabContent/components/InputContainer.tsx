@@ -331,7 +331,6 @@ export const InputContainer: React.FC<InputContainerProps> = ({
           }}
         />
       </Container>
-
       {/* Attachment Selector Popper */}
       <Popper
         open={Boolean(attachmentAnchorElement)}

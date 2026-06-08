@@ -18,11 +18,11 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const getCtrlModifier = () => process.platform === 'darwin' ? 'Cmd' : 'Ctrl';
 
 describe('KeyboardShortcutRegister Component', () => {
-  let mockOnChange: ReturnType<typeof vi.fn>;
+  let mockOnChange: (value: string) => void;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockOnChange = vi.fn();
+    mockOnChange = vi.fn<(value: string) => void>();
 
     // Mock window.service.context.get
     Object.defineProperty(window.service.context, 'get', {

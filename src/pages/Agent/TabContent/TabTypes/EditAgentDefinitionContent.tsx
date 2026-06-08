@@ -456,7 +456,14 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   if (isLoading && !agentDefinition) {
     return (
       <Container_>
-        <Box display='flex' justifyContent='center' alignItems='center' height='100%'>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
           <CircularProgress />
           <Typography variant='body1' sx={{ ml: 2 }}>
             {t('EditAgent.Loading')}
@@ -469,7 +476,14 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   if (!agentDefinition) {
     return (
       <Container_>
-        <Box display='flex' justifyContent='center' alignItems='center' height='100%'>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
           <Typography variant='h6' color='error'>
             {t('EditAgent.AgentNotFound')}
           </Typography>
@@ -490,7 +504,13 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
           <SectionTitle variant='h6'>
             {t('EditAgent.EditBasic')}
           </SectionTitle>
-          <Typography variant='body2' color='text.secondary' gutterBottom>
+          <Typography
+            variant='body2'
+            gutterBottom
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {t('EditAgent.EditBasicDescription')}
           </Typography>
 
@@ -538,7 +558,13 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
           <SectionTitle variant='h6'>
             {t('EditAgent.EditPrompt')}
           </SectionTitle>
-          <Typography variant='body2' color='text.secondary' gutterBottom>
+          <Typography
+            variant='body2'
+            gutterBottom
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {t('EditAgent.EditPromptDescription')}
           </Typography>
 
@@ -554,7 +580,12 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
             )
             : (
               <Box sx={{ mt: 2 }}>
-                <Typography variant='body2' color='text.secondary'>
+                <Typography
+                  variant='body2'
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   {t('EditAgent.LoadingPromptConfig')}
                 </Typography>
               </Box>
@@ -571,7 +602,13 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               {t('EditAgent.ScheduledWakeup', 'Scheduled Wake-up')}
             </SectionTitle>
           </Box>
-          <Typography variant='body2' color='text.secondary' gutterBottom>
+          <Typography
+            variant='body2'
+            gutterBottom
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {t('EditAgent.ScheduledWakeupDescription', 'Configure a recurring schedule to automatically wake this agent and send a reminder message.')}
           </Typography>
 
@@ -672,7 +709,12 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               </Box>
               {cronPreviewDates.length > 0 && (
                 <Box sx={{ mt: 1 }}>
-                  <Typography variant='caption' color='text.secondary'>
+                  <Typography
+                    variant='caption'
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     {t('EditAgent.ScheduleCronPreview', 'Next runs:')} {cronPreviewDates.map(d => new Date(d).toLocaleString()).join(' → ')}
                   </Typography>
                 </Box>
@@ -752,7 +794,13 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
           <SectionTitle variant='h6'>
             {t('EditAgent.ImmediateUse')}
           </SectionTitle>
-          <Typography variant='body2' color='text.secondary' gutterBottom>
+          <Typography
+            variant='body2'
+            gutterBottom
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {t('EditAgent.ImmediateUseDescription')}
           </Typography>
 
@@ -774,7 +822,6 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
           )}
         </SectionContainer>
       </ScrollableContent>
-
       {/* Action Bar */}
       <ActionBar>
         <Button
