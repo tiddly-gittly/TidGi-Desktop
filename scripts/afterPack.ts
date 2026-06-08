@@ -118,18 +118,18 @@ export default async (
 
       // MCP SDK — non-critical
       console.log('Copy @modelcontextprotocol/sdk');
-      const mcpSdkDest = path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk');
+      const mcpSdkDestination = path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk');
       try {
         fs.copySync(
           path.join(sourceNodeModulesFolder, '@modelcontextprotocol', 'sdk'),
-          mcpSdkDest,
+          mcpSdkDestination,
           { dereference: true },
         );
         // The SDK package has "type": "module", so Node.js treats all .js files as ESM.
         // Its CJS dist lives under dist/cjs/ with .js extensions, which breaks require()
         // at runtime. Override the type for the CJS subtree so require() works in the
         // packaged Electron app.
-        fs.writeJsonSync(path.join(mcpSdkDest, 'dist', 'cjs', 'package.json'), { type: 'commonjs' });
+        fs.writeJsonSync(path.join(mcpSdkDestination, 'dist', 'cjs', 'package.json'), { type: 'commonjs' });
       } catch (error) {
         console.error(`Error copying @modelcontextprotocol/sdk: ${error instanceof Error ? error.message : String(error)}`);
       }
