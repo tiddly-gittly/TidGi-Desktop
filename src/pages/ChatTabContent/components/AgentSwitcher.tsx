@@ -109,7 +109,6 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
         </Typography>
         <ArrowDropDownIcon sx={{ fontSize: 16, transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' }} />
       </SwitcherButton>
-
       <Popper
         open={open}
         anchorEl={anchorElement}
@@ -159,7 +158,14 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
                     {option.name ?? option.id}
                   </Typography>
                   {option.description && (
-                    <Typography variant='caption' color='text.secondary' noWrap sx={{ maxWidth: '100%' }}>
+                    <Typography
+                      variant='caption'
+                      noWrap
+                      sx={{
+                        color: 'text.secondary',
+                        maxWidth: '100%',
+                      }}
+                    >
                       {option.description}
                     </Typography>
                   )}

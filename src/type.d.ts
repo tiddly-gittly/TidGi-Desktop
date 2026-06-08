@@ -87,33 +87,17 @@ declare module '*.svg' {
   export default value;
 }
 
-interface IDefaultGatewayInfo {
-  gateway: string;
-  interface: 'WLAN';
-}
-declare module 'default-gateway/ibmi' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/android' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/darwin' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/freebsd' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/linux' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/openbsd' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/sunos' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
-}
-declare module 'default-gateway/win32' {
-  export function v4(): Promise<IDefaultGatewayInfo>;
+// default-gateway v7 — unified API, no platform-specific sub-paths
+declare module 'default-gateway' {
+  interface DefaultGatewayInfo {
+    gateway: string;
+    version: number;
+    int: string | null;
+  }
+  export function gateway4(): Promise<DefaultGatewayInfo>;
+  export function gateway6(): Promise<DefaultGatewayInfo>;
+  export function gateway4Sync(): DefaultGatewayInfo;
+  export function gateway6Sync(): DefaultGatewayInfo;
 }
 
 declare module '@modelcontextprotocol/sdk/client/index.js' {

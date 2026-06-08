@@ -4,7 +4,6 @@ import 'reflect-metadata';
 import './helpers/singleInstance';
 import './services/database/configSetting';
 import { app, ipcMain, powerMonitor, protocol } from 'electron';
-import unhandled from 'electron-unhandled';
 import inspector from 'node:inspector';
 import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database/configSetting';
 
@@ -12,6 +11,7 @@ import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { container } from '@services/container';
+import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
 import { initializeMcpServer, stopMcpServer } from '@services/mcpServer';
@@ -235,9 +235,6 @@ const commonInit = async (): Promise<void> => {
   // Initialize MCP server (CLI flags, env vars, or preferences)
   await initializeMcpServer(preferenceService);
 
-  // Show analytics disclosure dialog on first launch before sending any events
-  await analyticsService.showDisclosureIfNeeded();
-
   // Track app launch event
   void analyticsService.trackAppLaunch();
 };
@@ -306,16 +303,19 @@ app.on('before-quit', (event): void => {
   }
 });
 
-unhandled({
-  showDialog: !isDevelopmentOrTest,
-  logger: (error: Error) => {
+void (async () => {
+  const unhandledLogger = (error: Error) => {
     logger.error('unhandled', { error });
     analyticsService.trackError(error, 'unhandled');
-  },
-  reportButton: (error) => {
-    reportErrorToGithubWithTemplates(error);
-  },
-});
+  };
+  await setupUnhandled({
+    showDialog: !isDevelopmentOrTest,
+    logger: unhandledLogger,
+    reportButton: (error: Error) => {
+      reportErrorToGithubWithTemplates(error);
+    },
+  });
+})();
 
 // Handle Windows Squirrel events (install/update/uninstall)
 // Using inline implementation to avoid ESM/CommonJS compatibility issues

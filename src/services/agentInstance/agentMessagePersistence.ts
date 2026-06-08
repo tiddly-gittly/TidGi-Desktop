@@ -123,7 +123,7 @@ export function createDebouncedMessageUpdater(
 
             // Update agent entity to link message
             const agentRepo = transaction.getRepository(AgentInstanceEntity);
-            const agentEntity = await agentRepo.findOne({ where: { id: aid }, relations: ['messages'] });
+            const agentEntity = await agentRepo.findOne({ where: { id: aid }, relations: { messages: true } });
             if (agentEntity) {
               if (!agentEntity.messages) agentEntity.messages = [];
               agentEntity.messages.push(newMessage);

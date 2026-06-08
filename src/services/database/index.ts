@@ -130,7 +130,7 @@ export class DatabaseService implements IDatabaseService {
     const databasePath = this.getDatabasePathSync(key);
 
     // Skip if database already exists (except in test environment where we always use fresh in-memory DB)
-    if (!isTest && await fs.exists(databasePath)) {
+    if (!isTest && (await fs.exists(databasePath))) {
       logger.debug(`Database already exists for key: ${key} at ${databasePath}`);
       return;
     }
@@ -300,7 +300,7 @@ export class DatabaseService implements IDatabaseService {
       }
 
       const databasePath = this.getDatabasePathSync(key);
-      if (databasePath !== ':memory:' && await fs.pathExists(databasePath)) {
+      if (databasePath !== ':memory:' && (await fs.pathExists(databasePath))) {
         await fs.unlink(databasePath);
         logger.info(`Database file deleted for key: ${key}`);
       }

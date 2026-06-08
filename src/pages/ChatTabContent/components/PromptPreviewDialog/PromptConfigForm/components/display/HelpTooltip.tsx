@@ -1,4 +1,4 @@
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
 import { IconButton, Tooltip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';

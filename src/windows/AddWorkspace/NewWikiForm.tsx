@@ -52,7 +52,12 @@ export function NewWikiForm({
           }}
           endIcon={<FolderIcon />}
         >
-          <Typography variant='button' display='inline'>
+          <Typography
+            variant='button'
+            sx={{
+              display: 'inline',
+            }}
+          >
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
@@ -102,6 +107,7 @@ export function NewWikiForm({
             freeSolo
             options={availableTags}
             value={form.tagNames}
+            inputValue={tagInputValue}
             onInputChange={(_event, newInputValue) => {
               setTagInputValue(newInputValue);
             }}
@@ -109,20 +115,41 @@ export function NewWikiForm({
               form.tagNamesSetter(newValue);
               setTagInputValue('');
             }}
+            onKeyDown={(event) => {
+              // MUI v9: Explicitly handle Enter in freeSolo mode to add typed text as a tag.
+              if (event.key === 'Enter' && tagInputValue.trim().length > 0) {
+                event.preventDefault();
+                const newTag = tagInputValue.trim();
+                if (!form.tagNames.includes(newTag)) {
+                  form.tagNamesSetter([...form.tagNames, newTag]);
+                }
+                setTagInputValue('');
+              }
+            }}
             slotProps={{
               chip: {
                 variant: 'outlined',
               },
             }}
-            renderInput={(parameters: AutocompleteRenderInputParams) => (
-              <LocationPickerInput
-                error={errorInWhichComponent.tagNames}
-                {...parameters}
-                label={t('AddWorkspace.TagName')}
-                helperText={tagHelperText}
-                slotProps={{ htmlInput: { ...parameters.inputProps, 'data-testid': 'tagname-autocomplete-input' } }}
-              />
-            )}
+            renderInput={(parameters: AutocompleteRenderInputParams) => {
+              const { slotProps: parametersSlotProps, ...otherParameters } = parameters;
+              const htmlInput = (parametersSlotProps?.htmlInput ?? {}) as React.InputHTMLAttributes<HTMLInputElement>;
+              return (
+                <LocationPickerInput
+                  {...otherParameters}
+                  error={errorInWhichComponent.tagNames}
+                  label={t('AddWorkspace.TagName')}
+                  helperText={tagHelperText}
+                  slotProps={{
+                    ...parametersSlotProps,
+                    htmlInput: {
+                      ...htmlInput,
+                      'data-testid': 'tagname-autocomplete-input',
+                    },
+                  }}
+                />
+              );
+            }}
           />
         </>
       )}

@@ -144,7 +144,7 @@ export function ServerOptions(props: ICustomSectionProps) {
                 onChange={async () => {
                   const nextTokenAuth = !tokenAuth;
 
-                  const newAuthToken = authToken || await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
+                  const newAuthToken = authToken || (await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id)));
                   workspaceSetter({
                     ...workspace,
                     userName: userNameIsEmpty ? DEFAULT_USER_NAME : userName,

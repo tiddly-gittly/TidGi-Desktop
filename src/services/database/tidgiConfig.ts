@@ -149,7 +149,7 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
 export async function readTidgiConfig(wikiFolderLocation: string): Promise<Partial<ISyncableWikiConfig> | undefined> {
   const configPath = getTidgiConfigPath(wikiFolderLocation);
   try {
-    if (!await fs.pathExists(configPath)) {
+    if (!(await fs.pathExists(configPath))) {
       return undefined;
     }
     const content = await fs.readFile(configPath, 'utf-8');

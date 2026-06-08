@@ -29,7 +29,7 @@ export class SystemPreference implements ISystemPreferenceService {
         return 'no';
       }
       default: {
-        throw new Error(`Try to get ${key} in SystemPreference, but it is not existed`);
+        throw new Error(`Try to get ${String(key)} in SystemPreference, but it is not existed`);
       }
     }
   }

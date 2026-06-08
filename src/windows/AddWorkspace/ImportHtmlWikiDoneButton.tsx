@@ -50,9 +50,13 @@ export function ImportHtmlWikiDoneButton({
       >
         <Alert severity='info'>{wikiCreationMessage}</Alert>
       </Snackbar>
-
       <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
-        <Typography variant='body1' display='inline'>
+        <Typography
+          variant='body1'
+          sx={{
+            display: 'inline',
+          }}
+        >
           {t('AddWorkspace.ImportWiki')}
         </Typography>
         <WikiLocation>{form.wikiHtmlPath}</WikiLocation>

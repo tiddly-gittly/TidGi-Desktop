@@ -10,8 +10,8 @@
  * All modes can optionally show a freeform text box for custom input.
  */
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import QuestionMarkIcon from '@mui/icons-material/HelpOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
+import QuestionMarkIcon from '@mui/icons-material/HelpOutlineOutlined';
 import SendIcon from '@mui/icons-material/Send';
 import { Box, Button, ButtonBase, Checkbox, FormGroup, TextField, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -193,11 +193,16 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
     <QuestionContainer data-testid='ask-question-container'>
       <QuestionHeader>
         <QuestionMarkIcon color='info' fontSize='small' />
-        <Typography variant='subtitle2' color='info.main'>Agent Question</Typography>
+        <Typography
+          variant='subtitle2'
+          sx={{
+            color: 'info.main',
+          }}
+        >
+          Agent Question
+        </Typography>
       </QuestionHeader>
-
       <Typography variant='body1' sx={{ whiteSpace: 'pre-wrap' }}>{data.question}</Typography>
-
       {/* Single-select: full-width option buttons — removed from DOM once answered */}
       {!answered && inputType === 'single-select' && data.options && data.options.length > 0 && (
         <OptionsStack data-testid='ask-question-options'>
@@ -219,7 +224,6 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
           ))}
         </OptionsStack>
       )}
-
       {/* Multi-select: checkboxes with full-width rows — removed from DOM once answered */}
       {!answered && inputType === 'multi-select' && data.options && data.options.length > 0 && (
         <FormGroup sx={{ mt: 1, gap: '4px' }} data-testid='ask-question-multiselect'>
@@ -244,7 +248,14 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
                     {option.label}
                   </Typography>
                   {option.description && (
-                    <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 0.25 }}>
+                    <Typography
+                      variant='caption'
+                      sx={{
+                        color: 'text.secondary',
+                        display: 'block',
+                        mt: 0.25,
+                      }}
+                    >
                       {option.description}
                     </Typography>
                   )}
@@ -255,7 +266,6 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
           ))}
         </FormGroup>
       )}
-
       {/* Freeform text input — shown for text mode, or when allowFreeform is true */}
       {!answered && (inputType === 'text' || (data.allowFreeform ?? true)) && (
         <FreeformContainer data-testid='ask-question-freeform'>
@@ -283,7 +293,6 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
           </Button>
         </FreeformContainer>
       )}
-
       {/* Multi-select submit button when no freeform */}
       {!answered && inputType === 'multi-select' && !(data.allowFreeform ?? true) && (
         <Box sx={{ mt: 1 }}>
@@ -298,9 +307,15 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
           </Button>
         </Box>
       )}
-
       {answered && (
-        <Typography variant='caption' color='text.secondary' sx={{ mt: 1, display: 'block' }}>
+        <Typography
+          variant='caption'
+          sx={{
+            color: 'text.secondary',
+            mt: 1,
+            display: 'block',
+          }}
+        >
           Answer submitted — waiting for agent...
         </Typography>
       )}

@@ -19,7 +19,9 @@ const mockLogger = {
 };
 
 const mockUtils = {
-  Logger: vi.fn(() => mockLogger),
+  Logger: vi.fn(function() {
+    return mockLogger;
+  }),
   createDirectory: vi.fn(),
 };
 
@@ -113,7 +115,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
     let result: IFileInfo | null = null;
     watcher.loadTiddler(title, (_err, _fields) => {
       // loadTiddler sets boot.files[title] as a side effect
-      result = (global.$tw.boot.files as Record<string, IFileInfo>)[title];
+      result = ((globalThis as unknown as { $tw: { boot: { files: Record<string, IFileInfo> } } }).$tw.boot.files)[title];
     });
     return result!;
   }

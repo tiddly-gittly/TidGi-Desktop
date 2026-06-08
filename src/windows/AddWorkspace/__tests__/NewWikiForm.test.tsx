@@ -63,13 +63,13 @@ const createMockProps = (overrides: Partial<{
   isCreateMainWorkspace: boolean;
   isCreateSyncedWorkspace: boolean;
   errorInWhichComponent: IErrorInWhichComponent;
-  errorInWhichComponentSetter: ReturnType<typeof vi.fn>;
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void;
 }> = {}) => ({
   form: createMockForm(),
   isCreateMainWorkspace: true,
   isCreateSyncedWorkspace: false,
   errorInWhichComponent: {},
-  errorInWhichComponentSetter: vi.fn(),
+  errorInWhichComponentSetter: vi.fn() as (errors: IErrorInWhichComponent) => void,
   ...overrides,
 });
 

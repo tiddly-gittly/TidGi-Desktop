@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -530,53 +530,54 @@ describe('TidGiMiniWindow Component', () => {
       await renderComponent();
 
       const shortcutButton = screen.getByRole('button', { name: /Preference\.TidgiMiniWindowShortcutKey/ });
+      await user.click(shortcutButton);
 
-      const mockOnChange = vi.fn(async (value: string) => {
-        if (value && value.trim() !== '') {
-          await window.service.native.registerKeyboardShortcut('Window', 'toggleTidgiMiniWindow', value);
-        } else {
-          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleTidgiMiniWindow');
-        }
+      await waitFor(() => {
+        expect(screen.getByTestId('shortcut-dialog')).toBeInTheDocument();
       });
 
-      shortcutButton.onclick = () => {
-        void mockOnChange('Ctrl+Shift+T');
-      };
+      const dialogContent = screen.getByTestId('shortcut-dialog-content');
 
-      await user.click(shortcutButton);
+      // Simulate Ctrl+Shift+T key press in dialog
+      fireEvent.keyDown(dialogContent, {
+        key: 'T',
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+      });
+
+      await waitFor(() => {
+        const display = screen.getByTestId('shortcut-display');
+        expect(display).toHaveTextContent('Ctrl+Shift+T');
+      });
+
+      // Press Enter to confirm
+      fireEvent.keyDown(document, { key: 'Enter', code: 'Enter' });
 
       await waitFor(() => {
         expect(window.service.native.registerKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleTidgiMiniWindow', 'Ctrl+Shift+T');
       });
     });
 
-    it('should call unregisterKeyboardShortcut API when shortcut is cleared', async () => {
+    it('should call unregisterKeyboardShortcut API when shortcut is empty', async () => {
       const user = userEvent.setup();
       preferenceSubject.next(
         createMockPreference({
           tidgiMiniWindow: true,
-          keyboardShortcuts: {
-            'Window.toggleTidgiMiniWindow': 'Ctrl+Shift+M',
-          },
+          keyboardShortcuts: {},
         }),
       );
       await renderComponent();
 
       const shortcutButton = screen.getByRole('button', { name: /Preference\.TidgiMiniWindowShortcutKey/ });
+      await user.click(shortcutButton);
 
-      const mockOnChange = vi.fn(async (value: string) => {
-        if (value && value.trim() !== '') {
-          await window.service.native.registerKeyboardShortcut('Window', 'toggleTidgiMiniWindow', value);
-        } else {
-          await window.service.native.unregisterKeyboardShortcut('Window', 'toggleTidgiMiniWindow');
-        }
+      await waitFor(() => {
+        expect(screen.getByTestId('shortcut-dialog')).toBeInTheDocument();
       });
 
-      shortcutButton.onclick = () => {
-        void mockOnChange('');
-      };
-
-      await user.click(shortcutButton);
+      // Press Enter to confirm empty shortcut
+      fireEvent.keyDown(document, { key: 'Enter', code: 'Enter' });
 
       await waitFor(() => {
         expect(window.service.native.unregisterKeyboardShortcut).toHaveBeenCalledWith('Window', 'toggleTidgiMiniWindow');

@@ -179,15 +179,22 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
       <SearchContainer>
         <Search placeholder={t('NewTab.SearchPlaceholder')} />
       </SearchContainer>
-
-      <Box mb={6}>
+      <Box
+        sx={{
+          mb: 6,
+        }}
+      >
         <SectionTitle variant='h5'>
           {t('NewTab.QuickAccess')}
         </SectionTitle>
 
         <QuickAccessGrid>
           <Grid container spacing={3}>
-            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+            <Grid
+              sx={{
+                width: { xs: '50%', sm: '25%', md: '16.66%' },
+              }}
+            >
               <ShortcutCard
                 onClick={() => createAgentChatTab()}
                 onContextMenu={handleRightClick}
@@ -199,7 +206,11 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
                 <Typography variant='subtitle1'>{t('NewTab.CreateDefaultAgent')}</Typography>
               </ShortcutCard>
             </Grid>
-            <Grid width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+            <Grid
+              sx={{
+                width: { xs: '50%', sm: '25%', md: '16.66%' },
+              }}
+            >
               <ShortcutCard
                 onClick={() => {
                   void createNewAgentTab();
@@ -215,7 +226,6 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
           </Grid>
         </QuickAccessGrid>
       </Box>
-
       {/* Context Menu */}
       <Menu
         open={contextMenu.isOpen}

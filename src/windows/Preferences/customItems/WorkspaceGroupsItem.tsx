@@ -101,7 +101,6 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
       <ListItem>
         <ListItemText primary={t('WorkspaceGroup.ManageGroups')} secondary={t('WorkspaceGroup.ManageGroupsDescription')} />
       </ListItem>
-
       <ListItem sx={{ alignItems: 'flex-start', flexDirection: 'column', gap: 1.5 }}>
         <TextField
           fullWidth
@@ -131,9 +130,7 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
           </Button>
         </Box>
       </ListItem>
-
       <Divider />
-
       {groups.length === 0
         ? (
           <ListItem>
@@ -180,7 +177,12 @@ export function WorkspaceGroupsItem(_props: ICustomItemProps): React.JSX.Element
                         <Typography variant='body2' sx={{ fontWeight: 500 }}>
                           {group.name}
                         </Typography>
-                        <Typography variant='caption' color='text.secondary'>
+                        <Typography
+                          variant='caption'
+                          sx={{
+                            color: 'text.secondary',
+                          }}
+                        >
                           {t('WorkspaceGroup.WorkspaceCount', { count: workspacesInGroup.length })}
                         </Typography>
                       </Box>

@@ -26,7 +26,11 @@ export function AllBranchesView({
 
   if (entries.length === 0 || currentBranch === null) {
     return (
-      <Box p={2}>
+      <Box
+        sx={{
+          p: 2,
+        }}
+      >
         <Typography>{t('GitLog.NoCommits')}</Typography>
       </Box>
     );

@@ -17,7 +17,8 @@ export default defineConfig({
     // Test environment
     environment: 'jsdom',
 
-    // features/ tests (HTTP/Node.js integration) run in node environment; src/ tests need jsdom
+    // features/ tests (HTTP/Node.js integration) run in node environment
+    // @ts-expect-error - environmentMatchGlobs may not exist in vitest 4 types
     environmentMatchGlobs: [
       ['features/**', 'node'],
     ],
@@ -50,18 +51,19 @@ export default defineConfig({
       ],
     },
 
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        maxForks: 6,
-        minForks: 2,
-      },
-      isolate: true,
-    },
-
     testTimeout: 30000,
     hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
+  },
+
+  // Vitest 4 requires pool options at the top level
+  pool: 'forks',
+  poolOptions: {
+    forks: {
+      maxForks: 6,
+      minForks: 2,
+    },
+    isolate: true,
   },
 
   resolve: {

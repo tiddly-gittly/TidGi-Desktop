@@ -298,14 +298,27 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             {t('Refresh')}
           </Button>
         </Box>
-        <Typography variant='body2' color='text.secondary' sx={{ px: 2, pb: 1, fontSize: '0.8rem' }}>
+        <Typography
+          variant='body2'
+          sx={{
+            color: 'text.secondary',
+            px: 2,
+            pb: 1,
+            fontSize: '0.8rem',
+          }}
+        >
           {t('Preference.ScheduledTasksDescription', 'Periodically wake agents on a schedule (interval or cron). Tasks survive app restarts.')}
         </Typography>
 
         {scheduledTasks.length === 0
           ? (
             <Box sx={{ px: 2, py: 2, textAlign: 'center' }}>
-              <Typography variant='body2' color='text.secondary'>
+              <Typography
+                variant='body2'
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {t('Preference.NoScheduledTasks', 'No scheduled tasks. Add one to periodically wake an agent.')}
               </Typography>
             </Box>
@@ -408,7 +421,6 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             </Table>
           )}
       </Paper>
-
       {/* ── ScheduledTask create/edit dialog ──────────────────────────────── */}
       <Dialog
         open={scheduledTaskDialogOpen}
@@ -502,7 +514,14 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                 />
               </Box>
               {cronPreviewDates.length > 0 && (
-                <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 0.5 }}>
+                <Typography
+                  variant='caption'
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                    mt: 0.5,
+                  }}
+                >
                   {'Next runs: '}
                   {cronPreviewDates.map(d => new Date(d).toLocaleString()).join(' → ')}
                 </Typography>
@@ -567,14 +586,12 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-
       <ToolApprovalSettingsDialog
         open={toolApprovalDialogOpen}
         onClose={() => {
           setToolApprovalDialogOpen(false);
         }}
       />
-
       <Dialog
         open={deleteDialogOpen}
         onClose={() => {

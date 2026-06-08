@@ -775,8 +775,15 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     }
   }, [canonicalGroups.length, t]);
 
-  const deriveDragState = useCallback((event: Pick<DragMoveEvent, 'active' | 'over' | 'delta' | 'collisions'>): IDragState => {
-    const { active, over } = event;
+  const deriveDragState = useCallback((event: Pick<DragMoveEvent, 'active' | 'over' | 'delta' | 'collisions' | 'activatorEvent'>): IDragState => {
+    const { active, over, delta, activatorEvent } = event;
+    // Compute the live pointer Y from the initial pointerdown position plus
+    // the cumulative drag delta. This is more reliable than the global
+    // pointermove listener (pointerYReference), which can miss events on
+    // Windows CI/Electron/Playwright and cause incorrect intent zones.
+    const activatorPointerY = activatorEvent instanceof PointerEvent || activatorEvent instanceof MouseEvent
+      ? activatorEvent.clientY + delta.y
+      : undefined;
     const activeId = String(active.id);
     const overData = over?.data.current as { type?: string } | undefined;
     const effectiveOverId = over ? String(over.id) : null;
@@ -805,8 +812,10 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // The over.id itself is still correct (collision detection resolves the
       // right target), but over.rect can be stale.
       const activeRect = active.rect.current.translated;
-      // Use the actual pointer Y computed from the initial pointerdown position
-      const pointerY = pointerYReference.current ?? (activeRect
+      // Prefer the pointer Y derived from the initial pointerdown + delta,
+      // which is deterministic across platforms. Fall back to the global
+      // pointermove listener, then to rect centers for rare edge cases.
+      const pointerY = activatorPointerY ?? pointerYReference.current ?? (activeRect
         ? activeRect.top + activeRect.height / 2
         : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
       const referenceY = pointerY;
@@ -879,7 +888,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         };
       }
 
-      const pointerY = pointerYReference.current ?? (overRect.top + overRect.height / 2);
+      const pointerY = activatorPointerY ?? pointerYReference.current ?? (overRect.top + overRect.height / 2);
 
       return {
         intent: getReorderIntentFromPointer({
@@ -908,7 +917,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         };
       }
 
-      const pointerY = pointerYReference.current ?? (overRect.top + overRect.height / 2);
+      const pointerY = activatorPointerY ?? pointerYReference.current ?? (overRect.top + overRect.height / 2);
 
       return {
         intent: getReorderIntentFromPointer({

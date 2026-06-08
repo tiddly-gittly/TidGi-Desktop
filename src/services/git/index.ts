@@ -183,10 +183,10 @@ export class Git implements IGitService {
     // Use wikiOperationInServer so the write goes directly through the wiki worker's filesystem
     // adapter, which has boot.files correctly populated and can overwrite the existing .tid file
     // without appending numeric suffixes.
-    if (await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo']) !== githubRepoName) {
+    if ((await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo'])) !== githubRepoName) {
       await wikiService.wikiOperationInServer(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
     }
-    if (await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch']) !== branch) {
+    if ((await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch'])) !== branch) {
       await wikiService.wikiOperationInServer(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
     }
   }
