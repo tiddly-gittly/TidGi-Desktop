@@ -30,3 +30,7 @@ allowBuilds:
   nsfw: true
   registry-js: true
   unrs-resolver: true
+
+# pnpm 11 blocks exotic subdependencies by default. Allow them for @reforged/maker-appimage git deps.
+# Duplicated from .npmrc because CI occasionally fails to read .npmrc for this setting.
+blockExoticSubdeps: false
