@@ -217,16 +217,18 @@ export class IpcServerRoutes {
   async getTiddlersJSON(
     filter = '[all[tiddlers]!is[system]sort[title]]',
     excludeFields = ['text'],
-    options?: { ignoreSyncSystemConfig?: boolean; toTiddler?: boolean },
+    options?: { skipSystemFilter?: boolean; toTiddler?: boolean },
   ): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
-    if (!(options?.ignoreSyncSystemConfig === true) && this.wikiInstance.wiki.getTiddlerText('$:/config/SyncSystemTiddlersFromServer') !== 'yes') {
-      filter += '+[!is[system]]';
-    }
     const titles = this.wikiInstance.wiki.filterTiddlers(filter);
+    const shouldExcludeSystem = !options?.skipSystemFilter &&
+      this.wikiInstance.wiki.getTiddlerText('$:/config/SyncSystemTiddlersFromServer') !== 'yes';
+    const filteredTitles = shouldExcludeSystem
+      ? titles.filter((title) => !this.wikiInstance.wiki.isSystemTiddler(title))
+      : titles;
     const tiddlers: ISkinnyTiddlerFields[] = options?.toTiddler === false
-      ? titles.map((title): ISkinnyTiddlerFields => ({ title }))
-      : titles.flatMap((title): ISkinnyTiddlerFields[] => {
+      ? filteredTitles.map((title): ISkinnyTiddlerFields => ({ title }))
+      : filteredTitles.flatMap((title): ISkinnyTiddlerFields[] => {
         const tiddler = this.wikiInstance.wiki.getTiddler(title);
         if (tiddler === undefined) {
           return [];

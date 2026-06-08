@@ -12,7 +12,6 @@ import { sanitizeErrorMessage } from './utilities';
 
 export { sanitizeErrorMessage };
 
-const CURRENT_ANALYTICS_DISCLOSURE_VERSION = 1;
 const ANALYTICS_SETTINGS_KEY = 'analyticsSecrets';
 const DEFAULT_TIMEOUT_MS = 15_000;
 
@@ -69,28 +68,6 @@ export class AnalyticsService implements IAnalyticsService {
 
   public async clearPendingEvents(): Promise<void> {
     this.queuedEvents.length = 0;
-  }
-
-  public async shouldShowDisclosure(): Promise<boolean> {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const secrets = databaseService.getSetting(ANALYTICS_SETTINGS_KEY);
-    const recordedVersion = secrets?.analyticsDisclosureVersion;
-    return recordedVersion === undefined || recordedVersion < CURRENT_ANALYTICS_DISCLOSURE_VERSION;
-  }
-
-  public async recordDisclosureVersion(): Promise<void> {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const secrets = this.getAnalyticsSecrets(databaseService);
-    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, {
-      ...secrets,
-      analyticsDisclosureVersion: CURRENT_ANALYTICS_DISCLOSURE_VERSION,
-    });
-    await databaseService.immediatelyStoreSettingsToFile();
-  }
-
-  public async showDisclosureIfNeeded(): Promise<void> {
-    // No-op: we no longer show a blocking disclosure dialog on first launch.
-    // Analytics is controlled solely by the preference toggle in Settings > Privacy.
   }
 
   public async trackAppLaunch(): Promise<void> {

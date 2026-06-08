@@ -228,7 +228,6 @@ export class Window implements IWindowService {
       [WindowNames.addWorkspace]: 'TidGi [Add Workspace]',
       [WindowNames.editWorkspace]: 'TidGi [Edit Workspace]',
       [WindowNames.about]: 'TidGi [About]',
-      [WindowNames.analyticsDisclosure]: 'TidGi [Analytics Disclosure]',
       [WindowNames.gitHistory]: 'TidGi [Git History]',
       [WindowNames.notifications]: 'TidGi [Notifications]',
       [WindowNames.spellcheck]: 'TidGi [Spellcheck]',

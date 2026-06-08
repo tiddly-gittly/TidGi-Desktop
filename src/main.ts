@@ -235,9 +235,6 @@ const commonInit = async (): Promise<void> => {
   // Initialize MCP server (CLI flags, env vars, or preferences)
   await initializeMcpServer(preferenceService);
 
-  // Show analytics disclosure dialog on first launch before sending any events
-  await analyticsService.showDisclosureIfNeeded();
-
   // Track app launch event
   void analyticsService.trackAppLaunch();
 };

@@ -41,22 +41,11 @@ describe('AnalyticsService', () => {
     expect(await service.isEnabled()).toBe(false);
   });
 
-  it('isEnabled returns true when enabled and configured even if disclosure has not been recorded', async () => {
+  it('isEnabled returns true when enabled and configured', async () => {
     preferenceStore.analyticsEnabled = true;
     preferenceStore.analyticsHost = 'https://analytics.tidgi.fun';
     preferenceStore.analyticsHostname = 'desktop.tidgi.fun';
     preferenceStore.analyticsSiteId = '189dd97a8d37';
-    (mockDatabase.getSetting as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
-    const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
-    expect(await service.isEnabled()).toBe(true);
-  });
-
-  it('isEnabled returns true when enabled and disclosure recorded', async () => {
-    preferenceStore.analyticsEnabled = true;
-    preferenceStore.analyticsHost = 'https://analytics.tidgi.fun';
-    preferenceStore.analyticsHostname = 'desktop.tidgi.fun';
-    preferenceStore.analyticsSiteId = '189dd97a8d37';
-    (mockDatabase.getSetting as ReturnType<typeof vi.fn>).mockReturnValue({ analyticsDisclosureVersion: 1 });
     const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
     expect(await service.isEnabled()).toBe(true);
   });
@@ -75,16 +64,5 @@ describe('AnalyticsService', () => {
     // trackError is fire-and-forget; wait a tick
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(preferenceService.get).toHaveBeenCalledWith('analyticsEnabled');
-  });
-
-  it('recordDisclosureVersion persists version to database', async () => {
-    preferenceStore.analyticsEnabled = true;
-    (mockDatabase.getSetting as ReturnType<typeof vi.fn>).mockReturnValue({});
-    const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
-    await service.recordDisclosureVersion();
-    expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-      'analyticsSecrets',
-      expect.objectContaining({ analyticsDisclosureVersion: expect.any(Number) }),
-    );
   });
 });

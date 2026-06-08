@@ -2,7 +2,6 @@ import { AnalyticsChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 export type BuiltInAnalyticsEventName =
-  | 'analytics.disclosure_responded'
   | 'app.launched'
   | 'deep_link.opened'
   | 'error.report_requested'
@@ -70,26 +69,6 @@ export interface IAnalyticsService {
   getRetentionProperties(): Promise<IAnalyticsEventProperties | undefined>;
 
   /**
-   * Check whether the analytics disclosure dialog should be shown.
-   * Returns true if the user has never seen the current version of the disclosure
-   * (or any disclosure at all).
-   */
-  shouldShowDisclosure(): Promise<boolean>;
-
-  /**
-   * Record that the user has seen the current analytics disclosure version,
-   * so it won't be shown again on subsequent launches.
-   */
-  recordDisclosureVersion(): Promise<void>;
-
-  /**
-   * Show the analytics disclosure dialog if it hasn't been shown yet
-   * (or if a newer disclosure version requires re-confirmation).
-   * Skips in test environments.
-   */
-  showDisclosureIfNeeded(): Promise<void>;
-
-  /**
    * Track the app.launched event with retention properties.
    */
   trackAppLaunch(): Promise<void>;
@@ -109,7 +88,5 @@ export const AnalyticsServiceIPCDescriptor = {
     track: ProxyPropertyType.Function,
     trackPluginEvent: ProxyPropertyType.Function,
     isEnabled: ProxyPropertyType.Function,
-    shouldShowDisclosure: ProxyPropertyType.Function,
-    recordDisclosureVersion: ProxyPropertyType.Function,
   },
 };
