@@ -190,7 +190,7 @@ describe('NewWikiForm Component', () => {
       expect(mockSetter).toHaveBeenCalledWith('/test/selected/path');
     });
 
-    it.skip('should handle tag name input for sub workspace', async () => {
+    it('should handle tag name input for sub workspace', async () => {
       const user = userEvent.setup();
       const mockSetter = vi.fn();
       const form = createMockForm({

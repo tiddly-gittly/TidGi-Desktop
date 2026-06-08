@@ -2,9 +2,7 @@ import { LOG_FOLDER } from '@/constants/appPaths';
 import { serializeError } from 'serialize-error';
 import winston, { format } from 'winston';
 import 'winston-daily-rotate-file';
-// logform types are provided by winston's dependency
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TransformableInfo = any;
+import type { TransformableInfo } from 'logform';
 import RendererTransport from './rendererTransport';
 
 /**
@@ -24,7 +22,6 @@ const errorSerializer = format((info: TransformableInfo) => {
       infoRecord.error = `${error?.message ?? ''} stack: ${error?.stack ?? ''}`;
     }
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return info;
 });
 

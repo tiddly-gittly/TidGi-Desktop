@@ -56,7 +56,7 @@ export default defineConfig({
     reporters: ['default', 'hanging-process'],
   },
 
-  // Pool options are top-level in Vitest 4
+  // Vitest 4 requires pool options at the top level
   pool: 'forks',
   poolOptions: {
     forks: {
