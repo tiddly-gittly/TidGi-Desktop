@@ -20,6 +20,11 @@ export default [
       '@typescript-eslint/no-unnecessary-condition': 'off',
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-dynamic-delete': 'off',
+      // TODO: fix these rules from eslint-config-tidgi@3 upgrade, then remove these overrides
+      'security-node/preserve-caught-error': 'off',
+      'preserve-caught-error': 'off',
+      'no-useless-assignment': 'warn',
+      'import-x/no-unresolved': 'off',
     },
   },
   {

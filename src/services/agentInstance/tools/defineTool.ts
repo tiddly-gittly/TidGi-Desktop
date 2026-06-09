@@ -611,7 +611,7 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
                   toolResult: result.result ?? { success: false, error: resultText },
                   toolInfo: {
                     toolId: String(toolName),
-                    parameters: (result.call.parameters ?? {}),
+                    parameters: result.call.parameters ?? {},
                     originalText: result.call.originalText,
                   },
                   requestId,

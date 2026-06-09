@@ -103,7 +103,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
             agentFrameworkConfig: defaultAgent.agentFrameworkConfig,
             aiApiConfig: defaultAgent.aiApiConfig,
             agentTools: defaultAgent.agentTools,
-            heartbeat: (defaultAgent).heartbeat,
+            heartbeat: defaultAgent.heartbeat,
           })
         );
         // Save all default agents to database

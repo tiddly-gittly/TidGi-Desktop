@@ -7,14 +7,14 @@
  */
 
 // ── Constants ──────────────────────────────────────────────────────────────────
+export * from '@/constants/auth';
 export * from '@/constants/channels';
 export * from '@/constants/pageTypes';
 export * from '@/constants/wikiCreation';
-export * from '@/constants/auth';
 
 // ── Shared Service Types ───────────────────────────────────────────────────────
-export * from '@services/types';
 export { default as serviceIdentifier } from '@services/serviceIdentifier';
+export * from '@services/types';
 export * from './tidgiGlobal';
 
 // ── Service Interfaces ─────────────────────────────────────────────────────────

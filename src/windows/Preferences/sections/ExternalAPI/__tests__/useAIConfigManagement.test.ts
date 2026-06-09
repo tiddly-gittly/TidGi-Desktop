@@ -98,7 +98,7 @@ describe('useAIConfigManagement', () => {
       };
 
       act(() => {
-        (window.observables.externalAPI.defaultConfig$).next(updatedConfig);
+        window.observables.externalAPI.defaultConfig$.next(updatedConfig);
       });
 
       // Config should update from observable
@@ -126,7 +126,7 @@ describe('useAIConfigManagement', () => {
       ];
 
       act(() => {
-        (window.observables.externalAPI.providers$).next(updatedProviders);
+        window.observables.externalAPI.providers$.next(updatedProviders);
       });
 
       // Providers should update from observable

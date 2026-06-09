@@ -8,8 +8,9 @@ overrides:
   # winston-daily-rotate-file hasn't updated its range yet, so override it here.
   file-stream-rotator: 1.0.0
   # Security fixes for transitive deps via prebuild-install -> rc / tar-stream
-  ini: "^1.3.8"
-  bl: "^4.1.0"
+  # Scoped to parent to avoid cross-major overrides for other consumers
+  "rc>ini": "^1.3.8"
+  "tar-stream>bl": "^4.1.0"
 
 peerDependencyRules:
   ignoreMissing:
@@ -46,3 +47,19 @@ allowBuilds:
 # pnpm 11 blocks exotic subdependencies by default. Allow them for @reforged/maker-appimage git deps.
 # Duplicated from .npmrc because CI occasionally fails to read .npmrc for this setting.
 blockExoticSubdeps: false
+
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.61.0'
+  - '@typescript-eslint/parser@8.61.0'
+  - '@typescript-eslint/project-service@8.61.0'
+  - '@typescript-eslint/scope-manager@8.61.0'
+  - '@typescript-eslint/tsconfig-utils@8.61.0'
+  - '@typescript-eslint/type-utils@8.61.0'
+  - '@typescript-eslint/types@8.61.0'
+  - '@typescript-eslint/typescript-estree@8.61.0'
+  - '@typescript-eslint/utils@8.61.0'
+  - '@typescript-eslint/visitor-keys@8.61.0'
+  - eslint-config-tidgi@3.1.0
+  - eslint-plugin-unicorn@65.0.1
+  - git-sync-js@2.4.0
+  - typescript-eslint@8.61.0
