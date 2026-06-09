@@ -107,7 +107,7 @@ export const AskQuestionRenderer: React.FC<MessageRendererProps> = memo(({ messa
   const [freeformText, setFreeformText] = useState('');
   const [checkedOptions, setCheckedOptions] = useState<Set<string>>(new Set());
   const [answered, setAnswered] = useState(() => {
-    return !!(message.metadata)?.askQuestionAnswered;
+    return !!message.metadata?.askQuestionAnswered;
   });
 
   const data = parseAskQuestionData(message.content);

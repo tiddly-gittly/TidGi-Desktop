@@ -49,7 +49,7 @@ export const ConditionalField: React.FC<FieldProps> = (props) => {
     const dependentValue = (parentData as Record<string, unknown>)[dependsOn];
 
     // Determine if condition is met
-    let conditionMet = false;
+    let conditionMet: boolean;
     if (Array.isArray(showWhen)) {
       // Support multiple acceptable values
       conditionMet = showWhen.includes(String(dependentValue));

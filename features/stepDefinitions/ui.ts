@@ -111,7 +111,7 @@ Then('I should not see a(n) {string} element with selector {string}', async func
   } catch (error) {
     if (error instanceof Error && error.message.includes('timeout')) {
       // Element still visible after timeout — get parent HTML for debugging
-      let parentHtml = '';
+      let parentHtml: string;
       try {
         const element = currentWindow.locator(selector).first();
         const parent = element.locator('xpath=..');

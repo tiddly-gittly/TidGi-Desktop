@@ -115,7 +115,7 @@ describe('FileSystemWatcher - loadTiddler file format type preservation', () => 
     let result: IFileInfo | null = null;
     watcher.loadTiddler(title, (_err, _fields) => {
       // loadTiddler sets boot.files[title] as a side effect
-      result = ((globalThis as unknown as { $tw: { boot: { files: Record<string, IFileInfo> } } }).$tw.boot.files)[title];
+      result = (globalThis as unknown as { $tw: { boot: { files: Record<string, IFileInfo> } } }).$tw.boot.files[title];
     });
     return result!;
   }

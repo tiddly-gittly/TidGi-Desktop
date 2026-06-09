@@ -61,7 +61,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
 
   // Check if active tab is a split view
   const isActiveSplitViewTab = activeTab?.type === TabType.SPLIT_VIEW;
-  const activeSplitViewTab = isActiveSplitViewTab ? (activeTab) : undefined;
+  const activeSplitViewTab = isActiveSplitViewTab ? activeTab : undefined;
 
   // Close context menu
   const handleClose = useCallback(() => {
@@ -91,7 +91,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
     switch (targetTab.type) {
       case TabType.WEB:
         await addTab(TabType.WEB, {
-          url: (targetTab).url,
+          url: targetTab.url,
           title: targetTab.title,
         });
         break;

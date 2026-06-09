@@ -19,7 +19,7 @@ Given('I configure tidgi mini window with shortcut', async function(this: Applic
   // Convert CommandOrControl to platform-specific format
   const isWindows = process.platform === 'win32';
   const isLinux = process.platform === 'linux';
-  let shortcut = 'CommandOrControl+Shift+M';
+  let shortcut: string;
   if (isWindows || isLinux) {
     shortcut = 'Ctrl+Shift+M';
   } else {

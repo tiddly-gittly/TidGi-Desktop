@@ -66,7 +66,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       };
       const localHostUrl = await tidgiService.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
       const urlObject = new URL(localHostUrl);
-      setLocationProperty('full', (localHostUrl).split('#')[0]);
+      setLocationProperty('full', localHostUrl.split('#')[0]);
       setLocationProperty('host', urlObject.host);
       setLocationProperty('hostname', urlObject.hostname);
       setLocationProperty('protocol', https.enabled ? 'https' : 'http');

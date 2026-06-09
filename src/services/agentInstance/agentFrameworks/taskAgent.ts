@@ -264,7 +264,7 @@ export async function* basicPromptConcatHandler(context: AgentFrameworkContext) 
               for (const tm of pendingToolMessages) {
                 try {
                   await agentInstanceService.saveUserMessage(tm);
-                  (tm).metadata = { ...(tm).metadata, isPersisted: true };
+                  tm.metadata = { ...tm.metadata, isPersisted: true };
                 } catch (error1) {
                   logger.warn('Failed to persist pending tool result before error', {
                     error: error1,

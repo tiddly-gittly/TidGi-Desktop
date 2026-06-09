@@ -145,7 +145,7 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
   const schedule = task.schedule;
 
   if (schedule.kind === 'interval') {
-    const intervalMs = Math.max(60, (schedule).intervalSeconds) * 1000;
+    const intervalMs = Math.max(60, schedule.intervalSeconds) * 1000;
     const handle = setInterval(() => {
       void fireTask(task);
       // Update nextRunAt in task object
