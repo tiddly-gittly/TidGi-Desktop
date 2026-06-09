@@ -1,20 +1,18 @@
 import { inject, injectable } from 'inversify';
-import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
-import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
 import { promptConcatStream } from '@services/agentInstance/promptConcat/promptConcat';
 import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
 import type { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcatTypes';
-import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
+import { initializePluginSystem } from '@services/agentInstance/tools';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -33,6 +31,7 @@ import type {
   SetBackgroundAlarmInput,
   SetBackgroundHeartbeatInput,
 } from './interface';
+import { MemeLoopDesktopRuntime } from './memeloop/runtime';
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
@@ -56,6 +55,9 @@ export class AgentInstanceService implements IAgentInstanceService {
   @inject(serviceIdentifier.AgentDefinition)
   private readonly agentDefinitionService!: IAgentDefinitionService;
 
+  @inject(serviceIdentifier.ExternalAPI)
+  private readonly externalAPIService!: IExternalAPIService;
+
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
   private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
@@ -64,8 +66,8 @@ export class AgentInstanceService implements IAgentInstanceService {
   private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
 
-  private agentFrameworks: Map<string, AgentFramework> = new Map();
   private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
+  private memeLoopRuntime: MemeLoopDesktopRuntime | null = null;
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
 
@@ -118,9 +120,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public registerBuiltinFrameworks(): void {
-    // Tools are already registered in initialize(), so we only register frameworks here
-    // Register basic prompt concatenation framework with its schema
-    this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
+    this.frameworkSchemas.set('memeloopTaskAgent', getPromptConcatAgentFrameworkConfigJsonSchema());
   }
 
   /**
@@ -202,24 +202,86 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   /**
-   * Register a framework with an optional schema
-   * @param frameworkId ID for the framework
-   * @param framework The framework function
-   * @param schema Optional JSON schema for the framework configuration
-   */
-  private registerFramework(frameworkId: string, framework: AgentFramework, schema?: Record<string, unknown>): void {
-    this.agentFrameworks.set(frameworkId, framework);
-    if (schema) {
-      this.frameworkSchemas.set(frameworkId, schema);
-    }
-  }
-
-  /**
    * Ensure repositories are initialized
    */
   private ensureRepositories(): void {
     if (!this.agentInstanceRepository || !this.agentMessageRepository) {
       throw new Error('Agent instance repositories not initialized');
+    }
+  }
+
+  private getMemeLoopRuntime(): MemeLoopDesktopRuntime {
+    if (!this.memeLoopRuntime) {
+      this.memeLoopRuntime = new MemeLoopDesktopRuntime({
+        agentInstanceService: this,
+        agentDefinitionService: this.agentDefinitionService,
+        externalAPIService: this.externalAPIService,
+        notifyAgentChanged: (agentId, agent) => {
+          this.notifyAgentUpdate(agentId, agent);
+        },
+        isCancelled: (agentId) => this.cancelTokenMap.get(agentId)?.value ?? false,
+      });
+    }
+    return this.memeLoopRuntime;
+  }
+
+  private async updateAgentStatusBestEffort(agentId: string, status: AgentInstanceLatestStatus): Promise<void> {
+    let currentAgent: AgentInstance | undefined;
+    try {
+      currentAgent = await this.getAgent(agentId);
+    } catch {
+      currentAgent = undefined;
+    }
+
+    if (currentAgent) {
+      currentAgent.status = status;
+      this.notifyAgentUpdate(agentId, currentAgent);
+    }
+
+    if (!this.agentInstanceRepository || !this.agentMessageRepository) {
+      return;
+    }
+
+    try {
+      await this.updateAgent(agentId, { status });
+    } catch (error) {
+      if (!currentAgent) {
+        throw error;
+      }
+      logger.warn('Failed to persist agent status during MemeLoop turn; continuing with in-memory status', { error, agentId, state: status.state });
+    }
+  }
+
+  private async persistMemeLoopError(agentId: string, error_: unknown): Promise<void> {
+    const now = new Date();
+    const message: AgentInstanceMessage = {
+      id: `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      agentId,
+      role: 'error',
+      content: `Error: ${error_ instanceof Error ? error_.message : String(error_)}`,
+      created: now,
+      modified: now,
+      duration: 1,
+      metadata: {
+        errorDetail: error_ instanceof Error ? { message: error_.message, name: error_.name } : { message: String(error_) },
+      },
+    };
+
+    try {
+      await this.saveUserMessage(message);
+      this.debounceUpdateMessage(message, agentId, 0);
+      const agent = await this.getAgent(agentId);
+      if (agent) {
+        const existingIndex = agent.messages.findIndex(item => item.id === message.id);
+        if (existingIndex >= 0) {
+          agent.messages[existingIndex] = message;
+        } else {
+          agent.messages.push(message);
+        }
+        this.notifyAgentUpdate(agentId, agent);
+      }
+    } catch (persistError) {
+      logger.warn('Failed to persist MemeLoop error message', { error: persistError, agentId });
     }
   }
 
@@ -311,50 +373,20 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async sendMsgToAgent(agentId: string, content: { text: string; file?: File; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> }): Promise<void> {
     try {
-      // Get agent instance
       const agentInstance = await this.getAgent(agentId);
       if (!agentInstance) {
         throw new Error(`Agent instance not found: ${agentId}`);
       }
 
-      // Create user message
-      const messageId = nanoid();
       const now = new Date();
 
-      // Get agent configuration
       const agentDefinition = await this.agentDefinitionService.getAgentDef(agentInstance.agentDefId);
       if (!agentDefinition) {
         throw new Error(`Agent definition not found: ${agentInstance.agentDefId}`);
       }
 
-      // Get appropriate framework, fall back to the default when older agent definitions lack this field
-      const agentFrameworkId = agentDefinition.agentFrameworkID ?? 'basicPromptConcatHandler';
-      if (!agentFrameworkId) {
-        throw new Error(`Agent framework ID not found in agent definition: ${agentDefinition.id}`);
-      }
-      const framework = this.agentFrameworks.get(agentFrameworkId);
-      if (!framework) {
-        throw new Error(`Framework not found: ${agentFrameworkId}`);
-      }
-
-      // Create framework context with temporary message added for processing
       const cancelToken = { value: false };
       this.cancelTokenMap.set(agentId, cancelToken);
-      const frameworkContext: AgentFrameworkContext = {
-        agent: {
-          ...agentInstance,
-          messages: [...agentInstance.messages],
-          status: {
-            state: 'working',
-            modified: now,
-          },
-        },
-        agentDef: agentDefinition,
-        isCancelled: () => cancelToken.value,
-      };
-
-      // Create fresh hooks for this framework execution and register plugins based on frameworkConfig
-      const { hooks: frameworkHooks } = await createHooksWithPlugins(agentDefinition.agentFrameworkConfig || {});
 
       // Record HEAD commit hashes for all wiki workspaces before the agent turn starts.
       // This allows rollback by comparing with commits made during the turn.
@@ -378,109 +410,32 @@ export class AgentInstanceService implements IAgentInstanceService {
         logger.warn('Failed to record before-turn commit hashes', { error });
       }
 
-      // Trigger userMessageReceived hook with the configured tools
-      await frameworkHooks.userMessageReceived.promise({
-        agentFrameworkContext: frameworkContext,
-        content,
-        messageId,
-        timestamp: now,
-      });
-
-      // Attach beforeCommitMap to the user message metadata after it's created by the messagePersistence hook.
-      // This allows the frontend to know which commit hash to rollback to for this turn.
-      if (Object.keys(beforeCommitMap).length > 0) {
-        const userMessage = frameworkContext.agent.messages.find(m => m.id === messageId);
-        if (userMessage) {
-          userMessage.metadata = { ...userMessage.metadata, beforeCommitMap };
-          // Persist the updated metadata
-          void this.saveUserMessage(userMessage).catch((error: unknown) => {
-            logger.warn('Failed to persist beforeCommitMap metadata', { error, messageId });
-          });
-        }
-      }
-
-      // Notify agent update after user message is added
-      this.notifyAgentUpdate(agentId, frameworkContext.agent);
-
       try {
-        // Create async generator
-        const generator = framework(frameworkContext);
+        await this.updateAgentStatusBestEffort(agentId, {
+          state: 'working',
+          modified: now,
+        });
 
-        // Track the last message for completion handling
-        let lastResult: AgentInstanceLatestStatus | undefined;
+        const terminalState = await this.getMemeLoopRuntime().runTurn({
+          agentId,
+          content,
+          beforeCommitMap,
+        });
 
-        for await (const result of generator) {
-          // Update status subscribers for specific message
-          if (result.message) {
-            // Ensure message has correct modification timestamp
-            if (!result.message.modified) {
-              result.message.modified = new Date();
-            }
+        const finalState = cancelToken.value ? 'canceled' : terminalState;
+        await this.updateAgentStatusBestEffort(agentId, {
+          state: finalState,
+          modified: new Date(),
+        });
 
-            // Update status subscribers directly
-            const statusKey = `${agentId}:${result.message.id}`;
-            if (this.statusSubjects.has(statusKey)) {
-              this.statusSubjects.get(statusKey)?.next(result);
-            }
-
-            // Notify agent update with latest messages for real-time UI updates
-            // (even if content is empty — tool results and state changes need broadcasting)
-            this.notifyAgentUpdate(agentId, frameworkContext.agent);
-          }
-
-          // Store the last result for completion handling
-          lastResult = result;
+        if (agentDefinition.heartbeat?.enabled && !agentInstance.volatile) {
+          startHeartbeat(agentId, agentDefinition.heartbeat, this, { createdBy: 'agent-definition' });
         }
 
-        // Handle stream completion
-        if (lastResult?.message) {
-          // Complete the message stream directly using the last message from the generator
-          const statusKey = `${agentId}:${lastResult.message.id}`;
-          const subject = this.statusSubjects.get(statusKey);
-          if (subject) {
-            const finalState = lastResult.state ?? 'completed';
-            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id, finalState });
-            // Send final update with the actual terminal state from the generator
-            subject.next({
-              state: finalState,
-              message: lastResult.message,
-              modified: new Date(),
-            });
-            // Complete and clean up the Observable
-            // Use queueMicrotask to ensure IPC message delivery before completing subject
-            // This schedules the completion after the current synchronous code and pending microtasks
-            queueMicrotask(() => {
-              try {
-                subject.complete();
-                this.statusSubjects.delete(statusKey);
-                logger.debug(`[${agentId}] Subject completed and deleted`, { messageId: lastResult.message?.id });
-              } catch (error) {
-                logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message?.id, error });
-              }
-            });
-          }
-
-          // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
-          const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled';
-          await frameworkHooks.agentStatusChanged.promise({
-            agentFrameworkContext: frameworkContext,
-            status: {
-              state: terminalState,
-              modified: new Date(),
-            },
-          });
-
-          // Start heartbeat timer if the agent definition has heartbeat config
-          if (agentDefinition.heartbeat?.enabled && !agentInstance.volatile) {
-            startHeartbeat(agentId, agentDefinition.heartbeat, this, { createdBy: 'agent-definition' });
-          }
-        }
-
-        // Remove cancel token after generator completes
         this.cancelTokenMap.delete(agentId);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error(`Agent handler execution failed: ${errorMessage}`);
+        logger.error(`MemeLoop agent execution failed: ${errorMessage}`);
 
         // Clear any pending message subscriptions for this agent
         for (const key of Array.from(this.statusSubjects.keys())) {
@@ -502,18 +457,12 @@ export class AgentInstanceService implements IAgentInstanceService {
           }
         }
 
-        // Trigger agentStatusChanged hook for failure
-        await frameworkHooks.agentStatusChanged.promise({
-          agentFrameworkContext: frameworkContext,
-          status: {
-            state: 'failed',
-            modified: new Date(),
-          },
-        }).catch(() => {
-          // Ignore hook errors during error handling
+        await this.persistMemeLoopError(agentId, error);
+        await this.updateAgentStatusBestEffort(agentId, {
+          state: 'failed',
+          modified: new Date(),
         });
 
-        // Remove cancel token
         this.cancelTokenMap.delete(agentId);
         throw error;
       }

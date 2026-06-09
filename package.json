@@ -93,6 +93,7 @@
     "lodash": "4.18.1",
     "material-ui-popup-state": "^5.3.7",
     "menubar": "9.5.2",
+    "memeloop": "file:../memeloop/packages/memeloop",
     "monaco-editor": "^0.55.1",
     "nanoid": "^5.1.11",
     "new-github-issue-url": "^1.1.0",

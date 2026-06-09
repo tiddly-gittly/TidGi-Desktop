@@ -67,7 +67,7 @@ describe('AgentInstanceService Wiki Operation', () => {
     };
 
     // Mock generateFromAI to yield AIStreamResponse-like objects.
-    // Use mockReturnValueOnce per round: the iterative basicPromptConcatHandler calls
+    // Use mockReturnValueOnce per round: MemeLoop calls generateFromAI once per round
     // generateFromAI once per round and breaks the stream with `break` when a tool result
     // triggers a new round.  A shared generator instance would be terminated by that break.
     mockExternalAPIService.generateFromAI = vi.fn()
