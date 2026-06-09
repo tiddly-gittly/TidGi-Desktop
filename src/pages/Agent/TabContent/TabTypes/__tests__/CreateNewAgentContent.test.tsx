@@ -503,7 +503,7 @@ describe('CreateNewAgentContent', () => {
     // Step 1: Create agent definition (simulates template selection)
     const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition);
     expect(createdDef).toBeDefined();
-    const prompts = (createdDef.agentFrameworkConfig).prompts as Array<{
+    const prompts = createdDef.agentFrameworkConfig.prompts as Array<{
       children?: Array<{ text?: string }>;
     }>;
     expect((prompts as Array<{ children?: Array<{ text?: string }> }>)[0]?.children?.[0]?.text).toBe('You are a helpful assistant for Tiddlywiki user.');

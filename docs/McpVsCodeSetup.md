@@ -54,11 +54,11 @@ Replace `YOUR_32_CHAR_HEX_TOKEN` with the actual token from TidGi preferences.
 
 ## Supported Auth Methods
 
-| Method | Bearer Header `Authorization: Bearer <token>` | Query Param `?token=<token>` |
-|--------|-----------------------------------------------|------------------------------|
-| VS Code built-in MCP client | ❌ Not supported | ✅ Supported |
-| Custom MCP clients (e.g., Claude Desktop, script) | ✅ Supported | ✅ Supported |
-| curl / wget | ✅ Supported | ✅ Supported |
+| Method                                            | Bearer Header `Authorization: Bearer <token>` | Query Param `?token=<token>` |
+| ------------------------------------------------- | --------------------------------------------- | ---------------------------- |
+| VS Code built-in MCP client                       | ❌ Not supported                              | ✅ Supported                 |
+| Custom MCP clients (e.g., Claude Desktop, script) | ✅ Supported                                  | ✅ Supported                 |
+| curl / wget                                       | ✅ Supported                                  | ✅ Supported                 |
 
 ## Troubleshooting
 

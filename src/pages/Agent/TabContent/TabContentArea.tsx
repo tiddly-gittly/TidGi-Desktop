@@ -30,10 +30,10 @@ const FallbackHeader = styled(Box)`
 
 function getWikiEmbedWorkspaceIds(tab: TabItem): string[] {
   if (tab.type === TabType.WIKI_EMBED) {
-    return [(tab).workspaceId];
+    return [tab.workspaceId];
   }
   if (tab.type === TabType.SPLIT_VIEW) {
-    return (tab).childTabs.flatMap(getWikiEmbedWorkspaceIds);
+    return tab.childTabs.flatMap(getWikiEmbedWorkspaceIds);
   }
   return [];
 }

@@ -86,7 +86,7 @@ export const splitViewActionsMiddleware: StateCreator<
       const state = get();
       // Find the split view tab that contains this tab
       const splitViewTab = state.tabs.find(
-        tab => tab.type === TabType.SPLIT_VIEW && (tab).childTabs.some(childTab => childTab.id === tabId),
+        tab => tab.type === TabType.SPLIT_VIEW && tab.childTabs.some(childTab => childTab.id === tabId),
       ) as ISplitViewTab | undefined;
 
       if (!splitViewTab) return;

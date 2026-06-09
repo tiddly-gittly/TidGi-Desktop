@@ -17,6 +17,7 @@ TidGi offers anonymous usage analytics to help improve the application. This fea
 - **Transparent** - All tracked events are limited to application behavior, never your notes or personal content
 
 When enabled, analytics may collect:
+
 - Application launch events
 - Workspace creation and activation (without names or paths)
 - Preference changes related to analytics configuration
@@ -24,6 +25,7 @@ When enabled, analytics may collect:
 - Platform and version information
 
 Analytics **never** collect:
+
 - Note content or titles
 - Workspace names or file paths
 - URLs or web browsing history
@@ -43,6 +45,7 @@ The app may use third-party services that could collect information:
 ## Your Control
 
 You have full control over your data:
+
 - All notes and content are stored locally or in your own Git repositories
 - You choose which Git service (if any) to use for synchronization
 - You can export your data at any time

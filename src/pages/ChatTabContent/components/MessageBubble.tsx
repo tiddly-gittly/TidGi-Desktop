@@ -25,7 +25,7 @@ const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
       };
     } // Check for persisted file object with path
     else if (file && typeof file === 'object' && 'path' in file) {
-      const filePath = `file://${(file).path}`;
+      const filePath = `file://${file.path}`;
       setSource(filePath);
       setPreviewUrl(filePath);
     }

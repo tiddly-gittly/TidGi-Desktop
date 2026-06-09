@@ -452,8 +452,8 @@ ${message.message}
 
   public formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string {
     logger.debug('formatting file URL to absolute path', { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
-    let pathname = '';
-    let hostname = '';
+    let pathname: string;
+    let hostname: string;
     try {
       ({ hostname, pathname } = new URL(urlWithFileProtocol));
     } catch {
