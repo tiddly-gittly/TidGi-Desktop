@@ -146,7 +146,7 @@ export function validateAndConvertWikiTiddlerToAgentTemplate(
       name: getStringField(tiddler.caption) || getStringField(tiddler.title),
       description: getStringField(tiddler.description) || `Agent template from ${workspaceName || 'wiki'}`,
       avatarUrl: getStringField(tiddler.avatar_url) || undefined,
-      agentFrameworkID: getStringField(tiddler.agentFrameworkID) || 'basicPromptConcatHandler',
+      agentFrameworkID: getStringField(tiddler.agentFrameworkID) || 'memeloopTaskAgent',
       agentFrameworkConfig,
       aiApiConfig: parseAiApiConfig(tiddler.ai_api_config),
       agentTools: parseAgentTools(tiddler.agent_tools),

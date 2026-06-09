@@ -470,7 +470,7 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'task-agent',
       name: 'Example Agent',
-      agentFrameworkID: 'basicPromptConcatHandler',
+      agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {
         prompts: [
           {
