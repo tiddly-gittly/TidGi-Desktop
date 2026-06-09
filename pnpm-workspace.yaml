@@ -7,6 +7,9 @@ overrides:
   # file-stream-rotator 1.0.0 removes the moment dependency.
   # winston-daily-rotate-file hasn't updated its range yet, so override it here.
   file-stream-rotator: 1.0.0
+  # Security fixes for transitive deps via prebuild-install -> rc / tar-stream
+  ini: "^1.3.8"
+  bl: "^4.1.0"
 
 peerDependencyRules:
   ignoreMissing:
