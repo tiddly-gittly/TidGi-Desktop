@@ -214,7 +214,7 @@ Then('the browser view should be loaded and visible', async function(this: Appli
     },
   ).catch(async () => {
     // Gather diagnostics for failure analysis
-    let diagnostics = '';
+    let diagnostics: string;
     try {
       const loaded = await isLoaded(this.app!, this.currentWindow);
       const content = await getTextContent(this.app!, this.currentWindow);
@@ -558,7 +558,7 @@ Then('image {string} should be loaded in browser view', async function(this: App
   let lastDiagnostic = '';
   await backOff(
     async () => {
-      let isImageLoaded = false;
+      let isImageLoaded: boolean;
       try {
         const diagnostic = await executeTiddlyWikiCode<{
           loaded: boolean;

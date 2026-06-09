@@ -243,7 +243,7 @@ async function dragLocatorToCoordinates(
   // settled before releasing — prevents the drop from firing while the
   // intent is still transitioning between zones.
   if (targetWorkspaceId !== undefined) {
-    ({ targetX, targetY } = await waitForDragIntent(
+    await waitForDragIntent(
       world,
       sourceSelector,
       resolveTargetCoordinates,
@@ -251,7 +251,7 @@ async function dragLocatorToCoordinates(
       expectedIntent,
       'drop',
       { targetX, targetY },
-    ));
+    );
   }
 
   await world.currentWindow.mouse.up();
