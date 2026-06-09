@@ -14,14 +14,14 @@ describe('createAgentInstanceData', () => {
           },
         ],
       },
-      agentFrameworkID: 'basicPromptConcatHandler',
+      agentFrameworkID: 'memeloopTaskAgent',
     };
 
     const { instanceData } = createAgentInstanceData(agentDefinition);
 
     expect(instanceData.agentFrameworkConfig).toBeUndefined();
     expect(instanceData.agentDefId).toBe('test-agent-def');
-    expect(instanceData.agentFrameworkID).toBe('basicPromptConcatHandler');
+    expect(instanceData.agentFrameworkID).toBe('memeloopTaskAgent');
     expect(instanceData.name).toContain('Test Agent');
   });
 
@@ -29,7 +29,7 @@ describe('createAgentInstanceData', () => {
     const agentDefinition = {
       id: 'test-agent-def-no-config',
       name: 'Test Agent No Config',
-      agentFrameworkID: 'basicPromptConcatHandler',
+      agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {}, // Required by AgentDefinition interface
     };
 
@@ -37,6 +37,6 @@ describe('createAgentInstanceData', () => {
 
     expect(instanceData.agentFrameworkConfig).toBeUndefined();
     expect(instanceData.agentDefId).toBe('test-agent-def-no-config');
-    expect(instanceData.agentFrameworkID).toBe('basicPromptConcatHandler');
+    expect(instanceData.agentFrameworkID).toBe('memeloopTaskAgent');
   });
 });

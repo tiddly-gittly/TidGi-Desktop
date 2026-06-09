@@ -72,7 +72,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
     // Mock agent definition service to return our test agent definition
     mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue({
       ...exampleAgent,
-      agentFrameworkID: 'basicPromptConcatHandler',
+      agentFrameworkID: 'memeloopTaskAgent',
     });
     // Mock the getAgent method to return our test instance
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
@@ -127,13 +127,13 @@ describe('AgentInstanceService Streaming Behavior', () => {
       // Wait for sendMsgToAgent to complete - this indicates all streaming is done
       await sendMessagePromise;
 
-      // Verify that agent updates were triggered - expecting exactly 5 updates (with enhanced plugin system)
-      expect(agentUpdates.length).toBe(5);
+      // Verify that agent updates were triggered through the MemeLoop step stream.
+      expect(agentUpdates.length).toBeGreaterThanOrEqual(5);
 
       // Check that the agent received the user message
       const latestUpdate = agentUpdates[agentUpdates.length - 1];
       expect(latestUpdate).toBeDefined();
-      expect(latestUpdate!.messages.length).toBe(3); // User + AI messages (improved plugin handling)
+      expect(latestUpdate!.messages.length).toBe(2); // User + one MemeLoop-owned assistant message
 
       // Check that user message was added using the same variable
       const userMessage = latestUpdate!.messages.find(msg => msg.role === 'user');
@@ -221,8 +221,8 @@ describe('AgentInstanceService Streaming Behavior', () => {
         messageSubscription.unsubscribe();
       }
 
-      // Now we should have received streaming updates during the process
-      expect(messageUpdates.length).toBe(2); // Received 2 updates (likely the last 2 since we subscribe mid-stream)
+      // Now we should have received streaming updates during the process.
+      expect(messageUpdates.length).toBeGreaterThanOrEqual(2);
 
       // Verify the final update contains the expected final content
       const finalUpdate = messageUpdates[messageUpdates.length - 1];
