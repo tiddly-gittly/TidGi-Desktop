@@ -41,10 +41,10 @@ export const developersSection: ISectionDefinition = {
     },
     { type: 'divider' },
     {
-      type: 'action',
+      type: 'custom',
+      componentId: 'developers.diagPanel',
       titleKey: 'Preference.DiagPanel',
       descriptionKey: 'Preference.DiagPanelDetail',
-      handler: 'developerTools.openDiagPanel',
     },
     { type: 'divider' },
     {
@@ -91,24 +91,11 @@ export const developersSection: ISectionDefinition = {
     },
     { type: 'divider' },
     {
-      type: 'preference-boolean',
-      key: 'externalAPIDebug',
+      type: 'custom',
+      componentId: 'developers.externalApi',
       titleKey: 'Preference.ExternalAPIDebug',
       descriptionKey: 'Preference.ExternalAPIDebugDescription',
       ns: 'agent',
-      zod: z.boolean(),
-    },
-    { type: 'divider' },
-    {
-      type: 'action',
-      titleKey: 'Preference.OpenDatabaseFolder',
-      ns: 'agent',
-      handler: 'developerTools.openExternalApiDbFolder',
-    },
-    {
-      type: 'action',
-      titleKey: 'Preference.DeleteExternalApiDatabase',
-      handler: 'developerTools.deleteExternalApiDb',
     },
   ],
 };

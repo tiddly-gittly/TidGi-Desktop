@@ -7,19 +7,19 @@ import type { ICustomSectionProps } from '@services/preferences/definitions/type
 import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
+import { DeveloperDiagPanelItem, DeveloperExternalApiItem } from './customItems/DeveloperToolsItems';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';
 import { NotificationScheduleItem } from './customItems/NotificationScheduleItem';
 import { OpenAtLoginItem } from './customItems/OpenAtLoginItem';
+import { SyncAiTimeoutItem, SyncIntervalItem, SyncMoreSettingsItem, SyncTokenFormItem } from './customItems/SyncItems';
 import { SpellcheckLanguagesItem } from './customItems/SpellcheckLanguagesItem';
+import { TidGiMiniWindowAdvancedSettingsItem, TidGiMiniWindowMainToggleItem } from './customItems/TidGiMiniWindowItems';
 import { WikiUserNameItem } from './customItems/WikiUserNameItem';
 import { WorkspaceGroupsItem } from './customItems/WorkspaceGroupsItem';
 
 // ─── Lazy-loaded section-level custom components (very complex sections) ──
 const LazyExternalAPISection = lazy(() => import('./sections/ExternalAPI').then((m) => ({ default: m.ExternalAPI })));
 const LazyAIAgentSection = lazy(() => import('./sections/AIAgent').then((m) => ({ default: m.AIAgent })));
-const LazyDeveloperToolsSection = lazy(() => import('./sections/DeveloperTools').then((m) => ({ default: m.DeveloperTools })));
-const LazySyncSection = lazy(() => import('./sections/Sync').then((m) => ({ default: m.Sync })));
-const LazyTidGiMiniWindowSection = lazy(() => import('./sections/TidGiMiniWindow').then((m) => ({ default: m.TidGiMiniWindow })));
 
 function wrapWithSuspense(LazyComponent: LazyExoticComponent<ComponentType<ICustomSectionProps>>): ComponentType<ICustomSectionProps> {
   return function SuspenseWrapper(props: ICustomSectionProps) {
@@ -46,15 +46,20 @@ export function registerCustomSections(): void {
   };
   registerSection('externalAPI', LazyExternalAPISection);
   registerSection('aiAgent', LazyAIAgentSection);
-  registerSection('developers', LazyDeveloperToolsSection);
-  registerSection('sync', LazySyncSection);
-  registerSection('tidgiMiniWindow', LazyTidGiMiniWindowSection);
 
   // Item-level custom components (small self-contained widgets)
   registerCustomComponent('system.openAtLogin', OpenAtLoginItem);
   registerCustomComponent('wiki.userName', WikiUserNameItem);
   registerCustomComponent('languages.selector', LanguageSelectorItem);
   registerCustomComponent('languages.spellcheckLanguages', SpellcheckLanguagesItem);
+  registerCustomComponent('developers.diagPanel', DeveloperDiagPanelItem);
+  registerCustomComponent('developers.externalApi', DeveloperExternalApiItem);
+  registerCustomComponent('sync.tokenForm', SyncTokenFormItem);
+  registerCustomComponent('sync.interval', SyncIntervalItem);
+  registerCustomComponent('sync.aiTimeout', SyncAiTimeoutItem);
+  registerCustomComponent('sync.moreSettings', SyncMoreSettingsItem);
+  registerCustomComponent('tidgiMiniWindow.mainToggle', TidGiMiniWindowMainToggleItem);
+  registerCustomComponent('tidgiMiniWindow.advancedSettings', TidGiMiniWindowAdvancedSettingsItem);
   registerCustomComponent('notifications.schedule', NotificationScheduleItem);
   registerCustomComponent('notifications.test', NotificationTestItem);
   registerCustomComponent('notifications.helpText', NotificationHelpTextItem);
