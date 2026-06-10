@@ -6,17 +6,25 @@ export const DEFAULT_MCP_SERVER_PORT = 38385;
 
 let server: http.Server | undefined;
 
+function getEffectiveMcpAuth(requireToken: boolean, token: string) {
+  const normalizedToken = token.trim();
+  const shouldRequireToken = requireToken && normalizedToken.length > 0;
+  return {
+    normalizedToken,
+    shouldRequireToken,
+  };
+}
+
 export async function startMcpServer(port: number = DEFAULT_MCP_SERVER_PORT, requireToken = false, token = ''): Promise<void> {
   if (server !== undefined) return;
-  const normalizedToken = token.trim();
-  if (requireToken && !normalizedToken) {
-    logger.warn('MCP server not started: mcpServerRequireToken is true but mcpServerToken is empty');
-    return;
+  const { normalizedToken, shouldRequireToken } = getEffectiveMcpAuth(requireToken, token);
+  if (requireToken && !shouldRequireToken) {
+    logger.warn('MCP server token auth requested but mcpServerToken is empty; starting without token auth');
   }
   // Dynamic import to avoid loading @modelcontextprotocol/sdk at module init time
   // (static imports in server.ts → sdkAdapter.ts chain would hang Electron startup on CI)
   const { createMcpHttpServer } = await import('./server');
-  server = createMcpHttpServer(requireToken ? { requireToken: true, token: normalizedToken } : undefined);
+  server = createMcpHttpServer(shouldRequireToken ? { requireToken: true, token: normalizedToken } : undefined);
   server.listen(port, '127.0.0.1', () => {
     logger.info(`TidGi MCP server listening on http://127.0.0.1:${port}/mcp`);
   });
@@ -40,6 +48,10 @@ export function stopMcpServer(): Promise<void> | undefined {
       resolve();
     });
   });
+}
+
+export function __resetMcpServerForTests(): void {
+  server = undefined;
 }
 
 let startPromise: Promise<void> | undefined;
