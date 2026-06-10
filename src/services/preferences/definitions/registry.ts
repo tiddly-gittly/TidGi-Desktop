@@ -99,6 +99,16 @@ export function buildZodSchema(): z.ZodObject<Record<string, z.ZodType>> {
   shape.pauseNotificationsByScheduleTo = z.string();
   // Language is managed by a custom selector
   shape.language = z.string();
+  // Preferences managed by custom item components
+  shape.syncDebounceInterval = z.number();
+  shape.aiGenerateBackupTitleTimeout = z.number();
+  shape.tidgiMiniWindow = z.boolean();
+  shape.tidgiMiniWindowShowTitleBar = z.boolean();
+  shape.tidgiMiniWindowAlwaysOnTop = z.boolean();
+  shape.tidgiMiniWindowSyncWorkspaceWithMainWindow = z.boolean();
+  shape.tidgiMiniWindowShowSidebar = z.boolean();
+  shape.tidgiMiniWindowFixedWorkspaceId = z.string().optional();
+  shape.externalAPIDebug = z.boolean();
   return z.object(shape);
 }
 
