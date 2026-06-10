@@ -392,18 +392,23 @@ interface ISearchHit {
   section: ISectionDefinition;
 }
 
-function collectSearchHits(query: string, platform: string | undefined, t: (key: string, options?: Record<string, unknown>) => string): ISearchHit[] {
+function collectSearchHits(
+  query: string,
+  platform: string | undefined,
+  preference: IPreferences,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): ISearchHit[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
   const hits: ISearchHit[] = [];
   for (const section of allSections) {
-    if (evaluateHidden(section.hidden, { preference: undefined, platform })) continue;
+    if (evaluateHidden(section.hidden, { preference, platform })) continue;
     const sectionTitleLower = txEn(section.titleKey, section.ns).toLowerCase();
     const sectionTitleCurrent = t(section.titleKey, section.ns ? { ns: section.ns } : undefined).toLowerCase();
     const sectionKeyLower = section.titleKey.toLowerCase();
     for (const item of section.items) {
       if (item.type === 'divider') continue;
-      if ('hidden' in item && evaluateHidden(item.hidden, { preference: undefined, platform })) continue;
+      if ('hidden' in item && evaluateHidden(item.hidden, { preference, platform })) continue;
       if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
       const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
       const titleCurrent = t(item.titleKey, item.ns ? { ns: item.ns } : undefined).toLowerCase();
@@ -513,7 +518,7 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
     if (preference === undefined) {
       return <Skeleton variant='text' width={200} height={24} sx={{ mt: 2 }} />;
     }
-    const hits = collectSearchHits(query, platform, t);
+    const hits = collectSearchHits(query, platform, preference, t);
     if (hits.length === 0) {
       return (
         <Typography

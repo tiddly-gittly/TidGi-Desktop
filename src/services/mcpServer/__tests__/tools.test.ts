@@ -178,4 +178,20 @@ describe('MCP tools', () => {
     expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
     expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
   });
+
+  it('supports drilling into array ranges returned by snapshot summaries', async () => {
+    mockGet.mockReturnValue(createSnapshotWindowMock({
+      nodes: Array.from({ length: 80 }, (_, index) => ({ nodeId: String(index), text: `node-${index}` })),
+    }));
+
+    const result = await callTool('ui_snapshot', {
+      workspaceId: 'main-window',
+      path: 'nodes.10:14',
+      maxBytes: 10_000,
+    }) as Array<{ nodeId: string; text: string }>;
+
+    expect(result).toHaveLength(5);
+    expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
+    expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
+  });
 });

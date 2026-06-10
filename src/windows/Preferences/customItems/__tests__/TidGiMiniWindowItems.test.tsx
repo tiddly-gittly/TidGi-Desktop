@@ -144,8 +144,9 @@ describe('TidGiMiniWindow custom items', () => {
     expect(screen.getAllByText('Preference.TidgiMiniWindowFixedWorkspace').length).toBeGreaterThan(0);
 
     const user = userEvent.setup();
-    const switches = screen.getAllByRole('switch');
-    await user.click(switches[2]);
+    const syncSwitch = screen.getByTestId('tidgi-mini-window-sync-workspace-switch').querySelector('input[type="checkbox"]');
+    if (!syncSwitch) throw new Error('Sync switch not found');
+    await user.click(syncSwitch);
 
     expect(window.service.preference.set).toHaveBeenCalledWith('tidgiMiniWindowSyncWorkspaceWithMainWindow', true);
   });

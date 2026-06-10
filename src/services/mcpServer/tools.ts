@@ -167,6 +167,15 @@ function getSnapshotValueAtPath(root: unknown, pathSegments: SnapshotPathSegment
       }
       current = current[segment];
     } else {
+      if (Array.isArray(current)) {
+        const rangeMatch = /^(\d+):(\d+)$/.exec(segment);
+        if (rangeMatch) {
+          const start = Number(rangeMatch[1]);
+          const end = Number(rangeMatch[2]);
+          current = current.slice(start, end + 1);
+          continue;
+        }
+      }
       if (current === null || typeof current !== 'object' || !(segment in current)) {
         throw new Error(`Snapshot path ${formatSnapshotPath(pathSegments)} not found.`);
       }
