@@ -4,10 +4,17 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { z } from 'zod';
 import type { McpToolDefinition, ToolInput } from './types';
 
 /** Pass this as workspaceId to target the main React UI window instead of a wiki webview. */
 const MAIN_WINDOW_TARGET = 'main-window';
+const PREFERENCES_WINDOW_TARGET = 'preferences-window';
+
+const WINDOW_TARGETS = new Map<string, WindowNames>([
+  [MAIN_WINDOW_TARGET, WindowNames.main],
+  [PREFERENCES_WINDOW_TARGET, WindowNames.preferences],
+]);
 
 // ─── Tool Definitions ─────────────────────────────────────────────────────────
 
@@ -16,86 +23,60 @@ export const TOOLS: McpToolDefinition[] = [
   {
     name: 'ui_snapshot',
     description:
-      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI (sidebar, settings, workspace switcher). Omit workspaceId to use the active workspace.',
+      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. Omit workspaceId to use the active workspace.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_screenshot',
-    description: 'Take a screenshot. workspaceId targets a wiki webview; use "main-window" for the main React UI. Omit to use active workspace. Returns base64-encoded PNG.',
+    description: 'Take a screenshot. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. Omit to use active workspace. Returns base64-encoded PNG.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_click',
-    description: 'Click at (x, y). workspaceId targets a wiki webview; use "main-window" for the main React UI. Omit to use active workspace.',
+    description: 'Click at (x, y). workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. Omit to use active workspace.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        x: { type: 'number', description: 'X coordinate (pixels from left)' },
-        y: { type: 'number', description: 'Y coordinate (pixels from top)' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-        button: { type: 'string', enum: ['left', 'right', 'middle'], description: 'Mouse button (default: left)' },
-        clickCount: { type: 'number', description: 'Number of clicks: 1=single, 2=double. Default: 1.' },
-      },
-      required: ['x', 'y'],
+      x: z.number().describe('X coordinate (pixels from left)'),
+      y: z.number().describe('Y coordinate (pixels from top)'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
+      button: z.enum(['left', 'right', 'middle']).optional().describe('Mouse button (default: left)'),
+      clickCount: z.number().optional().describe('Number of clicks: 1=single, 2=double. Default: 1.'),
     },
   },
   {
     name: 'ui_type',
-    description: 'Type text into the currently focused element. workspaceId targets a wiki webview; use "main-window" for the main React UI.',
+    description: 'Type text into the currently focused element. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        text: { type: 'string', description: 'Text to type' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
-      required: ['text'],
+      text: z.string().describe('Text to type'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_key',
-    description: 'Press a keyboard key or shortcut, e.g. "Enter", "Escape", "Control+s". Use "main-window" to target the main React UI.',
+    description: 'Press a keyboard key or shortcut, e.g. "Enter", "Escape", "Control+s". Use "main-window" or "preferences-window" to target app windows.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        key: { type: 'string', description: 'Key name or combo, e.g. "Enter", "Tab", "Control+s"' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
-      required: ['key'],
+      key: z.string().describe('Key name or combo, e.g. "Enter", "Tab", "Control+s"'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_navigate',
     description: 'Navigate the workspace webview to a URL, e.g. "tidgi://workspaceId/#TiddlerTitle". Only works for wiki webviews, not "main-window".',
     inputSchema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'URL to load' },
-        workspaceId: { type: 'string', description: 'Workspace ID. Omit to use active workspace.' },
-      },
-      required: ['url'],
+      url: z.string().describe('URL to load'),
+      workspaceId: z.string().optional().describe('Workspace ID. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_evaluate',
     description:
-      'Evaluate JavaScript and return the result. In wiki webviews, $tw.wiki API is available. Use "main-window" to query the main React UI (window.service, React state, etc.).',
+      'Evaluate JavaScript and return the result. In wiki webviews, $tw.wiki API is available. Use "main-window" or "preferences-window" to query app window state (window.service, React state, etc.).',
     inputSchema: {
-      type: 'object',
-      properties: {
-        script: { type: 'string', description: 'JavaScript to evaluate. The last expression value is returned.' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
-      required: ['script'],
+      script: z.string().describe('JavaScript to evaluate. The last expression value is returned.'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
 ];
@@ -114,14 +95,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 async function getWebContents(workspaceId: string | undefined) {
-  // Special target: main React UI window (sidebar, settings, workspace switcher)
-  if (workspaceId === MAIN_WINDOW_TARGET) {
+  // Special targets: app windows like main or preferences.
+  if (workspaceId && WINDOW_TARGETS.has(workspaceId)) {
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-    const win = windowService.get(WindowNames.main);
-    if (!win) throw new Error('Main window not found.');
+    const windowName = WINDOW_TARGETS.get(workspaceId)!;
+    const win = windowService.get(windowName);
+    if (!win) throw new Error(`${workspaceId} not found.`);
     const { webContents } = win;
-    if (webContents.isDestroyed()) throw new Error('Main window webContents is destroyed.');
-    return { webContents, wsId: MAIN_WINDOW_TARGET };
+    if (webContents.isDestroyed()) throw new Error(`${workspaceId} webContents is destroyed.`);
+    return { webContents, wsId: workspaceId };
   }
 
   // Wiki webview target

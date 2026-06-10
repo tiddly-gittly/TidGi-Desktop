@@ -5,10 +5,9 @@
  * error-typed container operations. This module wraps the SDK so IoC files
  * only see a plain http.Server factory.
  */
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
-import type { AnySchema } from '@modelcontextprotocol/sdk/server/zod-compat';
 import { TOOLS } from './tools';
 import type { ToolInput } from './types';
 
@@ -22,7 +21,7 @@ function createMcpServerWithTools(): McpServer {
       tool.name,
       {
         description: tool.description,
-        inputSchema: tool.inputSchema as unknown as AnySchema | undefined,
+        inputSchema: tool.inputSchema,
       },
       async (parameters: unknown) => {
         const { callTool } = await import('./tools');
