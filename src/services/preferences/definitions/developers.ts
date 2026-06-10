@@ -68,7 +68,6 @@ export const developersSection: ISectionDefinition = {
       needsRestart: false,
       zod: z.number(),
     },
-    { type: 'divider' },
     {
       type: 'preference-boolean',
       key: 'mcpServerRequireToken',
@@ -81,6 +80,7 @@ export const developersSection: ISectionDefinition = {
       key: 'mcpServerToken',
       titleKey: 'Preference.McpServerToken',
       descriptionKey: 'Preference.McpServerTokenDescription',
+      hidden: [{ type: 'preference', key: 'mcpServerRequireToken', operator: 'falsy' }],
       needsRestart: false,
       zod: z.string(),
     },
@@ -88,6 +88,13 @@ export const developersSection: ISectionDefinition = {
       type: 'action',
       titleKey: 'Preference.GenerateMcpToken',
       handler: 'native.generateMcpToken',
+      hidden: [{ type: 'preference', key: 'mcpServerRequireToken', operator: 'falsy' }],
+    },
+    {
+      type: 'custom',
+      componentId: 'developers.mcpVsCodeUrl',
+      titleKey: 'Preference.CopyMcpServerUrl',
+      hidden: [{ type: 'preference', key: 'mcpServerRequireToken', operator: 'falsy' }],
     },
     { type: 'divider' },
     {

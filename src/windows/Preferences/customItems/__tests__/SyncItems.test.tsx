@@ -66,7 +66,7 @@ describe('Sync custom items', () => {
   it('renders ai timeout item and updates timeout', async () => {
     render(
       <TestWrapper>
-        <SyncAiTimeoutItem onNeedsRestart={() => {}} />
+        <SyncAiTimeoutItem />
       </TestWrapper>,
     );
 
@@ -83,7 +83,7 @@ describe('Sync custom items', () => {
   it('renders more settings item', () => {
     render(
       <TestWrapper>
-        <SyncMoreSettingsItem onNeedsRestart={() => {}} />
+        <SyncMoreSettingsItem />
       </TestWrapper>,
     );
 

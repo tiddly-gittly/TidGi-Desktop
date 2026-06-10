@@ -2,6 +2,7 @@ import type { OverridableComponent } from '@mui/material/OverridableComponent';
 import type { SvgIconTypeMap } from '@mui/material/SvgIcon';
 import { z } from 'zod';
 import type { IPreferences } from '../interface';
+import { type HiddenCondition, hiddenConditionSchema } from './conditions';
 
 // ─── Platform condition ──────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ export type PlatformCondition = z.infer<typeof platformConditionSchema>;
 const definitionBaseSchema = z.object({
   titleKey: z.string(),
   descriptionKey: z.string().optional(),
+  hidden: hiddenConditionSchema.optional(),
   ns: z.string().optional(),
   platform: platformConditionSchema.optional(),
 });
@@ -119,7 +121,7 @@ export const sectionDefinitionDataSchema = z.object({
   id: z.string(),
   titleKey: z.string(),
   ns: z.string().optional(),
-  hidden: z.boolean().optional(),
+  hidden: hiddenConditionSchema.optional(),
   items: z.array(preferenceItemDefinitionSchema),
 });
 export type ISectionDefinitionData = z.infer<typeof sectionDefinitionDataSchema>;
@@ -155,6 +157,7 @@ export interface IGenericBooleanItem {
   key: string;
   titleKey: string;
   descriptionKey?: string;
+  hidden?: HiddenCondition;
   ns?: string;
   platform?: PlatformCondition;
   needsRestart?: boolean;
@@ -165,6 +168,7 @@ export interface IGenericEnumItem {
   key: string;
   titleKey: string;
   descriptionKey?: string;
+  hidden?: HiddenCondition;
   ns?: string;
   platform?: PlatformCondition;
   enumValues: string[];
@@ -177,6 +181,7 @@ export interface IGenericNumberItem {
   key: string;
   titleKey: string;
   descriptionKey?: string;
+  hidden?: HiddenCondition;
   ns?: string;
   platform?: PlatformCondition;
   needsRestart?: boolean;
@@ -187,6 +192,7 @@ export interface IGenericStringItem {
   key: string;
   titleKey: string;
   descriptionKey?: string;
+  hidden?: HiddenCondition;
   ns?: string;
   platform?: PlatformCondition;
   multiline?: boolean;

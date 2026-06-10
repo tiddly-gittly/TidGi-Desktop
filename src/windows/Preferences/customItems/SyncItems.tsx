@@ -3,8 +3,8 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { renderTimeViewClock } from '@mui/x-date-pickers/timeViewRenderers';
 import { useTranslation } from 'react-i18next';
 
-import { TokenForm } from '@/components/TokenForm';
 import { ListItem, ListItemText } from '@/components/ListItem';
+import { TokenForm } from '@/components/TokenForm';
 import type { ICustomItemProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';

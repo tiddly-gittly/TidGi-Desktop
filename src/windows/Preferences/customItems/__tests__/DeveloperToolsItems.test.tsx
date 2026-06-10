@@ -11,7 +11,7 @@ import { sectionById } from '@services/preferences/definitions/registry';
 import type { IPreferences } from '@services/preferences/interface';
 import { lightTheme } from '@services/theme/defaultTheme';
 import { registerCustomSections } from '../../registerCustomSections';
-import { DeveloperDiagPanelItem, DeveloperExternalApiItem } from '../DeveloperToolsItems';
+import { buildVsCodeMcpUrl, DeveloperDiagPanelItem, DeveloperExternalApiItem, DeveloperMcpVsCodeUrlItem } from '../DeveloperToolsItems';
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={lightTheme}>
@@ -26,9 +26,11 @@ const createMockPreference = (overrides: Partial<IPreferences> = {}): IPreferenc
 
 describe('DeveloperTools custom items', () => {
   let preferenceSubject: BehaviorSubject<IPreferences | undefined>;
+  let writeTextMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    writeTextMock = vi.fn().mockResolvedValue(undefined);
 
     preferenceSubject = new BehaviorSubject<IPreferences | undefined>(
       createMockPreference({
@@ -127,7 +129,7 @@ describe('DeveloperTools custom items', () => {
     });
 
     Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      value: { writeText: writeTextMock },
       configurable: true,
     });
   });
@@ -155,7 +157,7 @@ describe('DeveloperTools custom items', () => {
   it('opens diag panel dialog', async () => {
     render(
       <TestWrapper>
-        <DeveloperDiagPanelItem onNeedsRestart={() => {}} />
+        <DeveloperDiagPanelItem />
       </TestWrapper>,
     );
 
@@ -165,5 +167,65 @@ describe('DeveloperTools custom items', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Preference.DiagPanel').length).toBeGreaterThan(1);
     });
+  });
+
+  it('builds the MCP URL with token query parameter', async () => {
+    preferenceSubject.next(createMockPreference({
+      mcpServerPort: 38385,
+      mcpServerRequireToken: true,
+      mcpServerToken: 'abc123token',
+    }));
+
+    render(
+      <TestWrapper>
+        <DeveloperMcpVsCodeUrlItem />
+      </TestWrapper>,
+    );
+
+    const user = userEvent.setup();
+    const button = screen.getByText('Preference.CopyMcpServerUrl').closest('[role="button"]');
+    expect(button).not.toBeNull();
+    await user.click(button!);
+
+    expect(buildVsCodeMcpUrl(createMockPreference({
+      mcpServerPort: 38385,
+      mcpServerRequireToken: true,
+      mcpServerToken: 'abc123token',
+    }))).toBe('http://127.0.0.1:38385/mcp?token=abc123token');
+
+    await waitFor(() => {
+      expect(screen.getByText('Preference.CopiedToClipboard')).toBeInTheDocument();
+    });
+  });
+
+  it('disables copying when token auth is enabled but token is empty', () => {
+    preferenceSubject.next(createMockPreference({
+      mcpServerRequireToken: true,
+      mcpServerToken: '',
+    }));
+
+    render(
+      <TestWrapper>
+        <DeveloperMcpVsCodeUrlItem />
+      </TestWrapper>,
+    );
+
+    expect(screen.getByRole('button', { name: /Preference\.CopyMcpServerUrl/i })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('disables copying when token auth is turned off', () => {
+    preferenceSubject.next(createMockPreference({
+      mcpServerRequireToken: false,
+      mcpServerToken: 'abc123token',
+    }));
+
+    render(
+      <TestWrapper>
+        <DeveloperMcpVsCodeUrlItem />
+      </TestWrapper>,
+    );
+
+    expect(screen.getByRole('button', { name: /Preference\.CopyMcpServerUrl/i })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText('Preference.CopyMcpServerUrlRequiresAuthDescription')).toBeInTheDocument();
   });
 });

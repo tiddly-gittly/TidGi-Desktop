@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { getActionHandler } from '@services/preferences/definitions/actionHandlers';
+import { evaluateHidden } from '@services/preferences/definitions/conditions';
 import { allSections } from '@services/preferences/definitions/registry';
 import { getSideEffect } from '@services/preferences/definitions/sideEffects';
 import type {
@@ -334,6 +335,7 @@ function ItemRenderer({
   const { t } = useTranslation(['translation', 'agent']);
 
   if (item.type === 'divider') return query ? null : <Divider />;
+  if ('hidden' in item && evaluateHidden(item.hidden, { preference, platform })) return null;
   if ('platform' in item && !matchesPlatform(item.platform, platform)) return null;
 
   switch (item.type) {
@@ -395,11 +397,13 @@ function collectSearchHits(query: string, platform: string | undefined, t: (key:
   if (!q) return [];
   const hits: ISearchHit[] = [];
   for (const section of allSections) {
+    if (evaluateHidden(section.hidden, { preference: undefined, platform })) continue;
     const sectionTitleLower = txEn(section.titleKey, section.ns).toLowerCase();
     const sectionTitleCurrent = t(section.titleKey, section.ns ? { ns: section.ns } : undefined).toLowerCase();
     const sectionKeyLower = section.titleKey.toLowerCase();
     for (const item of section.items) {
       if (item.type === 'divider') continue;
+      if ('hidden' in item && evaluateHidden(item.hidden, { preference: undefined, platform })) continue;
       if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
       const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
       const titleCurrent = t(item.titleKey, item.ns ? { ns: item.ns } : undefined).toLowerCase();
@@ -561,6 +565,7 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
   return (
     <>
       {allSections.slice(0, visibleCount).map((section) => {
+        if (evaluateHidden(section.hidden, { preference, platform })) return null;
         const reference = sectionRefs.get(section.id) ?? React.createRef<HTMLSpanElement>();
         // If the section provides a custom component, use it instead of the schema renderer
         if (section.CustomSectionComponent) {
@@ -579,7 +584,10 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
         );
       })}
       {/* Skeleton placeholders for deferred sections — refs attached so sidebar nav still works */}
-      {allSections.slice(visibleCount).map((section) => <DeferredSectionSkeleton key={section.id} sectionRef={sectionRefs.get(section.id)} />)}
+      {allSections.slice(visibleCount).map((section) => {
+        if (evaluateHidden(section.hidden, { preference, platform })) return null;
+        return <DeferredSectionSkeleton key={section.id} sectionRef={sectionRefs.get(section.id)} />;
+      })}
     </>
   );
 }

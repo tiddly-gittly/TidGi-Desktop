@@ -2,7 +2,6 @@ import { KeyboardShortcutRegister } from '@/components/KeyboardShortcutRegister'
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { Box, Divider, FormControl, InputLabel, MenuItem, Select, Switch, Typography } from '@mui/material';
-import type { ICustomItemProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
@@ -20,7 +19,7 @@ export function TidGiMiniWindowMainToggleItem(): React.JSX.Element {
 
   return (
     <ListItem
-      secondaryAction={(
+      secondaryAction={
         <Switch
           edge='end'
           color='primary'
@@ -30,7 +29,7 @@ export function TidGiMiniWindowMainToggleItem(): React.JSX.Element {
           }}
           data-testid='attach-to-tidgi-mini-window-switch'
         />
-      )}
+      }
     >
       <ListItemText
         primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.TidgiMiniWindow')}
@@ -72,7 +71,7 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
         </Box>
       </Box>
       <ListItem
-        secondaryAction={(
+        secondaryAction={
           <Switch
             edge='end'
             color='primary'
@@ -82,7 +81,7 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
             }}
             data-testid='tidgi-mini-window-titlebar-switch'
           />
-        )}
+        }
       >
         <ListItemText
           primary={t('Preference.TidgiMiniWindowShowTitleBar')}
@@ -90,7 +89,7 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
         />
       </ListItem>
       <ListItem
-        secondaryAction={(
+        secondaryAction={
           <Switch
             edge='end'
             color='primary'
@@ -100,13 +99,13 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
             }}
             data-testid='tidgi-mini-window-always-on-top-switch'
           />
-        )}
+        }
       >
         <ListItemText primary={t('Preference.TidgiMiniWindowAlwaysOnTop')} secondary={t('Preference.TidgiMiniWindowAlwaysOnTopDetail')} />
       </ListItem>
       <Divider />
       <ListItem
-        secondaryAction={(
+        secondaryAction={
           <Switch
             edge='end'
             color='primary'
@@ -116,7 +115,7 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
             }}
             data-testid='tidgi-mini-window-sync-workspace-switch'
           />
-        )}
+        }
       >
         <ListItemText
           primary={t('Preference.TidgiMiniWindowSyncWorkspaceWithMainWindow')}
@@ -126,7 +125,7 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
       {!preference.tidgiMiniWindowSyncWorkspaceWithMainWindow && (
         <>
           <ListItem
-            secondaryAction={(
+            secondaryAction={
               <Switch
                 edge='end'
                 color='primary'
@@ -136,7 +135,7 @@ export function TidGiMiniWindowAdvancedSettingsItem(): React.JSX.Element {
                 }}
                 data-testid='sidebar-on-tidgi-mini-window-switch'
               />
-            )}
+            }
           >
             <ListItemText
               primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.TidgiMiniWindowShowSidebar')}

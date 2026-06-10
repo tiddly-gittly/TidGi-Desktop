@@ -121,7 +121,7 @@ describe('TidGiMiniWindow custom items', () => {
   it('renders the main toggle item', async () => {
     render(
       <TestWrapper>
-        <TidGiMiniWindowMainToggleItem onNeedsRestart={() => {}} />
+        <TidGiMiniWindowMainToggleItem />
       </TestWrapper>,
     );
 
@@ -133,7 +133,7 @@ describe('TidGiMiniWindow custom items', () => {
   it('renders advanced settings and updates sync preference', async () => {
     render(
       <TestWrapper>
-        <TidGiMiniWindowAdvancedSettingsItem onNeedsRestart={() => {}} />
+        <TidGiMiniWindowAdvancedSettingsItem />
       </TestWrapper>,
     );
 

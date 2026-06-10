@@ -27,8 +27,57 @@ import { ListItem, ListItemText } from '@/components/ListItem';
 import type { IProcessInfo } from '@services/native/processInfo';
 import type { ICustomItemProps } from '@services/preferences/definitions/types';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import type { IPreferences } from '@services/preferences/interface';
 import type { IViewInfo } from '@services/view/interface';
 import type { IWorkerInfo } from '@services/wiki/interface';
+
+export function buildVsCodeMcpUrl(preference: Pick<IPreferences, 'mcpServerPort' | 'mcpServerRequireToken' | 'mcpServerToken'>): string {
+  const token = preference.mcpServerToken.trim();
+  return `http://127.0.0.1:${preference.mcpServerPort}/mcp${preference.mcpServerRequireToken && token ? `?token=${encodeURIComponent(token)}` : ''}`;
+}
+
+export function DeveloperMcpVsCodeUrlItem(): React.JSX.Element | null {
+  const { t } = useTranslation();
+  const preference = usePreferenceObservable();
+  const [copiedSnackbarOpen, setCopiedSnackbarOpen] = useState(false);
+
+  if (preference === undefined) return null;
+
+  const token = preference.mcpServerToken.trim();
+  const requiresToken = preference.mcpServerRequireToken;
+  const copyDisabled = !requiresToken || token.length === 0;
+  const url = buildVsCodeMcpUrl(preference);
+
+  return (
+    <>
+      <ListItemButton
+        disabled={copyDisabled}
+        onClick={() => {
+          void navigator.clipboard.writeText(url);
+          setCopiedSnackbarOpen(true);
+        }}
+      >
+        <ListItemText
+          primary={t('Preference.CopyMcpServerUrl')}
+          secondary={!requiresToken
+            ? t('Preference.CopyMcpServerUrlRequiresAuthDescription')
+            : copyDisabled
+            ? t('Preference.CopyMcpServerUrlDisabledDescription')
+            : t('Preference.CopyMcpServerUrlDescription')}
+        />
+        <ChevronRightIcon color='action' />
+      </ListItemButton>
+      <Snackbar
+        open={copiedSnackbarOpen}
+        autoHideDuration={2000}
+        onClose={() => {
+          setCopiedSnackbarOpen(false);
+        }}
+        message={t('Preference.CopiedToClipboard')}
+      />
+    </>
+  );
+}
 
 export function DeveloperDiagPanelItem(): React.JSX.Element {
   const { t } = useTranslation();
@@ -164,14 +213,26 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                             <Typography variant='body2' sx={{ fontWeight: 'bold' }}>{info.workspaceName}</Typography>
                             <Typography variant='caption' sx={{ color: 'text.secondary' }}>{info.workspaceID.slice(0, 8)}</Typography>
                           </TableCell>
-                          <TableCell><Typography variant='body2'>{info.isRunning && info.threadId > 0 ? info.threadId : '-'}</Typography></TableCell>
-                          <TableCell><Typography variant='body2'>{info.isRunning ? info.port : '-'}</Typography></TableCell>
                           <TableCell>
-                            <Chip label={info.isRunning ? t('Preference.WorkerDebugRunning') : t('Preference.WorkerDebugStopped')} size='small' color={info.isRunning ? 'success' : 'default'} />
+                            <Typography variant='body2'>{info.isRunning && info.threadId > 0 ? info.threadId : '-'}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant='body2'>{info.isRunning ? info.port : '-'}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={info.isRunning ? t('Preference.WorkerDebugRunning') : t('Preference.WorkerDebugStopped')}
+                              size='small'
+                              color={info.isRunning ? 'success' : 'default'}
+                            />
                           </TableCell>
                           <TableCell>
                             {info.rss_MB >= 0
-                              ? <Typography variant='body2' color={info.rss_MB > 500 ? 'error' : info.rss_MB > 200 ? 'warning.main' : 'success.main'} sx={{ fontWeight: 'bold' }}>{`${info.rss_MB} MB`}</Typography>
+                              ? (
+                                <Typography variant='body2' color={info.rss_MB > 500 ? 'error' : info.rss_MB > 200 ? 'warning.main' : 'success.main'} sx={{ fontWeight: 'bold' }}>
+                                  {`${info.rss_MB} MB`}
+                                </Typography>
+                              )
                               : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
                           </TableCell>
                           <TableCell>
@@ -257,22 +318,54 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                                     )
                                     : <Typography variant='caption' sx={{ color: 'text.secondary' }}>{renderer.title || '-'}</Typography>}
                                 </TableCell>
-                                <TableCell><Chip label={renderer.type} size='small' /></TableCell>
+                                <TableCell>
+                                  <Chip label={renderer.type} size='small' />
+                                </TableCell>
                                 <TableCell>
                                   {renderer.private_KB > 0
-                                    ? <Typography variant='body2' color={renderer.private_KB > 500_000 ? 'error' : renderer.private_KB > 200_000 ? 'warning.main' : 'success.main'} sx={{ fontWeight: 'bold' }}>{`${Math.round(renderer.private_KB / 1024)} MB`}</Typography>
+                                    ? (
+                                      <Typography
+                                        variant='body2'
+                                        color={renderer.private_KB > 500_000 ? 'error' : renderer.private_KB > 200_000 ? 'warning.main' : 'success.main'}
+                                        sx={{ fontWeight: 'bold' }}
+                                      >
+                                        {`${Math.round(renderer.private_KB / 1024)} MB`}
+                                      </Typography>
+                                    )
                                     : renderer.workingSet_KB > 0
-                                    ? <Typography variant='body2' color={renderer.workingSet_KB > 500_000 ? 'error' : renderer.workingSet_KB > 200_000 ? 'warning.main' : 'success.main'} sx={{ fontWeight: 'bold' }}>{`~${Math.round(renderer.workingSet_KB / 1024)} MB`}</Typography>
+                                    ? (
+                                      <Typography
+                                        variant='body2'
+                                        color={renderer.workingSet_KB > 500_000 ? 'error' : renderer.workingSet_KB > 200_000 ? 'warning.main' : 'success.main'}
+                                        sx={{ fontWeight: 'bold' }}
+                                      >
+                                        {`~${Math.round(renderer.workingSet_KB / 1024)} MB`}
+                                      </Typography>
+                                    )
                                     : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
                                 </TableCell>
                                 <TableCell>
                                   {renderer.cpu_percent >= 0
-                                    ? <Typography variant='body2' color={renderer.cpu_percent > 20 ? 'error' : renderer.cpu_percent > 5 ? 'warning.main' : 'text.primary'} sx={{ fontWeight: 'bold' }}>{`${renderer.cpu_percent.toFixed(1)} %`}</Typography>
+                                    ? (
+                                      <Typography
+                                        variant='body2'
+                                        color={renderer.cpu_percent > 20 ? 'error' : renderer.cpu_percent > 5 ? 'warning.main' : 'text.primary'}
+                                        sx={{ fontWeight: 'bold' }}
+                                      >
+                                        {`${renderer.cpu_percent.toFixed(1)} %`}
+                                      </Typography>
+                                    )
                                     : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
                                 </TableCell>
                                 <TableCell>
                                   {matchingView !== undefined
-                                    ? <Typography variant='caption'>{`x:${matchingView.bounds.x} y:${matchingView.bounds.y}`}<br />{`${matchingView.bounds.width}×${matchingView.bounds.height}`}</Typography>
+                                    ? (
+                                      <Typography variant='caption'>
+                                        {`x:${matchingView.bounds.x} y:${matchingView.bounds.y}`}
+                                        <br />
+                                        {`${matchingView.bounds.width}×${matchingView.bounds.height}`}
+                                      </Typography>
+                                    )
                                     : '-'}
                                 </TableCell>
                                 <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -368,7 +461,7 @@ export function DeveloperExternalApiItem({ onNeedsRestart }: ICustomItemProps): 
   return (
     <>
       <ListItem
-        secondaryAction={(
+        secondaryAction={
           <Switch
             edge='end'
             checked={preference?.externalAPIDebug || false}
@@ -382,7 +475,7 @@ export function DeveloperExternalApiItem({ onNeedsRestart }: ICustomItemProps): 
             }}
             name='externalAPIDebug'
           />
-        )}
+        }
       >
         <ListItemText
           primary={t('Preference.ExternalAPIDebug', { ns: 'agent' })}
