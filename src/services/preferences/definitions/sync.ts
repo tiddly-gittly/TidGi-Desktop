@@ -33,12 +33,10 @@ export const syncSection: ISectionDefinition = {
     },
     { type: 'divider' },
     {
-      type: 'preference-number',
-      key: 'syncDebounceInterval',
+      type: 'custom',
+      componentId: 'sync.interval',
       titleKey: 'Preference.SyncInterval',
       descriptionKey: 'Preference.SyncIntervalDescription',
-      needsRestart: true,
-      zod: z.number(),
     },
     { type: 'divider' },
     {
@@ -50,11 +48,10 @@ export const syncSection: ISectionDefinition = {
     },
     { type: 'divider' },
     {
-      type: 'preference-number',
-      key: 'aiGenerateBackupTitleTimeout',
+      type: 'custom',
+      componentId: 'sync.aiTimeout',
       titleKey: 'Preference.AIGenerateBackupTitleTimeout',
       descriptionKey: 'Preference.AIGenerateBackupTitleTimeoutDescription',
-      zod: z.number(),
     },
     { type: 'divider' },
     {
