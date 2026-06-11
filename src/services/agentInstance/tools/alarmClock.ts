@@ -70,37 +70,11 @@ export async function scheduleAlarmTimer(
 
 /** Cancel all alarm tasks for an agent. */
 export function cancelAlarm(agentId: string): void {
-  // removeTask is async but callers don't await — fire and forget is acceptable for cleanup
   for (const task of getActiveTasksForAgent(agentId)) {
     if (task.scheduleKind === 'at') {
       void removeTask(task.id);
     }
   }
-}
-
-/** Check if an agent has active alarm tasks. */
-export function hasActiveAlarm(agentId: string): boolean {
-  return getActiveTasksForAgent(agentId).some(t => t.scheduleKind === 'at');
-}
-
-/** Get all agent IDs with active alarms. */
-export function getActiveAlarmAgentIds(): string[] {
-  return [];
-}
-
-/** Alias kept for AgentInstanceService. */
-export function getActiveAlarmEntries(): Array<{
-  agentId: string;
-  wakeAtISO: string;
-  reminderMessage?: string;
-  repeatIntervalMinutes?: number;
-  nextWakeAtISO?: string;
-  createdBy?: string;
-  lastRunAtISO?: string;
-  runCount: number;
-}> {
-  // The caller expects ActiveAlarmTimer shape; we don't have it directly anymore.
-  return [];
 }
 
 // ─── schedule-task / list-schedules / remove-schedule / update-schedule ──────
