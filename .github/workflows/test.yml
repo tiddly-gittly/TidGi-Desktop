@@ -151,6 +151,12 @@ jobs:
             echo "Verified: out/TidGi-linux-x64/tidgi exists"
           fi
 
+      - name: Calibrate E2E timeouts
+        run: pnpm run test:e2e:calibrate
+        env:
+          CI: true
+        timeout-minutes: 45
+
       # Linux: Run E2E under xvfb for virtual display
       - name: Run E2E tests (Linux)
         if: runner.os == 'Linux'
