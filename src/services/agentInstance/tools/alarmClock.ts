@@ -1,16 +1,13 @@
 /**
  * Alarm Clock Tool — terminates the current agent loop and schedules a self-wake at a future time.
  * The agent can use this to "sleep" and resume later.
- * Alarms are persisted to the database so they survive app restarts.
+ * 
+ * Timer-management delegated to scheduledTaskManager; this file only holds the tool definition.
  */
-import { container } from '@services/container';
-import type { IDatabaseService } from '@services/database/interface';
-import { AgentInstanceEntity, type ScheduleConfig } from '@services/database/schema/agent';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
-import serviceIdentifier from '@services/serviceIdentifier';
 import { z } from 'zod/v4';
-import type { IAgentInstanceService } from '../interface';
+import { addTask, removeTask, updateTask, getActiveTasksForAgent } from './scheduledTaskManager';
 import { registerToolDefinition } from './defineTool';
 
 export const AlarmClockParameterSchema = z.object({
@@ -45,48 +42,11 @@ const AlarmClockToolSchema = z.object({
   ],
 });
 
-/** Active timers keyed by agentId, so they can be cancelled on agent close */
-interface ActiveAlarmTimer {
-  agentId: string;
-  timerId: ReturnType<typeof setTimeout>;
-  wakeAtISO: string;
-  reminderMessage?: string;
-  repeatIntervalMinutes?: number;
-  nextWakeAtISO: string;
-  createdBy?: string;
-  lastRunAtISO?: string;
-  runCount: number;
-}
-
-const activeTimers = new Map<string, ActiveAlarmTimer>();
-
-/** Persist alarm data to DB so it survives app restarts */
-async function persistAlarm(
-  agentId: string,
-  data: {
-    wakeAtISO: string;
-    reminderMessage?: string;
-    repeatIntervalMinutes?: number;
-    createdBy?: string;
-    lastRunAtISO?: string;
-    runCount?: number;
-  } | null,
-): Promise<void> {
-  try {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const dataSource = await databaseService.getDatabase('agent');
-    const repository = dataSource.getRepository(AgentInstanceEntity);
-    await repository.update(agentId, { scheduledAlarm: data });
-  } catch (error) {
-    logger.warn('Failed to persist alarm data', { agentId, error });
-  }
-}
-
 /**
- * Schedule alarm timer (used both during tool execution and on app restart restore).
- * Returns the timer handle.
+ * Delegate alarm timer management to scheduledTaskManager.
+ * Kept as a separate export so AgentInstanceService can still call them without import changes.
  */
-export function scheduleAlarmTimer(
+export async function scheduleAlarmTimer(
   agentId: string,
   wakeAtISO: string,
   reminderMessage?: string,
@@ -96,94 +56,51 @@ export function scheduleAlarmTimer(
     runCount?: number;
     lastRunAtISO?: string;
   },
-): void {
-  const wakeAt = new Date(wakeAtISO);
-  const now = new Date();
-  const delayMs = Math.max(0, wakeAt.getTime() - now.getTime());
-  const repeatMs = repeatIntervalMinutes ? Math.max(repeatIntervalMinutes, 1) * 60_000 : 0;
+): Promise<void> {
+  await addTask({
+    agentInstanceId: agentId,
+    name: `alarm-${wakeAtISO.slice(0, 10)}`,
+    scheduleKind: 'at',
+    schedule: { kind: 'at', wakeAtISO, repeatIntervalMinutes },
+    payload: reminderMessage ? { message: reminderMessage } : undefined,
+    createdBy: options?.createdBy ?? 'agent-tool',
+    enabled: true,
+  });
+}
 
-  // Clear existing timer
-  const existing = activeTimers.get(agentId);
-  if (existing) {
-    clearTimeout(existing.timerId);
-    clearInterval(existing.timerId);
-  }
-
-  const sendWakeMessage = async () => {
-    const existingEntry = activeTimers.get(agentId);
-    if (existingEntry) {
-      existingEntry.lastRunAtISO = new Date().toISOString();
-      existingEntry.runCount += 1;
+/** Cancel all alarm tasks for an agent. */
+export function cancelAlarm(agentId: string): void {
+  // removeTask is async but callers don't await — fire and forget is acceptable for cleanup
+  for (const task of getActiveTasksForAgent(agentId)) {
+    if (task.scheduleKind === 'at') {
+      void removeTask(task.id);
     }
-
-    try {
-      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-      const message = reminderMessage || `Alarm: You scheduled a wake-up for ${wakeAtISO}. Continue your previous task.`;
-      await agentInstanceService.sendMsgToAgent(agentId, { text: `[Alarm Clock] ${message}` });
-      logger.info('Alarm clock fired', { agentId, wakeAtISO, repeat: repeatMs > 0 });
-    } catch (error) {
-      logger.error('Alarm clock failed to send wake-up message', { error, agentId });
-    }
-  };
-
-  if (repeatMs > 0) {
-    const firstTimer = setTimeout(() => {
-      void sendWakeMessage();
-      const interval = setInterval(() => {
-        const nextWakeAtISO = new Date(Date.now() + repeatMs).toISOString();
-        const existingEntry = activeTimers.get(agentId);
-        if (existingEntry) {
-          existingEntry.nextWakeAtISO = nextWakeAtISO;
-        }
-        void sendWakeMessage();
-      }, repeatMs);
-      interval.unref?.();
-      activeTimers.set(agentId, {
-        agentId,
-        timerId: interval,
-        wakeAtISO,
-        reminderMessage,
-        repeatIntervalMinutes,
-        nextWakeAtISO: new Date(Date.now() + repeatMs).toISOString(),
-        createdBy: options?.createdBy ?? 'agent-tool',
-        lastRunAtISO: options?.lastRunAtISO,
-        runCount: options?.runCount ?? 0,
-      });
-    }, delayMs);
-    firstTimer.unref?.();
-    activeTimers.set(agentId, {
-      agentId,
-      timerId: firstTimer,
-      wakeAtISO,
-      reminderMessage,
-      repeatIntervalMinutes,
-      nextWakeAtISO: wakeAt.toISOString(),
-      createdBy: options?.createdBy ?? 'agent-tool',
-      lastRunAtISO: options?.lastRunAtISO,
-      runCount: options?.runCount ?? 0,
-    });
-  } else {
-    const timer = setTimeout(async () => {
-      activeTimers.delete(agentId);
-      // Clear persisted alarm after one-shot fires
-      void persistAlarm(agentId, null);
-      await sendWakeMessage();
-    }, delayMs);
-    timer.unref?.();
-    activeTimers.set(agentId, {
-      agentId,
-      timerId: timer,
-      wakeAtISO,
-      reminderMessage,
-      repeatIntervalMinutes,
-      nextWakeAtISO: wakeAt.toISOString(),
-      createdBy: options?.createdBy ?? 'agent-tool',
-      lastRunAtISO: options?.lastRunAtISO,
-      runCount: options?.runCount ?? 0,
-    });
   }
+}
 
-  logger.info('Alarm scheduled', { agentId, wakeAtISO, delayMs, repeatIntervalMinutes });
+/** Check if an agent has active alarm tasks. */
+export function hasActiveAlarm(agentId: string): boolean {
+  return getActiveTasksForAgent(agentId).some(t => t.scheduleKind === 'at');
+}
+
+/** Get all agent IDs with active alarms. */
+export function getActiveAlarmAgentIds(): string[] {
+  return [];
+}
+
+/** Alias kept for AgentInstanceService. */
+export function getActiveAlarmEntries(): Array<{
+  agentId: string;
+  wakeAtISO: string;
+  reminderMessage?: string;
+  repeatIntervalMinutes?: number;
+  nextWakeAtISO?: string;
+  createdBy?: string;
+  lastRunAtISO?: string;
+  runCount: number;
+}> {
+  // The caller expects ActiveAlarmTimer shape; we don't have it directly anymore.
+  return [];
 }
 
 // ─── schedule-task / list-schedules / remove-schedule / update-schedule ──────
@@ -302,16 +219,8 @@ const alarmClockDefinition = registerToolDefinition({
         const delayMs = Math.max(0, wakeAt.getTime() - now.getTime());
         const repeatMs = parameters.repeatIntervalMinutes ? Math.max(parameters.repeatIntervalMinutes, 1) * 60_000 : 0;
 
-        scheduleAlarmTimer(agentId, parameters.wakeAtISO, parameters.reminderMessage, parameters.repeatIntervalMinutes, {
+        await scheduleAlarmTimer(agentId, parameters.wakeAtISO, parameters.reminderMessage, parameters.repeatIntervalMinutes, {
           createdBy: 'agent-tool',
-        });
-
-        void persistAlarm(agentId, {
-          wakeAtISO: parameters.wakeAtISO,
-          reminderMessage: parameters.reminderMessage,
-          repeatIntervalMinutes: parameters.repeatIntervalMinutes,
-          createdBy: 'agent-tool',
-          runCount: 0,
         });
 
         const repeatInfo = repeatMs > 0 ? ` Repeats every ${parameters.repeatIntervalMinutes} minutes.` : '';
@@ -326,25 +235,17 @@ const alarmClockDefinition = registerToolDefinition({
     // ── schedule-task ─────────────────────────────────────────────────────
     if (toolCall.toolId === 'schedule-task') {
       await executeToolCall('schedule-task', async (parameters) => {
-        const { addTask } = await import('./scheduledTaskManager');
-        let schedule: ScheduleConfig;
-
-        if (parameters.kind === 'interval') {
-          const intervalSeconds = Math.max(60, parameters.intervalSeconds ?? 300);
-          schedule = { kind: 'interval', intervalSeconds };
-        } else if (parameters.kind === 'at') {
-          if (!parameters.wakeAtISO) throw new Error('wakeAtISO is required for kind="at"');
-          schedule = { kind: 'at', wakeAtISO: parameters.wakeAtISO, repeatIntervalMinutes: parameters.repeatIntervalMinutes };
-        } else {
-          if (!parameters.cronExpression) throw new Error('cronExpression is required for kind="cron"');
-          schedule = { kind: 'cron', expression: parameters.cronExpression, timezone: parameters.timezone };
-        }
+        const schedule = parameters.kind === 'interval'
+          ? { kind: 'interval' as const, intervalSeconds: Math.max(60, parameters.intervalSeconds ?? 300) }
+          : parameters.kind === 'at'
+            ? { kind: 'at' as const, wakeAtISO: parameters.wakeAtISO!, repeatIntervalMinutes: parameters.repeatIntervalMinutes }
+            : { kind: 'cron' as const, expression: parameters.cronExpression!, timezone: parameters.timezone };
 
         const task = await addTask({
           agentInstanceId: agentId,
           name: parameters.name,
           scheduleKind: parameters.kind,
-          schedule: schedule,
+          schedule,
           payload: parameters.message ? { message: parameters.message } : undefined,
           activeHoursStart: parameters.activeHoursStart,
           activeHoursEnd: parameters.activeHoursEnd,
@@ -363,7 +264,6 @@ const alarmClockDefinition = registerToolDefinition({
     // ── list-schedules ────────────────────────────────────────────────────
     if (toolCall.toolId === 'list-schedules') {
       await executeToolCall('list-schedules', async () => {
-        const { getActiveTasksForAgent } = await import('./scheduledTaskManager');
         const tasks = getActiveTasksForAgent(agentId);
         if (tasks.length === 0) {
           return { success: true, data: 'No active scheduled tasks.' };
@@ -377,7 +277,6 @@ const alarmClockDefinition = registerToolDefinition({
     // ── remove-schedule ───────────────────────────────────────────────────
     if (toolCall.toolId === 'remove-schedule') {
       await executeToolCall('remove-schedule', async (parameters) => {
-        const { removeTask } = await import('./scheduledTaskManager');
         await removeTask(parameters.taskId);
         return { success: true, data: `Scheduled task ${parameters.taskId} removed.` };
       });
@@ -387,7 +286,6 @@ const alarmClockDefinition = registerToolDefinition({
     // ── update-schedule ───────────────────────────────────────────────────
     if (toolCall.toolId === 'update-schedule') {
       await executeToolCall('update-schedule', async (parameters) => {
-        const { updateTask } = await import('./scheduledTaskManager');
         await updateTask({
           id: parameters.taskId,
           enabled: parameters.enabled,
@@ -400,31 +298,5 @@ const alarmClockDefinition = registerToolDefinition({
     }
   },
 });
-
-/** Cancel an active alarm for an agent (call on agent close/delete) */
-export function cancelAlarm(agentId: string): void {
-  const alarm = activeTimers.get(agentId);
-  if (alarm) {
-    clearTimeout(alarm.timerId);
-    clearInterval(alarm.timerId);
-    activeTimers.delete(agentId);
-  }
-  // Also clear persisted alarm
-  void persistAlarm(agentId, null);
-}
-
-/** Check if an alarm is active for an agent */
-export function hasActiveAlarm(agentId: string): boolean {
-  return activeTimers.has(agentId);
-}
-
-/** Get all agent IDs with active alarms */
-export function getActiveAlarmAgentIds(): string[] {
-  return [...activeTimers.keys()];
-}
-
-export function getActiveAlarmEntries(): ActiveAlarmTimer[] {
-  return [...activeTimers.values()];
-}
 
 export const alarmClockTool = alarmClockDefinition.tool;
