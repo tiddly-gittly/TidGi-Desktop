@@ -1,6 +1,7 @@
 function readPackage(pkg, context) {
   if (process.platform !== 'win32') {
-    delete pkg.optionalDependencies['registry-js'];
+    delete pkg.dependencies?.['registry-js'];
+    delete pkg.optionalDependencies?.['registry-js'];
   }
 
   return pkg;

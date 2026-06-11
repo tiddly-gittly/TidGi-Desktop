@@ -98,10 +98,6 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch == 'arm64' && 'amd64_arm64' || 'x64' }}
           pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
-      - name: Remove windows only deps
-        if: matrix.platform != 'win'
-        run: pnpm remove registry-js
-
       - name: Build plugins
         run: pnpm run build:plugin
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
