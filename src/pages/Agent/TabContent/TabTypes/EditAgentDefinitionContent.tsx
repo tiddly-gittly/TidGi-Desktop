@@ -4,7 +4,7 @@ import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinitionService';
 import { AgentFrameworkConfig } from '@services/agentInstance/schema';
-import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/scheduledTaskManager';
+import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/tools/scheduledTaskManager';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

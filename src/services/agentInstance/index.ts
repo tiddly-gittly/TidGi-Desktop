@@ -41,8 +41,8 @@ import {
   removeTask as stmRemoveTask,
   restoreScheduledTasks,
   updateTask as stmUpdateTask,
-} from './scheduledTaskManager';
-import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
+} from './tools/scheduledTaskManager';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './tools/scheduledTaskTypes';
 import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
 
