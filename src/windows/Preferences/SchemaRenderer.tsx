@@ -1,13 +1,13 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Divider, List, ListItemButton, Skeleton, Switch, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import i18next from 'i18next';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { getActionHandler } from '@services/preferences/definitions/actionHandlers';
+import { collectSettingSearchHits } from '@services/preferences/definitions/collectSettingSearchHits';
 import { evaluateHidden } from '@services/preferences/definitions/conditions';
 import { allSections } from '@services/preferences/definitions/registry';
 import { getSideEffect } from '@services/preferences/definitions/sideEffects';
@@ -38,17 +38,6 @@ function matchesPlatform(condition: PlatformCondition | undefined, platform: str
   if (condition === '!darwin') return platform !== 'darwin';
   if (condition === 'win32') return platform === 'win32';
   return true;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────
-
-/** Return the English translation for a key — used for search matching independent of UI language. */
-function txEn(key: string, ns?: string): string {
-  try {
-    return (ns ? i18next.t(key, { lng: 'en', ns }) : i18next.t(key, { lng: 'en' })) ?? '';
-  } catch {
-    return '';
-  }
 }
 
 /** Label shown in search results for the section the item belongs to. */
@@ -385,55 +374,6 @@ function ItemRenderer({
   }
 }
 
-// ─── Search helpers ───────────────────────────────────────────────────
-
-interface ISearchHit {
-  item: PreferenceItemDefinition;
-  section: ISectionDefinition;
-}
-
-function collectSearchHits(
-  query: string,
-  platform: string | undefined,
-  preference: IPreferences,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): ISearchHit[] {
-  const q = query.toLowerCase().trim();
-  if (!q) return [];
-  const hits: ISearchHit[] = [];
-  for (const section of allSections) {
-    if (evaluateHidden(section.hidden, { preference, platform })) continue;
-    const sectionTitleLower = txEn(section.titleKey, section.ns).toLowerCase();
-    const sectionTitleCurrent = t(section.titleKey, section.ns ? { ns: section.ns } : undefined).toLowerCase();
-    const sectionKeyLower = section.titleKey.toLowerCase();
-    for (const item of section.items) {
-      if (item.type === 'divider') continue;
-      if ('hidden' in item && evaluateHidden(item.hidden, { preference, platform })) continue;
-      if ('platform' in item && !matchesPlatform(item.platform, platform)) continue;
-      const titleEn = txEn(item.titleKey, item.ns).toLowerCase();
-      const titleCurrent = t(item.titleKey, item.ns ? { ns: item.ns } : undefined).toLowerCase();
-      const descEn = item.descriptionKey ? txEn(item.descriptionKey, item.ns).toLowerCase() : '';
-      const descCurrent = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined).toLowerCase() : '';
-      const titleKeyLower = item.titleKey.toLowerCase();
-      const descKeyLower = item.descriptionKey?.toLowerCase() ?? '';
-      if (
-        titleEn.includes(q) ||
-        titleCurrent.includes(q) ||
-        descEn.includes(q) ||
-        descCurrent.includes(q) ||
-        titleKeyLower.includes(q) ||
-        descKeyLower.includes(q) ||
-        sectionTitleLower.includes(q) ||
-        sectionTitleCurrent.includes(q) ||
-        sectionKeyLower.includes(q)
-      ) {
-        hits.push({ item, section });
-      }
-    }
-  }
-  return hits;
-}
-
 interface ISectionRendererProps {
   onNeedsRestart: () => void;
   platform: string | undefined;
@@ -518,7 +458,10 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
     if (preference === undefined) {
       return <Skeleton variant='text' width={200} height={24} sx={{ mt: 2 }} />;
     }
-    const hits = collectSearchHits(query, platform, preference, t);
+    const hits = collectSettingSearchHits(allSections, query, { platform, t }, {
+      shouldSkipSection: (section) => evaluateHidden(section.hidden, { preference, platform }),
+      shouldSkipItem: (item) => item.hidden !== undefined && evaluateHidden(item.hidden, { preference, platform }),
+    });
     if (hits.length === 0) {
       return (
         <Typography
@@ -534,8 +477,9 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
     return (
       <>
         {hits.map(({ item, section }, index) => {
+          const preferenceItem = item as PreferenceItemDefinition;
           const sectionTitle = t(section.titleKey, section.ns ? { ns: section.ns } : undefined);
-          const itemKey = 'key' in item ? item.key : ('handler' in item ? `action-${item.handler}-${index}` : `item-${index}`);
+          const itemKey = 'key' in preferenceItem ? preferenceItem.key : ('handler' in preferenceItem ? `action-${preferenceItem.handler}-${index}` : `item-${index}`);
           return (
             <React.Fragment key={itemKey}>
               {index > 0 && <Divider />}
@@ -543,7 +487,7 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
                 <HighlightText text={sectionTitle} query={query} />
               </SearchSectionLabel>
               <ItemRenderer
-                item={item}
+                item={preferenceItem}
                 preference={preference}
                 platform={platform}
                 onNeedsRestart={onNeedsRestart}

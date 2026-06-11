@@ -10,17 +10,17 @@ import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
 import { isEqual, omit } from 'lodash';
+import { AllGenericSectionsRenderer, createRecordSchemaStore } from '../Preferences/GenericSchemaRenderer';
 import { PageInner as Inner } from '../Preferences/PreferenceComponents';
 import { SearchBar } from '../Preferences/SearchBar';
-import { registerWorkspaceCustomSections } from './registerWorkspaceCustomSections';
+import { registerWorkspaceCustomItems } from './registerWorkspaceCustomItems';
 import { Outter } from './styles';
 import { Button, SaveCancelButtonsContainer } from './styles';
 import { WorkspaceFormProvider } from './WorkspaceFormContext';
-import { AllWorkspaceSectionsRenderer } from './WorkspaceSchemaRenderer';
 import { WorkspaceSectionSideBar } from './WorkspaceSectionSideBar';
 
 // Wire custom components to the schema once at module load
-registerWorkspaceCustomSections();
+registerWorkspaceCustomItems();
 
 export default function EditWorkspace(): React.JSX.Element {
   const [workspaceID, setWorkspaceID] = useState<string | undefined>(() => (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID);
@@ -104,12 +104,24 @@ export default function EditWorkspace(): React.JSX.Element {
     return hidden;
   }, [isSubWiki, isWiki]);
 
+  const wikiWorkspace = isWiki ? workspace : undefined;
+  const workspaceStore = useMemo(
+    () => (wikiWorkspace
+      ? createRecordSchemaStore(
+        wikiWorkspace as unknown as Record<string, unknown>,
+        (next, needsRestart) => {
+          workspaceSetter({ ...wikiWorkspace, ...next }, needsRestart);
+        },
+      )
+      : undefined),
+    [wikiWorkspace, workspaceSetter],
+  );
+
   if (workspaceID === undefined || workspace === undefined) {
     return <Outter>{workspace === undefined ? t('Loading') : `Error ${workspaceID ?? '-'} not exists`}</Outter>;
   }
 
   const isSearching = searchQuery.trim().length > 0;
-  const wikiWorkspace = isWiki ? workspace : undefined;
   const hasUnsavedChanges = currentWorkspace !== undefined && !isEqual(omit(workspace, nonConfigFields), omit(currentWorkspace, nonConfigFields));
 
   return (
@@ -121,14 +133,14 @@ export default function EditWorkspace(): React.JSX.Element {
         </title>
       </Helmet>
       <SearchBar value={searchQuery} onChange={setSearchQuery} inputRef={searchInputReference} />
-      {wikiWorkspace && (
+      {wikiWorkspace && workspaceStore && (
         <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter}>
           {!isSearching && <WorkspaceSectionSideBar sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />}
           <Inner>
-            <AllWorkspaceSectionsRenderer
+            <AllGenericSectionsRenderer
+              sections={allWorkspaceSections}
+              store={workspaceStore}
               query={searchQuery}
-              workspace={wikiWorkspace}
-              workspaceSetter={workspaceSetter}
               onNeedsRestart={requestRestartCountDown}
               sectionRefs={sectionReferences}
               hiddenSections={hiddenSections}
