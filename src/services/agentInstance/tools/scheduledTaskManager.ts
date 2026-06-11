@@ -17,7 +17,7 @@ import { Repository } from 'typeorm';
 
 import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
-import type { IAgentInstanceService } from './interface';
+import type { IAgentInstanceService } from '../interface';
 import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 
 export type { CreateScheduledTaskInput, ScheduleConfig, ScheduledTask, ScheduleKind, UpdateScheduledTaskInput } from './scheduledTaskTypes';
