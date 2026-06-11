@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as heartbeatManager from '../heartbeatManager';
+import * as heartbeatManager from '../tools/scheduledTaskManager';
 import { AgentInstanceService } from '../index';
 import * as alarmClock from '../tools/alarmClock';
 
