@@ -194,4 +194,16 @@ describe('MCP tools', () => {
     expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
     expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
   });
+
+  it('rejects ui_navigate for app window targets', async () => {
+    await expect(callTool('ui_navigate', {
+      workspaceId: 'main-window',
+      url: 'https://example.com',
+    })).rejects.toThrow('ui_navigate does not support app window target "main-window"');
+
+    await expect(callTool('ui_navigate', {
+      workspaceId: 'preferences-window',
+      url: 'https://example.com',
+    })).rejects.toThrow('ui_navigate does not support app window target "preferences-window"');
+  });
 });

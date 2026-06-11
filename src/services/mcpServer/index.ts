@@ -1,4 +1,5 @@
 import { logger } from '@services/libs/log';
+import { mcpServerPortSchema } from '@services/preferences/definitions/preferenceSchemas';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type http from 'node:http';
 
@@ -17,6 +18,12 @@ function getEffectiveMcpAuth(requireToken: boolean, token: string) {
 
 export async function startMcpServer(port: number = DEFAULT_MCP_SERVER_PORT, requireToken = false, token = ''): Promise<void> {
   if (server !== undefined) return;
+  const portResult = mcpServerPortSchema.safeParse(port);
+  if (!portResult.success) {
+    logger.warn(`MCP server not started: invalid port ${port}`);
+    return;
+  }
+  const listenPort = portResult.data;
   const { normalizedToken, shouldRequireToken } = getEffectiveMcpAuth(requireToken, token);
   if (requireToken && !shouldRequireToken) {
     logger.warn('MCP server token auth requested but mcpServerToken is empty; starting without token auth');
@@ -24,16 +31,20 @@ export async function startMcpServer(port: number = DEFAULT_MCP_SERVER_PORT, req
   // Dynamic import to avoid loading @modelcontextprotocol/sdk at module init time
   // (static imports in server.ts → sdkAdapter.ts chain would hang Electron startup on CI)
   const { createMcpHttpServer } = await import('./server');
-  server = createMcpHttpServer(shouldRequireToken ? { requireToken: true, token: normalizedToken } : undefined);
-  server.listen(port, '127.0.0.1', () => {
-    logger.info(`TidGi MCP server listening on http://127.0.0.1:${port}/mcp`);
-  });
-  server.on('error', (error: NodeJS.ErrnoException) => {
+  const httpServer = createMcpHttpServer(shouldRequireToken ? { requireToken: true, token: normalizedToken } : undefined);
+  httpServer.on('error', (error: NodeJS.ErrnoException) => {
+    if (server === httpServer) {
+      server = undefined;
+    }
     if (error.code === 'EADDRINUSE') {
-      logger.warn(`MCP server port ${port} already in use, skipping`);
+      logger.warn(`MCP server port ${listenPort} already in use, skipping`);
     } else {
       logger.error('MCP server error', { error });
     }
+  });
+  server = httpServer;
+  httpServer.listen(listenPort, '127.0.0.1', () => {
+    logger.info(`TidGi MCP server listening on http://127.0.0.1:${listenPort}/mcp`);
   });
 }
 
@@ -57,19 +68,10 @@ export function __resetMcpServerForTests(): void {
 let startPromise: Promise<void> | undefined;
 
 /**
- * Initialize MCP server based on CLI flags, env vars, or preferences.
- * Also watches preference changes to restart the server dynamically.
+ * Initialize MCP server from preferences and watch for changes.
  */
 export async function initializeMcpServer(preferenceService: IPreferenceService): Promise<void> {
-  // Parse --mcp-port CLI flag or MCP_PORT env
-  const mcpPortArgument = process.argv.find((a) => a.startsWith('--mcp-port='));
-  const mcpPort = mcpPortArgument ? mcpPortArgument.split('=')[1] : process.env.MCP_PORT;
-  if (mcpPort !== undefined) {
-    const port = Number.parseInt(mcpPort, 10);
-    void startMcpServer(Number.isNaN(port) ? undefined : port);
-  } else {
-    await restartMcpServerIfNeeded(preferenceService);
-  }
+  await restartMcpServerIfNeeded(preferenceService);
   // Watch for preference changes
   const previousMcpPrefs: { enabled?: boolean; port?: number; requireToken?: boolean; token?: string } = {};
   preferenceService.preference$.subscribe(async (prefs) => {

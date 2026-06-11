@@ -57,4 +57,31 @@ describe('MCP server startup auth fallback', () => {
     expect(mockCreateMcpHttpServer).toHaveBeenCalledWith({ requireToken: true, token: 'secret-token' });
     expect(mockWarn).not.toHaveBeenCalled();
   });
+
+  it('does not start when port is invalid', async () => {
+    const module = await import('../index');
+
+    await module.startMcpServer(0, false, '');
+
+    expect(mockCreateMcpHttpServer).not.toHaveBeenCalled();
+    expect(mockWarn).toHaveBeenCalledWith('MCP server not started: invalid port 0');
+  });
+
+  it('clears server handle after EADDRINUSE so a later start can retry', async () => {
+    const module = await import('../index');
+    let errorHandler: ((error: NodeJS.ErrnoException) => void) | undefined;
+    mockOn.mockImplementation((event: string, handler: (error: NodeJS.ErrnoException) => void) => {
+      if (event === 'error') {
+        errorHandler = handler;
+      }
+      return mockServer;
+    });
+
+    await module.startMcpServer(38385, false, '');
+    expect(mockCreateMcpHttpServer).toHaveBeenCalledTimes(1);
+    errorHandler?.(Object.assign(new Error('address already in use'), { code: 'EADDRINUSE' }));
+
+    await module.startMcpServer(38385, false, '');
+    expect(mockCreateMcpHttpServer).toHaveBeenCalledTimes(2);
+  });
 });

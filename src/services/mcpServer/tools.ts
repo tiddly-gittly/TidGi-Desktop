@@ -378,6 +378,18 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+function assertWikiNavigateTarget(workspaceId: string | undefined): void {
+  if (!workspaceId) {
+    return;
+  }
+  if (WINDOW_TARGETS.has(workspaceId)) {
+    throw new Error(`ui_navigate does not support app window target "${workspaceId}". Use a workspace ID instead.`);
+  }
+  if (APP_WINDOW_NAMES.includes(workspaceId as WindowNames)) {
+    throw new Error(`ui_navigate does not support app window "${workspaceId}". Use a workspace ID instead.`);
+  }
+}
+
 async function getWebContents(workspaceId: string | undefined) {
   // Special targets: app windows like main or preferences.
   if (workspaceId && WINDOW_TARGETS.has(workspaceId)) {
@@ -533,6 +545,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 
     case 'ui_navigate': {
       const { workspaceId, url } = input as { workspaceId?: string; url: string };
+      assertWikiNavigateTarget(workspaceId);
       const { webContents } = await getWebContents(workspaceId);
       await withTimeout(webContents.loadURL(url), 15_000, 'ui_navigate');
       return { success: true, url };
