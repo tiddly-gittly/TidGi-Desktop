@@ -1,5 +1,5 @@
-import type { HunspellLanguages } from '@/constants/hunspellLanguages';
 import { z } from 'zod';
+import { customPreferenceFieldSchemas } from './customPreferenceFields';
 import { aiAgentSection } from './aiAgent';
 import { developersSection } from './developers';
 import { downloadsSection } from './downloads';
@@ -80,35 +80,18 @@ export function getAllPreferenceItems(): PreferenceItem[] {
 }
 
 /**
- * Build the unified Zod schema from all section definitions.
- * Fields not covered by definitions (like keyboardShortcuts, spellcheckLanguages)
- * are added here as extra fields.
+ * Build the unified Zod schema from section definitions and custom item fields.
  */
 export function buildZodSchema(): z.ZodObject<Record<string, z.ZodType>> {
   const shape: Record<string, z.ZodType> = {};
   for (const item of getAllPreferenceItems()) {
     shape[item.key] = item.zod;
   }
-  // Extra fields not managed by section definitions but part of IPreferences
-  shape.keyboardShortcuts = z.record(z.string(), z.string());
-  shape.spellcheckLanguages = z.array(z.string() as z.ZodType<HunspellLanguages>);
-  shape.pauseNotifications = z.string().optional();
-  // Schedule fields rendered by custom TimePicker component
-  shape.pauseNotificationsBySchedule = z.boolean();
-  shape.pauseNotificationsByScheduleFrom = z.string();
-  shape.pauseNotificationsByScheduleTo = z.string();
-  // Language is managed by a custom selector
-  shape.language = z.string();
-  // Preferences managed by custom item components
-  shape.syncDebounceInterval = z.number();
-  shape.aiGenerateBackupTitleTimeout = z.number();
-  shape.tidgiMiniWindow = z.boolean();
-  shape.tidgiMiniWindowShowTitleBar = z.boolean();
-  shape.tidgiMiniWindowAlwaysOnTop = z.boolean();
-  shape.tidgiMiniWindowSyncWorkspaceWithMainWindow = z.boolean();
-  shape.tidgiMiniWindowShowSidebar = z.boolean();
-  shape.tidgiMiniWindowFixedWorkspaceId = z.string().optional();
-  shape.externalAPIDebug = z.boolean();
+  for (const [key, fieldSchema] of Object.entries(customPreferenceFieldSchemas)) {
+    if (!(key in shape)) {
+      shape[key] = fieldSchema;
+    }
+  }
   return z.object(shape);
 }
 

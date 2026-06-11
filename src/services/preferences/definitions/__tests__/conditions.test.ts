@@ -17,6 +17,20 @@ describe('preference conditions', () => {
     })).toBe(false);
   });
 
+  it('hides TidGi mini window advanced settings when mini window is disabled', () => {
+    expect(evaluateHidden([
+      { type: 'preference', key: 'tidgiMiniWindow', operator: 'falsy' },
+    ], {
+      preference: { ...defaultPreferences, tidgiMiniWindow: false },
+    })).toBe(true);
+
+    expect(evaluateHidden([
+      { type: 'preference', key: 'tidgiMiniWindow', operator: 'falsy' },
+    ], {
+      preference: { ...defaultPreferences, tidgiMiniWindow: true },
+    })).toBe(false);
+  });
+
   it('supports recursive any/all/not composition for future conditions', () => {
     const condition: Condition = {
       type: 'all',

@@ -16,6 +16,7 @@ export const tidgiMiniWindowSection: ISectionDefinition = {
       type: 'custom',
       componentId: 'tidgiMiniWindow.advancedSettings',
       titleKey: 'Preference.TidgiMiniWindow',
+      hidden: [{ type: 'preference', key: 'tidgiMiniWindow', operator: 'falsy' }],
     },
   ],
 };

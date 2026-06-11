@@ -1,5 +1,6 @@
 import CodeIcon from '@mui/icons-material/Code';
 import { z } from 'zod';
+import { mcpServerPortSchema } from './preferenceSchemas';
 import type { ISectionDefinition } from './types';
 
 export const developersSection: ISectionDefinition = {
@@ -66,7 +67,7 @@ export const developersSection: ISectionDefinition = {
       key: 'mcpServerPort',
       titleKey: 'Preference.McpServerPort',
       needsRestart: false,
-      zod: z.number(),
+      zod: mcpServerPortSchema,
     },
     {
       type: 'preference-boolean',
