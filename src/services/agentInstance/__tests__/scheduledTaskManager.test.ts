@@ -10,7 +10,7 @@ import type { IAgentInstanceService } from '../interface';
 // ─── We test the module-level exported functions directly ────────────────────
 // Dynamic import to get a fresh module state (the Map is module-level)
 async function importManager() {
-  return await import('../scheduledTaskManager');
+  return await import('../tools/scheduledTaskManager');
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
