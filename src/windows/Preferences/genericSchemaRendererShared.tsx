@@ -1,5 +1,6 @@
 import { Skeleton, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { kebabCase } from 'lodash';
 import React from 'react';
 
 import type { PlatformCondition } from '@services/preferences/definitions/types';
@@ -13,7 +14,7 @@ export function matchesPlatform(condition: PlatformCondition | undefined, platfo
 }
 
 export function toKebabCase(value: string): string {
-  return value.replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  return kebabCase(value);
 }
 
 export const SearchSectionLabel = styled(Typography)`

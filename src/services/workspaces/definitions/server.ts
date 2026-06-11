@@ -9,6 +9,7 @@ export const serverSection: IGenericSectionDefinition = {
     {
       type: 'preference-boolean',
       key: 'enableHTTPAPI',
+      testId: 'enable-http-api-switch',
       titleKey: 'EditWorkspace.EnableHTTPAPI',
       descriptionKey: 'EditWorkspace.EnableHTTPAPIDescription',
       needsRestart: true,

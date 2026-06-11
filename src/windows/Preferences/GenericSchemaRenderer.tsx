@@ -60,7 +60,7 @@ function BooleanItem<TRecord extends Record<string, unknown>>({
           edge='end'
           color='primary'
           checked={value ?? false}
-          data-testid={`${toKebabCase(item.key)}-switch`}
+          data-testid={item.testId ?? `${toKebabCase(item.key)}-switch`}
           onChange={(event) => {
             store.update({ [item.key]: event.target.checked } as Partial<TRecord>, item.needsRestart);
           }}
@@ -261,7 +261,7 @@ export function GenericSectionRenderer<TRecord extends Record<string, unknown>>(
   const { t } = useTranslation();
   return (
     <>
-      <SectionTitle ref={sectionRef} data-testid={`preference-section-${section.id}`}>
+      <SectionTitle ref={sectionRef}>
         {t(section.titleKey, section.ns ? { ns: section.ns } : undefined)}
       </SectionTitle>
       <Paper elevation={0}>

@@ -162,6 +162,8 @@ export interface IGenericBooleanItem {
   platform?: PlatformCondition;
   needsRestart?: boolean;
   sideEffectId?: string;
+  /** Override auto-generated switch test id (kebab-case key + "-switch"). */
+  testId?: string;
 }
 export interface IGenericEnumItem {
   type: 'preference-enum';
