@@ -3,10 +3,10 @@
  * These tests import only from the definitions/ layer (no Node backend deps),
  * ensuring the schema stays frontend-safe and self-consistent.
  */
-import { allSections, getAllPreferenceItems, zodPreferencesSchema } from '@services/preferences/definitions/registry';
-import { preferenceItemDefinitionSchema, sectionDefinitionDataSchema } from '@services/preferences/definitions/types';
 import { defaultPreferences } from '@services/preferences/defaultPreferences';
 import { mcpServerPortSchema } from '@services/preferences/definitions/preferenceSchemas';
+import { allSections, getAllPreferenceItems, zodPreferencesSchema } from '@services/preferences/definitions/registry';
+import { preferenceItemDefinitionSchema, sectionDefinitionDataSchema } from '@services/preferences/definitions/types';
 import { type IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { describe, expect, it } from 'vitest';
 

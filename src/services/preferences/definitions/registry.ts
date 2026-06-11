@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { customPreferenceFieldSchemas } from './customPreferenceFields';
 import { aiAgentSection } from './aiAgent';
+import { customPreferenceFieldSchemas } from './customPreferenceFields';
 import { developersSection } from './developers';
 import { downloadsSection } from './downloads';
 import { externalAPISection } from './externalAPI';
