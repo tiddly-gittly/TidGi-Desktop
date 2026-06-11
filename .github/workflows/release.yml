@@ -87,6 +87,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      # pnpm git deps (e.g. @electron/node-gyp) resolve to git@github.com on Windows CI
+      - name: Use HTTPS for GitHub git dependencies
+        run: git config --global url."https://github.com/".insteadOf git@github.com:
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Rebuild native modules for Electron (non-Windows)
