@@ -43,7 +43,7 @@ import {
   updateTask as stmUpdateTask,
 } from './tools/scheduledTaskManager';
 import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './tools/scheduledTaskTypes';
-import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
+import { cancelAlarm, scheduleAlarmTimer } from './tools/alarmClock';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
 
 @injectable()
@@ -777,22 +777,21 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
     }
 
-    // Collect alarms from in-memory registry
-    const alarmEntries = getActiveAlarmEntries();
-    for (const alarmEntry of alarmEntries) {
-      const agentId = alarmEntry.agentId;
-      const agent = await this.getAgent(agentId);
+    // Collect alarms from unified ScheduledTaskManager
+    for (const task of stmGetActiveTasks().filter(t => t.scheduleKind === 'at')) {
+      const agent = await this.getAgent(task.agentInstanceId);
+      const atSchedule = task.schedule as Extract<typeof task.schedule, { kind: 'at' }>;
       tasks.push({
-        agentId,
+        agentId: task.agentInstanceId,
         agentName: agent?.name,
         type: 'alarm',
-        wakeAtISO: alarmEntry.wakeAtISO,
-        nextWakeAtISO: alarmEntry.nextWakeAtISO,
-        message: alarmEntry.reminderMessage,
-        repeatIntervalMinutes: alarmEntry.repeatIntervalMinutes,
-        createdBy: alarmEntry.createdBy,
-        lastRunAtISO: alarmEntry.lastRunAtISO,
-        runCount: alarmEntry.runCount,
+        wakeAtISO: atSchedule.wakeAtISO,
+        nextWakeAtISO: task.nextRunAt,
+        message: task.payload?.message,
+        repeatIntervalMinutes: atSchedule.repeatIntervalMinutes,
+        createdBy: task.createdBy,
+        lastRunAtISO: task.lastRunAt,
+        runCount: task.runCount,
       });
     }
 
