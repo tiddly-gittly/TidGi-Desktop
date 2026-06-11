@@ -4,7 +4,7 @@ const mockListen = vi.fn((_port: number, _host: string, callback?: () => void) =
   callback?.();
   return mockServer;
 });
-const mockOn = vi.fn(() => mockServer);
+const mockOn = vi.fn((..._args: unknown[]) => mockServer);
 const mockClose = vi.fn((callback?: () => void) => callback?.());
 
 const mockServer = {
@@ -70,9 +70,10 @@ describe('MCP server startup auth fallback', () => {
   it('clears server handle after EADDRINUSE so a later start can retry', async () => {
     const module = await import('../index');
     let errorHandler: ((error: NodeJS.ErrnoException) => void) | undefined;
-    mockOn.mockImplementation((event: string, handler: (error: NodeJS.ErrnoException) => void) => {
-      if (event === 'error') {
-        errorHandler = handler;
+    mockOn.mockImplementation((...args: unknown[]) => {
+      const [event, handler] = args;
+      if (event === 'error' && typeof handler === 'function') {
+        errorHandler = handler as (error: NodeJS.ErrnoException) => void;
       }
       return mockServer;
     });

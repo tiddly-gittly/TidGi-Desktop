@@ -27,6 +27,8 @@
     "lint": "eslint ./src ./features ./scripts ./localization ./*.ts --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src ./features ./scripts ./localization ./*.ts --ext ts,tsx,json --fix",
     "check": "tsc --noEmit --skipLibCheck",
+    "validate:push": "pnpm run check && pnpm run lint --max-warnings 0",
+    "prepare": "husky",
     "installType": "typesync"
   },
   "repository": "https://github.com/tiddly-gittly/TidGi-Desktop",
@@ -172,6 +174,7 @@
     "electron-chrome-web-store": "^0.13.0",
     "esbuild": "^0.28.0",
     "eslint-config-tidgi": "^3.1.0",
+    "husky": "9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jsdom": "^29.1.1",
     "memory-fs": "^0.5.0",
