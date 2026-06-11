@@ -1,10 +1,10 @@
-import type { AgentDefinition } from '@services/agentDefinition/interface';
-import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
+import type { AgentDefinition } from '@services/agentDefinitionService';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import type { AIGlobalSettings, AIStreamResponse } from '@services/externalAPI/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import { getBuiltinAgentDefinitions } from 'memeloop';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ModelMessage } from 'ai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,7 +25,7 @@ describe('ExternalAPIService logging', () => {
 
     // Clear existing data and add test data
     await agentDefRepo.clear();
-    const example = (defaultAgents as unknown as AgentDefinition[])[0];
+    const example = (getBuiltinAgentDefinitions() as unknown as AgentDefinition[])[0];
     await agentDefRepo.save({ id: example.id });
   });
 

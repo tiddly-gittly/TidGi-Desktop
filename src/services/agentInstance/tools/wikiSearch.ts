@@ -13,7 +13,7 @@ import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
+import type { AiAPIConfig } from '../schema';
 import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 
 /**

@@ -6,9 +6,18 @@ import PersonIcon from '@mui/icons-material/Person';
 import { Avatar, Box, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React, { memo } from 'react';
-import { isMessageExpiredForAI } from '../../../services/agentInstance/utilities/messageDurationFilter';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
 import { MessageRenderer } from './MessageRenderer';
+
+function isMessageExpiredForAI(
+  message: { duration?: number | null },
+  currentPosition: number,
+  totalMessages: number,
+): boolean {
+  if (message.duration === undefined || message.duration === null) return false;
+  if (message.duration === 0) return true;
+  return totalMessages - 1 - currentPosition >= message.duration;
+}
 
 const ImageAttachment = ({ file }: { file: File | { path: string } }) => {
   const [source, setSource] = React.useState<string | undefined>();

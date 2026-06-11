@@ -4,7 +4,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/schema';
 import { lightTheme } from '@services/theme/defaultTheme';
 import { BehaviorSubject } from 'rxjs';
 

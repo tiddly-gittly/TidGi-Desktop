@@ -9,7 +9,7 @@ import type {
   ListConversationsOptions,
 } from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceMessage, IAgentInstanceService } from '../interface';
 import { toAgentInstanceMessage, toConversationMeta, toMemeLoopAgentDefinition, toMemeLoopMessage } from './messageMapping';
 

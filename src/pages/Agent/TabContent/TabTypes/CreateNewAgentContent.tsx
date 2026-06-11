@@ -3,8 +3,8 @@ import { PromptConfigForm } from '@/pages/ChatTabContent/components/PromptPrevie
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentDefinition } from '@services/agentDefinitionService';
+import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useRef, useState } from 'react';

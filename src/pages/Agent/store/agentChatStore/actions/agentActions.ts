@@ -1,4 +1,4 @@
-import { AgentDefinition } from '@services/agentDefinition/interface';
+import { AgentDefinition } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import { Subscription } from 'rxjs';
 import type { StoreApi } from 'zustand';
