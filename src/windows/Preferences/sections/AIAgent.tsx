@@ -33,7 +33,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
-import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/scheduledTaskManager';
+import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/tools/scheduledTaskManager';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';

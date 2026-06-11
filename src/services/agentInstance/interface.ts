@@ -5,7 +5,7 @@ import { AgentChannel } from '@/constants/channels';
 import { AgentDefinition } from '@services/agentDefinitionService';
 import type { AgentPromptDescription } from '@services/agentInstance/schema';
 import type { PromptConcatStreamState } from '@services/agentInstance/schema';
-import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
+import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './tools/scheduledTaskTypes';
 
 /**
  * Content of a session instance that user chat with an agent.

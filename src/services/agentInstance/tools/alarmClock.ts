@@ -326,7 +326,7 @@ const alarmClockDefinition = registerToolDefinition({
     // ── schedule-task ─────────────────────────────────────────────────────
     if (toolCall.toolId === 'schedule-task') {
       await executeToolCall('schedule-task', async (parameters) => {
-        const { addTask } = await import('../scheduledTaskManager');
+        const { addTask } = await import('./scheduledTaskManager');
         let schedule: ScheduleConfig;
 
         if (parameters.kind === 'interval') {
@@ -363,7 +363,7 @@ const alarmClockDefinition = registerToolDefinition({
     // ── list-schedules ────────────────────────────────────────────────────
     if (toolCall.toolId === 'list-schedules') {
       await executeToolCall('list-schedules', async () => {
-        const { getActiveTasksForAgent } = await import('../scheduledTaskManager');
+        const { getActiveTasksForAgent } = await import('./scheduledTaskManager');
         const tasks = getActiveTasksForAgent(agentId);
         if (tasks.length === 0) {
           return { success: true, data: 'No active scheduled tasks.' };
@@ -377,7 +377,7 @@ const alarmClockDefinition = registerToolDefinition({
     // ── remove-schedule ───────────────────────────────────────────────────
     if (toolCall.toolId === 'remove-schedule') {
       await executeToolCall('remove-schedule', async (parameters) => {
-        const { removeTask } = await import('../scheduledTaskManager');
+        const { removeTask } = await import('./scheduledTaskManager');
         await removeTask(parameters.taskId);
         return { success: true, data: `Scheduled task ${parameters.taskId} removed.` };
       });
@@ -387,7 +387,7 @@ const alarmClockDefinition = registerToolDefinition({
     // ── update-schedule ───────────────────────────────────────────────────
     if (toolCall.toolId === 'update-schedule') {
       await executeToolCall('update-schedule', async (parameters) => {
-        const { updateTask } = await import('../scheduledTaskManager');
+        const { updateTask } = await import('./scheduledTaskManager');
         await updateTask({
           id: parameters.taskId,
           enabled: parameters.enabled,

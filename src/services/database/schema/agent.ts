@@ -1,10 +1,10 @@
 import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AiAPIConfig } from '@services/agentInstance/schema';
-import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
+import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
-export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
+export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
 
 @Entity('scheduled_tasks')
 export class ScheduledTaskEntity {
