@@ -95,6 +95,7 @@
     "material-ui-popup-state": "^5.3.7",
     "menubar": "9.5.2",
     "memeloop": "file:../memeloop/packages/memeloop",
+    "@memeloop/react-ui": "file:../memeloop/packages/memeloop-react-ui",
     "monaco-editor": "^0.56.0",
     "nanoid": "^6.0.0",
     "new-github-issue-url": "^1.1.0",

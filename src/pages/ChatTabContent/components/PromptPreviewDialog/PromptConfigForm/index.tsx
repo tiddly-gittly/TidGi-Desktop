@@ -1,17 +1,16 @@
 import { Box, CircularProgress, Paper, Typography } from '@mui/material';
 import { IChangeEvent } from '@rjsf/core';
-import Form from '@rjsf/mui';
+import type { UiSchema } from '@rjsf/utils';
 import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { Form, buildUiSchema, promptEditorTemplates, promptEditorWidgets } from '@memeloop/react-ui/web';
+import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorDisplay } from './components/ErrorDisplay';
-import { ArrayItemProvider } from './context/ArrayItemContext';
+import { ArrayItemProvider } from '@memeloop/react-ui';
 import { useDefaultUiSchema } from './defaultUiSchema';
 import { fields } from './fields';
-import { ArrayFieldItemTemplate, ArrayFieldTemplate, FieldTemplate, ObjectFieldTemplate, RootObjectFieldTemplate } from './templates';
-import { widgets } from './widgets';
 
 /**
  * Extended form context that provides access to root form data
@@ -64,21 +63,25 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 }) => {
   const { t } = useTranslation('agent');
   const [validationErrors, setValidationErrors] = useState<RJSFValidationError[]>([]);
-  const uiSchema = useDefaultUiSchema(uiSchemaOverride, schema);
+  const buildSharedUiSchema = buildUiSchema as unknown as (
+    schema?: Record<string, unknown> | null,
+    overrides?: UiSchema,
+  ) => UiSchema;
+  const uiSchema = useDefaultUiSchema(buildSharedUiSchema(schema, uiSchemaOverride as UiSchema), schema);
 
   const templates = useMemo(() => {
+    const sharedTemplates = promptEditorTemplates as unknown as {
+      ObjectFieldTemplate?: React.ComponentType<ObjectFieldTemplateProps>;
+    } & Record<string, unknown>;
     const rootObjectFieldTemplate = (props: ObjectFieldTemplateProps) => {
-      const isRootLevel = props.fieldPathId?.$id === 'root';
-      return isRootLevel
-        ? <RootObjectFieldTemplate {...props} />
-        : <ObjectFieldTemplate {...props} />;
+      const fieldTemplate = sharedTemplates.ObjectFieldTemplate;
+      return fieldTemplate
+        ? React.createElement(fieldTemplate, props)
+        : props.properties[0]?.content ?? <div />;
     };
 
     return {
-      ArrayFieldTemplate,
-
-      ArrayFieldItemTemplate,
-      FieldTemplate,
+      ...sharedTemplates,
       ObjectFieldTemplate: rootObjectFieldTemplate,
     };
   }, []);
@@ -138,12 +141,30 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
     );
   }
 
+  const SharedForm = Form as unknown as React.ComponentType<{
+    schema: RJSFSchema;
+    uiSchema?: UiSchema;
+    formData?: AgentFrameworkConfig;
+    formContext?: ExtendedFormContext;
+    validator: typeof validator;
+    onChange?: (event: IChangeEvent<AgentFrameworkConfig>) => void;
+    onError?: (errors: RJSFValidationError[]) => void;
+    disabled?: boolean;
+    templates?: Record<string, unknown>;
+    widgets?: Record<string, unknown>;
+    fields?: Record<string, unknown>;
+    showErrorList?: boolean;
+    liveValidate?: 'onChange';
+    noHtml5Validate?: boolean;
+    children?: React.ReactNode;
+  }>;
+
   return (
     <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false}>
       <Box data-testid='prompt-config-form'>
-        <Form
+        <SharedForm
           schema={schema}
-          uiSchema={uiSchema}
+          uiSchema={uiSchema as UiSchema}
           formData={formData}
           formContext={formContext}
           validator={validator}
@@ -151,14 +172,14 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
           onError={handleError}
           disabled={disabled}
           templates={templates}
-          widgets={widgets}
+          widgets={promptEditorWidgets as Record<string, unknown>}
           fields={fields}
           showErrorList={false}
           liveValidate='onChange'
           noHtml5Validate
         >
           <div />
-        </Form>
+        </SharedForm>
         <ErrorDisplay errors={validationErrors} />
       </Box>
     </ArrayItemProvider>

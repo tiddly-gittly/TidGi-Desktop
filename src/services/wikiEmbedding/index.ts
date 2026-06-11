@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import { WikiChannel } from '@/constants/channels';
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AiAPIConfig } from '@services/agentInstance/schema';
 import type { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
 import type { IExternalAPIService } from '@services/externalAPI/interface';

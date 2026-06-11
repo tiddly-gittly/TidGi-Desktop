@@ -1,13 +1,13 @@
 import type { ILLMProvider } from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import type { ModelMessage } from 'ai';
 import { merge } from 'lodash';
 
 import type { IAgentInstanceService } from '../interface';
-import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
+import type { AiAPIConfig } from '../schema';
 
 export class MemeLoopDesktopLLMProvider implements ILLMProvider {
   public readonly name = 'tidgi-desktop';

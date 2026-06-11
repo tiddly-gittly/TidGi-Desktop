@@ -1,9 +1,20 @@
-import { ToolCallingMatch } from '@services/agentDefinition/interface';
-import { AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
+import type { AgentDefinition } from 'memeloop';
+import { ToolCallingMatch } from 'memeloop';
+import type { AgentInstance } from '@services/agentInstance/interface';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import type { IPrompt, IPromptConcatTool } from '../promptConcat/promptConcatSchema';
+import type { IPrompt } from 'memeloop';
+import type { IPromptConcatTool } from '../schema';
+
+/**
+ * Desktop AgentFrameworkContext — survives memeloop migration; used by defineTool plugin hooks.
+ */
+export interface DesktopAgentFrameworkContext {
+  agent: AgentInstance;
+  agentDef: AgentDefinition;
+  isCancelled(): boolean;
+}
 
 /**
  * Tool approval mode: 'auto' executes immediately, 'confirm' pauses for user approval
@@ -83,7 +94,7 @@ export interface ToolActions {
  */
 export interface BaseToolContext {
   /** Framework context */
-  agentFrameworkContext: AgentFrameworkContext;
+  agentFrameworkContext: DesktopAgentFrameworkContext;
   /** Additional context data */
   metadata?: Record<string, unknown>;
   /** Actions set by tools during processing */

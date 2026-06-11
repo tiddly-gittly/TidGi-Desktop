@@ -7,7 +7,7 @@ import { createProxy } from 'electron-ipc-cat/client';
 import { AsyncifyProxy } from 'electron-ipc-cat/common';
 
 import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
-import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinitionService';
 import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
 import { AnalyticsServiceIPCDescriptor, type IAnalyticsService } from '@services/analytics/interface';
 import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from '@services/auth/interface';

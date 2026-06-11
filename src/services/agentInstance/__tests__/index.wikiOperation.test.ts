@@ -1,16 +1,17 @@
 import { WikiChannel } from '@/constants/channels';
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstance, IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
+import { getBuiltinAgentDefinitions } from 'memeloop';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import defaultAgents from '../agentFrameworks/taskAgents.json';
 
 // Follow structure of index.streaming.test.ts
 describe('AgentInstanceService Wiki Operation', () => {
+  const defaultAgents = getBuiltinAgentDefinitions();
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;

@@ -1,6 +1,6 @@
 import { IAskAIWithSelectionData } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
