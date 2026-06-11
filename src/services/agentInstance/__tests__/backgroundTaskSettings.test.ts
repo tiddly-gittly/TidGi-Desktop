@@ -45,9 +45,7 @@ describe('AgentInstanceService background task settings APIs', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    scheduleAlarmTimerSpy = vi.spyOn(alarmClock, 'scheduleAlarmTimer').mockImplementation(() => {
-      // Avoid creating real timers in unit tests.
-    });
+    scheduleAlarmTimerSpy = vi.spyOn(alarmClock, 'scheduleAlarmTimer').mockResolvedValue();
     startHeartbeatSpy = vi.spyOn(heartbeatManager, 'startHeartbeat').mockImplementation(() => {
       // Avoid creating real timers in unit tests.
     });
