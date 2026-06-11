@@ -3,7 +3,7 @@
  * Supports updating the heartbeat schedule, tool approvals, and system prompt config.
  * Operates with approval mode "confirm" by default (user must approve each change).
  */
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';

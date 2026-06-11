@@ -4,16 +4,16 @@
  */
 import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getBuiltinAgentDefinitions } from 'memeloop';
 // Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceLatestStatus, IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import defaultAgents from '../agentFrameworks/taskAgents.json';
-
 describe('AgentInstanceService Streaming Behavior', () => {
+  const defaultAgents = getBuiltinAgentDefinitions();
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;

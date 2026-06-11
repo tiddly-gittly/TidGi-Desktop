@@ -1,4 +1,4 @@
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/schema';
 import { AIProviderConfig, IExternalAPIService, ModelInfo } from '@services/externalAPI/interface';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

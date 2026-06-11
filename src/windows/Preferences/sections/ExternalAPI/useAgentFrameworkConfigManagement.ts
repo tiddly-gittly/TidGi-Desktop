@@ -1,4 +1,4 @@
-import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import React, { useCallback, useEffect, useState } from 'react';
 
 interface useAgentFrameworkConfigManagementProps {

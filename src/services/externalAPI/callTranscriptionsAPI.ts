@@ -1,6 +1,6 @@
 import { logger } from '@services/libs/log';
 
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/schema';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
 import type { AIProviderConfig, AITranscriptionResponse } from './interface';
 

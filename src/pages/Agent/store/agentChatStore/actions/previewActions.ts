@@ -1,4 +1,4 @@
-import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/schema';
 import type { ModelMessage } from 'ai';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
@@ -101,16 +101,16 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewCurrentPlugin: state.currentPlugin?.toolId || null,
               // Update intermediate results
               previewResult: {
-                flatPrompts: state.flatPrompts,
-                processedPrompts: state.processedPrompts,
+                flatPrompts: state.flatPrompts as ModelMessage[],
+                processedPrompts: state.processedPrompts as IPrompt[],
               },
             });
 
             // Store final result
             if (state.isComplete) {
               finalResult = {
-                flatPrompts: state.flatPrompts,
-                processedPrompts: state.processedPrompts,
+                flatPrompts: state.flatPrompts as ModelMessage[],
+                processedPrompts: state.processedPrompts as IPrompt[],
               };
             }
           },

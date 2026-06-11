@@ -2,7 +2,7 @@ import '@algolia/autocomplete-theme-classic';
 import { autocomplete } from '@algolia/autocomplete-js';
 import { Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
+import type { AgentDefinition } from '@services/agentDefinitionService';
 import { createElement, Fragment, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useTranslation } from 'react-i18next';

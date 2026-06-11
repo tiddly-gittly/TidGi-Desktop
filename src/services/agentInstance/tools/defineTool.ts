@@ -10,16 +10,14 @@
  * - Schema for LLM-callable tool parameters (injected into prompts)
  * - Hook handlers for different lifecycle events
  */
-import { type ToolCallingMatch } from '@services/agentDefinition/interface';
-import { matchAllToolCallings } from '@services/agentDefinition/responsePatternUtility';
+import type { ToolCallingMatch } from '@services/agentDefinitionService';
+import { matchAllToolCallings } from 'memeloop';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { findPromptById } from '../promptConcat/promptConcat';
-import type { IPrompt } from '../promptConcat/promptConcatSchema';
-import { schemaToToolContent } from '../utilities/schemaToToolContent';
+import { findPromptById, schemaToToolContent, type IPrompt } from 'memeloop';
 import { evaluateApproval, requestApproval } from './approval';
 
 /**
@@ -124,7 +122,7 @@ export function defineTool<
 
               // Generate tool content from schemas
               const schemas = options.toolSchemas ?? (llmToolSchemas ? Object.values(llmToolSchemas) : []);
-              const toolContent = schemas.map((schema) => schemaToToolContent(schema)).join('\n\n');
+              const toolContent = schemas.map((schema) => schemaToToolContent(schema as never)).join('\n\n');
 
               // Build source path pointing to the plugin configuration
               // Format: ['plugins', pluginId] so clicking navigates to plugins tab

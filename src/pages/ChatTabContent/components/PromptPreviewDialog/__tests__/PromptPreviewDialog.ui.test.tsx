@@ -7,10 +7,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { getBuiltinAgentDefinitions } from 'memeloop';
 
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
-import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
 import { PromptPreviewDialog } from '../index';
+
+const defaultAgents = getBuiltinAgentDefinitions();
 
 // Mock handler config management hook
 vi.mock('@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement', () => ({

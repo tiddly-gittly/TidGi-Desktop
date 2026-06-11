@@ -4,7 +4,7 @@
  * Executes multiple tool calls concurrently with per-tool timeout and
  * collects both success and failure results (like Promise.allSettled, not Promise.all).
  */
-import type { ToolCallingMatch } from '@services/agentDefinition/interface';
+import type { ToolCallingMatch } from '@services/agentDefinitionService';
 import { logger } from '@services/libs/log';
 import type { ToolExecutionResult } from './defineTool';
 

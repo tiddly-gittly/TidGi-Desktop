@@ -1,6 +1,6 @@
 import type { AgentDefinition as MemeLoopAgentDefinition, ChatMessage, ConversationMeta } from 'memeloop';
 
-import type { AgentDefinition } from '@services/agentDefinition/interface';
+import type { AgentDefinition } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceMessage } from '../interface';
 
 const ORIGIN_NODE_ID = 'tidgi-desktop';

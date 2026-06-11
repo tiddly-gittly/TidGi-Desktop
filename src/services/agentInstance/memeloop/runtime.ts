@@ -1,7 +1,7 @@
 import type { AgentFrameworkContext, AgentInstanceState, ChatMessage, TaskAgentStep } from 'memeloop';
 import { createTaskAgent } from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import type { AgentInstance, IAgentInstanceService } from '../interface';

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ICreateNewAgentTab, TabState, TabType } from '@/pages/Agent/types/tab';
 import { ThemeProvider } from '@mui/material/styles';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
+import type { AgentDefinition } from '@services/agentDefinitionService';
 import { lightTheme } from '@services/theme/defaultTheme';
 import { CreateNewAgentContent } from '../CreateNewAgentContent';
 
