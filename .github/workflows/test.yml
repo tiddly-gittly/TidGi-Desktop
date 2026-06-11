@@ -150,6 +150,8 @@ jobs:
         with:
           name: e2e-calibration-${{ matrix.os }}
           path: .calibration.json
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 7
 
   e2e:
