@@ -20,7 +20,7 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
-import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './heartbeatManager';
+import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
 import type {
   AgentBackgroundTask,
   AgentInstance,

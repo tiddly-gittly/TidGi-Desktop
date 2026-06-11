@@ -80,6 +80,7 @@ export default defineConfig({
         // rotating-file-stream@3 is pure ESM ("type":"module") but has a CJS dist.
         // External it so Node.js native require() uses its "exports.require" CJS entry.
         'rotating-file-stream',
+        'expo-sqlite',
         ...typeormOptionalDepsRegex,
         'expo-sqlite',
       ],
