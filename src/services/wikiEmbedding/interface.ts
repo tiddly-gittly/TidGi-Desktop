@@ -2,7 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 import type { ITiddlerFields } from 'tiddlywiki';
 
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
+import type { AiAPIConfig } from '@services/agentInstance/schema';
 
 /**
  * Embedding record in the database

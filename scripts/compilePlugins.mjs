@@ -48,6 +48,10 @@ const nativeNodeModulesPlugin = {
     build.onResolve({ filter: /^\$:\// }, () => ({
       external: true,
     }));
+    // External typeorm optional drivers that are irrelevant in Electron context
+    build.onResolve({ filter: /^(expo-sqlite|react-native-sqlite-storage|sql\.js|oracledb|mongodb|redis|ioredis)$/ }, () => ({
+      external: true,
+    }));
   },
 };
 

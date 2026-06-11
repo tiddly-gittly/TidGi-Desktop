@@ -1,6 +1,6 @@
-import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinition/interface';
+import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
+import type { AiAPIConfig } from '@services/agentInstance/schema';
 import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 

@@ -5,7 +5,7 @@
  * The manager runs timers per agent-instance and sends automated messages to trigger the agent loop.
  * Active hours filtering is supported to restrict heartbeats to certain times of day.
  */
-import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
+import type { AgentHeartbeatConfig } from '@services/agentDefinitionService';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from './interface';
 

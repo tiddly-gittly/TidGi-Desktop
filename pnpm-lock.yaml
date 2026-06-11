@@ -56,6 +56,9 @@ importers:
       '@fontsource/roboto':
         specifier: ^5.2.10
         version: 5.2.10
+      '@memeloop/react-ui':
+        specifier: file:../memeloop/packages/memeloop-react-ui
+        version: file:../memeloop/packages/memeloop-react-ui(20cfaba2ea466b7f28c2eee92e40502c)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.4.3)
@@ -1903,6 +1906,27 @@ packages:
   '@malept/flatpak-bundler@0.4.0':
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
+
+  '@memeloop/react-ui@file:../memeloop/packages/memeloop-react-ui':
+    resolution: {directory: ../memeloop/packages/memeloop-react-ui, type: directory}
+    peerDependencies:
+      '@mui/icons-material': '>=6.0.0'
+      '@mui/material': '>=6.0.0'
+      '@rjsf/core': '>=5.0.0'
+      '@rjsf/mui': '*'
+      '@rjsf/utils': '>=5.0.0'
+      '@rjsf/validator-ajv8': '>=5.0.0'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      react-native: '*'
+      react-native-paper: '*'
+    peerDependenciesMeta:
+      '@rjsf/mui':
+        optional: true
+      react-native:
+        optional: true
+      react-native-paper:
+        optional: true
 
   '@modelcontextprotocol/sdk@1.29.0':
     resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
@@ -9935,6 +9959,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  '@memeloop/react-ui@file:../memeloop/packages/memeloop-react-ui(20cfaba2ea466b7f28c2eee92e40502c)':
+    dependencies:
+      '@mui/icons-material': 9.0.1(@mui/material@9.0.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(react@19.2.7)
+      '@mui/material': 9.0.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@rjsf/core': 6.6.1(@rjsf/utils@6.6.1(react@19.2.7))(react@19.2.7)
+      '@rjsf/utils': 6.6.1(react@19.2.7)
+      '@rjsf/validator-ajv8': 6.6.1(@rjsf/utils@6.6.1(react@19.2.7))
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+    optionalDependencies:
+      '@rjsf/mui': 6.6.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@mui/icons-material@9.0.1(@mui/material@9.0.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@mui/material@9.0.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@rjsf/core@6.6.1(@rjsf/utils@6.6.1(react@19.2.7))(react@19.2.7))(@rjsf/utils@6.6.1(react@19.2.7))(react@19.2.7)
 
   '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
     dependencies:

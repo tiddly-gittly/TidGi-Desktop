@@ -1,5 +1,5 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
+import type { AgentDefinition } from '@services/agentDefinitionService';
 import { getI18n } from 'react-i18next';
 
 import { TEMP_TAB_ID_PREFIX } from '../../../constants/tab';

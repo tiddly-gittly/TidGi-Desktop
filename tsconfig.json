@@ -12,7 +12,11 @@
     "ignoreDeprecations": "6.0",
     "paths": {
       "@services/*": ["./src/services/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@memeloop/react-ui": ["../memeloop/packages/memeloop-react-ui/src/index.ts"],
+      "@memeloop/react-ui/web": ["../memeloop/packages/memeloop-react-ui/src/web/index.ts"],
+      "@memeloop/react-ui/native": ["../memeloop/packages/memeloop-react-ui/src/native/index.ts"],
+      "@memeloop/react-ui/theme": ["../memeloop/packages/memeloop-react-ui/src/theme/index.ts"]
     },
     "skipLibCheck": true,
     /* Basic Options */

@@ -2,12 +2,11 @@ import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
-import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { promptConcatStream } from '@services/agentInstance/promptConcat/promptConcat';
-import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
-import type { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcatTypes';
+import type { AgentHeartbeatConfig } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import { promptConcatStream } from 'memeloop';
+import type { AgentPromptDescription } from '@services/agentInstance/schema';
+import { getPromptConcatAgentFrameworkConfigJsonSchema, type PromptConcatStreamState } from '@services/agentInstance/schema';
 import { initializePluginSystem } from '@services/agentInstance/tools';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -1072,7 +1071,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             isCancelled: () => false,
           };
 
-          const streamGenerator = promptConcatStream(promptDescription, messages, frameworkContext);
+          const streamGenerator = promptConcatStream(promptDescription as never, messages as never, frameworkContext as never);
           for await (const state of streamGenerator) {
             observer.next(state);
             if (state.isComplete) {

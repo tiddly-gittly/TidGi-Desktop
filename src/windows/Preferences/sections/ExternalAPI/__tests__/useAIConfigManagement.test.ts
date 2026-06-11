@@ -1,4 +1,4 @@
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/schema';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { BehaviorSubject } from 'rxjs';

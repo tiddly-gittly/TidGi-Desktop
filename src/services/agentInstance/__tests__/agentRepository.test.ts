@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstanceEntity } from '@services/database/schema/agent';
 import { createAgent } from '../agentRepository';
 
