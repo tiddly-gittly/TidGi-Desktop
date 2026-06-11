@@ -370,3 +370,92 @@ export function cancelTasksForAgent(agentInstanceId: string): void {
     }
   }
 }
+
+// ── Heartbeat (in-memory only, not persisted) ──────────────────────────────
+// Heartbeats are derived from AgentDefinition config and do NOT create DB rows.
+// They use the same internal timer infrastructure but with a separate namespace.
+
+import type { AgentHeartbeatConfig } from '@services/agentDefinitionService';
+
+interface HeartbeatState {
+  nextWakeAtISO?: string;
+  createdBy?: string;
+  lastRunAtISO?: string;
+  runCount: number;
+}
+
+const heartbeatStates = new Map<string, HeartbeatState>();
+
+/**
+ * Start a heartbeat for an agent instance. Not persisted — derived from definition config.
+ */
+export function startHeartbeat(
+  agentId: string,
+  config: AgentHeartbeatConfig,
+  agentInstanceService: IAgentInstanceService,
+  options?: { createdBy?: string },
+): void {
+  stopHeartbeat(agentId);
+  if (!config.enabled) return;
+
+  const intervalMs = Math.max(config.intervalSeconds, 60) * 1000;
+  const message = config.message || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.';
+
+  const state: HeartbeatState = {
+    nextWakeAtISO: new Date(Date.now() + intervalMs).toISOString(),
+    createdBy: options?.createdBy ?? 'agent-definition',
+    runCount: 0,
+  };
+  heartbeatStates.set(agentId, state);
+
+  const handle = setInterval(() => {
+    const s = heartbeatStates.get(agentId);
+    if (!s) return;
+    s.lastRunAtISO = new Date().toISOString();
+    s.runCount += 1;
+    s.nextWakeAtISO = new Date(Date.now() + intervalMs).toISOString();
+
+    // Active hours check
+    if (config.activeHoursStart && config.activeHoursEnd) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const [sh, sm] = config.activeHoursStart.split(':').map(Number);
+      const [eh, em] = config.activeHoursEnd.split(':').map(Number);
+      const start = (sh ?? 0) * 60 + (sm ?? 0);
+      const end = (eh ?? 0) * 60 + (em ?? 0);
+      if (start <= end ? !(currentMinutes >= start && currentMinutes <= end) : !(currentMinutes >= start || currentMinutes <= end)) {
+        return;
+      }
+    }
+
+    void agentInstanceService.sendMsgToAgent(agentId, { text: `[Heartbeat] ${message}` }).catch((error: unknown) => {
+      logger.error('Heartbeat failed to send message', { error, agentId });
+    });
+  }, intervalMs);
+
+  handle.unref?.();
+  // Store handle under a heartbeat-specific key to avoid conflicting with scheduled tasks
+  activeEntries.set(`__heartbeat:${agentId}`, { task: { id: `__heartbeat:${agentId}`, agentInstanceId: agentId, enabled: true, schedule: { kind: 'interval', intervalSeconds: config.intervalSeconds } } as ScheduledTaskEntity, intervalHandle: handle });
+  logger.info('Heartbeat started', { agentId, intervalMs });
+}
+
+/** Stop heartbeat for an agent instance. */
+export function stopHeartbeat(agentId: string): void {
+  cancelEntry(`__heartbeat:${agentId}`);
+  heartbeatStates.delete(agentId);
+}
+
+export function getActiveHeartbeatEntries(): Array<{
+  agentId: string;
+  config: AgentHeartbeatConfig;
+  nextWakeAtISO?: string;
+  createdBy?: string;
+  lastRunAtISO?: string;
+  runCount: number;
+}> {
+  return [...heartbeatStates.entries()].map(([agentId, state]) => ({
+    agentId,
+    config: { enabled: true, intervalSeconds: 0, message: '' },
+    ...state,
+  }));
+}
