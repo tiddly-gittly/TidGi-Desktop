@@ -63,6 +63,23 @@ export default defineConfig({
     commonjsOptions: {
       ignoreDynamicRequires: true,
     },
+    rolldownOptions: {
+      external: [
+        'sqlite-vec',
+        'registry-js',
+        'dugite',
+        'tiddlywiki',
+        'zx',
+        'esbuild',
+        '@modelcontextprotocol/sdk',
+        /^@modelcontextprotocol\/sdk\//,
+        'default-gateway',
+        'electron-unhandled',
+        'rotating-file-stream',
+        'expo-sqlite',
+        ...typeormOptionalDepsRegex,
+      ],
+    },
     rollupOptions: {
       external: [
         'sqlite-vec',
@@ -73,16 +90,10 @@ export default defineConfig({
         'esbuild',
         '@modelcontextprotocol/sdk',
         /^@modelcontextprotocol\/sdk\//,
-        // default-gateway v7 / electron-unhandled v5 are pure ESM, used via dynamic import().
-        // External so the dynamic import() runs at Node.js runtime.
         'default-gateway',
         'electron-unhandled',
-        // rotating-file-stream@3 is pure ESM ("type":"module") but has a CJS dist.
-        // External it so Node.js native require() uses its "exports.require" CJS entry.
         'rotating-file-stream',
-        'expo-sqlite',
         ...typeormOptionalDepsRegex,
-        'expo-sqlite',
       ],
     },
   },
