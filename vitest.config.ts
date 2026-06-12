@@ -82,7 +82,6 @@ export default defineConfig({
       { find: /^react\/jsx-dev-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-dev-runtime.js') },
       { find: /^react-dom$/, replacement: path.resolve(__dirname, './node_modules/react-dom/index.js') },
       { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, './node_modules/react-dom/client.js') },
-      { find: /^@mui\/icons-material\/HelpOutline$/, replacement: path.resolve(__dirname, './node_modules/@mui/icons-material/HelpOutlineOutlined.js') },
       // Resolve memeloop packages for vitest (SWC-transformed files need explicit paths)
       { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
       { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js') },
