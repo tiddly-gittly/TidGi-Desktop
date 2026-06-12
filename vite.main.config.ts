@@ -76,7 +76,6 @@ export default defineConfig({
         'default-gateway',
         'electron-unhandled',
         'rotating-file-stream',
-        'expo-sqlite',
         ...typeormOptionalDepsRegex,
       ],
     },
