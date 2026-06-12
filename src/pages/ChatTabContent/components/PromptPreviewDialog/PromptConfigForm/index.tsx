@@ -160,7 +160,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
   }>;
 
   return (
-    <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false}>
+    <ArrayItemProvider isInArrayItem={false} arrayItemCollapsible={false} itemData={undefined} itemIndex={0} arrayFieldPath={''} arrayFieldPathSegments={undefined}>
       <Box data-testid='prompt-config-form'>
         <SharedForm
           schema={schema}
