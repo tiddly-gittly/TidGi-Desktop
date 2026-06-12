@@ -174,6 +174,29 @@ function getSidebarItemId(item: TInterleavedSidebarItem): string {
   return isSidebarGroupItem(item) ? `group-${item.group.id}` : item.workspace.id;
 }
 
+function buildDraggableIds(
+  items: TInterleavedSidebarItem[],
+  { includeGroupHeaders }: { includeGroupHeaders: boolean },
+): string[] {
+  const ids: string[] = [];
+
+  items.forEach(item => {
+    if (isSidebarGroupItem(item)) {
+      if (includeGroupHeaders) {
+        ids.push(getSidebarItemId(item));
+      }
+      if (!item.group.collapsed) {
+        item.workspaces.forEach(workspace => ids.push(workspace.id));
+      }
+      return;
+    }
+
+    ids.push(getSidebarItemId(item));
+  });
+
+  return ids;
+}
+
 function getReorderIntentFromPointer({
   pointerY,
   rect,
@@ -246,8 +269,6 @@ function _getLiveSortableRect(
   return { top, height };
 }
 
-// ─── SortableGroupHeader ─────────────────────────────────────────────
-
 function SortableGroupHeader({ group, onToggleCollapse }: SortableGroupHeaderProps): React.JSX.Element {
   const { t } = useTranslation();
   // Keep data reference stable; only groupId is needed by collision detection.
@@ -258,13 +279,22 @@ function SortableGroupHeader({ group, onToggleCollapse }: SortableGroupHeaderPro
   });
 
   const dragContext = useDragContext();
+  const isDraggingWorkspace = dragContext.activeId !== null && !dragContext.activeId.startsWith('group-');
   const isDragOverTarget = dragContext.overId === `group-${group.id}`;
-  const dragIntent = isDragOverTarget ? dragContext.intent : null;
+  const dragIntent = isDragOverTarget
+    ? dragContext.activeId?.startsWith('group-')
+      ? dragContext.intent === 'reorder-before' || dragContext.intent === 'reorder-after'
+        ? dragContext.intent
+        : null
+      : dragContext.intent === 'group' || dragContext.intent === 'ungroup'
+      ? dragContext.intent
+      : null
+    : null;
   const isAnyDragActive = dragContext.activeId !== null;
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition ?? undefined,
+    transform: isDraggingWorkspace ? undefined : CSS.Transform.toString(transform),
+    transition: isDraggingWorkspace ? undefined : transition ?? undefined,
   };
 
   const handleContextMenu = useCallback(async (event: React.MouseEvent<HTMLDivElement>) => {
@@ -608,15 +638,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     if (dragState.activeId !== null) {
       return allDraggableIdsReference.current;
     }
-    const ids: string[] = [];
 
-    interleavedSidebarItems.forEach(item => {
-      ids.push(getSidebarItemId(item));
-      if (isSidebarGroupItem(item) && !item.group.collapsed) {
-        item.workspaces.forEach(workspace => ids.push(workspace.id));
-      }
-    });
-
+    const ids = buildDraggableIds(interleavedSidebarItems, { includeGroupHeaders: true });
     allDraggableIdsReference.current = ids;
     return ids;
   }, [interleavedSidebarItems, dragState.activeId]);
@@ -834,20 +857,24 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         };
       }
 
-      // Fallback to sortable data if workspace is not in canonical list (e.g., stale state during rapid updates).
-      const activeGroupId = activeWorkspace?.groupId ?? (active.data.current as { groupId?: string | null } | undefined)?.groupId;
-      const overGroupId = overWorkspace?.groupId ?? (overData as { groupId?: string | null } | undefined)?.groupId;
+      // Prefer canonical workspace state over sortable data — dnd-kit data can lag after group mutations.
+      const activeGroupId = activeWorkspace?.groupId ?? (
+        activeWorkspace ? null : (active.data.current as { groupId?: string | null } | undefined)?.groupId ?? null
+      );
+      const overGroupId = overWorkspace?.groupId ?? (
+        overWorkspace ? null : (overData as { groupId?: string | null } | undefined)?.groupId ?? null
+      );
       const activePageType = activeWorkspace?.pageType ?? (active.data.current as { pageType?: string } | undefined)?.pageType;
       const overPageType = overWorkspace?.pageType ?? (overData as { pageType?: string } | undefined)?.pageType;
 
-      const isSameGroup = activeGroupId && overGroupId && activeGroupId === overGroupId;
-      const canGroup = !isSameGroup && !activePageType && !overPageType;
+      const isSameGroup = Boolean(activeGroupId && overGroupId && activeGroupId === overGroupId);
+      const canUseGroupIntent = !isSameGroup && !activePageType && !overPageType;
       let intent: TDragIntent;
 
       const liveRect = _getLiveSortableRect(resolvedOverId, overRect);
-      // Keep dnd-kit's coordinate frame for pointer-vs-top math, but refresh
-      // height from the DOM so stale cached heights do not skew zone boundaries.
-      const intentRect = { top: overRect.top, height: liveRect?.height ?? overRect.height };
+      // Use a single rect source for zone math — mixing dnd-kit's cached top with a
+      // live height skews center/top/bottom boundaries after layout shifts.
+      const intentRect = liveRect ?? { top: overRect.top, height: overRect.height };
       const reorderIntent = getReorderIntentFromPointer({
         pointerY: referenceY,
         rect: intentRect,
@@ -855,10 +882,16 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       const relativeY = Math.min(Math.max(referenceY - intentRect.top, 0), intentRect.height);
       const beforeBoundary = intentRect.height / 3;
       const afterBoundary = intentRect.height - beforeBoundary;
+      const inCenterZone = relativeY >= beforeBoundary && relativeY <= afterBoundary;
 
-      if (relativeY > beforeBoundary && relativeY < afterBoundary && canGroup) {
+      if (isSameGroup) {
+        // Reorder within a group — never show "group" on the center zone.
+        intent = reorderIntent;
+      } else if (inCenterZone && canUseGroupIntent) {
+        // Center third only: join/create/move between groups.
         intent = 'group';
       } else {
+        // Top/bottom thirds always reorder in the mixed sidebar list.
         intent = reorderIntent;
       }
 
@@ -1005,8 +1038,12 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   const handleDragStart = useCallback((event: DragStartEvent) => {
     clearDragStateTimeout();
     lastResolvedDragStateReference.current = initialDragState;
-    applyDragState(previous => ({ ...previous, activeId: String(event.active.id) }));
-  }, [applyDragState, clearDragStateTimeout]);
+    const activeId = String(event.active.id);
+    allDraggableIdsReference.current = buildDraggableIds(interleavedSidebarItems, {
+      includeGroupHeaders: activeId.startsWith('group-'),
+    });
+    applyDragState(previous => ({ ...previous, activeId }));
+  }, [applyDragState, clearDragStateTimeout, interleavedSidebarItems]);
 
   const handleDragCancel = useCallback(async (_event: DragCancelEvent) => {
     resetDragState();

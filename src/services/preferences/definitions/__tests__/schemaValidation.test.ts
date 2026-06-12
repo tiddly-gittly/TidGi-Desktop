@@ -3,6 +3,8 @@
  * These tests import only from the definitions/ layer (no Node backend deps),
  * ensuring the schema stays frontend-safe and self-consistent.
  */
+import { defaultPreferences } from '@services/preferences/defaultPreferences';
+import { mcpServerPortSchema } from '@services/preferences/definitions/preferenceSchemas';
 import { allSections, getAllPreferenceItems, zodPreferencesSchema } from '@services/preferences/definitions/registry';
 import { preferenceItemDefinitionSchema, sectionDefinitionDataSchema } from '@services/preferences/definitions/types';
 import { type IPreferences, PreferenceSections } from '@services/preferences/interface';
@@ -65,21 +67,16 @@ describe('Section Definition Schema Validation', () => {
 
   it('zodPreferencesSchema covers all IPreferences keys', () => {
     const schemaKeys = new Set(Object.keys(zodPreferencesSchema.shape));
-    const requiredKeys: Array<keyof IPreferences> = [
-      'themeSource',
-      'sidebar',
-      'spellcheck',
-      'language',
-      'syncBeforeShutdown',
-      'syncDebounceInterval',
-      'tidgiMiniWindow',
-      'useHardwareAcceleration',
-      'keyboardShortcuts',
-      'spellcheckLanguages',
-    ];
-    for (const key of requiredKeys) {
+    for (const key of Object.keys(defaultPreferences) as Array<keyof IPreferences>) {
       expect(schemaKeys.has(key), `Missing key "${key}" in zodPreferencesSchema`).toBe(true);
     }
+  });
+
+  it('mcpServerPortSchema rejects invalid TCP ports', () => {
+    expect(mcpServerPortSchema.safeParse(38385).success).toBe(true);
+    expect(mcpServerPortSchema.safeParse(0).success).toBe(false);
+    expect(mcpServerPortSchema.safeParse(65536).success).toBe(false);
+    expect(mcpServerPortSchema.safeParse(1.5).success).toBe(false);
   });
 
   it('every action item has a non-empty handler string', () => {

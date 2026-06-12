@@ -1,3 +1,5 @@
+import type { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
+
 export interface JsonRpcRequest {
   jsonrpc: '2.0';
   id: number | string | null;
@@ -15,11 +17,7 @@ export interface JsonRpcResponse {
 export interface McpToolDefinition {
   name: string;
   description: string;
-  inputSchema: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
+  inputSchema: ZodRawShapeCompat | AnySchema;
 }
 
 export type ToolInput = Record<string, unknown>;

@@ -1,13 +1,12 @@
-import { Button, LinearProgress, List, Typography } from '@mui/material';
+import { Button, LinearProgress, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
-import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import type { ICustomItemProps } from '@services/preferences/definitions/types';
 import { PreferenceSections } from '@services/preferences/interface';
 import type { EmbeddingStatus } from '@services/wikiEmbedding/interface';
-import { Paper, SectionTitle } from '../../Preferences/PreferenceComponents';
 import { useWorkspaceForm } from '../WorkspaceFormContext';
 
 type WorkspaceEmbeddingStatus = Partial<EmbeddingStatus> & {
@@ -15,7 +14,7 @@ type WorkspaceEmbeddingStatus = Partial<EmbeddingStatus> & {
   totalNotes?: number;
 };
 
-export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }: ICustomSectionProps): React.JSX.Element {
+export function WorkspaceEmbeddingItem(_props: ICustomItemProps): React.JSX.Element {
   const { t } = useTranslation();
   const { workspace } = useWorkspaceForm();
   const workspaceId = workspace.id;
@@ -52,7 +51,6 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
     void loadStatus();
   }, [workspaceId]);
 
-  // Poll when generating
   useEffect(() => {
     if (status.status === 'generating' && pollingIntervalReference.current === null) {
       pollingIntervalReference.current = setInterval(() => {
@@ -128,106 +126,86 @@ export function EmbeddingSection({ sectionRef, onNeedsRestart: _onNeedsRestart }
     }
   };
 
+  if (loading) {
+    return (
+      <ListItem>
+        <ListItemText primary={t('Loading')} />
+      </ListItem>
+    );
+  }
+
   return (
-    <>
-      <SectionTitle ref={sectionRef}>{t('Preference.Search')}</SectionTitle>
-      <Paper elevation={0}>
-        <List dense disablePadding>
-          {loading
-            ? (
-              <ListItem>
-                <ListItemText primary={t('Loading')} />
-              </ListItem>
-            )
-            : (
-              <ListItem>
-                <div style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <Typography
-                      variant='body2'
-                      sx={{
-                        color: 'text.secondary',
-                      }}
-                    >
-                      {getStatusText()}
-                    </Typography>
-                    <div>
-                      <Button
-                        size='small'
-                        variant='outlined'
-                        onClick={handleGenerate}
-                        disabled={status.status === 'generating'}
-                        style={{ marginRight: 8 }}
-                        data-testid={`generate-embeddings-button-${workspaceId}`}
-                      >
-                        {status.status === 'generating'
-                          ? t('Preference.SearchEmbeddingGenerating')
-                          : (status.totalEmbeddings ?? 0) > 0
-                          ? t('Preference.SearchEmbeddingUpdate')
-                          : t('Preference.SearchEmbeddingGenerate')}
-                      </Button>
-                      {(status.totalEmbeddings ?? 0) > 0 && (
-                        <Button
-                          size='small'
-                          variant='outlined'
-                          color='error'
-                          onClick={handleDelete}
-                          disabled={status.status === 'generating'}
-                          data-testid={`delete-embeddings-button-${workspaceId}`}
-                        >
-                          {t('Preference.SearchEmbeddingDelete')}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {status.status === 'generating' && status.progress && status.progress.total > 0 && (
-                    <LinearProgress
-                      variant='determinate'
-                      value={(status.progress.completed / status.progress.total) * 100}
-                      style={{ marginTop: 8 }}
-                    />
-                  )}
-
-                  {status.lastUpdated && status.status !== 'idle' && (
-                    <Typography
-                      variant='caption'
-                      style={{ display: 'block', marginTop: 4 }}
-                      sx={{
-                        color: 'text.secondary',
-                      }}
-                    >
-                      {t('Preference.SearchEmbeddingLastUpdated', {
-                        time: status.lastUpdated.toLocaleString(),
-                      })}
-                    </Typography>
-                  )}
-
-                  {infoMessage && (
-                    <div style={{ marginTop: 8 }}>
-                      <Typography variant='body2' color='error'>
-                        {infoMessage}
-                      </Typography>
-                      {showOpenSettingsButton && (
-                        <Button
-                          size='small'
-                          variant='text'
-                          color='primary'
-                          style={{ marginTop: 4, padding: 0 }}
-                          onClick={async () => {
-                            await window.service.deepLink.openDeepLink(`${TIDGI_PROTOCOL_SCHEME}://preferences/${PreferenceSections.externalAPI}`);
-                          }}
-                        >
-                          {t('Preference.OpenExternalAPISettings')}
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </ListItem>
+    <ListItem>
+      <div style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <Typography variant='body2' sx={{ color: 'text.secondary' }}>
+            {getStatusText()}
+          </Typography>
+          <div>
+            <Button
+              size='small'
+              variant='outlined'
+              onClick={handleGenerate}
+              disabled={status.status === 'generating'}
+              style={{ marginRight: 8 }}
+              data-testid={`generate-embeddings-button-${workspaceId}`}
+            >
+              {status.status === 'generating'
+                ? t('Preference.SearchEmbeddingGenerating')
+                : (status.totalEmbeddings ?? 0) > 0
+                ? t('Preference.SearchEmbeddingUpdate')
+                : t('Preference.SearchEmbeddingGenerate')}
+            </Button>
+            {(status.totalEmbeddings ?? 0) > 0 && (
+              <Button
+                size='small'
+                variant='outlined'
+                color='error'
+                onClick={handleDelete}
+                disabled={status.status === 'generating'}
+                data-testid={`delete-embeddings-button-${workspaceId}`}
+              >
+                {t('Preference.SearchEmbeddingDelete')}
+              </Button>
             )}
-        </List>
-      </Paper>
-    </>
+          </div>
+        </div>
+
+        {status.status === 'generating' && status.progress && status.progress.total > 0 && (
+          <LinearProgress
+            variant='determinate'
+            value={(status.progress.completed / status.progress.total) * 100}
+            style={{ marginTop: 8 }}
+          />
+        )}
+
+        {status.lastUpdated && status.status !== 'idle' && (
+          <Typography variant='caption' style={{ display: 'block', marginTop: 4 }} sx={{ color: 'text.secondary' }}>
+            {t('Preference.SearchEmbeddingLastUpdated', { time: status.lastUpdated.toLocaleString() })}
+          </Typography>
+        )}
+
+        {infoMessage && (
+          <div style={{ marginTop: 8 }}>
+            <Typography variant='body2' color='error'>
+              {infoMessage}
+            </Typography>
+            {showOpenSettingsButton && (
+              <Button
+                size='small'
+                variant='text'
+                color='primary'
+                style={{ marginTop: 4, padding: 0 }}
+                onClick={async () => {
+                  await window.service.deepLink.openDeepLink(`${TIDGI_PROTOCOL_SCHEME}://preferences/${PreferenceSections.externalAPI}`);
+                }}
+              >
+                {t('Preference.OpenExternalAPISettings')}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </ListItem>
   );
 }

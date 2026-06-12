@@ -13,12 +13,15 @@
  */
 
 import { spawnSync } from 'child_process';
+import fs from 'fs';
 import path from 'path';
 
 const cucumberArguments: string[] = process.argv.slice(2);
+const CALIBRATION_FILE = path.resolve(process.cwd(), '.calibration.json');
 
 // ── Validation phase ──
 validateCucumberArguments(cucumberArguments);
+ensureCalibrationFileExists();
 
 // ── Execution phase ──
 const cucumberBin = path.resolve(process.cwd(), 'node_modules', '@cucumber', 'cucumber', 'bin', 'cucumber.js');
@@ -31,6 +34,29 @@ const result = spawnSync(process.execPath, [cucumberBin, '--config', 'features/c
 process.exit(result.status ?? 1);
 
 // ── Validators ──
+
+function ensureCalibrationFileExists(): void {
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
+    return;
+  }
+
+  if (fs.existsSync(CALIBRATION_FILE)) {
+    return;
+  }
+
+  fail(
+    'Missing .calibration.json',
+    'E2E timeouts are measured — they are not hardcoded.',
+    '',
+    'Run calibration FIRST:',
+    '  pnpm run test:e2e:calibrate',
+    '',
+    'Then run your scenarios, for example:',
+    '  pnpm test:e2e --tags="@edit-workspace-save-http-api"',
+    '',
+    'AI agents: `pnpm test:e2e` does NOT run calibration.',
+  );
+}
 
 function validateCucumberArguments(arguments_: string[]): void {
   if (arguments_.length === 0) return; // Running all tests is intentional

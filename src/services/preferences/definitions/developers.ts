@@ -1,5 +1,6 @@
 import CodeIcon from '@mui/icons-material/Code';
 import { z } from 'zod';
+import { mcpServerPortSchema } from './preferenceSchemas';
 import type { ISectionDefinition } from './types';
 
 export const developersSection: ISectionDefinition = {
@@ -41,10 +42,10 @@ export const developersSection: ISectionDefinition = {
     },
     { type: 'divider' },
     {
-      type: 'action',
+      type: 'custom',
+      componentId: 'developers.diagPanel',
       titleKey: 'Preference.DiagPanel',
       descriptionKey: 'Preference.DiagPanelDetail',
-      handler: 'developerTools.openDiagPanel',
     },
     { type: 'divider' },
     {
@@ -66,9 +67,8 @@ export const developersSection: ISectionDefinition = {
       key: 'mcpServerPort',
       titleKey: 'Preference.McpServerPort',
       needsRestart: false,
-      zod: z.number(),
+      zod: mcpServerPortSchema,
     },
-    { type: 'divider' },
     {
       type: 'preference-boolean',
       key: 'mcpServerRequireToken',
@@ -81,6 +81,7 @@ export const developersSection: ISectionDefinition = {
       key: 'mcpServerToken',
       titleKey: 'Preference.McpServerToken',
       descriptionKey: 'Preference.McpServerTokenDescription',
+      hidden: [{ type: 'preference', key: 'mcpServerRequireToken', operator: 'falsy' }],
       needsRestart: false,
       zod: z.string(),
     },
@@ -88,27 +89,21 @@ export const developersSection: ISectionDefinition = {
       type: 'action',
       titleKey: 'Preference.GenerateMcpToken',
       handler: 'native.generateMcpToken',
+      hidden: [{ type: 'preference', key: 'mcpServerRequireToken', operator: 'falsy' }],
+    },
+    {
+      type: 'custom',
+      componentId: 'developers.mcpVsCodeUrl',
+      titleKey: 'Preference.CopyMcpServerUrl',
+      hidden: [{ type: 'preference', key: 'mcpServerRequireToken', operator: 'falsy' }],
     },
     { type: 'divider' },
     {
-      type: 'preference-boolean',
-      key: 'externalAPIDebug',
+      type: 'custom',
+      componentId: 'developers.externalApi',
       titleKey: 'Preference.ExternalAPIDebug',
       descriptionKey: 'Preference.ExternalAPIDebugDescription',
       ns: 'agent',
-      zod: z.boolean(),
-    },
-    { type: 'divider' },
-    {
-      type: 'action',
-      titleKey: 'Preference.OpenDatabaseFolder',
-      ns: 'agent',
-      handler: 'developerTools.openExternalApiDbFolder',
-    },
-    {
-      type: 'action',
-      titleKey: 'Preference.DeleteExternalApiDatabase',
-      handler: 'developerTools.deleteExternalApiDb',
     },
   ],
 };

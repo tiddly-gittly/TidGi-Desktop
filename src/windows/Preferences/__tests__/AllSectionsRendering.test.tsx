@@ -283,6 +283,19 @@ describe('Preferences - All Sections Rendering', () => {
     }, { timeout: 5000 });
   });
 
+  it('hides MCP token-related items when token auth is disabled', async () => {
+    preferenceSubject.next(createMockPreference({
+      mcpServerRequireToken: false,
+      mcpServerToken: 'abc123token',
+    }));
+
+    await renderAllSections();
+
+    expect(screen.queryByText('Preference.McpServerToken')).not.toBeInTheDocument();
+    expect(screen.queryByText('Preference.GenerateMcpToken')).not.toBeInTheDocument();
+    expect(screen.queryByText('Preference.CopyMcpServerUrl')).not.toBeInTheDocument();
+  });
+
   // ─── Boolean toggle interaction ─────────────────────────────────
   // NOTE: Skipped because Sync section crash prevents full rendering.
   it.skip('should toggle a boolean preference (alwaysOnTop)', async () => {
@@ -413,6 +426,19 @@ describe('Preferences - Search Mode', () => {
 
   it('should show no-results message when query matches nothing', async () => {
     await renderSearch('xyznonexistent');
+
+    await waitFor(() => {
+      expect(screen.getByText(/No settings found/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should exclude hidden MCP token items from search results', async () => {
+    preferenceSubject.next(createMockPreference({
+      mcpServerRequireToken: false,
+      mcpServerToken: 'abc123token',
+    }));
+
+    await renderSearch('mcpservertoken');
 
     await waitFor(() => {
       expect(screen.getByText(/No settings found/i)).toBeInTheDocument();

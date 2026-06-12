@@ -29,6 +29,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      # pnpm git deps (e.g. @electron/node-gyp) resolve to git@github.com on Windows CI
+      - name: Use HTTPS for GitHub git dependencies
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -44,8 +48,116 @@ jobs:
       - name: Run linting
         run: pnpm run lint --max-warnings 0
 
-  e2e:
+  e2e-calibrate:
     needs: unit
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-2022
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          # Node 24.16.0 breaks extract-zip/yauzl, causing Electron packaging to exit 0 with no output.
+          node-version: 24.15.0
+          cache: 'pnpm'
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Set up MSVC compiler (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Use HTTPS for GitHub git dependencies
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Rebuild native modules for Electron (Linux)
+        if: runner.os == 'Linux'
+        run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+
+      - name: Rebuild native modules for Electron (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
+
+      - name: Install Linux GUI dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          sudo apt-get install -y fonts-noto-cjk fonts-wqy-zenhei language-pack-zh-hans
+          sudo locale-gen zh_CN.UTF-8
+
+      - name: Prepare E2E
+        run: pnpm run test:prepare-e2e
+        env:
+          CI: true
+        timeout-minutes: 15
+
+      - name: Verify packaged executable exists
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            test -f "out/TidGi-win32-x64/tidgi.exe" || { echo "ERROR: Packaged executable not found at out/TidGi-win32-x64/tidgi.exe"; exit 1; }
+            echo "Verified: out/TidGi-win32-x64/tidgi.exe exists"
+          else
+            test -f "out/TidGi-linux-x64/tidgi" || { echo "ERROR: Packaged executable not found at out/TidGi-linux-x64/tidgi"; exit 1; }
+            echo "Verified: out/TidGi-linux-x64/tidgi exists"
+          fi
+
+      - name: Calibrate E2E timeouts (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" pnpm run test:e2e:calibrate
+        env:
+          CI: true
+          LANG: zh_CN.UTF-8
+          LC_ALL: zh_CN.UTF-8
+        timeout-minutes: 45
+
+      - name: Calibrate E2E timeouts (Windows)
+        if: runner.os == 'Windows'
+        run: pnpm run test:e2e:calibrate
+        env:
+          CI: true
+        timeout-minutes: 45
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: e2e-calibration-${{ matrix.os }}
+          path: .calibration.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  e2e:
+    needs:
+      - unit
+      - e2e-calibrate
     strategy:
       fail-fast: false
       matrix:
@@ -89,6 +201,10 @@ jobs:
         with:
           arch: x64
 
+      # pnpm git deps (e.g. @electron/node-gyp) resolve to git@github.com on Windows CI
+      - name: Use HTTPS for GitHub git dependencies
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -104,11 +220,6 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
-
-      # registry-js is a Windows-only dependency — remove it on non-Windows to avoid install noise
-      - name: Remove Windows-only deps (Linux)
-        if: runner.os == 'Linux'
-        run: pnpm remove registry-js
 
       # Linux: Install headless GUI stack for Electron (xvfb), CJK fonts and locale for i18n tests
       # https://www.electronjs.org/docs/latest/tutorial/testing-on-headless-ci
@@ -148,6 +259,15 @@ jobs:
             echo "Verified: out/TidGi-linux-x64/tidgi exists"
           fi
 
+      - name: Download E2E calibration
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-calibration-${{ matrix.os }}
+
+      - name: Verify E2E calibration artifact
+        shell: bash
+        run: test -f .calibration.json
+
       # Linux: Run E2E under xvfb for virtual display
       - name: Run E2E tests (Linux)
         if: runner.os == 'Linux'
@@ -158,8 +278,6 @@ jobs:
         shell: bash
         env:
           CI: true
-          DISPLAY: :99
-          # Set Chinese locale for i18n testing
           LANG: zh_CN.UTF-8
           LC_ALL: zh_CN.UTF-8
           # E2E test sharding — splits feature files across parallel CI runners

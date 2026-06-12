@@ -4,8 +4,11 @@ import { useTranslation } from 'react-i18next';
 
 import { useInfoSnackbar } from '@/components/InfoSnackbar';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
+import { evaluateHidden } from '@services/preferences/definitions/conditions';
 import { allSections } from '@services/preferences/definitions/registry';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 
+import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import React from 'react';
 import { PageInner as Inner, PageRoot as Root } from './PreferenceComponents';
@@ -21,6 +24,8 @@ registerCustomSections();
 /** Build ISectionRecord from allSections for sidebar + scroll nav */
 function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.RefObject<HTMLSpanElement | null>> } {
   const { t } = useTranslation(['translation', 'agent']);
+  const preference = usePreferenceObservable();
+  const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   const references = useMemo(() => {
     const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
     for (const section of allSections) {
@@ -35,12 +40,12 @@ function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.R
       result[section.id] = {
         text: t(section.titleKey, section.ns ? { ns: section.ns } : undefined),
         Icon: section.Icon,
-        hidden: section.hidden,
+        hidden: evaluateHidden(section.hidden, { preference, platform }),
         ref: references.get(section.id) ?? React.createRef<HTMLSpanElement>(),
       };
     }
     return result;
-  }, [t, references]);
+  }, [t, references, preference, platform]);
 
   return { record, refs: references };
 }

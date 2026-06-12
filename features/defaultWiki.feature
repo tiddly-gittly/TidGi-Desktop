@@ -61,6 +61,19 @@ Feature: TidGi Default Wiki
     When I open tiddler "Index" in browser view
     Then I should see a "Index tiddler" element in browser view with selector "div[data-tiddler-title='Index']"
 
+  @wiki @calibrate @lazy-all-restart
+  Scenario: Calibrate restart with lazy-all root tiddler
+    Given I cleanup test wiki so it could create a new one on start
+    When I launch the TidGi application
+    And I wait for the page to load completely
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    And the browser view should be loaded and visible
+    When I update workspace "wiki" settings:
+      | property              | value                 |
+      | rootTiddler           | $:/core/save/lazy-all |
+      | enableFileSystemWatch | false                 |
+    Then I wait for "config file written" log marker "[test-id-TIDGI_CONFIG_WRITTEN]"
+    When I restart workspace "wiki"
 
   @wiki @move-workspace
   Scenario: Move workspace to a new location

@@ -3,9 +3,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import defaultIcon from '../../../images/default-icon.png';
 
-import { ListItem, ListItemText } from '@/components/ListItem';
+import { ListItem } from '@/components/ListItem';
 import { wikiPictureExtensions } from '@/constants/fileNames';
-import { ListItemVertical, TextField } from '../../Preferences/PreferenceComponents';
 import { Avatar, AvatarFlex, AvatarLeft, AvatarPicture, AvatarRight, PictureButton } from '../styles';
 import { useWorkspaceForm } from '../WorkspaceFormContext';
 
@@ -15,24 +14,6 @@ const getValidIconPath = (iconPath?: string | null): string => {
   }
   return defaultIcon;
 };
-
-export function WorkspaceNameItem(): React.JSX.Element {
-  const { t } = useTranslation();
-  const { workspace, workspaceSetter } = useWorkspaceForm();
-  return (
-    <ListItemVertical>
-      <ListItemText primary={t('EditWorkspace.Name')} secondary={t('EditWorkspace.NameDescription')} />
-      <TextField
-        fullWidth
-        placeholder='Optional'
-        value={workspace.name ?? ''}
-        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-          workspaceSetter({ ...workspace, name: event.target.value });
-        }}
-      />
-    </ListItemVertical>
-  );
-}
 
 export function WorkspaceAvatarItem(): React.JSX.Element {
   const { t } = useTranslation();
