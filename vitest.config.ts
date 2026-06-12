@@ -26,6 +26,12 @@ export default defineConfig({
     // Setup files
     setupFiles: ['./src/__tests__/setup-vitest.ts'],
 
+    server: {
+      deps: {
+        inline: [/@memeloop\/react-ui/, /node_modules\/@memeloop\/react-ui/],
+      },
+    },
+
     // Test file patterns
     include: [
       'src/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
@@ -71,9 +77,15 @@ export default defineConfig({
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
       { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+      { find: /^react$/, replacement: path.resolve(__dirname, './node_modules/react/index.js') },
+      { find: /^react\/jsx-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-runtime.js') },
+      { find: /^react\/jsx-dev-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-dev-runtime.js') },
+      { find: /^react-dom$/, replacement: path.resolve(__dirname, './node_modules/react-dom/index.js') },
+      { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, './node_modules/react-dom/client.js') },
+      { find: /^@mui\/icons-material\/HelpOutline$/, replacement: path.resolve(__dirname, './node_modules/@mui/icons-material/HelpOutlineOutlined.js') },
       // Resolve memeloop packages for vitest (SWC-transformed files need explicit paths)
-      { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/web/index.js') },
-      { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/index.js') },
+      { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
+      { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js') },
       // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
       { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
     ],
