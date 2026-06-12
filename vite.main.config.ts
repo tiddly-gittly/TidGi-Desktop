@@ -57,11 +57,20 @@ export default defineConfig({
       '@services': path.resolve(__dirname, './src/services'),
       'i18next-fs-backend': path.resolve(__dirname, './node_modules/i18next-fs-backend/cjs/index.js'),
       'i18next-electron-fs-backend': path.resolve(__dirname, './node_modules/i18next-electron-fs-backend/cjs/index.js'),
+      // TypeORM's ExpoDriver.js has a try-catch require('expo-sqlite'). The
+      // forge Vite subprocess loses rolldownOptions.external during config
+      // merging, so we redirect to an empty stub that's never used at runtime.
+      'expo-sqlite': path.resolve(__dirname, './src/__tests__/__stubs__/expoSqliteStub.js'),
     },
   },
   build: {
     commonjsOptions: {
       ignoreDynamicRequires: true,
+    },
+    // `ssr.external` is forwarded directly to Rolldown in the forge subprocess
+    // and bypasses config merge issues that strip rolldownOptions.external.
+    ssr: {
+      external: ['expo-sqlite'],
     },
     rolldownOptions: {
       external: [
