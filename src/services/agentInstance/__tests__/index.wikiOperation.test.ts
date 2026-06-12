@@ -44,8 +44,22 @@ describe('AgentInstanceService Wiki Operation', () => {
       messages: [],
     };
 
+    // Ensure the wiki-operation tool is configured for this agent so
+    // MemeLoop's taskAgent will pick it up when the LLM returns tool calls.
+    const agentDefWithWikiPlugin = {
+      ...exampleAgent,
+      agentFrameworkID: 'memeloopTaskAgent',
+      agentFrameworkConfig: {
+        ...(exampleAgent as Record<string, unknown>).agentFrameworkConfig as Record<string, unknown>,
+        plugins: [
+          ...((exampleAgent as Record<string, unknown>).agentFrameworkConfig as Record<string, unknown> | undefined)?.plugins as Array<{ toolId: string }> ?? [],
+          { toolId: 'wikiOperation' },
+        ],
+      },
+    };
+
     // Mock agent definition service to return our test agent definition
-    mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue(exampleAgent);
+    mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue(agentDefWithWikiPlugin);
     vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
   });
 
