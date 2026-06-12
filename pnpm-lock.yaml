@@ -11,7 +11,7 @@ overrides:
   rc>ini: ^1.3.8
   tar-stream>bl: ^4.1.0
 
-pnpmfileChecksum: sha256-lIFkUl44z62LBhI/qC/00DMf5xie4YLU9ldCFAHgCsA=
+pnpmfileChecksum: sha256-gaC5Dg4Fp+Nz2C08mg99IV4k/lAe0lAUbc6f9DW35os=
 
 importers:
 
@@ -245,9 +245,6 @@ importers:
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
-      registry-js:
-        specifier: 1.16.1
-        version: 1.16.1
       rotating-file-stream:
         specifier: ^3.2.9
         version: 3.2.9
@@ -435,6 +432,9 @@ importers:
       eslint-config-tidgi:
         specifier: ^3.1.0
         version: 3.1.0(@typescript-eslint/eslint-plugin@8.61.0(@typescript-eslint/parser@8.61.0(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2))(typescript@6.0.3))(@typescript-eslint/utils@8.61.0(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2))(typescript@6.0.3))(eslint-import-resolver-node@0.3.10)(eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.61.0(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2)))(jiti@2.7.0)(supports-color@10.2.2)(typescript@6.0.3)
+      husky:
+        specifier: 9.1.7
+        version: 9.1.7
       identity-obj-proxy:
         specifier: ^3.0.0
         version: 3.0.0
@@ -1915,10 +1915,10 @@ packages:
     peerDependencies:
       '@mui/icons-material': '>=6.0.0'
       '@mui/material': '>=6.0.0'
-      '@rjsf/core': '>=5.0.0'
+      '@rjsf/core': '>=6.0.0'
       '@rjsf/mui': '*'
-      '@rjsf/utils': '>=5.0.0'
-      '@rjsf/validator-ajv8': '>=5.0.0'
+      '@rjsf/utils': '>=6.0.0'
+      '@rjsf/validator-ajv8': '>=6.0.0'
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
       react-native: '*'
@@ -5116,6 +5116,11 @@ packages:
   humanize-ms@1.2.1:
     resolution: {integrity: sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==}
 
+  husky@9.1.7:
+    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   i18next-electron-fs-backend@4.0.0:
     resolution: {integrity: sha512-ZFQ7UoChpyrqpOWVLwwRdcB4pC63xpEFmaB20RoTiJWPkDvQnxxF2dtSRRcwHCxvFG0odBYdzFMrw3jHXj55zg==}
 
@@ -6753,9 +6758,6 @@ packages:
   regexparam@3.0.0:
     resolution: {integrity: sha512-RSYAtP31mvYLkAHrOlh25pCNQ5hWnT106VukGaaFfuJrZFkGRX5GhUAdPqpSDXxOhA2c4akmRuplv1mRqnBn6Q==}
     engines: {node: '>=8'}
-
-  registry-js@1.16.1:
-    resolution: {integrity: sha512-pQ2kD36lh+YNtpaXm6HCCb0QZtV/zQEeKnkfEIj5FDSpF/oFts7pwizEUkWSvP8IbGb4A4a5iBhhS9eUearMmQ==}
 
   regjsparser@0.13.1:
     resolution: {integrity: sha512-dLsljMd9sqwRkby8zhO1gSg3PnJIBFid8f4CQj/sXx+7cKx+E7u0PKhZ+U4wmhx7EfmtvnA318oVaIkAB1lRJw==}
@@ -13497,6 +13499,8 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
+  husky@9.1.7: {}
+
   i18next-electron-fs-backend@4.0.0:
     dependencies:
       lodash.clonedeep: 4.5.0
@@ -15146,11 +15150,6 @@ snapshots:
     optional: true
 
   regexparam@3.0.0: {}
-
-  registry-js@1.16.1:
-    dependencies:
-      node-addon-api: 7.1.1
-      prebuild-install: 7.1.3
 
   regjsparser@0.13.1:
     dependencies:
