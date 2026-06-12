@@ -3,12 +3,11 @@ import { IChangeEvent } from '@rjsf/core';
 import type { UiSchema } from '@rjsf/utils';
 import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import { Form, buildUiSchema, promptEditorTemplates, promptEditorWidgets } from '@memeloop/react-ui/web';
+import { ArrayItemProvider, Form, buildUiSchema, promptEditorTemplates, promptEditorWidgets } from '@memeloop/react-ui/web';
 import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorDisplay } from './components/ErrorDisplay';
-import { ArrayItemProvider } from '@memeloop/react-ui';
 import { useDefaultUiSchema } from './defaultUiSchema';
 import { fields } from './fields';
 
