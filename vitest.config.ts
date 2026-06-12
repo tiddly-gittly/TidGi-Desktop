@@ -18,7 +18,7 @@ export default defineConfig({
     environment: 'jsdom',
 
     // features/ tests (HTTP/Node.js integration) run in node environment
-    // @ts-expect-error - environmentMatchGlobs may not exist in vitest 4 types
+    // @ts-ignore — environmentMatchGlobs is supported in vitest 4
     environmentMatchGlobs: [
       ['features/**', 'node'],
     ],
@@ -54,9 +54,7 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
-    deps: {
-      inline: [/@memeloop\/react-ui/],
-    },
+
   },
 
   // Vitest 4 requires pool options at the top level
