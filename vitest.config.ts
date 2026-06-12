@@ -54,6 +54,9 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
+    deps: {
+      inline: [/@memeloop\/react-ui/],
+    },
   },
 
   // Vitest 4 requires pool options at the top level
@@ -70,10 +73,9 @@ export default defineConfig({
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
       { find: '@services', replacement: path.resolve(__dirname, './src/services') },
-      { find: '@memeloop/react-ui', replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/index.ts') },
-      { find: '@memeloop/react-ui/web', replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/web/index.ts') },
-      { find: '@memeloop/react-ui/native', replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/native/index.ts') },
-      { find: '@memeloop/react-ui/theme', replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/theme/index.ts') },
+      // Resolve memeloop packages for vitest (SWC-transformed files need explicit paths)
+      { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/web/index.js') },
+      { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/index.js') },
       // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
       { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
     ],

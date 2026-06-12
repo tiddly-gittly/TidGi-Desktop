@@ -16,10 +16,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
-      '@memeloop/react-ui': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/index.ts'),
-      '@memeloop/react-ui/web': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/web/index.ts'),
-      '@memeloop/react-ui/native': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/native/index.ts'),
-      '@memeloop/react-ui/theme': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/src/theme/index.ts'),
+      '@memeloop/react-ui': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/index.js'),
+      '@memeloop/react-ui/web': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/web/index.js'),
+      '@memeloop/react-ui/native': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/native/index.js'),
+      '@memeloop/react-ui/theme': path.resolve(__dirname, '../memeloop/packages/memeloop-react-ui/dist/theme/index.js'),
     },
   },
   optimizeDeps: {
