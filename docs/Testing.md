@@ -11,9 +11,11 @@ pnpm test
 # Run unit tests only
 pnpm test:unit
 
-# Run E2E tests (requires prepare packaged app, but only when you modify code in ./src) Don't need to run this if you only modify .feature file or step definition ts files.
+# Run E2E tests (requires prepare packaged app when you modify code in ./src)
 pnpm run test:prepare-e2e
-# (When only modify tests in ./features folder, and you have packaged app before, only need to run this.)
+# Generate measured timeouts once (or after changing @calibrate scenarios):
+pnpm run test:e2e:calibrate
+# Run scenarios — `test:e2e` does NOT run calibration automatically:
 pnpm test:e2e
 # Or run a specific e2e test by using same `@xxx` as in the `.feature` file.
 # Not `-- --tags` , and not `tag`

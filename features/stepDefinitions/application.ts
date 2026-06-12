@@ -5,6 +5,7 @@ import path from 'path';
 import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { WindowNames } from '../../src/services/windows/WindowProperties';
+import { killProcessTree } from '../supports/killProcessTree';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
@@ -405,16 +406,7 @@ async function closeTidGiApplication(world: ApplicationWorld): Promise<void> {
   // isTidGiRunning or taskkill never prevents reference clearance.
   try {
     if (world.appPid !== undefined && await isTidGiRunning(world)) {
-      try {
-        const { execSync } = await import('child_process');
-        if (process.platform === 'win32') {
-          execSync(`taskkill /PID ${world.appPid} /T /F`, { stdio: 'ignore' });
-        } else {
-          process.kill(world.appPid, 'SIGKILL');
-        }
-      } catch {
-        // Process already exited or kill failed — ignore
-      }
+      killProcessTree(world.appPid);
     }
   } catch {
     // isTidGiRunning may throw if the Playwright handle is in an invalid

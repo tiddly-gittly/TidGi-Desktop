@@ -62,14 +62,13 @@ Feature: TidGi Preference
     Then I should not see a "empty first autocomplete placeholder" element with selector "xpath=(//label[contains(text(),'Preference.SelectModel')])[1]"
     Then I should not see a "test-model after test-embedding-model (wrong order)" element with selector "xpath=//input[@value='test-embedding-model']/following::input[@value='test-model']"
     # Step 10: Add ComfyUI provider with workflow path
-    When I click on "add provider button and select from preset dropdown and comfyui preset option and add provider submit and provider tab and add model button" elements with selectors:
-      | element description           | selector                                   |
-      | add provider button           | [data-testid='add-new-provider-button']    |
-      | select from preset dropdown   | [data-testid='new-provider-preset-select'] |
-      | comfyui preset option         | li[role='option']:has-text('comfyui')      |
-      | add provider submit button    | [data-testid='add-provider-submit-button'] |
-      | provider tab comfyui          | button[role='tab']:has-text('comfyui')     |
-      | add model button              | [data-testid='add-new-model-button']       |
+    When I click on a "add provider button" element with selector "[data-testid='add-new-provider-button']"
+    When I select "comfyui" from MUI Select with test id "new-provider-preset-select"
+    When I click on an "add provider submit" element with selector "[data-testid='add-provider-submit-button']"
+    When I click on "provider tab and add model button" elements with selectors:
+      | element description  | selector                                   |
+      | provider tab comfyui | button[role='tab']:has-text('comfyui')     |
+      | add model button     | [data-testid='add-new-model-button']       |
     When I type "test-flux" in "model name input" element with selector "[data-testid='new-model-name-input']"
     When I click on "language feature checkbox and imageGeneration feature checkbox" elements with selectors:
       | element description              | selector                                         |

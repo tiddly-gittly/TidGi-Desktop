@@ -9,7 +9,8 @@ This repo ships a ready-to-use [chrome-devtools-mcp](https://github.com/ChromeDe
 
 ## Start Electron with DevTools port
 
-- Run `pnpm run start:dev:mcp` (check active terminal see if it is already running)
+- Run `pnpm run start:dev` (check active terminal see if it is already running)
+- Enable the TidGi MCP server from **Settings → Developer Tools** when needed
 - Ports: `9222` for Chrome DevTools (renderer), `9229` for Node Inspector (main process)
 
 ## Connect from VS Code MCP
@@ -23,6 +24,6 @@ This repo ships a ready-to-use [chrome-devtools-mcp](https://github.com/ChromeDe
 
 ## Troubleshooting
 
-- If browser pages do not show, app main window react part is shown, but wiki browser view is white or not shown: Seems it is not working with browser view. ~~close other Chrome instances or change the port in `.vscode/mcp.json` and rerun `start:dev:mcp`~~
+- If browser pages do not show, app main window react part is shown, but wiki browser view is white or not shown: Seems it is not working with browser view.
 - If you see `Debugger listening on ws://127.0.0.1:9229/...`, that is the main-process Node inspector; keep using `9222` for renderer DevTools
 - Multiple windows (e.g., preferences dialog) appear as separate pages in `list_pages` — use `select_page` to switch context

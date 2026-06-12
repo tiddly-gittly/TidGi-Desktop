@@ -86,7 +86,18 @@ function requireRecord(): CalibrationRecord {
     return record;
   }
   throw new Error(
-    'E2E calibration file is missing.\nRun `pnpm test:e2e` to generate it — the calibration preflight runs automatically.',
+    [
+      'E2E calibration file (.calibration.json) is missing.',
+      '',
+      'Run calibration FIRST (once per machine / after timeout-related changes):',
+      '  pnpm run test:e2e:calibrate',
+      '',
+      'Then run targeted E2E tests, for example:',
+      '  pnpm test:e2e --tags="@edit-workspace-save-http-api"',
+      '',
+      'AI agents: do NOT assume `pnpm test:e2e` generates calibration — it only runs scenarios.',
+      'If this error appears, run `pnpm run test:e2e:calibrate` before retrying E2E.',
+    ].join('\n'),
   );
 }
 

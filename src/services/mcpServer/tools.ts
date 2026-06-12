@@ -4,98 +4,363 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { z } from 'zod';
 import type { McpToolDefinition, ToolInput } from './types';
 
 /** Pass this as workspaceId to target the main React UI window instead of a wiki webview. */
 const MAIN_WINDOW_TARGET = 'main-window';
+const PREFERENCES_WINDOW_TARGET = 'preferences-window';
+
+const WINDOW_TARGETS = new Map<string, WindowNames>([
+  [MAIN_WINDOW_TARGET, WindowNames.main],
+  [PREFERENCES_WINDOW_TARGET, WindowNames.preferences],
+]);
+
+const TARGET_WINDOW_NAMES = new Map<WindowNames, string>(
+  Array.from(WINDOW_TARGETS, ([target, windowName]) => [windowName, target]),
+);
+
+const APP_WINDOW_NAMES = Object.values(WindowNames);
+const DEFAULT_SNAPSHOT_MAX_BYTES = 48 * 1024;
+const DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT = 50;
+const MAX_SNAPSHOT_SUMMARY_CHILDREN = 25;
+
+type SnapshotPathSegment = string | number;
+
+interface SnapshotSummaryChild {
+  key: string;
+  path: string;
+  valueType: string;
+  serializedBytes: number;
+  childCount: number | null;
+}
+
+interface SnapshotSummary {
+  truncated: true;
+  path: string;
+  valueType: string;
+  serializedBytes: number;
+  maxBytes: number;
+  childCount: number | null;
+  arraySlice?: {
+    start: number;
+    count: number;
+    total: number;
+    applied: boolean;
+  };
+  children?: SnapshotSummaryChild[];
+  preview?: string;
+}
+
+function resolveWindowName(window: string): WindowNames {
+  if (WINDOW_TARGETS.has(window)) {
+    return WINDOW_TARGETS.get(window)!;
+  }
+
+  if (APP_WINDOW_NAMES.includes(window as WindowNames)) {
+    return window as WindowNames;
+  }
+
+  throw new Error(
+    `Unknown window: ${window}. Use one of: ${[...WINDOW_TARGETS.keys(), ...APP_WINDOW_NAMES].join(', ')}`,
+  );
+}
+
+function getWindowState(windowService: IWindowService, windowName: WindowNames) {
+  const win = windowService.get(windowName);
+  const isOpen = !!win && !win.isDestroyed();
+
+  return {
+    windowName,
+    target: TARGET_WINDOW_NAMES.get(windowName) ?? null,
+    isOpen,
+    isVisible: isOpen ? win.isVisible() : false,
+    title: isOpen ? win.getTitle() : null,
+  };
+}
+
+function getOpenConfig(input: {
+  multiple?: boolean;
+  recreate?: boolean;
+  recreateUnlessWorkspaceID?: string;
+}) {
+  const { multiple, recreate, recreateUnlessWorkspaceID } = input;
+  if (multiple === undefined && recreate === undefined && recreateUnlessWorkspaceID === undefined) {
+    return undefined;
+  }
+
+  return {
+    ...(multiple === undefined ? {} : { multiple }),
+    ...(recreate === undefined ? {} : { recreate }),
+    ...(recreateUnlessWorkspaceID === undefined ? {} : { recreateUnlessWorkspaceID }),
+  };
+}
+
+function getSnapshotValueType(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+function getSnapshotChildCount(value: unknown): number | null {
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+
+  if (value !== null && typeof value === 'object') {
+    return Object.keys(value).length;
+  }
+
+  return null;
+}
+
+function getSerializedBytes(value: unknown): number {
+  return Buffer.byteLength(JSON.stringify(value), 'utf8');
+}
+
+function formatSnapshotPath(pathSegments: SnapshotPathSegment[]): string {
+  if (pathSegments.length === 0) {
+    return 'root';
+  }
+
+  return pathSegments.reduce<string>((path, segment) => {
+    if (typeof segment === 'number') {
+      return `${path}[${segment}]`;
+    }
+
+    return path === '' ? segment : `${path}.${segment}`;
+  }, '');
+}
+
+function parseSnapshotPath(path: string | undefined): SnapshotPathSegment[] {
+  if (!path) {
+    return [];
+  }
+
+  return path
+    .split('.')
+    .filter(segment => segment.length > 0)
+    .flatMap((segment) => {
+      const parts: SnapshotPathSegment[] = [];
+      const pattern = /([^[]+)|(\[(\d+)\])/g;
+      let match: RegExpExecArray | null;
+
+      while ((match = pattern.exec(segment)) !== null) {
+        if (match[1]) {
+          parts.push(match[1]);
+        } else if (match[3]) {
+          parts.push(Number(match[3]));
+        }
+      }
+
+      return parts;
+    });
+}
+
+function getSnapshotValueAtPath(root: unknown, pathSegments: SnapshotPathSegment[]): unknown {
+  let current = root;
+
+  for (const segment of pathSegments) {
+    if (typeof segment === 'number') {
+      if (!Array.isArray(current)) {
+        throw new Error(`Snapshot path ${formatSnapshotPath(pathSegments)} expected an array before index ${segment}.`);
+      }
+      current = current[segment];
+    } else {
+      if (Array.isArray(current)) {
+        const rangeMatch = /^(\d+):(\d+)$/.exec(segment);
+        if (rangeMatch) {
+          const start = Number(rangeMatch[1]);
+          const end = Number(rangeMatch[2]);
+          current = current.slice(start, end + 1);
+          continue;
+        }
+      }
+      if (current === null || typeof current !== 'object' || !(segment in current)) {
+        throw new Error(`Snapshot path ${formatSnapshotPath(pathSegments)} not found.`);
+      }
+      current = (current as Record<string, unknown>)[segment];
+    }
+  }
+
+  return current;
+}
+
+function createSnapshotSummaryChild(key: string, pathSegments: SnapshotPathSegment[], value: unknown): SnapshotSummaryChild {
+  return {
+    key,
+    path: formatSnapshotPath(pathSegments),
+    valueType: getSnapshotValueType(value),
+    serializedBytes: getSerializedBytes(value),
+    childCount: getSnapshotChildCount(value),
+  };
+}
+
+function summarizeSnapshotValue(
+  value: unknown,
+  pathSegments: SnapshotPathSegment[],
+  maxBytes: number,
+  arraySlice: { start: number; count: number; total: number; applied: boolean } | undefined,
+): SnapshotSummary {
+  const summary: SnapshotSummary = {
+    truncated: true,
+    path: formatSnapshotPath(pathSegments),
+    valueType: getSnapshotValueType(value),
+    serializedBytes: getSerializedBytes(value),
+    maxBytes,
+    childCount: getSnapshotChildCount(value),
+  };
+
+  if (arraySlice) {
+    summary.arraySlice = arraySlice;
+  }
+
+  if (Array.isArray(value)) {
+    const total = value.length;
+    const chunkSize = arraySlice?.count ?? DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT;
+    const children: SnapshotSummaryChild[] = [];
+
+    for (let start = 0; start < total && children.length < MAX_SNAPSHOT_SUMMARY_CHILDREN; start += chunkSize) {
+      const end = Math.min(start + chunkSize, total);
+      children.push(createSnapshotSummaryChild(`${start}-${end - 1}`, [...pathSegments, `${start}:${end - 1}`], value.slice(start, end)));
+    }
+
+    summary.children = children;
+    return summary;
+  }
+
+  if (value !== null && typeof value === 'object') {
+    summary.children = Object.entries(value)
+      .slice(0, MAX_SNAPSHOT_SUMMARY_CHILDREN)
+      .map(([key, childValue]) => createSnapshotSummaryChild(key, [...pathSegments, key], childValue));
+    return summary;
+  }
+
+  summary.preview = typeof value === 'string' ? value.slice(0, 500) : String(value);
+  return summary;
+}
+
+function selectSnapshotValue(
+  root: unknown,
+  options: { path?: string; sliceStart?: number; sliceCount?: number },
+): {
+  value: unknown;
+  pathSegments: SnapshotPathSegment[];
+  arraySlice?: { start: number; count: number; total: number; applied: boolean };
+} {
+  const pathSegments = parseSnapshotPath(options.path);
+  const selectedValue = getSnapshotValueAtPath(root, pathSegments);
+
+  if (!Array.isArray(selectedValue)) {
+    return { value: selectedValue, pathSegments };
+  }
+
+  if (options.sliceStart === undefined && options.sliceCount === undefined) {
+    return {
+      value: selectedValue,
+      pathSegments,
+      arraySlice: {
+        start: 0,
+        count: DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT,
+        total: selectedValue.length,
+        applied: false,
+      },
+    };
+  }
+
+  const sliceStart = options.sliceStart ?? 0;
+  const sliceCount = options.sliceCount ?? DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT;
+  return {
+    value: selectedValue.slice(sliceStart, sliceStart + sliceCount),
+    pathSegments,
+    arraySlice: {
+      start: sliceStart,
+      count: sliceCount,
+      total: selectedValue.length,
+      applied: true,
+    },
+  };
+}
 
 // ─── Tool Definitions ─────────────────────────────────────────────────────────
 
 export const TOOLS: McpToolDefinition[] = [
   // ── UI interaction (like Chrome DevTools Protocol) ────────────────────────
   {
+    name: 'ui_window',
+    description:
+      'List, open, or close app windows. Use this to open windows like Preferences before targeting them with other UI tools. Accepts either MCP targets such as "main-window" / "preferences-window" or internal window names such as "preferences" / "notifications".',
+    inputSchema: {
+      action: z.enum(['list', 'open', 'close']).describe('Window action to perform.'),
+      window: z.string().optional().describe('Required for open/close. Supports MCP targets like "main-window" / "preferences-window" or window names like "preferences".'),
+      meta: z.record(z.string(), z.unknown()).optional().describe('Optional window metadata to pass when opening a window.'),
+      multiple: z.boolean().optional().describe('Allow multiple windows with the same name when opening.'),
+      recreate: z.boolean().optional().describe('Recreate the window if it is already open.'),
+      recreateUnlessWorkspaceID: z.string().optional().describe('Recreate the window unless its stored workspaceID already matches this value.'),
+    },
+  },
+  {
     name: 'ui_snapshot',
     description:
-      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI (sidebar, settings, workspace switcher). Omit workspaceId to use the active workspace.',
+      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. For oversized results, the tool returns a structural summary and supports drilling into a path or array slice.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
+      path: z.string().optional().describe('Optional dot path into the snapshot result, for example "nodes" or "nodes[0].childIds".'),
+      sliceStart: z.number().optional().describe('Optional start index when the selected path points to an array.'),
+      sliceCount: z.number().optional().describe('Optional number of array items to return from the selected path.'),
+      maxBytes: z.number().optional().describe('Maximum serialized JSON size before the result is summarized. Default: 49152 bytes.'),
     },
   },
   {
     name: 'ui_screenshot',
-    description: 'Take a screenshot. workspaceId targets a wiki webview; use "main-window" for the main React UI. Omit to use active workspace. Returns base64-encoded PNG.',
+    description:
+      'Take a screenshot. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. Omit to use active workspace. Returns base64-encoded PNG.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_click',
-    description: 'Click at (x, y). workspaceId targets a wiki webview; use "main-window" for the main React UI. Omit to use active workspace.',
+    description: 'Click at (x, y). workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. Omit to use active workspace.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        x: { type: 'number', description: 'X coordinate (pixels from left)' },
-        y: { type: 'number', description: 'Y coordinate (pixels from top)' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-        button: { type: 'string', enum: ['left', 'right', 'middle'], description: 'Mouse button (default: left)' },
-        clickCount: { type: 'number', description: 'Number of clicks: 1=single, 2=double. Default: 1.' },
-      },
-      required: ['x', 'y'],
+      x: z.number().describe('X coordinate (pixels from left)'),
+      y: z.number().describe('Y coordinate (pixels from top)'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
+      button: z.enum(['left', 'right', 'middle']).optional().describe('Mouse button (default: left)'),
+      clickCount: z.number().optional().describe('Number of clicks: 1=single, 2=double. Default: 1.'),
     },
   },
   {
     name: 'ui_type',
-    description: 'Type text into the currently focused element. workspaceId targets a wiki webview; use "main-window" for the main React UI.',
+    description: 'Type text into the currently focused element. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        text: { type: 'string', description: 'Text to type' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
-      required: ['text'],
+      text: z.string().describe('Text to type'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_key',
-    description: 'Press a keyboard key or shortcut, e.g. "Enter", "Escape", "Control+s". Use "main-window" to target the main React UI.',
+    description: 'Press a keyboard key or shortcut, e.g. "Enter", "Escape", "Control+s". Use "main-window" or "preferences-window" to target app windows.',
     inputSchema: {
-      type: 'object',
-      properties: {
-        key: { type: 'string', description: 'Key name or combo, e.g. "Enter", "Tab", "Control+s"' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
-      required: ['key'],
+      key: z.string().describe('Key name or combo, e.g. "Enter", "Tab", "Control+s"'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_navigate',
     description: 'Navigate the workspace webview to a URL, e.g. "tidgi://workspaceId/#TiddlerTitle". Only works for wiki webviews, not "main-window".',
     inputSchema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'URL to load' },
-        workspaceId: { type: 'string', description: 'Workspace ID. Omit to use active workspace.' },
-      },
-      required: ['url'],
+      url: z.string().describe('URL to load'),
+      workspaceId: z.string().optional().describe('Workspace ID. Omit to use active workspace.'),
     },
   },
   {
     name: 'ui_evaluate',
     description:
-      'Evaluate JavaScript and return the result. In wiki webviews, $tw.wiki API is available. Use "main-window" to query the main React UI (window.service, React state, etc.).',
+      'Evaluate JavaScript and return the result. In wiki webviews, $tw.wiki API is available. Use "main-window" or "preferences-window" to query app window state (window.service, React state, etc.).',
     inputSchema: {
-      type: 'object',
-      properties: {
-        script: { type: 'string', description: 'JavaScript to evaluate. The last expression value is returned.' },
-        workspaceId: { type: 'string', description: 'Workspace ID, or "main-window" for the main app UI. Omit to use active workspace.' },
-      },
-      required: ['script'],
+      script: z.string().describe('JavaScript to evaluate. The last expression value is returned.'),
+      workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
     },
   },
 ];
@@ -113,15 +378,28 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+function assertWikiNavigateTarget(workspaceId: string | undefined): void {
+  if (!workspaceId) {
+    return;
+  }
+  if (WINDOW_TARGETS.has(workspaceId)) {
+    throw new Error(`ui_navigate does not support app window target "${workspaceId}". Use a workspace ID instead.`);
+  }
+  if (APP_WINDOW_NAMES.includes(workspaceId as WindowNames)) {
+    throw new Error(`ui_navigate does not support app window "${workspaceId}". Use a workspace ID instead.`);
+  }
+}
+
 async function getWebContents(workspaceId: string | undefined) {
-  // Special target: main React UI window (sidebar, settings, workspace switcher)
-  if (workspaceId === MAIN_WINDOW_TARGET) {
+  // Special targets: app windows like main or preferences.
+  if (workspaceId && WINDOW_TARGETS.has(workspaceId)) {
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-    const win = windowService.get(WindowNames.main);
-    if (!win) throw new Error('Main window not found.');
+    const windowName = WINDOW_TARGETS.get(workspaceId)!;
+    const win = windowService.get(windowName);
+    if (!win) throw new Error(`${workspaceId} not found.`);
     const { webContents } = win;
-    if (webContents.isDestroyed()) throw new Error('Main window webContents is destroyed.');
-    return { webContents, wsId: MAIN_WINDOW_TARGET };
+    if (webContents.isDestroyed()) throw new Error(`${workspaceId} webContents is destroyed.`);
+    return { webContents, wsId: workspaceId };
   }
 
   // Wiki webview target
@@ -146,8 +424,52 @@ async function getWebContents(workspaceId: string | undefined) {
 export async function callTool(name: string, input: ToolInput): Promise<unknown> {
   switch (name) {
     // ── UI interaction ────────────────────────────────────────────────────
+    case 'ui_window': {
+      const { action, window, meta, multiple, recreate, recreateUnlessWorkspaceID } = input as {
+        action: 'list' | 'open' | 'close';
+        window?: string;
+        meta?: Record<string, unknown>;
+        multiple?: boolean;
+        recreate?: boolean;
+        recreateUnlessWorkspaceID?: string;
+      };
+      const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+
+      if (action === 'list') {
+        return {
+          targetAliases: Object.fromEntries(WINDOW_TARGETS),
+          windows: APP_WINDOW_NAMES.map(windowName => getWindowState(windowService, windowName)),
+        };
+      }
+
+      if (!window) {
+        throw new Error(`window is required for ui_window action "${action}".`);
+      }
+
+      const windowName = resolveWindowName(window);
+
+      if (action === 'open') {
+        await windowService.open(windowName, meta, getOpenConfig({ multiple, recreate, recreateUnlessWorkspaceID }));
+        return getWindowState(windowService, windowName);
+      }
+
+      await windowService.close(windowName);
+      return {
+        success: true,
+        windowName,
+        target: TARGET_WINDOW_NAMES.get(windowName) ?? null,
+        isOpen: false,
+      };
+    }
+
     case 'ui_snapshot': {
-      const { workspaceId } = input as { workspaceId?: string };
+      const { workspaceId, path, sliceStart, sliceCount, maxBytes = DEFAULT_SNAPSHOT_MAX_BYTES } = input as {
+        workspaceId?: string;
+        path?: string;
+        sliceStart?: number;
+        sliceCount?: number;
+        maxBytes?: number;
+      };
       const { webContents } = await getWebContents(workspaceId);
       if (!webContents.debugger.isAttached()) webContents.debugger.attach('1.3');
       try {
@@ -156,7 +478,12 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
           10_000,
           'ui_snapshot',
         )) as unknown;
-        return result;
+        const selected = selectSnapshotValue(result, { path, sliceStart, sliceCount });
+        if (getSerializedBytes(selected.value) <= maxBytes) {
+          return selected.value;
+        }
+
+        return summarizeSnapshotValue(selected.value, selected.pathSegments, maxBytes, selected.arraySlice);
       } finally {
         if (webContents.debugger.isAttached()) webContents.debugger.detach();
       }
@@ -218,6 +545,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 
     case 'ui_navigate': {
       const { workspaceId, url } = input as { workspaceId?: string; url: string };
+      assertWikiNavigateTarget(workspaceId);
       const { webContents } = await getWebContents(workspaceId);
       await withTimeout(webContents.loadURL(url), 15_000, 'ui_navigate');
       return { success: true, url };

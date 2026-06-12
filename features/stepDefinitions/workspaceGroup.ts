@@ -322,7 +322,11 @@ async function waitForDragIntent(
 
   while (Date.now() < deadline) {
     attempts++;
-    latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: false });
+    try {
+      latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: true });
+    } catch {
+      latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: false });
+    }
     await world.currentWindow.mouse.move(latestCoordinates.targetX, latestCoordinates.targetY, { steps: 3 });
     await waitForTwoAnimationFrames(world);
 
@@ -330,6 +334,12 @@ async function waitForDragIntent(
     if (matchingIntentCount > 0) {
       return latestCoordinates;
     }
+
+    // Nudge downward inside the target when another sidebar item steals hit-testing.
+    latestCoordinates = {
+      targetX: latestCoordinates.targetX,
+      targetY: latestCoordinates.targetY + 4,
+    };
   }
 
   throw await buildDragIntentError(

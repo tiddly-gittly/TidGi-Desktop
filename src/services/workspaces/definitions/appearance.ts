@@ -7,9 +7,10 @@ export const appearanceSection: IGenericSectionDefinition = {
   Icon: BrushIcon,
   items: [
     {
-      type: 'custom',
-      componentId: 'workspace.name',
+      type: 'preference-string',
+      key: 'name',
       titleKey: 'EditWorkspace.Name',
+      descriptionKey: 'EditWorkspace.NameDescription',
     },
     { type: 'divider' },
     {

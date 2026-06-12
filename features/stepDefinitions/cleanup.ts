@@ -1,6 +1,7 @@
 import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 import path from 'path';
+import { killProcessTree } from '../supports/killProcessTree';
 import type { MockAnalyticsServer } from '../supports/mockAnalytics';
 import { makeSlugPath } from '../supports/paths';
 import { clearAISettings } from './agent';
@@ -90,23 +91,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
       // inevitably interrupt that cleanup, leaving zombie child processes that
       // contaminate subsequent scenarios. taskkill /T /F while the parent is still
       // alive reliably terminates the whole tree.
-      if (this.appPid !== undefined) {
-        try {
-          const { execSync } = await import('child_process');
-          execSync(`taskkill /PID ${this.appPid} /T /F`, { stdio: 'ignore' });
-        } catch {
-          // Process already exited or kill failed — ignore
-        }
-        this.appPid = undefined;
-      }
-      // Fallback: kill any remaining tidgi.exe processes by image name.
-      // The PID-based kill above may miss detached child processes (e.g. wiki
-      // workers spawned by the mini window test). Since scenarios run
-      // sequentially, no other TidGi should be alive at this point.
-      try {
-        const { execSync } = await import('child_process');
-        execSync('taskkill /IM tidgi.exe /T /F', { stdio: 'ignore' });
-      } catch { /* no process found — fine */ }
+      killProcessTree(this.appPid);
+      this.appPid = undefined;
       // Give Windows a moment to fully terminate processes and release file locks
       // before the next scenario's Before hook tries to remove scenarioRoot.
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -161,14 +147,8 @@ After(async function(this: ApplicationWorld, { pickle }) {
           // Even force close can fail, but we don't care - move on
         }
 
-        if (this.appPid !== undefined) {
-          try {
-            process.kill(this.appPid, 'SIGKILL');
-          } catch {
-            // Process already exited or kill failed — ignore
-          }
-          this.appPid = undefined;
-        }
+        killProcessTree(this.appPid);
+        this.appPid = undefined;
       }
     }
 
@@ -176,17 +156,6 @@ After(async function(this: ApplicationWorld, { pickle }) {
     this.app = undefined;
     this.mainWindow = undefined;
     this.currentWindow = undefined;
-  }
-
-  // Windows: ensure NO tidgi.exe processes survive between scenarios.
-  // Even if the PID-based kill above succeeded, detached child processes
-  // (wiki workers, mini window helpers) may still be alive. Since scenarios
-  // run sequentially, killing by image name is safe here.
-  if (process.platform === 'win32') {
-    try {
-      const { execSync } = await import('child_process');
-      execSync('taskkill /IM tidgi.exe /T /F', { stdio: 'ignore' });
-    } catch { /* no process found — fine */ }
   }
 
   // Stop mock analytics server if it was started for this scenario
