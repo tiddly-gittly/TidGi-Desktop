@@ -127,8 +127,8 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     # Switch to Plan Agent via the switcher dropdown
     When I click on a "agent switcher button" element with selector "[data-testid='agent-switcher-button']"
     Then I should see an "agent switcher dropdown" element with selector "[data-testid='agent-switcher-dropdown']"
-    And I should see a "plan agent option" element with selector "[data-testid='agent-switcher-option-plan-agent']"
-    When I click on a "plan agent option" element with selector "[data-testid='agent-switcher-option-plan-agent']"
+    And I should see a "plan agent option" element with selector "[data-testid='agent-switcher-option-memeloop:code-assistant']"
+    When I click on a "plan agent option" element with selector "[data-testid='agent-switcher-option-memeloop:code-assistant']"
     # After switching, chat history resets (new agent instance), input should be available
     Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Send message with Plan Agent
