@@ -52,6 +52,9 @@ export default defineConfig({
     }),
   ],
   resolve: {
+    // Force Node.js resolution for TypeORM — Rolldown picks the "browser"
+    // export condition by default which includes ExpoDriver + expo-sqlite.
+    conditions: ['node'],
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
@@ -76,9 +79,6 @@ export default defineConfig({
         'default-gateway',
         'electron-unhandled',
         'rotating-file-stream',
-        // TypeORM's ExpoDriver.js has a try-catch require('expo-sqlite') that
-        // Rolldown tries to resolve. It's safe to externalize — this driver is
-        // never loaded in Electron.
         'expo-sqlite',
         ...typeormOptionalDepsRegex,
       ],
@@ -96,9 +96,6 @@ export default defineConfig({
         'default-gateway',
         'electron-unhandled',
         'rotating-file-stream',
-        // TypeORM's ExpoDriver.js has a try-catch require('expo-sqlite') that
-        // Rolldown tries to resolve. It's safe to externalize — this driver is
-        // never loaded in Electron.
         'expo-sqlite',
         ...typeormOptionalDepsRegex,
       ],
