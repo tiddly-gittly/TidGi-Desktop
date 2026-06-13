@@ -1,10 +1,10 @@
 import { DatabaseChannel } from '@/constants/channels';
 import type { IUserInfos } from '@services/auth/interface';
-import { AIGlobalSettings } from '@services/externalAPI/interface';
+import type { AIGlobalSettings } from '@services/externalAPI/interface';
 import type { IPreferences } from '@services/preferences/interface';
 import type { ISyncableWikiConfig, IWorkspace, IWorkspaceGroup } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { DataSource } from 'typeorm';
+import type { DataSource } from 'typeorm';
 
 export interface IAnalyticsSecretSettings {
   deviceFirstLaunchDate?: string;

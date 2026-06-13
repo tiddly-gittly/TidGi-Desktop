@@ -1,9 +1,9 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { AgentChannel } from '@/constants/channels';
-import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
-import { BehaviorSubject } from 'rxjs';
-import { TabItem } from '../../pages/Agent/types/tab';
+import type { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
+import type { BehaviorSubject } from 'rxjs';
+import type { TabItem } from '../../pages/Agent/types/tab';
 
 /**
  * Agent Browser Service interface
