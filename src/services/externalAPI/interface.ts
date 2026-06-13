@@ -1,10 +1,10 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { BehaviorSubject, Observable } from 'rxjs';
+import type { BehaviorSubject, Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
 import type { AiAPIConfig } from '@services/agentInstance/schema';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import { ModelMessage } from 'ai';
+import type { ModelMessage } from 'ai';
 
 /**
  * Shared error detail structure used across all AI responses
