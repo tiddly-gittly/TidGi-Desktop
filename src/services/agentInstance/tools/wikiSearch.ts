@@ -117,7 +117,7 @@ type WikiUpdateEmbeddingsToolParameters = z.infer<typeof WikiUpdateEmbeddingsToo
 /**
  * Execute wiki search
  */
-async function executeWikiSearch(
+export async function executeWikiSearch(
   parameters: WikiSearchToolParameters,
   aiConfig?: AiAPIConfig,
 ): Promise<ToolExecutionResult> {
@@ -254,7 +254,7 @@ async function executeWikiSearch(
 /**
  * Execute wiki update embeddings
  */
-async function executeWikiUpdateEmbeddings(
+export async function executeWikiUpdateEmbeddings(
   parameters: WikiUpdateEmbeddingsToolParameters,
   aiConfig?: AiAPIConfig,
 ): Promise<ToolExecutionResult> {
