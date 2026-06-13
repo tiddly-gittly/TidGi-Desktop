@@ -105,12 +105,20 @@ export class MemeLoopDesktopRuntime {
         const agent = await this.options.agentInstanceService.getAgent(agentId);
         const definition = agent ? await this.options.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
         const globalAIConfig = await this.options.externalAPIService.getAIConfig();
+        const frameworkConfig = {
+          ...(agent?.agentFrameworkConfig ?? definition?.agentFrameworkConfig),
+        };
+        // Map Desktop agentTools to memeloop agentFrameworkConfig.plugins
+        const tools = definition?.agentTools ?? agent?.agentTools;
+        if (tools && Array.isArray(tools) && tools.length > 0 && !frameworkConfig.plugins) {
+          frameworkConfig.plugins = tools.map((t) => ({ toolId: t.toolId, ...t.parameters }));
+        }
         return {
           ...(agent ?? {}),
           id: agentId,
           messages: messages.map(message => toMemeLoopMessage(message, agentId)),
           agentDefId: agent?.agentDefId ?? definition?.id ?? agentId,
-          agentFrameworkConfig: agent?.agentFrameworkConfig ?? definition?.agentFrameworkConfig,
+          agentFrameworkConfig: frameworkConfig,
           aiApiConfig: {
             ...globalAIConfig,
             ...definition?.aiApiConfig,
@@ -121,12 +129,33 @@ export class MemeLoopDesktopRuntime {
       taskAgent: {
         maxIterations: 32,
         isCancelled: this.options.isCancelled,
+        fallbackRegistryTools: false,
       },
       resolveAgentDefinition: async definitionId => {
         const definition = await this.options.agentDefinitionService.getAgentDef(definitionId);
         if (!definition) return null;
         const { toMemeLoopAgentDefinition } = await import('./messageMapping');
-        return toMemeLoopAgentDefinition(definition);
+        const result = toMemeLoopAgentDefinition(definition);
+        const rawConfig = result.agentFrameworkConfig as Record<string, unknown> | undefined;
+
+        // Always include all globally-registered Desktop tools as plugins
+        const { getAllToolDefinitions } = await import('../tools/defineTool');
+        const allTools = getAllToolDefinitions();
+        const existingPlugins = (rawConfig?.plugins as Array<{ toolId: string }> ?? []);
+        const existingIds = new Set(existingPlugins.map(p => p.toolId));
+        const extraPlugins: Array<{ toolId: string }> = [];
+        for (const [toolId] of allTools) {
+          if (!existingIds.has(toolId)) {
+            extraPlugins.push({ toolId });
+          }
+        }
+
+        result.agentFrameworkConfig = {
+          ...rawConfig,
+          plugins: [...existingPlugins, ...extraPlugins],
+        } as typeof result.agentFrameworkConfig;
+
+        return result;
       },
     };
   }

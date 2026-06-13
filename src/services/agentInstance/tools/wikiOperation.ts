@@ -94,7 +94,7 @@ type WikiOperationToolParameters = z.infer<typeof WikiOperationToolSchema>;
 /**
  * Execute wiki operation
  */
-async function executeWikiOperation(parameters: WikiOperationToolParameters): Promise<ToolExecutionResult> {
+export async function executeWikiOperation(parameters: WikiOperationToolParameters): Promise<ToolExecutionResult> {
   const { workspaceName, operation, title, text, extraMeta, options: optionsString, variables } = parameters;
 
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);

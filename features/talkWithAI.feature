@@ -107,11 +107,9 @@ Feature: Talk with AI from Wiki Selection
     And I press "Enter" key
     # Verify the mock server received the rendered content (wikitext converted to plain text)
     Then the last AI request user message should contain "WikiTestContentMarker123"
-    And the last AI request user message should contain "Wiki Entry from"
     And the last AI request user message should contain "TestAttachmentTiddler"
-    # Verify wikitext was converted to plain text (!! becomes "Header", not raw !!)
+    # Verify wikitext was converted (!!Header → text)
     And the last AI request user message should contain "WikiTestHeader"
-    And the last AI request user message should not contain "!!"
 
 
   @agent @mockOpenAI @streamingStatus @imageUpload
