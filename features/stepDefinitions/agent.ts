@@ -226,7 +226,8 @@ Then('I should see {int} messages in chat history', async function(this: Applica
     try {
       const finalCount = await currentWindow.locator(messageSelector).count();
       throw new Error(`Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`);
-    } catch {
+    } catch (rethrow) {
+      if (rethrow instanceof Error && rethrow.message.startsWith('Could not find')) throw rethrow;
       throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
     }
   });

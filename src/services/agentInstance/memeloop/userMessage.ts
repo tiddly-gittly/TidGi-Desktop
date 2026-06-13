@@ -41,9 +41,18 @@ export async function createMemeLoopUserMessage(input: {
     metadata.beforeCommitMap = input.beforeCommitMap;
   }
 
+  // Inject wiki tiddler content into the message text
+  let messageContent = input.content.text;
+  if (wikiTiddlersMetadata.length > 0) {
+    const tiddlerBlocks = wikiTiddlersMetadata.map(
+      (tiddler) => `[Wiki Tiddler: ${tiddler.tiddlerTitle} (${tiddler.workspaceName})]\n${tiddler.renderedContent}\n[End of tiddler: ${tiddler.tiddlerTitle}]`,
+    );
+    messageContent = `${tiddlerBlocks.join('\n\n')}\n\n${messageContent}`;
+  }
+
   return createAgentMessage(messageId, input.agentId, {
     role: 'user',
-    content: input.content.text,
+    content: messageContent,
     contentType: 'text/plain',
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     duration: undefined,
