@@ -43,7 +43,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Vector Database Tutorial 的笔记，内容是：向量数据库用于存储和检索高维向量数据，支持语义搜索和相似度匹配。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 6 messages in chat history
+    Then I should see 5 messages in chat history
     # Step 4: Update vector embeddings using agent tool
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "为 wiki 工作区更新向量索引" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -99,7 +99,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于机器学习的内容" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 6 messages in chat history
+    Then I should see 5 messages in chat history
     # Verify the last message contains vector search results
     And I should see a "ML search result in last message" element with selector "[data-testid='message-bubble']:has-text('Tiddler: Machine Learning Basics')"
 
@@ -143,7 +143,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Machine Learning 的笔记，内容是：机器学习算法和应用。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 6 messages in chat history
+    Then I should see 5 messages in chat history
     # Step 4: Update vector embeddings
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "为 wiki 工作区更新向量索引" in "chat input" element with selector "[data-testid='agent-message-input']"

@@ -40,7 +40,7 @@ function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
     name: mergeTextOverride(entity.name, defaultAgent?.name),
     description: mergeTextOverride(entity.description, defaultAgent?.description),
     avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
-    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID),
+    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || 'memeloopTaskAgent',
     agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? {},
     aiApiConfig: entity.aiApiConfig ?? defaultAgent?.aiApiConfig,
     agentTools: entity.agentTools ?? defaultAgent?.agentTools,
@@ -80,7 +80,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       if (existingCount === 0) {
         const entities = defaultAgentsList.map(d => this.agentDefRepository!.create({
           id: d.id, name: d.name, description: d.description, avatarUrl: d.avatarUrl,
-          agentFrameworkID: d.agentFrameworkID, agentFrameworkConfig: d.agentFrameworkConfig,
+          agentFrameworkID: d.agentFrameworkID || 'memeloopTaskAgent', agentFrameworkConfig: d.agentFrameworkConfig,
           aiApiConfig: d.aiApiConfig, agentTools: d.agentTools, heartbeat: d.heartbeat,
         }));
         await this.agentDefRepository.save(entities);
