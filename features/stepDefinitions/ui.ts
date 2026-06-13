@@ -63,7 +63,13 @@ Then('I should see a(n) {string} element with selector {string}', async function
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
   } catch (error) {
-    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
+    let bodyHTML = '';
+    try {
+      bodyHTML = await currentWindow.evaluate(() => document.body?.innerHTML?.substring(0, 800) ?? '(no body.innerHTML)');
+    } catch {
+      bodyHTML = '(could not read body)';
+    }
+    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}\nBODY: ${bodyHTML}`);
   }
 });
 
