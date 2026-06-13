@@ -9,7 +9,11 @@ import path from 'path';
 // Packages whose absence makes the app non-functional at runtime.
 // If any of these fail to copy, packaging itself should fail so that the
 // problem is caught before deployment, not discovered by a user crash.
-const CRITICAL_PACKAGES = ['tiddlywiki', 'better-sqlite3', 'nsfw', 'dugite'];
+const CRITICAL_PACKAGES = ['tiddlywiki', 'better-sqlite3', 'nsfw', 'dugite', 'typeorm'];
+
+interface PackageJsonWithDependencies {
+  dependencies?: Record<string, string>;
+}
 
 function copyWithTracking(
   source: string,
@@ -24,6 +28,44 @@ function copyWithTracking(
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Error copying ${source} → ${destination}: ${errorMessage}`);
     failures.add(criticalPackage);
+  }
+}
+
+function copyPackageDependencyClosure(
+  packageName: string,
+  sourceNodeModulesFolder: string,
+  destinationNodeModulesFolder: string,
+  criticalPackage: string,
+  failures: Set<string>,
+  copiedPackages: Set<string> = new Set(),
+): void {
+  if (copiedPackages.has(packageName)) return;
+  copiedPackages.add(packageName);
+
+  const packageSegments = packageName.split('/');
+  const source = path.resolve(sourceNodeModulesFolder, ...packageSegments);
+  const destination = path.resolve(destinationNodeModulesFolder, ...packageSegments);
+  copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
+
+  let packageJson: PackageJsonWithDependencies;
+  try {
+    packageJson = fs.readJsonSync(path.join(source, 'package.json')) as PackageJsonWithDependencies;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error reading ${packageName} package.json: ${errorMessage}`);
+    failures.add(criticalPackage);
+    return;
+  }
+
+  for (const dependencyName of Object.keys(packageJson.dependencies ?? {})) {
+    copyPackageDependencyClosure(
+      dependencyName,
+      sourceNodeModulesFolder,
+      destinationNodeModulesFolder,
+      criticalPackage,
+      failures,
+      copiedPackages,
+    );
   }
 }
 
@@ -115,6 +157,15 @@ export default async (
           copyWithTracking(source, destination, copyOptions, criticalPackage, failures);
         }
       }
+
+      console.log('Copy typeorm dependency closure');
+      copyPackageDependencyClosure(
+        'typeorm',
+        sourceNodeModulesFolder,
+        path.join(cwd, 'node_modules'),
+        'typeorm',
+        failures,
+      );
 
       // MCP SDK — non-critical
       console.log('Copy @modelcontextprotocol/sdk');
