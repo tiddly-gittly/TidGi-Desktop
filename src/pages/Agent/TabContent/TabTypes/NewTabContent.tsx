@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import { TabType } from '@/pages/Agent/types/tab';
+import { getDefaultAgentDefinitionId } from '@services/agentDefinition/interface';
 import { Search } from '../../components/Search/Search';
 import { INewTab } from '../../types/tab';
 
@@ -86,7 +87,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
 
   const createAgentChatTab = async (agentDefinitionId?: string) => {
     try {
-      const agentDefinitionIdToUse = agentDefinitionId || 'task-agent';
+      const agentDefinitionIdToUse = agentDefinitionId || getDefaultAgentDefinitionId();
 
       // Handle current active tab - close temp tabs or NEW_TAB type tabs
       if (activeTabId) {
@@ -161,8 +162,8 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab: _tab }) => {
   }, []);
 
   const handleEditDefinition = useCallback(() => {
-    // Use the example agent ID for now - in the future this could be configurable
-    void editAgentDefinitionTab('task-agent');
+    // Use the default built-in agent definition for now - in the future this could be configurable
+    void editAgentDefinitionTab(getDefaultAgentDefinitionId());
     handleCloseContextMenu();
   }, []);
 

@@ -50,9 +50,9 @@ describe('AgentInstanceService Wiki Operation', () => {
       ...exampleAgent,
       agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {
-        ...(exampleAgent as Record<string, unknown>).agentFrameworkConfig as Record<string, unknown>,
+        ...(exampleAgent.agentFrameworkConfig as unknown as Record<string, unknown>),
         plugins: [
-          ...((exampleAgent as Record<string, unknown>).agentFrameworkConfig as Record<string, unknown> | undefined)?.plugins as Array<{ toolId: string }> ?? [],
+          ...((exampleAgent.agentFrameworkConfig as unknown as Record<string, unknown> | undefined)?.plugins as Array<{ toolId: string }> ?? []),
           { toolId: 'wikiOperation' },
         ],
       },
