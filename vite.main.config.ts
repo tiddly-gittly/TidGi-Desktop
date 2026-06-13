@@ -1,20 +1,10 @@
 import { workerPlugin } from '@fetsorn/vite-node-worker';
-import fs from 'fs-extra';
 import path from 'path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
 
-// Dynamically read TypeORM's optional peer dependencies to avoid hardcoding
-const typeormPackageJson = fs.readJsonSync(path.resolve(__dirname, 'node_modules/typeorm/package.json')) as Record<string, unknown>;
-const typeormOptionalDepNames = Object.keys(typeormPackageJson.peerDependenciesMeta || {}).filter(
-  (dep) => dep !== 'better-sqlite3',
-);
-
-// Convert to RegExp to match both package name and sub-paths
-const typeormOptionalDepsRegex = typeormOptionalDepNames.map(
-  (dep) => new RegExp(`^${dep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/.*)?$`),
-);
+const typeormRuntimeExternals = ['typeorm', /^typeorm\/.*$/];
 
 export default defineConfig({
   define: {
@@ -52,9 +42,6 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    // Force Node.js resolution for TypeORM — Rolldown picks the "browser"
-    // export condition by default which includes ExpoDriver + expo-sqlite.
-    conditions: ['node'],
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
@@ -79,8 +66,7 @@ export default defineConfig({
         'default-gateway',
         'electron-unhandled',
         'rotating-file-stream',
-        'expo-sqlite',
-        ...typeormOptionalDepsRegex,
+        ...typeormRuntimeExternals,
       ],
     },
     rollupOptions: {
@@ -96,8 +82,7 @@ export default defineConfig({
         'default-gateway',
         'electron-unhandled',
         'rotating-file-stream',
-        'expo-sqlite',
-        ...typeormOptionalDepsRegex,
+        ...typeormRuntimeExternals,
       ],
     },
   },

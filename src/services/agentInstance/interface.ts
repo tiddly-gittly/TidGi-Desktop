@@ -2,7 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import { AgentDefinition } from '@services/agentDefinitionService';
+import type { AgentDefinition } from '@services/agentDefinitionService';
 import type { AgentPromptDescription } from '@services/agentInstance/schema';
 import type { PromptConcatStreamState } from '@services/agentInstance/schema';
 import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './tools/scheduledTaskTypes';
