@@ -4,10 +4,10 @@
  * Extracted from defineTool.ts to reduce file size and improve importability.
  */
 import type { ToolCallingMatch } from '@services/agentDefinitionService';
-import type { z } from 'zod/v4';
-import type { AgentInstanceMessage } from '../interface';
 import type { IPrompt } from 'memeloop';
 import type { findPromptById } from 'memeloop';
+import type { z } from 'zod/v4';
+import type { AgentInstanceMessage } from '../interface';
 import type { AIResponseContext, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool } from './types';
 
 /**

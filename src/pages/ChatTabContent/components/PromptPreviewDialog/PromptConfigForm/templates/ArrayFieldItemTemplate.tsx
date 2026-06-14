@@ -116,7 +116,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     targetArray[index] = currentItem;
     parent[arrayKey] = targetArray;
 
-    formContext.onFormDataChange(newRootData as never);
+    formContext.onFormDataChange(newRootData);
   }, [arrayItemContext.arrayFieldPathSegments, formContext, index, itemEnabled]);
 
   // Get the ArrayFieldItemButtonsTemplate to render buttons
