@@ -37,6 +37,8 @@ import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import { CreateWorkspaceTabs } from './constants';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportConfigDialog } from './ImportConfigDialog';
+import { OpenHtmlWikiDoneButton } from './OpenHtmlWikiDoneButton';
+import { OpenHtmlWikiForm } from './OpenHtmlWikiForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
 
@@ -154,7 +156,8 @@ export default function AddWorkspace(): React.JSX.Element {
             <Tab label={t('AddWorkspace.CreateNewWiki')} value={CreateWorkspaceTabs.CreateNewWiki} />
             <Tab label={t(`AddWorkspace.CloneOnlineWiki`)} value={CreateWorkspaceTabs.CloneOnlineWiki} />
             <Tab label={t('AddWorkspace.OpenLocalWiki')} value={CreateWorkspaceTabs.OpenLocalWiki} />
-            <Tab label={t('AddWorkspace.OpenLocalWikiFromHTML')} value={CreateWorkspaceTabs.OpenLocalWikiFromHtml} />
+            <Tab label={t('AddWorkspace.OpenHtmlWikiFile')} value={CreateWorkspaceTabs.OpenHtmlWikiFile} />
+            <Tab label={t('AddWorkspace.UnpackLocalWikiFromHTML')} value={CreateWorkspaceTabs.OpenLocalWikiFromHtml} />
           </Tabs>
         </Paper>
       </AppBar>
@@ -247,6 +250,14 @@ export default function AddWorkspace(): React.JSX.Element {
               isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
             />
             <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} selectedImportConfig={selectedImportConfig} />
+          </Container>
+        </TabPanel>
+      )}
+      {currentTab === CreateWorkspaceTabs.OpenHtmlWikiFile && (
+        <TabPanel>
+          <Container>
+            <OpenHtmlWikiForm {...formProps} />
+            <OpenHtmlWikiDoneButton {...formProps} />
           </Container>
         </TabPanel>
       )}

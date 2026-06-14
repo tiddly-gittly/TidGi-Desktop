@@ -5,7 +5,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { IGenericSectionDefinition } from '@services/preferences/definitions/types';
-import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
 
 const SideBar = styled('div')`
   position: fixed;
@@ -41,14 +40,15 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
 `;
 
 interface WorkspaceSectionSideBarProps {
+  sections: IGenericSectionDefinition[];
   sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
   hiddenSections?: Set<string>;
   onSearchClick: () => void;
 }
 
-export function WorkspaceSectionSideBar({ sectionRefs, hiddenSections, onSearchClick }: WorkspaceSectionSideBarProps): React.JSX.Element {
+export function WorkspaceSectionSideBar({ sections, sectionRefs, hiddenSections, onSearchClick }: WorkspaceSectionSideBarProps): React.JSX.Element {
   const { t } = useTranslation();
-  const visibleSections = allWorkspaceSections.filter((s) => !hiddenSections?.has(s.id) && !s.hidden);
+  const visibleSections = sections.filter((s) => !hiddenSections?.has(s.id) && !s.hidden);
 
   return (
     <SideBar>

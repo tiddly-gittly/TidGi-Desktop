@@ -3,9 +3,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { allWorkspaceSections } from '@services/workspaces/definitions/registry';
+import { allWorkspaceSections, getWorkspaceSectionsForType } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { isWikiWorkspace, type IWorkspace, nonConfigFields } from '@services/workspaces/interface';
+import { getWorkspaceType, isWikiWorkspace, nonConfigFields, type IWorkspace, WorkspaceType } from '@services/workspaces/interface';
 import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
@@ -88,21 +88,28 @@ export default function EditWorkspace(): React.JSX.Element {
     };
   }, [workspaceID]);
 
-  // Build section refs from registry
-  const sectionReferences = useMemo(() => {
-    const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
-    for (const section of allWorkspaceSections) {
-      map.set(section.id, React.createRef<HTMLSpanElement>());
-    }
-    return map;
-  }, []);
-
   const hiddenSections = useMemo(() => {
     const hidden = new Set<string>();
     if (isSubWiki) hidden.add('server');
     if (!isWiki) hidden.add('subWiki');
     return hidden;
   }, [isSubWiki, isWiki]);
+
+  const workspaceSections = useMemo(() => {
+    if (!isWiki || !workspace) {
+      return allWorkspaceSections;
+    }
+    return getWorkspaceSectionsForType(getWorkspaceType(workspace));
+  }, [isWiki, workspace]);
+
+  // Build section refs from registry
+  const sectionReferences = useMemo(() => {
+    const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
+    for (const section of workspaceSections) {
+      map.set(section.id, React.createRef<HTMLSpanElement>());
+    }
+    return map;
+  }, [workspaceSections]);
 
   const wikiWorkspace = isWiki ? workspace : undefined;
   const workspaceStore = useMemo(
@@ -135,10 +142,10 @@ export default function EditWorkspace(): React.JSX.Element {
       <SearchBar value={searchQuery} onChange={setSearchQuery} inputRef={searchInputReference} />
       {wikiWorkspace && workspaceStore && (
         <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter}>
-          {!isSearching && <WorkspaceSectionSideBar sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />}
+          {!isSearching && <WorkspaceSectionSideBar sections={workspaceSections} sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />}
           <Inner>
             <AllGenericSectionsRenderer
-              sections={allWorkspaceSections}
+              sections={workspaceSections}
               store={workspaceStore}
               query={searchQuery}
               onNeedsRestart={requestRestartCountDown}

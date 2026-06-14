@@ -22,7 +22,8 @@ import type { FlatNamespace, TFunction } from 'i18next';
 import { nanoid } from 'nanoid';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
-import { isWikiWorkspace } from './interface';
+import { isHtmlWikiWorkspace, isWikiWorkspace } from './interface';
+import { getWorkspaceStrategy } from './strategies';
 
 interface IWorkspaceMenuRequiredServices {
   agentDefinition: Pick<IAgentDefinitionService, 'getAgentDef' | 'getAgentDefs'>;
@@ -196,16 +197,21 @@ export async function getWorkspaceMenuTemplate(
   }
 
   const { hibernated, tagNames, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, enableHTTPAPI, lastUrl, homeUrl } = workspace;
+  const menuStrategy = getWorkspaceStrategy(workspace).menu;
+  const openPath = menuStrategy.getManagedPathForOpen(workspace) ?? wikiFolderLocation;
+  const containerPath = isHtmlWikiWorkspace(workspace) ? wikiFolderLocation : wikiFolderLocation;
 
   const template: MenuItemConstructorOptions[] = [
-    {
-      label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
-        tagName: tagNames[0] ?? (isSubWiki ? name : `${name} ${t('WorkspaceSelector.DefaultTiddlers')}`),
-      }),
-      click: async () => {
-        await service.workspace.openWorkspaceTiddler(workspace);
-      },
-    },
+    ...(!isHtmlWikiWorkspace(workspace)
+      ? [{
+        label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
+          tagName: tagNames[0] ?? (isSubWiki ? name : `${name} ${t('WorkspaceSelector.DefaultTiddlers')}`),
+        }),
+        click: async () => {
+          await service.workspace.openWorkspaceTiddler(workspace);
+        },
+      }]
+      : []),
     {
       label: t('ContextMenu.OpenWorkspaceInNewWindow'),
       enabled: !hibernated,
@@ -228,23 +234,23 @@ export async function getWorkspaceMenuTemplate(
       },
     },
     {
-      label: t('WorkspaceSelector.OpenWorkspaceFolder'),
+      label: isHtmlWikiWorkspace(workspace) ? t('WorkspaceSelector.OpenHtmlWikiFile') : t('WorkspaceSelector.OpenWorkspaceFolder'),
       click: async () => {
-        await service.native.openPath(wikiFolderLocation);
+        await service.native.openPath(openPath);
       },
     },
     {
-      label: t('WorkspaceSelector.OpenWorkspaceFolderInEditor'),
-      click: async () => await service.native.openInEditor(wikiFolderLocation),
+      label: isHtmlWikiWorkspace(workspace) ? t('WorkspaceSelector.OpenHtmlWikiFolder') : t('WorkspaceSelector.OpenWorkspaceFolderInEditor'),
+      click: async () => await service.native.openInEditor(openPath),
     },
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),
-      click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
+      click: async () => await service.native.openInGitGuiApp(containerPath),
     },
 
     {
-      label: `${t('WorkspaceSelector.OpenInBrowser')}${enableHTTPAPI ? '' : t('WorkspaceSelector.OpenInBrowserDisabledHint')}`,
-      enabled: enableHTTPAPI,
+      label: `${t('WorkspaceSelector.OpenInBrowser')}${enableHTTPAPI && menuStrategy.canOpenInBrowser ? '' : t('WorkspaceSelector.OpenInBrowserDisabledHint')}`,
+      enabled: enableHTTPAPI && menuStrategy.canOpenInBrowser,
       click: async () => {
         const actualIP = await service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), id);
         await service.native.openURI(actualIP);
@@ -277,7 +283,7 @@ export async function getWorkspaceMenuTemplate(
   const backupItems = createBackupMenuItems(workspace, t, service.git, aiGenerateBackupTitleEnabled, false);
   template.push(...backupItems);
 
-  if (!isSubWiki) {
+  if (!isSubWiki && menuStrategy.canRestartService) {
     template.push(
       {
         label: t('ContextMenu.RestartService'),

@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { TokenForm } from '@/components/TokenForm';
 import { SupportedStorageServices } from '@services/types';
-import { isWikiWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace, isWikiWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
+import { getWorkspaceStrategy } from '@services/workspaces/strategies';
 import { SyncedWikiDescription } from '../../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../../AddWorkspace/GitRepoUrlForm';
 import { ListItemVertical, TextField } from '../../Preferences/PreferenceComponents';
@@ -14,17 +15,25 @@ import { useWorkspaceForm } from '../WorkspaceFormContext';
 export function WorkspacePathItem(): React.JSX.Element {
   const { t } = useTranslation();
   const { workspace } = useWorkspaceForm();
-  const wikiFolderLocation = isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : '';
+  const isHtml = isHtmlWikiWorkspace(workspace);
+  const pathValue = isWikiWorkspace(workspace)
+    ? (isHtml ? workspace.htmlFileLocation : workspace.wikiFolderLocation)
+    : '';
+  const menuStrategy = isWikiWorkspace(workspace) ? getWorkspaceStrategy(workspace).menu : undefined;
   return (
     <ListItemVertical>
-      <ListItemText primary={t('EditWorkspace.Path')} secondary={t('EditWorkspace.PathDescription')} />
+      <ListItemText
+        primary={isHtml ? t('EditWorkspace.HtmlFilePath') : t('EditWorkspace.Path')}
+        secondary={isHtml ? t('EditWorkspace.HtmlFilePathDescription') : t('EditWorkspace.PathDescription')}
+      />
       <TextField
         fullWidth
         placeholder='Optional'
         disabled
-        value={wikiFolderLocation}
+        value={pathValue}
       />
-      <Tooltip title={t('EditWorkspace.MoveWorkspaceTooltip') ?? ''} placement='top'>
+      {!isHtml && menuStrategy?.canMoveWorkspaceLocation && (
+        <Tooltip title={t('EditWorkspace.MoveWorkspaceTooltip') ?? ''} placement='top'>
         <Button
           variant='outlined'
           size='small'
@@ -48,7 +57,8 @@ export function WorkspacePathItem(): React.JSX.Element {
         >
           {t('EditWorkspace.MoveWorkspace')}
         </Button>
-      </Tooltip>
+        </Tooltip>
+      )}
     </ListItemVertical>
   );
 }
