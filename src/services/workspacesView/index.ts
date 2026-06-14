@@ -21,6 +21,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceStrategy } from '@services/workspaces/strategies';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { ISyncService } from '@services/sync/interface';
@@ -49,7 +50,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }, { function: 'initializeAllWorkspaceView' });
     // Only load workspace that is not a subwiki and not a page type
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-    workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType).forEach((workspace) => {
+    workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType && getWorkspaceStrategy(workspace).runtime.usesNodeWikiWorker).forEach((workspace) => {
       wikiService.setWikiStartLockOn(workspace.id);
     });
     const sortedList = workspacesList
@@ -90,13 +91,15 @@ export class WorkspaceView implements IWorkspaceViewService {
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const shouldBeMainWiki = isWikiWorkspace(workspace) && !workspace.isSubWiki;
+    const strategy = getWorkspaceStrategy(workspace);
     logger.info('checking wiki existence', {
       workspaceId: workspace.id,
       shouldBeMainWiki,
       wikiFolderLocation: isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : undefined,
+      workspaceType: isWikiWorkspace(workspace) ? workspace.workspaceType : undefined,
       function: 'initializeWorkspaceView',
     });
-    const checkResult = await wikiService.checkWikiExist(workspace, { shouldBeMainWiki, showDialog: true });
+    const checkResult = await strategy.runtime.checkWikiExist(workspace, { shouldBeMainWiki, showDialog: true });
     if (checkResult !== true) {
       logger.warn('checkWikiExist found invalid wiki', {
         workspaceId: workspace.id,
@@ -232,7 +235,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       function: 'initializeWorkspaceView',
     });
     await Promise.all([
-      container.get<IWikiService>(serviceIdentifier.Wiki).wikiStartup(workspace),
+      getWorkspaceStrategy(workspace).runtime.startupWorkspace(workspace),
       addViewWhenInitializeWorkspaceView(),
     ]);
     void syncGitWhenInitializeWorkspaceView();
@@ -382,7 +385,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       const subWorkspaceIDs = subWorkspaces.filter(sw => !sw.active).map(sw => sw.id);
 
       await Promise.all([
-        container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceID),
+        getWorkspaceStrategy(workspace).runtime.stopWorkspace(workspaceID),
         workspaceService.update(workspaceID, { hibernated: true }),
         ...subWorkspaceIDs.map(async (subID) => {
           await workspaceService.update(subID, { hibernated: true });
@@ -607,7 +610,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       isRestarting: true,
     });
     try {
-      await container.get<IWikiService>(serviceIdentifier.Wiki).stopWiki(workspaceToRestart.id);
+      await getWorkspaceStrategy(workspaceToRestart).runtime.stopWorkspace(workspaceToRestart.id);
       await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
       if (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).workspaceDidFailLoad(workspaceToRestart.id)) {
         logger.warn('skip because workspaceDidFailLoad', { function: 'restartWorkspaceViewService' });

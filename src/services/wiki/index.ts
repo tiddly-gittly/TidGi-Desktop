@@ -24,7 +24,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
@@ -533,6 +533,13 @@ export class Wiki implements IWikiService {
   }
 
   public async stopWiki(id: string): Promise<void> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(id);
+    if (workspace && isHtmlWikiWorkspace(workspace)) {
+      const htmlWikiService = container.get<import('@services/htmlWiki/interface').IHtmlWikiService>(serviceIdentifier.HtmlWiki);
+      await htmlWikiService.stopWorkspace(id);
+      return;
+    }
     const workerData = this.wikiWorkers[id];
     const worker = workerData?.proxy;
     const nativeWorker = workerData?.nativeWorker;
