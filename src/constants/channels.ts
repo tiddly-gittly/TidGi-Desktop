@@ -170,6 +170,10 @@ export enum ExternalAPIChannel {
   name = 'ExternalAPIChannel',
 }
 
+export enum HtmlWikiChannel {
+  name = 'HtmlWikiChannel',
+}
+
 export enum WikiEmbeddingChannel {
   name = 'WikiEmbeddingChannel',
 }
@@ -183,6 +187,7 @@ export type Channels =
   | AuthenticationChannel
   | ContextChannel
   | GitChannel
+  | HtmlWikiChannel
   | MenuChannel
   | NativeChannel
   | NotificationChannel
