@@ -37,6 +37,7 @@ export interface DesktopAgentFrameworkConfig {
 }
 
 /** Desktop UI alias for DesktopAgentFrameworkConfig — matches memeloop PromptNode[] for backward compat. */
+// eslint-disable-next-line @typescript-eslint/no-deprecated
 export type AgentFrameworkConfig = DesktopAgentFrameworkConfig & { prompts?: import('memeloop').PromptNode[] };
 
 /** Desktop UI IPrompt — mirrors memeloop PromptNode for schema editor/tree. */
@@ -55,7 +56,7 @@ export interface AgentPromptDescription {
   id: string;
   api?: { provider: string; model: string };
   modelParameters?: ModelParameters;
-  agentFrameworkConfig: DesktopAgentFrameworkConfig;
+  agentFrameworkConfig: Record<string, unknown>;
   aiApiConfig?: AiAPIConfig;
   [key: string]: unknown;
 }
