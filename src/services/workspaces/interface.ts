@@ -5,6 +5,21 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { SetOptional } from 'type-fest';
 
+import { WorkspaceType } from './workspaceType';
+
+export { WorkspaceType } from './workspaceType';
+export type { IHtmlWikiWorkspace, IFolderWikiWorkspace, IWorkspaceGitScope } from './workspacePaths';
+export {
+  getHtmlFileLocation,
+  getWorkspaceContainerPath,
+  getWorkspaceGitScope,
+  getWorkspaceManagedPath,
+  getWorkspaceType,
+  isFolderWikiWorkspace,
+  isHtmlWikiWorkspace,
+  normalizeHtmlWorkspacePaths,
+} from './workspacePaths';
+
 /**
  * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.
  * These fields are updated during runtime and should not trigger the save button.
@@ -30,6 +45,8 @@ export const localOnlyFields = [
   'authToken',
   'picturePath',
   'wikiFolderLocation',
+  'htmlFileLocation',
+  'workspaceType',
   'pageType',
   'port',
   'useTidgiConfigSync',
@@ -259,7 +276,15 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
   transparentBackground: boolean;
   userName: string;
   /**
-   * folder path for this wiki workspace
+   * Content kind: folder-based wiki (default) or single-file HTML wiki.
+   */
+  workspaceType?: WorkspaceType;
+  /**
+   * Absolute path to the managed HTML file when workspaceType is html.
+   */
+  htmlFileLocation?: string;
+  /**
+   * folder path for this wiki workspace (for html workspaces: parent directory of the html file)
    */
   wikiFolderLocation: string;
   /**
@@ -331,6 +356,11 @@ export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
 /**
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
  */
+export type INewHtmlWikiWorkspaceConfig = INewWikiWorkspaceConfig & {
+  workspaceType: WorkspaceType.html;
+  htmlFileLocation: string;
+};
+
 export type INewWikiWorkspaceConfig =
   & SetOptional<
     Omit<IWikiWorkspace, 'active' | 'hibernated' | 'id' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup' | 'useTidgiConfigSync'>,
