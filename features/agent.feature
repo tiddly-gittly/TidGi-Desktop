@@ -38,7 +38,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 3 messages in chat history
+    Then I should see 4 messages in chat history
     # Verify the last message contains the AI explanation about Index
     And I should see "explanation about Index in last message" elements with selectors:
       | element description              | selector                                                    |
@@ -66,7 +66,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 3 messages in chat history
+    Then I should see 4 messages in chat history
     # Verify the last message contains the tool results
     And I should see "tool result with workspace and wiki text" elements with selectors:
       | element description       | selector                                                     |
