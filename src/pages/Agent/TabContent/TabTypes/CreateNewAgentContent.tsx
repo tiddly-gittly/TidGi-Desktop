@@ -4,7 +4,6 @@ import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinitionService';
-import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -408,7 +407,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                 <Box sx={{ mt: 2, height: 400, overflow: 'auto' }}>
                   <PromptConfigForm
                     schema={promptSchema}
-                    formData={(temporaryAgentDefinition.agentFrameworkConfig || {}) as AgentFrameworkConfig}
+                    formData={temporaryAgentDefinition.agentFrameworkConfig || {}}
                     onChange={(updatedConfig) => {
                       void handleAgentDefinitionChange({
                         ...temporaryAgentDefinition,

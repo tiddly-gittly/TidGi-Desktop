@@ -60,7 +60,6 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
-
   },
 
   // Vitest 4 requires pool options at the top level

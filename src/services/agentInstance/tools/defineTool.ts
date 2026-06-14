@@ -11,13 +11,13 @@
  * - Hook handlers for different lifecycle events
  */
 import type { ToolCallingMatch } from '@services/agentDefinitionService';
-import { matchAllToolCallings } from 'memeloop';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { matchAllToolCallings } from 'memeloop';
+import { findPromptById, type IPrompt, schemaToToolContent } from 'memeloop';
 import type { z } from 'zod/v4';
 import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { findPromptById, schemaToToolContent, type IPrompt } from 'memeloop';
 import { evaluateApproval, requestApproval } from './approval';
 
 /**
