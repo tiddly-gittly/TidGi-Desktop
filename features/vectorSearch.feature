@@ -38,7 +38,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Agent Guide 的笔记，内容是：智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 3 messages in chat history
+    Then I should see 4 messages in chat history
   # Step 3: Create second note
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Vector Database Tutorial 的笔记，内容是：向量数据库用于存储和检索高维向量数据，支持语义搜索和相似度匹配。" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -85,7 +85,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 Machine Learning Basics 的笔记，内容是：机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 3 messages in chat history
+    Then I should see 4 messages in chat history
     # Step 2: Open workspace settings and navigate to Search/Embedding section to generate embeddings
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
@@ -138,7 +138,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Technology 的笔记，内容是：人工智能技术正在改变世界。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 3 messages in chat history
+    Then I should see 4 messages in chat history
     # Step 3: Create second note about ML
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Machine Learning 的笔记，内容是：机器学习算法和应用。" in "chat input" element with selector "[data-testid='agent-message-input']"
