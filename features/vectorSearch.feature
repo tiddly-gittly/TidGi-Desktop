@@ -43,17 +43,17 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Vector Database Tutorial 的笔记，内容是：向量数据库用于存储和检索高维向量数据，支持语义搜索和相似度匹配。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 5 messages in chat history
+    Then I should see 8 messages in chat history
     # Step 4: Update vector embeddings using agent tool
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "为 wiki 工作区更新向量索引" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 9 messages in chat history
+    Then I should see 12 messages in chat history
     # Step 5: Perform vector search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于如何使用AI智能体的内容" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 12 messages in chat history
+    Then I should see 16 messages in chat history
     # Verify the last message contains vector search results
     And I should see "search result in last message" elements with selectors:
       | element description        | selector                                                               |
@@ -99,7 +99,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于机器学习的内容" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 5 messages in chat history
+    Then I should see 8 messages in chat history
     # Verify the last message contains vector search results
     And I should see a "ML search result in last message" element with selector "[data-testid='message-bubble']:has-text('Tiddler: Machine Learning Basics')"
 
@@ -143,17 +143,17 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再创建一个名为 Machine Learning 的笔记，内容是：机器学习算法和应用。" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 5 messages in chat history
+    Then I should see 8 messages in chat history
     # Step 4: Update vector embeddings
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "为 wiki 工作区更新向量索引" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 9 messages in chat history
+    Then I should see 12 messages in chat history
     # Step 5: Search for unrelated content with high threshold (should find nothing)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "使用向量搜索在 wiki 中查找关于天气预报的内容，阈值设为0.7" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 12 messages in chat history
+    Then I should see 16 messages in chat history
     # Verify the response contains "no results found" with threshold info
     Then I should see "no results and threshold 0.7" elements with selectors:
       | element description          | selector                                                                 |
@@ -163,7 +163,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再次搜索天气预报，但这次把阈值降低到0.1" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see 15 messages in chat history
+    Then I should see 20 messages in chat history
     # Verify the response contains low-similarity result
     Then I should see "AI Technology and low similarity" elements with selectors:
       | element description                    | selector                                                                 |
