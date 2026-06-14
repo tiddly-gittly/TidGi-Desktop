@@ -1,9 +1,9 @@
+import { ArrayItemProvider, buildUiSchema, Form, promptEditorTemplates, promptEditorWidgets } from '@memeloop/react-ui/web';
 import { Box, CircularProgress, Paper, Typography } from '@mui/material';
 import { IChangeEvent } from '@rjsf/core';
 import type { UiSchema } from '@rjsf/utils';
 import { ObjectFieldTemplateProps, RJSFSchema, RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import { ArrayItemProvider, Form, buildUiSchema, promptEditorTemplates, promptEditorWidgets } from '@memeloop/react-ui/web';
 import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,11 +62,8 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
 }) => {
   const { t } = useTranslation('agent');
   const [validationErrors, setValidationErrors] = useState<RJSFValidationError[]>([]);
-  const buildSharedUiSchema = buildUiSchema as unknown as (
-    schema?: Record<string, unknown> | null,
-    overrides?: UiSchema,
-  ) => UiSchema;
-  const uiSchema = useDefaultUiSchema(buildSharedUiSchema(schema, uiSchemaOverride as UiSchema), schema);
+  const buildSharedUiSchema = buildUiSchema;
+  const uiSchema = useDefaultUiSchema(buildSharedUiSchema(schema, uiSchemaOverride), schema);
 
   const templates = useMemo(() => {
     const sharedTemplates = promptEditorTemplates as unknown as {
@@ -163,7 +160,7 @@ export const PromptConfigForm: React.FC<PromptConfigFormProps> = ({
       <Box data-testid='prompt-config-form'>
         <SharedForm
           schema={schema}
-          uiSchema={uiSchema as UiSchema}
+          uiSchema={uiSchema}
           formData={formData}
           formContext={formContext}
           validator={validator}

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as heartbeatManager from '../tools/scheduledTaskManager';
 import { AgentInstanceService } from '../index';
 import * as alarmClock from '../tools/alarmClock';
+import * as heartbeatManager from '../tools/scheduledTaskManager';
 
 describe('AgentInstanceService background task settings APIs', () => {
   const findOneMock = vi.fn();

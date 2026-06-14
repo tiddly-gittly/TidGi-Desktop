@@ -3,7 +3,6 @@ import { Alert, Box, Button, CircularProgress, Container, Divider, MenuItem, Tex
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinitionService';
-import { AgentFrameworkConfig } from '@services/agentInstance/schema';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/tools/scheduledTaskManager';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -573,7 +572,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               <Box sx={{ mt: 2 }} data-testid='edit-agent-prompt-form'>
                 <PromptConfigForm
                   schema={promptSchema}
-                  formData={agentDefinition.agentFrameworkConfig as AgentFrameworkConfig}
+                  formData={agentDefinition.agentFrameworkConfig}
                   onChange={handlePromptConfigChange}
                 />
               </Box>

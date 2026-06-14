@@ -141,7 +141,7 @@ export class MemeLoopDesktopRuntime {
         // Always include all globally-registered Desktop tools as plugins
         const { getAllToolDefinitions } = await import('../tools/defineTool');
         const allTools = getAllToolDefinitions();
-        const existingPlugins = (rawConfig?.plugins as Array<{ toolId: string }> ?? []);
+        const existingPlugins = rawConfig?.plugins as Array<{ toolId: string }> ?? [];
         const existingIds = new Set(existingPlugins.map(p => p.toolId));
         const extraPlugins: Array<{ toolId: string }> = [];
         for (const [toolId] of allTools) {
@@ -153,7 +153,7 @@ export class MemeLoopDesktopRuntime {
         result.agentFrameworkConfig = {
           ...rawConfig,
           plugins: [...existingPlugins, ...extraPlugins],
-        } as typeof result.agentFrameworkConfig;
+        };
 
         return result;
       },

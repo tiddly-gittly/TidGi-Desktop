@@ -435,7 +435,10 @@ export function startHeartbeat(
 
   handle.unref?.();
   // Store handle under a heartbeat-specific key to avoid conflicting with scheduled tasks
-  activeEntries.set(`__heartbeat:${agentId}`, { task: { id: `__heartbeat:${agentId}`, agentInstanceId: agentId, enabled: true, schedule: { kind: 'interval', intervalSeconds: config.intervalSeconds } } as ScheduledTaskEntity, intervalHandle: handle });
+  activeEntries.set(`__heartbeat:${agentId}`, {
+    task: { id: `__heartbeat:${agentId}`, agentInstanceId: agentId, enabled: true, schedule: { kind: 'interval', intervalSeconds: config.intervalSeconds } } as ScheduledTaskEntity,
+    intervalHandle: handle,
+  });
   logger.info('Heartbeat started', { agentId, intervalMs });
 }
 

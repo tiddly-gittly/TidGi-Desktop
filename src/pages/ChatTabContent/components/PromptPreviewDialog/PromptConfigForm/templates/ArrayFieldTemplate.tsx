@@ -186,7 +186,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     const finalKey = path[path.length - 1];
     current[finalKey] = newArrayData;
 
-    formContext.onFormDataChange(newRootData as never);
+    formContext.onFormDataChange(newRootData);
   }, [formData, formContext, fieldPathId, itemIds, moveItem, fieldPath]);
 
   const handleDragCancel = useCallback(() => {

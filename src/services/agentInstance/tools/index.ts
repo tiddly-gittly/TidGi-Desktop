@@ -9,7 +9,6 @@
  * Each plugin has a `toolId` that identifies it and a corresponding `xxxParam` object for configuration.
  */
 import { logger } from '@services/libs/log';
-import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
 
 import { getAllToolDefinitions } from './defineTool';
 import { registerToolParameterSchema } from './schemaRegistry';
