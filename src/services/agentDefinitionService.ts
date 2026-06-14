@@ -68,7 +68,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       if (agentInstanceService) await agentInstanceService.initialize();
       if (this.agentBrowserService) await this.agentBrowserService.initialize();
     } catch (error) {
-      logger.error(`Failed to initialize agent service: ${error}`);
+      logger.error(`Failed to initialize agent service: ${String(error)}`);
       throw error;
     }
   }
@@ -94,7 +94,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         await this.agentDefRepository.save(entities);
       }
     } catch (error) {
-      logger.error(`Failed to initialize default agents: ${error}`);
+      logger.error(`Failed to initialize default agents: ${String(error)}`);
       throw error;
     }
   }
@@ -170,9 +170,9 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           ) as unknown[];
           if (Array.isArray(tiddlers)) {
             for (const tiddler of tiddlers) {
-              const agentDef = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspace.name);
-              if (agentDef) {
-                templates.push(agentDef as unknown as AgentDefinition);
+              const agentDefinition = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspace.name);
+              if (agentDefinition) {
+                templates.push(agentDefinition as unknown as AgentDefinition);
               }
             }
           }
