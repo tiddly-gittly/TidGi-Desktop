@@ -498,6 +498,26 @@ When('I prepare to select directory in dialog {string}', async function(this: Ap
   }, targetPath);
 });
 
+When('I prepare to select file in dialog {string}', async function(this: ApplicationWorld, fileName: string) {
+  if (!this.app) {
+    throw new Error('Application is not launched');
+  }
+  const targetPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, fileName);
+  if (!await fs.pathExists(targetPath)) {
+    throw new Error(`File does not exist: ${targetPath}`);
+  }
+  await this.app.evaluate(({ dialog }, targetFile: string) => {
+    const originalShowOpenDialog = dialog.showOpenDialog.bind(dialog);
+    dialog.showOpenDialog = async () => {
+      dialog.showOpenDialog = originalShowOpenDialog;
+      return {
+        canceled: false,
+        filePaths: [targetFile],
+      };
+    };
+  }, targetPath);
+});
+
 When('I prepare to select file {string} for file chooser', async function(this: ApplicationWorld, filePath: string) {
   const page = this.currentWindow;
   if (!page) {
