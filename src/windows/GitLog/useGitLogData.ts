@@ -7,6 +7,7 @@ import { filter } from 'rxjs/operators';
 import type { getGitLog } from '@services/git/gitOperations';
 import type { ISearchParameters } from './SearchBar';
 import type { GitLogEntry } from './types';
+import { getWorkspaceGitLogScope } from './workspaceGitScope';
 
 export interface IGitLogData {
   entries: GitLogEntry[];
@@ -172,10 +173,16 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           options.searchMode = 'none';
         }
 
+        const gitScope = getWorkspaceGitLogScope(workspaceInfo);
+        const repoPath = gitScope?.repoPath ?? workspaceInfo.wikiFolderLocation;
+        if (gitScope?.scopedPath && options.searchMode === 'none') {
+          options.scopedPath = gitScope.scopedPath;
+        }
+
         // Get git log from service
         const result = await window.service.git.callGitOp(
           'getGitLog',
-          workspaceInfo.wikiFolderLocation,
+          repoPath,
           options,
         );
         void window.service.native.log('debug', '[DEBUG] getGitLog completed', { entryCount: result.entries.length });
@@ -187,7 +194,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           ? Promise.resolve(new Set<string>())
           : window.service.git.callGitOp(
             'getUnpushedCommitHashes',
-            workspaceInfo.wikiFolderLocation,
+            repoPath,
             workspaceInfo.gitUrl,
           );
 
@@ -195,11 +202,11 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         const entriesWithFiles = await Promise.all(
           result.entries.map(async (entry) => {
             try {
-              // getCommitFiles handles both committed (with hash) and uncommitted (empty hash) changes
               const files = await window.service.git.callGitOp(
                 'getCommitFiles',
-                workspaceInfo.wikiFolderLocation,
+                repoPath,
                 entry.hash,
+                gitScope?.scopedPath,
               );
               return { ...entry, files };
             } catch (error) {

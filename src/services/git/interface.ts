@@ -46,6 +46,8 @@ export interface IGitLogOptions {
   searchMode?: GitLogSearchMode;
   /** File path pattern for file search mode */
   filePath?: string;
+  /** Limit operations to a single managed file (HTML wiki workspace) */
+  scopedPath?: string;
   /** Start date for date range search (ISO string) */
   since?: string;
   /** End date for date range search (ISO string) */

@@ -1,8 +1,8 @@
 import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
 import { handleWorkerMessages } from '@services/libs/workerAdapter';
-import type { IWorkspace } from '@services/workspaces/interface';
-import { isWikiWorkspace } from '@services/workspaces/interface';
+import { exec as gitExec } from 'dugite';
+import { getWorkspaceGitScope, isHtmlWikiWorkspace, isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 
 /**
  * Decode git's octal-escaped non-ASCII filenames in log messages.
@@ -135,36 +135,45 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
   return new Observable<IGitLogMessage>((observer) => {
     // For sub-wiki, show sync progress in main workspace
     const workspaceIDForNotification = isWikiWorkspace(workspace) && workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
-    void commitAndSync({
-      ...configs,
-      defaultGitInfo,
-      logger: {
-        debug: (message: string, context: ILoggerContext): void => {
-          observer.next({ message: decodeGitOctalEscapes(message), level: 'debug', meta: { callerFunction: 'commitAndSync', ...context } });
-        },
-        warn: (message: string, context: ILoggerContext): void => {
-          observer.next({ message: decodeGitOctalEscapes(message), level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } });
-        },
-        info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspaceIDForNotification, callerFunction: 'commitAndSync', ...context } });
-        },
-      },
-      filesToIgnore: ['.DS_Store'],
-    }).then(
-      () => {
-        observer.complete();
-      },
-      (_error: unknown) => {
-        if (_error instanceof Error) {
-          observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
-          translateAndLogErrorMessage(_error, errorI18NDict);
-          observer.next({ level: 'error', error: _error });
-        } else {
-          observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+    void (async () => {
+      if (isHtmlWikiWorkspace(workspace)) {
+        const scope = getWorkspaceGitScope(workspace);
+        if (scope?.managedRelativePath) {
+          await gitExec(['reset'], configs.dir);
+          await gitExec(['add', '--', scope.managedRelativePath], configs.dir);
         }
-        observer.complete();
-      },
-    );
+      }
+      await commitAndSync({
+        ...configs,
+        defaultGitInfo,
+        logger: {
+          debug: (message: string, context: ILoggerContext): void => {
+            observer.next({ message: decodeGitOctalEscapes(message), level: 'debug', meta: { callerFunction: 'commitAndSync', ...context } });
+          },
+          warn: (message: string, context: ILoggerContext): void => {
+            observer.next({ message: decodeGitOctalEscapes(message), level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } });
+          },
+          info: (message: GitStep, context: ILoggerContext): void => {
+            observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspaceIDForNotification, callerFunction: 'commitAndSync', ...context } });
+          },
+        },
+        filesToIgnore: ['.DS_Store'],
+      }).then(
+        () => {
+          observer.complete();
+        },
+        (_error: unknown) => {
+          if (_error instanceof Error) {
+            observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+            translateAndLogErrorMessage(_error, errorI18NDict);
+            observer.next({ level: 'error', error: _error });
+          } else {
+            observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+          }
+          observer.complete();
+        },
+      );
+    })();
   });
 }
 

@@ -21,6 +21,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/interface';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitSyncProgressEvent, IGitUserInfos } from './interface';
@@ -319,12 +320,16 @@ export class Git implements IGitService {
 
       // Generate AI commit message if not provided and settings allow
       let finalConfigs = configs;
+      const gitScope = getWorkspaceGitScope(workspace);
+      if (isHtmlWikiWorkspace(workspace) && gitScope?.managedRelativePath) {
+        finalConfigs = { ...configs, dir: gitScope.repoPath };
+      }
       if (!configs.commitMessage) {
         logger.debug('No commit message provided, attempting to generate AI commit message');
         const { generateAICommitMessage } = await import('./aiCommitMessage');
-        // Determine source of the call for debugging
         const source = configs.commitOnly ? 'backup' : 'sync';
-        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation, source);
+        const aiFolderPath = gitScope?.repoPath ?? workspace.wikiFolderLocation;
+        const aiCommitMessage = await generateAICommitMessage(aiFolderPath, source, gitScope?.managedRelativePath);
         if (aiCommitMessage) {
           finalConfigs = { ...configs, commitMessage: aiCommitMessage };
           logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage, source });
@@ -335,6 +340,26 @@ export class Git implements IGitService {
         }
       } else {
         logger.debug('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
+      }
+
+      if (isHtmlWikiWorkspace(workspace) && gitScope?.managedRelativePath) {
+        const hasChanges = await gitOperations.commitScopedChanges(
+          gitScope.repoPath,
+          gitScope.managedRelativePath,
+          finalConfigs.commitMessage ?? i18n.t('LOG.CommitBackupMessage'),
+        );
+        if (!configs.commitOnly) {
+          const observable = this.gitWorker?.commitAndSyncWiki(
+            workspace,
+            { ...finalConfigs, dir: gitScope.repoPath, commitOnly: false },
+            getErrorMessageI18NDict(),
+          );
+          await this.getHasChangeHandler(observable, gitScope.repoPath, workspaceIDToShowNotification);
+        }
+        const changeType = configs.commitOnly ? 'commit' : 'sync';
+        this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
+        logger.info(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
+        return hasChanges;
       }
 
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
