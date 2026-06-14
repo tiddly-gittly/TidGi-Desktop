@@ -18,7 +18,7 @@ export default defineConfig({
     environment: 'jsdom',
 
     // features/ tests (HTTP/Node.js integration) run in node environment
-    // @ts-ignore — environmentMatchGlobs is supported in vitest 4
+    // @ts-expect-error — environmentMatchGlobs is supported in vitest 4
     environmentMatchGlobs: [
       ['features/**', 'node'],
     ],

@@ -155,7 +155,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           // For one-shot alarms in the past, fire immediately
           // For recurring alarms, always restore
           if (alarm.repeatIntervalMinutes || wakeAt.getTime() > now.getTime()) {
-            scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes, {
+            void scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes, {
               createdBy: alarm.createdBy ?? 'restore',
               runCount: alarm.runCount,
               lastRunAtISO: alarm.lastRunAtISO,
@@ -163,7 +163,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             alarmsRestored++;
           } else {
             // Past one-shot alarm — fire it now and clear
-            scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage, undefined, {
+            void scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage, undefined, {
               createdBy: alarm.createdBy ?? 'restore',
               runCount: alarm.runCount,
               lastRunAtISO: alarm.lastRunAtISO,
@@ -825,7 +825,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       : undefined;
     const wakeAtISO = parsedWakeAt.toISOString();
 
-    scheduleAlarmTimer(agentId, wakeAtISO, alarm.message, repeatIntervalMinutes, {
+    void scheduleAlarmTimer(agentId, wakeAtISO, alarm.message, repeatIntervalMinutes, {
       createdBy: 'settings-ui',
       runCount: 0,
     });
