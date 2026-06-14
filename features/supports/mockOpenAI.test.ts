@@ -1,6 +1,6 @@
+import type { AiAPIConfig } from '@services/agentInstance/schema';
 import type { ModelMessage } from 'ai';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { AiAPIConfig } from '@services/agentInstance/schema';
 import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
 import type { AIProviderConfig } from '../../src/services/externalAPI/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
