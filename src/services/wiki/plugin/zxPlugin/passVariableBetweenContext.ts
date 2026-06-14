@@ -40,8 +40,12 @@ export function getSerializeAllVariablesInContextSnippet(content: string): strin
   const variables = getVariablesFromScript(content);
   /**
    * Serialize all variables that is primitive in the context using JSONStringify.
-   * This is a helper function that will not be executed. We toString it, and concat it to the JS script that will be executed.
+   * This arrow function is a source-code template — it is NEVER executed, only .toString()'d.
+   * The result is bound via `const variableMap = …` in the generated code; no `return`
+   * is needed.  A `return` here would leak out of the stripped function body into the .mjs
+   * module top level and cause "Illegal return statement" at `compileSourceTextModule`.
    */
+  /* eslint-disable @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars */
   const toStringHelper = () => {
     const variableMap = variables.reduce((accumulator, variable) => {
       try {
@@ -50,8 +54,8 @@ export function getSerializeAllVariablesInContextSnippet(content: string): strin
         return accumulator;
       }
     }, {});
-    return variableMap;
   };
+  /* eslint-enable @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars */
   // after minify, the `() => {` will become `()=>{`, so we need to replace both, otherwise after bundle, this will cause error.
   const stringScriptWithoutPrefix = toStringHelper.toString().replace('() => {', '').replace('()=>{', '');
   // replace tailing `}`, and replace `variables` string with actuarial variables
