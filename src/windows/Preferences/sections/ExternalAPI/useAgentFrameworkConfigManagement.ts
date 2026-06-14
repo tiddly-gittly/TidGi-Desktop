@@ -38,16 +38,16 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
           }
           // Use instance config if available, otherwise fallback to definition config
           if (agentInstance?.agentFrameworkConfig && Object.keys(agentInstance.agentFrameworkConfig).length > 0) {
-            finalConfig = agentInstance.agentFrameworkConfig as AgentFrameworkConfig;
+            finalConfig = agentInstance.agentFrameworkConfig;
           } else if (agentDefinition?.agentFrameworkConfig) {
-            finalConfig = agentDefinition.agentFrameworkConfig as AgentFrameworkConfig;
+            finalConfig = agentDefinition.agentFrameworkConfig;
           }
           // Use agentFrameworkID from instance, fallback to definition
           agentFrameworkID = agentInstance?.agentFrameworkID || agentDefinition?.agentFrameworkID;
         } else if (agentDefId) {
           const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
           if (agentDefinition?.agentFrameworkConfig) {
-            finalConfig = agentDefinition.agentFrameworkConfig as AgentFrameworkConfig;
+            finalConfig = agentDefinition.agentFrameworkConfig;
           }
           agentFrameworkID = agentDefinition?.agentFrameworkID;
         }

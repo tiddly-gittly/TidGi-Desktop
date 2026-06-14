@@ -1,14 +1,13 @@
 /**
  * Alarm Clock Tool — terminates the current agent loop and schedules a self-wake at a future time.
  * The agent can use this to "sleep" and resume later.
- * 
+ *
  * Timer-management delegated to scheduledTaskManager; this file only holds the tool definition.
  */
 import { t } from '@services/libs/i18n/placeholder';
-import { logger } from '@services/libs/log';
 import { z } from 'zod/v4';
-import { addTask, removeTask, updateTask, getActiveTasksForAgent } from './scheduledTaskManager';
 import { registerToolDefinition } from './defineTool';
+import { addTask, getActiveTasksForAgent, removeTask, updateTask } from './scheduledTaskManager';
 
 export const AlarmClockParameterSchema = z.object({
   toolListPosition: z.object({
@@ -212,8 +211,8 @@ const alarmClockDefinition = registerToolDefinition({
         const schedule = parameters.kind === 'interval'
           ? { kind: 'interval' as const, intervalSeconds: Math.max(60, parameters.intervalSeconds ?? 300) }
           : parameters.kind === 'at'
-            ? { kind: 'at' as const, wakeAtISO: parameters.wakeAtISO!, repeatIntervalMinutes: parameters.repeatIntervalMinutes }
-            : { kind: 'cron' as const, expression: parameters.cronExpression!, timezone: parameters.timezone };
+          ? { kind: 'at' as const, wakeAtISO: parameters.wakeAtISO!, repeatIntervalMinutes: parameters.repeatIntervalMinutes }
+          : { kind: 'cron' as const, expression: parameters.cronExpression!, timezone: parameters.timezone };
 
         const task = await addTask({
           agentInstanceId: agentId,

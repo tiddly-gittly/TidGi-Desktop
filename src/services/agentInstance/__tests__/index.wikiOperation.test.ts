@@ -3,9 +3,9 @@ import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstance, IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
-import { getBuiltinAgentDefinitions } from 'memeloop';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
+import { getBuiltinAgentDefinitions } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -50,9 +50,9 @@ describe('AgentInstanceService Wiki Operation', () => {
       ...exampleAgent,
       agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {
-        ...(exampleAgent.agentFrameworkConfig as unknown as Record<string, unknown>),
+        ...(exampleAgent.agentFrameworkConfig as Record<string, unknown>),
         plugins: [
-          ...((exampleAgent.agentFrameworkConfig as unknown as Record<string, unknown> | undefined)?.plugins as Array<{ toolId: string }> ?? []),
+          ...((exampleAgent.agentFrameworkConfig as Record<string, unknown> | undefined)?.plugins as Array<{ toolId: string }> ?? []),
           { toolId: 'wikiOperation' },
         ],
       },

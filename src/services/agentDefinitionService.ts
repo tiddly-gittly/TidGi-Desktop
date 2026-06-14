@@ -2,14 +2,14 @@
  * Desktop AgentDefinition service: DB-backed definition persistence and IPC bridge.
  * memeloop core manages the model, Desktop provides the storage layer.
  */
-import { inject, injectable } from 'inversify';
-import { pick } from 'lodash';
-import { getBuiltinAgentDefinitions, tiddlerToAgentDefinition, type TiddlerFieldsForAgent } from 'memeloop';
 import { WikiChannel } from '@/constants/channels';
 import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { inject, injectable } from 'inversify';
+import { pick } from 'lodash';
+import { getBuiltinAgentDefinitions, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 export type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig, IAgentDefinitionService, ToolCallingMatch } from '@services/agentDefinition/interface';
 export { AgentDefinitionServiceIPCDescriptor } from '@services/agentDefinition/interface';
@@ -78,11 +78,19 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     try {
       const existingCount = await this.agentDefRepository.count();
       if (existingCount === 0) {
-        const entities = defaultAgentsList.map(d => this.agentDefRepository!.create({
-          id: d.id, name: d.name, description: d.description, avatarUrl: d.avatarUrl,
-          agentFrameworkID: d.agentFrameworkID || 'memeloopTaskAgent', agentFrameworkConfig: d.agentFrameworkConfig,
-          aiApiConfig: d.aiApiConfig, agentTools: d.agentTools, heartbeat: d.heartbeat,
-        }));
+        const entities = defaultAgentsList.map(d =>
+          this.agentDefRepository!.create({
+            id: d.id,
+            name: d.name,
+            description: d.description,
+            avatarUrl: d.avatarUrl,
+            agentFrameworkID: d.agentFrameworkID || 'memeloopTaskAgent',
+            agentFrameworkConfig: d.agentFrameworkConfig,
+            aiApiConfig: d.aiApiConfig,
+            agentTools: d.agentTools,
+            heartbeat: d.heartbeat,
+          })
+        );
         await this.agentDefRepository.save(entities);
       }
     } catch (error) {
@@ -91,7 +99,9 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     }
   }
 
-  private ensureRepositories(): void { if (!this.agentDefRepository) throw new Error('Agent repositories not initialized'); }
+  private ensureRepositories(): void {
+    if (!this.agentDefRepository) throw new Error('Agent repositories not initialized');
+  }
 
   public async createAgentDef(agent: AgentDefinition): Promise<AgentDefinition> {
     this.ensureRepositories();
@@ -104,10 +114,13 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     this.ensureRepositories();
     const existing = await this.agentDefRepository!.findOne({ where: { id: agent.id } });
     if (!existing) throw new Error(`Agent definition not found: ${agent.id}`);
-    Object.assign(existing, Object.fromEntries(
-      Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']))
-        .filter(([, v]) => v !== undefined),
-    ));
+    Object.assign(
+      existing,
+      Object.fromEntries(
+        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']))
+          .filter(([, v]) => v !== undefined),
+      ),
+    );
     await this.agentDefRepository!.save(existing);
     return existing as unknown as AgentDefinition;
   }
@@ -151,11 +164,13 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       for (const workspace of activeMain) {
         try {
           const tiddlers = await wikiService.wikiOperationInServer(
-            WikiChannel.getTiddlersAsJson, workspace.id, ['[tag[$:/tags/AI/Template]]'],
+            WikiChannel.getTiddlersAsJson,
+            workspace.id,
+            ['[tag[$:/tags/AI/Template]]'],
           ) as unknown[];
           if (Array.isArray(tiddlers)) {
             for (const tiddler of tiddlers) {
-              const agentDef = tiddlerToAgentDefinition(tiddler as unknown as TiddlerFieldsForAgent, workspace.name);
+              const agentDef = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspace.name);
               if (agentDef) {
                 templates.push(agentDef as unknown as AgentDefinition);
               }

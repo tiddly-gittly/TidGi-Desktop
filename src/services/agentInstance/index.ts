@@ -4,7 +4,6 @@ import { DataSource, Repository } from 'typeorm';
 
 import type { AgentHeartbeatConfig } from '@services/agentDefinitionService';
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
-import { promptConcatStream } from 'memeloop';
 import type { AgentPromptDescription } from '@services/agentInstance/schema';
 import { getPromptConcatAgentFrameworkConfigJsonSchema, type PromptConcatStreamState } from '@services/agentInstance/schema';
 import { initializePluginSystem } from '@services/agentInstance/tools';
@@ -17,10 +16,10 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { promptConcatStream } from 'memeloop';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
-import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
 import type {
   AgentBackgroundTask,
   AgentInstance,
@@ -31,6 +30,9 @@ import type {
   SetBackgroundHeartbeatInput,
 } from './interface';
 import { MemeLoopDesktopRuntime } from './memeloop/runtime';
+import { cancelAlarm, scheduleAlarmTimer } from './tools/alarmClock';
+import { cleanupMCPClient } from './tools/modelContextProtocol';
+import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
@@ -43,8 +45,6 @@ import {
   updateTask as stmUpdateTask,
 } from './tools/scheduledTaskManager';
 import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './tools/scheduledTaskTypes';
-import { cancelAlarm, scheduleAlarmTimer } from './tools/alarmClock';
-import { cleanupMCPClient } from './tools/modelContextProtocol';
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {

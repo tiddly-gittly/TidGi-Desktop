@@ -1,10 +1,10 @@
-import type { AgentDefinition } from 'memeloop';
-import { ToolCallingMatch } from 'memeloop';
 import type { AgentInstance } from '@services/agentInstance/interface';
 import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
-import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
+import type { AgentDefinition } from 'memeloop';
+import { ToolCallingMatch } from 'memeloop';
 import type { IPrompt } from 'memeloop';
+import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
 import type { IPromptConcatTool } from '../schema';
 
 /**

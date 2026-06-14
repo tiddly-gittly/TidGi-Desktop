@@ -2,9 +2,9 @@
  * Tests for AgentInstanceService streaming behavior
  * Tests that sendMsgToAgent properly triggers streaming updates through observables
  */
+import { getBuiltinAgentDefinitions } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getBuiltinAgentDefinitions } from 'memeloop';
 // Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstance, AgentInstanceLatestStatus, IAgentInstanceService } from '@services/agentInstance/interface';

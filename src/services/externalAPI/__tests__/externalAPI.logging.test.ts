@@ -4,9 +4,9 @@ import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import type { AIGlobalSettings, AIStreamResponse } from '@services/externalAPI/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
-import { getBuiltinAgentDefinitions } from 'memeloop';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ModelMessage } from 'ai';
+import { getBuiltinAgentDefinitions } from 'memeloop';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('ExternalAPIService logging', () => {
