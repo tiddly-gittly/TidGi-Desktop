@@ -50,9 +50,10 @@ export class WorkspaceView implements IWorkspaceViewService {
     }, { function: 'initializeAllWorkspaceView' });
     // Only load workspace that is not a subwiki and not a page type
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-    workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType && getWorkspaceStrategy(workspace).runtime.usesNodeWikiWorker).forEach((workspace) => {
-      wikiService.setWikiStartLockOn(workspace.id);
-    });
+    workspacesList.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.pageType && getWorkspaceStrategy(workspace).runtime.usesNodeWikiWorker)
+      .forEach((workspace) => {
+        wikiService.setWikiStartLockOn(workspace.id);
+      });
     const sortedList = workspacesList
       .sort(workspaceSorter)
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first

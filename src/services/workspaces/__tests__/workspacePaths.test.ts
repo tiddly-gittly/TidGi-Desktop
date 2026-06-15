@@ -1,12 +1,7 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import {
-  getWorkspaceGitScope,
-  getWorkspaceType,
-  isHtmlWikiWorkspace,
-  normalizeHtmlWorkspacePaths,
-} from '@services/workspaces/workspacePaths';
+import { getWorkspaceGitScope, getWorkspaceType, isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from '@services/workspaces/workspacePaths';
 import { WorkspaceType } from '@services/workspaces/workspaceType';
 
 describe('workspacePaths', () => {

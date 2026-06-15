@@ -37,10 +37,10 @@ import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import { CreateWorkspaceTabs } from './constants';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportConfigDialog } from './ImportConfigDialog';
-import { OpenHtmlWikiDoneButton } from './OpenHtmlWikiDoneButton';
-import { OpenHtmlWikiForm } from './OpenHtmlWikiForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
+import { OpenHtmlWikiDoneButton } from './OpenHtmlWikiDoneButton';
+import { OpenHtmlWikiForm } from './OpenHtmlWikiForm';
 
 const Paper = styled((props: React.ComponentProps<typeof PaperRaw>) => <PaperRaw {...props} />)`
   border-color: ${({ theme }) => theme.palette.divider};

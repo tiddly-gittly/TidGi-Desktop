@@ -6,8 +6,8 @@ import { ListItem, ListItemText } from '@/components/ListItem';
 import { TokenForm } from '@/components/TokenForm';
 import { SupportedStorageServices } from '@services/types';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
-import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { getWorkspaceStrategy } from '@services/workspaces/strategies';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { SyncedWikiDescription } from '../../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../../AddWorkspace/GitRepoUrlForm';
 import { ListItemVertical, TextField } from '../../Preferences/PreferenceComponents';
@@ -35,29 +35,29 @@ export function WorkspacePathItem(): React.JSX.Element {
       />
       {!isHtml && menuStrategy?.canMoveWorkspaceLocation && (
         <Tooltip title={t('EditWorkspace.MoveWorkspaceTooltip') ?? ''} placement='top'>
-        <Button
-          variant='outlined'
-          size='small'
-          sx={{ mt: 1 }}
-          onClick={async () => {
-            const directories = await window.service.native.pickDirectory();
-            if (directories.length > 0) {
-              const newLocation = directories[0];
-              try {
-                await window.service.wikiGitWorkspace.moveWorkspaceLocation(workspace.id, newLocation);
-              } catch (error) {
-                const errorMessage = (error as Error).message;
-                void window.service.native.log('error', `Failed to move workspace: ${errorMessage}`, { error, workspaceID: workspace.id, newLocation });
-                void window.service.notification.show({
-                  title: t('EditWorkspace.MoveWorkspaceFailed'),
-                  body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspace.name, error: errorMessage }),
-                });
+          <Button
+            variant='outlined'
+            size='small'
+            sx={{ mt: 1 }}
+            onClick={async () => {
+              const directories = await window.service.native.pickDirectory();
+              if (directories.length > 0) {
+                const newLocation = directories[0];
+                try {
+                  await window.service.wikiGitWorkspace.moveWorkspaceLocation(workspace.id, newLocation);
+                } catch (error) {
+                  const errorMessage = (error as Error).message;
+                  void window.service.native.log('error', `Failed to move workspace: ${errorMessage}`, { error, workspaceID: workspace.id, newLocation });
+                  void window.service.notification.show({
+                    title: t('EditWorkspace.MoveWorkspaceFailed'),
+                    body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspace.name, error: errorMessage }),
+                  });
+                }
               }
-            }
-          }}
-        >
-          {t('EditWorkspace.MoveWorkspace')}
-        </Button>
+            }}
+          >
+            {t('EditWorkspace.MoveWorkspace')}
+          </Button>
         </Tooltip>
       )}
     </ListItemVertical>

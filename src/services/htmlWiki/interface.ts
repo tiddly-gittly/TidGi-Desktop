@@ -1,6 +1,6 @@
 import { HtmlWikiChannel } from '@/constants/channels';
-import type { IHtmlWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import type { IWikiServerRouteResponse } from '@services/wiki/wikiWorker/ipcServerRoutes';
+import type { IHtmlWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 export interface IHtmlWikiService {

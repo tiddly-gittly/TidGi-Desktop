@@ -23,8 +23,8 @@ import { nanoid } from 'nanoid';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
 import { isWikiWorkspace } from './interface';
-import { isHtmlWikiWorkspace } from './workspacePaths';
 import { getWorkspaceStrategy } from './strategies';
+import { isHtmlWikiWorkspace } from './workspacePaths';
 
 interface IWorkspaceMenuRequiredServices {
   agentDefinition: Pick<IAgentDefinitionService, 'getAgentDef' | 'getAgentDefs'>;

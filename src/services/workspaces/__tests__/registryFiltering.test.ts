@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { getWorkspaceSectionsForType, filterWorkspaceSectionForType } from '../definitions/registry';
-import { WorkspaceType } from '../workspaceType';
-import { subWikiSection } from '../definitions/subWiki';
+import { filterWorkspaceSectionForType, getWorkspaceSectionsForType } from '../definitions/registry';
 import { serverSection } from '../definitions/server';
+import { subWikiSection } from '../definitions/subWiki';
+import { WorkspaceType } from '../workspaceType';
 
 describe('workspace registry filtering', () => {
   it('hides subWiki section for html workspaces', () => {

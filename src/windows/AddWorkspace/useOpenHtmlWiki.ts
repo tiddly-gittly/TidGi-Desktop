@@ -1,6 +1,6 @@
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { SupportedStorageServices } from '@services/types';
-import { WorkspaceType, type INewHtmlWikiWorkspaceConfig } from '@services/workspaces/interface';
+import { type INewHtmlWikiWorkspaceConfig, WorkspaceType } from '@services/workspaces/interface';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
@@ -39,7 +39,7 @@ export function useOpenHtmlWiki(
   const { t } = useTranslation();
 
   return useCallback(async () => {
-    const { wikiHtmlPath, wikiFolderName, wikiPort, storageProvider, gitRepoUrl } = form;
+    const { wikiHtmlPath, wikiFolderName, wikiPort, gitRepoUrl } = form;
     if (!wikiHtmlPath) {
       hasErrorSetter(true);
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.LocalWikiHtml')}`);

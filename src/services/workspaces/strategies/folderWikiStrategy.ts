@@ -1,6 +1,5 @@
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IAuthenticationService } from '@services/auth/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiServerRouteResponse } from '@services/wiki/wikiWorker/ipcServerRoutes';
 

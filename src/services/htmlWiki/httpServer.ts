@@ -26,7 +26,11 @@ export class HtmlWikiHttpServerManager {
         try {
           const chunks: Buffer[] = [];
           for await (const chunk of request) {
-            chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+            if (typeof chunk === 'string') {
+              chunks.push(Buffer.from(chunk));
+            } else if (Buffer.isBuffer(chunk)) {
+              chunks.push(chunk);
+            }
           }
           const body = Buffer.concat(chunks).toString('utf-8');
           const result = await htmlWikiService.handleHttpRequest(workspace.id, request.method ?? 'GET', body);
@@ -53,7 +57,9 @@ export class HtmlWikiHttpServerManager {
     const running = this.servers.get(workspaceID);
     if (!running) return;
     await new Promise<void>((resolve) => {
-      running.server.close(() => resolve());
+      running.server.close(() => {
+        resolve();
+      });
     });
     this.servers.delete(workspaceID);
   }

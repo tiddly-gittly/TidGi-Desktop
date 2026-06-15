@@ -507,7 +507,7 @@ export class Git implements IGitService {
     }
     // Type assertion through unknown is necessary here because TypeScript cannot verify
     // that the union type of all gitOperations functions matches the generic K constraint
-    const inflightKey = `${String(method)}:${JSON.stringify(arguments_)}`;
+    const inflightKey = `${method}:${JSON.stringify(arguments_)}`;
     const inflight = this.inflightCallGitOps.get(inflightKey);
     if (inflight !== undefined) {
       return await inflight as Awaited<ReturnType<typeof gitOperations[K]>>;

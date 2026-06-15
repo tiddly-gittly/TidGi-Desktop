@@ -164,8 +164,8 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
   const scope = scopedPath ? { managedRelativePath: scopedPath } : undefined;
 
   // Check for uncommitted changes (only in normal mode)
-  const statusArgs = appendGitPathSpec(['-c', 'core.quotePath=false', 'status', '--porcelain'], scope);
-  const statusResult = await gitExec(statusArgs, repoPath);
+  const statusArguments = appendGitPathSpec(['-c', 'core.quotePath=false', 'status', '--porcelain'], scope);
+  const statusResult = await gitExec(statusArguments, repoPath);
   const hasUncommittedChanges = hasUncommittedChangesInScope(statusResult.stdout, scope) && searchMode === 'none';
 
   // Build git log command arguments
@@ -332,11 +332,11 @@ export async function getCommitFiles(repoPath: string, commitHash: string, scope
   }
 
   // For committed changes, use diff-tree with --name-status to get file status
-  const diffTreeArgs = appendGitPathSpec(
+  const diffTreeArguments = appendGitPathSpec(
     ['-c', 'core.quotePath=false', 'diff-tree', '--no-commit-id', '--name-status', '-z', '-r', commitHash],
     scope,
   );
-  const result = await gitExec(diffTreeArgs, repoPath);
+  const result = await gitExec(diffTreeArguments, repoPath);
 
   if (result.exitCode !== 0) {
     throw new Error(`Failed to get commit files: ${result.stderr}`);

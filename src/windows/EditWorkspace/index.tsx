@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { allWorkspaceSections, getWorkspaceSectionsForType } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { isWikiWorkspace, nonConfigFields, type IWorkspace, WorkspaceType } from '@services/workspaces/interface';
+import { isWikiWorkspace, type IWorkspace, nonConfigFields } from '@services/workspaces/interface';
 import { getWorkspaceType } from '@services/workspaces/workspacePaths';
 import { useForm } from './useForm';
 
@@ -143,7 +143,9 @@ export default function EditWorkspace(): React.JSX.Element {
       <SearchBar value={searchQuery} onChange={setSearchQuery} inputRef={searchInputReference} />
       {wikiWorkspace && workspaceStore && (
         <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter}>
-          {!isSearching && <WorkspaceSectionSideBar sections={workspaceSections} sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />}
+          {!isSearching && (
+            <WorkspaceSectionSideBar sections={workspaceSections} sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />
+          )}
           <Inner>
             <AllGenericSectionsRenderer
               sections={workspaceSections}

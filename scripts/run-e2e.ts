@@ -190,20 +190,22 @@ function ensureCalibrationFileExists(): void {
     return;
   }
 
-  console.error(formatE2EArgsValidationError(new E2EArgsValidationError(
-    'Missing .calibration.json',
-    [
-      'E2E timeouts are measured — they are not hardcoded.',
-      '',
-      'Run calibration FIRST:',
-      '  pnpm run test:e2e:calibrate',
-      '',
-      'Then run your scenarios, for example:',
-      '  pnpm test:e2e --tags="@edit-workspace-save-http-api"',
-      '',
-      'AI agents: `pnpm test:e2e` does NOT run calibration.',
-    ],
-  )));
+  console.error(formatE2EArgsValidationError(
+    new E2EArgsValidationError(
+      'Missing .calibration.json',
+      [
+        'E2E timeouts are measured — they are not hardcoded.',
+        '',
+        'Run calibration FIRST:',
+        '  pnpm run test:e2e:calibrate',
+        '',
+        'Then run your scenarios, for example:',
+        '  pnpm test:e2e --tags="@edit-workspace-save-http-api"',
+        '',
+        'AI agents: `pnpm test:e2e` does NOT run calibration.',
+      ],
+    ),
+  ));
   process.exit(1);
 }
 

@@ -30,13 +30,13 @@ export async function writeHtmlWikiFile(htmlFileLocation: string, content: strin
   const backupPath = `${resolved}.tidgi-backup-${Date.now()}`;
   const existing = await fs.readFile(resolved, 'utf-8');
   await fs.writeFile(backupPath, existing, 'utf-8');
-  const tempPath = `${resolved}.tidgi-tmp-${Date.now()}`;
+  const temporaryPath = `${resolved}.tidgi-tmp-${Date.now()}`;
   try {
-    await fs.writeFile(tempPath, content, 'utf-8');
-    await fs.rename(tempPath, resolved);
+    await fs.writeFile(temporaryPath, content, 'utf-8');
+    await fs.rename(temporaryPath, resolved);
   } finally {
     try {
-      await fs.unlink(tempPath);
+      await fs.unlink(temporaryPath);
     } catch {
       // temp file may have been renamed
     }

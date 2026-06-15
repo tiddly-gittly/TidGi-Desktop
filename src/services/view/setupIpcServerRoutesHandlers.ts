@@ -7,8 +7,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { getWorkspaceStrategy } from '@services/workspaces/strategies';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID: string) {
@@ -19,7 +19,9 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
   async function resolveHttpStrategy(workspaceIDFromHost: string) {
     const workspace = await workspaceService.get(workspaceIDFromHost);
     if (!workspace || !isWikiWorkspace(workspace)) {
-      return getWorkspaceStrategy({ id: workspaceIDFromHost, name: '', active: false, order: 0, picturePath: null, wikiFolderLocation: '' } as import('@services/workspaces/interface').IWikiWorkspace);
+      return getWorkspaceStrategy(
+        { id: workspaceIDFromHost, name: '', active: false, order: 0, picturePath: null, wikiFolderLocation: '' },
+      );
     }
     return getWorkspaceStrategy(workspace);
   }

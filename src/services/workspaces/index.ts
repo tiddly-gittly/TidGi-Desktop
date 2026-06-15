@@ -34,9 +34,9 @@ import type {
   IWorkspaceWithMetadata,
 } from './interface';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues, WorkspaceType } from './interface';
-import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePaths';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utilities';
+import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePaths';
 
 @injectable()
 export class Workspace implements IWorkspaceService {

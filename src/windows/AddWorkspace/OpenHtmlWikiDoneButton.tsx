@@ -1,9 +1,9 @@
 import { Alert, LinearProgress, Snackbar, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { CloseButton, ReportErrorFabButton } from './FormComponents';
-import { useOpenHtmlWiki, useValidateOpenHtmlWiki } from './useOpenHtmlWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useWikiCreationProgress } from './useIndicator';
+import { useOpenHtmlWiki, useValidateOpenHtmlWiki } from './useOpenHtmlWiki';
 
 export function OpenHtmlWikiDoneButton({
   form,

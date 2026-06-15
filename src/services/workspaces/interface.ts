@@ -10,7 +10,7 @@ import { WorkspaceType } from './workspaceType';
 export { WorkspaceType } from './workspaceType';
 // Type-only re-exports: value helpers live in workspacePaths.ts and must not be
 // re-exported here — preload imports this file and cannot load node:path.
-export type { IHtmlWikiWorkspace, IFolderWikiWorkspace, IWorkspaceGitScope } from './workspacePaths';
+export type { IFolderWikiWorkspace, IHtmlWikiWorkspace, IWorkspaceGitScope } from './workspacePaths';
 
 /**
  * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.

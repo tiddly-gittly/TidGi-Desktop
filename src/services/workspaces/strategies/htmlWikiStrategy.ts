@@ -1,15 +1,10 @@
 import { container } from '@services/container';
-import serviceIdentifier from '@services/serviceIdentifier';
 import type { IHtmlWikiService } from '@services/htmlWiki/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiServerRouteResponse } from '@services/wiki/wikiWorker/ipcServerRoutes';
 
 import { isWikiWorkspace, type IWorkspace } from '../interface';
-import {
-  getWorkspaceContainerPath,
-  getWorkspaceGitScope,
-  getWorkspaceManagedPath,
-  isHtmlWikiWorkspace,
-} from '../workspacePaths';
+import { getWorkspaceContainerPath, getWorkspaceGitScope, getWorkspaceManagedPath, isHtmlWikiWorkspace } from '../workspacePaths';
 import type { IWorkspaceStrategy } from './types';
 
 const htmlRuntimeStrategy = {

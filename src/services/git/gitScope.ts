@@ -5,11 +5,11 @@ export interface IGitScopeOptions {
   managedRelativePath?: string;
 }
 
-export function appendGitPathSpec(args: string[], scope?: IGitScopeOptions): string[] {
+export function appendGitPathSpec(arguments_: string[], scope?: IGitScopeOptions): string[] {
   if (!scope?.managedRelativePath) {
-    return args;
+    return arguments_;
   }
-  return [...args, '--', scope.managedRelativePath];
+  return [...arguments_, '--', scope.managedRelativePath];
 }
 
 export function filterFilesByScope<T extends { path: string }>(files: T[], scope?: IGitScopeOptions): T[] {

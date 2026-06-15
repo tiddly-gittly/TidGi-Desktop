@@ -23,7 +23,7 @@ export class HtmlWiki implements IHtmlWikiService {
   private readonly activeWorkspaceIds = new Set<string>();
 
   public async checkHtmlWikiExist(workspace: IHtmlWikiWorkspace, options: { showDialog?: boolean } = {}): Promise<string | true> {
-    const { htmlFileLocation, id: workspaceID, name } = workspace;
+    const { htmlFileLocation, id: workspaceID } = workspace;
     try {
       await validateHtmlWikiFile(htmlFileLocation);
       return true;
@@ -113,7 +113,7 @@ export class HtmlWiki implements IHtmlWikiService {
     await writeHtmlWikiFile(workspace.htmlFileLocation, htmlContent);
     const gitService = container.get<import('@services/git/interface').IGitService>(serviceIdentifier.Git);
     gitService.notifyFileChange(workspace.wikiFolderLocation, { onlyWhenGitLogOpened: true });
-    return { statusCode: 204, headers: {} as Record<string, string>, data: '' };
+    return { statusCode: 204, headers: {}, data: '' };
   }
 
   public async getStatusResponse(workspaceID: string, userName: string): Promise<import('@services/wiki/wikiWorker/ipcServerRoutes').IWikiServerRouteResponse> {
