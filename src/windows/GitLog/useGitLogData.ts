@@ -9,6 +9,10 @@ import type { ISearchParameters } from './SearchBar';
 import type { GitLogEntry } from './types';
 import { getWorkspaceGitLogScope } from './workspaceGitScope';
 
+/** Survives React StrictMode remounts; keyed by repo path. */
+const inflightGitLogLoadsByRepo = new Map<string, Promise<void>>();
+const pendingGitLogRefreshByRepo = new Map<string, boolean>();
+
 export interface IGitLogData {
   entries: GitLogEntry[];
   loading: boolean;
@@ -40,7 +44,6 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   const lastChangeTimestamp = useRef<number>(0);
   const loadingMoreReference = useRef(false);
   const isFirstLoad = useRef(true);
-  const loadGitLogInProgress = useRef(false); // Guard against concurrent loadGitLog calls
 
   const isSearchMode = searchParameters.mode !== 'none';
   const hasMore = entries.length < totalCount;
@@ -126,16 +129,22 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   useEffect(() => {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
-    // Prevent concurrent loadGitLog calls
-    if (loadGitLogInProgress.current) {
-      void window.service.native.log('debug', '[DEBUG] loadGitLog skipped - already in progress', { refreshTrigger });
+    const gitScope = getWorkspaceGitLogScope(workspaceInfo);
+    const repoPath = gitScope?.repoPath ?? workspaceInfo.wikiFolderLocation;
+
+    if (inflightGitLogLoadsByRepo.has(repoPath)) {
+      pendingGitLogRefreshByRepo.set(repoPath, true);
+      void window.service.native.log('debug', '[DEBUG] loadGitLog skipped - already in progress', { refreshTrigger, repoPath });
       return;
     }
 
-    const loadGitLog = async () => {
-      loadGitLogInProgress.current = true;
+    let finishLoad!: () => void;
+    const loadPromise = new Promise<void>((resolve) => {
+      finishLoad = resolve;
+    });
+    inflightGitLogLoadsByRepo.set(repoPath, loadPromise);
 
-      // Log at the very start to verify this function is called
+    void (async () => {
       void window.service.native.log('debug', '[DEBUG] loadGitLog started', {
         refreshTrigger,
         wikiFolderLocation: workspaceInfo.wikiFolderLocation,
@@ -180,11 +189,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         }
 
         // Get git log from service
-        const result = await window.service.git.callGitOp(
-          'getGitLog',
-          repoPath,
-          options,
-        );
+        const result = await window.service.git.getGitLog(repoPath, options);
         void window.service.native.log('debug', '[DEBUG] getGitLog completed', { entryCount: result.entries.length });
 
         // Get unpushed commit hashes in parallel with loading files
@@ -192,18 +197,13 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         const isLocalWorkspace = workspaceInfo.storageService === SupportedStorageServices.local;
         const unpushedHashesPromise = isLocalWorkspace
           ? Promise.resolve(new Set<string>())
-          : window.service.git.callGitOp(
-            'getUnpushedCommitHashes',
-            repoPath,
-            workspaceInfo.gitUrl,
-          );
+          : window.service.git.getUnpushedCommitHashes(repoPath, workspaceInfo.gitUrl);
 
         // Load files for each commit
         const entriesWithFiles = await Promise.all(
           result.entries.map(async (entry) => {
             try {
-              const files = await window.service.git.callGitOp(
-                'getCommitFiles',
+              const files = await window.service.git.getCommitFiles(
                 repoPath,
                 entry.hash,
                 gitScope?.scopedPath,
@@ -248,16 +248,18 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         console.error('Failed to load git log:', error);
         setError(error.message);
       } finally {
-        // Only clear loading if it was set (first load)
-        if (loading) {
+        finishLoad();
+        if (inflightGitLogLoadsByRepo.get(repoPath) === loadPromise) {
+          inflightGitLogLoadsByRepo.delete(repoPath);
+        }
+        if (pendingGitLogRefreshByRepo.get(repoPath)) {
+          pendingGitLogRefreshByRepo.set(repoPath, false);
+          setRefreshTrigger((previous) => previous + 1);
+        } else if (loading) {
           setLoading(false);
         }
-        // Always clear the in-progress flag
-        loadGitLogInProgress.current = false;
       }
-    };
-
-    void loadGitLog();
+    })();
   }, [workspaceInfo, refreshTrigger, searchParameters]);
 
   // Track the last logged entries to detect actual changes
@@ -317,31 +319,29 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         options.searchMode = 'none';
       }
 
-      const result = await window.service.git.callGitOp(
-        'getGitLog',
-        workspaceInfo.wikiFolderLocation,
-        options,
-      );
+      const gitScope = getWorkspaceGitLogScope(workspaceInfo);
+      const repoPath = gitScope?.repoPath ?? workspaceInfo.wikiFolderLocation;
+      if (gitScope?.scopedPath && options.searchMode === 'none') {
+        options.scopedPath = gitScope.scopedPath;
+      }
+
+      const result = await window.service.git.getGitLog(repoPath, options);
 
       // Get unpushed commit hashes in parallel with loading files
       // For local workspaces, skip this — users should convert to cloud workspace if they want remote sync.
       const isLocalWorkspace = workspaceInfo.storageService === SupportedStorageServices.local;
       const unpushedHashesPromise = isLocalWorkspace
         ? Promise.resolve(new Set<string>())
-        : window.service.git.callGitOp(
-          'getUnpushedCommitHashes',
-          workspaceInfo.wikiFolderLocation,
-          workspaceInfo.gitUrl,
-        );
+        : window.service.git.getUnpushedCommitHashes(repoPath, workspaceInfo.gitUrl);
 
       // Load files for each commit
       const entriesWithFiles = await Promise.all(
         result.entries.map(async (entry) => {
           try {
-            const files = await window.service.git.callGitOp(
-              'getCommitFiles',
-              workspaceInfo.wikiFolderLocation,
+            const files = await window.service.git.getCommitFiles(
+              repoPath,
               entry.hash,
+              gitScope?.scopedPath,
             );
             return { ...entry, files };
           } catch (error) {
