@@ -2,8 +2,12 @@ import path from 'node:path';
 
 import { isHtmlWiki } from '@/constants/fileNames';
 import type { IWikiWorkspace, IWorkspace } from './interface';
-import { isWikiWorkspace } from './interface';
 import { WorkspaceType } from './workspaceType';
+
+/** Local guard to avoid runtime circular import with interface.ts */
+function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
+  return 'wikiFolderLocation' in workspace;
+}
 
 export interface IWorkspaceGitScope {
   /** Git repository root directory */

@@ -4,12 +4,8 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiServerRouteResponse } from '@services/wiki/wikiWorker/ipcServerRoutes';
 
-import {
-  getWorkspaceGitScope,
-  getWorkspaceManagedPath,
-  isWikiWorkspace,
-  type IWorkspace,
-} from '../interface';
+import { isWikiWorkspace, type IWorkspace } from '../interface';
+import { getWorkspaceGitScope, getWorkspaceManagedPath } from '../workspacePaths';
 import type { IWorkspaceStrategy } from './types';
 
 const folderRuntimeStrategy = {

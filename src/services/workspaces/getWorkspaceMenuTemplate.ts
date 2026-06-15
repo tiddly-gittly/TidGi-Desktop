@@ -22,7 +22,8 @@ import type { FlatNamespace, TFunction } from 'i18next';
 import { nanoid } from 'nanoid';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
 import type { IWorkspace, IWorkspaceService } from './interface';
-import { isHtmlWikiWorkspace, isWikiWorkspace } from './interface';
+import { isWikiWorkspace } from './interface';
+import { isHtmlWikiWorkspace } from './workspacePaths';
 import { getWorkspaceStrategy } from './strategies';
 
 interface IWorkspaceMenuRequiredServices {

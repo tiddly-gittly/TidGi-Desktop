@@ -138,6 +138,8 @@ export interface IGitService {
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
   initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
+  /** Init git repo and initial commit for a single managed file (HTML wiki). */
+  initScopedWikiGit(repoPath: string, scopedPath: string): Promise<void>;
   /**
    * Decide to use forcePull or commitAndSync according to workspace's `readOnlyMode` setting.
    *
@@ -152,6 +154,9 @@ export interface IGitService {
     method: K,
     ...arguments_: Parameters<typeof import('./gitOperations')[K]>
   ): Promise<Awaited<ReturnType<typeof import('./gitOperations')[K]>>>;
+  getGitLog(repoPath: string, options?: IGitLogOptions): Promise<IGitLogResult>;
+  getCommitFiles(repoPath: string, commitHash: string, scopedPath?: string): Promise<IFileWithStatus[]>;
+  getUnpushedCommitHashes(repoPath: string, remoteUrl?: string | null): Promise<Set<string>>;
   /**
    * Checkout a specific commit
    */
@@ -200,6 +205,9 @@ export const GitServiceIPCDescriptor = {
   properties: {
     addToGitignore: ProxyPropertyType.Function,
     callGitOp: ProxyPropertyType.Function,
+    getGitLog: ProxyPropertyType.Function,
+    getCommitFiles: ProxyPropertyType.Function,
+    getUnpushedCommitHashes: ProxyPropertyType.Function,
     checkoutCommit: ProxyPropertyType.Function,
     clone: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,
@@ -211,6 +219,7 @@ export const GitServiceIPCDescriptor = {
     gitStateChange$: ProxyPropertyType.Value$,
     gitSyncProgress$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,
+    initScopedWikiGit: ProxyPropertyType.Function,
     notifyFileChange: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     amendCommitMessage: ProxyPropertyType.Function,

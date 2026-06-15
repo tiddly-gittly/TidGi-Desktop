@@ -2,7 +2,8 @@ import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
 import { handleWorkerMessages } from '@services/libs/workerAdapter';
 import { exec as gitExec } from 'dugite';
-import { getWorkspaceGitScope, isHtmlWikiWorkspace, isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 
 /**
  * Decode git's octal-escaped non-ASCII filenames in log messages.

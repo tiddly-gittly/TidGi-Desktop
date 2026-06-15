@@ -4,6 +4,7 @@
  */
 import { i18n } from '@services/libs/i18n';
 import { exec as gitExec } from 'dugite';
+import { hasGit } from 'git-sync-js';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -26,6 +27,40 @@ function getGitCommitEnvironment(username: string = defaultGitInfo.gitUserName, 
     GIT_COMMITTER_NAME: username,
     GIT_COMMITTER_EMAIL: email,
   };
+}
+
+/**
+ * Initialize git in repoPath and create an initial commit that tracks only scopedPath.
+ * Used for HTML wiki workspaces whose repo root is the parent folder of the .html file.
+ */
+export async function initScopedWikiGit(repoPath: string, scopedPath: string, message?: string): Promise<void> {
+  if (!(await hasGit(repoPath, true))) {
+    const initResult = await gitExec(['init'], repoPath);
+    if (initResult.exitCode !== 0) {
+      throw new Error(`Failed to init git: ${initResult.stderr}`);
+    }
+    await gitExec(['config', 'user.email', defaultGitInfo.email], repoPath);
+    await gitExec(['config', 'user.name', defaultGitInfo.gitUserName], repoPath);
+  }
+
+  const addResult = await gitExec(['add', '--', scopedPath], repoPath);
+  if (addResult.exitCode !== 0) {
+    throw new Error(`Failed to stage ${scopedPath}: ${addResult.stderr}`);
+  }
+
+  const stagedResult = await gitExec(['diff', '--cached', '--quiet', '--', scopedPath], repoPath);
+  if (stagedResult.exitCode === 0) {
+    return;
+  }
+
+  const commitResult = await gitExec(
+    ['commit', '-m', message ?? i18n.t('LOG.CommitBackupMessage'), '--', scopedPath],
+    repoPath,
+    { env: getGitCommitEnvironment() },
+  );
+  if (commitResult.exitCode !== 0) {
+    throw new Error(`Failed to commit ${scopedPath}: ${commitResult.stderr}`);
+  }
 }
 
 /**
@@ -168,9 +203,9 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
     throw new Error(`Git log failed: ${result.stderr}`);
   }
 
-  // Get current branch
+  // Get current branch (fresh repos may have no commits yet — HEAD does not exist)
   const branchResult = await gitExec(['rev-parse', '--abbrev-ref', 'HEAD'], repoPath);
-  const currentBranch = branchResult.stdout.trim();
+  const currentBranch = branchResult.exitCode === 0 ? branchResult.stdout.trim() : '';
 
   // Get total count
   const countArguments = ['rev-list', '--all', '--count'];
@@ -190,7 +225,7 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
     countArguments.push('--', scopedPath);
   }
   const countResult = await gitExec(countArguments, repoPath);
-  const totalCount = Number.parseInt(countResult.stdout.trim(), 10);
+  const totalCount = Number.parseInt(countResult.stdout.trim(), 10) || 0;
 
   // Parse log output
   const entries = result.stdout

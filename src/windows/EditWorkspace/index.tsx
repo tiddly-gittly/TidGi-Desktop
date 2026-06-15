@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { allWorkspaceSections, getWorkspaceSectionsForType } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { getWorkspaceType, isWikiWorkspace, nonConfigFields, type IWorkspace, WorkspaceType } from '@services/workspaces/interface';
+import { isWikiWorkspace, nonConfigFields, type IWorkspace, WorkspaceType } from '@services/workspaces/interface';
+import { getWorkspaceType } from '@services/workspaces/workspacePaths';
 import { useForm } from './useForm';
 
 import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';

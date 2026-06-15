@@ -33,13 +33,8 @@ import type {
   IWorkspacesWithMetadata,
   IWorkspaceWithMetadata,
 } from './interface';
-import {
-  isHtmlWikiWorkspace,
-  isWikiWorkspace,
-  normalizeHtmlWorkspacePaths,
-  wikiWorkspaceDefaultValues,
-  WorkspaceType,
-} from './interface';
+import { isWikiWorkspace, wikiWorkspaceDefaultValues, WorkspaceType } from './interface';
+import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePaths';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utilities';
 

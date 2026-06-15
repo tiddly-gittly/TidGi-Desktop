@@ -3,14 +3,13 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IHtmlWikiService } from '@services/htmlWiki/interface';
 import type { IWikiServerRouteResponse } from '@services/wiki/wikiWorker/ipcServerRoutes';
 
+import { isWikiWorkspace, type IWorkspace } from '../interface';
 import {
   getWorkspaceContainerPath,
   getWorkspaceGitScope,
   getWorkspaceManagedPath,
   isHtmlWikiWorkspace,
-  isWikiWorkspace,
-  type IWorkspace,
-} from '../interface';
+} from '../workspacePaths';
 import type { IWorkspaceStrategy } from './types';
 
 const htmlRuntimeStrategy = {

@@ -1,4 +1,5 @@
-import { getWorkspaceType, isWikiWorkspace, type IWorkspace, WorkspaceType } from '../interface';
+import { isWikiWorkspace, type IWorkspace, WorkspaceType } from '../interface';
+import { getWorkspaceType } from '../workspacePaths';
 import { folderWikiStrategy } from './folderWikiStrategy';
 import { htmlWikiStrategy } from './htmlWikiStrategy';
 import type { IWorkspaceStrategy } from './types';
