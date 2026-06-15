@@ -354,10 +354,15 @@ export class WorkspaceView implements IWorkspaceViewService {
       const subWorkspaces = await workspaceService.getSubWorkspacesAsList(workspaceID);
       const hibernatedSubWorkspaces = subWorkspaces.filter(sw => sw.hibernated);
 
+      const strategy = getWorkspaceStrategy(workspace);
+      const startTask = strategy.runtime.usesNodeWikiWorker
+        ? this.authService.getUserName(workspace).then((userName) => container.get<IWikiService>(serviceIdentifier.Wiki).startWiki(workspaceID, userName))
+        : strategy.runtime.startupWorkspace(workspace);
+
       // First, update workspace state and start wiki server
       await Promise.all([
         workspaceService.update(workspaceID, { hibernated: false }),
-        this.authService.getUserName(workspace).then(userName => container.get<IWikiService>(serviceIdentifier.Wiki).startWiki(workspaceID, userName)),
+        startTask,
         ...hibernatedSubWorkspaces.map(async (subWorkspace) => {
           await workspaceService.update(subWorkspace.id, { hibernated: false });
         }),
@@ -471,13 +476,18 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
 
-    // fix #556 and #593: Ensure wiki worker is started before showing the view. This must happen before `showWorkspaceView` to ensure the worker is ready when view is created.
+    // fix #556 and #593: Ensure wiki runtime is started before showing the view.
     if (isWikiWorkspace(freshWorkspace) && !freshWorkspace.hibernated) {
-      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      const worker = wikiService.getWorker(nextWorkspaceID);
-      if (worker === undefined) {
-        const userName = await this.authService.getUserName(freshWorkspace);
-        await wikiService.startWiki(nextWorkspaceID, userName);
+      const strategy = getWorkspaceStrategy(freshWorkspace);
+      if (strategy.runtime.usesNodeWikiWorker) {
+        const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+        const worker = wikiService.getWorker(nextWorkspaceID);
+        if (worker === undefined) {
+          const userName = await this.authService.getUserName(freshWorkspace);
+          await wikiService.startWiki(nextWorkspaceID, userName);
+        }
+      } else {
+        await strategy.runtime.startupWorkspace(freshWorkspace);
       }
     }
 

@@ -11,7 +11,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { isHtmlWikiWorkspace, isWikiWorkspace, type INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace, type INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 // Import from appPaths to get the Electron-accurate Desktop path (handles OneDrive Desktop redirect)
@@ -94,6 +95,13 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           } else {
             throw new InitWikiGitSyncedWikiNoGitUserInfoError(gitUrl, userInfo);
           }
+        } else if (isHtmlWikiWorkspace(newWorkspace)) {
+          const gitScope = getWorkspaceGitScope(newWorkspace);
+          if (!gitScope?.managedRelativePath) {
+            throw new Error('HTML wiki workspace is missing git scope');
+          }
+          const gitService = container.get<IGitService>(serviceIdentifier.Git);
+          await gitService.initScopedWikiGit(gitScope.repoPath, gitScope.managedRelativePath);
         } else {
           const gitService = container.get<IGitService>(serviceIdentifier.Git);
           await gitService.initWikiGit(wikiFolderLocation, false);

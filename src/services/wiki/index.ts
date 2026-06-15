@@ -24,7 +24,8 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { isHtmlWikiWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
@@ -152,6 +153,10 @@ export class Wiki implements IWikiService {
     }
     if (!isWikiWorkspace(workspace)) {
       logger.error('Try to start wiki, but workspace is not a wiki workspace', { workspace, workspaceID });
+      return;
+    }
+    if (isHtmlWikiWorkspace(workspace)) {
+      logger.debug('skip startWiki for HTML wiki workspace', { workspaceID });
       return;
     }
     const { rootTiddler, readOnlyMode, tokenAuth, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
@@ -863,6 +868,9 @@ export class Wiki implements IWikiService {
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
     if (!isWikiWorkspace(workspace)) {
+      return;
+    }
+    if (isHtmlWikiWorkspace(workspace)) {
       return;
     }
     const { id, isSubWiki } = workspace;

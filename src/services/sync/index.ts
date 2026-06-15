@@ -13,6 +13,7 @@ import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { ISyncOptions, ISyncService } from './interface';
 
@@ -138,6 +139,12 @@ export class Sync implements ISyncService {
 
   public async checkCanSyncDueToNoDraft(workspaceID: string): Promise<boolean> {
     try {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+      const workspace = await workspaceService.get(workspaceID);
+      if (workspace && isHtmlWikiWorkspace(workspace)) {
+        return true;
+      }
+
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       // Add timeout so the sync flow doesn't hang forever when the wiki browser view is unresponsive
       const DRAFT_CHECK_TIMEOUT_MS = 5000;

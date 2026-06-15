@@ -9,7 +9,8 @@ import type { ISyncService } from '@services/sync/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { isHtmlWikiWorkspace, type IHtmlWikiWorkspace } from '@services/workspaces/interface';
+import type { IHtmlWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { readHtmlWikiFile, validateHtmlWikiFile, writeHtmlWikiFile } from './htmlFileIO';

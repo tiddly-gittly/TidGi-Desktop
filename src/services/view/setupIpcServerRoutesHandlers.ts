@@ -6,7 +6,8 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { isHtmlWikiWorkspace, isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { getWorkspaceStrategy } from '@services/workspaces/strategies';
 import type { ITiddlerFields } from 'tiddlywiki';
 
