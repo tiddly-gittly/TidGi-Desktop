@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { E2EArgsValidationError, validateCucumberArguments } from '../../scripts/validate-cucumber-arguments';
+import { E2EArgsValidationError, validateCucumberArguments } from '../../scripts/run-e2e';
 
 describe('validateCucumberArguments', () => {
   it('allows empty args (full suite)', () => {
