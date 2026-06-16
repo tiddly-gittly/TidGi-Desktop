@@ -8,14 +8,6 @@ export function getDefaultAgentDefinitionId(): string {
   return builtinAgents[0]?.id ?? 'memeloop:general-assistant';
 }
 
-/** Flat ToolCallingMatch used by Desktop tool files (non-discriminated union). */
-export interface ToolCallingMatch {
-  found: boolean;
-  toolId?: string;
-  parameters?: Record<string, unknown>;
-  originalText?: string;
-}
-
 export type { AgentDefinition, AgentDefinitionToolConfig as AgentToolConfig, AgentHeartbeatConfig, HostAgentToolConfig } from 'memeloop';
 
 export interface IAgentDefinitionService {
