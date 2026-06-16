@@ -10,7 +10,7 @@ import { DataSource, Repository } from 'typeorm';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 
-import type { AgentInstance, AgentInstanceMessage } from './interface';
+import type { AgentInstance, ChatMessage } from 'memeloop';
 import { AGENT_INSTANCE_FIELDS, createAgentMessage, toDatabaseCompatibleMessage } from './utilities';
 
 /**
@@ -18,13 +18,13 @@ import { AGENT_INSTANCE_FIELDS, createAgentMessage, toDatabaseCompatibleMessage 
  */
 export async function saveUserMessage(
   agentMessageRepo: Repository<AgentInstanceMessageEntity>,
-  userMessage: AgentInstanceMessage,
+  userMessage: ChatMessage,
 ): Promise<void> {
   const now = new Date();
   const summary = {
-    id: userMessage.id,
+    messageId: userMessage.messageId,
     role: userMessage.role,
-    agentId: userMessage.agentId,
+    conversationId: userMessage.conversationId,
     isToolResult: !!userMessage.metadata?.isToolResult,
     isPersisted: !!userMessage.metadata?.isPersisted,
   };
@@ -59,13 +59,13 @@ export function createDebouncedMessageUpdater(
   debounceMs: number,
   /** Callback to notify agent subscribers after a new message is created */
   onNewMessage?: (agentId: string, updatedAgent: AgentInstance) => void,
-): (messageData: AgentInstanceMessage, agentId?: string) => void {
+): (messageData: ChatMessage, agentId?: string) => void {
   return debounce(
-    async (messageData_: AgentInstanceMessage, aid?: string) => {
+    async (messageData_: ChatMessage, aid?: string) => {
       try {
         await dataSource.transaction(async transaction => {
           const messageRepo = transaction.getRepository(AgentInstanceMessageEntity);
-          const messageEntity = await messageRepo.findOne({ where: { id: messageId } });
+          const messageEntity = await messageRepo.findOne({ where: { messageId } });
 
           if (messageEntity) {
             // Update existing message
@@ -73,11 +73,8 @@ export function createDebouncedMessageUpdater(
             if (messageData_.contentType) messageEntity.contentType = messageData_.contentType;
             if (messageData_.metadata) messageEntity.metadata = messageData_.metadata;
             if (messageData_.duration !== undefined) messageEntity.duration = messageData_.duration ?? undefined;
-            if (messageData_.modified instanceof Date) {
-              if (!messageEntity.modified || messageData_.modified.getTime() < new Date(messageEntity.modified).getTime()) {
-                messageEntity.modified = messageData_.modified;
-              }
-            }
+            messageEntity.timestamp = messageData_.timestamp;
+            messageEntity.lamportClock = messageData_.lamportClock;
 
             const startSave = new Date();
             logger.debug('Updating existing message (start save)', {
@@ -131,6 +128,11 @@ export function createDebouncedMessageUpdater(
 
               const updatedAgent: AgentInstance = {
                 ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
+                aiApiConfig: agentEntity.aiApiConfig,
+                systemPrompt: '',
+                tools: [],
+                description: '',
+                version: '1',
                 messages: agentEntity.messages,
               };
               onNewMessage?.(aid, updatedAgent);

@@ -9,10 +9,14 @@ describe('agentRepository.createAgent', () => {
   const mockDefinition: AgentDefinition = {
     id: 'agent-def-1',
     name: 'Test Agent',
+    description: '',
+    systemPrompt: '',
+    tools: [],
+    version: '1',
     avatarUrl: 'avatar.png',
-    aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' } },
+    aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' }, modelParameters: {} },
     agentFrameworkID: 'memeloopTaskAgent',
-    agentFrameworkConfig: {},
+    agentFrameworkConfig: { prompts: [], plugins: [] },
   };
 
   const createMockRepo = () => {

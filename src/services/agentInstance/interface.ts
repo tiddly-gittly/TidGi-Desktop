@@ -1,120 +1,9 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { AgentInstance, AgentInstanceLatestStatus, AgentPromptDescription, ChatMessage, PromptConcatStreamState } from 'memeloop';
 import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import type { AgentDefinition } from '@services/agentDefinitionService';
-import type { AgentPromptDescription } from '@services/agentInstance/schema';
-import type { PromptConcatStreamState } from '@services/agentInstance/schema';
 import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './tools/scheduledTaskTypes';
-
-/**
- * Content of a session instance that user chat with an agent.
- * Inherits import { AgentFrameworkConfig } optional to allow fallback.
- * The instance can override the definition's configuration, or fall back to using it.
- */
-export interface AgentInstance extends Omit<AgentDefinition, 'name' | 'agentFrameworkConfig'> {
-  /** Agent description ID that generates this instance */
-  agentDefId: string;
-  /** Session name, optional in instance unlike definition */
-  name?: string;
-  /** Agent framework's config - optional, falls back to AgentDefinition.agentFrameworkConfig if not set */
-  agentFrameworkConfig?: Record<string, unknown>;
-  /**
-   * Message history.
-   * latest on top, so it's easy to get first one as user's latest input, and rest as history.
-   */
-  messages: AgentInstanceMessage[];
-  status: AgentInstanceLatestStatus;
-  /** Session creation time (converted from ISO string) */
-  created: Date;
-  /**
-   * Last update time (converted from ISO string).
-   * We don't need `created` for message because it might be stream generated, we only care about its complete time.
-   */
-  modified?: Date;
-  /**
-   * Indicates whether this agent instance is closed. Closed instances are not deleted from database
-   * but are hidden from the default list and don't consume resources.
-   */
-  closed?: boolean;
-  /**
-   * Indicates whether this agent instance is a preview instance used for testing during agent creation.
-   * Preview instances are excluded from normal agent instance lists and should be cleaned up automatically.
-   */
-  volatile?: boolean;
-  /**
-   * Indicates this instance was spawned by another agent (sub-agent).
-   * Sub-agent instances are hidden from the default user-facing list.
-   */
-  isSubAgent?: boolean;
-  /** Parent agent instance ID if this is a sub-agent */
-  parentAgentId?: string;
-}
-
-/**
- * Represents the state of a task within the A2A protocol.
- * @description An enumeration.
- */
-export type AgentInstanceState =
-  | 'submitted'
-  | 'working'
-  | 'input-required'
-  | 'completed'
-  | 'canceled'
-  | 'failed'
-  | 'unknown';
-
-/**
- * Represents the status of a task at a specific point in time.
- */
-export interface AgentInstanceLatestStatus {
-  /**
-   * The current state of the task.
-   */
-  state: AgentInstanceState;
-
-  /**
-   * An optional message associated with the current status (e.g., progress update, final response).
-   * @default undefined
-   */
-  message?: AgentInstanceMessage;
-
-  /** Creation time (converted from ISO string) */
-  created?: Date;
-  /** Last update time (converted from ISO string) */
-  modified?: Date;
-}
-
-export interface AgentInstanceMessage {
-  /** Message nano ID */
-  id: string;
-  agentId: string;
-  /** Message role */
-  role: 'user' | 'assistant' | 'agent' | 'tool' | 'error';
-  /** Message content */
-  content: string;
-  /**
-   * Reasoning or thinking content, separated from main content
-   * Primarily used with DeepSeek which returns reasoning content separately
-   */
-  reasoning_content?: string;
-  contentType?: string; // 'text/plain' | 'text/markdown' | 'text/html' | 'application/json' | 'application/json+ndjson';
-  /** Creation time (converted from ISO string) */
-  created?: Date;
-  /** Last update time (converted from ISO string) */
-  modified?: Date;
-  /** Message metadata */
-  metadata?: Record<string, unknown>;
-  /** Whether this message should be hidden from UI/history (default: false) */
-  hidden?: boolean;
-  /**
-   * Duration in rounds that this message should be included in AI context
-   * When set to a number > 0, the message will only be sent to AI for that many rounds from current position
-   * undefined/null means the message persists in AI context indefinitely (default behavior)
-   * 0 means the message is excluded from AI context immediately but remains visible in UI
-   */
-  duration?: number | null;
-}
 
 export interface AgentBackgroundTask {
   agentId: string;
@@ -241,7 +130,7 @@ export interface IAgentInstanceService {
    * @param messages Messages to be included in prompt generation
    * @returns Observable stream of processing states, with final state containing complete results
    */
-  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState>;
+  concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: ChatMessage[]): Observable<PromptConcatStreamState>;
 
   /**
    * Get JSON Schema for handler configuration
@@ -256,7 +145,7 @@ export interface IAgentInstanceService {
    * Made public so plugins can use it for message persistence
    * @param userMessage User message to save
    */
-  saveUserMessage(userMessage: AgentInstanceMessage): Promise<void>;
+  saveUserMessage(userMessage: ChatMessage): Promise<void>;
 
   /**
    * Debounced message update to reduce database writes
@@ -265,7 +154,7 @@ export interface IAgentInstanceService {
    * @param agentId Agent ID for status subscribers
    * @param debounceMs Debounce delay in milliseconds
    */
-  debounceUpdateMessage(message: AgentInstanceMessage, agentId?: string, debounceMs?: number): void;
+  debounceUpdateMessage(message: ChatMessage, agentId?: string, debounceMs?: number): void;
 
   /**
    * Resolve a pending tool approval request from the UI
