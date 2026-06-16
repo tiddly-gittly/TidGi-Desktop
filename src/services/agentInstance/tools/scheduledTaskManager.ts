@@ -375,7 +375,7 @@ export function cancelTasksForAgent(agentInstanceId: string): void {
 // Heartbeats are derived from AgentDefinition config and do NOT create DB rows.
 // They use the same internal timer infrastructure but with a separate namespace.
 
-import type { AgentHeartbeatConfig } from '@services/agentDefinitionService';
+import type { AgentHeartbeatConfig } from 'memeloop';
 
 interface HeartbeatState {
   nextWakeAtISO?: string;

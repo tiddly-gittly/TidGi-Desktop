@@ -108,6 +108,23 @@ Don't use `npm rebuild` or `npm install`, it doesn't works, it will still build 
 
 ```sh
 ./node_modules/.bin/electron-rebuild
+
+## GPU process isn't usable (SSH/xvfb)
+
+SSH 环境下 Electron GPU 进程崩溃：
+
+```
+GPU process launch failed: error_code=1002
+GPU process isn't usable. Goodbye.
+```
+
+加 `--disable-gpu --disable-software-rasterizer --in-process-gpu`：
+
+```sh
+xvfb-run -a npx electron-forge start -- --disable-gpu --disable-software-rasterizer --in-process-gpu &
+```
+
+API Key 改了 settings.json 后会被运行时写回旧值，先关应用再改再启。
 ```
 
 See <https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713> if you still have problem rebuild opencv for @nut-tree/nut-js
