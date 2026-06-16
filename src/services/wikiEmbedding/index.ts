@@ -3,7 +3,6 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import { WikiChannel } from '@/constants/channels';
-import type { AiAPIConfig } from '@services/agentInstance/schema';
 import type { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -12,6 +11,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 
+import type { AiAPIConfig } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import type { EmbeddingStatus, IWikiEmbeddingService, SearchResult } from './interface';
 

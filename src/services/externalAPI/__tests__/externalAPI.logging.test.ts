@@ -1,4 +1,3 @@
-import type { AgentDefinition } from '@services/agentDefinitionService';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
@@ -25,7 +24,7 @@ describe('ExternalAPIService logging', () => {
 
     // Clear existing data and add test data
     await agentDefRepo.clear();
-    const example = (getBuiltinAgentDefinitions() as unknown as AgentDefinition[])[0];
+    const example = (getBuiltinAgentDefinitions())[0];
     await agentDefRepo.save({ id: example.id });
   });
 
