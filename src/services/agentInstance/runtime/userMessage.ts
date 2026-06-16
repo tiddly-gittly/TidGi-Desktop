@@ -9,7 +9,7 @@ import * as fs from 'fs-extra';
 import { nanoid } from 'nanoid';
 import * as path from 'path';
 
-import type { AgentInstanceMessage } from '../interface';
+import type { ChatMessage } from 'memeloop';
 import { createAgentMessage } from '../utilities';
 
 export type AgentUserContent = {
@@ -23,7 +23,7 @@ export async function createMemeLoopUserMessage(input: {
   content: AgentUserContent;
   messageId?: string;
   beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
-}): Promise<AgentInstanceMessage> {
+}): Promise<ChatMessage> {
   const messageId = input.messageId ?? nanoid();
   const metadata: Record<string, unknown> = {};
 
