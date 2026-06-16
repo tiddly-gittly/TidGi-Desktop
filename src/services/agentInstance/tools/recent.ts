@@ -75,7 +75,7 @@ const recentDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-recent') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-recent') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('wiki-recent', executeRecent);
   },

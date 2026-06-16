@@ -107,7 +107,7 @@ const listTiddlersDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-list-tiddlers') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-list-tiddlers') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('wiki-list-tiddlers', executeListTiddlers);
   },

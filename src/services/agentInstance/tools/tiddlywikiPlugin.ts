@@ -256,7 +256,7 @@ const tiddlyWikiPluginDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
-    if (!toolCall || toolCall.toolId !== 'tiddlywiki-plugin') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'tiddlywiki-plugin') return;
     if (agentFrameworkContext.isCancelled()) return;
 
     // At this point, config should be available from the context

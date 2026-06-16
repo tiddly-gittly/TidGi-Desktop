@@ -11,9 +11,9 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { AiAPIConfig } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-import type { AiAPIConfig } from '../schema';
 import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 
 /**
@@ -344,6 +344,7 @@ const wikiSearchDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
+    if (!toolCall.found) return;
 
     // Check cancellation
     if (agentFrameworkContext.isCancelled()) {
@@ -351,7 +352,7 @@ const wikiSearchDefinition = registerToolDefinition({
       return;
     }
 
-    const aiConfig = agentFrameworkContext.agent.aiApiConfig as AiAPIConfig | undefined;
+    const aiConfig = agentFrameworkContext.agent.aiApiConfig;
 
     if (toolCall.toolId === 'wiki-search') {
       await executeToolCall('wiki-search', (parameters) => executeWikiSearch(parameters, aiConfig));

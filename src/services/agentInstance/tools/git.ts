@@ -240,6 +240,7 @@ const gitToolDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
+    if (!toolCall.found) return;
     if (agentFrameworkContext.isCancelled()) return;
 
     if (toolCall.toolId === 'git-log') {
