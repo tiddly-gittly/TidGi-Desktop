@@ -1,5 +1,6 @@
+import { ChatMessage } from 'memeloop';
+
 import { AgentInstanceService } from '@services/agentInstance';
-import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AgentPromptDescription } from '@services/agentInstance/schema';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -56,7 +57,7 @@ Object.defineProperty(window, 'observables', {
       providers$: new BehaviorSubject([]).asObservable(),
     },
     agentInstance: {
-      concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]) => {
+      concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: ChatMessage[]) => {
         const agentInstanceService = container.get<AgentInstanceService>(serviceIdentifier.AgentInstance);
         // Initialize handlers (plugins and built-in handlers) before calling concatPrompt
         // We need to wrap this in an Observable since concatPrompt returns an Observable

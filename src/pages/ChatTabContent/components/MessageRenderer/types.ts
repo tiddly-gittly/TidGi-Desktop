@@ -1,12 +1,12 @@
 // Message renderer type definitions
 
-import { AgentInstanceMessage } from '@/services/agentInstance/interface';
+import type { ChatMessage } from 'memeloop';
 
 /**
  * Interface for message renderer components
  */
 export interface MessageRendererProps {
-  message: AgentInstanceMessage;
+  message: ChatMessage;
   isUser: boolean;
 }
 

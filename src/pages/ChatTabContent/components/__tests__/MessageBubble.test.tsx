@@ -7,11 +7,11 @@ import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
-import { AgentInstanceMessage } from '@/services/agentInstance/interface';
+import type { ChatMessage } from 'memeloop';
 import { MessageBubble } from '../MessageBubble';
 
 // Mock the agent chat store
-const mockMessages = new Map<string, AgentInstanceMessage>();
+const mockMessages = new Map<string, ChatMessage>();
 const mockOrderedMessageIds: string[] = [];
 const mockStreamingMessageIds = new Set<string>();
 
@@ -45,7 +45,7 @@ describe('MessageBubble - Duration-based Graying', () => {
 
   it('should show AI tool call message as grayed out when duration=1', () => {
     // Setup messages with AI tool call having duration=1
-    const userMessage: AgentInstanceMessage = {
+    const userMessage = {
       id: 'user-1',
       role: 'user',
       content: 'Help me search for something',
@@ -53,9 +53,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined, // User messages don't expire
-    };
+    } as unknown as ChatMessage;
 
-    const aiToolCallMessage: AgentInstanceMessage = {
+    const aiToolCallMessage = {
       id: 'ai-tool-call',
       role: 'assistant',
       content: '<tool_use name="wiki-search">{"workspaceName": "Test Wiki", "filter": "[tag[test]]"}</tool_use>',
@@ -67,9 +67,9 @@ describe('MessageBubble - Duration-based Graying', () => {
         containsToolCall: true,
         toolId: 'wiki-search',
       },
-    };
+    } as unknown as ChatMessage;
 
-    const toolResultMessage: AgentInstanceMessage = {
+    const toolResultMessage = {
       id: 'tool-result',
       role: 'user',
       content: '<functions_result>Tool: wiki-search\nResult: Found some content</functions_result>',
@@ -81,9 +81,9 @@ describe('MessageBubble - Duration-based Graying', () => {
         isToolResult: true,
         toolId: 'wiki-search',
       },
-    };
+    } as unknown as ChatMessage;
 
-    const finalAiMessage: AgentInstanceMessage = {
+    const finalAiMessage = {
       id: 'ai-final',
       role: 'assistant',
       content: 'Based on the search results, here is the information you requested...',
@@ -91,7 +91,7 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined, // Final response doesn't expire
-    };
+    } as unknown as ChatMessage;
 
     // Setup store state
     mockMessages.set('user-1', userMessage);
@@ -116,7 +116,7 @@ describe('MessageBubble - Duration-based Graying', () => {
 
   it('should show tool result message as grayed out when duration=1', () => {
     // Setup messages where tool result has duration=1
-    const userMessage: AgentInstanceMessage = {
+    const userMessage = {
       id: 'user-1',
       role: 'user',
       content: 'Help me search for something',
@@ -124,9 +124,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined,
-    };
+    } as unknown as ChatMessage;
 
-    const toolResultMessage: AgentInstanceMessage = {
+    const toolResultMessage = {
       id: 'tool-result',
       role: 'user',
       content: '<functions_result>Tool: wiki-search\nResult: Found some content</functions_result>',
@@ -138,9 +138,9 @@ describe('MessageBubble - Duration-based Graying', () => {
         isToolResult: true,
         toolId: 'wiki-search',
       },
-    };
+    } as unknown as ChatMessage;
 
-    const finalAiMessage: AgentInstanceMessage = {
+    const finalAiMessage = {
       id: 'ai-final',
       role: 'assistant',
       content: 'Based on the search results...',
@@ -148,7 +148,7 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined,
-    };
+    } as unknown as ChatMessage;
 
     // Setup store state
     mockMessages.set('user-1', userMessage);
@@ -171,7 +171,7 @@ describe('MessageBubble - Duration-based Graying', () => {
   });
 
   it('should show messages without duration as normal (not grayed out)', () => {
-    const userMessage: AgentInstanceMessage = {
+    const userMessage = {
       id: 'user-1',
       role: 'user',
       content: 'Regular user message',
@@ -179,9 +179,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined, // No duration, should not be grayed out
-    };
+    } as unknown as ChatMessage;
 
-    const aiMessage: AgentInstanceMessage = {
+    const aiMessage = {
       id: 'ai-1',
       role: 'assistant',
       content: 'Regular AI response',
@@ -189,7 +189,7 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined, // No duration, should not be grayed out
-    };
+    } as unknown as ChatMessage;
 
     // Setup store state
     mockMessages.set('user-1', userMessage);
@@ -214,7 +214,7 @@ describe('MessageBubble - Duration-based Graying', () => {
   });
 
   it('should show messages with duration=0 as grayed out immediately', () => {
-    const messageWithZeroDuration: AgentInstanceMessage = {
+    const messageWithZeroDuration = {
       id: 'zero-duration',
       role: 'assistant',
       content: 'Message with zero duration',
@@ -222,9 +222,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: 0, // Immediately expired
-    };
+    } as unknown as ChatMessage;
 
-    const laterMessage: AgentInstanceMessage = {
+    const laterMessage = {
       id: 'later',
       role: 'user',
       content: 'Later message',
@@ -232,7 +232,7 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined,
-    };
+    } as unknown as ChatMessage;
 
     // Setup store state
     mockMessages.set('zero-duration', messageWithZeroDuration);
@@ -258,8 +258,9 @@ describe('MessageBubble - Duration-based Graying', () => {
 
   it('should correctly calculate graying for messages with mixed durations', () => {
     // Setup multiple messages with different duration values
-    const messages: AgentInstanceMessage[] = [
+    const messages: Array<ChatMessage & { id?: string }> = [
       {
+        messageId: 'msg-1',
         id: 'msg-1',
         role: 'user',
         content: 'Message 1 - no duration',
@@ -269,6 +270,7 @@ describe('MessageBubble - Duration-based Graying', () => {
         duration: undefined, // Should not be grayed
       },
       {
+        messageId: 'msg-2',
         id: 'msg-2',
         role: 'assistant',
         content: 'Message 2 - duration 3',
@@ -278,6 +280,7 @@ describe('MessageBubble - Duration-based Graying', () => {
         duration: 3, // Should not be grayed (roundsFromCurrent=2 < duration=3)
       },
       {
+        messageId: 'msg-3',
         id: 'msg-3',
         role: 'user',
         content: 'Message 3 - duration 1',
@@ -287,6 +290,7 @@ describe('MessageBubble - Duration-based Graying', () => {
         duration: 1, // Should be grayed (roundsFromCurrent=1 >= duration=1)
       },
       {
+        messageId: 'msg-4',
         id: 'msg-4',
         role: 'assistant',
         content: 'Message 4 - latest',
@@ -295,11 +299,11 @@ describe('MessageBubble - Duration-based Graying', () => {
         modified: new Date(),
         duration: undefined, // Should not be grayed
       },
-    ];
+    ] as unknown as Array<ChatMessage & { id?: string }>;
 
     // Setup store state
     for (const msg of messages) {
-      mockMessages.set(msg.id, msg);
+      mockMessages.set(msg.id ?? msg.messageId ?? '', msg);
     }
     mockOrderedMessageIds.push('msg-1', 'msg-2', 'msg-3', 'msg-4');
 
@@ -329,7 +333,7 @@ describe('MessageBubble - Duration-based Graying', () => {
   });
 
   it('should not display avatar for tool role messages', () => {
-    const toolMessage: AgentInstanceMessage = {
+    const toolMessage = {
       id: 'tool-msg',
       role: 'tool',
       content: '<functions_result>Tool: wiki-search\nResult: Found some content</functions_result>',
@@ -341,7 +345,7 @@ describe('MessageBubble - Duration-based Graying', () => {
         isToolResult: true,
         toolId: 'wiki-search',
       },
-    };
+    } as unknown as ChatMessage;
 
     // Setup store state
     mockMessages.set('tool-msg', toolMessage);
@@ -364,7 +368,7 @@ describe('MessageBubble - Duration-based Graying', () => {
   });
 
   it('should use same background color for tool and assistant messages', () => {
-    const assistantMessage: AgentInstanceMessage = {
+    const assistantMessage = {
       id: 'assistant-msg',
       role: 'assistant',
       content: 'This is an assistant response',
@@ -372,9 +376,9 @@ describe('MessageBubble - Duration-based Graying', () => {
       contentType: 'text/plain',
       modified: new Date(),
       duration: undefined,
-    };
+    } as unknown as ChatMessage;
 
-    const toolMessage: AgentInstanceMessage = {
+    const toolMessage = {
       id: 'tool-msg',
       role: 'tool',
       content: 'Tool result plain text',
@@ -386,7 +390,7 @@ describe('MessageBubble - Duration-based Graying', () => {
         isToolResult: true,
         toolId: 'test-tool',
       },
-    };
+    } as unknown as ChatMessage;
 
     // Setup store state
     mockMessages.set('assistant-msg', assistantMessage);
@@ -419,7 +423,7 @@ describe('MessageBubble - Duration-based Graying', () => {
 
   it('should display wiki tiddler attachments as chips in message bubble', () => {
     // Setup a message with wiki tiddler attachments
-    const messageWithTiddlers: AgentInstanceMessage = {
+    const messageWithTiddlers = {
       id: 'msg-with-tiddlers',
       role: 'user',
       content: 'Here is some information from the wiki',
@@ -443,7 +447,7 @@ describe('MessageBubble - Duration-based Graying', () => {
           },
         ],
       },
-    };
+    } as unknown as ChatMessage;
 
     mockMessages.set('msg-with-tiddlers', messageWithTiddlers);
     mockOrderedMessageIds.push('msg-with-tiddlers');
@@ -468,7 +472,7 @@ describe('MessageBubble - Duration-based Graying', () => {
 
   it('should use different navigation strategies for split view vs normal tab', () => {
     // Setup a message with wiki tiddlers
-    const messageWithTiddlers: AgentInstanceMessage = {
+    const messageWithTiddlers = {
       id: 'msg-with-tiddlers-split',
       role: 'user',
       content: 'Check the wiki tiddler',
@@ -486,7 +490,7 @@ describe('MessageBubble - Duration-based Graying', () => {
           },
         ],
       },
-    };
+    } as unknown as ChatMessage;
 
     mockMessages.set('msg-with-tiddlers-split', messageWithTiddlers);
     mockOrderedMessageIds.push('msg-with-tiddlers-split');

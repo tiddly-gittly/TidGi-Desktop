@@ -1,4 +1,4 @@
-import type { AgentInstanceMessage } from '@services/agentInstance/interface';
+import type { ChatMessage } from 'memeloop';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, StreamingActions } from '../types';
 
@@ -37,13 +37,13 @@ export const streamingActionsMiddleware: StateCreator<AgentChatStoreType, [], []
     return get().messages.get(messageId);
   },
 
-  streamMessageStart: (message: AgentInstanceMessage) => {
+  streamMessageStart: (message: ChatMessage) => {
     set(state => {
       const newMessages = new Map(state.messages);
-      newMessages.set(message.id, message);
-      const newOrderedIds = [...state.orderedMessageIds, message.id];
+      newMessages.set(message.messageId, message);
+      const newOrderedIds = [...state.orderedMessageIds, message.messageId];
       const newStreamingMessageIds = new Set(state.streamingMessageIds);
-      newStreamingMessageIds.add(message.id);
+      newStreamingMessageIds.add(message.messageId);
       return {
         messages: newMessages,
         orderedMessageIds: newOrderedIds,
