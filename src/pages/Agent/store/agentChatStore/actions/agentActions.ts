@@ -1,5 +1,5 @@
 import { AgentDefinition } from '@services/agentDefinitionService';
-import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
+import type { AgentInstance, ChatMessage } from 'memeloop';
 import { Subscription } from 'rxjs';
 import type { StoreApi } from 'zustand';
 import type { AgentChatStoreType, AgentWithoutMessages } from '../types';
@@ -13,28 +13,26 @@ export const agentActions = (
   ): Promise<{
     agent: AgentWithoutMessages;
     agentDef: AgentDefinition | null;
-    messages: Map<string, AgentInstanceMessage>;
+    messages: Map<string, ChatMessage>;
     orderedMessageIds: string[];
   }> => {
     // Convert message array to a Map with ID as key
-    const messagesMap = new Map<string, AgentInstanceMessage>();
+    const messagesMap = new Map<string, ChatMessage>();
     // Create an ordered array of message IDs
     const orderedIds: string[] = [];
 
     // Split agent data into agent without messages and message Map
     const { messages, ...agentWithoutMessages } = fullAgent;
 
-    // Sort messages by modified time in ascending order
+    // Sort messages by timestamp in ascending order (core canonical field)
     const sortedMessages = [...messages].sort((a, b) => {
-      const dateA = a.modified ? new Date(a.modified).getTime() : 0;
-      const dateB = b.modified ? new Date(b.modified).getTime() : 0;
-      return dateA - dateB;
+      return a.timestamp - b.timestamp;
     });
 
     // Populate message Map and ordered ID array
     sortedMessages.forEach(message => {
-      messagesMap.set(message.id, message);
-      orderedIds.push(message.id);
+      messagesMap.set(message.messageId, message);
+      orderedIds.push(message.messageId);
     });
 
     // If there's an agentDefId, load the agentDef
@@ -212,12 +210,12 @@ export const agentActions = (
           // This is a failsafe in case message-level status updates were missed
           if (isAgentTerminalState) {
             fullAgent.messages.forEach(message => {
-              if (get().streamingMessageIds.has(message.id)) {
+              if (get().streamingMessageIds.has(message.messageId)) {
                 console.log('[AgentChat] Agent terminal state, clearing streaming for message', {
-                  messageId: message.id,
+                  messageId: message.messageId,
                   agentState: fullAgent.status.state,
                 });
-                get().setMessageStreaming(message.id, false);
+                get().setMessageStreaming(message.messageId, false);
               }
             });
           }
@@ -225,63 +223,64 @@ export const agentActions = (
           // Build a new Map with new messages added immutably
           const newMessagesMap = new Map(currentMessages);
           fullAgent.messages.forEach(message => {
-            const existingMessage = currentMessages.get(message.id);
+            const existingMessage = currentMessages.get(message.messageId);
 
             // If this is a new message
             if (!existingMessage) {
-              newMessagesMap.set(message.id, message);
-              newMessageIds.push(message.id);
+              newMessagesMap.set(message.messageId, message);
+              newMessageIds.push(message.messageId);
 
               // Subscribe to AI message updates
-              if ((message.role === 'agent' || message.role === 'assistant') && !messageSubscriptions.has(message.id)) {
+              if ((message.role === 'agent' || message.role === 'assistant') && !messageSubscriptions.has(message.messageId)) {
                 // Only mark as streaming if agent is still working
                 // This prevents marking completed messages as streaming when loading history
                 if (!isAgentTerminalState) {
-                  get().setMessageStreaming(message.id, true);
+                  get().setMessageStreaming(message.messageId, true);
                 }
                 // Create message-specific subscription
                 messageSubscriptions.set(
-                  message.id,
-                  window.observables.agentInstance.subscribeToAgentUpdates(agentId, message.id).subscribe({
+                  message.messageId,
+                  window.observables.agentInstance.subscribeToAgentUpdates(agentId, message.messageId).subscribe({
                     next: (status) => {
-                      if (status?.message) {
+                      const statusMessage = status?.message;
+                      if (statusMessage) {
                         // Immutably update the message so zustand notifies subscribers
                         set(state => {
                           const newMessages = new Map(state.messages);
-                          newMessages.set(status.message!.id, status.message!);
+                          newMessages.set(statusMessage.messageId, statusMessage);
                           return { messages: newMessages };
                         });
                         // Clear streaming flag when status is completed
                         if (status.state === 'completed' || status.state === 'failed' || status.state === 'canceled' || status.state === 'input-required') {
                           console.log('[AgentChat] Message completed via status update, clearing streaming', {
-                            messageId: status.message.id,
+                            messageId: statusMessage.messageId,
                             state: status.state,
                           });
-                          get().setMessageStreaming(status.message.id, false);
+                          get().setMessageStreaming(statusMessage.messageId, false);
                         }
                       }
                     },
                     error: (error_: unknown) => {
-                      console.error('[AgentChat] Message subscription error', { messageId: message.id, error: error_ });
+                      console.error('[AgentChat] Message subscription error', { messageId: message.messageId, error: error_ });
                       void window.service.native.log(
                         'error',
-                        `Error in message subscription for ${message.id}`,
+                        `Error in message subscription for ${message.messageId}`,
                         {
                           function: 'agentActions.subscribeToUpdates.messageSubscription',
                           error: error_,
                         },
                       );
                       // Clean up on error
-                      get().setMessageStreaming(message.id, false);
-                      messageSubscriptions.delete(message.id);
+                      get().setMessageStreaming(message.messageId, false);
+                      messageSubscriptions.delete(message.messageId);
                     },
                     complete: () => {
                       console.log('[AgentChat] Message subscription completed', {
-                        messageId: message.id,
+                        messageId: message.messageId,
                         streamingIds: Array.from(get().streamingMessageIds),
                       });
-                      get().setMessageStreaming(message.id, false);
-                      messageSubscriptions.delete(message.id);
+                      get().setMessageStreaming(message.messageId, false);
+                      messageSubscriptions.delete(message.messageId);
                     },
                   }),
                 );

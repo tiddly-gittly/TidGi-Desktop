@@ -16,7 +16,7 @@ import { fields } from './fields';
  * for conditional field logic and cross-field validation
  */
 export interface ExtendedFormContext {
-  rootFormData?: Record<string, unknown>;
+  rootFormData?: AgentFrameworkConfig;
   onFormDataChange?: (formData: AgentFrameworkConfig) => void;
 }
 
