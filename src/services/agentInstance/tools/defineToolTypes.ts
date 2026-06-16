@@ -3,11 +3,8 @@
  *
  * Extracted from defineTool.ts to reduce file size and improve importability.
  */
-import type { ToolCallingMatch } from '@services/agentDefinitionService';
-import type { IPrompt } from 'memeloop';
-import type { findPromptById } from 'memeloop';
+import type { ChatMessage, findPromptById, IPrompt, ToolCallingMatch } from 'memeloop';
 import type { z } from 'zod/v4';
-import type { AgentInstanceMessage } from '../interface';
 import type { AIResponseContext, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool } from './types';
 
 /**
@@ -69,7 +66,7 @@ export interface ToolHandlerContext<TConfigSchema extends z.ZodType> {
   prompts: IPrompt[];
 
   /** Message history */
-  messages: AgentInstanceMessage[];
+  messages: ChatMessage[];
 
   /** Agent framework context */
   agentFrameworkContext: PromptConcatHookContext['agentFrameworkContext'];
@@ -99,6 +96,9 @@ export interface ResponseHandlerContext<
 
   /** Parsed tool call from response (first match, backward compatible) */
   toolCall: ToolCallingMatch | null;
+
+  /** Convenience guard: true when toolCall is a matched call. */
+  hasToolCall: boolean;
 
   /** All parsed tool calls from response (for parallel tool call support) */
   allToolCalls: Array<ToolCallingMatch & { found: true }>;

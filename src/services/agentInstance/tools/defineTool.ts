@@ -10,14 +10,14 @@
  * - Schema for LLM-callable tool parameters (injected into prompts)
  * - Hook handlers for different lifecycle events
  */
-import type { ToolCallingMatch } from '@services/agentDefinitionService';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { matchAllToolCallings } from 'memeloop';
 import { findPromptById, type IPrompt, schemaToToolContent } from 'memeloop';
+import type { ChatMessage, ToolCallingMatch } from 'memeloop';
 import type { z } from 'zod/v4';
-import type { AgentInstanceMessage, IAgentInstanceService } from '../interface';
+import type { IAgentInstanceService } from '../interface';
 import { evaluateApproval, requestApproval } from './approval';
 
 /**
@@ -258,6 +258,7 @@ export function defineTool<
             agentFrameworkContext,
             response,
             toolCall,
+            hasToolCall: toolCall !== null && toolCall.found,
             allToolCalls: allCalls,
             isParallel,
             agentFrameworkConfig,
@@ -278,7 +279,7 @@ export function defineTool<
               toolName: TToolName,
               executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
             ): Promise<boolean> => {
-              if (!toolCall || toolCall.toolId !== toolName) {
+              if (!toolCall || !toolCall.found || toolCall.toolId !== toolName) {
                 return false;
               }
 
@@ -389,8 +390,6 @@ export function defineTool<
             },
 
             addToolResult: (options: AddToolResultOptions) => {
-              const now = new Date();
-
               // Truncate excessively long results to prevent context window overflow
               let resultContent = options.result;
               if (resultContent.length > MAX_TOOL_RESULT_CHARS) {
@@ -404,14 +403,16 @@ Tool: ${options.toolName}
 Parameters: ${JSON.stringify(options.parameters)}
 ${options.isError ? 'Error' : 'Result'}: ${resultContent}
 </functions_result>`;
+              const messageId = `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-              const toolResultMessage: AgentInstanceMessage = {
-                id: `tool-result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                agentId: agentFrameworkContext.agent.id,
+              const toolResultMessage: ChatMessage = {
+                messageId,
+                conversationId: agentFrameworkContext.agent.id,
+                originNodeId: 'tidgi-desktop',
+                timestamp: Date.now(),
+                lamportClock: Date.now(),
                 role: 'tool',
                 content: toolResultText,
-                created: now,
-                modified: now,
                 duration: options.duration ?? 1,
                 metadata: {
                   isToolResult: true,
@@ -444,11 +445,10 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
                   void (async () => {
                     try {
                       const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-                      if (!latestAiMessage.created) latestAiMessage.created = new Date();
                       await agentInstanceService.saveUserMessage(latestAiMessage);
                       agentInstanceService.debounceUpdateMessage(latestAiMessage, agentFrameworkContext.agent.id, 0);
                     } catch (error) {
-                      logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.id });
+                      logger.warn('Failed to persist AI message with tool call', { error, messageId: latestAiMessage.messageId });
                       latestAiMessage.metadata = { ...latestAiMessage.metadata, isPersisted: false };
                     }
                   })();
@@ -461,7 +461,7 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
                   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
                   await agentInstanceService.saveUserMessage(toolResultMessage);
                 } catch (error) {
-                  logger.warn('Failed to persist tool result', { error, messageId: toolResultMessage.id });
+                  logger.warn('Failed to persist tool result', { error, messageId: toolResultMessage.messageId });
                   toolResultMessage.metadata = { ...toolResultMessage.metadata, isPersisted: false };
                 }
               })();
@@ -469,7 +469,7 @@ ${options.isError ? 'Error' : 'Result'}: ${resultContent}
               logger.debug('Tool result added', {
                 toolName: options.toolName,
                 isError: options.isError,
-                messageId: toolResultMessage.id,
+                messageId: toolResultMessage.messageId,
               });
             },
 
