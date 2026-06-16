@@ -12,7 +12,7 @@ import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 
-import type { AgentInstance, AgentInstanceMessage } from './interface';
+import type { AgentInstance, ChatMessage } from 'memeloop';
 import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
 
 export async function createAgent(
@@ -41,7 +41,7 @@ export async function createAgent(
     throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
   }
 
-  const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition as Required<Pick<typeof agentDefinition, 'name'>> & typeof agentDefinition);
+  const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition);
 
   if (options?.preview || options?.volatile) {
     instanceData.volatile = true;
@@ -75,16 +75,22 @@ export async function getAgent(
   const instanceEntity = await agentInstanceRepo.findOne({
     where: { id: agentId },
     relations: { messages: true },
-    order: { messages: { modified: 'ASC' } },
+    order: { messages: { timestamp: 'ASC' } },
   });
   if (!instanceEntity) return undefined;
 
   const messages = (instanceEntity.messages || []).slice().sort((a, b) => {
-    const aTime = a.created ? new Date(a.created).getTime() : (a.modified ? new Date(a.modified).getTime() : 0);
-    const bTime = b.created ? new Date(b.created).getTime() : (b.modified ? new Date(b.modified).getTime() : 0);
-    return aTime - bTime;
+    return a.timestamp - b.timestamp;
   });
-  return { ...pick(instanceEntity, AGENT_INSTANCE_FIELDS), messages };
+  return {
+    ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
+    aiApiConfig: instanceEntity.aiApiConfig,
+    systemPrompt: '',
+    tools: [] as string[],
+    description: '',
+    version: '1',
+    messages: messages,
+  };
 }
 
 export async function updateAgent(
@@ -96,7 +102,7 @@ export async function updateAgent(
   const instanceEntity = await agentInstanceRepo.findOne({
     where: { id: agentId },
     relations: { messages: true },
-    order: { messages: { modified: 'ASC' } },
+    order: { messages: { timestamp: 'ASC' } },
   });
 
   if (!instanceEntity) {
@@ -110,15 +116,17 @@ export async function updateAgent(
   // Handle message updates if provided
   if (data.messages && data.messages.length > 0) {
     for (const message of data.messages) {
-      const existingMessage = instanceEntity.messages?.find(m => m.id === message.id);
+      const messageId = message.messageId;
+      const existingMessage = instanceEntity.messages?.find(m => m.messageId === messageId);
       if (existingMessage) {
         existingMessage.content = message.content;
-        existingMessage.modified = message.modified || new Date();
+        existingMessage.timestamp = message.timestamp;
+        existingMessage.lamportClock = message.lamportClock;
         if (message.metadata) existingMessage.metadata = message.metadata;
         if (message.contentType) existingMessage.contentType = message.contentType;
         await agentMessageRepo.save(existingMessage);
       } else {
-        const messageData = pick(message, MESSAGE_FIELDS) as AgentInstanceMessage;
+        const messageData = pick(message, MESSAGE_FIELDS) as ChatMessage;
         const messageEntity = agentMessageRepo.create(toDatabaseCompatibleMessage(messageData));
         await agentMessageRepo.save(messageEntity);
         if (!instanceEntity.messages) instanceEntity.messages = [];
@@ -127,7 +135,15 @@ export async function updateAgent(
     }
   }
 
-  return { ...pick(instanceEntity, AGENT_INSTANCE_FIELDS), messages: instanceEntity.messages || [] };
+  return {
+    ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
+    aiApiConfig: instanceEntity.aiApiConfig,
+    systemPrompt: '',
+    tools: [] as string[],
+    description: '',
+    version: '1',
+    messages: instanceEntity.messages || [],
+  };
 }
 
 export async function deleteAgent(
@@ -135,7 +151,7 @@ export async function deleteAgent(
   agentMessageRepo: Repository<AgentInstanceMessageEntity>,
   agentId: string,
 ): Promise<void> {
-  await agentMessageRepo.delete({ agentId });
+  await agentMessageRepo.delete({ conversationId: agentId });
   await agentInstanceRepo.delete(agentId);
   logger.info(`Deleted agent instance: ${agentId}`);
 }
@@ -166,5 +182,5 @@ export async function getAgents(
     order: { created: 'DESC' },
   });
 
-  return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS));
+  return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS)) as unknown as Array<Omit<AgentInstance, 'messages'>>;
 }

@@ -2,11 +2,9 @@ import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
-import type { AgentHeartbeatConfig } from '@services/agentDefinitionService';
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
-import type { AgentPromptDescription } from '@services/agentInstance/schema';
-import { getPromptConcatAgentFrameworkConfigJsonSchema, type PromptConcatStreamState } from '@services/agentInstance/schema';
-import { initializePluginSystem } from '@services/agentInstance/tools';
+import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/schema';
+import { initializePluginSystem, pluginRegistry } from '@services/agentInstance/tools';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
@@ -16,20 +14,21 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { promptConcatStream } from 'memeloop';
+import {
+  type AgentFrameworkConfig,
+  type AgentHeartbeatConfig,
+  type AgentInstance,
+  type AgentInstanceLatestStatus,
+  type AgentPromptDescription,
+  type ChatMessage,
+  promptConcatStream,
+  type PromptConcatStreamState,
+} from 'memeloop';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
-import type {
-  AgentBackgroundTask,
-  AgentInstance,
-  AgentInstanceLatestStatus,
-  AgentInstanceMessage,
-  IAgentInstanceService,
-  SetBackgroundAlarmInput,
-  SetBackgroundHeartbeatInput,
-} from './interface';
-import { MemeLoopDesktopRuntime } from './memeloop/runtime';
+import type { AgentBackgroundTask, IAgentInstanceService, SetBackgroundAlarmInput, SetBackgroundHeartbeatInput } from './interface';
+import { MemeLoopDesktopRuntime } from './runtime/runtime';
 import { cancelAlarm, scheduleAlarmTimer } from './tools/alarmClock';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
 import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
@@ -68,7 +67,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
   private memeLoopRuntime: MemeLoopDesktopRuntime | null = null;
   private cancelTokenMap: Map<string, { value: boolean }> = new Map();
-  private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
+  private debouncedUpdateFunctions: Map<string, (message: ChatMessage, agentId?: string) => void> = new Map();
 
   public async initialize(): Promise<void> {
     try {
@@ -252,14 +251,15 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   private async persistMemeLoopError(agentId: string, error_: unknown): Promise<void> {
-    const now = new Date();
-    const message: AgentInstanceMessage = {
-      id: `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      agentId,
+    const id = `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const message: ChatMessage = {
+      messageId: id,
+      conversationId: agentId,
+      originNodeId: 'tidgi-desktop',
+      timestamp: Date.now(),
+      lamportClock: Date.now(),
       role: 'error',
       content: `Error: ${error_ instanceof Error ? error_.message : String(error_)}`,
-      created: now,
-      modified: now,
       duration: 1,
       metadata: {
         errorDetail: error_ instanceof Error ? { message: error_.message, name: error_.name } : { message: String(error_) },
@@ -271,7 +271,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.debounceUpdateMessage(message, agentId, 0);
       const agent = await this.getAgent(agentId);
       if (agent) {
-        const existingIndex = agent.messages.findIndex(item => item.id === message.id);
+        const existingIndex = agent.messages.findIndex(item => item.messageId === id);
         if (existingIndex >= 0) {
           agent.messages[existingIndex] = message;
         } else {
@@ -444,7 +444,7 @@ export class AgentInstanceService implements IAgentInstanceService {
               try {
                 subject.next({
                   state: 'failed',
-                  message: {} as AgentInstanceMessage,
+                  message: {} as ChatMessage,
                   modified: new Date(),
                 });
                 subject.complete();
@@ -512,10 +512,10 @@ export class AgentInstanceService implements IAgentInstanceService {
                 const parts = key.split(':');
                 const messageId = parts[1];
                 const subject = this.statusSubjects.get(key);
-                const message = agent.messages.find(m => m.id === messageId);
+                const message = agent.messages.find(m => m.messageId === messageId);
                 if (subject) {
                   try {
-                    const message_ = message || ({} as AgentInstanceMessage);
+                    const message_ = message || ({} as ChatMessage);
                     logger.debug('propagate canceled to subscription', { function: 'cancelAgent', subscriptionKey: key });
                     subject.next({
                       state: 'canceled',
@@ -660,7 +660,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     });
     if (agent) {
       const deletedSet = new Set(messageIds);
-      agent.messages = (agent.messages ?? []).filter(m => !deletedSet.has(m.id));
+      agent.messages = (agent.messages ?? []).filter(m => !deletedSet.has(m.messageId));
       await this.agentInstanceRepository.save(agent);
     }
   }
@@ -671,7 +671,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       throw new Error(`Agent instance not found: ${agentId}`);
     }
 
-    const userMessage = agent.messages.find(m => m.id === userMessageId);
+    const userMessage = agent.messages.find(m => m.messageId === userMessageId);
     if (!userMessage) {
       throw new Error(`User message not found: ${userMessageId}`);
     }
@@ -704,7 +704,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       throw new Error(`Agent instance not found: ${agentId}`);
     }
 
-    const userMessage = agent.messages.find(m => m.id === userMessageId);
+    const userMessage = agent.messages.find(m => m.messageId === userMessageId);
     if (!userMessage) {
       throw new Error(`User message not found: ${userMessageId}`);
     }
@@ -932,13 +932,13 @@ export class AgentInstanceService implements IAgentInstanceService {
         // Try to get initial status
         this.getAgent(agentId).then(agent => {
           if (agent) {
-            const message = agent.messages.find(m => m.id === messageId);
+            const message = agent.messages.find(m => m.messageId === messageId);
             if (message) {
               // 创建状态对象，注意不再检查 isComplete
               const status: AgentInstanceLatestStatus = {
                 state: agent.status.state,
                 message,
-                modified: message.modified,
+                modified: new Date(message.timestamp),
               };
 
               this.statusSubjects.get(statusKey)?.next(status);
@@ -985,26 +985,26 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
+  public async saveUserMessage(userMessage: ChatMessage): Promise<void> {
     this.ensureRepositories();
     try {
       await saveUserMessageHelper(this.agentMessageRepository!, userMessage);
     } catch (error) {
       logger.error('Failed to save user message', {
         error,
-        messageId: userMessage.id,
-        agentId: userMessage.agentId,
+        messageId: userMessage.messageId,
+        agentId: userMessage.conversationId,
       });
       throw error;
     }
   }
 
   public debounceUpdateMessage(
-    message: AgentInstanceMessage,
+    message: ChatMessage,
     agentId?: string,
     debounceMs = 300,
   ): void {
-    const messageId = message.id;
+    const messageId = message.messageId;
     // Use agentId:messageId as key so we can clean up by agentId prefix
     const debounceKey = agentId ? `${agentId}:${messageId}` : messageId;
 
@@ -1015,7 +1015,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         this.statusSubjects.get(statusKey)?.next({
           state: 'working',
           message,
-          modified: message.modified ?? new Date(),
+          modified: new Date(message.timestamp),
         });
       }
     }
@@ -1046,17 +1046,18 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
+  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: ChatMessage[]): Observable<PromptConcatStreamState> {
     logger.debug('AgentInstanceService.concatPrompt called', {
       hasPromptConfig: !!promptDescription.agentFrameworkConfig,
-      promptConfigKeys: Object.keys(promptDescription.agentFrameworkConfig || {}),
+      promptConfigKeys: Object.keys(promptDescription.agentFrameworkConfig ?? {}),
       messagesCount: messages.length,
     });
 
     return new Observable<PromptConcatStreamState>((observer) => {
       const processStream = async () => {
         try {
-          // Create a minimal framework context for prompt concatenation
+          const emptyConfig: AgentFrameworkConfig = { prompts: [], plugins: [] };
+          // Include Desktop tool registry so that concatPrompt can find defineTool plugins
           const frameworkContext = {
             agent: {
               id: 'temp',
@@ -1064,13 +1065,14 @@ export class AgentInstanceService implements IAgentInstanceService {
               agentDefId: 'temp',
               status: { state: 'working' as const, modified: new Date() },
               created: new Date(),
-              agentFrameworkConfig: {},
+              agentFrameworkConfig: emptyConfig,
             },
-            agentDef: { id: 'temp', name: 'temp', agentFrameworkConfig: promptDescription.agentFrameworkConfig || {} },
+            agentDef: { id: 'temp', name: 'temp', agentFrameworkConfig: promptDescription.agentFrameworkConfig ?? emptyConfig },
+            tools: { getPromptPlugins: () => pluginRegistry },
             isCancelled: () => false,
           };
 
-          const streamGenerator = promptConcatStream(promptDescription as never, messages as never, frameworkContext as never);
+          const streamGenerator = promptConcatStream(promptDescription, messages, frameworkContext as never);
           for await (const state of streamGenerator) {
             observer.next(state);
             if (state.isComplete) {
@@ -1081,7 +1083,6 @@ export class AgentInstanceService implements IAgentInstanceService {
         } catch (error) {
           logger.error('Error in AgentInstanceService.concatPrompt', {
             error,
-            promptDescriptionId: (promptDescription as AgentPromptDescription).id,
             messagesCount: messages.length,
           });
           observer.error(error);

@@ -1,104 +1,10 @@
 /**
- * Desktop-specific AI config & prompt types.
- * Minimal survival of `promptConcat/promptConcatSchema` after migrating the runtime to memeloop.
- * Only keep what the remaining Desktop UI and services reference.
+ * Desktop-specific helpers for prompt-concat UI forms.
+ * All shared types (AiAPIConfig, AgentFrameworkConfig, PromptConcatStreamState, etc.)
+ * live in memeloop and are re-exported here only for legacy import paths.
  */
 
-export interface ModelSelection {
-  provider: string;
-  model: string;
-  [key: string]: unknown;
-}
-
-export interface ModelParameters {
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  [key: string]: unknown;
-}
-
-export interface AiAPIConfig {
-  default?: ModelSelection;
-  embedding?: ModelSelection;
-  speech?: ModelSelection;
-  imageGeneration?: ModelSelection;
-  transcriptions?: ModelSelection;
-  free?: ModelSelection;
-  modelParameters: ModelParameters;
-  [key: string]: unknown;
-}
-
-/** @deprecated Use memeloop's AgentFrameworkConfig for runtime; keep here for Desktop-only UI/schema flows. */
-export interface DesktopAgentFrameworkConfig {
-  prompts?: unknown[];
-  response?: unknown[];
-  plugins?: unknown[];
-  [key: string]: unknown;
-}
-
-/** Desktop UI alias for DesktopAgentFrameworkConfig — matches memeloop PromptNode[] for backward compat. */
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-export type AgentFrameworkConfig = DesktopAgentFrameworkConfig & { prompts?: import('memeloop').PromptNode[] };
-
-/** Desktop UI IPrompt — mirrors memeloop PromptNode for schema editor/tree. */
-export interface IPrompt {
-  id: string;
-  caption: string;
-  enabled?: boolean;
-  role?: 'system' | 'user' | 'assistant' | 'tool';
-  tags?: string[];
-  text?: string;
-  children?: IPrompt[];
-  source?: string[];
-}
-
-export interface AgentPromptDescription {
-  id: string;
-  api?: { provider: string; model: string };
-  modelParameters?: ModelParameters;
-  agentFrameworkConfig: Record<string, unknown>;
-  aiApiConfig?: AiAPIConfig;
-  [key: string]: unknown;
-}
-
-export interface PromptConcatPluginPreview {
-  id: string;
-  toolId?: string;
-  caption?: string;
-  [key: string]: unknown;
-}
-
-export interface PromptConcatStreamState {
-  processedPrompts: unknown[];
-  flatPrompts: unknown[];
-  step: 'plugin' | 'finalize' | 'flatten' | 'complete';
-  currentPlugin?: PromptConcatPluginPreview;
-  progress?: number;
-  isComplete: boolean;
-}
-
-/**
- * Desktop IPromptConcatTool — registered tools' plugin config shape.
- * Each tool registers its parameters under `${toolId}Param`.
- */
-export interface IPromptConcatTool {
-  [key: string]: unknown;
-  id: string;
-  caption?: string;
-  content?: string;
-  enabled?: boolean;
-  forbidOverrides?: boolean;
-  toolId: string;
-  /** Per-tool approval configuration */
-  approval?: {
-    mode: 'auto' | 'confirm';
-    allowPatterns?: string[];
-    denyPatterns?: string[];
-    timeoutMs?: number;
-  };
-  /** Per-tool execution timeout in ms */
-  timeoutMs?: number;
-}
+export type { AgentFrameworkConfig, AgentPromptDescription, AiAPIConfig, PromptConcatPluginPreview, PromptConcatStreamState, PromptNode as IPrompt } from 'memeloop';
 
 /** Inline replacement for deleted promptConcatSchema/jsonSchema.ts. */
 export function getPromptConcatAgentFrameworkConfigJsonSchema(): Record<string, unknown> {
