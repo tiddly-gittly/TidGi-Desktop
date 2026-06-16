@@ -72,7 +72,7 @@ const backlinksDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-backlinks') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-backlinks') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('wiki-backlinks', executeBacklinks);
   },

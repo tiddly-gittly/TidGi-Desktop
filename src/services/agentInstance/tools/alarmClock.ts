@@ -182,6 +182,7 @@ const alarmClockDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
+    if (!toolCall.found) return;
     const agentId = agentFrameworkContext.agent.id;
 
     // ── legacy alarm-clock ────────────────────────────────────────────────

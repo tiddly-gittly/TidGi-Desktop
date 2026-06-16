@@ -161,7 +161,7 @@ const editTiddlerDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'edit-tiddler') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'edit-tiddler') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('edit-tiddler', executeEditTiddler);
   },

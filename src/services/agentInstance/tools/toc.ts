@@ -87,7 +87,7 @@ const tocDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-toc') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-toc') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('wiki-toc', executeToc);
   },

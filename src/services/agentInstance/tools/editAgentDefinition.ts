@@ -7,6 +7,7 @@ import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { AgentFrameworkConfig } from 'memeloop';
 import { z } from 'zod/v4';
 import { registerToolDefinition } from './defineTool';
 
@@ -81,6 +82,7 @@ const editAgentDefinitionDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
+    if (!toolCall.found) return;
     const agentId = agentFrameworkContext.agent.id;
 
     if (toolCall.toolId === 'edit-heartbeat') {
@@ -117,8 +119,10 @@ const editAgentDefinitionDefinition = registerToolDefinition({
         const agentDefinition = await agentDefinitionService.getAgentDef(agent.agentDefId);
         if (!agentDefinition) throw new Error(`Agent definition not found: ${agent.agentDefId}`);
 
-        const updatedConfig = {
-          ...(agentDefinition.agentFrameworkConfig ?? {}),
+        const updatedConfig: AgentFrameworkConfig = {
+          prompts: agentDefinition.agentFrameworkConfig?.prompts ?? [],
+          plugins: agentDefinition.agentFrameworkConfig?.plugins ?? [],
+          response: agentDefinition.agentFrameworkConfig?.response,
           [parameters.field]: parameters.value,
         };
 

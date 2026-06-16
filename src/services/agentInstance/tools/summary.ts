@@ -41,7 +41,7 @@ const summaryDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult }) {
-    if (!toolCall || toolCall.toolId !== 'summary') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'summary') return;
 
     const parameters = toolCall.parameters as z.infer<typeof SummaryToolSchema>;
     logger.debug('Summary tool called — agent loop will terminate', { textLength: parameters.text.length });

@@ -140,7 +140,7 @@ const spawnAgentDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
-    if (!toolCall || toolCall.toolId !== 'spawn-agent') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'spawn-agent') return;
     if (agentFrameworkContext.isCancelled()) return;
 
     const timeoutMs = config?.defaultTimeoutMs ?? 120000;
