@@ -1,7 +1,7 @@
 import { logger } from '@services/libs/log';
 import fs from 'fs-extra';
 
-import { AiAPIConfig } from '@services/agentInstance/schema';
+import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
 import type { AIImageGenerationResponse, AIProviderConfig } from './interface';
 

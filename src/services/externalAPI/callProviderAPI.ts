@@ -7,7 +7,7 @@ import { ModelMessage, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider-v2';
 
 import { getFormattedContent } from '@/pages/ChatTabContent/components/types';
-import { AiAPIConfig } from '@services/agentInstance/schema';
+import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
 

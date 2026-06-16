@@ -1,6 +1,6 @@
 import { logger } from '@services/libs/log';
 
-import { AiAPIConfig } from '@services/agentInstance/schema';
+import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
 import type { AIProviderConfig, AISpeechResponse } from './interface';
 
