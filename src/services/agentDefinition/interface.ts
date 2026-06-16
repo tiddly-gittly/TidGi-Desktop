@@ -1,7 +1,6 @@
 import { AgentChannel } from '@/constants/channels';
-import type { AiAPIConfig } from '@services/agentInstance/schema';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { getBuiltinAgentDefinitions } from 'memeloop';
+import { type AgentDefinition, getBuiltinAgentDefinitions } from 'memeloop';
 
 /** ID of the built-in agent definition to use as the default when creating a new agent. */
 export function getDefaultAgentDefinitionId(): string {
@@ -17,32 +16,7 @@ export interface ToolCallingMatch {
   originalText?: string;
 }
 
-export interface AgentToolConfig {
-  toolId: string;
-  enabled?: boolean;
-  parameters?: Record<string, unknown>;
-  tags?: string[];
-}
-
-export interface AgentHeartbeatConfig {
-  enabled: boolean;
-  intervalSeconds: number;
-  message: string;
-  activeHoursStart?: string;
-  activeHoursEnd?: string;
-}
-
-export interface AgentDefinition {
-  id: string;
-  name?: string;
-  description?: string;
-  avatarUrl?: string;
-  agentFrameworkID?: string;
-  agentFrameworkConfig: Record<string, unknown>;
-  aiApiConfig?: Partial<AiAPIConfig>;
-  agentTools?: AgentToolConfig[];
-  heartbeat?: AgentHeartbeatConfig;
-}
+export type { AgentDefinition, AgentDefinitionToolConfig as AgentToolConfig, AgentHeartbeatConfig, HostAgentToolConfig } from 'memeloop';
 
 export interface IAgentDefinitionService {
   initialize(): Promise<void>;

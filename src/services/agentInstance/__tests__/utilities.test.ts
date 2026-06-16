@@ -1,3 +1,4 @@
+import type { AgentDefinition } from 'memeloop';
 import { describe, expect, it } from 'vitest';
 import { createAgentInstanceData } from '../utilities';
 
@@ -6,18 +7,11 @@ describe('createAgentInstanceData', () => {
     const agentDefinition = {
       id: 'test-agent-def',
       name: 'Test Agent',
-      agentFrameworkConfig: {
-        prompts: [
-          {
-            text: 'You are a helpful assistant.',
-            role: 'system',
-          },
-        ],
-      },
+      agentFrameworkConfig: undefined,
       agentFrameworkID: 'memeloopTaskAgent',
     };
 
-    const { instanceData } = createAgentInstanceData(agentDefinition);
+    const { instanceData } = createAgentInstanceData(agentDefinition as unknown as AgentDefinition);
 
     expect(instanceData.agentFrameworkConfig).toBeUndefined();
     expect(instanceData.agentDefId).toBe('test-agent-def');
@@ -30,10 +24,10 @@ describe('createAgentInstanceData', () => {
       id: 'test-agent-def-no-config',
       name: 'Test Agent No Config',
       agentFrameworkID: 'memeloopTaskAgent',
-      agentFrameworkConfig: {}, // Required by AgentDefinition interface
+      agentFrameworkConfig: undefined,
     };
 
-    const { instanceData } = createAgentInstanceData(agentDefinition);
+    const { instanceData } = createAgentInstanceData(agentDefinition as unknown as AgentDefinition);
 
     expect(instanceData.agentFrameworkConfig).toBeUndefined();
     expect(instanceData.agentDefId).toBe('test-agent-def-no-config');

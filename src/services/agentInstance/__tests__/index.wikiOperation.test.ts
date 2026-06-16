@@ -1,6 +1,8 @@
 import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
-import type { AgentInstance, IAgentInstanceService } from '@services/agentInstance/interface';
+import type { AgentInstance } from 'memeloop';
+
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -32,6 +34,7 @@ describe('AgentInstanceService Wiki Operation', () => {
     // Setup test agent instance using data from taskAgents.json
     const exampleAgent = defaultAgents[0];
     testAgentInstance = {
+      ...exampleAgent,
       id: nanoid(),
       agentDefId: exampleAgent.id,
       name: 'Test Agent',
@@ -46,13 +49,14 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     // Ensure the wiki-operation tool is configured for this agent so
     // MemeLoop's taskAgent will pick it up when the LLM returns tool calls.
+    const baseConfig = exampleAgent.agentFrameworkConfig ?? { prompts: [], plugins: [] };
     const agentDefWithWikiPlugin = {
       ...exampleAgent,
       agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {
-        ...(exampleAgent.agentFrameworkConfig as Record<string, unknown>),
+        ...baseConfig,
         plugins: [
-          ...((exampleAgent.agentFrameworkConfig as Record<string, unknown> | undefined)?.plugins as Array<{ toolId: string }> ?? []),
+          ...baseConfig.plugins,
           { toolId: 'wikiOperation' },
         ],
       },
