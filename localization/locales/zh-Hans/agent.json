@@ -53,6 +53,7 @@
       "ModelNoVisionSupport": "模型 {{model}} 不支持视觉/图片输入。请选择具有“视觉”功能标签的模型。",
       "NoDefaultModel": "未配置默认模型。请在设置中配置默认模型。",
       "ProviderNotFound": "未找到提供商 {{provider}}。请在设置中进行配置。",
+      "StreamRetryExhausted": "流式响应失败，已重试多次，请稍后再试。",
       "Title": "配置问题"
     },
     "FileValidation": {
