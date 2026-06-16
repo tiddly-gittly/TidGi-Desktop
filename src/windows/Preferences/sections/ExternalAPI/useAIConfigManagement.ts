@@ -41,19 +41,19 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
           // Get instance config first
           const agentInstance = await window.service.agentInstance.getAgent(agentId);
           if (agentInstance?.aiApiConfig && Object.keys(agentInstance.aiApiConfig).length > 0) {
-            finalConfig = agentInstance.aiApiConfig as AiAPIConfig;
+            finalConfig = agentInstance.aiApiConfig;
           } else if (agentInstance?.agentDefId) {
             // Auto-resolve agentDefId from agentId and get definition config
             const agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
             if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
-              finalConfig = agentDefinition.aiApiConfig as AiAPIConfig;
+              finalConfig = agentDefinition.aiApiConfig;
             }
           }
         } else if (agentDefId) {
           // Get definition config
           const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
           if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
-            finalConfig = agentDefinition.aiApiConfig as AiAPIConfig;
+            finalConfig = agentDefinition.aiApiConfig;
           }
         }
 

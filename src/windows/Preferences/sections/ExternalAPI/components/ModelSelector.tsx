@@ -1,6 +1,6 @@
 import { Autocomplete, Box, Typography } from '@mui/material';
-import { ModelSelection } from '@services/agentInstance/schema';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import type { ModelSelection } from 'memeloop';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
