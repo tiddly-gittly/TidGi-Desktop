@@ -27,7 +27,7 @@ import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from 
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-const defaultAgentsList = getBuiltinAgentDefinitions() as unknown as AgentDefinition[];
+const defaultAgentsList = getBuiltinAgentDefinitions();
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;
@@ -36,12 +36,16 @@ function mergeTextOverride(value: string | null | undefined, fallback: string | 
 function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
   const defaultAgent = defaultAgentsList.find(agent => agent.id === entity.id);
   return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...defaultAgent,
     id: entity.id,
-    name: mergeTextOverride(entity.name, defaultAgent?.name),
-    description: mergeTextOverride(entity.description, defaultAgent?.description),
+    name: mergeTextOverride(entity.name, defaultAgent?.name) ?? '',
+    description: mergeTextOverride(entity.description, defaultAgent?.description) ?? '',
     avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
     agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || 'memeloopTaskAgent',
-    agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? {},
+    agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? { prompts: [], plugins: [] },
     aiApiConfig: entity.aiApiConfig ?? defaultAgent?.aiApiConfig,
     agentTools: entity.agentTools ?? defaultAgent?.agentTools,
     heartbeat: entity.heartbeat ?? defaultAgent?.heartbeat,
@@ -117,7 +121,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     Object.assign(
       existing,
       Object.fromEntries(
-        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']))
+        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'agentTools', 'heartbeat']))
           .filter(([, v]) => v !== undefined),
       ),
     );
@@ -172,7 +176,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
             for (const tiddler of tiddlers) {
               const agentDefinition = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspace.name);
               if (agentDefinition) {
-                templates.push(agentDefinition as unknown as AgentDefinition);
+                templates.push(agentDefinition);
               }
             }
           }
