@@ -82,6 +82,14 @@ export function useMessageHandling({
   }, []);
 
   /**
+   * Clear all attachments
+   */
+  const clearAttachments = useCallback(() => {
+    setSelectedFile(undefined);
+    setSelectedWikiTiddlers([]);
+  }, []);
+
+  /**
    * Handle sending a message
    */
   const handleSendMessage = useCallback(async () => {
@@ -138,5 +146,6 @@ export function useMessageHandling({
     selectedWikiTiddlers,
     handleWikiTiddlerSelect,
     handleRemoveWikiTiddler,
+    clearAttachments,
   };
 }

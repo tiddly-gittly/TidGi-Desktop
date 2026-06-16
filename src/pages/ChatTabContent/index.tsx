@@ -1,63 +1,54 @@
-// Chat tab content component - Modular version with message rendering system
+// Chat tab content component - built on @memeloop/react-ui + assistant-ui
 
 import { Box, CircularProgress, Typography } from '@mui/material';
-// Import services and hooks
-import React, { useEffect } from 'react';
+import type { ChatMessage } from 'memeloop';
+import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
-// Import internal components
+import { type MemeLoopChatAdapter, MemeLoopComposer, MemeLoopRuntimeProvider, MemeLoopThread, useAui } from '@memeloop/react-ui/chat';
+
 import { ChatHeader } from './components/ChatHeader';
-import { InputContainer } from './components/InputContainer';
-import { MessagesContainer } from './components/MessagesContainer';
-import { ScrollToBottomButton } from './components/ScrollToBottomButton';
-
-// Import AIModelParametersDialog
-import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
-
-// Import custom hooks
+import { MessageRenderer } from './components/MessageRenderer';
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { useRegisterMessageRenderers } from './hooks/useMessageRendering';
-import { useScrollHandling } from './hooks/useScrollHandling';
-
-// Import utils
 import { isChatTab } from './utils/tabTypeGuards';
 
-// Import store hooks to fetch agent data
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
-import { useShallow } from 'zustand/react/shallow';
-import { AgentWithoutMessages } from '../Agent/store/agentChatStore/types';
+import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 import { TabItem } from '../Agent/types/tab';
 
-/**
- * Props interface for ChatTabContent component
- * Only accepts a tab object as its single prop
- */
 interface ChatTabContentProps {
-  tab: TabItem; // Tab will be checked if it's a chat tab
-  isSplitView?: boolean; // Whether this chat tab is in a split view
+  tab: TabItem;
+  isSplitView?: boolean;
+}
+
+/**
+ * Wraps ChatHeader so it can read the current composer text from the assistant-ui
+ * runtime for prompt preview.
+ */
+function HeaderWithComposerText(props: React.ComponentProps<typeof ChatHeader>) {
+  const aui = useAui();
+  const text = aui.composer().getState().text;
+  return <ChatHeader {...props} inputText={text} />;
 }
 
 /**
  * Chat Tab Content Component
- * Displays a chat interface for interacting with an AI agent
- * Only works with IChatTab objects
+ * Displays a chat interface for interacting with an AI agent.
  */
 export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView }) => {
   const { t } = useTranslation('agent');
 
-  // Type checking
   if (!isChatTab(tab)) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography color='error'>
-          {t('Agent.InvalidTabType')}
-        </Typography>
+        <Typography color='error'>{t('Agent.InvalidTabType')}</Typography>
       </Box>
     );
   }
 
-  // Get agent store
   const {
     fetchAgent,
     cancelAgent,
@@ -66,7 +57,12 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
     loading,
     error,
     agent,
-    streamingMessageIds, // Add streaming state to detect active generation
+    messages,
+    orderedMessageIds,
+    streamingMessageIds,
+    sendMessage: storeSendMessage,
+    deleteTurn,
+    retryTurn,
   } = useAgentChatStore(
     useShallow((state) => ({
       fetchAgent: state.fetchAgent,
@@ -76,191 +72,171 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
       loading: state.loading,
       error: state.error,
       agent: state.agent,
+      messages: state.messages,
+      orderedMessageIds: state.orderedMessageIds,
       streamingMessageIds: state.streamingMessageIds,
+      sendMessage: state.sendMessage,
+      deleteTurn: state.deleteTurn,
+      retryTurn: state.retryTurn,
     })),
   );
 
-  // Initialize scroll handling
   const {
-    isUserAtBottomReference,
-    scrollToBottom,
-    debouncedScrollToBottom,
-    isUserAtBottom,
-    hasInitialScrollBeenDone,
-    markInitialScrollAsDone,
-  } = useScrollHandling();
-
-  // Initialize message handling
-  const {
-    message,
-    setMessage,
     parametersOpen,
     setParametersOpen,
-    // Only use the variables that are needed
     handleOpenParameters,
-    handleMessageChange,
-    handleSendMessage,
-    handleKeyPress,
     selectedFile,
     handleFileSelect,
     handleClearFile,
     selectedWikiTiddlers,
     handleWikiTiddlerSelect,
     handleRemoveWikiTiddler,
+    clearAttachments,
   } = useMessageHandling({
     agentId: tab.agentId,
-    isUserAtBottom,
-    isUserAtBottomReference,
-    debouncedScrollToBottom,
+    isUserAtBottom: () => true,
+    isUserAtBottomReference: { current: true },
+    debouncedScrollToBottom: () => {},
   });
 
-  // Register message renderers
   useRegisterMessageRenderers();
 
-  // Setup agent subscription on mount or when tab.agentId changes
+  // Fetch agent and subscribe on tab/agent change.
   useEffect(() => {
     if (!tab.agentId) return;
 
-    // Log the agentId being used for debugging
     void window.service.native.log('info', 'ChatTabContent: Setting up agent subscription', {
       agentId: tab.agentId,
       tabId: tab.id,
       tabTitle: tab.title,
     });
 
-    // Fetch agent first
     void fetchAgent(tab.agentId);
-
-    // Then setup subscription
     const unsub = subscribeToUpdates(tab.agentId);
-
-    // Cleanup subscription on unmount or when tab.agentId changes
     return () => {
       if (unsub) unsub();
     };
   }, [tab.agentId, fetchAgent, subscribeToUpdates]);
-  const orderedMessageIds = useAgentChatStore(
-    useShallow((state) => state.orderedMessageIds),
+
+  const orderedMessages = useMemo(
+    () =>
+      orderedMessageIds
+        .map((id) => messages.get(id))
+        .filter((message): message is ChatMessage => message !== undefined),
+    [messages, orderedMessageIds],
   );
 
-  // Effect to handle initial scroll when agent is first loaded
-  useEffect(() => {
-    // Only scroll to bottom on initial agent load, not on every agent update
-    const currentAgent: AgentWithoutMessages | null = agent;
-    if (currentAgent && !loading && orderedMessageIds.length > 0) {
-      // Use a ref to track if initial scroll has happened for this agent
-      const agentId = currentAgent.id;
-
-      // Check if we've already scrolled for this agent
-      if (!hasInitialScrollBeenDone(agentId)) {
-        // Scroll to bottom on initial load
-        debouncedScrollToBottom();
-        // Mark this agent as scrolled in our ref
-        markInitialScrollAsDone(agentId);
-      }
-    }
-  }, [agent?.id, loading, debouncedScrollToBottom, hasInitialScrollBeenDone, markInitialScrollAsDone, orderedMessageIds]);
-
-  // Effect to scroll to bottom when messages change
-  useEffect(() => {
-    if (!orderedMessageIds.length) return;
-
-    // Always use debounced scroll to prevent UI jumping for all message updates
-    if (isUserAtBottomReference.current) {
-      debouncedScrollToBottom();
-    }
-  }, [orderedMessageIds.length, isUserAtBottomReference, debouncedScrollToBottom]);
-  const isWorking = loading || agent?.status.state === 'working'; /**
-   * Check if any messages are currently streaming by examining the streamingMessageIds Set
-   * When Set size > 0, it means there's at least one message being streamed from the AI
-   */
-
+  const isWorking = loading || agent?.status?.state === 'working';
   const isStreaming = streamingMessageIds.size > 0;
 
-  // Agent switching: create new agent instance with different definition, update tab
+  const adapter: MemeLoopChatAdapter = useMemo(
+    () => ({
+      messages: orderedMessages,
+      isRunning: isWorking,
+      isLoading: loading,
+      isMessageStreaming: (messageId) => streamingMessageIds.has(messageId),
+      error,
+      sendMessage: async ({ text, file, wikiTiddlers }) => {
+        await storeSendMessage(text, file, wikiTiddlers);
+        clearAttachments();
+      },
+      cancel: cancelAgent,
+      deleteTurn: async (userMessageId) => {
+        await deleteTurn(userMessageId);
+      },
+      retryTurn,
+    }),
+    [
+      orderedMessages,
+      isWorking,
+      loading,
+      streamingMessageIds,
+      error,
+      storeSendMessage,
+      clearAttachments,
+      cancelAgent,
+      deleteTurn,
+      retryTurn,
+    ],
+  );
+
   const updateTabData = useTabStore(useShallow((state) => state.updateTabData));
-  const handleSwitchAgent = React.useCallback(async (newAgentDefinitionId: string) => {
-    if (newAgentDefinitionId === tab.agentDefId) return;
-    try {
-      const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
-      // Update tab with new agent - this triggers useEffect[tab.agentId] which handles subscription cleanup/setup
-      updateTabData(tab.id, { agentId: newAgent.id, agentDefId: newAgentDefinitionId, title: newAgent.name });
-      // Load the new agent into the store
-      await fetchAgent(newAgent.id);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to switch agent', { error });
-    }
-  }, [tab.agentDefId, tab.id, updateTabData, fetchAgent]);
+  const handleSwitchAgent = React.useCallback(
+    async (newAgentDefinitionId: string) => {
+      if (newAgentDefinitionId === tab.agentDefId) return;
+      try {
+        const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
+        updateTabData(tab.id, {
+          agentId: newAgent.id,
+          agentDefId: newAgentDefinitionId,
+          title: newAgent.name,
+        });
+        await fetchAgent(newAgent.id);
+      } catch (error_) {
+        void window.service.native.log('error', 'Failed to switch agent', { error: error_ });
+      }
+    },
+    [tab.agentDefId, tab.id, updateTabData, fetchAgent],
+  );
+
+  const renderMessageContent = React.useCallback(
+    (message: ChatMessage, isUser: boolean) => <MessageRenderer message={message} isUser={isUser} />,
+    [],
+  );
+
+  const composer = (
+    <MemeLoopComposer
+      selectedFile={selectedFile}
+      selectedWikiTiddlers={selectedWikiTiddlers}
+      onFileSelect={handleFileSelect}
+      onWikiTiddlerSelect={handleWikiTiddlerSelect}
+      onClearFile={handleClearFile}
+      onRemoveWikiTiddler={handleRemoveWikiTiddler}
+      disabled={!agent || isWorking}
+      placeholder={t('Agent.StartConversation')}
+    />
+  );
+
+  const empty = (
+    <>
+      {!loading && !error && orderedMessageIds.length === 0 && (
+        <Box sx={{ textAlign: 'center', p: 4, color: 'text.secondary' }}>
+          <Typography>{t('Agent.StartConversation')}</Typography>
+        </Box>
+      )}
+      {loading && orderedMessageIds.length === 0 && (
+        <Box sx={{ textAlign: 'center', p: 4 }}>
+          <CircularProgress size={24} />
+          <Typography sx={{ mt: 2 }}>{t('Agent.LoadingChat')}</Typography>
+        </Box>
+      )}
+      {error && (
+        <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
+          <Typography>{error.message}</Typography>
+        </Box>
+      )}
+    </>
+  );
 
   return (
-    <Box
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Chat header with title and model selector */}
-      <ChatHeader
-        title={tab.title}
-        onOpenParameters={handleOpenParameters}
-        loading={isWorking}
-        inputText={message}
-        currentAgentDefId={tab.agentDefId}
-        onSwitchAgent={handleSwitchAgent}
-        isStreaming={isStreaming}
-        isSplitView={isSplitView}
+    <MemeLoopRuntimeProvider adapter={adapter}>
+      <MemeLoopThread
+        header={
+          <HeaderWithComposerText
+            title={tab.title}
+            onOpenParameters={handleOpenParameters}
+            loading={isWorking}
+            currentAgentDefId={tab.agentDefId}
+            onSwitchAgent={handleSwitchAgent}
+            isStreaming={isStreaming}
+            isSplitView={isSplitView}
+          />
+        }
+        empty={empty}
+        composerComponent={() => composer}
+        renderMessageContent={renderMessageContent}
       />
 
-      {/* Messages container with all chat bubbles */}
-      <Box sx={{ position: 'relative', flex: 1, overflow: 'hidden' }}>
-        <MessagesContainer messageIds={orderedMessageIds} isSplitView={isSplitView} onDeleteTurn={setMessage}>
-          {/* Error state */}
-          {error && (
-            <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-              <Typography>{error.message}</Typography>
-            </Box>
-          )}
-
-          {/* Empty state */}
-          {!loading && !error && orderedMessageIds.length === 0 && (
-            <Box sx={{ textAlign: 'center', p: 4, color: 'text.secondary' }}>
-              <Typography>{t('Agent.StartConversation')}</Typography>
-            </Box>
-          )}
-
-          {/* Loading state - when first loading the agent */}
-          {loading && orderedMessageIds.length === 0 && (
-            <Box sx={{ textAlign: 'center', p: 4 }}>
-              <CircularProgress size={24} />
-              <Typography sx={{ mt: 2 }}>{t('Agent.LoadingChat')}</Typography>
-            </Box>
-          )}
-        </MessagesContainer>
-
-        {/* Floating scroll to bottom button */}
-        <ScrollToBottomButton scrollToBottom={scrollToBottom} />
-      </Box>
-
-      {/* Input container for typing messages */}
-      <InputContainer
-        value={message}
-        onChange={handleMessageChange}
-        onSend={handleSendMessage}
-        onCancel={cancelAgent}
-        onKeyPress={handleKeyPress}
-        disabled={!agent || isWorking}
-        isStreaming={isStreaming}
-        selectedFile={selectedFile}
-        onFileSelect={handleFileSelect}
-        onClearFile={handleClearFile}
-        selectedWikiTiddlers={selectedWikiTiddlers}
-        onWikiTiddlerSelect={handleWikiTiddlerSelect}
-        onRemoveWikiTiddler={handleRemoveWikiTiddler}
-      />
-
-      {/* Model parameter dialog */}
       {parametersOpen && (
         <AIModelParametersDialog
           open={parametersOpen}
@@ -285,6 +261,6 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab, isSplitView
           }}
         />
       )}
-    </Box>
+    </MemeLoopRuntimeProvider>
   );
 };

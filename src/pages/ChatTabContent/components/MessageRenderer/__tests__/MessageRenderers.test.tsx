@@ -9,9 +9,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import type { AgentInstanceMessage } from '@/services/agentInstance/interface';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+import type { ChatMessage } from 'memeloop';
 
 // ── mocks ──────────────────────────────────────────────────────────────
 
@@ -49,13 +49,18 @@ Object.defineProperty(window, 'service', {
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => <ThemeProvider theme={lightTheme}>{children}</ThemeProvider>;
 
-function makeMessage(overrides: Partial<AgentInstanceMessage>): AgentInstanceMessage {
+function makeMessage(overrides: Partial<ChatMessage> & { id?: string; agentId?: string; modified?: Date }): ChatMessage {
   return {
-    id: 'msg-1',
-    agentId: 'agent-1',
+    messageId: 'msg-1',
+    conversationId: 'agent-1',
+    originNodeId: 'tidgi-desktop',
+    timestamp: Date.now(),
+    lamportClock: Date.now(),
     role: 'tool',
     content: '',
-    modified: new Date(),
+    metadata: {
+      agentId: overrides.agentId ?? 'agent-1',
+    },
     ...overrides,
   };
 }
@@ -175,7 +180,7 @@ describe('AskQuestionRenderer', () => {
     AskQuestionRenderer = mod.AskQuestionRenderer;
   });
 
-  const makeAskQuestionMessage = (data: Record<string, unknown>): AgentInstanceMessage =>
+  const makeAskQuestionMessage = (data: Record<string, unknown>): ChatMessage =>
     makeMessage({
       content: `<functions_result>\nTool: ask-question\nParameters: {}\nResult: ${JSON.stringify(data)}\n</functions_result>`,
     });
@@ -427,7 +432,7 @@ describe('ToolApprovalRenderer', () => {
     ToolApprovalRenderer = mod.ToolApprovalRenderer;
   });
 
-  const makeApprovalMessage = (): AgentInstanceMessage =>
+  const makeApprovalMessage = (): ChatMessage =>
     makeMessage({
       content: `<functions_result>\nTool: tool-approval\nParameters: {}\nResult: ${
         JSON.stringify({

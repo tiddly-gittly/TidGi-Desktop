@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinitionService';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/tools/scheduledTaskManager';
+import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatTabContent } from '../../../ChatTabContent';
@@ -432,7 +433,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
         return {
           ...previous,
-          agentFrameworkConfig: formData as Record<string, unknown>,
+          agentFrameworkConfig: formData as AgentFrameworkConfig,
         };
       },
     );

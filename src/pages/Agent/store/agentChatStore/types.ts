@@ -1,7 +1,7 @@
 import { AgentDefinition } from '@services/agentDefinitionService';
-import type { AgentInstance, AgentInstanceMessage } from '@services/agentInstance/interface';
 import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/schema';
 import { ModelMessage } from 'ai';
+import type { AgentInstance, ChatMessage } from 'memeloop';
 
 // Type for agent data without messages - exported for use in other components
 export interface AgentWithoutMessages extends Omit<AgentInstance, 'messages'> {
@@ -17,7 +17,7 @@ export interface AgentChatBaseState {
   // The current agent instance data, excluding messages
   agent: AgentWithoutMessages | null;
   // Stores all messages for the current agent, mapped by message ID
-  messages: Map<string, AgentInstanceMessage>;
+  messages: Map<string, ChatMessage>;
   // Stores the order of message IDs to maintain backend message order
   orderedMessageIds: string[];
   // Tracks which message IDs are currently streaming
@@ -48,13 +48,13 @@ export interface BasicActions {
   /** Set current agent */
   setAgent: (agentData: AgentWithoutMessages | null) => void;
   /** Set messages */
-  setMessages: (messages: AgentInstanceMessage[]) => void;
+  setMessages: (messages: ChatMessage[]) => void;
   /** Add a new message */
-  addMessage: (message: AgentInstanceMessage) => void;
+  addMessage: (message: ChatMessage) => void;
   /** Update an existing message */
-  updateMessage: (message: AgentInstanceMessage) => void;
+  updateMessage: (message: ChatMessage) => void;
   /** Start streaming a message */
-  streamMessageStart: (message: AgentInstanceMessage) => void;
+  streamMessageStart: (message: ChatMessage) => void;
   /** Update streaming message content */
   streamMessageContent: (content: string, messageId?: string) => void;
   /** End streaming a message */
@@ -105,7 +105,7 @@ export interface BasicActions {
   ) => Promise<{
     agent: AgentWithoutMessages;
     agentDef: AgentDefinition | null;
-    messages: Map<string, AgentInstanceMessage>;
+    messages: Map<string, ChatMessage>;
     orderedMessageIds: string[];
   }>;
 
@@ -148,7 +148,7 @@ export interface StreamingActions {
    * Gets a message by its ID from the messages map
    * @param messageId The ID of the message to retrieve
    */
-  getMessageById: (messageId: string) => AgentInstanceMessage | undefined;
+  getMessageById: (messageId: string) => ChatMessage | undefined;
 }
 
 // Preview dialog related actions interface

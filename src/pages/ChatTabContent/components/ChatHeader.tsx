@@ -2,7 +2,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import EditIcon from '@mui/icons-material/Edit';
 import TuneIcon from '@mui/icons-material/Tune';
-import { Box, CircularProgress, IconButton } from '@mui/material';
+import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import React, { useState } from 'react';
@@ -121,7 +121,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <BugReportIcon />
           </IconButton>
         )}
-        {loading && <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />}
+        {isStreaming && agent?.status?.progress
+          ? (
+            <Tooltip title={agent.status.progress}>
+              <Typography variant='caption' color='text.secondary' sx={{ mr: 1, whiteSpace: 'nowrap' }}>
+                {agent.status.progress}
+              </Typography>
+            </Tooltip>
+          )
+          : loading
+          ? <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />
+          : null}
         <CompactModelSelector agentDefId={agent?.agentDefId} />
         <IconButton
           size='small'
