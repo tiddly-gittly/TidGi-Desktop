@@ -2,9 +2,11 @@ import { closestCenter, DndContext, DragEndEvent, DragOverlay, DragStartEvent, P
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Box, Typography } from '@mui/material';
 import { ArrayFieldTemplateProps } from '@rjsf/utils';
+import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
+
 import { ArrayAddButton, ArrayContainer, ArrayHeader, ArrayItemCount, EmptyState, HelpTooltip, StyledFieldLabel } from '../components';
 import { ArrayItemProvider } from '../context/ArrayItemContext';
 import { ExtendedFormContext } from '../index';
@@ -168,12 +170,12 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     const path = fieldPathId?.path;
     if (!path || path.length === 0) {
       // If no path, this array is the root (unlikely but handle it)
-      formContext.onFormDataChange(newArrayData as never);
+      formContext.onFormDataChange(newArrayData as unknown as AgentFrameworkConfig);
       return;
     }
 
     // Deep clone and update the nested array
-    const newRootData = structuredClone(formContext.rootFormData);
+    const newRootData = structuredClone(formContext.rootFormData) as unknown as Record<string, unknown>;
     let current: Record<string, unknown> = newRootData;
 
     // Navigate to parent of the array
@@ -186,7 +188,7 @@ export const ArrayFieldTemplate: React.FC<ArrayFieldTemplateProps> = (props) => 
     const finalKey = path[path.length - 1];
     current[finalKey] = newArrayData;
 
-    formContext.onFormDataChange(newRootData);
+    formContext.onFormDataChange(newRootData as unknown as AgentFrameworkConfig);
   }, [formData, formContext, fieldPathId, itemIds, moveItem, fieldPath]);
 
   const handleDragCancel = useCallback(() => {

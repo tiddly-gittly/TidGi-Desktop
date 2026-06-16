@@ -58,12 +58,15 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       }
 
       if (inputText.trim()) {
+        const now = new Date();
         messages.push({
-          id: 'preview-input',
-          agentId: 'preview-id',
+          messageId: 'preview-input',
+          conversationId: 'preview-id',
+          originNodeId: 'tidgi-desktop',
+          timestamp: now.getTime(),
+          lamportClock: now.getTime(),
           role: 'user',
           content: inputText,
-          modified: new Date(),
         });
       }
 
@@ -102,7 +105,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               // Update intermediate results
               previewResult: {
                 flatPrompts: state.flatPrompts as ModelMessage[],
-                processedPrompts: state.processedPrompts as IPrompt[],
+                processedPrompts: state.processedPrompts,
               },
             });
 
@@ -110,7 +113,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
             if (state.isComplete) {
               finalResult = {
                 flatPrompts: state.flatPrompts as ModelMessage[],
-                processedPrompts: state.processedPrompts as IPrompt[],
+                processedPrompts: state.processedPrompts,
               };
             }
           },

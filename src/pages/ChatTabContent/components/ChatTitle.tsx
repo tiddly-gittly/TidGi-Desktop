@@ -1,6 +1,6 @@
 import { Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AgentInstance } from '@services/agentInstance/interface';
+import type { AgentInstance } from 'memeloop';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

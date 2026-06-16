@@ -61,7 +61,8 @@ export const PromptTreeNode = memo(({
   const handleNodeClick = useCallback((event: React.MouseEvent) => {
     event.stopPropagation();
 
-    const targetFieldPath = (node.source && node.source.length > 0) ? node.source : [...fieldPath, node.id];
+    const sourcePath = node.source as string[] | undefined;
+    const targetFieldPath = (sourcePath && sourcePath.length > 0) ? sourcePath : [...fieldPath, node.id];
 
     setFormFieldsToScrollTo(targetFieldPath);
   }, [node.source, node.id, fieldPath, setFormFieldsToScrollTo]);

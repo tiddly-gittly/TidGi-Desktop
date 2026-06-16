@@ -406,7 +406,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                 <Box sx={{ mt: 2, height: 400, overflow: 'auto' }}>
                   <PromptConfigForm
                     schema={promptSchema}
-                    formData={temporaryAgentDefinition.agentFrameworkConfig || {}}
+                    formData={temporaryAgentDefinition.agentFrameworkConfig ?? { prompts: [], plugins: [] }}
                     onChange={(updatedConfig) => {
                       void handleAgentDefinitionChange({
                         ...temporaryAgentDefinition,

@@ -6,9 +6,11 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Checkbox, IconButton } from '@mui/material';
 import { ArrayFieldItemTemplateProps, FormContextType, getTemplate, getUiOptions, RJSFSchema } from '@rjsf/utils';
+import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
+
 import { ArrayItemProvider, useArrayItemContext } from '../context/ArrayItemContext';
 import { ExtendedFormContext } from '../index';
 import { useArrayFieldStore } from '../store/arrayFieldStore';
@@ -98,7 +100,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
       return;
     }
 
-    const newRootData = structuredClone(formContext.rootFormData);
+    const newRootData = structuredClone(formContext.rootFormData) as unknown as Record<string | number, unknown>;
     let parent: Record<string | number, unknown> | undefined = newRootData;
     for (let pathIndex = 0; pathIndex < pathSegments.length - 1; pathIndex += 1) {
       parent = parent?.[pathSegments[pathIndex]] as Record<string | number, unknown> | undefined;
@@ -107,7 +109,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
 
     const arrayKey = pathSegments[pathSegments.length - 1];
     const targetArray = Array.isArray(parent?.[arrayKey]) ? [...(parent?.[arrayKey] as unknown[])] : undefined;
-    if (!targetArray || targetArray[index] === undefined) {
+    if (!parent || !targetArray || targetArray[index] === undefined) {
       return;
     }
 
@@ -116,7 +118,7 @@ export function ArrayFieldItemTemplate<T = unknown, S extends RJSFSchema = RJSFS
     targetArray[index] = currentItem;
     parent[arrayKey] = targetArray;
 
-    formContext.onFormDataChange(newRootData);
+    formContext.onFormDataChange(newRootData as unknown as AgentFrameworkConfig);
   }, [arrayItemContext.arrayFieldPathSegments, formContext, index, itemEnabled]);
 
   // Get the ArrayFieldItemButtonsTemplate to render buttons

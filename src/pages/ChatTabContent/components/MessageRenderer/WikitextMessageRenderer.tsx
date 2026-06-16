@@ -77,7 +77,7 @@ const FallbackText = styled(Typography)`
  * During streaming, shows raw text with reduced opacity; renders on completion.
  */
 export const WikitextMessageRenderer: React.FC<MessageRendererProps> = memo(({ message }) => {
-  const isStreaming = useAgentChatStore(state => state.isMessageStreaming(message.id));
+  const isStreaming = useAgentChatStore(state => state.isMessageStreaming(message.messageId));
   const content = message.content || '';
 
   // During streaming, only render content up to the last double-newline boundary (complete blocks)

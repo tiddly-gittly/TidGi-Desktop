@@ -21,4 +21,5 @@ export const errorMessageI18nKeys = {
   // Legacy keys that may still exist in i18n files
   authenticationFailed: t('Chat.ConfigError.AuthenticationFailed'),
   providerNotFound: t('Chat.ConfigError.ProviderNotFound'),
+  streamRetryExhausted: t('Chat.ConfigError.StreamRetryExhausted'),
 } as const;

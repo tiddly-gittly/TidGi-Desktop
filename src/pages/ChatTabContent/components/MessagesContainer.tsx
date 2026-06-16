@@ -10,7 +10,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CopyAllIcon from '@mui/icons-material/CopyAll';
 import { Box, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AgentInstanceMessage } from '@services/agentInstance/interface';
+import type { ChatMessage } from 'memeloop';
 import React, { CSSProperties, ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { List, useListRef } from 'react-window';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';
@@ -30,7 +30,7 @@ interface Turn {
 }
 
 /** Derive turns from ordered message IDs */
-function buildTurns(orderedIds: string[], messages: Map<string, AgentInstanceMessage>): Turn[] {
+function buildTurns(orderedIds: string[], messages: Map<string, ChatMessage>): Turn[] {
   const turns: Turn[] = [];
   let current: Turn | undefined;
 
