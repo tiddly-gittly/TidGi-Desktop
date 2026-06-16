@@ -131,7 +131,7 @@ const webFetchDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, config, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'web-fetch') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'web-fetch') return;
     if (agentFrameworkContext.isCancelled()) return;
     const maxLength = config?.maxContentLength ?? 50000;
     await executeToolCall('web-fetch', (parameters) => executeWebFetch(parameters, maxLength));

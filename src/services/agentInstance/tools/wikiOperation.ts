@@ -217,7 +217,7 @@ const wikiOperationDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-operation') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-operation') return;
 
     // Check cancellation
     if (agentFrameworkContext.isCancelled()) {

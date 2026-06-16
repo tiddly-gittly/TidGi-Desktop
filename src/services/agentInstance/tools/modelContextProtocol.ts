@@ -169,7 +169,8 @@ const mcpDefinition = registerToolDefinition({
   // No static llmToolSchemas — MCP tools are dynamic
 
   async onProcessPrompts({ config, agentFrameworkContext, injectContent }) {
-    const agentId = agentFrameworkContext.agent.id;
+    const agentId = agentFrameworkContext?.agent?.id;
+    if (!agentId) return;
 
     // Connect if not already connected
     let state = clientStates.get(agentId);
@@ -201,10 +202,7 @@ const mcpDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext, hooks, requestId }) {
-    if (!toolCall) return;
-
-    // MCP tools are prefixed with "mcp-"
-    if (!toolCall.toolId?.startsWith('mcp-')) return;
+    if (!toolCall || !toolCall.found || !toolCall.toolId.startsWith('mcp-')) return;
 
     const agentId = agentFrameworkContext.agent.id;
     const mcpToolName = toolCall.toolId.replace(/^mcp-/, '');

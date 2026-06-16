@@ -109,7 +109,7 @@ const getErrorsDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-get-errors') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-get-errors') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('wiki-get-errors', executeGetErrors);
   },

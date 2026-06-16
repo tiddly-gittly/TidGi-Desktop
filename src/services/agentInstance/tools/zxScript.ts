@@ -84,7 +84,7 @@ const zxScriptDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'zx-script') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'zx-script') return;
     if (agentFrameworkContext.isCancelled()) return;
     await executeToolCall('zx-script', executeZxScript);
   },

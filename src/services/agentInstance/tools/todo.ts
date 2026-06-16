@@ -210,7 +210,7 @@ const todoDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'manage-todo') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'manage-todo') return;
     if (agentFrameworkContext.isCancelled()) return;
 
     const agentId = agentFrameworkContext.agent.id;
