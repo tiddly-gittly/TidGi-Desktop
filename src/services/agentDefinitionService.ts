@@ -11,7 +11,7 @@ import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import { getBuiltinAgentDefinitions, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
-export type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig, IAgentDefinitionService, ToolCallingMatch } from '@services/agentDefinition/interface';
+export type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig, IAgentDefinitionService } from '@services/agentDefinition/interface';
 export { AgentDefinitionServiceIPCDescriptor } from '@services/agentDefinition/interface';
 
 // ── Service implementation ─────────────────────────────────────────

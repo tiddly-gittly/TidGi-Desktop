@@ -61,7 +61,7 @@ const askQuestionDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult, yieldToHuman }) {
-    if (!toolCall || toolCall.toolId !== 'ask-question') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'ask-question') return;
 
     const parameters = toolCall.parameters as z.infer<typeof AskQuestionToolSchema>;
     const questionId = `ask-q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
