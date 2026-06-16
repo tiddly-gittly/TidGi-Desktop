@@ -1,17 +1,9 @@
-import type {
-  AgentDefinition as MemeLoopAgentDefinition,
-  AgentInstanceMeta,
-  AttachmentReference,
-  ChatMessage,
-  ConversationMeta,
-  GetMessagesOptions,
-  IAgentStorage,
-  ListConversationsOptions,
-} from 'memeloop';
+import type { AgentDefinition, AgentInstanceMeta, AttachmentReference, ChatMessage, ConversationMeta, GetMessagesOptions, IAgentStorage, ListConversationsOptions } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
-import type { AgentInstance, AgentInstanceMessage, IAgentInstanceService } from '../interface';
-import { toAgentInstanceMessage, toConversationMeta, toMemeLoopAgentDefinition, toMemeLoopMessage } from './messageMapping';
+import type { AgentInstance } from 'memeloop';
+import type { IAgentInstanceService } from '../interface';
+import { toConversationMeta } from './messageMapping';
 
 export class MemeLoopDesktopStorage implements IAgentStorage {
   public constructor(
@@ -35,11 +27,11 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
 
   public async getMessages(conversationId: string, _options?: GetMessagesOptions): Promise<ChatMessage[]> {
     const agent = await this.options.agentInstanceService.getAgent(conversationId);
-    return agent?.messages.map(message => toMemeLoopMessage(message, conversationId)) ?? [];
+    return agent?.messages ?? [];
   }
 
   public async appendMessage(message: ChatMessage): Promise<void> {
-    const agentMessage = toAgentInstanceMessage(message);
+    const agentMessage = message;
     await this.saveMessageBestEffort(agentMessage);
     await this.upsertAndNotify(agentMessage);
   }
@@ -49,19 +41,18 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
   }
 
   public async insertMessagesIfAbsent(messages: ChatMessage[]): Promise<void> {
-    const byAgent = new Map<string, AgentInstanceMessage[]>();
+    const byAgent = new Map<string, ChatMessage[]>();
     for (const message of messages) {
-      const agentMessage = toAgentInstanceMessage(message);
-      const existing = byAgent.get(agentMessage.agentId) ?? [];
-      existing.push(agentMessage);
-      byAgent.set(agentMessage.agentId, existing);
+      const existing = byAgent.get(message.conversationId) ?? [];
+      existing.push(message);
+      byAgent.set(message.conversationId, existing);
     }
 
     for (const [agentId, agentMessages] of byAgent) {
       const agent = await this.options.agentInstanceService.getAgent(agentId);
-      const existingIds = new Set(agent?.messages.map(message => message.id) ?? []);
+      const existingIds = new Set(agent?.messages.map(message => message.messageId) ?? []);
       for (const agentMessage of agentMessages) {
-        const shouldUpsert = !existingIds.has(agentMessage.id) || agentMessage.metadata?.isToolResult || agentMessage.metadata?.containsToolCall;
+        const shouldUpsert = !existingIds.has(agentMessage.messageId) || agentMessage.metadata?.isToolResult || agentMessage.metadata?.containsToolCall;
         if (shouldUpsert) {
           await this.saveMessageBestEffort(agentMessage);
           this.debounceMessageBestEffort(agentMessage, agentId);
@@ -79,9 +70,9 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     return undefined;
   }
 
-  public async getAgentDefinition(id: string): Promise<MemeLoopAgentDefinition | null> {
+  public async getAgentDefinition(id: string): Promise<AgentDefinition | null> {
     const definition = await this.options.agentDefinitionService.getAgentDef(id);
-    return definition ? toMemeLoopAgentDefinition(definition) : null;
+    return definition ?? null;
   }
 
   public async getMaxLamportClockForConversation(conversationId: string): Promise<number> {
@@ -107,32 +98,32 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     }
   }
 
-  private async upsertAndNotify(message: AgentInstanceMessage): Promise<void> {
-    this.debounceMessageBestEffort(message, message.agentId);
-    const agent = await this.options.agentInstanceService.getAgent(message.agentId);
+  private async upsertAndNotify(message: ChatMessage): Promise<void> {
+    this.debounceMessageBestEffort(message, message.conversationId);
+    const agent = await this.options.agentInstanceService.getAgent(message.conversationId);
     if (!agent) return;
 
-    const existingIndex = agent.messages.findIndex(item => item.id === message.id);
+    const existingIndex = agent.messages.findIndex(item => item.messageId === message.messageId);
     if (existingIndex >= 0) {
       agent.messages[existingIndex] = message;
     } else {
       agent.messages.push(message);
     }
-    this.options.notifyAgentChanged(message.agentId, agent);
+    this.options.notifyAgentChanged(message.conversationId, agent);
   }
 
-  private async saveMessageBestEffort(message: AgentInstanceMessage): Promise<void> {
+  private async saveMessageBestEffort(message: ChatMessage): Promise<void> {
     try {
       await this.options.agentInstanceService.saveUserMessage(message);
     } catch {
-      const agent = await this.options.agentInstanceService.getAgent(message.agentId).catch(() => undefined);
+      const agent = await this.options.agentInstanceService.getAgent(message.conversationId).catch(() => undefined);
       if (!agent) {
-        throw new Error(`Agent instance not found: ${message.agentId}`);
+        throw new Error(`Agent instance not found: ${message.conversationId}`);
       }
     }
   }
 
-  private debounceMessageBestEffort(message: AgentInstanceMessage, agentId: string): void {
+  private debounceMessageBestEffort(message: ChatMessage, agentId: string): void {
     try {
       this.options.agentInstanceService.debounceUpdateMessage(message, agentId, 0);
     } catch {
