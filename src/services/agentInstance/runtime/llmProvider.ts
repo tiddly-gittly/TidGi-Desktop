@@ -1,4 +1,4 @@
-import type { ILLMProvider } from 'memeloop';
+import type { AiAPIConfig, ILLMProvider } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -7,7 +7,6 @@ import type { ModelMessage } from 'ai';
 import { merge } from 'lodash';
 
 import type { IAgentInstanceService } from '../interface';
-import type { AiAPIConfig } from '../schema';
 
 export class MemeLoopDesktopLLMProvider implements ILLMProvider {
   public readonly name = 'tidgi-desktop';
@@ -47,8 +46,11 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
 
     let currentRequestId: string | undefined;
     let previousContent = '';
+    let chunkCount = 0;
 
-    for await (const response of this.options.externalAPIService.generateFromAI(messages, aiApiConfig, { agentInstanceId: conversationId, awaitLogs: true })) {
+    for await (
+      const response of this.options.externalAPIService.generateFromAI(messages, aiApiConfig, { agentInstanceId: conversationId, awaitLogs: true })
+    ) {
       if (!currentRequestId && response.requestId) {
         currentRequestId = response.requestId;
       }
@@ -62,8 +64,11 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
 
       if (response.status === 'error') {
         const message = response.errorDetail?.message || 'Unknown AI provider error';
+        const errorName = response.errorDetail?.name;
+        const error = new Error(message);
+        if (errorName) error.name = errorName;
         logger.error('MemeLoop LLM provider error', { errorDetail: response.errorDetail, requestId: currentRequestId });
-        throw new Error(message);
+        throw error;
       }
 
       if ((response.status === 'update' || response.status === 'done') && response.content) {
@@ -71,9 +76,11 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
         const delta = nextContent.startsWith(previousContent) ? nextContent.slice(previousContent.length) : nextContent;
         previousContent = nextContent;
         if (delta.length > 0) {
+          chunkCount++;
           yield delta;
         }
       }
     }
+    logger.debug('MemeLoop LLM stream complete', { conversationId, chunkCount, contentLength: previousContent.length });
   }
 }
