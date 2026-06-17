@@ -9,7 +9,7 @@ import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { AgentFrameworkConfig } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { registerToolDefinition } from 'memeloop';
 
 export const EditAgentDefinitionParameterSchema = z.object({
   toolListPosition: z.object({
