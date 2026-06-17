@@ -11,7 +11,8 @@ import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/datab
 import { logger } from '@services/libs/log';
 
 import type { AgentInstance, ChatMessage } from 'memeloop';
-import { AGENT_INSTANCE_FIELDS, createAgentMessage, toDatabaseCompatibleMessage } from './utilities';
+import { createChatMessage } from 'memeloop';
+import { AGENT_INSTANCE_FIELDS, toDatabaseCompatibleMessage } from './utilities';
 
 /**
  * Persist a message (user, tool, or error) to the database.
@@ -93,9 +94,12 @@ export function createDebouncedMessageUpdater(
             });
           } else if (aid) {
             // Create new message
-            const messageData = createAgentMessage(messageId, aid, {
+            const messageData = createChatMessage({
+              messageId,
+              conversationId: aid,
               role: messageData_.role,
               content: messageData_.content,
+              originNodeId: 'tidgi-desktop',
               contentType: messageData_.contentType,
               metadata: messageData_.metadata,
               duration: messageData_.duration,
