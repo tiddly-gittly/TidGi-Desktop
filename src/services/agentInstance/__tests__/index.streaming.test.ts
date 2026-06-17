@@ -6,7 +6,7 @@ import { getBuiltinAgentDefinitions } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance, AgentInstanceLatestStatus } from 'memeloop';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';

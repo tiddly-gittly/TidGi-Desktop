@@ -8,7 +8,7 @@ import { backOff } from 'exponential-backoff';
 import { pick } from 'lodash';
 import { Repository } from 'typeorm';
 
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 

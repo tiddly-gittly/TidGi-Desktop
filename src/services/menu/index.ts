@@ -1,5 +1,5 @@
 import { getWorkspaceIdFromUrl } from '@/constants/urls';
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';

@@ -1,5 +1,5 @@
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
