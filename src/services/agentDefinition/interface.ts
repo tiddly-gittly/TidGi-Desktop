@@ -2,8 +2,6 @@ import { AgentChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { AgentDefinition } from 'memeloop';
 
-export type { AgentDefinition } from 'memeloop';
-
 export interface IAgentDefinitionService {
   initialize(): Promise<void>;
   createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;

@@ -4,7 +4,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Autocomplete, Box, ClickAwayListener, Paper, Popper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AgentDefinition } from '@services/agentDefinitionService';
+import type { AgentDefinition } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 const SwitcherButton = styled(Box)<{ disabled?: boolean }>(({ theme, disabled }) => ({

@@ -3,15 +3,16 @@
  * memeloop core manages the model, Desktop provides the storage layer.
  */
 import { WikiChannel } from '@/constants/channels';
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
+import type { AgentDefinition } from 'memeloop';
 import { getBuiltinAgentDefinitions, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
-export type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
+export type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 export { AgentDefinitionServiceIPCDescriptor } from '@services/agentDefinition/interface';
 
 /** ID of the built-in agent definition to use as the default when creating a new agent. */
