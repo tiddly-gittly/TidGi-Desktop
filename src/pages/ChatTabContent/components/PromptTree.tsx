@@ -1,5 +1,5 @@
 import { Box, styled, Typography } from '@mui/material';
-import { IPrompt } from '@services/agentInstance/schema';
+import type { PromptNode as IPrompt } from 'memeloop';
 import React, { memo, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAgentChatStore } from '../../Agent/store/agentChatStore/index';

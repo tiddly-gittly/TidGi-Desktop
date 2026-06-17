@@ -1,6 +1,6 @@
-import { AiAPIConfig } from '@services/agentInstance/schema';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import { cloneDeep } from 'lodash';
+import type { AiAPIConfig } from 'memeloop';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseAIConfigManagementProps {
