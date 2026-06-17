@@ -10,7 +10,7 @@
  */
 import { logger } from '@services/libs/log';
 
-import { getAllToolDefinitions } from './defineTool';
+import { getAllToolDefinitions } from 'memeloop';
 import { registerToolParameterSchema } from './schemaRegistry';
 import { PromptConcatTool } from './types';
 
@@ -18,8 +18,9 @@ import { PromptConcatTool } from './types';
 export type { AgentResponse, PostProcessContext, PromptConcatHookContext, PromptConcatHooks, PromptConcatTool, ResponseHookContext } from './types';
 
 // Re-export defineTool API for LLM tools
-export { defineTool, getAllToolDefinitions, registerToolDefinition } from './defineTool';
-export type { ResponseHandlerContext, ToolDefinition, ToolExecutionResult, ToolHandlerContext } from './defineTool';
+export { defineTool, getAllToolDefinitions, registerToolDefinition } from 'memeloop';
+import type { ResponseHandlerContext, ToolDefinition, ToolExecutionResult, ToolHandlerContext } from 'memeloop';
+export type { ResponseHandlerContext, ToolDefinition, ToolExecutionResult, ToolHandlerContext };
 
 /**
  * Registry for all plugins (LLM tools)

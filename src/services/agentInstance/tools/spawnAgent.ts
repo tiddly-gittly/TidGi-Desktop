@@ -8,7 +8,8 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { z } from 'zod/v4';
 import type { IAgentInstanceService } from '../interface';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { registerToolDefinition } from 'memeloop';
+import type { ToolExecutionResult } from 'memeloop';
 
 export const SpawnAgentParameterSchema = z.object({
   toolListPosition: z.object({
