@@ -4,9 +4,9 @@
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { net } from 'electron';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import { z } from 'zod/v4';
 
 export const WebFetchParameterSchema = z.object({
   toolListPosition: z.object({
@@ -133,7 +133,7 @@ const webFetchDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, config, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'web-fetch') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (agentFrameworkContext.isCancelled?.()) return;
     const maxLength = config?.maxContentLength ?? 50000;
     await executeToolCall('web-fetch', (parameters) => executeWebFetch(parameters, maxLength));
   },

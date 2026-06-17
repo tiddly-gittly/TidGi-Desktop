@@ -9,9 +9,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import { z } from 'zod/v4';
 
 export const TocParameterSchema = z.object({
   toolListPosition: z.object({
@@ -89,7 +89,7 @@ const tocDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-toc') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (agentFrameworkContext.isCancelled?.()) return;
     await executeToolCall('wiki-toc', executeToc);
   },
 });

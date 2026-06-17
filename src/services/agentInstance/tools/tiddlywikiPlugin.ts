@@ -30,10 +30,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import type { ITiddlerFields } from 'tiddlywiki';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import type { ITiddlerFields } from 'tiddlywiki';
+import { z } from 'zod/v4';
 
 export const TiddlyWikiPluginParameterSchema = z.object({
   workspaceNameOrID: z.string().default('wiki').meta({
@@ -258,7 +258,7 @@ const tiddlyWikiPluginDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'tiddlywiki-plugin') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (agentFrameworkContext.isCancelled?.()) return;
 
     // At this point, config should be available from the context
     const typedConfig = config as TiddlyWikiPluginParameter;

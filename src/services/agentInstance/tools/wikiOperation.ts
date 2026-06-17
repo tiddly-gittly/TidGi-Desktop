@@ -11,9 +11,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import { z } from 'zod/v4';
 
 /**
  * Wiki Operation Config Schema (user-configurable in UI)
@@ -221,7 +221,7 @@ const wikiOperationDefinition = registerToolDefinition({
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-operation') return;
 
     // Check cancellation
-    if (agentFrameworkContext.isCancelled()) {
+    if (agentFrameworkContext.isCancelled?.()) {
       logger.debug('Wiki operation cancelled', { agentId: agentFrameworkContext.agent.id });
       return;
     }

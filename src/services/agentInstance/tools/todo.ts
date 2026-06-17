@@ -26,9 +26,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import { z } from 'zod/v4';
 
 /* ------------------------------------------------------------------ */
 /*  Config schema                                                      */
@@ -212,7 +212,7 @@ const todoDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'manage-todo') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (agentFrameworkContext.isCancelled?.()) return;
 
     const agentId = agentFrameworkContext.agent.id;
     await executeToolCall('manage-todo', async (parameters) => {

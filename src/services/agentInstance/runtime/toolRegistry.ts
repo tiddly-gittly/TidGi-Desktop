@@ -1,7 +1,7 @@
 import type { IToolRegistry, PromptConcatTool } from 'memeloop';
 
-import { pluginRegistry } from '../tools';
 import type { ToolExecutionResult } from 'memeloop';
+import { pluginRegistry } from '../tools';
 
 type ToolFunction = (arguments_: Record<string, unknown>) => Promise<ToolExecutionResult>;
 
