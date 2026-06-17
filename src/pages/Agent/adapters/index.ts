@@ -14,3 +14,6 @@ export { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
 export { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
 export { createDesktopPromptPreviewClient } from './DesktopPromptPreviewClient';
 export { createDesktopScheduledTaskClient } from './DesktopScheduledTaskClient';
+
+// Desktop-specific chat tab (replaces former ChatTabContent)
+export { DesktopAgentChatTab } from './DesktopAgentChatTab';

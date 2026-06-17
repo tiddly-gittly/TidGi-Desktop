@@ -8,8 +8,9 @@ import type { AgentDefinition } from 'memeloop';
 import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChatTabContent } from '../../../ChatTabContent';
+import { DesktopAgentChatTab } from '../../adapters';
 import { PromptConfigForm } from '../../../ChatTabContent/components/PromptPreviewDialog/PromptConfigForm';
+// TODO: Migrate to @memeloop/react-ui/agent PromptConfigForm
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
 
@@ -806,7 +807,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
           {previewAgentId && (
             <Box sx={{ height: '400px', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              <ChatTabContent
+              <DesktopAgentChatTab
                 tab={{
                   id: previewTabId,
                   type: TabType.CHAT,
