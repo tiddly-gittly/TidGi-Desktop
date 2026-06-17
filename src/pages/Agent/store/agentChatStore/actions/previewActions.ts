@@ -1,5 +1,5 @@
-import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/schema';
 import type { ModelMessage } from 'ai';
+import type { AgentPromptDescription, PromptNode as IPrompt } from 'memeloop';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
