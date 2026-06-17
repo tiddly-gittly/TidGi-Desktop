@@ -279,7 +279,7 @@ export function defineTool<
               toolName: TToolName,
               executor: (parameters: z.infer<TLLMToolSchemas[TToolName]>) => Promise<ToolExecutionResult>,
             ): Promise<boolean> => {
-              if (!toolCall || !toolCall.found || toolCall.toolId !== toolName) {
+              if (!toolCall || toolCall.found !== true || toolCall.toolId !== toolName) {
                 return false;
               }
 
