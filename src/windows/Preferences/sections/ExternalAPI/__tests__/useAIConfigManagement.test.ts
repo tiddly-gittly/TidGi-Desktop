@@ -1,6 +1,6 @@
-import { AiAPIConfig } from '@services/agentInstance/schema';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { AiAPIConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAIConfigManagement } from '../useAIConfigManagement';

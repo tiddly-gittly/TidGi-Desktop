@@ -1,5 +1,5 @@
-import type { AiAPIConfig } from '@services/agentInstance/schema';
 import type { ModelMessage } from 'ai';
+import type { AiAPIConfig } from 'memeloop';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
 import type { AIProviderConfig } from '../../src/services/externalAPI/interface';

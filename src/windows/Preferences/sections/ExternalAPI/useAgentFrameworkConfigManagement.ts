@@ -1,4 +1,4 @@
-import { AgentFrameworkConfig } from '@services/agentInstance/schema';
+import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useState } from 'react';
 
 interface useAgentFrameworkConfigManagementProps {

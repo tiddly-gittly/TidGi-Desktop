@@ -8,7 +8,7 @@ import React, { FC, lazy, Suspense, SyntheticEvent, useCallback, useEffect, useS
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
-import { AgentFrameworkConfig } from '@services/agentInstance/schema';
+import type { AgentFrameworkConfig } from 'memeloop';
 import { useAgentChatStore } from '../../../Agent/store/agentChatStore/index';
 import { PromptConfigForm } from './PromptConfigForm';
 import { useArrayFieldStore } from './PromptConfigForm/store/arrayFieldStore';
