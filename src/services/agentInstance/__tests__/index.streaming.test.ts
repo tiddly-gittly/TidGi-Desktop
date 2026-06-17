@@ -7,15 +7,25 @@ import { nanoid } from 'nanoid';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentInstance, AgentInstanceLatestStatus } from 'memeloop';
+import type { AgentDefinition, AgentInstance, AgentInstanceLatestStatus } from 'memeloop';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+
+function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
+  return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  };
+}
+
 describe('AgentInstanceService Streaming Behavior', () => {
-  const defaultAgents = getBuiltinLoopProfiles();
+  const defaultAgents = getBuiltinLoopProfiles().map(toAgentDefinition);
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
@@ -58,6 +68,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
     await agentInstanceService.initialize();
     // Setup test agent instance using data from taskAgents.json
     const exampleAgent = defaultAgents[0];
+    if (!exampleAgent) throw new Error('Missing built-in agent profile');
     testAgentInstance = {
       id: nanoid(),
       agentDefId: exampleAgent.id,

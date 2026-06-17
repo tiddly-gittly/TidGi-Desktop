@@ -42,7 +42,7 @@ export const AgentDefinitionServiceIPCDescriptor = {
 
 /** ID of the built-in agent definition to use as the default when creating a new agent. */
 export function getDefaultAgentDefinitionId(): string {
-  const builtinProfiles = getBuiltinLoopProfiles() as unknown as Array<{ id: string }>;
+  const builtinProfiles = getBuiltinLoopProfiles();
   return builtinProfiles[0]?.id ?? 'memeloop:general-assistant';
 }
 
@@ -59,7 +59,12 @@ import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from 
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-const defaultAgentsList = getBuiltinLoopProfiles() as unknown as AgentDefinition[];
+const defaultAgentsList = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
+  systemPrompt: '',
+  tools: [],
+  version: '1',
+  ...profile,
+}));
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;
