@@ -6,7 +6,7 @@
  */
 import { t } from '@services/libs/i18n/placeholder';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { registerToolDefinition } from 'memeloop';
 import { addTask, getActiveTasksForAgent, removeTask, updateTask } from './scheduledTaskManager';
 
 export const AlarmClockParameterSchema = z.object({

@@ -32,7 +32,8 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { registerToolDefinition } from 'memeloop';
+import type { ToolExecutionResult } from 'memeloop';
 
 export const TiddlyWikiPluginParameterSchema = z.object({
   workspaceNameOrID: z.string().default('wiki').meta({

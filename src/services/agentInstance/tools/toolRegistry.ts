@@ -4,8 +4,8 @@
  * Extracted from defineTool.ts to reduce file size.
  */
 import type { z } from 'zod/v4';
-import { defineTool } from './defineTool';
-import type { DefinedTool, ToolDefinition } from './defineToolTypes';
+import { defineTool } from 'memeloop';
+import type { DefinedTool, ToolDefinition } from 'memeloop';
 import { registerToolParameterSchema } from './schemaRegistry';
 
 /**

@@ -6,7 +6,7 @@
  */
 import { logger } from '@services/libs/log';
 import type { ToolCallingMatch } from 'memeloop';
-import type { ToolExecutionResult } from './defineTool';
+import type { ToolExecutionResult } from 'memeloop';
 
 /** Default per-tool timeout (30 seconds) */
 const DEFAULT_TOOL_TIMEOUT_MS = 30_000;
