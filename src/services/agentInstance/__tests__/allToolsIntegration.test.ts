@@ -13,7 +13,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { getBuiltinAgentDefinitions } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,7 +33,7 @@ describe('all tools integration', () => {
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     await agentInstanceService.initializeFrameworks();
 
-    const defaultAgent = getBuiltinAgentDefinitions().find(a => a.id === 'memeloop:general-assistant');
+    const defaultAgent = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant') as unknown as import('memeloop').AgentDefinition | undefined;
     testAgentInstance = {
       ...(defaultAgent as AgentDefinition),
       id: nanoid(),

@@ -3,7 +3,7 @@ import { Box, IconButton, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 
-import { ChatTabContent } from '../../ChatTabContent';
+import { DesktopAgentChatTab } from '../adapters';
 import { TabListDropdown } from '../components/TabBar/TabListDropdown';
 import { useTabStore } from '../store/tabStore';
 import { TabItem, TabType } from '../types/tab';
@@ -66,7 +66,7 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
       case TabType.WEB:
         return <WebTabContent tab={tab} />;
       case TabType.CHAT:
-        return <ChatTabContent tab={tab} isSplitView={isSplitView} />;
+        return <DesktopAgentChatTab tab={tab} isSplitView={isSplitView} />;
       case TabType.NEW_TAB:
         return <NewTabContent tab={tab} />;
       case TabType.SPLIT_VIEW:

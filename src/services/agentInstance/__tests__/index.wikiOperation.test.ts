@@ -6,13 +6,13 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { AgentInstance } from 'memeloop';
-import { getBuiltinAgentDefinitions } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Follow structure of index.streaming.test.ts
 describe('AgentInstanceService Wiki Operation', () => {
-  const defaultAgents = getBuiltinAgentDefinitions();
+  const defaultAgents = getBuiltinLoopProfiles();
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
@@ -33,10 +33,16 @@ describe('AgentInstanceService Wiki Operation', () => {
     // Setup test agent instance using data from taskAgents.json
     const exampleAgent = defaultAgents[0];
     testAgentInstance = {
-      ...exampleAgent,
       id: nanoid(),
       agentDefId: exampleAgent.id,
       name: 'Test Agent',
+      description: exampleAgent.description ?? '',
+      systemPrompt: exampleAgent.systemPrompt ?? '',
+      tools: exampleAgent.tools ?? [],
+      agentTools: exampleAgent.agentTools,
+      agentFrameworkConfig: exampleAgent.agentFrameworkConfig,
+      aiApiConfig: exampleAgent.aiApiConfig,
+      version: exampleAgent.version ?? '1.0.0',
       status: {
         state: 'working',
         modified: new Date(),

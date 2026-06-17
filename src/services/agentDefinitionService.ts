@@ -59,7 +59,7 @@ import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from 
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-const defaultAgentsList = getBuiltinLoopProfiles();
+const defaultAgentsList = getBuiltinLoopProfiles() as unknown as AgentDefinition[];
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;

@@ -3,7 +3,7 @@
  * tool calls using mocked OpenAI responses. This test validates the entire
  * pipeline: agentTools → plugins → prompt → LLM → tool call → execution → result.
  */
-import { getBuiltinAgentDefinitions } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -34,7 +34,7 @@ describe('multi-turn tool-use conversation', () => {
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     await agentInstanceService.initializeFrameworks();
 
-    const defaultAgent = getBuiltinAgentDefinitions().find(a => a.id === 'memeloop:general-assistant');
+    const defaultAgent = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant') as unknown as import('memeloop').AgentDefinition;
     testAgentInstance = {
       ...(defaultAgent as AgentDefinition),
       id: nanoid(),
