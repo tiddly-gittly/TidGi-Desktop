@@ -6,7 +6,7 @@ import { lightTheme } from '@services/theme/defaultTheme';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import type { IPrompt } from '@services/agentInstance/schema';
+import type { PromptNode as IPrompt } from 'memeloop';
 import { PromptTree } from '../PromptTree';
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

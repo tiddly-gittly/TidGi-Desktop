@@ -4,13 +4,13 @@ import { nanoid } from 'nanoid';
 import { BehaviorSubject, defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
-import { AiAPIConfig } from '@services/agentInstance/schema';
 import type { IDatabaseService } from '@services/database/interface';
 import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMetadata } from '@services/database/schema/externalAPILog';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ModelMessage } from 'ai';
+import type { AiAPIConfig } from 'memeloop';
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { generateImageFromProvider } from './callImageGenerationAPI';

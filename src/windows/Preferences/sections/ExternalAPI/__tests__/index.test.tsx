@@ -4,8 +4,8 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
-import { AiAPIConfig } from '@services/agentInstance/schema';
 import { lightTheme } from '@services/theme/defaultTheme';
+import type { AiAPIConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';

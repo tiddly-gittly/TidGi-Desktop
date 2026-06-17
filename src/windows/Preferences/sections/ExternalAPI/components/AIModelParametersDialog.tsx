@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField } from '@mui/material';
-import { AiAPIConfig } from '@services/agentInstance/schema';
 import { cloneDeep } from 'lodash';
+import type { AiAPIConfig } from 'memeloop';
 import type { ModelParameters } from 'memeloop';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

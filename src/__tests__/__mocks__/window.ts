@@ -1,9 +1,9 @@
 import { ChatMessage } from 'memeloop';
 
 import { AgentInstanceService } from '@services/agentInstance';
-import { AgentPromptDescription } from '@services/agentInstance/schema';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { AgentPromptDescription } from 'memeloop';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
 import { serviceInstances } from './services-container';

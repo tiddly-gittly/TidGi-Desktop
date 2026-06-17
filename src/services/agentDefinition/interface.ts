@@ -1,14 +1,8 @@
 import { AgentChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { type AgentDefinition, getBuiltinAgentDefinitions } from 'memeloop';
+import type { AgentDefinition } from 'memeloop';
 
-/** ID of the built-in agent definition to use as the default when creating a new agent. */
-export function getDefaultAgentDefinitionId(): string {
-  const builtinAgents = getBuiltinAgentDefinitions() as unknown as Array<{ id: string }>;
-  return builtinAgents[0]?.id ?? 'memeloop:general-assistant';
-}
-
-export type { AgentDefinition, AgentDefinitionToolConfig as AgentToolConfig, AgentHeartbeatConfig, HostAgentToolConfig } from 'memeloop';
+export type { AgentDefinition } from 'memeloop';
 
 export interface IAgentDefinitionService {
   initialize(): Promise<void>;
