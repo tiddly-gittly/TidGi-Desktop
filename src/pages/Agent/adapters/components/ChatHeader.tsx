@@ -1,0 +1,157 @@
+import ArticleIcon from '@mui/icons-material/Article';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import EditIcon from '@mui/icons-material/Edit';
+import TuneIcon from '@mui/icons-material/Tune';
+import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
+import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown';
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
+import { AgentSwitcher } from './AgentSwitcher';
+import { APILogsDialog } from './APILogsDialog';
+import ChatTitle from './ChatTitle';
+import { CompactModelSelector } from './CompactModelSelector';
+import { PromptPreviewDialog } from './PromptPreviewDialog';
+
+const Header = styled(Box)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid ${props => props.theme.palette.divider};
+`;
+
+const ControlsContainer = styled(Box)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+interface ChatHeaderProps {
+  title?: string;
+  loading: boolean;
+  onOpenParameters: () => void;
+  inputText?: string;
+  currentAgentDefId?: string;
+  onSwitchAgent?: (agentDefinitionId: string) => void;
+  isStreaming?: boolean;
+  isSplitView?: boolean;
+}
+
+/**
+ * Chat header component with title and AI model controls
+ */
+export const ChatHeader: React.FC<ChatHeaderProps> = ({
+  title,
+  loading,
+  onOpenParameters,
+  inputText,
+  currentAgentDefId,
+  onSwitchAgent,
+  isStreaming,
+  isSplitView,
+}) => {
+  const { t } = useTranslation('agent');
+  const preference = usePreferenceObservable();
+  const [apiLogsDialogOpen, setApiLogsDialogOpen] = useState(false);
+
+  const { agent, previewDialogOpen, previewDialogBaseMode, openPreviewDialog, closePreviewDialog, updateAgent } = useAgentChatStore(
+    useShallow((state) => ({
+      agent: state.agent,
+      previewDialogOpen: state.previewDialogOpen,
+      previewDialogBaseMode: state.previewDialogBaseMode,
+      updateAgent: state.updateAgent,
+      openPreviewDialog: state.openPreviewDialog,
+      closePreviewDialog: state.closePreviewDialog,
+    })),
+  );
+
+  const handleOpenAPILogs = () => {
+    setApiLogsDialogOpen(true);
+  };
+
+  const handleCloseAPILogs = () => {
+    setApiLogsDialogOpen(false);
+  };
+
+  // Show debug button only when debug is enabled and agent exists
+  const showDebugButton = preference?.externalAPIDebug && agent?.id;
+
+  return (
+    <Header>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
+        {!isSplitView && <TabListDropdown />}
+        <ChatTitle title={title} agent={agent} updateAgent={updateAgent} />
+        {onSwitchAgent && (
+          <AgentSwitcher
+            currentAgentDefId={currentAgentDefId}
+            onSwitch={onSwitchAgent}
+            disabled={loading || isStreaming}
+          />
+        )}
+      </Box>
+      <ControlsContainer>
+        <IconButton
+          size='small'
+          onClick={() => {
+            openPreviewDialog();
+          }}
+          title={t('Prompt.Preview')}
+        >
+          <ArticleIcon />
+        </IconButton>
+        <IconButton
+          size='small'
+          onClick={() => {
+            openPreviewDialog({ baseMode: 'edit' });
+          }}
+          title={t('Prompt.Edit')}
+        >
+          <EditIcon />
+        </IconButton>
+        {showDebugButton && (
+          <IconButton
+            size='small'
+            onClick={handleOpenAPILogs}
+            title={t('APILogs.Title')}
+          >
+            <BugReportIcon />
+          </IconButton>
+        )}
+        {isStreaming && agent?.status?.progress
+          ? (
+            <Tooltip title={agent.status.progress}>
+              <Typography variant='caption' color='text.secondary' sx={{ mr: 1, whiteSpace: 'nowrap' }}>
+                {agent.status.progress}
+              </Typography>
+            </Tooltip>
+          )
+          : loading
+          ? <CircularProgress size={20} sx={{ mr: 1 }} color='primary' />
+          : null}
+        <CompactModelSelector agentDefId={agent?.agentDefId} />
+        <IconButton
+          size='small'
+          onClick={onOpenParameters}
+          title={t('Preference.ModelParameters')}
+        >
+          <TuneIcon />
+        </IconButton>
+      </ControlsContainer>
+      <PromptPreviewDialog
+        open={previewDialogOpen}
+        onClose={closePreviewDialog}
+        inputText={inputText}
+        initialBaseMode={previewDialogBaseMode}
+      />
+      <APILogsDialog
+        open={apiLogsDialogOpen}
+        onClose={handleCloseAPILogs}
+        agentInstanceId={agent?.id}
+      />
+    </Header>
+  );
+};

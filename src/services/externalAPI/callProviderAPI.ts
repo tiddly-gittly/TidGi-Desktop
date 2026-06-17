@@ -6,10 +6,32 @@ import { logger } from '@services/libs/log';
 import { ModelMessage, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider-v2';
 
-import { getFormattedContent } from '@/pages/ChatTabContent/components/types';
 import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
+
+interface ModelMessageContent {
+  text?: string;
+  content?: string;
+}
+
+function getFormattedContent(content: ModelMessage['content']): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    return content
+      .map(part => {
+        if (typeof part === 'string') return part;
+        const typedPart = part as ModelMessageContent;
+        if (typedPart.text) return typedPart.text;
+        if (typedPart.content) return typedPart.content;
+        return '';
+      })
+      .join('');
+  }
+  return '';
+}
 
 type AIStreamResult = ReturnType<typeof streamText>;
 
