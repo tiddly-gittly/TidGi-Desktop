@@ -7,7 +7,7 @@ import { createDefaultUtilityProcessTransport, createWorkerProxy, type WorkerPro
 import { Observable } from 'rxjs';
 
 import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
-import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinitionService';
 import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
 import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from '@services/auth/interface';
 import { ContextServiceIPCDescriptor, type IContextService } from '@services/context/interface';
