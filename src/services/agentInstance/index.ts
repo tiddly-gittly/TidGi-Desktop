@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import type { IAgentDefinitionService } from '@services/agentDefinitionService';
-import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/schema';
+
 import { initializePluginSystem, pluginRegistry } from '@services/agentInstance/tools';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -118,7 +118,14 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public registerBuiltinFrameworks(): void {
-    this.frameworkSchemas.set('memeloopTaskAgent', getPromptConcatAgentFrameworkConfigJsonSchema());
+    this.frameworkSchemas.set('memeloopTaskAgent', {
+      type: 'object',
+      properties: {
+        prompts: { type: 'array', items: { type: 'object' } },
+        response: { type: 'array', items: { type: 'object' } },
+        plugins: { type: 'array', items: { type: 'object' } },
+      },
+    });
   }
 
   /**
