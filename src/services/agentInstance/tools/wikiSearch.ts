@@ -14,7 +14,8 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { AiAPIConfig } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { registerToolDefinition } from 'memeloop';
+import type { ToolExecutionResult } from 'memeloop';
 
 /**
  * Wiki Search Config Schema (user-configurable in UI)
