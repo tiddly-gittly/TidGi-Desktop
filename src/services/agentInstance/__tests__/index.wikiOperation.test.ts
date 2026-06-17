@@ -5,14 +5,23 @@ import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import type { AgentInstance } from 'memeloop';
+import type { AgentDefinition, AgentInstance } from 'memeloop';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
+  return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  };
+}
+
 // Follow structure of index.streaming.test.ts
 describe('AgentInstanceService Wiki Operation', () => {
-  const defaultAgents = getBuiltinLoopProfiles();
+  const defaultAgents = getBuiltinLoopProfiles().map(toAgentDefinition);
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
@@ -32,17 +41,12 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     // Setup test agent instance using data from taskAgents.json
     const exampleAgent = defaultAgents[0];
+    if (!exampleAgent) throw new Error('Missing built-in agent profile');
     testAgentInstance = {
+      ...exampleAgent,
       id: nanoid(),
       agentDefId: exampleAgent.id,
       name: 'Test Agent',
-      description: exampleAgent.description ?? '',
-      systemPrompt: exampleAgent.systemPrompt ?? '',
-      tools: exampleAgent.tools ?? [],
-      agentTools: exampleAgent.agentTools,
-      agentFrameworkConfig: exampleAgent.agentFrameworkConfig,
-      aiApiConfig: exampleAgent.aiApiConfig,
-      version: exampleAgent.version ?? '1.0.0',
       status: {
         state: 'working',
         modified: new Date(),

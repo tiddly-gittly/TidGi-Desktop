@@ -223,7 +223,7 @@ export const TabListDropdown: React.FC = () => {
           </IconButton>
         </Tooltip>
       )}
-      {/* Standalone new-tab button — keeps backward-compatible test selector */}
+      {/* Standalone new-tab button with the stable selector used by tab tests. */}
       <Tooltip title={t('NewTab.NewTab')}>
         <IconButton
           size='small'

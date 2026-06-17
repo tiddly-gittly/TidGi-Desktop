@@ -23,7 +23,12 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAgentDefinitionService } from './interface';
 
-const defaultAgentsList = getBuiltinLoopProfiles() as unknown as AgentDefinition[];
+const defaultAgentsList = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
+  systemPrompt: '',
+  tools: [],
+  version: '1',
+  ...profile,
+}));
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;

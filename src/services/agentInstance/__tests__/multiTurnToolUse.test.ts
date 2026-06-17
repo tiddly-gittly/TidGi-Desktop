@@ -18,6 +18,15 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 
+function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
+  return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  };
+}
+
 describe('multi-turn tool-use conversation', () => {
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
@@ -34,11 +43,13 @@ describe('multi-turn tool-use conversation', () => {
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     await agentInstanceService.initializeFrameworks();
 
-    const defaultAgent = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant') as unknown as import('memeloop').AgentDefinition;
+    const defaultProfile = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant');
+    if (!defaultProfile) throw new Error('Missing built-in general assistant profile');
+    const defaultAgent = toAgentDefinition(defaultProfile);
     testAgentInstance = {
-      ...(defaultAgent as AgentDefinition),
+      ...defaultAgent,
       id: nanoid(),
-      agentDefId: defaultAgent!.id,
+      agentDefId: defaultAgent.id,
       name: 'Test Agent',
       status: { state: 'working', modified: new Date() },
       created: new Date(),
