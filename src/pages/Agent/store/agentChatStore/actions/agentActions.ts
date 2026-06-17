@@ -1,4 +1,4 @@
-import { AgentDefinition } from '@services/agentDefinitionService';
+import type { AgentDefinition } from 'memeloop';
 import type { AgentInstance, ChatMessage } from 'memeloop';
 import { Subscription } from 'rxjs';
 import type { StoreApi } from 'zustand';

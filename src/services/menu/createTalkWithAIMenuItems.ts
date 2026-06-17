@@ -1,9 +1,10 @@
 import { IAskAIWithSelectionData, WindowChannel } from '@/constants/channels';
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { TFunction } from 'i18next';
+import type { AgentDefinition } from 'memeloop';
 
 interface ICreateTalkWithAIMenuItemsOptions {
   /** Agent definition service to get available agents */
