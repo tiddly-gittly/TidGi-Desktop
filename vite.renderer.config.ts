@@ -16,6 +16,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@services': path.resolve(__dirname, './src/services'),
+      '@memeloop/react-ui/chat': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js'),
       '@memeloop/react-ui/web': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js'),
       '@memeloop/react-ui/native': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/native/index.js'),
       '@memeloop/react-ui/theme': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/theme/index.js'),
@@ -41,6 +42,14 @@ export default defineConfig({
     },
     commonjsOptions: {
       include: [/monaco-editor/, /node_modules/],
+    },
+    // Externalize modules not available in renderer (Expo, React Native, etc.)
+    rolldownOptions: {
+      external: [
+        'expo-sqlite',
+        'react-native',
+        'react-native-paper',
+      ],
     },
   },
   server: {

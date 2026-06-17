@@ -1,8 +1,9 @@
 import { Repository } from 'typeorm';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
 import type { AgentInstanceEntity } from '@services/database/schema/agent';
+import type { AgentDefinition } from 'memeloop';
 import { createAgent } from '../agentRepository';
 
 describe('agentRepository.createAgent', () => {

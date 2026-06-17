@@ -91,11 +91,24 @@ export class MemeLoopDesktopRuntime {
           agent?.agentFrameworkConfig,
           agent?.agentTools ?? definition?.agentTools,
         );
+        const defaultAgent = {
+          id: agentId,
+          agentDefId: agent?.agentDefId ?? definition?.id ?? agentId,
+          status: { state: 'working' as const, modified: new Date() },
+          created: new Date(),
+          messages: [],
+          description: '',
+          systemPrompt: '',
+          tools: [],
+          version: '1',
+        };
         return {
-          ...(agent ?? {}),
+          ...(agent ?? defaultAgent),
           id: agentId,
           messages,
           agentDefId: agent?.agentDefId ?? definition?.id ?? agentId,
+          status: agent?.status ?? { state: 'working' as const, modified: new Date() },
+          created: agent?.created ?? new Date(),
           agentFrameworkConfig: frameworkConfig,
           aiApiConfig: {
             ...globalAIConfig,
