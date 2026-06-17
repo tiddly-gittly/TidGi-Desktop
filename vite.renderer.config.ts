@@ -43,7 +43,10 @@ export default defineConfig({
     commonjsOptions: {
       include: [/monaco-editor/, /node_modules/],
     },
-    // Externalize modules not available in renderer (Expo, React Native, etc.)
+    // TypeORM's browser entry statically reaches optional platform drivers so
+    // Expo/React Native bundlers can discover their storage providers. TidGi only
+    // uses the better-sqlite3 driver, but Rolldown still tries to resolve those
+    // optional driver packages while building the Desktop renderer bundle.
     rolldownOptions: {
       external: [
         'expo-sqlite',

@@ -1,69 +1,9 @@
 /**
- * Utility functions and constants for agent instance service
+ * Database-compatible utility functions for agent instance service.
+ * These are TypeORM-specific helpers, not domain factories.
+ * Domain factories live in memeloop core (createChatMessage, createAgentInstanceFromDefinition).
  */
-import type { AgentDefinition, AgentInstance, AgentInstanceLatestStatus, ChatMessage } from 'memeloop';
-import { nanoid } from 'nanoid';
-
-/**
- * Create initial data for a new agent instance
- * @param agentDefinition Agent definition
- * @returns Initial agent instance data
- */
-export function createAgentInstanceData(agentDefinition: AgentDefinition): {
-  instanceData: Omit<AgentInstance, 'created' | 'modified'>;
-  instanceId: string;
-  now: Date;
-} {
-  const instanceId = nanoid();
-  const now = new Date();
-
-  // Initialize agent status
-  const initialStatus: AgentInstanceLatestStatus = {
-    state: 'completed',
-    modified: now,
-  };
-
-  const instanceData: Omit<AgentInstance, 'created' | 'modified'> = {
-    ...agentDefinition,
-    id: instanceId,
-    agentDefId: agentDefinition.id,
-    name: agentDefinition.name,
-    status: initialStatus,
-    messages: [],
-    closed: false,
-    volatile: false,
-  };
-
-  return { instanceData, instanceId, now };
-}
-
-/**
- * Create a new agent message object with required fields
- * @param id Message ID
- * @param agentId Agent instance ID
- * @param message Base message data
- * @returns Complete message object
- */
-export function createAgentMessage(
-  messageId: string,
-  conversationId: string,
-  message: Pick<ChatMessage, 'role' | 'content' | 'contentType' | 'metadata' | 'duration'>,
-): ChatMessage {
-  const now = Date.now();
-  return {
-    ...message,
-    messageId,
-    conversationId,
-    originNodeId: 'tidgi-desktop',
-    timestamp: now,
-    lamportClock: now,
-    role: message.role,
-    content: message.content,
-    contentType: message.contentType || 'text/plain',
-    metadata: message.metadata,
-    duration: message.duration === null ? undefined : message.duration,
-  };
-}
+import type { AgentInstance, ChatMessage } from 'memeloop';
 
 /**
  * Message fields to be extracted when creating message entities

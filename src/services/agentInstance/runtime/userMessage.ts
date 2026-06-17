@@ -10,7 +10,7 @@ import { nanoid } from 'nanoid';
 import * as path from 'path';
 
 import type { ChatMessage } from 'memeloop';
-import { createAgentMessage } from '../utilities';
+import { createChatMessage } from 'memeloop';
 
 export type AgentUserContent = {
   text: string;
@@ -50,9 +50,12 @@ export async function createMemeLoopUserMessage(input: {
     messageContent = `${tiddlerBlocks.join('\n\n')}\n\n${messageContent}`;
   }
 
-  return createAgentMessage(messageId, input.agentId, {
+  return createChatMessage({
+    messageId,
+    conversationId: input.agentId,
     role: 'user',
     content: messageContent,
+    originNodeId: 'tidgi-desktop',
     contentType: 'text/plain',
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     duration: undefined,
