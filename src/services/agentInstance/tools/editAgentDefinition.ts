@@ -8,8 +8,8 @@ import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { AgentFrameworkConfig } from 'memeloop';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
+import { z } from 'zod/v4';
 
 export const EditAgentDefinitionParameterSchema = z.object({
   toolListPosition: z.object({

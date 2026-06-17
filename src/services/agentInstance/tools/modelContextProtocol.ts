@@ -8,9 +8,9 @@
  */
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import { z } from 'zod/v4';
 
 /**
  * Model Context Protocol Parameter Schema
