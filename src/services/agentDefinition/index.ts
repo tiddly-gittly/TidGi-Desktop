@@ -1,52 +1,15 @@
 /**
- * Desktop AgentDefinition service: DB-backed definition persistence and IPC bridge.
+ * Desktop AgentDefinition service implementation: DB-backed definition persistence.
  * memeloop core manages the model, Desktop provides the storage layer.
- *
- * This file defines the IPC contract (IAgentDefinitionService + AgentDefinitionServiceIPCDescriptor)
- * AND its implementation, so consumers import from a single path.
  */
-import { AgentChannel } from '@/constants/channels';
 import { WikiChannel } from '@/constants/channels';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import type { AgentDefinition } from 'memeloop';
 import { getBuiltinAgentDefinitions, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
-
-// ── IPC contract ───────────────────────────────────────────────────
-
-export interface IAgentDefinitionService {
-  initialize(): Promise<void>;
-  createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
-  updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition>;
-  getAgentDefs(): Promise<AgentDefinition[]>;
-  getAgentDef(id?: string): Promise<AgentDefinition | undefined>;
-  getAgentTemplates(): Promise<AgentDefinition[]>;
-  deleteAgentDef(id: string): Promise<void>;
-}
-
-export const AgentDefinitionServiceIPCDescriptor = {
-  channel: AgentChannel.definition,
-  properties: {
-    createAgentDef: ProxyPropertyType.Function,
-    updateAgentDef: ProxyPropertyType.Function,
-    getAgentDefs: ProxyPropertyType.Function,
-    getAgentDef: ProxyPropertyType.Function,
-    getAgentTemplates: ProxyPropertyType.Function,
-    deleteAgentDef: ProxyPropertyType.Function,
-  },
-};
-
-/** ID of the built-in agent definition to use as the default when creating a new agent. */
-export function getDefaultAgentDefinitionId(): string {
-  const builtinAgents = getBuiltinAgentDefinitions() as unknown as Array<{ id: string }>;
-  return builtinAgents[0]?.id ?? 'memeloop:general-assistant';
-}
-
-// ── Service implementation ─────────────────────────────────────────
 
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
@@ -58,6 +21,7 @@ import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IAgentDefinitionService } from './interface';
 
 const defaultAgentsList = getBuiltinAgentDefinitions();
 
