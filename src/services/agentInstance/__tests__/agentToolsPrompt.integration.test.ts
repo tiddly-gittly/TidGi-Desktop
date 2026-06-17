@@ -54,8 +54,8 @@ describe('default agent tools → prompt integration', () => {
 
     // Diagnostic: check plugin registry
     const { pluginRegistry: pr } = await import('@services/agentInstance/tools/index');
-    const { getAllToolDefinitions: gtd } = await import('@services/agentInstance/tools/defineTool');
-    const toolDefs = gtd();
+    const { getAllToolDefinitions: getGtd } = await import('memeloop');
+    const toolDefs = getGtd();
     console.log('toolRegistry keys:', Array.from(toolDefs.keys()));
     console.log('pluginRegistry keys:', Array.from(pr.keys()));
     console.log('pluginRegistry size:', pr.size);
