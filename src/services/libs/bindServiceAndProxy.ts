@@ -7,7 +7,7 @@ import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 import { AgentBrowserService } from '@services/agentBrowser';
-import { AgentDefinitionService } from '@services/agentDefinitionService';
+import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
 import { AnalyticsService } from '@services/analytics';
 import { Authentication } from '@services/auth';
@@ -34,7 +34,7 @@ import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
 import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
-import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinitionService';
+import { AgentDefinitionServiceIPCDescriptor, type IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { AgentInstanceServiceIPCDescriptor, type IAgentInstanceService } from '@services/agentInstance/interface';
 import { AnalyticsServiceIPCDescriptor, type IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';

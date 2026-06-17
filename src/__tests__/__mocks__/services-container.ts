@@ -1,6 +1,6 @@
 import type { AIStreamResponse, IExternalAPIService } from '@/services/externalAPI/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
-import { AgentDefinitionService } from '@services/agentDefinitionService';
+import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';

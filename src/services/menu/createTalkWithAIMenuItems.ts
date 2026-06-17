@@ -1,5 +1,5 @@
 import { IAskAIWithSelectionData, WindowChannel } from '@/constants/channels';
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { MenuItemConstructorOptions } from 'electron';

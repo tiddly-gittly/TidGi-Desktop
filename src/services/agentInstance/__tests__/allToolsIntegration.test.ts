@@ -3,7 +3,7 @@
  * Verifies filesystem side effects for wikiOperation.
  */
 import { WikiChannel } from '@/constants/channels';
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentDefinition } from 'memeloop';
 import type { AgentInstance } from 'memeloop';
 
