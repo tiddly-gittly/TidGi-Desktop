@@ -14,6 +14,7 @@ import { AuthenticationServiceIPCDescriptor, type IAuthenticationService } from 
 import { ContextServiceIPCDescriptor, type IContextService } from '@services/context/interface';
 import { DatabaseServiceIPCDescriptor, type IDatabaseService } from '@services/database/interface';
 import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/deepLink/interface';
+import { DeviceNetworkServiceIPCDescriptor, type IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '@services/externalAPI/interface';
 import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
 import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
@@ -39,6 +40,7 @@ export const analytics = createProxy<IAnalyticsService>(AnalyticsServiceIPCDescr
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
+export const deviceNetwork = createProxy<IDeviceNetworkService>(DeviceNetworkServiceIPCDescriptor);
 export const externalAPI = createProxy<IExternalAPIService>(ExternalAPIServiceIPCDescriptor);
 export const database = createProxy<IDatabaseService>(DatabaseServiceIPCDescriptor);
 export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
@@ -66,6 +68,7 @@ export const descriptors = {
   auth: AuthenticationServiceIPCDescriptor,
   context: ContextServiceIPCDescriptor,
   deepLink: DeepLinkServiceIPCDescriptor,
+  deviceNetwork: DeviceNetworkServiceIPCDescriptor,
   git: GitServiceIPCDescriptor,
   menu: MenuServiceIPCDescriptor,
   native: NativeServiceIPCDescriptor,

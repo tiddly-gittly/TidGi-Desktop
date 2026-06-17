@@ -170,6 +170,10 @@ export enum ExternalAPIChannel {
   name = 'ExternalAPIChannel',
 }
 
+export enum DeviceNetworkChannel {
+  name = 'DeviceNetworkChannel',
+}
+
 export enum WikiEmbeddingChannel {
   name = 'WikiEmbeddingChannel',
 }
