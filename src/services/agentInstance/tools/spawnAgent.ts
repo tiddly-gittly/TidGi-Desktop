@@ -6,10 +6,10 @@ import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { registerToolDefinition } from 'memeloop';
+import type { AgentDefinition, ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import type { IAgentInstanceService } from '../interface';
-import { registerToolDefinition } from 'memeloop';
-import type { ToolExecutionResult } from 'memeloop';
 
 export const SpawnAgentParameterSchema = z.object({
   toolListPosition: z.object({
@@ -142,10 +142,13 @@ const spawnAgentDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'spawn-agent') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (agentFrameworkContext.isCancelled?.()) return;
 
     const timeoutMs = config?.defaultTimeoutMs ?? 120000;
-    await executeToolCall('spawn-agent', (parameters) => executeSpawnAgent(parameters, agentFrameworkContext.agent.id, agentFrameworkContext.agentDef.id, timeoutMs));
+    await executeToolCall(
+      'spawn-agent',
+      (parameters) => executeSpawnAgent(parameters, agentFrameworkContext.agent.id, (agentFrameworkContext as { agentDef?: AgentDefinition }).agentDef!.id, timeoutMs),
+    );
   },
 });
 

@@ -8,8 +8,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { identity } from 'lodash';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
+import { z } from 'zod/v4';
 
 const t = identity;
 

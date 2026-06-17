@@ -59,7 +59,7 @@ export async function initializePluginSystem(): Promise<void> {
   // Register LLM tools from the tool registry
   const llmTools = getAllToolDefinitions();
   for (const [toolId, toolDefinition] of llmTools) {
-    pluginRegistry.set(toolId, toolDefinition.tool);
+    pluginRegistry.set(toolId, toolDefinition.tool as unknown as PromptConcatTool);
     registerToolParameterSchema(toolId, toolDefinition.configSchema, {
       displayName: toolDefinition.displayName,
       description: toolDefinition.description,
