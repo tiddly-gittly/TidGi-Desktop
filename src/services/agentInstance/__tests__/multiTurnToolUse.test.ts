@@ -7,7 +7,8 @@ import { getBuiltinAgentDefinitions } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { AgentDefinition } from 'memeloop';
 import type { AgentInstance } from 'memeloop';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
