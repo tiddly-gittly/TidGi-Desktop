@@ -9,6 +9,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { MemeLoopRuntimeProvider } from '@memeloop/react-ui/chat';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 import type { ChatMessage } from 'memeloop';
@@ -47,7 +48,24 @@ Object.defineProperty(window, 'service', {
   writable: true,
 });
 
-const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => <ThemeProvider theme={lightTheme}>{children}</ThemeProvider>;
+const mockAdapter = {
+  messages: [],
+  isRunning: false,
+  isLoading: false,
+  error: null,
+  sendMessage: vi.fn(),
+  cancel: vi.fn(),
+  deleteTurn: vi.fn(),
+  retryTurn: vi.fn(),
+  resolveAskQuestion: vi.fn(),
+  updateMessage: vi.fn(),
+};
+
+const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ThemeProvider theme={lightTheme}>
+    <MemeLoopRuntimeProvider adapter={mockAdapter}>{children}</MemeLoopRuntimeProvider>
+  </ThemeProvider>
+);
 
 function makeMessage(overrides: Partial<ChatMessage> & { id?: string; agentId?: string; modified?: Date }): ChatMessage {
   return {
@@ -170,6 +188,9 @@ describe('BaseMessageRenderer', () => {
 });
 
 // ── AskQuestionRenderer ────────────────────────────────────────────────
+// Detailed UI behaviour for ask-question messages now lives upstream in
+// @memeloop/react-ui. Desktop only keeps a smoke test to ensure routing and
+// adapter wiring still work.
 
 describe('AskQuestionRenderer', () => {
   let AskQuestionRenderer: typeof import('../AskQuestionRenderer').AskQuestionRenderer;
@@ -185,173 +206,36 @@ describe('AskQuestionRenderer', () => {
       content: `<functions_result>\nTool: ask-question\nParameters: {}\nResult: ${JSON.stringify(data)}\n</functions_result>`,
     });
 
-  describe('single-select (default)', () => {
-    it('should render question text and options as chips', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Which workspace?',
-        options: [{ label: 'Wiki A' }, { label: 'Wiki B' }],
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.getByText('Which workspace?')).toBeInTheDocument();
-      expect(screen.getByText('Wiki A')).toBeInTheDocument();
-      expect(screen.getByText('Wiki B')).toBeInTheDocument();
+  it('should render question text and options from upstream AskQuestionContent', () => {
+    const msg = makeAskQuestionMessage({
+      type: 'ask-question',
+      question: 'Which workspace?',
+      options: [{ label: 'Wiki A' }, { label: 'Wiki B' }],
     });
-
-    it('should send option label when chip is clicked', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Pick one',
-        options: [{ label: 'Option 1' }],
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      fireEvent.click(screen.getByText('Option 1'));
-      expect(mockSendMessage).toHaveBeenCalledWith('Option 1');
-    });
-
-    it('should remove options from DOM after answering', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Pick one',
-        options: [{ label: 'A' }, { label: 'B' }],
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      fireEvent.click(screen.getByText('A'));
-      // After clicking, "Answer submitted" text appears
-      expect(screen.getByText(/Answer submitted/)).toBeInTheDocument();
-      // Options should be removed from DOM (not just disabled)
-      expect(screen.queryByTestId('ask-question-option-0')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('ask-question-option-1')).not.toBeInTheDocument();
-    });
-
-    it('should show freeform text input when allowFreeform is true', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Pick or type',
-        options: [{ label: 'X' }],
-        allowFreeform: true,
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.getByTestId('ask-question-freeform')).toBeInTheDocument();
-    });
-
-    it('should NOT show freeform input when allowFreeform is false', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Only options',
-        options: [{ label: 'X' }],
-        allowFreeform: false,
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.queryByTestId('ask-question-freeform')).not.toBeInTheDocument();
-    });
+    render(
+      <Wrapper>
+        <AskQuestionRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
+    expect(screen.getByText('Which workspace?')).toBeInTheDocument();
+    expect(screen.getByText('Wiki A')).toBeInTheDocument();
+    expect(screen.getByText('Wiki B')).toBeInTheDocument();
   });
 
-  describe('multi-select', () => {
-    it('should render checkboxes for options', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Select tags',
-        inputType: 'multi-select',
-        options: [{ label: 'journal' }, { label: 'important' }],
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.getByTestId('ask-question-multiselect')).toBeInTheDocument();
-      expect(screen.getByText('journal')).toBeInTheDocument();
-      expect(screen.getByText('important')).toBeInTheDocument();
+  it('should call adapter.resolveAskQuestion when an option is selected', () => {
+    const msg = makeAskQuestionMessage({
+      type: 'ask-question',
+      questionId: 'q-1',
+      question: 'Pick one',
+      options: [{ label: 'Option 1' }],
     });
-
-    it('should send comma-separated values when submitted', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Select tags',
-        inputType: 'multi-select',
-        options: [{ label: 'journal' }, { label: 'important' }, { label: 'todo' }],
-        allowFreeform: true,
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      // Check two checkboxes
-      fireEvent.click(screen.getByTestId('ask-question-checkbox-0'));
-      fireEvent.click(screen.getByTestId('ask-question-checkbox-2'));
-      // Click submit
-      fireEvent.click(screen.getByTestId('ask-question-submit'));
-      expect(mockSendMessage).toHaveBeenCalledWith('journal, todo');
-    });
-  });
-
-  describe('text input', () => {
-    it('should show only text input with no options', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Describe changes',
-        inputType: 'text',
-      });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.getByTestId('ask-question-text-input')).toBeInTheDocument();
-      expect(screen.queryByTestId('ask-question-options')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('ask-question-multiselect')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('answered state persistence', () => {
-    it('should initialize answered=true from metadata', () => {
-      const msg = makeAskQuestionMessage({
-        type: 'ask-question',
-        question: 'Already answered',
-        options: [{ label: 'A' }],
-      });
-      msg.metadata = { askQuestionAnswered: true };
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.getByText(/Answer submitted/)).toBeInTheDocument();
-    });
-  });
-
-  describe('fallback', () => {
-    it('should render raw content when JSON is unparseable', () => {
-      const msg = makeMessage({ content: 'not json content' });
-      render(
-        <Wrapper>
-          <AskQuestionRenderer message={msg} isUser={false} />
-        </Wrapper>,
-      );
-      expect(screen.getByText('not json content')).toBeInTheDocument();
-    });
+    render(
+      <Wrapper>
+        <AskQuestionRenderer message={msg} isUser={false} />
+      </Wrapper>,
+    );
+    fireEvent.click(screen.getByText('Option 1'));
+    expect(mockAdapter.resolveAskQuestion).toHaveBeenCalledWith('q-1', 'Option 1');
   });
 });
 

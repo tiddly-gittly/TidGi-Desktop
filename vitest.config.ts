@@ -83,7 +83,10 @@ export default defineConfig({
       { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, './node_modules/react-dom/client.js') },
       // Resolve memeloop packages for vitest (SWC-transformed files need explicit paths)
       { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
+      { find: /^@memeloop\/react-ui\/chat$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js') },
       { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js') },
+      // MUI imports react-transition-group as a directory; force the ESM entry.
+      { find: /^react-transition-group\/TransitionGroupContext$/, replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js') },
       // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
       { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
     ],
