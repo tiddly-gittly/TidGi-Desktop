@@ -214,3 +214,15 @@ Use `--disable-gpu --disable-software-rasterizer --in-process-gpu`
 ```sh
 xvfb-run -a npx electron-forge start -- --disable-gpu --disable-software-rasterizer --in-process-gpu &
 ```
+
+## SUID sandbox helper binary was found, but is not configured correctly
+
+```
+FATAL:sandbox/linux/suid/client/setuid_sandbox_host.cc:166] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure that xxx/node_modules/electron/dist/chrome-sandbox is owned by root and has mode 4755.
+```
+
+The chrome-sandbox SUID bit is missing after electron install/rebuild on Linux. Fix:
+
+```sh
+sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+```
