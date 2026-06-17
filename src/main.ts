@@ -30,6 +30,7 @@ import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
+import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
@@ -88,6 +89,7 @@ const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
+const deviceNetworkService = container.get<IDeviceNetworkService>(serviceIdentifier.DeviceNetwork);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
 const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
@@ -234,6 +236,13 @@ const commonInit = async (): Promise<void> => {
 
   // Initialize MCP server (CLI flags, env vars, or preferences)
   await initializeMcpServer(preferenceService);
+
+  // Start device network service after all core services are ready
+  try {
+    await deviceNetworkService.start();
+  } catch (error) {
+    logger.error('Failed to start DeviceNetworkService', { error });
+  }
 
   // Track app launch event
   void analyticsService.trackAppLaunch();
