@@ -12,10 +12,10 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { AiAPIConfig } from 'memeloop';
-import type { ITiddlerFields } from 'tiddlywiki';
-import { z } from 'zod/v4';
 import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
+import type { ITiddlerFields } from 'tiddlywiki';
+import { z } from 'zod/v4';
 
 /**
  * Wiki Search Config Schema (user-configurable in UI)
@@ -348,12 +348,12 @@ const wikiSearchDefinition = registerToolDefinition({
     if (!toolCall.found) return;
 
     // Check cancellation
-    if (agentFrameworkContext.isCancelled()) {
+    if (agentFrameworkContext.isCancelled?.()) {
       logger.debug('Wiki search cancelled', { agentId: agentFrameworkContext.agent.id });
       return;
     }
 
-    const aiConfig = agentFrameworkContext.agent.aiApiConfig;
+    const aiConfig = (agentFrameworkContext.agent as { aiApiConfig?: AiAPIConfig }).aiApiConfig;
 
     if (toolCall.toolId === 'wiki-search') {
       await executeToolCall('wiki-search', (parameters) => executeWikiSearch(parameters, aiConfig));
