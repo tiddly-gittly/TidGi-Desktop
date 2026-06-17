@@ -2,7 +2,7 @@
  * DesktopAgentChatTab — Desktop-specific chat tab adapter.
  *
  * Bridges the Desktop Zustand store (useAgentChatStore) with the shared
- * MemeLoopRuntimeProvider/MemeLoopThread from @memeloop/react-ui/chat.
+ * AgentChatView from @memeloop/react-ui/agent.
  *
  * Desktop-specific responsibilities:
  * - Agent loading/subscription lifecycle via tab.agentId
@@ -13,26 +13,21 @@
  * - Split view handling
  */
 
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CopyAllIcon from '@mui/icons-material/CopyAll';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import ReplayIcon from '@mui/icons-material/Replay';
-import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import type { ChatMessage, WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { WikiChannel } from '@/constants/channels';
-import { type MemeLoopChatAdapter, MemeLoopComposer, MemeLoopRuntimeProvider, MemeLoopThread, useAui } from '@memeloop/react-ui/chat';
+import { AgentChatView } from '@memeloop/react-ui/agent';
+import { type MemeLoopChatAdapter, useAui } from '@memeloop/react-ui/chat';
 import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 
-import { ChatHeader } from '../ChatTabContent/components/ChatHeader';
-import { MessageRenderer } from '../ChatTabContent/components/MessageRenderer';
-import { WikiTiddlerSelector } from '../ChatTabContent/components/WikiTiddlerSelector';
-import { useMessageHandling } from '../ChatTabContent/hooks/useMessageHandling';
-import { useRegisterMessageRenderers } from '../ChatTabContent/hooks/useMessageRendering';
-import { isChatTab } from '../ChatTabContent/utils/tabTypeGuards';
+import { ChatHeader } from './components/ChatHeader';
+import { WikiTiddlerSelector } from './components/WikiTiddlerSelector';
+import { useMessageHandling } from './hooks/useMessageHandling';
+import { isChatTab } from './utils/tabTypeGuards';
 
 import { useAgentChatStore } from '../store/agentChatStore';
 import { useTabStore } from '../store/tabStore';
@@ -80,6 +75,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     orderedMessageIds,
     streamingMessageIds,
     sendMessage: storeSendMessage,
+    updateMessage,
     deleteTurn,
     retryTurn,
   } = useAgentChatStore(
@@ -95,6 +91,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       orderedMessageIds: state.orderedMessageIds,
       streamingMessageIds: state.streamingMessageIds,
       sendMessage: state.sendMessage,
+      updateMessage: state.updateMessage,
       deleteTurn: state.deleteTurn,
       retryTurn: state.retryTurn,
     })),
@@ -112,8 +109,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     handleRemoveWikiTiddler,
     clearAttachments,
   } = useMessageHandling();
-
-  useRegisterMessageRenderers();
 
   // Fetch agent and subscribe on tab/agent change.
   useEffect(() => {
@@ -159,6 +154,17 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         await deleteTurn(userMessageId);
       },
       retryTurn,
+      resolveAskQuestion: async (questionId, answer) => {
+        if (agent?.id) {
+          window.service.agentInstance.resolveAskQuestion(agent.id, questionId, answer);
+        }
+      },
+      updateMessage: async (message) => {
+        updateMessage(message);
+        if (agent?.id) {
+          window.service.agentInstance.debounceUpdateMessage(message, agent.id, 0);
+        }
+      },
     }),
     [
       orderedMessages,
@@ -169,6 +175,8 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       storeSendMessage,
       clearAttachments,
       cancelAgent,
+      agent?.id,
+      updateMessage,
       deleteTurn,
       retryTurn,
     ],
@@ -193,120 +201,12 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [tab.agentDefId, tab.id, updateTabData, fetchAgent],
   );
 
-  const renderMessageContent = React.useCallback(
-    (message: ChatMessage, isUser: boolean) => <MessageRenderer message={message} isUser={isUser} />,
-    [],
-  );
-
-  /**
-   * Render turn action buttons below assistant messages.
-   */
-  const renderTurnActions = useCallback(
-    (message: ChatMessage) => {
-      if (message.role === 'user') return null;
-
-      const currentIndex = orderedMessageIds.indexOf(message.messageId);
-      if (currentIndex < 0) return null;
-      const precedingUserMessageIds = orderedMessageIds
-        .slice(0, currentIndex)
-        .filter((id) => messages.get(id)?.role === 'user');
-      const userMessageId = precedingUserMessageIds.length > 0
-        ? precedingUserMessageIds[precedingUserMessageIds.length - 1]
-        : undefined;
-      if (!userMessageId) return null;
-
-      const handleRetry = () => retryTurn(userMessageId);
-      const handleDelete = () => deleteTurn(userMessageId);
-
-      const handleCopy = () => {
-        const fromIndex = currentIndex;
-        const toIndex = orderedMessageIds.findIndex((id, index) => index > currentIndex && messages.get(id)?.role === 'user');
-        const rangeIds = toIndex >= 0 ? orderedMessageIds.slice(fromIndex, toIndex) : orderedMessageIds.slice(fromIndex);
-        const text = rangeIds
-          .map((id) => messages.get(id)?.content ?? '')
-          .filter(Boolean)
-          .join('\n\n');
-        if (text) void navigator.clipboard.writeText(text);
-      };
-
-      const handleCopyAll = () => {
-        const allText = orderedMessageIds
-          .map((id) => {
-            const message_ = messages.get(id);
-            if (!message_) return '';
-            const role = message_.role === 'user' ? 'User' : 'Agent';
-            const content = message_.content || '';
-            return content ? `${role}: ${content}` : '';
-          })
-          .filter(Boolean)
-          .join('\n\n');
-        if (allText) void navigator.clipboard.writeText(allText);
-      };
-
-      const isAgentMessage = message.role === 'assistant';
-
-      return (
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 0.5,
-            mt: 0.5,
-            opacity: 0.15,
-            transition: 'opacity 0.15s',
-            '&:hover': { opacity: 1 },
-            '.turn-group:hover &': { opacity: 1 },
-          }}
-        >
-          {isAgentMessage && (
-            <>
-              <Tooltip title='Retry'>
-                <IconButton size='small' onClick={handleRetry}>
-                  <ReplayIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title='Delete turn'>
-                <IconButton size='small' onClick={handleDelete}>
-                  <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-          <Tooltip title='Copy'>
-            <IconButton size='small' onClick={handleCopy}>
-              <ContentCopyIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title='Copy all'>
-            <IconButton size='small' onClick={handleCopyAll}>
-              <CopyAllIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      );
-    },
-    [orderedMessageIds, messages, retryTurn, deleteTurn],
-  );
-
   const renderAttachmentActions = (
     <WikiTiddlerSelector
       disabled={!agent || isWorking}
       onSelect={(tiddler) => {
         handleWikiTiddlerSelect(tiddler);
       }}
-    />
-  );
-
-  const composer = (
-    <MemeLoopComposer
-      selectedFile={selectedFile}
-      selectedWikiTiddlers={selectedWikiTiddlers}
-      onFileSelect={handleFileSelect}
-      onWikiTiddlerSelect={handleWikiTiddlerSelect}
-      onClearFile={handleClearFile}
-      onRemoveWikiTiddler={handleRemoveWikiTiddler}
-      renderAttachmentActions={renderAttachmentActions}
-      disabled={!agent || isWorking}
-      placeholder={t('Agent.StartConversation')}
     />
   );
 
@@ -343,49 +243,33 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [isSplitView],
   );
 
-  const empty = (
-    <>
-      {!loading && !error && orderedMessageIds.length === 0 && (
-        <Box sx={{ textAlign: 'center', p: 4, color: 'text.secondary' }}>
-          <Typography>{t('Agent.StartConversation')}</Typography>
-        </Box>
-      )}
-      {loading && orderedMessageIds.length === 0 && (
-        <Box sx={{ textAlign: 'center', p: 4 }}>
-          <CircularProgress size={24} />
-          <Typography sx={{ mt: 2 }}>{t('Agent.LoadingChat')}</Typography>
-        </Box>
-      )}
-      {error && (
-        <Box sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-          <Typography>{error.message}</Typography>
-        </Box>
-      )}
-    </>
-  );
-
   return (
-    <MemeLoopRuntimeProvider adapter={adapter}>
-      <MemeLoopThread
-        header={
-          <HeaderWithComposerText
-            title={tab.title}
-            onOpenParameters={handleOpenParameters}
-            loading={isWorking}
-            currentAgentDefId={tab.agentDefId}
-            onSwitchAgent={handleSwitchAgent}
-            isStreaming={isStreaming}
-            isSplitView={isSplitView}
-          />
-        }
-        empty={empty}
-        composerComponent={() => composer}
-        renderMessageContent={renderMessageContent}
-        renderTurnActions={renderTurnActions}
-        onWikiTiddlerClick={handleWikiTiddlerClick}
-      />
-
-      {parametersOpen && (
+    <AgentChatView
+      adapter={adapter}
+      header={
+        <HeaderWithComposerText
+          title={tab.title}
+          onOpenParameters={handleOpenParameters}
+          loading={isWorking}
+          currentAgentDefId={tab.agentDefId}
+          onSwitchAgent={handleSwitchAgent}
+          isStreaming={isStreaming}
+          isSplitView={isSplitView}
+        />
+      }
+      renderAttachmentActions={renderAttachmentActions}
+      selectedFile={selectedFile}
+      selectedWikiTiddlers={selectedWikiTiddlers}
+      onFileSelect={handleFileSelect}
+      onWikiTiddlerSelect={handleWikiTiddlerSelect}
+      onClearFile={handleClearFile}
+      onRemoveWikiTiddler={handleRemoveWikiTiddler}
+      onWikiTiddlerClick={handleWikiTiddlerClick}
+      disabled={!agent || isWorking}
+      placeholder={t('Agent.StartConversation')}
+      loadingMessage={t('Agent.LoadingChat')}
+      emptyMessage={t('Agent.StartConversation')}
+      footer={parametersOpen && (
         <AIModelParametersDialog
           open={parametersOpen}
           onClose={() => {
@@ -409,6 +293,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           }}
         />
       )}
-    </MemeLoopRuntimeProvider>
+    />
   );
 };

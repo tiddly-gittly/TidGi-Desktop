@@ -17,6 +17,15 @@ import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
+  return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  };
+}
+
 describe('all tools integration', () => {
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
@@ -33,11 +42,13 @@ describe('all tools integration', () => {
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     await agentInstanceService.initializeFrameworks();
 
-    const defaultAgent = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant') as unknown as import('memeloop').AgentDefinition | undefined;
+    const defaultProfile = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant');
+    if (!defaultProfile) throw new Error('Missing built-in general assistant profile');
+    const defaultAgent = toAgentDefinition(defaultProfile);
     testAgentInstance = {
-      ...(defaultAgent as AgentDefinition),
+      ...defaultAgent,
       id: nanoid(),
-      agentDefId: defaultAgent!.id,
+      agentDefId: defaultAgent.id,
       name: 'Tool Test Agent',
       status: { state: 'working', modified: new Date() },
       created: new Date(),

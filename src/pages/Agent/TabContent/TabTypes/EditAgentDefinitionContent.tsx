@@ -8,8 +8,7 @@ import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DesktopAgentChatTab } from '../../adapters';
-import { PromptConfigForm } from '../../../ChatTabContent/components/PromptPreviewDialog/PromptConfigForm';
-// TODO: Migrate to @memeloop/react-ui/agent PromptConfigForm
+import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
 import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
