@@ -1,6 +1,6 @@
 import { AgentDefinition } from '@services/agentDefinitionService';
-import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/schema';
 import { ModelMessage } from 'ai';
+import type { AgentPromptDescription, PromptNode as IPrompt } from 'memeloop';
 import type { AgentInstance, ChatMessage } from 'memeloop';
 
 // Type for agent data without messages - exported for use in other components

@@ -11,8 +11,14 @@ import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import { getBuiltinAgentDefinitions, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
-export type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig, IAgentDefinitionService } from '@services/agentDefinition/interface';
+export type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
 export { AgentDefinitionServiceIPCDescriptor } from '@services/agentDefinition/interface';
+
+/** ID of the built-in agent definition to use as the default when creating a new agent. */
+export function getDefaultAgentDefinitionId(): string {
+  const builtinAgents = getBuiltinAgentDefinitions() as unknown as Array<{ id: string }>;
+  return builtinAgents[0]?.id ?? 'memeloop:general-assistant';
+}
 
 // ── Service implementation ─────────────────────────────────────────
 
