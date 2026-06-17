@@ -13,7 +13,8 @@ import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/datab
 import { logger } from '@services/libs/log';
 
 import type { AgentInstance, ChatMessage } from 'memeloop';
-import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
+import { createAgentInstanceFromDefinition } from 'memeloop';
+import { AGENT_INSTANCE_FIELDS, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
 
 export async function createAgent(
   agentInstanceRepo: Repository<AgentInstanceEntity>,
@@ -41,13 +42,15 @@ export async function createAgent(
     throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
   }
 
-  const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition);
+  const now = new Date();
+  const instanceId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const instanceData = createAgentInstanceFromDefinition(agentDefinition, {
+    id: instanceId,
+    volatile: options?.preview || options?.volatile || false,
+  });
 
-  if (options?.preview || options?.volatile) {
-    instanceData.volatile = true;
-  }
-
-  const instanceEntity = agentInstanceRepo.create(toDatabaseCompatibleInstance(instanceData));
+  const { created: _created, modified: _modified, ...instanceForPersistence } = instanceData;
+  const instanceEntity = agentInstanceRepo.create(toDatabaseCompatibleInstance(instanceForPersistence));
 
   // Add timeout to database save operation
   const savePromise = agentInstanceRepo.save(instanceEntity);
