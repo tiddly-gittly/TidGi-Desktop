@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import { TabType } from '@/pages/Agent/types/tab';
-import { getDefaultAgentDefinitionId } from '@services/agentDefinitionService';
+import { getDefaultAgentDefinitionId } from '@services/agentDefinition/defaults';
 import { Search } from '../../components/Search/Search';
 import { INewTab } from '../../types/tab';
 

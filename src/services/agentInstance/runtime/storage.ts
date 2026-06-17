@@ -1,6 +1,6 @@
 import type { AgentDefinition, AgentInstanceMeta, AttachmentReference, ChatMessage, ConversationMeta, GetMessagesOptions, IAgentStorage, ListConversationsOptions } from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance } from 'memeloop';
 import type { IAgentInstanceService } from '../interface';
 import { toConversationMeta } from './messageMapping';

@@ -2,7 +2,7 @@ import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
-import type { IAgentDefinitionService } from '@services/agentDefinitionService';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 
 import { initializePluginSystem, pluginRegistry } from '@services/agentInstance/tools';
 import { container } from '@services/container';
