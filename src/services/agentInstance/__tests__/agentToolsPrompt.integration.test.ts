@@ -10,7 +10,7 @@ import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { AgentFrameworkConfig } from 'memeloop';
-import { getBuiltinAgentDefinitions, mergeAgentToolsIntoFrameworkConfig } from 'memeloop';
+import { getBuiltinLoopProfiles, mergeAgentToolsIntoFrameworkConfig } from 'memeloop';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('default agent tools → prompt integration', () => {
@@ -28,7 +28,7 @@ describe('default agent tools → prompt integration', () => {
   });
 
   it('builtin general-assistant agentTools are reflected in the prompt', async () => {
-    const defaultAgent = getBuiltinAgentDefinitions().find(agent => agent.id === 'memeloop:general-assistant') as unknown as {
+    const defaultAgent = getBuiltinLoopProfiles().find(agent => agent.id === 'memeloop:general-assistant') as unknown as {
       id: string;
       agentTools?: Array<{ toolId: string; parameters?: Record<string, unknown> }>;
       agentFrameworkConfig: Record<string, unknown>;

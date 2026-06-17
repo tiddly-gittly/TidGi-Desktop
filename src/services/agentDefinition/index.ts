@@ -9,7 +9,7 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import type { AgentDefinition } from 'memeloop';
-import { getBuiltinAgentDefinitions, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
+import { getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
@@ -23,7 +23,7 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAgentDefinitionService } from './interface';
 
-const defaultAgentsList = getBuiltinAgentDefinitions();
+const defaultAgentsList = getBuiltinLoopProfiles() as unknown as AgentDefinition[];
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;

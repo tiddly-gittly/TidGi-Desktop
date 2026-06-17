@@ -5,7 +5,7 @@ import type { AIGlobalSettings, AIStreamResponse } from '@services/externalAPI/i
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ModelMessage } from 'ai';
-import { getBuiltinAgentDefinitions } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('ExternalAPIService logging', () => {
@@ -24,7 +24,7 @@ describe('ExternalAPIService logging', () => {
 
     // Clear existing data and add test data
     await agentDefRepo.clear();
-    const example = (getBuiltinAgentDefinitions())[0];
+    const example = (getBuiltinLoopProfiles())[0];
     await agentDefRepo.save({ id: example.id });
   });
 
