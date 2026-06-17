@@ -1,5 +1,6 @@
-import { ChatTabContent } from '@/pages/ChatTabContent';
+import { DesktopAgentChatTab } from '../../adapters';
 import { PromptConfigForm } from '@/pages/ChatTabContent/components/PromptPreviewDialog/PromptConfigForm';
+// TODO: Migrate to @memeloop/react-ui/agent PromptConfigForm
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
@@ -449,7 +450,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             {temporaryAgentDefinition && previewAgentId
               ? (
                 <Box sx={{ flex: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                  <ChatTabContent
+                  <DesktopAgentChatTab
                     tab={{
                       id: `preview-${previewAgentId}`,
                       type: TabType.CHAT,
