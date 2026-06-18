@@ -35,6 +35,7 @@ onlyBuiltDependencies:
 nodeLinker: hoisted
 
 allowBuilds:
+  '@ipshipyard/node-datachannel': true
   '@swc/core': true
   better-sqlite3: true
   dprint: true
