@@ -8,9 +8,9 @@ import React, { FC, lazy, Suspense, SyntheticEvent, useCallback, useEffect, useS
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import type { AgentFrameworkConfig } from 'memeloop';
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 
 // Lazy load Monaco Editor only when needed
 const MonacoEditor = lazy(async () => await import('@monaco-editor/react'));
