@@ -1,3 +1,5 @@
+import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown';
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import ArticleIcon from '@mui/icons-material/Article';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import EditIcon from '@mui/icons-material/Edit';
@@ -8,8 +10,6 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown';
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import { AgentSwitcher } from './AgentSwitcher';
 import { APILogsDialog } from './APILogsDialog';
 import ChatTitle from './ChatTitle';

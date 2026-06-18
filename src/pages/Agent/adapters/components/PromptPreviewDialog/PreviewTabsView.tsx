@@ -6,8 +6,8 @@ import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
-import { PromptTree } from '@memeloop/react-ui/agent';
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
+import { PromptTree } from '@memeloop/react-ui/agent';
 
 interface ModelMessageContent {
   text?: string;

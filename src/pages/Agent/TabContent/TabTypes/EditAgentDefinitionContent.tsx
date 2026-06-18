@@ -1,3 +1,4 @@
+import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { Alert, Box, Button, CircularProgress, Container, Divider, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -9,7 +10,6 @@ import type { AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DesktopAgentChatTab } from '../../adapters';
-import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
 
