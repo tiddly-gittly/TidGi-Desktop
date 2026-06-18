@@ -9,9 +9,9 @@
  * PromptPreviewController from the Desktop renderer process.
  */
 
+export { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
 export { createDesktopAgentDefinitionRepository } from './DesktopAgentDefinitionRepository';
 export { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
-export { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
 export { createDesktopPromptPreviewClient } from './DesktopPromptPreviewClient';
 export { createDesktopScheduledTaskClient } from './DesktopScheduledTaskClient';
 

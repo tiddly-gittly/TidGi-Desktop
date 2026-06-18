@@ -64,7 +64,9 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
           });
         }
       });
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   },
 
   getAgentFrameworkId: async (agentId) => {

@@ -63,10 +63,14 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
             if (!update) return;
             const messages = (update as { messages?: ChatMessage[] }).messages;
             if (messages) {
-              for (const msg of messages) listener(msg);
+              for (const message of messages) listener(message);
             }
           });
-        agentSubscriptions.set(agentId, { unsubscribe: () => subscription.unsubscribe() });
+        agentSubscriptions.set(agentId, {
+          unsubscribe: () => {
+            subscription.unsubscribe();
+          },
+        });
       }
 
       return () => {

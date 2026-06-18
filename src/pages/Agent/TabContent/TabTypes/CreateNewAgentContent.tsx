@@ -1,4 +1,3 @@
-import { DesktopAgentChatTab } from '../../adapters';
 import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
@@ -8,6 +7,7 @@ import type { AgentDefinition } from 'memeloop';
 import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DesktopAgentChatTab } from '../../adapters';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
 import { ICreateNewAgentTab, TabState, TabType } from '../../types/tab';

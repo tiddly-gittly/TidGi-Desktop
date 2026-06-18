@@ -1,13 +1,13 @@
+import { useAIConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAIConfigManagement';
 import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from '@mui/material';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAIConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAIConfigManagement';
 
 // Import from the external component
-import { Autocomplete, TextField } from '@mui/material';
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
+import { Autocomplete, TextField } from '@mui/material';
 
 interface ModelSelectorProps {
   agentDefId?: string;
