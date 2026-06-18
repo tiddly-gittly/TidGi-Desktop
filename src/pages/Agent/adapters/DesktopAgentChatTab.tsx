@@ -20,9 +20,9 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { WikiChannel } from '@/constants/channels';
+import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 import { AgentChatView } from '@memeloop/react-ui/agent';
 import { type MemeLoopChatAdapter, useAui } from '@memeloop/react-ui/chat';
-import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 
 import { ChatHeader } from './components/ChatHeader';
 import { WikiTiddlerSelector } from './components/WikiTiddlerSelector';
@@ -156,13 +156,13 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       retryTurn,
       resolveAskQuestion: async (questionId, answer) => {
         if (agent?.id) {
-          window.service.agentInstance.resolveAskQuestion(agent.id, questionId, answer);
+          await window.service.agentInstance.resolveAskQuestion(agent.id, questionId, answer);
         }
       },
       updateMessage: async (message) => {
         updateMessage(message);
         if (agent?.id) {
-          window.service.agentInstance.debounceUpdateMessage(message, agent.id, 0);
+          await window.service.agentInstance.debounceUpdateMessage(message, agent.id, 0);
         }
       },
     }),
