@@ -1,3 +1,4 @@
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
 import ArticleIcon from '@mui/icons-material/Article';
 import CloseIcon from '@mui/icons-material/Close';
@@ -16,7 +17,6 @@ import Tooltip from '@mui/material/Tooltip';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import { EditView } from './EditView';
 import { PreviewProgressBar } from './PreviewProgressBar';
 import { PreviewTabsView } from './PreviewTabsView';

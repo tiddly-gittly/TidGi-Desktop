@@ -1,7 +1,7 @@
+import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 
 /**
  * Debounce delay before showing the progress bar (ms)

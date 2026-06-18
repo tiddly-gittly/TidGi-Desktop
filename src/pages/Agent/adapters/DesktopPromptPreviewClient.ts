@@ -57,7 +57,7 @@ export const createDesktopPromptPreviewClient = (): PromptPreviewClient => ({
             currentPlugin: state.currentPlugin?.toolId,
           });
 
-          flatPrompts = state.flatPrompts as unknown[];
+          flatPrompts = state.flatPrompts;
           processedPrompts = state.processedPrompts;
 
           if (state.isComplete) {
