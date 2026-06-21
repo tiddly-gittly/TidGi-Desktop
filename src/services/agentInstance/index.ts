@@ -118,7 +118,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public registerBuiltinFrameworks(): void {
-    this.frameworkSchemas.set('memeloopTaskAgent', {
+    this.frameworkSchemas.set('memeloopAgentToolLoop', {
       type: 'object',
       properties: {
         prompts: { type: 'array', items: { type: 'object' } },

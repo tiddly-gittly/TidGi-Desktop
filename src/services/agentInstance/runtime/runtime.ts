@@ -5,7 +5,7 @@ import {
   registerBuiltinLoops,
   registerBuiltinPromptPlugins,
   registerBuiltinToolPlugins,
-  runTaskAgentTurn,
+  runAgentToolLoopTurn,
 } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
@@ -55,7 +55,7 @@ export class MemeLoopDesktopRuntime {
     const context = this.createContext(input.agentId);
     const runner = await this.createProfileRunner(input.agentId, context);
 
-    const result = await runTaskAgentTurn(
+    const result = await runAgentToolLoopTurn(
       context,
       {
         conversationId: input.agentId,
@@ -69,7 +69,7 @@ export class MemeLoopDesktopRuntime {
           agent.status = { state: 'working', progress: status, modified: new Date() };
           this.options.notifyAgentChanged(input.agentId, agent);
         },
-        taskAgent: runner ?? undefined,
+        agentToolLoop: runner ?? undefined,
       },
     );
     return result.state;
@@ -169,7 +169,7 @@ export class MemeLoopDesktopRuntime {
           },
         };
       },
-      taskAgent: {
+      agentToolLoop: {
         maxIterations: 32,
         isCancelled,
         fallbackRegistryTools: false,
