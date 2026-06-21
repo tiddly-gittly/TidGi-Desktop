@@ -16,7 +16,7 @@ describe('agentRepository.createAgent', () => {
     version: '1',
     avatarUrl: 'avatar.png',
     aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' }, modelParameters: {} },
-    agentFrameworkID: 'memeloopTaskAgent',
+    agentFrameworkID: 'memeloopAgentToolLoop',
     agentFrameworkConfig: { prompts: [], plugins: [] },
   };
 
