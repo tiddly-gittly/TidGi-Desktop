@@ -11,6 +11,8 @@ import {
   type MemeLoopDuplexStream,
   type MemeLoopProtocol,
   type PairingSession,
+  type DeviceTrustStore,
+  type TrustedDeviceRecord,
   type SyncResult,
 } from 'memeloop';
 
@@ -25,6 +27,7 @@ import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/in
 import type { IDeviceNetworkService } from './interface';
 
 const DEVICE_IDENTITY_KEY = 'deviceNetwork.identity.v1';
+const TRUSTED_DEVICES_KEY = 'deviceNetwork.trustedDevices.v1';
 
 interface EncryptedIdentityRecord {
   peerId: string;
@@ -33,6 +36,41 @@ interface EncryptedIdentityRecord {
   deviceName: string;
   platform: 'desktop';
   createdAt: number;
+}
+
+type StoredTrustedDevices = unknown;
+
+function isTrustedDeviceRecord(value: unknown): value is TrustedDeviceRecord {
+  const record = value as Record<string, unknown> | undefined;
+  return Boolean(
+    record &&
+      typeof record.peerId === 'string' &&
+      typeof record.publicKeyMultibase === 'string' &&
+      typeof record.deviceName === 'string' &&
+      typeof record.platform === 'string' &&
+      typeof record.trustMode === 'string' &&
+      typeof record.createdAt === 'number',
+  );
+}
+
+class ElectronSettingsDeviceTrustStore implements DeviceTrustStore {
+  public async loadTrustedDevices(): Promise<TrustedDeviceRecord[]> {
+    const stored = settings.getSync(TRUSTED_DEVICES_KEY) as StoredTrustedDevices;
+    return Array.isArray(stored) ? stored.filter(isTrustedDeviceRecord) : [];
+  }
+
+  public async saveTrustedDevice(record: TrustedDeviceRecord): Promise<void> {
+    const records = await this.loadTrustedDevices();
+    const next = records.filter((current) => current.peerId !== record.peerId);
+    next.push(record);
+    settings.setSync(TRUSTED_DEVICES_KEY, next as unknown as Parameters<typeof settings.setSync>[1]);
+  }
+
+  public async removeTrustedDevice(peerId: string): Promise<void> {
+    const records = await this.loadTrustedDevices();
+    const next = records.filter((record) => record.peerId !== peerId);
+    settings.setSync(TRUSTED_DEVICES_KEY, next as unknown as Parameters<typeof settings.setSync>[1]);
+  }
 }
 
 const emptyCapabilities: DeviceCapabilities = {
@@ -48,6 +86,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private core?: Libp2pDeviceNetworkService;
   private identity?: RawSeedDeviceIdentity;
   private started = false;
+  private readonly trustStore = new ElectronSettingsDeviceTrustStore();
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
@@ -64,6 +103,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     this.core = new Libp2pDeviceNetworkService({
       identity: this.identity!,
       capabilities: await this.buildCapabilities(),
+      trustStore: this.trustStore,
       enableMdns: true,
     });
     await this.core.start();
