@@ -1,5 +1,12 @@
-import type { AgentFrameworkContext, AgentInstanceState, ChatMessage } from 'memeloop';
-import { mergeAgentToolsIntoFrameworkConfig, runTaskAgentTurn } from 'memeloop';
+import type { AgentFrameworkContext, AgentInstanceState, AgentLoopGenerator, AgentLoopInput, AgentLoopRuntime, ChatMessage } from 'memeloop';
+import {
+  createAgentLoopRunner,
+  mergeAgentToolsIntoFrameworkConfig,
+  registerBuiltinLoops,
+  registerBuiltinPromptPlugins,
+  registerBuiltinToolPlugins,
+  runTaskAgentTurn,
+} from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -22,6 +29,7 @@ export class MemeLoopDesktopRuntime {
       externalAPIService: IExternalAPIService;
       notifyAgentChanged: (agentId: string, agent: AgentInstance) => void;
       isCancelled: (agentId: string) => boolean;
+      loopScriptPolicy?: AgentFrameworkContext['loopScriptPolicy'];
     },
   ) {
     this.storage = new MemeLoopDesktopStorage({
@@ -29,6 +37,9 @@ export class MemeLoopDesktopRuntime {
       agentDefinitionService: options.agentDefinitionService,
       notifyAgentChanged: options.notifyAgentChanged,
     });
+    registerBuiltinLoops();
+    registerBuiltinToolPlugins();
+    registerBuiltinPromptPlugins(this.toolRegistry.getPromptPlugins());
   }
 
   public async runTurn(input: {
@@ -42,6 +53,7 @@ export class MemeLoopDesktopRuntime {
       beforeCommitMap: input.beforeCommitMap,
     });
     const context = this.createContext(input.agentId);
+    const runner = await this.createProfileRunner(input.agentId, context);
 
     const result = await runTaskAgentTurn(
       context,
@@ -57,19 +69,57 @@ export class MemeLoopDesktopRuntime {
           agent.status = { state: 'working', progress: status, modified: new Date() };
           this.options.notifyAgentChanged(input.agentId, agent);
         },
+        taskAgent: runner ?? undefined,
       },
     );
     return result.state;
   }
 
-  private createContext(agentId: string): AgentFrameworkContext {
+  private async createProfileRunner(agentId: string, context: AgentFrameworkContext): Promise<((input: AgentLoopInput) => AgentLoopGenerator) | null> {
+    const agent = await this.options.agentInstanceService.getAgent(agentId);
+    if (!agent) return null;
+
+    return createAgentLoopRunner(context, {
+      definitionId: agent.agentDefId,
+      conversationId: agentId,
+    });
+  }
+
+  private createRunChildAgent(parentAgentId: string): AgentLoopRuntime['runChildAgent'] {
+    return (input: Parameters<AgentLoopRuntime['runChildAgent']>[0]) => this.runChildAgent(parentAgentId, input);
+  }
+
+  private async *runChildAgent(parentAgentId: string, input: Parameters<AgentLoopRuntime['runChildAgent']>[0]): AgentLoopGenerator {
+    const childAgent = await this.options.agentInstanceService.createAgent(input.profileId, { volatile: true });
+    await this.options.agentInstanceService.updateAgent(childAgent.id, {
+      name: `Sub-task: ${input.prompt.slice(0, 50)}`,
+    });
+
+    const childContext = this.createContext(childAgent.id, parentAgentId);
+    const childRunner = await this.createProfileRunner(childAgent.id, childContext);
+    if (!childRunner) {
+      yield { type: 'message', data: `Child agent profile not found: ${input.profileId}` };
+      return;
+    }
+
+    yield* childRunner({
+      conversationId: childAgent.id,
+      message: input.prompt,
+    });
+  }
+
+  private createContext(agentId: string, parentAgentId?: string): AgentFrameworkContext {
+    const isCancelled = (targetAgentId: string): boolean => {
+      return this.options.isCancelled(targetAgentId) || (parentAgentId ? this.options.isCancelled(parentAgentId) : false);
+    };
+
     return {
       storage: this.storage,
       llmProvider: new MemeLoopDesktopLLMProvider({
         agentInstanceService: this.options.agentInstanceService,
         agentDefinitionService: this.options.agentDefinitionService,
         externalAPIService: this.options.externalAPIService,
-        isCancelled: this.options.isCancelled,
+        isCancelled,
       }),
       tools: this.toolRegistry,
       syncAdapters: [],
@@ -78,7 +128,9 @@ export class MemeLoopDesktopRuntime {
         async stop() {},
       },
       logger,
-      isCancelled: () => this.options.isCancelled(agentId),
+      loopScriptPolicy: this.options.loopScriptPolicy,
+      isCancelled: () => isCancelled(agentId),
+      runChildAgent: this.createRunChildAgent(agentId),
       normalizeMessage: message => {
         return { ...message, originNodeId: message.originNodeId || 'tidgi-desktop' };
       },
@@ -119,7 +171,7 @@ export class MemeLoopDesktopRuntime {
       },
       taskAgent: {
         maxIterations: 32,
-        isCancelled: this.options.isCancelled,
+        isCancelled,
         fallbackRegistryTools: false,
       },
       resolveAgentDefinition: async definitionId => {
