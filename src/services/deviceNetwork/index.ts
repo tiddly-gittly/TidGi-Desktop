@@ -2,9 +2,19 @@ import { app, safeStorage } from 'electron';
 import settings from 'electron-settings';
 import { inject, injectable } from 'inversify';
 
-import crypto from 'node:crypto';
+import {
+  createDeviceIdentity,
+  type Device,
+  type DeviceCapabilities,
+  Libp2pDeviceNetworkService,
+  type LocalDeviceIdentity,
+  type MemeLoopDuplexStream,
+  type MemeLoopProtocol,
+  type PairingSession,
+  type SyncResult,
+} from 'memeloop';
 
-import { type Device, type DeviceCapabilities, type LocalDeviceIdentity, type MemeLoopProtocol, MemoryDeviceNetworkService, type PairingSession, type SyncResult } from 'memeloop';
+import type { RawSeedDeviceIdentity } from 'memeloop';
 
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -25,10 +35,6 @@ interface EncryptedIdentityRecord {
   createdAt: number;
 }
 
-interface DesktopLocalDeviceIdentity extends LocalDeviceIdentity {
-  privateKeyPkcs8Base64Url: string;
-}
-
 const emptyCapabilities: DeviceCapabilities = {
   tools: [],
   mcpServers: [],
@@ -39,8 +45,8 @@ const emptyCapabilities: DeviceCapabilities = {
 
 @injectable()
 export class DeviceNetworkService implements IDeviceNetworkService {
-  private core?: MemoryDeviceNetworkService;
-  private identity?: DesktopLocalDeviceIdentity;
+  private core?: Libp2pDeviceNetworkService;
+  private identity?: RawSeedDeviceIdentity;
   private started = false;
 
   constructor(
@@ -55,9 +61,10 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   public async start(): Promise<void> {
     if (this.started) return;
     await this.ensureIdentity();
-    this.core = new MemoryDeviceNetworkService({
+    this.core = new Libp2pDeviceNetworkService({
       identity: this.identity!,
       capabilities: await this.buildCapabilities(),
+      enableMdns: true,
     });
     await this.core.start();
     this.started = true;
@@ -100,11 +107,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     return this.core!.removeTrustedDevice(peerId);
   }
 
-  public async openStream(peerId: string, protocol: MemeLoopProtocol): Promise<{
-    source: AsyncIterable<Uint8Array>;
-    sink(source: AsyncIterable<Uint8Array>): Promise<void>;
-    close(): Promise<void>;
-  }> {
+  public async openStream(peerId: string, protocol: MemeLoopProtocol): Promise<MemeLoopDuplexStream> {
     return this.core!.openStream(peerId, protocol);
   }
 
@@ -121,42 +124,29 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     const stored = settings.getSync(DEVICE_IDENTITY_KEY) as unknown as EncryptedIdentityRecord | undefined;
     if (stored?.peerId && stored?.publicKeyMultibase && stored?.encryptedPrivateKey) {
       const encrypted = Buffer.from(stored.encryptedPrivateKey, 'base64');
-      const privateKeyPkcs8Base64Url = safeStorage.decryptString(encrypted);
+      const privateKeyRawSeedBase64Url = safeStorage.decryptString(encrypted);
       this.identity = {
         peerId: stored.peerId,
         publicKeyMultibase: stored.publicKeyMultibase,
-        privateKeyRef: 'local-pkcs8',
+        privateKeyRef: 'libp2p-raw-seed',
+        privateKeyRawSeedBase64Url,
         createdAt: stored.createdAt,
         deviceName: stored.deviceName,
         platform: 'desktop',
-        privateKeyPkcs8Base64Url,
       };
       return;
     }
-    const identity = this.createIdentity();
+    const identity = await this.createIdentity();
     await this.saveIdentity(identity);
     this.identity = identity;
   }
 
-  private createIdentity(): DesktopLocalDeviceIdentity {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
-    const publicKeyDer = publicKey.export({ format: 'der', type: 'spki' }) as Buffer;
-    const privateKeyDer = privateKey.export({ format: 'der', type: 'pkcs8' }) as Buffer;
-    const publicKeyMultibase = `spki:${publicKeyDer.toString('base64url')}`;
-    const peerId = `peer:${crypto.createHash('sha256').update(publicKeyDer).digest('base64url')}`;
-    return {
-      peerId,
-      publicKeyMultibase,
-      privateKeyRef: 'local-pkcs8',
-      createdAt: Date.now(),
-      deviceName: app.getName(),
-      platform: 'desktop',
-      privateKeyPkcs8Base64Url: privateKeyDer.toString('base64url'),
-    };
+  private async createIdentity(): Promise<RawSeedDeviceIdentity> {
+    return createDeviceIdentity('desktop', app.getName());
   }
 
-  private async saveIdentity(identity: DesktopLocalDeviceIdentity): Promise<void> {
-    const encrypted = safeStorage.encryptString(identity.privateKeyPkcs8Base64Url);
+  private async saveIdentity(identity: RawSeedDeviceIdentity): Promise<void> {
+    const encrypted = safeStorage.encryptString(identity.privateKeyRawSeedBase64Url);
     const record: EncryptedIdentityRecord = {
       peerId: identity.peerId,
       publicKeyMultibase: identity.publicKeyMultibase,
