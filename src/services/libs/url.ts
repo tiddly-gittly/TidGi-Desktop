@@ -1,5 +1,4 @@
-import { defaultServerIP } from '@/constants/urls';
-import { internalIpV4 } from '@/helpers/ip';
+import { getAllLocalIpV4 } from '@/helpers/ip';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { logger } from './log';
@@ -10,9 +9,24 @@ import { logger } from './log';
  * @param originalUrl might be `"http://0.0.0.0:5212/"`
  */
 export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<string> {
-  const internalIp = await internalIpV4();
-  const localHostUrlWithActualIP = originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, internalIp ?? defaultServerIP);
-  return localHostUrlWithActualIP;
+  const allIps = getAllLocalIpV4();
+  const ip = allIps.length > 0 ? allIps[0] : 'localhost';
+  return originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, ip);
+}
+
+/**
+ * Replace 0.0.0.0/localhost in the original URL with ALL local (non-internal) IPv4 addresses.
+ * Used to generate multiple QR codes for devices that have multiple network interfaces.
+ * @param originalUrl might be `"http://0.0.0.0:5212/"`
+ * @returns Array of URLs with real IPs, e.g. `["http://192.168.1.100:5212/", "http://10.0.0.5:5212/"]`
+ */
+export function getAllLocalHostUrlsWithActualIP(originalUrl: string): string[] {
+  const allIps = getAllLocalIpV4();
+  if (allIps.length === 0) {
+    // Fallback: no real IP found, return localhost
+    return [originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, 'localhost')];
+  }
+  return allIps.map(ip => originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, ip));
 }
 
 export function getUrlWithCorrectProtocol(workspace: IWorkspace, originalUrl: string): string {

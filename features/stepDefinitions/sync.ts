@@ -312,7 +312,7 @@ When('I clone workspace {string} via HTTP to {string}', async function(this: App
  * Mobile does NO merge or conflict resolution — all that happens on desktop.
  * 1. Stage & commit all local changes
  * 2. Force-push to `mobile-incoming` branch on desktop (always succeeds)
- * 3. Desktop's gitSmartHTTPReceivePack$ auto-merges `mobile-incoming` into `main`
+ * 3. The tw-mobile-sync plugin's merge-incoming endpoint merges `mobile-incoming` into `main`
  *    with .tid-aware conflict resolution before the HTTP response completes
  * 4. Pull `main` from desktop (fast-forward — desktop already merged)
  */

@@ -10,7 +10,7 @@ import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
 import { container } from '@services/container';
 import { getLoggerForLabel, logger } from '@services/libs/log';
-import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
+import { getLocalHostUrlWithActualIP, getAllLocalHostUrlsWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -399,6 +399,20 @@ ${message.message}
       replacedUrl = getUrlWithCorrectProtocol(workspace, replacedUrl);
     }
     return replacedUrl;
+  }
+
+  public async getAllLocalHostUrlsWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string[]> {
+    let replacedUrls = getAllLocalHostUrlsWithActualIP(urlToReplace);
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(workspaceID);
+    if (workspace !== undefined && isWikiWorkspace(workspace)) {
+      replacedUrls = replacedUrls.map(url => {
+        let processed = replaceUrlPortWithSettingPort(url, workspace.port);
+        processed = getUrlWithCorrectProtocol(workspace, processed);
+        return processed;
+      });
+    }
+    return replacedUrls;
   }
 
   public async path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined> {

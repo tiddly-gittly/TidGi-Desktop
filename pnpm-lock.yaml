@@ -239,6 +239,9 @@ importers:
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
+      registry-js:
+        specifier: 1.16.1
+        version: 1.16.1
       rotating-file-stream:
         specifier: ^3.2.9
         version: 3.2.9
@@ -272,6 +275,9 @@ importers:
       tiddlywiki:
         specifier: 5.4.0
         version: 5.4.0
+      tidgi-shared:
+        specifier: 0.1.6
+        version: 0.1.6(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2)
       type-fest:
         specifier: 5.7.0
         version: 5.7.0
@@ -1116,7 +1122,7 @@ packages:
     engines: {node: '>=22.12.0'}
 
   '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2':
-    resolution: {gitHosted: true, integrity: sha512-MXgzlTDEEndJB3TBbvd5uFQO/8gaINo1Hfen8vef5rq/VHVPeB63uuv/uO5+8GFsAJ/rauu6XB79S6K4+aXc+w==, tarball: https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2}
+    resolution: {gitHosted: true, tarball: https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2}
     version: 10.2.0-electron.1
     engines: {node: '>=12.13.0'}
     hasBin: true
@@ -6661,6 +6667,9 @@ packages:
     resolution: {integrity: sha512-RSYAtP31mvYLkAHrOlh25pCNQ5hWnT106VukGaaFfuJrZFkGRX5GhUAdPqpSDXxOhA2c4akmRuplv1mRqnBn6Q==}
     engines: {node: '>=8'}
 
+  registry-js@1.16.1:
+    resolution: {integrity: sha512-pQ2kD36lh+YNtpaXm6HCCb0QZtV/zQEeKnkfEIj5FDSpF/oFts7pwizEUkWSvP8IbGb4A4a5iBhhS9eUearMmQ==}
+
   regjsparser@0.13.1:
     resolution: {integrity: sha512-dLsljMd9sqwRkby8zhO1gSg3PnJIBFid8f4CQj/sXx+7cKx+E7u0PKhZ+U4wmhx7EfmtvnA318oVaIkAB1lRJw==}
     hasBin: true
@@ -7348,6 +7357,14 @@ packages:
     resolution: {integrity: sha512-KD7kskwijrj4tOBjHY0XldQiQ2bnNNEsCXcGaYdIUeTqEMoKVK436Gkscc+qUwQE7APRyQ6t1gvbOKOLly1MvA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
+
+  tidgi-shared@0.1.6:
+    resolution: {integrity: sha512-WvaalnjTp8etX8pidivDOzQ3yaP4lnR080pliPgkRaZEM/0A5FvYkAWejcRvTxmJRXQnQZi0AVJDn6+DX9M45A==}
+    peerDependencies:
+      rxjs: '>=7'
+    peerDependenciesMeta:
+      rxjs:
+        optional: true
 
   tiny-case@1.0.3:
     resolution: {integrity: sha512-Eet/eeMhkO6TX8mnUteS9zgPbUMQa4I6Kkp5ORiBD5476/m+PIRiumP5tmh5ioJpH7k51Kehawy2UDfsnxxY8Q==}
@@ -8686,7 +8703,7 @@ snapshots:
       '@electron-forge/core': 8.0.0-alpha.9(supports-color@10.2.2)
       '@electron-forge/core-utils': 8.0.0-alpha.9
       '@electron-forge/shared-types': 8.0.0-alpha.9
-      '@electron/get': 5.0.0(supports-color@10.2.2)
+      '@electron/get': 5.0.0
       commander: 11.1.0
       debug: 4.4.3(supports-color@10.2.2)
       fs-extra: 10.0.0
@@ -8715,8 +8732,8 @@ snapshots:
       '@electron-forge/publisher-base': 8.0.0-alpha.9
       '@electron-forge/shared-types': 8.0.0-alpha.9
       '@electron-forge/tracer': 8.0.0-alpha.9
-      '@electron/get': 5.0.0(supports-color@10.2.2)
-      '@electron/packager': 20.0.1(supports-color@10.2.2)
+      '@electron/get': 5.0.0
+      '@electron/packager': 20.0.1
       debug: 4.4.3(supports-color@10.2.2)
       filenamify: 6.0.0
       fs-extra: 10.0.0
@@ -8850,7 +8867,7 @@ snapshots:
   '@electron-forge/shared-types@8.0.0-alpha.9':
     dependencies:
       '@electron-forge/tracer': 8.0.0-alpha.9
-      '@electron/packager': 20.0.1(supports-color@10.2.2)
+      '@electron/packager': 20.0.1
       '@electron/rebuild': 4.0.4
       listr2: 7.0.2
     transitivePeerDependencies:
@@ -8925,7 +8942,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/get@5.0.0(supports-color@10.2.2)':
+  '@electron/get@5.0.0':
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       env-paths: 3.0.0
@@ -8962,7 +8979,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/notarize@3.1.1(supports-color@10.2.2)':
+  '@electron/notarize@3.1.1':
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       promise-retry: 2.0.1
@@ -8980,7 +8997,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/osx-sign@2.4.0(supports-color@10.2.2)':
+  '@electron/osx-sign@2.4.0':
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       isbinaryfile: 4.0.10
@@ -9013,19 +9030,19 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/packager@20.0.1(supports-color@10.2.2)':
+  '@electron/packager@20.0.1':
     dependencies:
       '@electron-internal/extract-zip': 1.0.2
       '@electron/asar': 4.2.0
-      '@electron/get': 5.0.0(supports-color@10.2.2)
-      '@electron/notarize': 3.1.1(supports-color@10.2.2)
-      '@electron/osx-sign': 2.4.0(supports-color@10.2.2)
-      '@electron/universal': 3.0.4(supports-color@10.2.2)
-      '@electron/windows-sign': 2.0.3(supports-color@10.2.2)
+      '@electron/get': 5.0.0
+      '@electron/notarize': 3.1.1
+      '@electron/osx-sign': 2.4.0
+      '@electron/universal': 3.0.4
+      '@electron/windows-sign': 2.0.3
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
       filenamify: 6.0.0
-      galactus: 2.0.2(supports-color@10.2.2)
+      galactus: 2.0.2
       graceful-fs: 4.2.11
       junk: 4.0.1
       plist: 3.1.1
@@ -9078,7 +9095,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/universal@3.0.4(supports-color@10.2.2)':
+  '@electron/universal@3.0.4':
     dependencies:
       '@electron/asar': 4.2.0
       debug: 4.4.3(supports-color@10.2.2)
@@ -9104,7 +9121,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/windows-sign@2.0.3(supports-color@10.2.2)':
+  '@electron/windows-sign@2.0.3':
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       graceful-fs: 4.2.11
@@ -12870,7 +12887,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  flora-colossus@3.0.2(supports-color@10.2.2):
+  flora-colossus@3.0.2:
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
     transitivePeerDependencies:
@@ -12986,10 +13003,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  galactus@2.0.2(supports-color@10.2.2):
+  galactus@2.0.2:
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
-      flora-colossus: 3.0.2(supports-color@10.2.2)
+      flora-colossus: 3.0.2
     transitivePeerDependencies:
       - supports-color
 
@@ -14934,6 +14951,11 @@ snapshots:
 
   regexparam@3.0.0: {}
 
+  registry-js@1.16.1:
+    dependencies:
+      node-addon-api: 7.1.1
+      prebuild-install: 7.1.3
+
   regjsparser@0.13.1:
     dependencies:
       jsesc: 3.1.0
@@ -15720,6 +15742,14 @@ snapshots:
   throat@6.0.2: {}
 
   tiddlywiki@5.4.0: {}
+
+  tidgi-shared@0.1.6(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2):
+    dependencies:
+      electron-ipc-cat: 2.4.0(electron@41.7.1)(rxjs@7.8.2)
+    optionalDependencies:
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - electron
 
   tiny-case@1.0.3: {}
 

@@ -12,7 +12,7 @@ import { rootTiddlers } from '@/constants/defaultTiddlerNames';
 import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { useActualIp } from '@services/native/hooks';
+import { useActualIp, useActualIps } from '@services/native/hooks';
 import type { ICustomItemProps } from '@services/preferences/definitions/types';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { useWorkspaceForm } from '../WorkspaceFormContext';
@@ -35,6 +35,7 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
   const { workspace, workspaceSetter } = useWorkspaceForm();
   const { port, id } = workspace;
   const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
+  const actualIPs = useActualIps(getDefaultHTTPServerIP(port), id) ?? [];
   const [portInput, setPortInput] = useState(() => String(port ?? ''));
   const portReference = useRef(port);
   if (portReference.current !== port) {
@@ -50,16 +51,36 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
         helperText={
           <span>
             {t('EditWorkspace.URL')}{' '}
-            <Link
-              onClick={async () => {
-                if (actualIP) {
-                  await window.service.native.openURI(actualIP);
-                }
-              }}
-              style={{ cursor: 'pointer' }}
-            >
-              {actualIP}
-            </Link>
+            {actualIPs.length > 1
+              ? (
+                <span>
+                  {actualIPs.map((ip, index) => (
+                    <span key={ip}>
+                      {index > 0 && <br />}
+                      <Link
+                        onClick={async () => {
+                          await window.service.native.openURI(ip);
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {ip}
+                      </Link>
+                    </span>
+                  ))}
+                </span>
+              )
+              : (
+                <Link
+                  onClick={async () => {
+                    if (actualIP) {
+                      await window.service.native.openURI(actualIP);
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {actualIP}
+                </Link>
+              )}
           </span>
         }
         placeholder='Optional'

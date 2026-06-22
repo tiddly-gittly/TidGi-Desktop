@@ -9,3 +9,13 @@ export function useActualIp(homeUrl?: string, workspaceID?: string): string | un
     [homeUrl, workspaceID],
   );
 }
+
+export function useActualIps(homeUrl?: string, workspaceID?: string): string[] | undefined {
+  return usePromiseValue<string[]>(
+    async (): Promise<string[]> => {
+      return homeUrl && workspaceID ? await window.service.native.getAllLocalHostUrlsWithActualInfo(homeUrl, workspaceID) : [];
+    },
+    [],
+    [homeUrl, workspaceID],
+  );
+}
