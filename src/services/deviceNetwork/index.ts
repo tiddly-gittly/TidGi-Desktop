@@ -256,12 +256,29 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     });
     if (result.length > 0 && this.core) {
       for (const device of result) {
+        const trustedDevice: TrustedDeviceRecord = {
+          peerId: device.peerId,
+          publicKeyMultibase: device.publicKeyMultibase,
+          deviceName: device.deviceName,
+          platform: device.platform,
+          trustMode: 'cloud-account',
+          accountId: device.accountId,
+          createdAt: Date.now(),
+          lastSeen: device.lastSeen,
+          revokedAt: device.revokedAt,
+        };
+        const paths = [
+          ...(device.multiaddrs.length > 0 ? ['direct' as const] : []),
+          ...(device.relayReservations.length > 0 ? ['relay' as const] : []),
+        ];
+        this.core.upsertTrustedDevice(trustedDevice);
         this.core.upsertDiscoveredDevice({
           peerId: device.peerId,
           displayName: device.deviceName,
           platform: device.platform,
           trustMode: 'cloud-account',
-          reachability: { state: 'online', paths: [] },
+          trusted: !device.revokedAt,
+          reachability: { state: device.revokedAt ? 'offline' : 'online', paths },
           capabilities: device.capabilities,
           multiaddrs: device.multiaddrs,
           lastSeen: device.lastSeen,
