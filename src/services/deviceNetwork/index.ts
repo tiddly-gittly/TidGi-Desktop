@@ -4,27 +4,26 @@ import { inject, injectable } from 'inversify';
 
 import {
   CloudDeviceAuthorizer,
-  createDeviceIdentity,
   type CloudDeviceClient,
   type CloudDeviceRecord,
-  type DeviceConnectionGrant,
+  createDeviceIdentity,
   type Device,
   type DeviceCapabilities,
-  Libp2pDeviceNetworkService,
+  type DeviceConnectionGrant,
   type DeviceRelayReservationToken,
-  type LocalPairingRequestOptions,
+  type DeviceTrustStore,
+  Libp2pDeviceNetworkService,
   type LocalDeviceIdentity,
+  type LocalPairingRequestOptions,
   type MemeLoopDuplexStream,
   type MemeLoopProtocol,
   type PairingSession,
-  type DeviceTrustStore,
-  type TrustedDeviceRecord,
-  type SyncResult,
+  type RawSeedDeviceIdentity,
   signDeviceBinding,
   syncCloudDevices,
+  type SyncResult,
+  type TrustedDeviceRecord,
 } from 'memeloop';
-
-import type { RawSeedDeviceIdentity } from 'memeloop';
 
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -394,8 +393,8 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private scheduleCloudHeartbeat(): void {
     if (this.cloudHeartbeatTimer) clearInterval(this.cloudHeartbeatTimer);
     this.cloudHeartbeatTimer = setInterval(() => {
-      void this.sendCloudHeartbeat().catch((error) => {
-        logger.warn('DeviceNetworkService cloud heartbeat failed', { error });
+      void this.sendCloudHeartbeat().catch((error: unknown) => {
+        logger.warn('DeviceNetworkService cloud heartbeat failed', { error: error instanceof Error ? error : String(error) });
       });
     }, 60_000);
   }
