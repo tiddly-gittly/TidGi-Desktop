@@ -3,10 +3,15 @@ import settings from 'electron-settings';
 import { inject, injectable } from 'inversify';
 
 import {
+  CloudDeviceAuthorizer,
   createDeviceIdentity,
+  type CloudDeviceClient,
+  type CloudDeviceRecord,
+  type DeviceConnectionGrant,
   type Device,
   type DeviceCapabilities,
   Libp2pDeviceNetworkService,
+  type LocalPairingRequestOptions,
   type LocalDeviceIdentity,
   type MemeLoopDuplexStream,
   type MemeLoopProtocol,
@@ -14,6 +19,7 @@ import {
   type DeviceTrustStore,
   type TrustedDeviceRecord,
   type SyncResult,
+  syncCloudDevices,
 } from 'memeloop';
 
 import type { RawSeedDeviceIdentity } from 'memeloop';
@@ -81,12 +87,102 @@ const emptyCapabilities: DeviceCapabilities = {
   wikis: [],
 };
 
+class ElectronCloudClient implements CloudDeviceClient {
+  constructor(
+    private readonly baseUrl: string,
+    private readonly accessToken: string,
+  ) {}
+
+  public async listDevices(): Promise<CloudDeviceRecord[]> {
+    const response = await this.request<{ devices: CloudDeviceRecord[] }>('/api/devices', { method: 'GET' });
+    return response.devices;
+  }
+
+  public async getConnectionGrantPublicKey(): Promise<{ issuer: string; publicKeyMultibase: string }> {
+    return this.request('/api/devices/connection-grant/public-key', { method: 'GET' });
+  }
+
+  public async createConnectionGrant(input: {
+    subjectPeerId: string;
+    allowedPeerIds: string[];
+  }): Promise<DeviceConnectionGrant> {
+    return this.request('/api/devices/connection-grant', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  public async createBindingNonce(): Promise<{ nonce: string; accountId: string; expiresAt: string }> {
+    return this.request('/api/devices/binding/nonce', { method: 'POST' });
+  }
+
+  public async registerDevice(input: {
+    identity: LocalDeviceIdentity;
+    cloudNonce: string;
+    signature: string;
+    capabilities: DeviceCapabilities;
+    multiaddrs: string[];
+    relayReservations: string[];
+  }): Promise<{ ok: boolean; peerId: string }> {
+    return this.request('/api/devices/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        peerId: input.identity.peerId,
+        publicKeyMultibase: input.identity.publicKeyMultibase,
+        deviceName: input.identity.deviceName,
+        platform: input.identity.platform,
+        cloudNonce: input.cloudNonce,
+        signature: input.signature,
+        capabilities: input.capabilities,
+        multiaddrs: input.multiaddrs,
+        relayReservations: input.relayReservations,
+      }),
+    });
+  }
+
+  public async heartbeat(input: {
+    peerId: string;
+    capabilities: DeviceCapabilities;
+    multiaddrs: string[];
+    relayReservations: string[];
+  }): Promise<{ ok: boolean }> {
+    return this.request('/api/devices/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  private async request<T>(path: string, init: RequestInit): Promise<T> {
+    const baseHeaders: Record<string, string> = {
+      'content-type': 'application/json',
+      authorization: `Bearer ${this.accessToken}`,
+    };
+    if (init.headers && typeof init.headers === 'object' && !Array.isArray(init.headers)) {
+      for (const [key, value] of Object.entries(init.headers as Record<string, string>)) {
+        baseHeaders[key] = value;
+      }
+    }
+    const response = await fetch(`${this.baseUrl.replace(/\/$/, '')}${path}`, {
+      ...init,
+      headers: baseHeaders,
+    });
+    if (!response.ok) {
+      throw new Error(`${response.status} ${await response.text()}`);
+    }
+    return (await response.json()) as T;
+  }
+}
+
 @injectable()
 export class DeviceNetworkService implements IDeviceNetworkService {
   private core?: Libp2pDeviceNetworkService;
   private identity?: RawSeedDeviceIdentity;
   private started = false;
   private readonly trustStore = new ElectronSettingsDeviceTrustStore();
+  private cloudConfig?: { cloudUrl: string; accessToken: string };
+  private cloudClient?: ElectronCloudClient;
+  private cloudAuthorizer?: CloudDeviceAuthorizer;
+  private cloudGrantCache = new Map<string, DeviceConnectionGrant>();
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
@@ -100,15 +196,42 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   public async start(): Promise<void> {
     if (this.started) return;
     await this.ensureIdentity();
+
+    let authorizer: CloudDeviceAuthorizer | undefined;
+    if (this.cloudClient) {
+      try {
+        const publicKey = await this.cloudClient.getConnectionGrantPublicKey();
+        authorizer = new CloudDeviceAuthorizer({
+          localPeerId: this.identity!.peerId,
+          grantVerificationPublicKeyMultibase: publicKey.publicKeyMultibase,
+          getTrustedDevice: (peerId) => this.core?.getTrustedDevice(peerId),
+        });
+        this.cloudAuthorizer = authorizer;
+      } catch (error) {
+        logger.warn('DeviceNetworkService cloud grant public key fetch failed', { error });
+      }
+    }
+
     this.core = new Libp2pDeviceNetworkService({
       identity: this.identity!,
       capabilities: await this.buildCapabilities(),
       trustStore: this.trustStore,
+      authorizer,
       enableMdns: true,
     });
     await this.core.start();
+
+    if (this.cloudClient) {
+      try {
+        const synced = await this.syncCloudDevices();
+        logger.info('DeviceNetworkService cloud directory synced', { count: synced.length });
+      } catch (error) {
+        logger.warn('DeviceNetworkService initial cloud sync failed', { error });
+      }
+    }
+
     this.started = true;
-    logger.info('DeviceNetworkService started', { peerId: this.identity!.peerId });
+    logger.info('DeviceNetworkService started', { peerId: this.identity!.peerId, cloud: !!this.cloudClient });
   }
 
   public async stop(): Promise<void> {
@@ -116,7 +239,36 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     await this.core?.stop();
     this.core = undefined;
     this.started = false;
+    this.cloudGrantCache.clear();
     logger.info('DeviceNetworkService stopped');
+  }
+
+  public configureCloud(config: { cloudUrl: string; accessToken: string }): void {
+    this.cloudConfig = config;
+    this.cloudClient = new ElectronCloudClient(config.cloudUrl, config.accessToken);
+  }
+
+  public async syncCloudDevices(): Promise<CloudDeviceRecord[]> {
+    if (!this.cloudClient) throw new Error('cloud_not_configured');
+    const result = await syncCloudDevices({
+      cloudClient: this.cloudClient,
+      trustStore: this.trustStore,
+    });
+    if (result.length > 0 && this.core) {
+      for (const device of result) {
+        this.core.upsertDiscoveredDevice({
+          peerId: device.peerId,
+          displayName: device.deviceName,
+          platform: device.platform,
+          trustMode: 'cloud-account',
+          reachability: { state: 'online', paths: [] },
+          capabilities: device.capabilities,
+          multiaddrs: device.multiaddrs,
+          lastSeen: device.lastSeen,
+        });
+      }
+    }
+    return result;
   }
 
   public async getLocalDevice(): Promise<Device> {
@@ -131,8 +283,16 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     return this.core!.observeDevices(listener);
   }
 
-  public async requestLocalPairing(peerId: string): Promise<PairingSession> {
-    return this.core!.requestLocalPairing(peerId);
+  public async listPairingSessions(): Promise<PairingSession[]> {
+    return this.core!.listPairingSessions();
+  }
+
+  public observePairingSessions(listener: (sessions: PairingSession[]) => void): () => void {
+    return this.core!.observePairingSessions(listener);
+  }
+
+  public async requestLocalPairing(peerId: string, options?: LocalPairingRequestOptions): Promise<PairingSession> {
+    return this.core!.requestLocalPairing(peerId, options);
   }
 
   public async acceptPairing(sessionId: string): Promise<void> {
@@ -147,16 +307,44 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     return this.core!.removeTrustedDevice(peerId);
   }
 
-  public async openStream(peerId: string, protocol: MemeLoopProtocol): Promise<MemeLoopDuplexStream> {
-    return this.core!.openStream(peerId, protocol);
+  public async openStream(
+    peerId: string,
+    protocol: MemeLoopProtocol,
+    presentedGrant?: DeviceConnectionGrant,
+  ): Promise<MemeLoopDuplexStream> {
+    const grant = presentedGrant ?? await this.resolveOutboundGrant(peerId);
+    return this.core!.openStream(peerId, protocol, grant);
   }
 
-  public async sendRpc<T>(peerId: string, method: string, parameters: unknown): Promise<T> {
-    return this.core!.sendRpc(peerId, method, parameters);
+  public async sendRpc<T>(
+    peerId: string,
+    method: string,
+    parameters: unknown,
+    presentedGrant?: DeviceConnectionGrant,
+  ): Promise<T> {
+    const grant = presentedGrant ?? await this.resolveOutboundGrant(peerId);
+    return this.core!.sendRpc(peerId, method, parameters, grant);
   }
 
-  public async syncWithDevice(peerId: string): Promise<SyncResult> {
-    return this.core!.syncWithDevice(peerId);
+  public async syncWithDevice(peerId: string, presentedGrant?: DeviceConnectionGrant): Promise<SyncResult> {
+    const grant = presentedGrant ?? await this.resolveOutboundGrant(peerId);
+    return this.core!.syncWithDevice(peerId, grant);
+  }
+
+  private async resolveOutboundGrant(peerId: string): Promise<DeviceConnectionGrant | undefined> {
+    if (!this.cloudClient || !this.identity) return undefined;
+    const cached = this.cloudGrantCache.get(peerId);
+    if (cached && cached.expiresAt > Date.now() + 30_000) return cached;
+    try {
+      const grant = await this.cloudClient.createConnectionGrant({
+        subjectPeerId: this.identity.peerId,
+        allowedPeerIds: [peerId],
+      });
+      this.cloudGrantCache.set(peerId, grant);
+      return grant;
+    } catch {
+      return undefined;
+    }
   }
 
   private async ensureIdentity(): Promise<void> {
