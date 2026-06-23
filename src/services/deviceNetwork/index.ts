@@ -6,6 +6,7 @@ import {
   CloudDeviceAuthorizer,
   type CloudDeviceClient,
   type CloudDeviceRecord,
+  createAgentRuntimeDeviceRpcHandler,
   createDeviceIdentity,
   type Device,
   type DeviceCapabilities,
@@ -25,6 +26,9 @@ import {
   type TrustedDeviceRecord,
 } from 'memeloop';
 
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
+import { MemeLoopDesktopStorage } from '@services/agentInstance/runtime/storage';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
@@ -197,6 +201,8 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
+    @inject(serviceIdentifier.AgentInstance) private readonly agentInstanceService: IAgentInstanceService,
+    @inject(serviceIdentifier.AgentDefinition) private readonly agentDefinitionService: IAgentDefinitionService,
   ) {}
 
   public async getLocalIdentity(): Promise<LocalDeviceIdentity> {
@@ -224,12 +230,32 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     }
 
     const capabilities = await this.buildCapabilities();
+    const syncStorage = this.createAgentSyncStorage();
     this.core = new Libp2pDeviceNetworkService({
       identity: this.identity!,
       capabilities,
       trustStore: this.trustStore,
       authorizer,
       enableMdns: true,
+      syncStorage,
+      rpcHandler: createAgentRuntimeDeviceRpcHandler({
+        runtime: {
+          createAgent: async ({ definitionId, initialMessage }) => {
+            const agent = await this.agentInstanceService.createAgent(definitionId);
+            if (initialMessage) await this.agentInstanceService.sendMsgToAgent(agent.id, { text: initialMessage });
+            return { conversationId: agent.id };
+          },
+          sendMessage: async ({ conversationId, message }) => {
+            await this.agentInstanceService.sendMsgToAgent(conversationId, { text: message });
+          },
+          cancelAgent: async (conversationId) => {
+            await this.agentInstanceService.cancelAgent(conversationId);
+          },
+        },
+        storage: syncStorage,
+        getAgentDefinitions: () => this.agentDefinitionService.getAgentDefs(),
+        localNodeId: this.identity!.peerId,
+      }),
     });
     await this.core.start();
 
@@ -415,6 +441,14 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     return relayedAddresses.length > 0 ? relayedAddresses : this.relayReservation?.relayMultiaddrs ?? [];
   }
 
+  private createAgentSyncStorage(): MemeLoopDesktopStorage {
+    return new MemeLoopDesktopStorage({
+      agentInstanceService: this.agentInstanceService,
+      agentDefinitionService: this.agentDefinitionService,
+      notifyAgentChanged: () => {},
+    });
+  }
+
   private async resolveOutboundGrant(peerId: string): Promise<DeviceConnectionGrant | undefined> {
     if (!this.cloudClient || !this.identity) return undefined;
     const cached = this.cloudGrantCache.get(peerId);
@@ -489,6 +523,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     }
     return {
       ...emptyCapabilities,
+      agentLoop: true,
       hasWiki: wikiPaths.length > 0,
       wikis: wikiPaths,
     };
