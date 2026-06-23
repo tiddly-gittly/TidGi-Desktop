@@ -1,6 +1,5 @@
 import { GitServerChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { Observable } from 'rxjs';
 
 /**
  * A chunk of Git Smart HTTP response transported via IPC Observable.

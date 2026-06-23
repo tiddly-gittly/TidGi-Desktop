@@ -50,8 +50,7 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
         label={t('EditWorkspace.Port')}
         helperText={
           <span>
-            {t('EditWorkspace.URL')}{' '}
-            {actualIPs.length > 1
+            {t('EditWorkspace.URL')} {actualIPs.length > 1
               ? (
                 <span>
                   {actualIPs.map((ip, index) => (
