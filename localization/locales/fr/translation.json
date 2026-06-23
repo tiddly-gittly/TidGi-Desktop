@@ -149,6 +149,37 @@
     "StorageServiceUserInfoNoFoundDetail": "Il semble que vous ne vous soyez pas connecté à votre service de stockage, nous désactivons donc la synchronisation pour ce wiki.",
     "WorkspaceFolderRemoved": "Le dossier de l'espace de travail est déplacé ou n'est pas un dossier wiki"
   },
+  "DeviceNetwork": {
+    "AcceptPairing": "Accept",
+    "Devices": "Devices",
+    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "Direction": {
+      "inbound": "Incoming request",
+      "outbound": "Outgoing request"
+    },
+    "LocalDevice": "This device",
+    "NoDevices": "No nearby or trusted devices yet.",
+    "NoPendingPairing": "No pairing requests waiting for confirmation.",
+    "Pair": "Pair",
+    "PairingRequests": "Pairing requests",
+    "Reachability": {
+      "connecting": "Connecting",
+      "nearby": "Nearby",
+      "offline": "Offline",
+      "online": "Online"
+    },
+    "Refresh": "Refresh devices",
+    "RejectPairing": "Reject",
+    "RemoveTrustedDevice": "Remove trusted device",
+    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
+    "Sync": "Sync",
+    "SyncCloudDevices": "Sync cloud devices",
+    "TrustMode": {
+      "cloud-account": "Cloud account",
+      "local-pairing": "Local pairing"
+    },
+    "Trusted": "Trusted"
+  },
   "EditWorkspace": {
     "AddExcludedPlugins": "Entrez le nom du plugin que vous souhaitez ignorer",
     "AddExcludedPluginsDescription": "Vous pouvez rechercher des plugins installés dans le wiki actuel, ou entrer n'importe quel nom de plugin.",
@@ -471,6 +502,8 @@
     "DefaultFreeModelSelectionDescription": "petit modèle gratuit utilisé pour générer des titres de résumé et des titres de sauvegarde",
     "DefaultUserName": "Nom d'utilisateur",
     "DefaultUserNameDetail": "Le nom d'utilisateur dans le Wiki, cela ne prend effet qu'après redémarrage, cela remplira le champ créateur des tiddlers nouvellement créés ou modifiés. Peut être remplacé par le nom d'utilisateur défini dans les paramètres de l'espace de travail.",
+    "DeviceNetwork": "Device Network",
+    "DeviceNetworkDescription": "Discover nearby devices, confirm local pairing codes, and manage trusted MemeLoop devices.",
     "DeveloperTools": "Outils de développement",
     "DisableAntiAntiLeech": "Désactiver l'anti-anti-leech",
     "DisableAntiAntiLeechDetail": "Activez cette option pour désactiver complètement la fonctionnalité anti-anti-leech.",

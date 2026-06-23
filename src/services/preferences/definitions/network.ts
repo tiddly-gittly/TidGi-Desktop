@@ -8,6 +8,13 @@ export const networkSection: ISectionDefinition = {
   Icon: RouterIcon,
   items: [
     {
+      type: 'custom',
+      titleKey: 'Preference.DeviceNetwork',
+      descriptionKey: 'Preference.DeviceNetworkDescription',
+      componentId: 'network.deviceNetworkPanel',
+    },
+    { type: 'divider' },
+    {
       type: 'preference-boolean',
       key: 'disableAntiAntiLeech',
       titleKey: 'Preference.DisableAntiAntiLeech',

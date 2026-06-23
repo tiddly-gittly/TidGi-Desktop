@@ -149,6 +149,37 @@
     "StorageServiceUserInfoNoFoundDetail": "Похоже, вы еще не вошли в службу резервного копирования, поэтому синхронизация этой Wiki временно отключена. Войдите в систему, чтобы предоставить данные для синхронизации.",
     "WorkspaceFolderRemoved": "Рабочая папка перемещена или эта папка не является Wiki"
   },
+  "DeviceNetwork": {
+    "AcceptPairing": "Accept",
+    "Devices": "Devices",
+    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "Direction": {
+      "inbound": "Incoming request",
+      "outbound": "Outgoing request"
+    },
+    "LocalDevice": "This device",
+    "NoDevices": "No nearby or trusted devices yet.",
+    "NoPendingPairing": "No pairing requests waiting for confirmation.",
+    "Pair": "Pair",
+    "PairingRequests": "Pairing requests",
+    "Reachability": {
+      "connecting": "Connecting",
+      "nearby": "Nearby",
+      "offline": "Offline",
+      "online": "Online"
+    },
+    "Refresh": "Refresh devices",
+    "RejectPairing": "Reject",
+    "RemoveTrustedDevice": "Remove trusted device",
+    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
+    "Sync": "Sync",
+    "SyncCloudDevices": "Sync cloud devices",
+    "TrustMode": {
+      "cloud-account": "Cloud account",
+      "local-pairing": "Local pairing"
+    },
+    "Trusted": "Trusted"
+  },
   "EditWorkspace": {
     "AddExcludedPlugins": "Введите имя плагина, который нужно игнорировать",
     "AddExcludedPluginsDescription": "Можно искать установленные плагины в текущей Wiki или ввести любое название плагина.",
@@ -470,6 +501,8 @@
     "DefaultFreeModelSelectionDescription": "бесплатная небольшая модель, используемая для генерации заголовков сводок и резервных заголовков",
     "DefaultUserName": "Имя пользователя по умолчанию",
     "DefaultUserNameDetail": "Имя пользователя по умолчанию",
+    "DeviceNetwork": "Device Network",
+    "DeviceNetworkDescription": "Discover nearby devices, confirm local pairing codes, and manage trusted MemeLoop devices.",
     "DeveloperTools": "Инструменты разработчика",
     "DisableAntiAntiLeech": "Отключить анти-анти-слив",
     "DisableAntiAntiLeechDetail": "Детали отключения анти-анти-слива",

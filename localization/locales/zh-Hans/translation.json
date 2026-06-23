@@ -158,6 +158,37 @@
     "StorageServiceUserInfoNoFoundDetail": "似乎你尚未登录存储备份服务，因此此知识库的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。",
     "WorkspaceFolderRemoved": "工作区文件夹被移走或该文件夹不是知识库"
   },
+  "DeviceNetwork": {
+    "AcceptPairing": "接受",
+    "Devices": "设备",
+    "DevicesDescription": "附近设备可本地配对；云端同账号设备会在同步设备目录后显示。",
+    "Direction": {
+      "inbound": "收到请求",
+      "outbound": "已发起请求"
+    },
+    "LocalDevice": "本机设备",
+    "NoDevices": "还没有附近设备或已信任设备。",
+    "NoPendingPairing": "暂无等待确认的配对请求。",
+    "Pair": "配对",
+    "PairingRequests": "配对请求",
+    "Reachability": {
+      "connecting": "连接中",
+      "nearby": "附近",
+      "offline": "离线",
+      "online": "在线"
+    },
+    "Refresh": "刷新设备",
+    "RejectPairing": "拒绝",
+    "RemoveTrustedDevice": "移除信任设备",
+    "RemoveTrustedDeviceConfirm": "移除对 {{deviceName}} 的本地信任？",
+    "Sync": "同步",
+    "SyncCloudDevices": "同步云端设备",
+    "TrustMode": {
+      "cloud-account": "云端同账号",
+      "local-pairing": "本地配对"
+    },
+    "Trusted": "已信任"
+  },
   "EditWorkspace": {
     "AddExcludedPlugins": "输入希望忽略的插件名",
     "AddExcludedPluginsDescription": "可搜索当前知识库中已安装的插件，或输入任意插件名。",
@@ -522,6 +553,8 @@
     "DarkTheme": "黑暗主题",
     "DefaultUserName": "默认编辑者名",
     "DefaultUserNameDetail": "在知识库中默认使用的编辑者名，将在创建或编辑条目时填入 creator 字段。可以被工作区内设置的编辑者名覆盖。",
+    "DeviceNetwork": "设备网络",
+    "DeviceNetworkDescription": "发现附近设备、确认本地配对码，并管理已信任的 MemeLoop 设备。",
     "DeleteExternalApiDatabase": "删除外部 API 数据库",
     "DeveloperTools": "开发者工具",
     "DisableAntiAntiLeech": "禁用反防盗链",
