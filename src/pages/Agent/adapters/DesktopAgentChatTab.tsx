@@ -33,6 +33,29 @@ import { useAgentChatStore } from '../store/agentChatStore';
 import { useTabStore } from '../store/tabStore';
 import type { TabItem } from '../types/tab';
 
+const LOCAL_EXECUTION_TARGET_ID = 'local';
+const REMOTE_EXECUTION_TARGET_PREFIX = 'peer:';
+
+interface AgentExecutionTarget {
+  id: string;
+  label: string;
+  description?: string;
+  kind?: 'local' | 'remote';
+  disabled?: boolean;
+}
+
+interface SetExecutionTargetOptions {
+  restartCurrentTurn?: boolean;
+}
+
+function remoteExecutionTargetId(peerId: string): string {
+  return `${REMOTE_EXECUTION_TARGET_PREFIX}${peerId}`;
+}
+
+function peerIdFromExecutionTarget(targetId: string): string | undefined {
+  return targetId.startsWith(REMOTE_EXECUTION_TARGET_PREFIX) ? targetId.slice(REMOTE_EXECUTION_TARGET_PREFIX.length) : undefined;
+}
+
 interface DesktopAgentChatTabProps {
   tab: TabItem;
   isSplitView?: boolean;
@@ -54,6 +77,11 @@ function HeaderWithComposerText(props: React.ComponentProps<typeof ChatHeader>) 
  */
 export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, isSplitView }) => {
   const { t } = useTranslation('agent');
+  const [localPeerId, setLocalPeerId] = React.useState<string | undefined>();
+  const [agentLoopDevices, setAgentLoopDevices] = React.useState<import('memeloop').Device[]>([]);
+  const [activeExecutionTargetId, setActiveExecutionTargetId] = React.useState(LOCAL_EXECUTION_TARGET_ID);
+  const [remoteRunning, setRemoteRunning] = React.useState(false);
+  const [remoteError, setRemoteError] = React.useState<Error | null>(null);
 
   if (!isChatTab(tab)) {
     return (
@@ -138,18 +166,153 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
   const isWorking = loading || agent?.status?.state === 'working';
   const isStreaming = streamingMessageIds.size > 0;
 
+  useEffect(() => {
+    let disposed = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void (async () => {
+      try {
+        await window.service.deviceNetwork.start();
+        const [local, devices] = await Promise.all([
+          window.service.deviceNetwork.getLocalDevice(),
+          window.service.deviceNetwork.listDevices(),
+        ]);
+        if (disposed) return;
+        setLocalPeerId(local.peerId);
+        setAgentLoopDevices(devices.filter(device => device.peerId !== local.peerId && device.trusted && device.capabilities.agentLoop));
+        unsubscribe = window.service.deviceNetwork.observeDevices((nextDevices) => {
+          setAgentLoopDevices(nextDevices.filter(device => device.peerId !== local.peerId && device.trusted && device.capabilities.agentLoop));
+        });
+      } catch (error_) {
+        setRemoteError(error_ instanceof Error ? error_ : new Error(String(error_)));
+      }
+    })();
+
+    return () => {
+      disposed = true;
+      unsubscribe?.();
+    };
+  }, []);
+
+  const executionTargets = useMemo<AgentExecutionTarget[]>(() => [
+    {
+      id: LOCAL_EXECUTION_TARGET_ID,
+      label: 'This device',
+      description: localPeerId ? `Run on this Desktop (${localPeerId})` : 'Run on this Desktop',
+      kind: 'local',
+    },
+    ...agentLoopDevices.map(device => ({
+      id: remoteExecutionTargetId(device.peerId),
+      label: device.displayName,
+      description: `${device.platform} · ${device.reachability.state}`,
+      kind: 'remote' as const,
+      disabled: !device.trusted,
+    })),
+  ], [agentLoopDevices, localPeerId]);
+
+  const sendRemoteMessage = useCallback(async (peerId: string, text: string) => {
+    if (!agent?.id) throw new Error('No active agent in store');
+    setRemoteRunning(true);
+    setRemoteError(null);
+    try {
+      await window.service.deviceNetwork.sendRpc(peerId, 'memeloop.agent.runTurn', {
+        conversationId: agent.id,
+        definitionId: agent.agentDefId,
+        message: text,
+        resumeSession: orderedMessages,
+        conversation: {
+          conversationId: agent.id,
+          title: agent.name || tab.title,
+          lastMessagePreview: text,
+          lastMessageTimestamp: Date.now(),
+          messageCount: orderedMessages.length,
+          originNodeId: localPeerId ?? 'tidgi-desktop',
+          definitionId: agent.agentDefId,
+          isUserInitiated: true,
+        },
+      });
+      await window.service.deviceNetwork.syncWithDevice(peerId);
+      await fetchAgent(agent.id);
+    } catch (error_) {
+      const nextError = error_ instanceof Error ? error_ : new Error(String(error_));
+      setRemoteError(nextError);
+      throw nextError;
+    } finally {
+      setRemoteRunning(false);
+    }
+  }, [agent?.agentDefId, agent?.id, agent?.name, fetchAgent, localPeerId, orderedMessages, tab.title]);
+
+  const cancelSelectedTarget = useCallback(async () => {
+    const peerId = peerIdFromExecutionTarget(activeExecutionTargetId);
+    if (peerId && agent?.id) {
+      await window.service.deviceNetwork.sendRpc(peerId, 'memeloop.agent.cancel', { conversationId: agent.id }).catch((error_: unknown) => {
+        void window.service.native.log('warn', 'Remote agent cancel failed', { peerId, error: error_ });
+      });
+      setRemoteRunning(false);
+      return;
+    }
+    await cancelAgent();
+  }, [activeExecutionTargetId, agent?.id, cancelAgent]);
+
+  const setExecutionTarget = useCallback(async (targetId: string, options?: SetExecutionTargetOptions) => {
+    if (targetId === activeExecutionTargetId) return;
+    if (!options?.restartCurrentTurn) {
+      setActiveExecutionTargetId(targetId);
+      return;
+    }
+
+    const lastUserMessage = [...orderedMessages].reverse().find(message => message.role === 'user');
+    await cancelSelectedTarget();
+    setActiveExecutionTargetId(targetId);
+    if (!lastUserMessage) return;
+    await deleteTurn(lastUserMessage.messageId);
+    const peerId = peerIdFromExecutionTarget(targetId);
+    if (peerId) {
+      await sendRemoteMessage(peerId, lastUserMessage.content);
+      return;
+    }
+    await storeSendMessage(lastUserMessage.content);
+  }, [activeExecutionTargetId, cancelSelectedTarget, deleteTurn, orderedMessages, sendRemoteMessage, storeSendMessage]);
+
+  const loadMessageDetail = useCallback(async (message: ChatMessage) => {
+    if (!message.detailRef) return null;
+    const targetPeerId = message.detailRef.nodeId;
+    const targetConversationId = message.detailRef.conversationId ?? message.conversationId;
+    if (!targetPeerId || targetPeerId === localPeerId) {
+      return orderedMessages.filter(item => item.conversationId === targetConversationId);
+    }
+    const result = await window.service.deviceNetwork.sendRpc<{ messages: ChatMessage[] }>(targetPeerId, 'memeloop.chat.pullAgentRunLog', {
+      conversationId: targetConversationId,
+      knownMessageIds: orderedMessages.map(item => item.messageId),
+    });
+    await window.service.deviceNetwork.syncWithDevice(targetPeerId).catch((error_: unknown) => {
+      void window.service.native.log('warn', 'DetailRef follow-up sync failed', { peerId: targetPeerId, error: error_ });
+    });
+    if (agent?.id) await fetchAgent(agent.id);
+    return result.messages;
+  }, [agent?.id, fetchAgent, localPeerId, orderedMessages]);
+
   const adapter: MemeLoopChatAdapter = useMemo(
     () => ({
       messages: orderedMessages,
-      isRunning: isWorking,
+      isRunning: isWorking || remoteRunning,
       isLoading: loading,
       isMessageStreaming: (messageId) => streamingMessageIds.has(messageId),
-      error,
+      error: error ?? remoteError,
+      executionTargets,
+      activeExecutionTargetId,
+      setExecutionTarget,
+      loadMessageDetail,
       sendMessage: async ({ text, file, wikiTiddlers }) => {
-        await storeSendMessage(text, file, wikiTiddlers);
+        const peerId = peerIdFromExecutionTarget(activeExecutionTargetId);
+        if (peerId) {
+          await sendRemoteMessage(peerId, text);
+        } else {
+          await storeSendMessage(text, file, wikiTiddlers);
+        }
         clearAttachments();
       },
-      cancel: cancelAgent,
+      cancel: cancelSelectedTarget,
       deleteTurn: async (userMessageId) => {
         await deleteTurn(userMessageId);
       },
@@ -169,12 +332,19 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [
       orderedMessages,
       isWorking,
+      remoteRunning,
       loading,
       streamingMessageIds,
       error,
+      remoteError,
+      executionTargets,
+      activeExecutionTargetId,
+      setExecutionTarget,
+      loadMessageDetail,
       storeSendMessage,
+      sendRemoteMessage,
       clearAttachments,
-      cancelAgent,
+      cancelSelectedTarget,
       agent?.id,
       updateMessage,
       deleteTurn,
