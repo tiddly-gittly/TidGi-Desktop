@@ -6,6 +6,7 @@ import { sectionById } from '@services/preferences/definitions/registry';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
+import { DeviceNetworkPanelItem } from './customItems/DeviceNetworkItems';
 import { DeveloperDiagPanelItem, DeveloperExternalApiItem, DeveloperMcpVsCodeUrlItem } from './customItems/DeveloperToolsItems';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';
@@ -55,6 +56,7 @@ export function registerCustomSections(): void {
   registerCustomComponent('developers.diagPanel', DeveloperDiagPanelItem);
   registerCustomComponent('developers.mcpVsCodeUrl', DeveloperMcpVsCodeUrlItem);
   registerCustomComponent('developers.externalApi', DeveloperExternalApiItem);
+  registerCustomComponent('network.deviceNetworkPanel', DeviceNetworkPanelItem);
   registerCustomComponent('sync.tokenForm', SyncTokenFormItem);
   registerCustomComponent('sync.interval', SyncIntervalItem);
   registerCustomComponent('sync.aiTimeout', SyncAiTimeoutItem);

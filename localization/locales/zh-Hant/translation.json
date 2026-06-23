@@ -149,6 +149,37 @@
     "StorageServiceUserInfoNoFoundDetail": "似乎你尚未登錄儲存備份服務，因此此知識庫的同步暫時禁用，直到你登錄以提供有可用於同步的登錄資訊。",
     "WorkspaceFolderRemoved": "工作區文件夾被移走或該文件夾不是知識庫"
   },
+  "DeviceNetwork": {
+    "AcceptPairing": "接受",
+    "Devices": "設備",
+    "DevicesDescription": "附近設備可本地配對；雲端同帳號設備會在同步設備目錄後顯示。",
+    "Direction": {
+      "inbound": "收到請求",
+      "outbound": "已發起請求"
+    },
+    "LocalDevice": "本機設備",
+    "NoDevices": "還沒有附近設備或已信任設備。",
+    "NoPendingPairing": "暫無等待確認的配對請求。",
+    "Pair": "配對",
+    "PairingRequests": "配對請求",
+    "Reachability": {
+      "connecting": "連接中",
+      "nearby": "附近",
+      "offline": "離線",
+      "online": "在線"
+    },
+    "Refresh": "刷新設備",
+    "RejectPairing": "拒絕",
+    "RemoveTrustedDevice": "移除信任設備",
+    "RemoveTrustedDeviceConfirm": "移除對 {{deviceName}} 的本地信任？",
+    "Sync": "同步",
+    "SyncCloudDevices": "同步雲端設備",
+    "TrustMode": {
+      "cloud-account": "雲端同帳號",
+      "local-pairing": "本地配對"
+    },
+    "Trusted": "已信任"
+  },
   "EditWorkspace": {
     "AddExcludedPlugins": "輸入希望忽略的插件名",
     "AddExcludedPluginsDescription": "可搜索當前知識庫中已安裝的插件，或輸入任意插件名。",
@@ -472,6 +503,8 @@
     "DefaultFreeModelSelectionDescription": "產生總結標題、產生備份標題時使用的免費小模型",
     "DefaultUserName": "默認編輯者名",
     "DefaultUserNameDetail": "在知識庫中預設使用的編輯者名，將在創建或編輯條目時填入 creator 欄位。可以被工作區內設置的編輯者名覆蓋。",
+    "DeviceNetwork": "設備網路",
+    "DeviceNetworkDescription": "發現附近設備、確認本地配對碼，並管理已信任的 MemeLoop 設備。",
     "DeleteExternalApiDatabase": "刪除外部 API 資料庫",
     "DeveloperTools": "開發者工具",
     "DisableAntiAntiLeech": "禁用反防盜鏈",

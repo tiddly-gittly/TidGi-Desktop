@@ -149,6 +149,37 @@
     "StorageServiceUserInfoNoFoundDetail": "ストレージサービスにログインしていないようです。このWikiの同期は無効になります。",
     "WorkspaceFolderRemoved": "ワークスペースフォルダが移動されたか、このフォルダはWikiフォルダではありません"
   },
+  "DeviceNetwork": {
+    "AcceptPairing": "Accept",
+    "Devices": "Devices",
+    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "Direction": {
+      "inbound": "Incoming request",
+      "outbound": "Outgoing request"
+    },
+    "LocalDevice": "This device",
+    "NoDevices": "No nearby or trusted devices yet.",
+    "NoPendingPairing": "No pairing requests waiting for confirmation.",
+    "Pair": "Pair",
+    "PairingRequests": "Pairing requests",
+    "Reachability": {
+      "connecting": "Connecting",
+      "nearby": "Nearby",
+      "offline": "Offline",
+      "online": "Online"
+    },
+    "Refresh": "Refresh devices",
+    "RejectPairing": "Reject",
+    "RemoveTrustedDevice": "Remove trusted device",
+    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
+    "Sync": "Sync",
+    "SyncCloudDevices": "Sync cloud devices",
+    "TrustMode": {
+      "cloud-account": "Cloud account",
+      "local-pairing": "Local pairing"
+    },
+    "Trusted": "Trusted"
+  },
   "EditWorkspace": {
     "AddExcludedPlugins": "無視するプラグイン名を入力",
     "AddExcludedPluginsDescription": "現在のWikiにインストールされているプラグインを検索するか、任意のプラグイン名を入力できます。",
@@ -470,6 +501,8 @@
     "DefaultFreeModelSelectionDescription": "要約タイトル生成、バックアップタイトル生成に使用する無料の小型モデル",
     "DefaultUserName": "デフォルトの編集者名",
     "DefaultUserNameDetail": "Wiki でデフォルトで使用される編集者名は、Tiddler の作成または編集時に creator フィールドに入力されます。ワークスペース内で設定された編集者名によって上書きされることがあります。",
+    "DeviceNetwork": "Device Network",
+    "DeviceNetworkDescription": "Discover nearby devices, confirm local pairing codes, and manage trusted MemeLoop devices.",
     "DeveloperTools": "開発者ツール",
     "DisableAntiAntiLeech": "アンチホットリンクを無効にする",
     "DisableAntiAntiLeechDetail": "チェックしてアンチホットリンク機能を完全に無効にする",

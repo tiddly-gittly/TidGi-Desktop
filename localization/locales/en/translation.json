@@ -158,6 +158,37 @@
     "OK": "OK",
     "Cancel": "Cancel"
   },
+  "DeviceNetwork": {
+    "AcceptPairing": "Accept",
+    "Devices": "Devices",
+    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "Direction": {
+      "inbound": "Incoming request",
+      "outbound": "Outgoing request"
+    },
+    "LocalDevice": "This device",
+    "NoDevices": "No nearby or trusted devices yet.",
+    "NoPendingPairing": "No pairing requests waiting for confirmation.",
+    "Pair": "Pair",
+    "PairingRequests": "Pairing requests",
+    "Reachability": {
+      "connecting": "Connecting",
+      "nearby": "Nearby",
+      "offline": "Offline",
+      "online": "Online"
+    },
+    "Refresh": "Refresh devices",
+    "RejectPairing": "Reject",
+    "RemoveTrustedDevice": "Remove trusted device",
+    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
+    "Sync": "Sync",
+    "SyncCloudDevices": "Sync cloud devices",
+    "TrustMode": {
+      "cloud-account": "Cloud account",
+      "local-pairing": "Local pairing"
+    },
+    "Trusted": "Trusted"
+  },
   "EditWorkspace": {
     "AddExcludedPlugins": "Enter the name of the plugin you want to ignore",
     "AddExcludedPluginsDescription": "You can search for installed plugins in the current wiki, or enter any plugin name.",
@@ -515,6 +546,8 @@
     "DarkTheme": "Dark Theme",
     "DefaultUserName": "User Name",
     "DefaultUserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers. Can be override by user name set in the workspace setting.",
+    "DeviceNetwork": "Device Network",
+    "DeviceNetworkDescription": "Discover nearby devices, confirm local pairing codes, and manage trusted MemeLoop devices.",
     "DeleteExternalApiDatabase": "Delete External API Database",
     "DeveloperTools": "Developer Tools",
     "DisableAntiAntiLeech": "Disable Anti-Anti-Leech",
