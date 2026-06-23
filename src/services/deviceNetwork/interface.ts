@@ -14,6 +14,7 @@ export const DeviceNetworkServiceIPCDescriptor = {
     getLocalDevice: ProxyPropertyType.Function,
     getLocalIdentity: ProxyPropertyType.Function,
     listDevices: ProxyPropertyType.Function,
+    observeDevices: ProxyPropertyType.Function,
     listPairingSessions: ProxyPropertyType.Function,
     observePairingSessions: ProxyPropertyType.Function,
     requestLocalPairing: ProxyPropertyType.Function,
