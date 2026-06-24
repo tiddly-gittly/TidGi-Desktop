@@ -5,6 +5,7 @@ import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
+import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import { ExternalAPIService } from '@services/externalAPI';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -35,6 +36,7 @@ export const serviceInstances: {
   context: Partial<IContextService>;
   preference: Partial<IPreferenceService>;
   externalAPI: Partial<IExternalAPIService>;
+  deviceNetwork: Partial<IDeviceNetworkService>;
 } = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
@@ -80,6 +82,30 @@ export const serviceInstances: {
       resetWithConfirm: vi.fn(async () => undefined),
     } as Partial<IPreferenceService>;
   })(),
+  deviceNetwork: {
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
+    getLocalDevice: vi.fn().mockResolvedValue(undefined),
+    getLocalIdentity: vi.fn().mockResolvedValue({
+      peerId: 'test-peer-id',
+      publicKeyMultibase: 'test-public-key',
+      deviceName: 'Test Device',
+      platform: 'desktop',
+      createdAt: Date.now(),
+    }),
+    listDevices: vi.fn().mockResolvedValue([]),
+    observeDevices: vi.fn(() => () => undefined),
+    listPairingSessions: vi.fn().mockResolvedValue([]),
+    observePairingSessions: vi.fn(() => () => undefined),
+    requestLocalPairing: vi.fn().mockResolvedValue(undefined),
+    acceptPairing: vi.fn().mockResolvedValue(undefined),
+    rejectPairing: vi.fn().mockResolvedValue(undefined),
+    removeTrustedDevice: vi.fn().mockResolvedValue(undefined),
+    configureCloud: vi.fn().mockReturnValue(undefined),
+    syncCloudDevices: vi.fn().mockResolvedValue([]),
+    sendRpc: vi.fn().mockResolvedValue(undefined),
+    syncWithDevice: vi.fn().mockResolvedValue(undefined),
+  },
   externalAPI: {
     getAIConfig: vi.fn(async () => ({ default: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
     getAIProviders: vi.fn(async () => []),
@@ -130,6 +156,7 @@ container.bind(serviceIdentifier.AgentDefinition).to(AgentDefinitionService).inS
 container.bind(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();
 // Bind real DatabaseService instead of mock
 container.bind(serviceIdentifier.Database).to(DatabaseService).inSingletonScope();
+container.bind(serviceIdentifier.DeviceNetwork).toConstantValue(serviceInstances.deviceNetwork);
 container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
 container.bind(serviceIdentifier.WikiEmbedding).to(WikiEmbeddingService).inSingletonScope();
 
