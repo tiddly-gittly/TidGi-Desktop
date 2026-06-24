@@ -16,21 +16,13 @@ export class E2EArgsValidationError extends Error {
 
 const KNOWN_OPTION_PREFIXES = [
   '--tags=',
-  '--profile',
   '--profile=',
-  '--format',
   '--format=',
-  '--parallel',
   '--parallel=',
-  '--retry',
   '--retry=',
-  '--name',
   '--name=',
-  '--language',
   '--language=',
-  '--require',
   '--require=',
-  '--world-parameters',
   '--world-parameters=',
   '--exit',
   '--fail-fast',
@@ -40,6 +32,16 @@ const KNOWN_OPTION_PREFIXES = [
   '--publish',
   '--publish-quiet',
 ] as const;
+
+const KNOWN_OPTIONS_WITH_VALUE = new Set([
+  '--profile',
+  '--format',
+  '--parallel',
+  '--retry',
+  '--language',
+  '--require',
+  '--world-parameters',
+]);
 
 function isKnownOption(argument: string): boolean {
   return KNOWN_OPTION_PREFIXES.some((prefix) => argument.startsWith(prefix));
@@ -133,6 +135,18 @@ export function validateCucumberArguments(arguments_: string[]): void {
     }
 
     if (currentArgument.startsWith('--')) {
+      if (KNOWN_OPTIONS_WITH_VALUE.has(currentArgument)) {
+        if (index + 1 >= arguments_.length || arguments_[index + 1].startsWith('--')) {
+          throw new E2EArgsValidationError(
+            `Missing value for ${currentArgument}`,
+            [
+              `Provide a value after ${currentArgument}, or use ${currentArgument}=value.`,
+            ],
+          );
+        }
+        index += 2;
+        continue;
+      }
       if (isKnownOption(currentArgument)) {
         index += 1;
         continue;

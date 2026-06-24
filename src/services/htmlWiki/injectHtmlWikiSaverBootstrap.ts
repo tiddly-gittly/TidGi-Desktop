@@ -1,6 +1,9 @@
 /**
- * Inline script injected into served HTML wikis so saves persist through TidGi
- * instead of triggering a browser download.
+ * Primary save path for HTML workspaces.
+ *
+ * This script is injected into the served wiki document and patches TiddlyWiki's
+ * saver flow before it reaches DownloadSaver. `htmlWikiDownloadIntercept` remains
+ * as an Electron-level fallback for generated HTML downloads that still escape.
  */
 export const HTML_WIKI_SAVER_BOOTSTRAP_SCRIPT_ID = 'tidgi-html-wiki-saver-bootstrap';
 

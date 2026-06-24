@@ -2,25 +2,16 @@ import { isHtmlWiki } from '@/constants/fileNames';
 import type { IWikiWorkspace, IWorkspace } from './interface';
 import { WorkspaceType } from './workspaceType';
 
-function normalizePathSeparators(filePath: string): string {
-  return filePath.replace(/\\/g, '/');
-}
-
-function dirname(filePath: string): string {
-  const normalized = normalizePathSeparators(filePath).replace(/\/+$/, '');
+function splitPortablePath(filePath: string): { baseName: string; directory: string; normalized: string } {
+  const normalized = filePath.replace(/\\/g, '/').replace(/\/+$/, '');
   const separatorIndex = normalized.lastIndexOf('/');
-  if (separatorIndex <= 0) {
-    return normalized;
-  }
-  return normalized.slice(0, separatorIndex);
+  return {
+    baseName: normalized.slice(separatorIndex + 1),
+    directory: separatorIndex <= 0 ? normalized : normalized.slice(0, separatorIndex),
+    normalized,
+  };
 }
 
-function basename(filePath: string): string {
-  const normalized = normalizePathSeparators(filePath).replace(/\/+$/, '');
-  return normalized.slice(normalized.lastIndexOf('/') + 1);
-}
-
-/** Local guard to avoid runtime circular import with interface.ts */
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
   return 'wikiFolderLocation' in workspace;
 }
@@ -77,7 +68,7 @@ export function getHtmlFileLocation(workspace: IWikiWorkspace): string | undefin
  */
 export function getWorkspaceContainerPath(workspace: IWikiWorkspace): string {
   if (isHtmlWikiWorkspace(workspace)) {
-    return dirname(workspace.htmlFileLocation);
+    return splitPortablePath(workspace.htmlFileLocation).directory;
   }
   return workspace.wikiFolderLocation;
 }
@@ -97,30 +88,29 @@ export function getWorkspaceGitScope(workspace: IWorkspace): IWorkspaceGitScope 
     return undefined;
   }
   if (isHtmlWikiWorkspace(workspace)) {
-    const managedAbsolutePath = normalizePathSeparators(workspace.htmlFileLocation);
-    const repoPath = dirname(managedAbsolutePath);
-    const managedRelativePath = basename(managedAbsolutePath);
+    const { baseName, directory, normalized } = splitPortablePath(workspace.htmlFileLocation);
     return {
-      repoPath,
-      managedRelativePath,
-      managedAbsolutePath,
-      managedDisplayName: managedRelativePath,
+      repoPath: directory,
+      managedRelativePath: baseName,
+      managedAbsolutePath: normalized,
+      managedDisplayName: baseName,
     };
   }
+  const folderPath = splitPortablePath(workspace.wikiFolderLocation);
   return {
-    repoPath: normalizePathSeparators(workspace.wikiFolderLocation),
-    managedAbsolutePath: normalizePathSeparators(workspace.wikiFolderLocation),
-    managedDisplayName: basename(workspace.wikiFolderLocation),
+    repoPath: folderPath.normalized,
+    managedAbsolutePath: folderPath.normalized,
+    managedDisplayName: folderPath.baseName,
   };
 }
 
 export function normalizeHtmlWorkspacePaths(htmlFileLocation: string): Pick<IHtmlWikiWorkspace, 'htmlFileLocation' | 'wikiFolderLocation'> {
-  const resolvedHtml = normalizePathSeparators(htmlFileLocation);
-  if (!isHtmlWiki(resolvedHtml)) {
-    throw new Error(`Not a valid HTML wiki file: ${resolvedHtml}`);
+  const htmlPath = splitPortablePath(htmlFileLocation);
+  if (!isHtmlWiki(htmlPath.normalized)) {
+    throw new Error(`Not a valid HTML wiki file: ${htmlPath.normalized}`);
   }
   return {
-    htmlFileLocation: resolvedHtml,
-    wikiFolderLocation: dirname(resolvedHtml),
+    htmlFileLocation: htmlPath.normalized,
+    wikiFolderLocation: htmlPath.directory,
   };
 }

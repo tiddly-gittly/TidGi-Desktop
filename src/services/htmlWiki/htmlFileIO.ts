@@ -8,12 +8,16 @@ export async function validateHtmlWikiFile(htmlFileLocation: string): Promise<vo
   if (!isHtmlWiki(resolved)) {
     throw new Error(`Not a valid HTML wiki file: ${resolved}`);
   }
+  let content: string;
   try {
-    await fs.access(resolved);
-  } catch {
-    throw new Error(`HTML wiki file does not exist: ${resolved}`);
+    content = await fs.readFile(resolved, 'utf-8');
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') {
+      throw new Error(`HTML wiki file does not exist: ${resolved}`);
+    }
+    throw error;
   }
-  const content = await fs.readFile(resolved, 'utf-8');
   if (!content.includes('<html') && !content.includes('<HTML')) {
     throw new Error(`File is not a valid HTML document: ${resolved}`);
   }

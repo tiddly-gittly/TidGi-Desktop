@@ -10,7 +10,7 @@ import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 // Scenario-specific paths are computed via helper functions
-import type { ApplicationWorld } from './application';
+import { type ApplicationWorld, chooseFileOrDirectory } from './application';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -1885,6 +1885,47 @@ When('I generate blank HTML wiki at {string}', async function(this: ApplicationW
   }
 });
 
+When('I open HTML wiki file {string} as workspace', async function(this: ApplicationWorld, filePath: string) {
+  await chooseFileOrDirectory(this, 'file', filePath, undefined, { registerFileChooser: false });
+
+  const mainWindow = await this.getWindow('main');
+  if (!mainWindow) {
+    throw new Error('Main window not found');
+  }
+  this.currentWindow = mainWindow;
+  await mainWindow.locator('#add-workspace-button').click({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
+
+  const addWorkspaceWindow = await this.getWindow('addWorkspace');
+  if (!addWorkspaceWindow) {
+    throw new Error('Add workspace window not found');
+  }
+  this.currentWindow = addWorkspaceWindow;
+  await addWorkspaceWindow.waitForLoadState('domcontentloaded', { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+  try {
+    await addWorkspaceWindow.waitForLoadState('networkidle', { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+  } catch {
+    // DOM readiness is sufficient for this window.
+  }
+
+  const openHtmlTab = addWorkspaceWindow.locator("button:has-text('打开 HTML 知识库文件')");
+  await Promise.all([
+    openHtmlTab.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT }),
+    addWorkspaceWindow.locator("button:has-text('解包 HTML 为文件夹知识库')").waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT }),
+  ]);
+  await openHtmlTab.click();
+  await addWorkspaceWindow.locator("[data-testid='main-sub-workspace-switch']").waitFor({ state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+  await addWorkspaceWindow.locator("button:has-text('选择')").click({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
+  await addWorkspaceWindow.locator("[data-testid='open-html-wiki-done-button']").click({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
+
+  const updatedMainWindow = await this.getWindow('main');
+  if (!updatedMainWindow) {
+    throw new Error('Main window not found after opening HTML workspace');
+  }
+  this.currentWindow = updatedMainWindow;
+  await waitForLogMarker(this, '[test-id-WORKSPACE_CREATED]', 'HTML workspace was not created', CUCUMBER_GLOBAL_TIMEOUT, '*');
+  await waitForLogMarker(this, '[test-id-HTML_WIKI_STARTED]', 'HTML wiki did not start', CUCUMBER_GLOBAL_TIMEOUT, '*');
+});
+
 async function getWorkspaceInfoFromSettings(world: ApplicationWorld, workspaceName: string): Promise<{ id: string; port: number }> {
   const settings = await fs.readJson(getSettingsPath(world)) as { workspaces?: Record<string, IWorkspace> };
   for (const [id, workspace] of Object.entries(settings.workspaces ?? {})) {
@@ -1895,29 +1936,24 @@ async function getWorkspaceInfoFromSettings(world: ApplicationWorld, workspaceNa
   throw new Error(`Workspace "${workspaceName}" not found in settings.json`);
 }
 
-When('I fetch HTML sync info for workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
+Then('workspace {string} should expose HTML sync info', async function(this: ApplicationWorld, workspaceName: string) {
   const { port } = await getWorkspaceInfoFromSettings(this, workspaceName);
-  const response = await fetch(`http://127.0.0.1:${port}/tidgi-html-sync/info`);
-  if (!response.ok) {
-    throw new Error(`HTML sync info request failed: ${response.status} ${await response.text()}`);
-  }
-  this.htmlSyncInfo = await response.json() as Record<string, unknown>;
-});
-
-Then('the HTML sync info should describe workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
-  const syncInfo = this.htmlSyncInfo as { htmlUrl?: string; syncType?: string; workspaceName?: string } | undefined;
-  if (!syncInfo) {
-    throw new Error('HTML sync info was not fetched');
-  }
-  if (syncInfo.syncType !== 'html') {
-    throw new Error(`Expected syncType html, got ${String(syncInfo.syncType)}`);
-  }
-  if (syncInfo.workspaceName !== workspaceName) {
-    throw new Error(`Expected workspaceName ${workspaceName}, got ${String(syncInfo.workspaceName)}`);
-  }
-  if (typeof syncInfo.htmlUrl !== 'string' || !syncInfo.htmlUrl.endsWith('/tidgi-html-sync/file')) {
-    throw new Error(`Invalid htmlUrl: ${String(syncInfo.htmlUrl)}`);
-  }
+  await backOff(async () => {
+    const response = await fetch(`http://127.0.0.1:${port}/tidgi-html-sync/info`);
+    if (!response.ok) {
+      throw new Error(`HTML sync info request failed: ${response.status} ${await response.text()}`);
+    }
+    const syncInfo = await response.json() as { htmlUrl?: string; syncType?: string; workspaceName?: string };
+    if (syncInfo.syncType !== 'html') {
+      throw new Error(`Expected syncType html, got ${String(syncInfo.syncType)}`);
+    }
+    if (syncInfo.workspaceName !== workspaceName) {
+      throw new Error(`Expected workspaceName ${workspaceName}, got ${String(syncInfo.workspaceName)}`);
+    }
+    if (typeof syncInfo.htmlUrl !== 'string' || !syncInfo.htmlUrl.endsWith('/tidgi-html-sync/file')) {
+      throw new Error(`Invalid htmlUrl: ${String(syncInfo.htmlUrl)}`);
+    }
+  }, BACKOFF_OPTIONS);
 });
 
 When('I PUT HTML sync file for workspace {string} with content {string}', async function(this: ApplicationWorld, workspaceName: string, htmlContent: string) {

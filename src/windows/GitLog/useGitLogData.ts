@@ -9,10 +9,6 @@ import type { ISearchParameters } from './SearchBar';
 import type { GitLogEntry } from './types';
 import { getWorkspaceGitLogScope } from './workspaceGitScope';
 
-/** Survives React StrictMode remounts; keyed by repo path. */
-const inflightGitLogLoadsByRepo = new Map<string, Promise<void>>();
-const pendingGitLogRefreshByRepo = new Map<string, boolean>();
-
 export interface IGitLogData {
   entries: GitLogEntry[];
   loading: boolean;
@@ -129,20 +125,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   useEffect(() => {
     if (!workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
 
-    const gitScope = getWorkspaceGitLogScope(workspaceInfo);
-    const repoPath = gitScope?.repoPath ?? workspaceInfo.wikiFolderLocation;
-
-    if (inflightGitLogLoadsByRepo.has(repoPath)) {
-      pendingGitLogRefreshByRepo.set(repoPath, true);
-      void window.service.native.log('debug', '[DEBUG] loadGitLog skipped - already in progress', { refreshTrigger, repoPath });
-      return;
-    }
-
-    let finishLoad!: () => void;
-    const loadPromise = new Promise<void>((resolve) => {
-      finishLoad = resolve;
-    });
-    inflightGitLogLoadsByRepo.set(repoPath, loadPromise);
+    let cancelled = false;
 
     void (async () => {
       void window.service.native.log('debug', '[DEBUG] loadGitLog started', {
@@ -225,6 +208,10 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         }));
         void window.service.native.log('debug', '[DEBUG] entriesWithUnpushedFlag completed', { count: entriesWithUnpushedFlag.length });
 
+        if (cancelled) {
+          return;
+        }
+
         const logData = {
           commitCount: entriesWithUnpushedFlag.length,
           wikiFolderLocation: workspaceInfo.wikiFolderLocation,
@@ -246,20 +233,19 @@ export function useGitLogData(workspaceID: string): IGitLogData {
       } catch (error_) {
         const error = error_ as Error;
         console.error('Failed to load git log:', error);
-        setError(error.message);
-      } finally {
-        finishLoad();
-        if (inflightGitLogLoadsByRepo.get(repoPath) === loadPromise) {
-          inflightGitLogLoadsByRepo.delete(repoPath);
+        if (!cancelled) {
+          setError(error.message);
         }
-        if (pendingGitLogRefreshByRepo.get(repoPath)) {
-          pendingGitLogRefreshByRepo.set(repoPath, false);
-          setRefreshTrigger((previous) => previous + 1);
-        } else if (loading) {
+      } finally {
+        if (!cancelled) {
           setLoading(false);
         }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [workspaceInfo, refreshTrigger, searchParameters]);
 
   // Track the last logged entries to detect actual changes

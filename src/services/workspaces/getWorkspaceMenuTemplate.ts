@@ -242,7 +242,7 @@ export async function getWorkspaceMenuTemplate(
     },
     {
       label: isHtmlWikiWorkspace(workspace) ? t('WorkspaceSelector.OpenHtmlWikiFolder') : t('WorkspaceSelector.OpenWorkspaceFolderInEditor'),
-      click: async () => await service.native.openInEditor(openPath),
+      click: async () => await service.native.openInEditor(containerPath),
     },
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),

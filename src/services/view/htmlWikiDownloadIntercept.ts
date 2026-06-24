@@ -22,8 +22,12 @@ function isLikelyHtmlWikiSaveDownload(item: DownloadItem, workspace: IHtmlWikiWo
 }
 
 /**
- * When TiddlyFox / TidGi PUT savers are unavailable, TW falls back to DownloadSaver (blob URL).
- * Intercept that generated HTML download and write it back to the managed file.
+ * Fallback for HTML wikis that still reach TiddlyWiki's DownloadSaver.
+ *
+ * `injectHtmlWikiSaverBootstrap` is the primary path: it patches the wiki page
+ * before saving so content is sent through TidGi directly. This handler sits at
+ * Electron's download boundary and only catches renderer-generated HTML downloads
+ * that escaped that bootstrap path.
  */
 export function tryInterceptHtmlWikiDownload(
   event: Event,

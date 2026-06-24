@@ -10,31 +10,10 @@ Feature: HTML wiki workspace
     And I wait for the page to load completely
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
 
-  @html-wiki
-  Scenario: Add workspace UI shows open HTML wiki file tab
-    When I click on an "add workspace button" element with selector "#add-workspace-button"
-    And I switch to "addWorkspace" window
-    And I wait for the page to load completely
-    Then I should see "html wiki tabs" elements with selectors:
-      | element description        | selector                              |
-      | open html wiki file tab    | button:has-text('打开 HTML 知识库文件') |
-      | unpack html wiki tab       | button:has-text('解包 HTML 为文件夹知识库') |
-    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
-    Then I should not see a "main sub workspace switch" element with selector "[data-testid='main-sub-workspace-switch']"
-
   @html-wiki @save
   Scenario: HTML workspace save persists tiddlers across reload
     When I generate blank HTML wiki at "{tmpDir}/blank-wiki.html"
-    And I click on an "add workspace button" element with selector "#add-workspace-button"
-    And I switch to "addWorkspace" window
-    And I wait for the page to load completely
-    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
-    When I prepare to select file in dialog "wiki-test/blank-wiki.html"
-    When I click on a "choose html file button" element with selector "button:has-text('选择')"
-    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
-    When I switch to "main" window
-    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
-    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    And I open HTML wiki file "wiki-test/blank-wiki.html" as workspace
     Then the browser view should be loaded and visible
     When I click on "add tiddler button and title input" elements in browser view with selectors:
       | element description | selector                                               |
@@ -65,16 +44,7 @@ Feature: HTML wiki workspace
       """
       unrelated notes file
       """
-    And I click on an "add workspace button" element with selector "#add-workspace-button"
-    And I switch to "addWorkspace" window
-    And I wait for the page to load completely
-    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
-    When I prepare to select file in dialog "wiki-test/wiki.html"
-    When I click on a "choose html file button" element with selector "button:has-text('选择')"
-    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
-    When I switch to "main" window
-    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
-    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    And I open HTML wiki file "wiki-test/wiki.html" as workspace
     When I modify file "{tmpDir}/wiki.html" to contain "<html><body>updated html</body></html>"
     And I modify file "{tmpDir}/notes.txt" to contain "changed notes should not appear in git log"
     When I click menu "同步和备份 > 查看历史备份"
@@ -85,44 +55,20 @@ Feature: HTML wiki workspace
     Then I should not see a "notes.txt in uncommitted list" element with selector "li:has-text('notes.txt')"
 
   @html-wiki @http-sync
-  Scenario: HTML workspace exposes mobile whole-file sync over HTTP
+  Scenario: HTML workspace exposes mobile whole-file sync and persists settings changes
     When I generate blank HTML wiki at "{tmpDir}/mobile-sync-wiki.html"
-    And I click on an "add workspace button" element with selector "#add-workspace-button"
-    And I switch to "addWorkspace" window
-    And I wait for the page to load completely
-    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
-    When I prepare to select file in dialog "wiki-test/mobile-sync-wiki.html"
-    When I click on a "choose html file button" element with selector "button:has-text('选择')"
-    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
-    When I switch to "main" window
-    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
-    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    And I open HTML wiki file "wiki-test/mobile-sync-wiki.html" as workspace
     When I update workspace "mobile-sync-wiki" settings:
       | property      | value |
       | enableHTTPAPI | true  |
     Then I wait for "html wiki http started" log marker "[test-id-HTML_WIKI_HTTP_STARTED]"
-    When I fetch HTML sync info for workspace "mobile-sync-wiki"
-    Then the HTML sync info should describe workspace "mobile-sync-wiki"
+    Then workspace "mobile-sync-wiki" should expose HTML sync info
     When I PUT HTML sync file for workspace "mobile-sync-wiki" with content "<html><body>MobileSyncUpdated</body></html>"
     Then file "{tmpDir}/mobile-sync-wiki.html" should contain text "MobileSyncUpdated"
-
-  @html-wiki @settings
-  Scenario: HTML workspace settings can rename the workspace and persist
-    When I generate blank HTML wiki at "{tmpDir}/config-html.html"
-    And I click on an "add workspace button" element with selector "#add-workspace-button"
-    And I switch to "addWorkspace" window
-    And I wait for the page to load completely
-    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
-    When I prepare to select file in dialog "wiki-test/config-html.html"
-    When I click on a "choose html file button" element with selector "button:has-text('选择')"
-    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
-    When I switch to "main" window
-    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
-    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
-    When I open edit workspace window for workspace with name "config-html"
+    When I open edit workspace window for workspace with name "mobile-sync-wiki"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I type "Renamed HTML Workspace" in "workspace name" element with selector "input[value='config-html']"
+    When I type "Renamed HTML Workspace" in "workspace name" element with selector "input[value='mobile-sync-wiki']"
     And I click on a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should not see a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
     Then settings.json should have workspace "Renamed HTML Workspace" with "name" set to "Renamed HTML Workspace"

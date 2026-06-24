@@ -57,7 +57,7 @@ export function useOpenHtmlWiki(
     }
     const parentFolder = await window.service.native.path('dirname', wikiHtmlPath);
     const baseName = await window.service.native.path('basename', wikiHtmlPath);
-    const defaultName = baseName?.replace(/\.(html|htm)$/i, '') ?? wikiFolderName;
+    const defaultName = baseName?.replace(/\.(html|htm|hta)$/i, '') ?? wikiFolderName;
     const isSynced = form.storageProvider !== SupportedStorageServices.local;
     const baseConfig = workspaceConfigFromForm(
       {
