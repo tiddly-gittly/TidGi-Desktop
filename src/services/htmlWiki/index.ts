@@ -15,6 +15,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { readHtmlWikiFile, validateHtmlWikiFile, writeHtmlWikiFile } from './htmlFileIO';
 import { HtmlWikiHttpServerManager } from './httpServer';
+import { injectHtmlWikiSaverBootstrap } from './injectHtmlWikiSaverBootstrap';
 import type { IHtmlWikiService } from './interface';
 
 @injectable()
@@ -97,7 +98,7 @@ export class HtmlWiki implements IHtmlWikiService {
 
   public async getIndexResponse(workspaceID: string): Promise<import('@services/wiki/wikiWorker/ipcServerRoutes').IWikiServerRouteResponse> {
     const workspace = await this.getHtmlWorkspaceOrThrow(workspaceID);
-    const html = await readHtmlWikiFile(workspace.htmlFileLocation);
+    const html = injectHtmlWikiSaverBootstrap(await readHtmlWikiFile(workspace.htmlFileLocation));
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -113,6 +114,10 @@ export class HtmlWiki implements IHtmlWikiService {
     await writeHtmlWikiFile(workspace.htmlFileLocation, htmlContent);
     const gitService = container.get<import('@services/git/interface').IGitService>(serviceIdentifier.Git);
     gitService.notifyFileChange(workspace.wikiFolderLocation, { onlyWhenGitLogOpened: true });
+    logger.info('[test-id-HTML_WIKI_SAVED] HTML wiki saved', {
+      workspaceId: workspaceID,
+      htmlFileLocation: workspace.htmlFileLocation,
+    });
     return { statusCode: 204, headers: {}, data: '' };
   }
 
