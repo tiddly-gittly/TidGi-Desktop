@@ -1,6 +1,9 @@
 import { dialog } from 'electron';
 import { injectable } from 'inversify';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
+import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -16,7 +19,29 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { readHtmlWikiFile, validateHtmlWikiFile, writeHtmlWikiFile } from './htmlFileIO';
 import { HtmlWikiHttpServerManager } from './httpServer';
 import { injectHtmlWikiSaverBootstrap } from './injectHtmlWikiSaverBootstrap';
-import type { IHtmlWikiService } from './interface';
+import type { IHtmlWikiHttpRequest, IHtmlWikiService } from './interface';
+
+const HTML_SYNC_INFO_PATH = '/tidgi-html-sync/info';
+const HTML_SYNC_FILE_PATH = '/tidgi-html-sync/file';
+const HTML_SYNC_REVISION_HEADER = 'X-TidGi-HTML-Revision';
+
+async function getHtmlWikiRevision(htmlFileLocation: string): Promise<string> {
+  const stat = await fs.stat(path.resolve(htmlFileLocation));
+  return `${Math.trunc(stat.mtimeMs)}-${stat.size}`;
+}
+
+function getHeaderValue(headers: IHtmlWikiHttpRequest['headers'], name: string): string | undefined {
+  const value = headers?.[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function getRequestBaseUrl(request: IHtmlWikiHttpRequest, workspace: IHtmlWikiWorkspace): string {
+  const host = getHeaderValue(request.headers, 'host') ?? `127.0.0.1:${workspace.port}`;
+  return `http://${host}`;
+}
 
 @injectable()
 export class HtmlWiki implements IHtmlWikiService {
@@ -136,29 +161,88 @@ export class HtmlWiki implements IHtmlWikiService {
     };
   }
 
-  public async handleHttpRequest(workspaceID: string, method: string, body?: string) {
+  public async handleHttpRequest(
+    workspaceID: string,
+    request: IHtmlWikiHttpRequest,
+  ): Promise<{ statusCode: number; headers: Record<string, string>; body: string | Buffer }> {
     const workspace = await this.getHtmlWorkspaceOrThrow(workspaceID);
-    if (method === 'GET' || method === 'HEAD') {
-      const html = await readHtmlWikiFile(workspace.htmlFileLocation);
+    const method = request.method.toUpperCase();
+    const url = new URL(request.url ?? '/', getRequestBaseUrl(request, workspace));
+    const pathname = url.pathname.replace(/\/+$/, '') || '/';
+    const requiresAuthentication = pathname.startsWith('/tidgi-html-sync') || method === 'PUT' || method === 'POST';
+    if (requiresAuthentication && !this.isHttpRequestAuthorized(workspace, request)) {
+      return { statusCode: 403, headers: { 'Content-Type': 'text/plain' }, body: 'Forbidden' };
+    }
+
+    if (pathname === '/status') {
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        body: html,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          ok: true,
+          read_only: workspace.readOnlyMode ?? false,
+          syncType: 'html',
+          workspaceId: workspace.id,
+        }),
+      };
+    }
+
+    if (pathname === HTML_SYNC_INFO_PATH) {
+      const baseUrl = getRequestBaseUrl(request, workspace);
+      const revision = await getHtmlWikiRevision(workspace.htmlFileLocation);
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          baseUrl,
+          htmlUrl: `${baseUrl}${HTML_SYNC_FILE_PATH}`,
+          readOnly: workspace.readOnlyMode ?? false,
+          revision,
+          syncType: 'html',
+          workspaceId: workspace.id,
+          workspaceName: workspace.name,
+        }),
+      };
+    }
+
+    if (method === 'GET' || method === 'HEAD') {
+      const html = await readHtmlWikiFile(workspace.htmlFileLocation);
+      const revision = await getHtmlWikiRevision(workspace.htmlFileLocation);
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', ETag: `"${revision}"`, [HTML_SYNC_REVISION_HEADER]: revision },
+        body: method === 'HEAD' ? '' : html,
       };
     }
     if (method === 'PUT' || method === 'POST') {
       if (workspace.readOnlyMode) {
         return { statusCode: 403, headers: { 'Content-Type': 'text/plain' }, body: 'Read-only mode' };
       }
-      if (typeof body !== 'string' || body.length === 0) {
+      if (typeof request.body !== 'string' || request.body.length === 0) {
         return { statusCode: 400, headers: { 'Content-Type': 'text/plain' }, body: 'Empty body' };
       }
-      await writeHtmlWikiFile(workspace.htmlFileLocation, body);
+      await writeHtmlWikiFile(workspace.htmlFileLocation, request.body);
       const gitService = container.get<import('@services/git/interface').IGitService>(serviceIdentifier.Git);
       gitService.notifyFileChange(workspace.wikiFolderLocation, { onlyWhenGitLogOpened: true });
-      return { statusCode: 204, headers: {} as Record<string, string>, body: '' };
+      const revision = await getHtmlWikiRevision(workspace.htmlFileLocation);
+      return { statusCode: 204, headers: { [HTML_SYNC_REVISION_HEADER]: revision }, body: '' };
     }
     return { statusCode: 405, headers: { 'Content-Type': 'text/plain' }, body: 'Method not allowed' };
+  }
+
+  private isHttpRequestAuthorized(workspace: IHtmlWikiWorkspace, request: IHtmlWikiHttpRequest): boolean {
+    if (!workspace.tokenAuth) {
+      return true;
+    }
+    if (!workspace.authToken) {
+      return false;
+    }
+    const authHeaderName = getTidGiAuthHeaderWithToken(workspace.authToken);
+    const authHeaderValue = getHeaderValue(request.headers, authHeaderName);
+    if (typeof authHeaderValue !== 'string' || authHeaderValue.length === 0) {
+      return false;
+    }
+    return !workspace.userName || authHeaderValue === workspace.userName;
   }
 
   private async getHtmlWorkspaceOrThrow(workspaceID: string): Promise<IHtmlWikiWorkspace> {

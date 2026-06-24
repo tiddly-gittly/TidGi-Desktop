@@ -55,8 +55,11 @@ describe('HtmlWiki handleHttpRequest', () => {
       id: 'ws-html',
       workspaceType: 'html',
       htmlFileLocation: htmlPath,
+      name: 'HTML Wiki',
+      port: 5212,
       wikiFolderLocation: tempDir,
       readOnlyMode: false,
+      tokenAuth: false,
     });
     mockNotifyFileChange.mockClear();
   });
@@ -66,14 +69,54 @@ describe('HtmlWiki handleHttpRequest', () => {
   });
 
   it('GET returns html content', async () => {
-    const response = await service.handleHttpRequest('ws-html', 'GET');
+    const response = await service.handleHttpRequest('ws-html', { method: 'GET', url: '/' });
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('original');
+    expect(response.headers['X-TidGi-HTML-Revision']).toBeDefined();
+    expect(response.headers.ETag).toBeDefined();
+  });
+
+  it('HEAD returns revision headers without body', async () => {
+    const response = await service.handleHttpRequest('ws-html', { method: 'HEAD', url: '/tidgi-html-sync/file' });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBe('');
+    expect(response.headers['X-TidGi-HTML-Revision']).toBeDefined();
+  });
+
+  it('status returns html sync health information', async () => {
+    const response = await service.handleHttpRequest('ws-html', { method: 'GET', url: '/status' });
+    expect(response.statusCode).toBe(200);
+    expect(typeof response.body).toBe('string');
+    expect(JSON.parse(response.body as string)).toMatchObject({
+      ok: true,
+      read_only: false,
+      syncType: 'html',
+      workspaceId: 'ws-html',
+    });
+  });
+
+  it('sync info returns mobile html sync metadata', async () => {
+    const response = await service.handleHttpRequest('ws-html', {
+      headers: { host: '192.168.1.20:5212' },
+      method: 'GET',
+      url: '/tidgi-html-sync/info',
+    });
+    expect(response.statusCode).toBe(200);
+    expect(typeof response.body).toBe('string');
+    expect(JSON.parse(response.body as string)).toMatchObject({
+      baseUrl: 'http://192.168.1.20:5212',
+      htmlUrl: 'http://192.168.1.20:5212/tidgi-html-sync/file',
+      readOnly: false,
+      syncType: 'html',
+      workspaceId: 'ws-html',
+      workspaceName: 'HTML Wiki',
+    });
   });
 
   it('PUT writes html back to the same file', async () => {
-    const response = await service.handleHttpRequest('ws-html', 'PUT', '<html><body>saved</body></html>');
+    const response = await service.handleHttpRequest('ws-html', { body: '<html><body>saved</body></html>', method: 'PUT', url: '/tidgi-html-sync/file' });
     expect(response.statusCode).toBe(204);
+    expect(response.headers['X-TidGi-HTML-Revision']).toBeDefined();
     const content = await fs.readFile(htmlPath, 'utf-8');
     expect(content).toContain('saved');
     expect(mockNotifyFileChange).toHaveBeenCalledWith(tempDir, { onlyWhenGitLogOpened: true });
@@ -84,10 +127,37 @@ describe('HtmlWiki handleHttpRequest', () => {
       id: 'ws-html',
       workspaceType: 'html',
       htmlFileLocation: htmlPath,
+      name: 'HTML Wiki',
+      port: 5212,
       wikiFolderLocation: tempDir,
       readOnlyMode: true,
+      tokenAuth: false,
     });
-    const response = await service.handleHttpRequest('ws-html', 'PUT', '<html></html>');
+    const response = await service.handleHttpRequest('ws-html', { body: '<html></html>', method: 'PUT', url: '/tidgi-html-sync/file' });
     expect(response.statusCode).toBe(403);
+  });
+
+  it('requires token auth for html sync endpoints when enabled', async () => {
+    mockGet.mockResolvedValue({
+      authToken: 'secret-token',
+      htmlFileLocation: htmlPath,
+      id: 'ws-html',
+      name: 'HTML Wiki',
+      port: 5212,
+      readOnlyMode: false,
+      tokenAuth: true,
+      userName: 'TidGi User',
+      wikiFolderLocation: tempDir,
+      workspaceType: 'html',
+    });
+    const rejected = await service.handleHttpRequest('ws-html', { method: 'GET', url: '/tidgi-html-sync/info' });
+    expect(rejected.statusCode).toBe(403);
+
+    const accepted = await service.handleHttpRequest('ws-html', {
+      headers: { 'x-tidgi-auth-token-secret-token': 'TidGi User' },
+      method: 'GET',
+      url: '/tidgi-html-sync/info',
+    });
+    expect(accepted.statusCode).toBe(200);
   });
 });

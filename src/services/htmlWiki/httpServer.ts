@@ -1,6 +1,6 @@
 import http from 'node:http';
 
-import { getDefaultHTTPServerIP } from '@/constants/urls';
+import { defaultServerIP } from '@/constants/urls';
 import { logger } from '@services/libs/log';
 import type { IHtmlWikiWorkspace } from '@services/workspaces/interface';
 
@@ -20,7 +20,7 @@ export class HtmlWikiHttpServerManager {
     }
     await this.stop(workspace.id);
     const port = workspace.port;
-    const host = getDefaultHTTPServerIP(port);
+    const host = defaultServerIP;
     const server = http.createServer((request, response) => {
       void (async () => {
         try {
@@ -33,7 +33,12 @@ export class HtmlWikiHttpServerManager {
             }
           }
           const body = Buffer.concat(chunks).toString('utf-8');
-          const result = await htmlWikiService.handleHttpRequest(workspace.id, request.method ?? 'GET', body);
+          const result = await htmlWikiService.handleHttpRequest(workspace.id, {
+            body,
+            headers: request.headers,
+            method: request.method ?? 'GET',
+            url: request.url ?? '/',
+          });
           response.writeHead(result.statusCode, result.headers);
           response.end(result.body);
         } catch (error) {

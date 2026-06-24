@@ -1884,3 +1884,49 @@ When('I generate blank HTML wiki at {string}', async function(this: ApplicationW
     await fs.remove(buildDirectory);
   }
 });
+
+async function getWorkspaceInfoFromSettings(world: ApplicationWorld, workspaceName: string): Promise<{ id: string; port: number }> {
+  const settings = await fs.readJson(getSettingsPath(world)) as { workspaces?: Record<string, IWorkspace> };
+  for (const [id, workspace] of Object.entries(settings.workspaces ?? {})) {
+    if ('wikiFolderLocation' in workspace && (workspace.name === workspaceName || path.basename(workspace.wikiFolderLocation) === workspaceName)) {
+      return { id, port: workspace.port ?? 5212 };
+    }
+  }
+  throw new Error(`Workspace "${workspaceName}" not found in settings.json`);
+}
+
+When('I fetch HTML sync info for workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  const { port } = await getWorkspaceInfoFromSettings(this, workspaceName);
+  const response = await fetch(`http://127.0.0.1:${port}/tidgi-html-sync/info`);
+  if (!response.ok) {
+    throw new Error(`HTML sync info request failed: ${response.status} ${await response.text()}`);
+  }
+  this.htmlSyncInfo = await response.json() as Record<string, unknown>;
+});
+
+Then('the HTML sync info should describe workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
+  const syncInfo = this.htmlSyncInfo as { htmlUrl?: string; syncType?: string; workspaceName?: string } | undefined;
+  if (!syncInfo) {
+    throw new Error('HTML sync info was not fetched');
+  }
+  if (syncInfo.syncType !== 'html') {
+    throw new Error(`Expected syncType html, got ${String(syncInfo.syncType)}`);
+  }
+  if (syncInfo.workspaceName !== workspaceName) {
+    throw new Error(`Expected workspaceName ${workspaceName}, got ${String(syncInfo.workspaceName)}`);
+  }
+  if (typeof syncInfo.htmlUrl !== 'string' || !syncInfo.htmlUrl.endsWith('/tidgi-html-sync/file')) {
+    throw new Error(`Invalid htmlUrl: ${String(syncInfo.htmlUrl)}`);
+  }
+});
+
+When('I PUT HTML sync file for workspace {string} with content {string}', async function(this: ApplicationWorld, workspaceName: string, htmlContent: string) {
+  const { port } = await getWorkspaceInfoFromSettings(this, workspaceName);
+  const response = await fetch(`http://127.0.0.1:${port}/tidgi-html-sync/file`, {
+    body: htmlContent,
+    method: 'PUT',
+  });
+  if (!response.ok) {
+    throw new Error(`HTML sync PUT failed: ${response.status} ${await response.text()}`);
+  }
+});

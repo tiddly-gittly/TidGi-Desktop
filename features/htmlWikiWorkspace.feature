@@ -83,3 +83,25 @@ Feature: HTML wiki workspace
     Then I wait for "git log UI refreshed" log marker "[test-id-git-log-refreshed]"
     Then I should see a "wiki.html in uncommitted list" element with selector "li:has-text('wiki.html')"
     Then I should not see a "notes.txt in uncommitted list" element with selector "li:has-text('notes.txt')"
+
+  @html-wiki @http-sync
+  Scenario: HTML workspace exposes mobile whole-file sync over HTTP
+    When I generate blank HTML wiki at "{tmpDir}/mobile-sync-wiki.html"
+    And I click on an "add workspace button" element with selector "#add-workspace-button"
+    And I switch to "addWorkspace" window
+    And I wait for the page to load completely
+    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
+    When I prepare to select file in dialog "wiki-test/mobile-sync-wiki.html"
+    When I click on a "choose html file button" element with selector "button:has-text('选择')"
+    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
+    When I switch to "main" window
+    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
+    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    When I update workspace "mobile-sync-wiki" settings:
+      | property      | value |
+      | enableHTTPAPI | true  |
+    Then I wait for "html wiki http started" log marker "[test-id-HTML_WIKI_HTTP_STARTED]"
+    When I fetch HTML sync info for workspace "mobile-sync-wiki"
+    Then the HTML sync info should describe workspace "mobile-sync-wiki"
+    When I PUT HTML sync file for workspace "mobile-sync-wiki" with content "<html><body>MobileSyncUpdated</body></html>"
+    Then file "{tmpDir}/mobile-sync-wiki.html" should contain text "MobileSyncUpdated"

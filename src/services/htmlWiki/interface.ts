@@ -2,6 +2,14 @@ import { HtmlWikiChannel } from '@/constants/channels';
 import type { IWikiServerRouteResponse } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { IHtmlWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { IncomingHttpHeaders } from 'node:http';
+
+export interface IHtmlWikiHttpRequest {
+  body?: string;
+  headers?: IncomingHttpHeaders;
+  method: string;
+  url?: string;
+}
 
 export interface IHtmlWikiService {
   checkHtmlWikiExist(workspace: IHtmlWikiWorkspace, options?: { showDialog?: boolean }): Promise<string | true>;
@@ -14,7 +22,7 @@ export interface IHtmlWikiService {
   getIndexResponse(workspaceID: string): Promise<IWikiServerRouteResponse>;
   saveHtmlResponse(workspaceID: string, htmlContent: string): Promise<IWikiServerRouteResponse>;
   getStatusResponse(workspaceID: string, userName: string): Promise<IWikiServerRouteResponse>;
-  handleHttpRequest(workspaceID: string, method: string, body?: string): Promise<{ statusCode: number; headers: Record<string, string>; body: string | Buffer }>;
+  handleHttpRequest(workspaceID: string, request: IHtmlWikiHttpRequest): Promise<{ statusCode: number; headers: Record<string, string>; body: string | Buffer }>;
 }
 
 export const HtmlWikiServiceIPCDescriptor = {
