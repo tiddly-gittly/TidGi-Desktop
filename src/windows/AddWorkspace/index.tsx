@@ -92,6 +92,8 @@ export default function AddWorkspace(): React.JSX.Element {
     (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>).addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,
   );
   const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
+  const isOpenHtmlWikiFileTab = currentTab === CreateWorkspaceTabs.OpenHtmlWikiFile;
+  const showAdvancedSettings = !isOpenHtmlWikiFileTab;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const [useTidgiConfig, useTidgiConfigSetter] = useState(true);
   const [selectedImportConfig, selectedImportConfigSetter] = useState<Partial<ISyncableWikiConfig> | undefined>(undefined);
@@ -162,15 +164,17 @@ export default function AddWorkspace(): React.JSX.Element {
         </Paper>
       </AppBar>
 
-      {/* show advanced options if user have already created a workspace */}
-      <Accordion defaultExpanded={workspaceList.length > 0}>
-        <AdvancedSettingsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('AddWorkspace.Advanced')}</AdvancedSettingsAccordionSummary>
-        <AccordionDetails>
-          {/* Force it only show sync option when clone online wiki, because many user encounter sync problem here. Recommend them create local first and sync later. */}
-          {isCreateSyncedWorkspace && <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={() => {}} />}
-          <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
-        </AccordionDetails>
-      </Accordion>
+      {/* HTML file import has no main/sub workspace concept — hide advanced settings entirely */}
+      {showAdvancedSettings && (
+        <Accordion defaultExpanded={workspaceList.length > 0}>
+          <AdvancedSettingsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('AddWorkspace.Advanced')}</AdvancedSettingsAccordionSummary>
+          <AccordionDetails>
+            {/* Force it only show sync option when clone online wiki, because many user encounter sync problem here. Recommend them create local first and sync later. */}
+            {isCreateSyncedWorkspace && <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={() => {}} />}
+            <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       {isCreateSyncedWorkspace && (
         <TokenFormContainer>

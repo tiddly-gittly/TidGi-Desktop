@@ -639,6 +639,13 @@ export class Workspace implements IWorkspaceService {
           workspaceType: WorkspaceType.html,
           htmlFileLocation: normalizedHtmlPaths.htmlFileLocation,
           wikiFolderLocation: normalizedHtmlPaths.wikiFolderLocation,
+          isSubWiki: false,
+          mainWikiID: null,
+          mainWikiToLink: null,
+          tagNames: [],
+          includeTagTree: false,
+          fileSystemPathFilterEnable: false,
+          fileSystemPathFilter: null,
         }
         : {}),
     };
