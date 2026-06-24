@@ -6,6 +6,7 @@ import { _electron as electron } from 'playwright';
 import type { ElectronApplication, Page } from 'playwright';
 import { WindowNames } from '../../src/services/windows/WindowProperties';
 import { killProcessTree } from '../supports/killProcessTree';
+import { MockMobileSyncServer } from '../supports/mockMobileSyncServer';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
@@ -64,6 +65,7 @@ export class ApplicationWorld {
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
   mockOAuthServer: MockOAuthServer | undefined;
+  mockMobileSyncServer: MockMobileSyncServer | undefined;
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
