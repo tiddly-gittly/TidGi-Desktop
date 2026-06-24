@@ -63,3 +63,4 @@ minimumReleaseAgeExclude:
   - eslint-plugin-unicorn@65.0.1
   - git-sync-js@2.4.0
   - typescript-eslint@8.61.0
+  - tidgi-shared@0.1.6

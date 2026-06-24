@@ -78,6 +78,13 @@ export interface INativeService {
    * @param urlToReplace Usually `getDefaultHTTPServerIP(port)`
    */
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
+  /**
+   * Replace 0.0.0.0 with ALL local (non-internal) IP addresses.
+   * Used to generate multiple QR codes for devices with multiple network interfaces.
+   * @param urlToReplace Usually `getDefaultHTTPServerIP(port)`
+   * @returns Array of URLs with real IPs
+   */
+  getAllLocalHostUrlsWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string[]>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   /**
    * Log a message for a specific label (e.g., wiki name)
@@ -159,6 +166,7 @@ export const NativeServiceIPCDescriptor = {
     executeZxScript$: ProxyPropertyType.Function$,
     formatFileUrlToAbsolutePath: ProxyPropertyType.Function,
     getLocalHostUrlWithActualInfo: ProxyPropertyType.Function,
+    getAllLocalHostUrlsWithActualInfo: ProxyPropertyType.Function,
     log: ProxyPropertyType.Function,
     logFor: ProxyPropertyType.Function,
     mkdir: ProxyPropertyType.Function,

@@ -75,6 +75,31 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       setLocationProperty('search', urlObject.search);
       setLocationProperty('origin', urlObject.origin);
 
+      // Inject all local IP URLs for multi-network-interface QR code display
+      try {
+        const allLocalUrls = await tidgiService.native.getAllLocalHostUrlsWithActualInfo(getDefaultHTTPServerIP(port), workspaceID);
+        // Store as JSON array for programmatic use
+        asyncInfoTiddlerFields.push({
+          title: '$:/info/url/localIPs',
+          text: JSON.stringify(allLocalUrls),
+        });
+        // Store individual tiddlers for TiddlyWiki list iteration
+        allLocalUrls.forEach((url, index) => {
+          asyncInfoTiddlerFields.push({
+            title: `$:/info/url/localIP/${index}`,
+            text: url,
+          });
+        });
+        asyncInfoTiddlerFields.push({
+          title: '$:/info/url/localIPCount',
+          text: String(allLocalUrls.length),
+        });
+      } catch (error) {
+        console.error('Failed to get all local IP URLs:', error);
+        asyncInfoTiddlerFields.push({ title: '$:/info/url/localIPs', text: '[]' });
+        asyncInfoTiddlerFields.push({ title: '$:/info/url/localIPCount', text: '0' });
+      }
+
       asyncInfoTiddlerFields.push({ title: '$:/info/tidgi/tokenAuth', text: mapBoolean(tokenAuth) }, { title: '$:/info/tidgi/enableHTTPAPI', text: mapBoolean(enableHTTPAPI) });
 
       // Add workspace name for QR code
