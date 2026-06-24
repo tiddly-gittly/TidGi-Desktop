@@ -9,7 +9,7 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import type { AgentDefinition } from 'memeloop';
-import { getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
+import { AGENT_TOOL_LOOP_ID, getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
@@ -45,7 +45,7 @@ function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
     name: mergeTextOverride(entity.name, defaultAgent?.name) ?? '',
     description: mergeTextOverride(entity.description, defaultAgent?.description) ?? '',
     avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
-    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || 'memeloopTaskAgent',
+    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || AGENT_TOOL_LOOP_ID,
     agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? { prompts: [], plugins: [] },
     aiApiConfig: entity.aiApiConfig ?? defaultAgent?.aiApiConfig,
     agentTools: entity.agentTools ?? defaultAgent?.agentTools,
@@ -89,7 +89,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
             name: d.name,
             description: d.description,
             avatarUrl: d.avatarUrl,
-            agentFrameworkID: d.agentFrameworkID || 'memeloopTaskAgent',
+            agentFrameworkID: d.agentFrameworkID || AGENT_TOOL_LOOP_ID,
             agentFrameworkConfig: d.agentFrameworkConfig,
             aiApiConfig: d.aiApiConfig,
             agentTools: d.agentTools,

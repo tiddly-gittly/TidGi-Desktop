@@ -8,7 +8,7 @@ describe('createAgentInstanceFromDefinition', () => {
       id: 'test-agent-def',
       name: 'Test Agent',
       agentFrameworkConfig: undefined,
-      agentFrameworkID: 'memeloopAgentToolLoop',
+      agentFrameworkID: 'agent-tool-loop',
       tools: [],
       version: '1',
       description: '',
@@ -21,7 +21,7 @@ describe('createAgentInstanceFromDefinition', () => {
 
     expect(instanceData.agentFrameworkConfig).toBeUndefined();
     expect(instanceData.agentDefId).toBe('test-agent-def');
-    expect(instanceData.agentFrameworkID).toBe('memeloopAgentToolLoop');
+    expect(instanceData.agentFrameworkID).toBe('agent-tool-loop');
     expect(instanceData.name).toContain('Test Agent');
     expect(instanceData.messages).toEqual([]);
     expect(instanceData.status.state).toBe('completed');

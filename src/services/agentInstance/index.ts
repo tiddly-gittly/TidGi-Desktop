@@ -16,6 +16,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import {
+  AGENT_TOOL_LOOP_ID,
   type AgentFrameworkConfig,
   type AgentHeartbeatConfig,
   type AgentInstance,
@@ -122,7 +123,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public registerBuiltinFrameworks(): void {
-    this.frameworkSchemas.set('memeloopAgentToolLoop', {
+    this.frameworkSchemas.set(AGENT_TOOL_LOOP_ID, {
       type: 'object',
       properties: {
         prompts: { type: 'array', items: { type: 'object' } },
