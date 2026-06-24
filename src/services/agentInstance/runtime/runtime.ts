@@ -9,6 +9,7 @@ import {
 } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import type { AgentInstance } from 'memeloop';
@@ -27,6 +28,7 @@ export class MemeLoopDesktopRuntime {
       agentInstanceService: IAgentInstanceService;
       agentDefinitionService: IAgentDefinitionService;
       externalAPIService: IExternalAPIService;
+      deviceNetworkService: IDeviceNetworkService;
       notifyAgentChanged: (agentId: string, agent: AgentInstance) => void;
       isCancelled: (agentId: string) => boolean;
       loopScriptPolicy?: AgentFrameworkContext['loopScriptPolicy'];
@@ -123,10 +125,7 @@ export class MemeLoopDesktopRuntime {
       }),
       tools: this.toolRegistry,
       syncAdapters: [],
-      network: {
-        async start() {},
-        async stop() {},
-      },
+      network: this.options.deviceNetworkService,
       logger,
       loopScriptPolicy: this.options.loopScriptPolicy,
       isCancelled: () => isCancelled(agentId),
