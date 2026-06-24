@@ -19,6 +19,41 @@ Feature: HTML wiki workspace
       | element description        | selector                              |
       | open html wiki file tab    | button:has-text('打开 HTML 知识库文件') |
       | unpack html wiki tab       | button:has-text('解包 HTML 为文件夹知识库') |
+    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
+    Then I should not see a "main sub workspace switch" element with selector "[data-testid='main-sub-workspace-switch']"
+
+  @html-wiki @save
+  Scenario: HTML workspace save persists tiddlers across reload
+    When I generate blank HTML wiki at "{tmpDir}/blank-wiki.html"
+    And I click on an "add workspace button" element with selector "#add-workspace-button"
+    And I switch to "addWorkspace" window
+    And I wait for the page to load completely
+    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
+    When I prepare to select file in dialog "wiki-test/blank-wiki.html"
+    When I click on a "choose html file button" element with selector "button:has-text('选择')"
+    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
+    When I switch to "main" window
+    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
+    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    Then the browser view should be loaded and visible
+    When I click on "add tiddler button and title input" elements in browser view with selectors:
+      | element description | selector                                               |
+      | add tiddler button  | button:has(.tc-image-new-button)                       |
+      | title input         | .tc-tiddler-edit-frame input.tc-titlebar.tc-edit-texteditor |
+    And I press "Control+a" in browser view
+    And I press "Delete" in browser view
+    And I type "HtmlWikiSaveTestTiddler" in "title input" element in browser view with selector ".tc-tiddler-edit-frame input.tc-titlebar.tc-edit-texteditor"
+    And I type "HtmlWikiSaveTestContent" in "body editor" element in browser view with selector ".tc-tiddler-edit-frame textarea.tc-edit-texteditor"
+    And I click on "confirm button and save wiki button" elements in browser view with selectors:
+      | element description | selector                          |
+      | confirm button      | button:has(.tc-image-done-button) |
+      | save wiki button    | button:has(.tc-image-save-button-dynamic) |
+    Then I wait for "html wiki saved" log marker "[test-id-HTML_WIKI_SAVED]"
+    Then file "{tmpDir}/blank-wiki.html" should contain text "HtmlWikiSaveTestTiddler"
+    When I restart workspace "blank-wiki"
+    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    When I open tiddler "HtmlWikiSaveTestTiddler" in browser view
+    Then I should see a "saved tiddler" element in browser view with selector "div[data-tiddler-title='HtmlWikiSaveTestTiddler']"
 
   @html-wiki @git
   Scenario: HTML workspace git log only shows the managed html file

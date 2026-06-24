@@ -2,6 +2,7 @@ import { DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { exec as gitExec } from 'dugite';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
+import { execSync } from 'node:child_process';
 import path from 'path';
 import { WindowNames } from '../../src/services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
@@ -1864,4 +1865,22 @@ When('I open workspace {string} in a new window', async function(this: Applicati
   await this.app.evaluate(async () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
   });
+});
+
+When('I generate blank HTML wiki at {string}', async function(this: ApplicationWorld, filePath: string) {
+  const actualPath = filePath.replace('{tmpDir}', getWikiTestRootPath(this));
+  await fs.ensureDir(path.dirname(actualPath));
+  const buildDirectory = path.join(getWikiTestRootPath(this), `.tw-empty-build-${Date.now()}`);
+  const tiddlyWikiJs = path.join(process.cwd(), 'node_modules', 'tiddlywiki', 'tiddlywiki.js');
+  try {
+    execSync(`node ${JSON.stringify(tiddlyWikiJs)} ${JSON.stringify(buildDirectory)} --init empty`, { stdio: 'pipe' });
+    execSync(`node ${JSON.stringify(tiddlyWikiJs)} ${JSON.stringify(buildDirectory)} --build index`, { stdio: 'pipe' });
+    const builtHtml = path.join(buildDirectory, 'output', 'index.html');
+    if (!await fs.pathExists(builtHtml)) {
+      throw new Error(`Expected built HTML at ${builtHtml}`);
+    }
+    await fs.copy(builtHtml, actualPath);
+  } finally {
+    await fs.remove(buildDirectory);
+  }
 });
