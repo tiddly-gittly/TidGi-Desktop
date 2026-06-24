@@ -1,10 +1,9 @@
-import { After, Then, When } from '@cucumber/cucumber';
+import { Then, When } from '@cucumber/cucumber';
 import { exec as gitExec } from 'dugite';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import path from 'path';
 import type { IWorkspace } from '../../src/services/workspaces/interface';
-import { MockMobileSyncServer } from '../supports/mockMobileSyncServer';
 import { getSettingsPath, getWikiTestRootPath } from '../supports/paths';
 import type { ApplicationWorld } from './application';
 
@@ -40,23 +39,6 @@ async function getWorkspaceInfo(world: ApplicationWorld, workspaceName: string):
   }
   throw new Error(`Workspace "${workspaceName}" not found in settings`);
 }
-
-async function getMockMobileSyncServer(world: ApplicationWorld): Promise<MockMobileSyncServer> {
-  if (!world.mockMobileSyncServer) {
-    world.mockMobileSyncServer = new MockMobileSyncServer();
-    await world.mockMobileSyncServer.start();
-  }
-  return world.mockMobileSyncServer;
-}
-
-After({ tags: '@mobilesync' }, async function(this: ApplicationWorld) {
-  if (!this.mockMobileSyncServer) return;
-  try {
-    await this.mockMobileSyncServer.stop();
-  } finally {
-    this.mockMobileSyncServer = undefined;
-  }
-});
 
 /**
  * Wait for TiddlyWiki's HTTP server to be reachable at the given port.
@@ -305,15 +287,23 @@ When('I clone workspace {string} via HTTP to {string}', async function(this: App
   const { id, port } = await getWorkspaceInfo(this, workspaceName);
   const httpUrl = `http://127.0.0.1:${port}/tw-mobile-sync/git/${id}`;
 
+  if (await fs.pathExists(actualPath)) {
+    await fs.remove(actualPath);
+  }
+
   // Wait for HTTP server to be reachable before cloning
   await waitForHTTPReady(port);
 
-  const mockMobileSyncServer = await getMockMobileSyncServer(this);
-  await mockMobileSyncServer.cloneWorkspace({
-    httpUrl,
-    targetPath: actualPath,
-    workingDirectory: getWikiTestRootPath(this),
-  });
+  // TiddlyWiki CSRF requires X-Requested-With header on POST requests;
+  // TidGi Mobile sends it via isomorphic-git, tests use git's http.extraHeader.
+  // http.proxy= disables system proxy so localhost requests go direct.
+  const cloneResult = await gitExec(
+    ['-c', 'http.proxy=', '-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'clone', '--verbose', httpUrl, actualPath],
+    getWikiTestRootPath(this),
+  );
+  if (cloneResult.exitCode !== 0) {
+    throw new Error(`HTTP clone failed (url=${httpUrl}): ${cloneResult.stderr}`);
+  }
 });
 
 /**
@@ -331,6 +321,59 @@ When('I sync {string} via HTTP to workspace {string}', async function(this: Appl
   const { id, port } = await getWorkspaceInfo(this, workspaceName);
   const httpUrl = `http://127.0.0.1:${port}/tw-mobile-sync/git/${id}`;
 
-  const mockMobileSyncServer = await getMockMobileSyncServer(this);
-  await mockMobileSyncServer.syncWorkspace({ clonePath: actualClonePath, httpUrl });
+  await gitExec(['config', 'user.name', 'MobileUser'], actualClonePath);
+  await gitExec(['config', 'user.email', 'mobile@example.com'], actualClonePath);
+  await gitExec(['remote', 'set-url', 'origin', httpUrl], actualClonePath);
+
+  // Step 1: Commit local changes
+  await gitExec(['add', '.'], actualClonePath);
+  const commitResult = await gitExec(['commit', '-m', 'Mobile sync commit'], actualClonePath);
+  if (commitResult.exitCode !== 0) {
+    throw new Error(`Mobile commit failed: ${commitResult.stderr}`);
+  }
+
+  // Step 2: Force-push local main to remote mobile-incoming branch.
+  // Force is needed because the remote branch may have stale refs from a previous sync cycle.
+  const pushResult = await gitExec(
+    ['-c', 'http.proxy=', '-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'push', '--force', 'origin', 'main:refs/heads/mobile-incoming'],
+    actualClonePath,
+  );
+  if (pushResult.exitCode !== 0) {
+    throw new Error(`HTTP push to mobile-incoming failed (url=${httpUrl}): ${pushResult.stderr}`);
+  }
+
+  // Step 3: Ask desktop to merge mobile-incoming into main.
+  // This is a separate HTTP call (not part of git protocol) because the git client
+  // closes the connection before the server can do post-receive work.
+  const mergeUrl = `http://127.0.0.1:${port}/tw-mobile-sync/git/${id}/merge-incoming`;
+  const http = await import('node:http');
+  await new Promise<void>((resolve, reject) => {
+    const request = http.request(mergeUrl, { method: 'POST', headers: { 'X-Requested-With': 'TiddlyWiki' } }, (response) => {
+      let body = '';
+      response.on('data', (chunk: Buffer) => {
+        body += chunk.toString();
+      });
+      response.on('end', () => {
+        if (response.statusCode === 200) resolve();
+        else reject(new Error(`merge-incoming returned ${response.statusCode}: ${body}`));
+      });
+    });
+    request.on('error', reject);
+    request.end();
+  });
+
+  // Step 4: Fetch main and reset to it.
+  // After desktop merges mobile-incoming, remote main contains a merge commit
+  // that is NOT a descendant of our local main (it's a sibling merged with desktop changes).
+  const fetchResult = await gitExec(
+    ['-c', 'http.proxy=', '-c', 'http.extraHeader=X-Requested-With: TiddlyWiki', 'fetch', 'origin', 'main'],
+    actualClonePath,
+  );
+  if (fetchResult.exitCode !== 0) {
+    throw new Error(`HTTP fetch main failed (url=${httpUrl}): ${fetchResult.stderr}`);
+  }
+  const resetResult = await gitExec(['reset', '--hard', 'origin/main'], actualClonePath);
+  if (resetResult.exitCode !== 0) {
+    throw new Error(`Reset to origin/main failed: ${resetResult.stderr}`);
+  }
 });
