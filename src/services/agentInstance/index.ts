@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
 import { initializePluginSystem, pluginRegistry } from '@services/agentInstance/tools';
 import { container } from '@services/container';
@@ -55,6 +56,9 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   @inject(serviceIdentifier.ExternalAPI)
   private readonly externalAPIService!: IExternalAPIService;
+
+  @inject(serviceIdentifier.DeviceNetwork)
+  private readonly deviceNetworkService!: IDeviceNetworkService;
 
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
@@ -221,6 +225,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         agentInstanceService: this,
         agentDefinitionService: this.agentDefinitionService,
         externalAPIService: this.externalAPIService,
+        deviceNetworkService: this.deviceNetworkService,
         notifyAgentChanged: (agentId, agent) => {
           this.notifyAgentUpdate(agentId, agent);
         },
