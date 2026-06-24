@@ -7,7 +7,8 @@ import { networkInterfaces } from 'os';
  * @returns Array of IP address strings, e.g. ['192.168.1.100', '10.0.0.5']
  */
 export function getAllLocalIpV4(): string[] {
-  const ips: string[] = [];
+  const preferredIps = new Set<string>();
+  const fallbackIps = new Set<string>();
   for (const [, addresses] of Object.entries(networkInterfaces())) {
     if (addresses === undefined) continue;
     for (const { address, family, internal } of addresses) {
@@ -16,8 +17,12 @@ export function getAllLocalIpV4(): string[] {
       if (address.startsWith('169.254.')) continue;
       // Skip 0.0.0.0
       if (address === '0.0.0.0') continue;
-      ips.push(address);
+      if (address.startsWith('172.')) {
+        fallbackIps.add(address);
+      } else {
+        preferredIps.add(address);
+      }
     }
   }
-  return ips;
+  return [...preferredIps, ...fallbackIps];
 }

@@ -36,6 +36,7 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
   const { port, id } = workspace;
   const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
   const actualIPs = useActualIps(getDefaultHTTPServerIP(port), id) ?? [];
+  const singleActualIP = actualIPs[0] ?? actualIP;
   const [portInput, setPortInput] = useState(() => String(port ?? ''));
   const portReference = useRef(port);
   if (portReference.current !== port) {
@@ -54,7 +55,7 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
               ? (
                 <span>
                   {actualIPs.map((ip, index) => (
-                    <span key={ip}>
+                    <span key={`${ip}-${index}`}>
                       {index > 0 && <br />}
                       <Link
                         onClick={async () => {
@@ -71,13 +72,13 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
               : (
                 <Link
                   onClick={async () => {
-                    if (actualIP) {
-                      await window.service.native.openURI(actualIP);
+                    if (singleActualIP) {
+                      await window.service.native.openURI(singleActualIP);
                     }
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  {actualIP}
+                  {singleActualIP}
                 </Link>
               )}
           </span>
