@@ -148,9 +148,9 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
       return undefined;
     }
 
-    // Only skip in unit test environment, not E2E
+    // Only skip in jsdom-style unit tests, not E2E.
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent ?? '' : '';
-    const isUnitTest = /jsdom/i.test(ua) && process.env.NODE_ENV === 'test' && typeof window.service === 'undefined';
+    const isUnitTest = /jsdom/i.test(ua) && typeof window.service === 'undefined';
     if (isUnitTest) {
       return undefined;
     }

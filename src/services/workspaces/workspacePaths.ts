@@ -1,8 +1,24 @@
-import path from 'node:path';
-
 import { isHtmlWiki } from '@/constants/fileNames';
 import type { IWikiWorkspace, IWorkspace } from './interface';
 import { WorkspaceType } from './workspaceType';
+
+function normalizePathSeparators(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
+function dirname(filePath: string): string {
+  const normalized = normalizePathSeparators(filePath).replace(/\/+$/, '');
+  const separatorIndex = normalized.lastIndexOf('/');
+  if (separatorIndex <= 0) {
+    return normalized;
+  }
+  return normalized.slice(0, separatorIndex);
+}
+
+function basename(filePath: string): string {
+  const normalized = normalizePathSeparators(filePath).replace(/\/+$/, '');
+  return normalized.slice(normalized.lastIndexOf('/') + 1);
+}
 
 /** Local guard to avoid runtime circular import with interface.ts */
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
@@ -61,7 +77,7 @@ export function getHtmlFileLocation(workspace: IWikiWorkspace): string | undefin
  */
 export function getWorkspaceContainerPath(workspace: IWikiWorkspace): string {
   if (isHtmlWikiWorkspace(workspace)) {
-    return path.dirname(workspace.htmlFileLocation);
+    return dirname(workspace.htmlFileLocation);
   }
   return workspace.wikiFolderLocation;
 }
@@ -81,9 +97,9 @@ export function getWorkspaceGitScope(workspace: IWorkspace): IWorkspaceGitScope 
     return undefined;
   }
   if (isHtmlWikiWorkspace(workspace)) {
-    const managedAbsolutePath = path.resolve(workspace.htmlFileLocation);
-    const repoPath = path.dirname(managedAbsolutePath);
-    const managedRelativePath = path.basename(managedAbsolutePath);
+    const managedAbsolutePath = normalizePathSeparators(workspace.htmlFileLocation);
+    const repoPath = dirname(managedAbsolutePath);
+    const managedRelativePath = basename(managedAbsolutePath);
     return {
       repoPath,
       managedRelativePath,
@@ -92,19 +108,19 @@ export function getWorkspaceGitScope(workspace: IWorkspace): IWorkspaceGitScope 
     };
   }
   return {
-    repoPath: path.resolve(workspace.wikiFolderLocation),
-    managedAbsolutePath: path.resolve(workspace.wikiFolderLocation),
-    managedDisplayName: path.basename(workspace.wikiFolderLocation),
+    repoPath: normalizePathSeparators(workspace.wikiFolderLocation),
+    managedAbsolutePath: normalizePathSeparators(workspace.wikiFolderLocation),
+    managedDisplayName: basename(workspace.wikiFolderLocation),
   };
 }
 
 export function normalizeHtmlWorkspacePaths(htmlFileLocation: string): Pick<IHtmlWikiWorkspace, 'htmlFileLocation' | 'wikiFolderLocation'> {
-  const resolvedHtml = path.resolve(htmlFileLocation);
+  const resolvedHtml = normalizePathSeparators(htmlFileLocation);
   if (!isHtmlWiki(resolvedHtml)) {
     throw new Error(`Not a valid HTML wiki file: ${resolvedHtml}`);
   }
   return {
     htmlFileLocation: resolvedHtml,
-    wikiFolderLocation: path.dirname(resolvedHtml),
+    wikiFolderLocation: dirname(resolvedHtml),
   };
 }

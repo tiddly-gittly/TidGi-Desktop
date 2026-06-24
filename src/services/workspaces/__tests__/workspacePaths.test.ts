@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { getWorkspaceGitScope, getWorkspaceType, isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from '@services/workspaces/workspacePaths';
@@ -33,9 +32,9 @@ describe('workspacePaths', () => {
   });
 
   it('normalizes html workspace paths', () => {
-    const normalized = normalizeHtmlWorkspacePaths('/data/my.wiki.html');
-    expect(normalized.htmlFileLocation).toBe(path.resolve('/data/my.wiki.html'));
-    expect(normalized.wikiFolderLocation).toBe(path.resolve('/data'));
+    const normalized = normalizeHtmlWorkspacePaths('C:\\data\\my.wiki.html');
+    expect(normalized.htmlFileLocation).toBe('C:/data/my.wiki.html');
+    expect(normalized.wikiFolderLocation).toBe('C:/data');
   });
 
   it('scopes git to a single html file', () => {
@@ -45,14 +44,14 @@ describe('workspacePaths', () => {
       active: false,
       order: 0,
       picturePath: null,
-      wikiFolderLocation: '/data',
+      wikiFolderLocation: 'C:\\data',
       workspaceType: WorkspaceType.html,
-      htmlFileLocation: '/data/my.wiki.html',
+      htmlFileLocation: 'C:\\data\\my.wiki.html',
     };
     expect(getWorkspaceGitScope(workspace)).toEqual({
-      repoPath: path.resolve('/data'),
+      repoPath: 'C:/data',
       managedRelativePath: 'my.wiki.html',
-      managedAbsolutePath: path.resolve('/data/my.wiki.html'),
+      managedAbsolutePath: 'C:/data/my.wiki.html',
       managedDisplayName: 'my.wiki.html',
     });
   });

@@ -105,3 +105,24 @@ Feature: HTML wiki workspace
     Then the HTML sync info should describe workspace "mobile-sync-wiki"
     When I PUT HTML sync file for workspace "mobile-sync-wiki" with content "<html><body>MobileSyncUpdated</body></html>"
     Then file "{tmpDir}/mobile-sync-wiki.html" should contain text "MobileSyncUpdated"
+
+  @html-wiki @settings
+  Scenario: HTML workspace settings can rename the workspace and persist
+    When I generate blank HTML wiki at "{tmpDir}/config-html.html"
+    And I click on an "add workspace button" element with selector "#add-workspace-button"
+    And I switch to "addWorkspace" window
+    And I wait for the page to load completely
+    When I click on a "open html wiki tab" element with selector "button:has-text('打开 HTML 知识库文件')"
+    When I prepare to select file in dialog "wiki-test/config-html.html"
+    When I click on a "choose html file button" element with selector "button:has-text('选择')"
+    And I click on a "open html wiki done button" element with selector "[data-testid='open-html-wiki-done-button']"
+    When I switch to "main" window
+    Then I wait for "workspace created" log marker "[test-id-WORKSPACE_CREATED]"
+    Then I wait for "html wiki started" log marker "[test-id-HTML_WIKI_STARTED]"
+    When I open edit workspace window for workspace with name "config-html"
+    And I switch to "editWorkspace" window
+    And I wait for the page to load completely
+    When I type "Renamed HTML Workspace" in "workspace name" element with selector "input[value='config-html']"
+    And I click on a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
+    Then I should not see a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
+    Then settings.json should have workspace "Renamed HTML Workspace" with "name" set to "Renamed HTML Workspace"

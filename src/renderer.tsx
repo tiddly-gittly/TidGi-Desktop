@@ -30,12 +30,20 @@ import { Pages } from './windows';
 function App(): JSX.Element {
   const theme = useThemeObservable();
   useEffect(() => {
-    if (process.env.NODE_ENV === 'test') {
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
+    void (async () => {
+      const isTest = await window.service.context.get('isTest');
+      if (!isTest || cancelled) return;
       // Lazy-load test-only keyboard shortcut fallback to avoid any overhead in production
-      void import('./helpers/testKeyboardShortcuts').then(({ initTestKeyboardShortcutFallback }) => {
-        initTestKeyboardShortcutFallback();
-      });
-    }
+      const { initTestKeyboardShortcutFallback } = await import('./helpers/testKeyboardShortcuts');
+      if (cancelled) return;
+      cleanup = initTestKeyboardShortcutFallback(isTest);
+    })();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
   }, []);
 
   return (

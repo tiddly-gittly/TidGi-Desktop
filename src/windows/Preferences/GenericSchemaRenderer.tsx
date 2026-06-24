@@ -19,7 +19,7 @@ import type {
   IGenericStringItem,
 } from '@services/preferences/definitions/types';
 import { getCustomComponent } from './customComponentRegistry';
-import { DeferredSectionSkeleton, INITIAL_GENERIC_SECTION_COUNT, IS_TEST_ENV, matchesPlatform, SearchSectionLabel, toKebabCase } from './genericSchemaRendererShared';
+import { DeferredSectionSkeleton, INITIAL_GENERIC_SECTION_COUNT, matchesPlatform, SearchSectionLabel, toKebabCase } from './genericSchemaRendererShared';
 import { HighlightText } from './HighlightText';
 import { Paper, SectionTitle } from './PreferenceComponents';
 
@@ -308,9 +308,8 @@ export function AllGenericSectionsRenderer<TRecord extends Record<string, unknow
     [hiddenSections, sections],
   );
 
-  const [visibleCount, setVisibleCount] = React.useState(IS_TEST_ENV ? visibleSections.length : initialSectionCount);
+  const [visibleCount, setVisibleCount] = React.useState(initialSectionCount);
   React.useEffect(() => {
-    if (IS_TEST_ENV) return;
     if (query.trim()) return;
     if (visibleCount >= visibleSections.length) return;
     const id = requestIdleCallback(() => {
