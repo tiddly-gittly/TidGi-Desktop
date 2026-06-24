@@ -61,7 +61,7 @@ describe('AgentInstanceService Wiki Operation', () => {
     const baseConfig = exampleAgent.agentFrameworkConfig ?? { prompts: [], plugins: [] };
     const agentDefWithWikiPlugin = {
       ...exampleAgent,
-      agentFrameworkID: 'memeloopTaskAgent',
+      agentFrameworkID: 'agent-tool-loop',
       agentFrameworkConfig: {
         ...baseConfig,
         plugins: [
