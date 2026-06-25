@@ -1,9 +1,9 @@
 import { Switch } from '@mui/material';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '@/components/ListItem';
-import { usePreferenceObservable } from '@services/preferences/hooks';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { ListItemVertical, TextField } from '../../Preferences/PreferenceComponents';
 import { useWorkspaceForm } from '../WorkspaceFormContext';
@@ -11,13 +11,24 @@ import { useWorkspaceForm } from '../WorkspaceFormContext';
 export function LastUrlItem(): React.JSX.Element | null {
   const { t } = useTranslation();
   const { workspace, workspaceSetter } = useWorkspaceForm();
-  const preference = usePreferenceObservable();
+  const initialValue = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
+  const [rememberLastPageVisited, setRememberLastPageVisited] = useState<boolean | undefined>(initialValue);
+
+  // Sync local state when initialValue resolves
+  React.useEffect(() => {
+    if (initialValue !== undefined) {
+      setRememberLastPageVisited(initialValue);
+    }
+  }, [initialValue]);
+
+  const handleToggle = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = event.target.checked;
+    setRememberLastPageVisited(checked);
+    await window.service.preference.set('rememberLastPageVisited', checked);
+  }, []);
 
   if (!isWikiWorkspace(workspace)) return null;
   if (workspace.isSubWiki) return null;
-  if (preference === undefined) return null;
-
-  const rememberLastPageVisited = preference.rememberLastPageVisited ?? false;
 
   return (
     <ListItemVertical>
@@ -25,11 +36,9 @@ export function LastUrlItem(): React.JSX.Element | null {
       <Switch
         edge='end'
         color='primary'
-        checked={rememberLastPageVisited}
+        checked={rememberLastPageVisited ?? false}
         data-testid='remember-last-page-visited-switch'
-        onChange={async (event) => {
-          await window.service.preference.set('rememberLastPageVisited', event.target.checked);
-        }}
+        onChange={handleToggle}
       />
       {rememberLastPageVisited && (
         <TextField
