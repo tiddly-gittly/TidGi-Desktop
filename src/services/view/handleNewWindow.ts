@@ -4,7 +4,6 @@ import windowStateKeeper from 'electron-window-state';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { MetaDataChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
-import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { container } from '@services/container';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -57,7 +56,7 @@ export function handleNewWindow(
   const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl, newWindowContext);
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // Handle tidgi:// deep links internally instead of opening in external browser
-  if (nextUrl.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`)) {
+  if (nextUrl.startsWith('tidgi://') || nextUrl.startsWith('tidgi-test://')) {
     logger.info('handleNewWindow handling tidgi:// deep link internally', { nextUrl, disposition, function: 'handleNewWindow' });
     void deepLinkService.openDeepLink(nextUrl);
     return { action: 'deny' };
@@ -149,7 +148,7 @@ export function handleNewWindow(
         }
         if (isInternalUrl(url, [appUrl, currentUrl])) {
           if (!isTest) childWindow.show();
-        } else if (url.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`)) {
+        } else if (url.startsWith('tidgi://') || url.startsWith('tidgi-test://')) {
           // Handle tidgi:// deep links internally
           logger.info('childWindow will-navigate handling tidgi:// deep link internally', { url, function: 'handleNewWindow' });
           _event.preventDefault();
