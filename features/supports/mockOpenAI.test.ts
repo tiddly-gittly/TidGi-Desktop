@@ -1,4 +1,4 @@
-import type { ModelMessage } from 'ai';
+import type { ModelMessage } from '@services/externalAPI/interface';
 import type { AiAPIConfig } from 'memeloop';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
@@ -269,16 +269,14 @@ describe('Mock OpenAI Server', () => {
       { role: 'user', content: 'Start streaming' },
     ];
 
-    // streamFromProvider returns an object from streamText; call it and iterate
+    // streamFromProvider returns an AsyncIterable; call it and iterate
     const aiConfig: AiAPIConfig = { default: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} };
-    const stream = streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
+    const stream = await streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
 
-    // The returned stream should expose `.textStream` as an AsyncIterable
     // We'll collect chunks as they arrive and assert intermediate states are streaming
     const receivedChunks: string[] = [];
-    if (!stream.textStream) throw new Error('Expected stream.textStream to be present');
 
-    for await (const chunk of stream.textStream) {
+    for await (const chunk of stream) {
       if (!chunk) continue;
       let contentPiece: string | undefined;
       if (typeof chunk === 'string') contentPiece = chunk;

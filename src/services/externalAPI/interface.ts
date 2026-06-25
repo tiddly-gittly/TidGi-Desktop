@@ -3,8 +3,17 @@ import type { BehaviorSubject, Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import type { ModelMessage } from 'ai';
 import type { AiAPIConfig } from 'memeloop';
+
+/**
+ * Vercel AI SDK message shape used by the External API service.
+ * Kept locally so the package does not depend on a specific `ai` major version
+ * for this type.
+ */
+export type ModelMessage =
+  | { role: 'system' | 'user' | 'assistant'; content: string }
+  | { role: 'system' | 'user' | 'assistant'; content: Array<{ type: string; text?: string; content?: string }> }
+  | { role: 'tool'; content: string; toolCallId?: string };
 
 /**
  * Shared error detail structure used across all AI responses

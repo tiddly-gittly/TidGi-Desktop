@@ -1,12 +1,9 @@
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { logger } from '@services/libs/log';
-import { ModelMessage, streamText } from 'ai';
-import { createOllama } from 'ollama-ai-provider-v2';
+import type { AiAPIConfig, ILLMProvider } from 'memeloop';
 
-import type { AiAPIConfig } from 'memeloop';
+import { createLLMProvider, type LLMProviderId } from 'memeloop/llm-providers';
+import type { ModelMessage } from './interface';
+
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
 
@@ -33,46 +30,46 @@ function getFormattedContent(content: ModelMessage['content']): string {
   return '';
 }
 
-type AIStreamResult = ReturnType<typeof streamText>;
-
-export function createProviderClient(providerConfig: { provider: string; providerClass?: string; baseURL?: string }, apiKey?: string) {
-  // 首先检查 providerClass，如果没有则回退到基于名称的判断
+/**
+ * Map Desktop's AIProviderConfig to a memeloop core ILLMProvider.
+ *
+ * Core owns the provider dispatch; Desktop only translates its own config
+ * schema (providerClass, models array, apiKey, baseURL) into the core shape.
+ */
+export async function createProviderFromConfig(providerConfig: AIProviderConfig): Promise<ILLMProvider> {
   const providerClass = providerConfig.providerClass || providerConfig.provider;
+  const isOllama = providerClass === 'ollama';
+  const isLocalOpenAICompatible = providerClass === 'openAICompatible' &&
+    providerConfig.baseURL &&
+    (providerConfig.baseURL.includes('localhost') || providerConfig.baseURL.includes('127.0.0.1'));
 
-  switch (providerClass) {
-    case 'openai':
-      return createOpenAI({ apiKey });
-    case 'openAICompatible':
-      if (!providerConfig.baseURL) {
-        throw new MissingBaseURLError(providerConfig.provider);
-      }
-      return createOpenAICompatible({
-        name: providerConfig.provider,
-        apiKey,
-        baseURL: providerConfig.baseURL,
-      });
-    case 'deepseek':
-      return createDeepSeek({ apiKey });
-    case 'anthropic':
-      return createAnthropic({ apiKey });
-    case 'ollama':
-      if (!providerConfig.baseURL) {
-        throw new MissingBaseURLError(providerConfig.provider);
-      }
-      return createOllama({
-        baseURL: providerConfig.baseURL,
-      });
-    default:
-      throw new Error(`Unsupported AI provider: ${providerConfig.provider}`);
+  if (!providerConfig.apiKey && !isOllama && !isLocalOpenAICompatible) {
+    throw new MissingAPIKeyError(providerConfig.provider);
   }
+
+  if ((isOllama || providerClass === 'openAICompatible') && !providerConfig.baseURL) {
+    throw new MissingBaseURLError(providerConfig.provider);
+  }
+
+  // Pick the first model as the default model id for core provider creation.
+  const firstModel = providerConfig.models?.[0];
+
+  return createLLMProvider({
+    provider: (providerClass === 'openAICompatible' ? 'openai' : providerClass) as LLMProviderId,
+    name: providerConfig.provider,
+    apiKey: providerConfig.apiKey,
+    baseUrl: providerConfig.baseURL,
+    model: firstModel?.name,
+    options: firstModel?.parameters,
+  });
 }
 
-export function streamFromProvider(
+export async function streamFromProvider(
   config: AiAPIConfig,
   messages: Array<ModelMessage>,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
-): AIStreamResult {
+): Promise<AsyncIterable<string>> {
   // Get default model configuration
   const modelConfig = config.default;
   if (!modelConfig?.provider || !modelConfig?.model) {
@@ -87,25 +84,15 @@ export function streamFromProvider(
   logger.info(`Using AI provider: ${provider}, model: ${model}`);
 
   try {
-    // Check if API key is required
-    const isOllama = providerConfig?.providerClass === 'ollama';
-    const isLocalOpenAICompatible = providerConfig?.providerClass === 'openAICompatible' &&
-      providerConfig?.baseURL &&
-      (providerConfig.baseURL.includes('localhost') || providerConfig.baseURL.includes('127.0.0.1'));
-
-    if (!providerConfig?.apiKey && !isOllama && !isLocalOpenAICompatible) {
-      // Ollama and local OpenAI-compatible servers don't require API key
-      throw new MissingAPIKeyError(provider);
+    if (!providerConfig) {
+      throw new Error(`Provider configuration not found: ${provider}`);
     }
 
-    const client = createProviderClient(
-      providerConfig,
-      providerConfig.apiKey,
-    );
+    const llmProvider = await createProviderFromConfig(providerConfig);
 
     // Extract system message from messages if present
     const systemMessage = messages.find(message => message.role === 'system');
-    const systemPrompt = (systemMessage ? getFormattedContent(systemMessage.content) : undefined) || 'You are a helpful assistant.';
+    const systemPrompt = systemMessage ? getFormattedContent(systemMessage.content) : undefined;
 
     // Filter out system messages from the messages array since we're handling them separately
     const nonSystemMessages = messages.filter(message => message.role !== 'system');
@@ -113,14 +100,23 @@ export function streamFromProvider(
     // Ensure we have at least one message to avoid AI library errors
     const finalMessages: Array<ModelMessage> = nonSystemMessages.length > 0 ? nonSystemMessages : [{ role: 'user' as const, content: 'Hi' }];
 
-    const providerModel = client(model);
-    return streamText({
-      model: providerModel,
-      system: systemPrompt,
+    const chatResult = await llmProvider.chat({
+      model,
       messages: finalMessages,
+      stream: true,
+      system: systemPrompt,
       temperature,
       abortSignal: signal,
     });
+
+    const isIterable = typeof chatResult === 'object' &&
+      chatResult !== null &&
+      (Symbol.asyncIterator in chatResult || Symbol.iterator in chatResult);
+    if (!isIterable) {
+      throw new Error(`${provider} provider did not return a stream`);
+    }
+
+    return chatResult as AsyncIterable<string>;
   } catch (error) {
     if (!error) {
       throw new Error(`${provider} error: Unknown error`);
@@ -132,7 +128,6 @@ export function streamFromProvider(
       throw new Error(`${provider} too many requests: Reduce request frequency or check API limits`);
     } else {
       logger.error(`${provider} streaming error:`, error);
-      // Try to parse the error into a more specific type if possible
       throw parseProviderError(error as Error, provider);
     }
   }
