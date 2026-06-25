@@ -2,8 +2,11 @@
  * Primary save path for HTML workspaces.
  *
  * This script is injected into the served wiki document and patches TiddlyWiki's
- * saver flow before it reaches DownloadSaver. `htmlWikiDownloadIntercept` remains
- * as an Electron-level fallback for generated HTML downloads that still escape.
+ * saver flow. For the normal `method: 'save'` path it sends the rendered HTML
+ * through the `tidgiHtmlWikiSave` bridge so TidGi persists it to the workspace
+ * file. It deliberately leaves `method: 'download'` untouched so that path still
+ * reaches Electron's download boundary, where `htmlWikiDownloadIntercept` can
+ * catch the generated HTML download and redirect it back to the workspace file.
  */
 export const HTML_WIKI_SAVER_BOOTSTRAP_SCRIPT_ID = 'tidgi-html-wiki-saver-bootstrap';
 

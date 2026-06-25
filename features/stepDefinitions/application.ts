@@ -533,12 +533,14 @@ export async function chooseFileOrDirectory(
   return targetPath;
 }
 
-When(
-  /^I choose (file|directory) "([^"]+)"(?: with input selector "([^"]+)")?$/,
-  async function(this: ApplicationWorld, kind: SelectablePathKind, inputPath: string, inputSelector?: string) {
-    await chooseFileOrDirectory(this, kind, inputPath, inputSelector);
-  },
-);
+When('I choose {word} {string}( with input selector {string})', async function(
+  this: ApplicationWorld,
+  kind: string,
+  inputPath: string,
+  inputSelector?: string,
+) {
+  await chooseFileOrDirectory(this, kind as SelectablePathKind, inputPath, inputSelector);
+});
 
 /**
  * Hide the main window exactly as `runOnBackground` does when the user presses the close button.

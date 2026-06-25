@@ -17,6 +17,7 @@ import { WikiChannel } from '@/constants/channels';
 import { getTiddlyWikiBootPath, TIDDLERS_PATH, TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
+import type { IHtmlWikiService } from '@services/htmlWiki/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -926,10 +927,18 @@ export class Wiki implements IWikiService {
     const { id, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
 
-    const userName = await this.authService.getUserName(workspace);
-
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
+
+    // HTML wiki workspaces are managed by HtmlWikiService, not the NodeJS wiki worker.
+    if (isHtmlWikiWorkspace(workspace)) {
+      const htmlWikiService = container.get<IHtmlWikiService>(serviceIdentifier.HtmlWiki);
+      await htmlWikiService.restartWorkspace(workspace);
+      await syncService.startIntervalSyncIfNeeded(workspace);
+      return;
+    }
+
+    const userName = await this.authService.getUserName(workspace);
     if (!isSubWiki) {
       await this.stopWiki(id);
       await this.startWiki(id, userName);

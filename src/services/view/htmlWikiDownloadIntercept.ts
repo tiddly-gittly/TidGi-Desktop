@@ -22,12 +22,15 @@ function isLikelyHtmlWikiSaveDownload(item: DownloadItem, workspace: IHtmlWikiWo
 }
 
 /**
- * Fallback for HTML wikis that still reach TiddlyWiki's DownloadSaver.
+ * Download-boundary handler for HTML workspaces.
  *
- * `injectHtmlWikiSaverBootstrap` is the primary path: it patches the wiki page
- * before saving so content is sent through TidGi directly. This handler sits at
- * Electron's download boundary and only catches renderer-generated HTML downloads
- * that escaped that bootstrap path.
+ * `injectHtmlWikiSaverBootstrap` intercepts the normal `method: 'save'` path and
+ * sends the HTML through the `tidgiHtmlWikiSave` bridge. It intentionally leaves
+ * `method: 'download'` (and any other renderer-generated HTML download) to follow
+ * TiddlyWiki's DownloadSaver path. This handler sits at Electron's `will-download`
+ * boundary, recognizes downloads that belong to the managed HTML file, and redirects
+ * them back to `IHtmlWikiService.saveHtmlResponse` so they persist to the workspace
+ * file instead of landing in the user's Downloads folder.
  */
 export function tryInterceptHtmlWikiDownload(
   event: Event,
