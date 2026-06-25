@@ -14,6 +14,7 @@ import { isEqual, omit } from 'lodash';
 import { AllGenericSectionsRenderer, createRecordSchemaStore } from '../Preferences/GenericSchemaRenderer';
 import { PageInner as Inner } from '../Preferences/PreferenceComponents';
 import { SearchBar } from '../Preferences/SearchBar';
+import { usePreferenceGotoTab } from '../Preferences/usePreferenceGotoTab';
 import { registerWorkspaceCustomItems } from './registerWorkspaceCustomItems';
 import { Outter } from './styles';
 import { Button, SaveCancelButtonsContainer } from './styles';
@@ -24,7 +25,8 @@ import { WorkspaceSectionSideBar } from './WorkspaceSectionSideBar';
 registerWorkspaceCustomItems();
 
 export default function EditWorkspace(): React.JSX.Element {
-  const [workspaceID, setWorkspaceID] = useState<string | undefined>(() => (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID);
+  const initialMeta = window.meta() as WindowMeta[WindowNames.editWorkspace];
+  const [workspaceID, setWorkspaceID] = useState<string | undefined>(() => initialMeta.workspaceID);
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID ?? '');
   const [fallbackWorkspace, setFallbackWorkspace] = useState<IWorkspace | undefined>(undefined);
@@ -111,6 +113,9 @@ export default function EditWorkspace(): React.JSX.Element {
     }
     return map;
   }, [workspaceSections]);
+
+  // Scroll to the section requested via deep link (tidgi://workspace/preferences/...)
+  usePreferenceGotoTab(WindowNames.editWorkspace, sectionReferences, { searchQuery });
 
   const wikiWorkspace = isWiki ? workspace : undefined;
   const workspaceStore = useMemo(

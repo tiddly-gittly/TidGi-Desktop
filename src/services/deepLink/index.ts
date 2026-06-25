@@ -82,10 +82,10 @@ export class DeepLinkService implements IDeepLinkService {
       if (pathname.startsWith('/preferences/')) {
         const sectionId = decodeURIComponent(pathname.replace('/preferences/', ''));
         const workspace = await this.workspaceService.get(hostname);
+        const windowService = container.get<IWindowService>(serviceIdentifier.Window);
         if (workspace !== undefined) {
-          const windowService = container.get<IWindowService>(serviceIdentifier.Window);
           logger.info(`Open edit workspace via deep link`, { workspaceId: workspace.id, sectionId, function: 'deepLinkHandler' });
-          await windowService.open(WindowNames.editWorkspace, { workspaceID: workspace.id });
+          await windowService.open(WindowNames.editWorkspace, { workspaceID: workspace.id, preferenceGotoTab: sectionId });
         } else {
           logger.warn(`Workspace not found for edit workspace deep link`, { hostname, function: 'deepLinkHandler' });
         }
