@@ -4,9 +4,10 @@ import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import type { AIGlobalSettings, AIStreamResponse } from '@services/externalAPI/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { ModelMessage } from 'ai';
 import { getBuiltinLoopProfiles } from 'memeloop';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ModelMessage } from '../interface';
 
 describe('ExternalAPIService logging', () => {
   beforeEach(async () => {
@@ -41,13 +42,12 @@ describe('ExternalAPIService logging', () => {
 
     // spy the provider stream to avoid real network and to be deterministic
     const callProvider = await import('../callProviderAPI');
-    type StreamReturn = ReturnType<typeof callProvider.streamFromProvider>;
-    const spy = vi.spyOn(callProvider, 'streamFromProvider').mockImplementation((): StreamReturn => ({
-      textStream: (async function*() {
+    const spy = vi.spyOn(callProvider, 'streamFromProvider').mockImplementation(async () =>
+      (async function*() {
         yield 'hello ';
         yield 'world';
-      })(),
-    } as unknown as StreamReturn));
+      })()
+    );
 
     await externalAPI.initialize();
 

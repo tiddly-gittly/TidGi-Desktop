@@ -1,7 +1,7 @@
 import { Box, List, Paper, styled, Typography } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import { ModelMessage } from 'ai';
+import type { ModelMessage } from '@services/externalAPI/interface';
 import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';

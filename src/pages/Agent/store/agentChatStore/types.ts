@@ -1,4 +1,4 @@
-import { ModelMessage } from 'ai';
+import type { ModelMessage } from '@services/externalAPI/interface';
 import type { AgentDefinition, AgentPromptDescription, PromptNode as IPrompt } from 'memeloop';
 import type { AgentInstance, ChatMessage } from 'memeloop';
 
