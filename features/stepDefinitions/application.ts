@@ -533,11 +533,19 @@ export async function chooseFileOrDirectory(
   return targetPath;
 }
 
-When('I choose {word} {string}( with input selector {string})', async function(
+When('I choose {word} {string}', async function(
   this: ApplicationWorld,
   kind: string,
   inputPath: string,
-  inputSelector?: string,
+) {
+  await chooseFileOrDirectory(this, kind as SelectablePathKind, inputPath);
+});
+
+When('I choose {word} {string} with input selector {string}', async function(
+  this: ApplicationWorld,
+  kind: string,
+  inputPath: string,
+  inputSelector: string,
 ) {
   await chooseFileOrDirectory(this, kind as SelectablePathKind, inputPath, inputSelector);
 });
