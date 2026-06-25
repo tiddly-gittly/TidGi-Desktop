@@ -25,6 +25,16 @@ if (typeof document !== 'undefined') {
       window.clearTimeout(id);
     };
   }
+
+  // @assistant-ui/react uses ResizeObserver — provide a stub for jsdom
+  if (typeof window.ResizeObserver === 'undefined') {
+    class ResizeObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    window.ResizeObserver = ResizeObserverStub;
+  }
 }
 
 import './__mocks__/services-container';
