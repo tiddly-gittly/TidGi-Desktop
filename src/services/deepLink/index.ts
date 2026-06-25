@@ -64,7 +64,7 @@ export class DeepLinkService implements IDeepLinkService {
       // hostname is workspace id or name
       const { hostname, hash, pathname } = new URL(requestUrl);
 
-      // Handle tidgi://preferences/<sectionId> deep links
+      // Handle tidgi://preferences/<sectionId> deep links (global preferences)
       if (hostname === 'preferences') {
         const sectionId = decodeURIComponent(pathname.replace(/^\//, '')) as PreferenceSections;
         const windowService = container.get<IWindowService>(serviceIdentifier.Window);
@@ -76,6 +76,20 @@ export class DeepLinkService implements IDeepLinkService {
           await windowService.open(WindowNames.preferences);
         }
         void analyticsService.track('deep_link.opened', { resolvedWorkspace: false, fromPendingQueue });
+        return;
+      }
+      // Handle tidgi://<workspaceId>/preferences/<sectionId> deep links (workspace settings)
+      if (pathname.startsWith('/preferences/')) {
+        const sectionId = decodeURIComponent(pathname.replace('/preferences/', ''));
+        const workspace = await this.workspaceService.get(hostname);
+        if (workspace !== undefined) {
+          const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+          logger.info(`Open edit workspace via deep link`, { workspaceId: workspace.id, sectionId, function: 'deepLinkHandler' });
+          await windowService.open(WindowNames.editWorkspace, { workspaceID: workspace.id });
+        } else {
+          logger.warn(`Workspace not found for edit workspace deep link`, { hostname, function: 'deepLinkHandler' });
+        }
+        void analyticsService.track('deep_link.opened', { resolvedWorkspace: workspace !== undefined, fromPendingQueue });
         return;
       }
       let workspace = await this.workspaceService.get(hostname);

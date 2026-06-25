@@ -161,15 +161,14 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
     const parsedUrl = new URL(request.url);
     const workspaceIDFromHost = parsedUrl.host;
 
-    // Handle tidgi://preferences/... deep links at the protocol level.
-    // This catches requests that bypass will-navigate (e.g. TiddlyWiki's
-    // internal link handling that triggers a direct protocol request).
-    if (workspaceIDFromHost === 'preferences') {
+    // Handle tidgi://preferences/... and tidgi://<workspaceId>/preferences/... deep links
+    // at the protocol level. This catches requests that bypass will-navigate.
+    if (workspaceIDFromHost === 'preferences' || parsedUrl.pathname.startsWith('/preferences/')) {
       logger.info('setupIpcServerRoutesHandlers: handling preferences deep link via protocol handler', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
         url: request.url,
       });
-      // Fire the deep link to open the preferences window.
+      // Fire the deep link to open the preferences or edit workspace window.
       void deepLinkService.openDeepLink(request.url);
       // Return 204 No Content so the page stays in place without a reload.
       return new Response(undefined, { status: 204 });
