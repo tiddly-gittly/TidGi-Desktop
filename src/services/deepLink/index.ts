@@ -204,8 +204,7 @@ export class DeepLinkService implements IDeepLinkService {
       // On Windows/Linux, protocol URLs are passed as command line arguments
       if (process.argv.length >= 2) {
         // Find the protocol URL in command line arguments
-        const scheme = isTest ? 'tidgi-test' : TIDGI_PROTOCOL_SCHEME;
-        const protocolUrl = process.argv.find(argument => argument.startsWith(`${scheme}://`));
+        const protocolUrl = process.argv.find(argument => argument.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`));
         if (protocolUrl) {
           logger.info(`Processing initial deep link from command line`, { protocolUrl, function: 'setupWindowsLinuxHandler' });
           // Process after app is ready

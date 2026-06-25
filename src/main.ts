@@ -10,8 +10,6 @@ import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database
 import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
-
-const tidgiProtocolScheme = isTest ? 'tidgi-test' : TIDGI_PROTOCOL_SCHEME;
 import { container } from '@services/container';
 import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initRendererI18NHandler } from '@services/libs/i18n';
@@ -70,7 +68,7 @@ app.commandLine.appendSwitch('--unsafely-disable-devtools-self-xss-warnings');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'http', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'https', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
-  { scheme: tidgiProtocolScheme, privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  { scheme: TIDGI_PROTOCOL_SCHEME, privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'open', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'file', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'mailto', privileges: { standard: true } },
@@ -175,7 +173,7 @@ const commonInit = async (): Promise<void> => {
   // if user want a tidgi mini window, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
   // Use different protocol for test mode to avoid conflicts with production
-  deepLinkService.initializeDeepLink(tidgiProtocolScheme);
+  deepLinkService.initializeDeepLink(TIDGI_PROTOCOL_SCHEME);
 
   await windowService.open(WindowNames.main);
 
