@@ -3,8 +3,9 @@ import type { AiAPIConfig, ILLMProvider } from 'memeloop';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
-import type { ModelMessage } from 'ai';
 import { merge } from 'lodash';
+
+import type { ModelMessage } from '@services/externalAPI/interface';
 
 import type { IAgentInstanceService } from '../interface';
 
