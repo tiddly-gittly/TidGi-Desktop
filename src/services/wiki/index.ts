@@ -17,6 +17,7 @@ import { WikiChannel } from '@/constants/channels';
 import { getTiddlyWikiBootPath, TIDDLERS_PATH, TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
+import type { IHtmlWikiService } from '@services/htmlWiki/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -25,6 +26,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
@@ -152,6 +154,10 @@ export class Wiki implements IWikiService {
     }
     if (!isWikiWorkspace(workspace)) {
       logger.error('Try to start wiki, but workspace is not a wiki workspace', { workspace, workspaceID });
+      return;
+    }
+    if (isHtmlWikiWorkspace(workspace)) {
+      logger.debug('skip startWiki for HTML wiki workspace', { workspaceID });
       return;
     }
     const { rootTiddler, readOnlyMode, tokenAuth, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
@@ -533,6 +539,13 @@ export class Wiki implements IWikiService {
   }
 
   public async stopWiki(id: string): Promise<void> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspace = await workspaceService.get(id);
+    if (workspace && isHtmlWikiWorkspace(workspace)) {
+      const htmlWikiService = container.get<import('@services/htmlWiki/interface').IHtmlWikiService>(serviceIdentifier.HtmlWiki);
+      await htmlWikiService.stopWorkspace(id);
+      return;
+    }
     const workerData = this.wikiWorkers[id];
     const worker = workerData?.proxy;
     const nativeWorker = workerData?.nativeWorker;
@@ -858,6 +871,9 @@ export class Wiki implements IWikiService {
     if (!isWikiWorkspace(workspace)) {
       return;
     }
+    if (isHtmlWikiWorkspace(workspace)) {
+      return;
+    }
     const { id, isSubWiki } = workspace;
 
     if (isSubWiki) {
@@ -911,10 +927,18 @@ export class Wiki implements IWikiService {
     const { id, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
 
-    const userName = await this.authService.getUserName(workspace);
-
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
+
+    // HTML wiki workspaces are managed by HtmlWikiService, not the NodeJS wiki worker.
+    if (isHtmlWikiWorkspace(workspace)) {
+      const htmlWikiService = container.get<IHtmlWikiService>(serviceIdentifier.HtmlWiki);
+      await htmlWikiService.restartWorkspace(workspace);
+      await syncService.startIntervalSyncIfNeeded(workspace);
+      return;
+    }
+
+    const userName = await this.authService.getUserName(workspace);
     if (!isSubWiki) {
       await this.stopWiki(id);
       await this.startWiki(id, userName);

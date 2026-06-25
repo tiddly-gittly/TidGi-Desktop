@@ -39,6 +39,8 @@ import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportConfigDialog } from './ImportConfigDialog';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
+import { OpenHtmlWikiDoneButton } from './OpenHtmlWikiDoneButton';
+import { OpenHtmlWikiForm } from './OpenHtmlWikiForm';
 
 const Paper = styled((props: React.ComponentProps<typeof PaperRaw>) => <PaperRaw {...props} />)`
   border-color: ${({ theme }) => theme.palette.divider};
@@ -90,6 +92,8 @@ export default function AddWorkspace(): React.JSX.Element {
     (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>).addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,
   );
   const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
+  const isOpenHtmlWikiFileTab = currentTab === CreateWorkspaceTabs.OpenHtmlWikiFile;
+  const showAdvancedSettings = !isOpenHtmlWikiFileTab;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const [useTidgiConfig, useTidgiConfigSetter] = useState(true);
   const [selectedImportConfig, selectedImportConfigSetter] = useState<Partial<ISyncableWikiConfig> | undefined>(undefined);
@@ -154,20 +158,23 @@ export default function AddWorkspace(): React.JSX.Element {
             <Tab label={t('AddWorkspace.CreateNewWiki')} value={CreateWorkspaceTabs.CreateNewWiki} />
             <Tab label={t(`AddWorkspace.CloneOnlineWiki`)} value={CreateWorkspaceTabs.CloneOnlineWiki} />
             <Tab label={t('AddWorkspace.OpenLocalWiki')} value={CreateWorkspaceTabs.OpenLocalWiki} />
-            <Tab label={t('AddWorkspace.OpenLocalWikiFromHTML')} value={CreateWorkspaceTabs.OpenLocalWikiFromHtml} />
+            <Tab label={t('AddWorkspace.OpenHtmlWikiFile')} value={CreateWorkspaceTabs.OpenHtmlWikiFile} />
+            <Tab label={t('AddWorkspace.UnpackLocalWikiFromHTML')} value={CreateWorkspaceTabs.OpenLocalWikiFromHtml} />
           </Tabs>
         </Paper>
       </AppBar>
 
-      {/* show advanced options if user have already created a workspace */}
-      <Accordion defaultExpanded={workspaceList.length > 0}>
-        <AdvancedSettingsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('AddWorkspace.Advanced')}</AdvancedSettingsAccordionSummary>
-        <AccordionDetails>
-          {/* Force it only show sync option when clone online wiki, because many user encounter sync problem here. Recommend them create local first and sync later. */}
-          {isCreateSyncedWorkspace && <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={() => {}} />}
-          <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
-        </AccordionDetails>
-      </Accordion>
+      {/* HTML file import has no main/sub workspace concept — hide advanced settings entirely */}
+      {showAdvancedSettings && (
+        <Accordion defaultExpanded={workspaceList.length > 0}>
+          <AdvancedSettingsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('AddWorkspace.Advanced')}</AdvancedSettingsAccordionSummary>
+          <AccordionDetails>
+            {/* Force it only show sync option when clone online wiki, because many user encounter sync problem here. Recommend them create local first and sync later. */}
+            {isCreateSyncedWorkspace && <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={() => {}} />}
+            <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       {isCreateSyncedWorkspace && (
         <TokenFormContainer>
@@ -247,6 +254,14 @@ export default function AddWorkspace(): React.JSX.Element {
               isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
             />
             <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} useTidgiConfig={useTidgiConfig} selectedImportConfig={selectedImportConfig} />
+          </Container>
+        </TabPanel>
+      )}
+      {currentTab === CreateWorkspaceTabs.OpenHtmlWikiFile && (
+        <TabPanel>
+          <Container>
+            <OpenHtmlWikiForm {...formProps} />
+            <OpenHtmlWikiDoneButton {...formProps} />
           </Container>
         </TabPanel>
       )}

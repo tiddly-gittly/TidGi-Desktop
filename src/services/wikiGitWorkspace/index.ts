@@ -1,4 +1,4 @@
-import { app, dialog, powerMonitor } from 'electron';
+import { app, dialog, powerMonitor, shell } from 'electron';
 import { copy, pathExists, remove } from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
@@ -11,8 +11,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { INewWikiWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { isWikiWorkspace } from '@services/workspaces/interface';
+import { type INewWikiWorkspaceConfig, isWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 // Import from appPaths to get the Electron-accurate Desktop path (handles OneDrive Desktop redirect)
@@ -95,6 +95,13 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           } else {
             throw new InitWikiGitSyncedWikiNoGitUserInfoError(gitUrl, userInfo);
           }
+        } else if (isHtmlWikiWorkspace(newWorkspace)) {
+          const gitScope = getWorkspaceGitScope(newWorkspace);
+          if (!gitScope?.managedRelativePath) {
+            throw new Error('HTML wiki workspace is missing git scope');
+          }
+          const gitService = container.get<IGitService>(serviceIdentifier.Git);
+          await gitService.initScopedWikiGit(gitScope.repoPath, gitScope.managedRelativePath);
         } else {
           const gitService = container.get<IGitService>(serviceIdentifier.Git);
           await gitService.initWikiGit(wikiFolderLocation, false);
@@ -210,10 +217,18 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         throw new Error('removeWorkspace can only be called with wiki workspaces');
       }
       const { isSubWiki, wikiFolderLocation, id, name } = workspace;
+      const isHtmlWorkspace = isHtmlWikiWorkspace(workspace);
+      const removeMessage = isHtmlWorkspace
+        ? `${i18n.t('EditWorkspace.Name')} ${name} ${i18n.t('WorkspaceSelector.AreYouSure')}`
+        : `${i18n.t('EditWorkspace.Name')} ${name} ${isSubWiki ? i18n.t('EditWorkspace.IsSubWorkspace') : ''} ${i18n.t('WorkspaceSelector.AreYouSure')}`;
       const { response } = await dialog.showMessageBox(mainWindow, {
         type: 'question',
-        buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],
-        message: `${i18n.t('EditWorkspace.Name')} ${name} ${isSubWiki ? i18n.t('EditWorkspace.IsSubWorkspace') : ''} ${i18n.t('WorkspaceSelector.AreYouSure')}`,
+        buttons: [
+          i18n.t('WorkspaceSelector.RemoveWorkspace'),
+          isHtmlWorkspace ? i18n.t('WorkspaceSelector.RemoveWorkspaceAndDeleteHtmlFile') : i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'),
+          i18n.t('Cancel'),
+        ],
+        message: removeMessage,
         cancelId: 2,
       });
       try {
@@ -230,7 +245,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         });
         if (isSubWiki) {
           await wikiService.removeWiki(wikiFolderLocation);
-          // Sub-wiki configuration is now handled by FileSystemAdaptor in watch-filesystem plugin
+        } else if (isHtmlWorkspace && removeWorkspaceAndDelete) {
+          await shell.trashItem(workspace.htmlFileLocation);
         } else {
           // is main wiki, also delete all sub wikis
           const subWikis = workspaceService.getSubWorkspacesAsListSync(id);
@@ -263,6 +279,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     }
     if (!isWikiWorkspace(workspace)) {
       throw new Error('moveWorkspaceLocation can only be called with wiki workspaces');
+    }
+    if (isHtmlWikiWorkspace(workspace)) {
+      throw new Error(i18n.t('EditWorkspace.HtmlWorkspaceCannotMove'));
     }
 
     const { wikiFolderLocation, name } = workspace;

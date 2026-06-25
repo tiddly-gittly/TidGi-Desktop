@@ -418,7 +418,6 @@ interface IAllSectionsRendererProps {
 }
 
 const INITIAL_SECTION_COUNT = 4;
-const IS_TEST_ENV = process.env.NODE_ENV === 'test';
 
 /** Placeholder skeleton shown for deferred sections while waiting for idle time */
 function DeferredSectionSkeleton({ sectionRef }: { sectionRef?: React.RefObject<HTMLSpanElement | null> }): React.JSX.Element {
@@ -440,9 +439,8 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
   const { t } = useTranslation(['translation', 'agent']);
 
   // All hooks must be called unconditionally before any conditional return.
-  const [visibleCount, setVisibleCount] = React.useState(IS_TEST_ENV ? allSections.length : INITIAL_SECTION_COUNT);
+  const [visibleCount, setVisibleCount] = React.useState(INITIAL_SECTION_COUNT);
   React.useEffect(() => {
-    if (IS_TEST_ENV) return;
     if (query.trim()) return; // don't advance deferred loading while searching
     if (preference === undefined || visibleCount >= allSections.length) return;
     const id = requestIdleCallback(() => {

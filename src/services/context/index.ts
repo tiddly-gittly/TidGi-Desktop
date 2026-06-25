@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
 import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import { app, net } from 'electron';
@@ -18,6 +19,7 @@ export class ContextService implements IContextService {
   private readonly pathConstants: IPaths = { ...paths, ...appPaths };
   private readonly constants: IConstants = {
     isDevelopment: isElectronDevelopment,
+    isTest,
     platform: process.platform,
     appVersion: app.getVersion(),
     appName: app.name,

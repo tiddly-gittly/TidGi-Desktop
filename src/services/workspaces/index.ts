@@ -23,6 +23,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { extractSyncableConfig, mergeWithSyncedConfig, readTidgiConfig, readTidgiConfigSync, removeSyncableFields, writeTidgiConfig } from '../database/configSetting';
 import type {
   IDedicatedWorkspace,
+  INewHtmlWikiWorkspaceConfig,
   INewWikiWorkspaceConfig,
   IWikiWorkspace,
   IWorkspace,
@@ -32,9 +33,10 @@ import type {
   IWorkspacesWithMetadata,
   IWorkspaceWithMetadata,
 } from './interface';
-import { isWikiWorkspace, wikiWorkspaceDefaultValues } from './interface';
+import { isWikiWorkspace, wikiWorkspaceDefaultValues, WorkspaceType } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utilities';
+import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePaths';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -316,13 +318,17 @@ export class Workspace implements IWorkspaceService {
       wikiFolderLocation: workspaceToSanitize.wikiFolderLocation,
     });
 
+    // HTML workspaces never sync from tidgi.config.json
+    const isHtmlWorkspace = workspaceToSanitize.workspaceType === WorkspaceType.html ||
+      (typeof workspaceToSanitize.htmlFileLocation === 'string' && workspaceToSanitize.htmlFileLocation.length > 0);
+
     // Read syncable config from tidgi.config.json if it exists
     // Only apply synced config during initial load, not during updates
     // (to avoid overwriting user's changes with old file content)
     // Skip tidgi.config.json if workspace is configured to not use it (e.g. secondary workspace pointing to same wiki folder)
     let workspaceWithSyncedConfig = workspaceToSanitize;
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
-    if (applySyncedConfig && workspaceToSanitize.useTidgiConfigSync !== false) {
+    if (applySyncedConfig && !isHtmlWorkspace && workspaceToSanitize.useTidgiConfigSync !== false) {
       try {
         const syncedConfig = readTidgiConfigSync(workspaceToSanitize.wikiFolderLocation);
         if (syncedConfig) {
@@ -385,6 +391,30 @@ export class Workspace implements IWorkspaceService {
     if (workspaceWithSyncedConfig.tokenAuth && !workspaceWithSyncedConfig.authToken) {
       const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
       fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceWithSyncedConfig.id);
+    }
+    // Migrate legacy workspaces without workspaceType to folder wiki
+    if (!workspaceWithSyncedConfig.workspaceType) {
+      fixingValues.workspaceType = isHtmlWorkspace ? WorkspaceType.html : WorkspaceType.folder;
+    }
+    if (isHtmlWorkspace && workspaceWithSyncedConfig.htmlFileLocation) {
+      try {
+        const normalizedPaths = normalizeHtmlWorkspacePaths(workspaceWithSyncedConfig.htmlFileLocation);
+        fixingValues.htmlFileLocation = normalizedPaths.htmlFileLocation;
+        fixingValues.wikiFolderLocation = normalizedPaths.wikiFolderLocation;
+        fixingValues.useTidgiConfigSync = false;
+        fixingValues.isSubWiki = false;
+        fixingValues.mainWikiID = null;
+      } catch (error) {
+        logger.warn('sanitizeWorkspace: Failed to normalize HTML workspace paths', {
+          workspaceId: workspaceWithSyncedConfig.id,
+          error: (error as Error).message,
+        });
+      }
+    }
+    if (applySyncedConfig && isHtmlWorkspace && (!workspaceWithSyncedConfig.name || workspaceWithSyncedConfig.name.trim() === '')) {
+      if (workspaceWithSyncedConfig.htmlFileLocation) {
+        fixingValues.name = path.basename(workspaceWithSyncedConfig.htmlFileLocation, path.extname(workspaceWithSyncedConfig.htmlFileLocation));
+      }
     }
     // Apply defaults, then workspace data, then fixing values
     // This ensures all required fields exist even if missing from settings.json/tidgi.config.json
@@ -553,15 +583,28 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
-    const { useTidgiConfig = true, ...workspaceConfig } = newWorkspaceConfig;
+    const isHtmlConfig = newWorkspaceConfig.workspaceType === WorkspaceType.html;
+    const { useTidgiConfig = !isHtmlConfig, ...workspaceConfig } = newWorkspaceConfig;
     const generatedID = nanoid();
     let newID = generatedID;
+
+    let normalizedHtmlPaths: ReturnType<typeof normalizeHtmlWorkspacePaths> | undefined;
+    if (isHtmlConfig) {
+      const htmlConfig = newWorkspaceConfig as INewHtmlWikiWorkspaceConfig;
+      normalizedHtmlPaths = normalizeHtmlWorkspacePaths(htmlConfig.htmlFileLocation);
+      workspaceConfig.wikiFolderLocation = normalizedHtmlPaths.wikiFolderLocation;
+      workspaceConfig.htmlFileLocation = normalizedHtmlPaths.htmlFileLocation;
+      workspaceConfig.workspaceType = WorkspaceType.html;
+      if (!workspaceConfig.name || workspaceConfig.name.trim() === '') {
+        workspaceConfig.name = path.basename(normalizedHtmlPaths.htmlFileLocation, path.extname(normalizedHtmlPaths.htmlFileLocation));
+      }
+    }
 
     // Read existing config from tidgi.config.json if it exists (for re-adding an existing wiki)
     // Synced config should take priority over the passed config for syncable fields
     // This allows users to restore their previous settings when re-adding a wiki
     let existingConfig: Partial<INewWikiWorkspaceConfig> = {};
-    if (useTidgiConfig && workspaceConfig.wikiFolderLocation) {
+    if (useTidgiConfig && workspaceConfig.wikiFolderLocation && !isHtmlConfig) {
       const syncedConfig = await readTidgiConfig(workspaceConfig.wikiFolderLocation);
       if (syncedConfig) {
         existingConfig = syncedConfig as Partial<INewWikiWorkspaceConfig>;
@@ -590,11 +633,31 @@ export class Workspace implements IWorkspaceService {
       lastNodeJSArgv: [],
       order: typeof workspaceConfig.order === 'number' ? workspaceConfig.order : await this.getNextInsertOrder(),
       picturePath: null,
-      useTidgiConfigSync: useTidgiConfig ?? true,
+      useTidgiConfigSync: isHtmlConfig ? false : (useTidgiConfig ?? true),
+      ...(isHtmlConfig && normalizedHtmlPaths
+        ? {
+          workspaceType: WorkspaceType.html,
+          htmlFileLocation: normalizedHtmlPaths.htmlFileLocation,
+          wikiFolderLocation: normalizedHtmlPaths.wikiFolderLocation,
+          isSubWiki: false,
+          mainWikiID: null,
+          mainWikiToLink: null,
+          tagNames: [],
+          includeTagTree: false,
+          fileSystemPathFilterEnable: false,
+          fileSystemPathFilter: null,
+        }
+        : {}),
     };
 
     await this.set(newID, newWorkspace, true);
-    logger.info(`[test-id-WORKSPACE_CREATED] Workspace created`, { workspaceId: newID, workspaceName: newWorkspace.name, wikiFolderLocation: newWorkspace.wikiFolderLocation });
+    logger.info(`[test-id-WORKSPACE_CREATED] Workspace created`, {
+      workspaceId: newID,
+      workspaceName: newWorkspace.name,
+      wikiFolderLocation: newWorkspace.wikiFolderLocation,
+      workspaceType: isWikiWorkspace(newWorkspace) ? newWorkspace.workspaceType : undefined,
+      htmlFileLocation: isHtmlWikiWorkspace(newWorkspace) ? newWorkspace.htmlFileLocation : undefined,
+    });
 
     // Track workspace creation event
     const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);

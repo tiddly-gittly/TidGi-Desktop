@@ -7,6 +7,7 @@ import { buildResourcePath } from '@/constants/paths';
 import getViewBounds from '@services/libs/getViewBounds';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { isWin } from '@/helpers/system';
@@ -21,6 +22,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { ViewLoadUrlError } from './error';
 import { handleNewWindow } from './handleNewWindow';
+import { tryInterceptHtmlWikiDownload } from './htmlWikiDownloadIntercept';
 import { handleViewFileContentLoading } from './setupViewFileProtocol';
 
 export interface IViewContext {
@@ -264,7 +266,17 @@ export default function setupViewEventHandlers(
   );
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
-  view.webContents.session.on('will-download', (_event, item) => {
+  // Session is shared across views — only handle downloads initiated by this view.
+  view.webContents.session.on('will-download', (event, item, webContents) => {
+    if (webContents.id !== view.webContents.id) {
+      return;
+    }
+    if (isHtmlWikiWorkspace(workspace)) {
+      const intercepted = tryInterceptHtmlWikiDownload(event, item, view, workspace);
+      if (intercepted) {
+        return;
+      }
+    }
     const { askForDownloadPath, downloadPath } = preferenceService.getPreferences();
     // Set the save path, making Electron not to prompt a save dialog.
     if (askForDownloadPath) {

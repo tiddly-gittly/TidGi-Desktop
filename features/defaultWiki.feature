@@ -93,7 +93,7 @@ Feature: TidGi Default Wiki
     When I click on a "save and sync options accordion" element with selector "[data-testid='preference-section-saveAndSync']"
     Then I should see a "move workspace button" element with selector "button:has-text('移动工作区')"
     # Test the actual move operation - this will trigger a file dialog
-    When I prepare to select directory in dialog "wiki-test-moved"
+    When I choose directory "wiki-test-moved"
     And I click on a "move workspace button" element with selector "button:has-text('移动工作区')"
     Then I wait for log markers:
       | description                        | marker                                   |

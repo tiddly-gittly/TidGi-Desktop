@@ -27,15 +27,28 @@ async function getWindowId(app: ElectronApplication, page: Page | undefined): Pr
   }
 }
 
+async function getActiveWorkspaceHomeUrl(app: ElectronApplication, page?: Page): Promise<string | undefined> {
+  const pages = app.windows();
+  const targetPage = page ?? pages.find((candidate) => !candidate.isClosed()) ?? pages[0];
+  if (!targetPage) {
+    return undefined;
+  }
+  return await targetPage.evaluate(async () => {
+    const workspaces = await window.service.workspace.getWorkspacesAsList();
+    const active = workspaces.find((workspace) => workspace.active);
+    return active && 'homeUrl' in active ? active.homeUrl : undefined;
+  });
+}
+
 /**
  * Get the active WebContentsView from the target window.
- * When multiple wiki views exist, the LAST child is preferred because
- * showView() / addView() calls addChildView() which moves the view to the top.
+ * Prefers the browser view whose URL matches the currently active workspace.
  */
 async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
   const pageUrl = await getWindowUrl(page);
   const pageWindowId = await getWindowId(app, page);
-  return await app.evaluate(async ({ BrowserWindow }, target?: { pageUrl?: string; windowId?: number }) => {
+  const activeHomeUrl = await getActiveWorkspaceHomeUrl(app, page);
+  return await app.evaluate(async ({ BrowserWindow }, target?: { pageUrl?: string; windowId?: number; activeHomeUrl?: string }) => {
     const allWindows = BrowserWindow.getAllWindows();
 
     const getViewIdFromWindow = (window: Electron.BrowserWindow) => {
@@ -58,6 +71,13 @@ async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
           };
         })
         .filter((info): info is { id: number; url: string } => Boolean(info));
+
+      if (target?.activeHomeUrl) {
+        const activeMatch = candidateInfos.find((info) => info.url.startsWith(target.activeHomeUrl!));
+        if (activeMatch) {
+          return activeMatch.id;
+        }
+      }
 
       for (let index = candidateInfos.length - 1; index >= 0; index--) {
         if (candidateInfos[index].url.startsWith('tidgi://')) {
@@ -109,7 +129,7 @@ async function getFirstWebContentsView(app: ElectronApplication, page?: Page) {
     }
 
     return null;
-  }, { pageUrl, windowId: pageWindowId });
+  }, { pageUrl, windowId: pageWindowId, activeHomeUrl });
 }
 
 /**

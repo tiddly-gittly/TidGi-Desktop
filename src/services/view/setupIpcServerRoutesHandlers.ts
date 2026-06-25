@@ -7,53 +7,90 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceStrategy } from '@services/workspaces/strategies';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID: string) {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+
+  async function resolveHttpStrategy(workspaceIDFromHost: string) {
+    const workspace = await workspaceService.get(workspaceIDFromHost);
+    if (!workspace || !isWikiWorkspace(workspace)) {
+      return getWorkspaceStrategy(
+        { id: workspaceIDFromHost, name: '', active: false, order: 0, picturePath: null, wikiFolderLocation: '' },
+      );
+    }
+    return getWorkspaceStrategy(workspace);
+  }
+
   const methods = [
     {
       method: 'GET',
       path: /^\/?$/,
       name: 'getIndex',
       handler: async (_request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
+        const strategy = await resolveHttpStrategy(workspaceIDFromHost);
+        return strategy.http.getIndex(workspaceIDFromHost);
+      },
+    },
+    {
+      method: 'PUT',
+      path: /^\/?$/,
+      name: 'saveHtmlWiki',
+      handler: async (request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
         const workspace = await workspaceService.get(workspaceIDFromHost);
-        const rootTiddler = workspace && isWikiWorkspace(workspace) ? workspace.rootTiddler : undefined;
-        const response = await wikiService.callWikiIpcServerRoute(
-          workspaceIDFromHost,
-          'getIndex',
-          rootTiddler ?? '$:/core/save/lazy-images',
-        );
-        return response;
+        if (!workspace || !isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Not an HTML wiki workspace' };
+        }
+        const strategy = getWorkspaceStrategy(workspace);
+        if (!strategy.http.saveHtml) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Save not supported' };
+        }
+        const htmlContent = await request.text();
+        return strategy.http.saveHtml(workspaceIDFromHost, htmlContent);
       },
     },
     {
       method: 'GET',
       path: /^\/recipes\/default\/tiddlers\/(.+)$/,
       name: 'getTiddler',
-      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getTiddler', parameters?.[1] ?? ''),
+      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Tiddler API not available for HTML wiki' };
+        }
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getTiddler', parameters?.[1] ?? '');
+      },
     },
     {
       method: 'GET',
       path: /^\/recipes\/default\/tiddlers\/(.+)$/,
       name: 'getTiddlersJSON',
-      handler: async (request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(
+      handler: async (request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Tiddlers JSON not available for HTML wiki' };
+        }
+        return await wikiService.callWikiIpcServerRoute(
           workspaceIDFromHost,
           'getTiddlersJSON',
           new URL(request.url).searchParams.get('filter') ?? '',
-          // Allow send empty string to disable omit. Otherwise text field will be omitted.
           new URL(request.url).searchParams.get('exclude')?.split(' ') ?? undefined,
-        ),
+        );
+      },
     },
     {
       method: 'PUT',
       path: /^\/recipes\/default\/tiddlers\/(.+)$/,
       name: 'putTiddler',
       handler: async (request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Tiddler API not available for HTML wiki' };
+        }
         const body = await request.json() as ITiddlerFields;
         return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'putTiddler', parameters?.[1] ?? '', body);
       },
@@ -62,34 +99,35 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       method: 'DELETE',
       path: /^\/bags\/default\/tiddlers\/(.+)$/,
       name: 'deleteTiddler',
-      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'deleteTiddler', parameters?.[1] ?? ''),
+      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Tiddler API not available for HTML wiki' };
+        }
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'deleteTiddler', parameters?.[1] ?? '');
+      },
     },
     {
       method: 'GET',
       path: /^\/favicon.ico$/,
       name: 'getFavicon',
-      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getFavicon'),
+      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: {}, data: '' };
+        }
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getFavicon');
+      },
     },
     {
       method: 'GET',
       path: /^\/files\/(.+)$/,
       name: 'getFile',
       handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
-        /**
-         * ```
-         * parameters [
-            '/files/%E4%B8%9C%E5%90%B413%E5%B2%81%E7%99%BB%E9%95%BF%E5%9F%8E%E7%85%A7.JPG',
-            '%E4%B8%9C%E5%90%B413%E5%B2%81%E7%99%BB%E9%95%BF%E5%9F%8E%E7%85%A7.JPG',
-            index: 0,
-            input: '/files/%E4%B8%9C%E5%90%B413%E5%B2%81%E7%99%BB%E9%95%BF%E5%9F%8E%E7%85%A7.JPG',
-            groups: undefined
-          ]
-          ```
-
-          Decode Chinese similar to src/services/view/setupViewFileProtocol.ts
-         */
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'External files not available for HTML wiki workspace' };
+        }
         return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getFile', decodeURI(parameters?.[1] ?? ''));
       },
     },
@@ -100,35 +138,33 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       handler: async (_request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) => {
         const workspace = await workspaceService.get(workspaceIDFromHost);
         const userName = workspace === undefined ? '' : await authService.getUserName(workspace);
-        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getStatus', userName);
+        const strategy = workspace && isWikiWorkspace(workspace) ? getWorkspaceStrategy(workspace) : await resolveHttpStrategy(workspaceIDFromHost);
+        return strategy.http.getStatus(workspaceIDFromHost, userName);
       },
     },
     {
       method: 'GET',
       path: /^\/([^/]+)$/,
       name: 'getTiddlerHtml',
-      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getTiddlerHtml', parameters?.[1] ?? ''),
+      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceIDFromHost);
+        if (workspace && isHtmlWikiWorkspace(workspace)) {
+          return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: 'Tiddler HTML not available for HTML wiki' };
+        }
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getTiddlerHtml', parameters?.[1] ?? '');
+      },
     },
   ];
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {
     const parsedUrl = new URL(request.url);
     let normalizedPathname = parsedUrl.pathname;
-    // In some wiki states, external attachment URLs become hash-relative like:
-    // tidgi://<workspaceId>#:TiddlerName/files/xxx.png
-    // Recover /files/... from hash so getFile route can still serve the asset.
     if ((normalizedPathname === '/' || normalizedPathname === '') && parsedUrl.hash.includes('/files/')) {
       const filesIndex = parsedUrl.hash.lastIndexOf('/files/');
       if (filesIndex >= 0) {
         normalizedPathname = parsedUrl.hash.slice(filesIndex);
       }
     }
-    // parsedUrl.host is the actual workspaceID from the URL. Due to Electron's `session.protocol.handle` sometimes routing
-    // requests to the wrong session's handler, workspaceIDFromHost may differ from the closure's workspaceID.
-    // Always prefer the URL-based ID since it reflects the actual workspace being loaded.
     const workspaceIDFromHost = parsedUrl.host;
-    // When using `standard: true` in `registerSchemesAsPrivileged`, workspaceIDFromHost is lowercased.
-    // Find the real workspace ID with correct casing via the workspace service.
     let effectiveWorkspaceID = workspaceID;
     if (workspaceIDFromHost.toLowerCase() !== workspaceID.toLowerCase()) {
       logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback, using URL-based ID', {
@@ -136,22 +172,18 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         workspaceIDFromHost,
         workspaceID,
       });
-      // Look up the correct-cased workspace ID from the workspace service
       const workspaceFromHost = await workspaceService.get(workspaceIDFromHost);
       if (workspaceFromHost) {
         effectiveWorkspaceID = workspaceFromHost.id;
       } else {
-        // Try case-insensitive search through all workspaces
         const allWorkspaces = await workspaceService.getWorkspacesAsList();
         const matched = allWorkspaces.find(ws => ws.id.toLowerCase() === workspaceIDFromHost.toLowerCase());
         effectiveWorkspaceID = matched?.id ?? workspaceIDFromHost;
       }
     }
-    // Iterate through methods to find matching routes
     try {
       for (const route of methods) {
         if (request.method === route.method && route.path.test(normalizedPathname)) {
-          // Get the parameters in the URL path
           const parameters = normalizedPathname.match(route.path);
           logger.debug('setupIpcServerRoutesHandlers.handlerCallback started', {
             function: 'setupIpcServerRoutesHandlers.handlerCallback',
@@ -160,8 +192,6 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
             normalizedPathname,
             parameters,
           });
-          // Call the handler of the route to process the request and return the result
-          // Use effectiveWorkspaceID which resolves the correct workspace even on cross-session routing
           const responseData = await route.handler(request, effectiveWorkspaceID, parameters);
           if (responseData === undefined) {
             const statusText = `setupIpcServerRoutesHandlers.handlerCallback: responseData is undefined ${request.url}`;

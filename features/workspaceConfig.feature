@@ -40,7 +40,7 @@ Feature: Workspace Configuration Sync
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    When I prepare to select directory in dialog "wiki-test/wiki"
+    When I choose directory "wiki-test/wiki"
     When I click on "open existing wiki tab and select folder button and import wiki button" elements with selectors:
       | element description    | selector                          |
       | open existing wiki tab | button:has-text('导入本地知识库') |
@@ -81,7 +81,7 @@ Feature: Workspace Configuration Sync
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    When I prepare to select directory in dialog "wiki-test/wiki"
+    When I choose directory "wiki-test/wiki"
     When I click on "open existing wiki tab and select folder button" elements with selectors:
       | element description    | selector                          |
       | open existing wiki tab | button:has-text('导入本地知识库') |
@@ -150,7 +150,7 @@ Feature: Workspace Configuration Sync
     When I click on an "add workspace button" element with selector "#add-workspace-button"
     And I switch to "addWorkspace" window
     And I wait for the page to load completely
-    When I prepare to select directory in dialog "wiki-test/wiki"
+    When I choose directory "wiki-test/wiki"
     When I click on "open existing wiki tab and select folder button" elements with selectors:
       | element description    | selector                          |
       | open existing wiki tab | button:has-text('导入本地知识库') |

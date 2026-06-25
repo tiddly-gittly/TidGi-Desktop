@@ -2,6 +2,7 @@ import { SupportedStorageServices } from '@services/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Workspace } from '../index';
 import { type IWikiWorkspace, wikiWorkspaceDefaultValues } from '../interface';
+import { WorkspaceType } from '../workspaceType';
 
 // Mock registerMenu to avoid side effects
 vi.mock('../registerMenu', () => ({
@@ -248,6 +249,23 @@ describe('Workspace useTidgiConfigSync', () => {
       (service as any).sanitizeWorkspace(workspace, false);
 
       expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+    });
+
+    it('should migrate html workspaces without reading tidgi.config.json', async () => {
+      const workspace = createWorkspace({
+        workspaceType: WorkspaceType.html,
+        htmlFileLocation: '/tmp/demo.html',
+        wikiFolderLocation: '/tmp',
+        useTidgiConfigSync: true,
+      });
+      const service = createWorkspaceService(workspace);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = (service as any).sanitizeWorkspace(workspace, true);
+
+      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(result.workspaceType).toBe(WorkspaceType.html);
+      expect(result.useTidgiConfigSync).toBe(false);
     });
   });
 });

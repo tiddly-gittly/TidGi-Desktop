@@ -21,6 +21,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitSyncProgressEvent, IGitUserInfos } from './interface';
@@ -34,6 +35,7 @@ export class Git implements IGitService {
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
   private operationLocks = new Map<string, Promise<void>>();
+  private inflightCallGitOps = new Map<string, Promise<unknown>>();
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
@@ -291,6 +293,11 @@ export class Git implements IGitService {
     logger.info(`[test-id-git-init-complete]`, { wikiFolderPath });
   }
 
+  public async initScopedWikiGit(repoPath: string, scopedPath: string): Promise<void> {
+    await gitOperations.initScopedWikiGit(repoPath, scopedPath);
+    logger.info(`[test-id-git-init-complete]`, { wikiFolderPath: repoPath, scopedPath });
+  }
+
   public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
     // Note: we no longer pre-check net.isOnline() here because it can return false even when
     // the user IS online (e.g. VPN, certain firewall configs, Electron quirks). The underlying
@@ -308,8 +315,9 @@ export class Git implements IGitService {
     let releaseLock: (() => void) | undefined;
     try {
       releaseLock = await this.acquireOperationLock(workspaceID);
-      // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever
-      if (!workspace.isSubWiki) {
+      // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever.
+      // HTML wikis have no Node wiki worker either.
+      if (!workspace.isSubWiki && !isHtmlWikiWorkspace(workspace)) {
         try {
           await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
         } catch (error: unknown) {
@@ -319,12 +327,16 @@ export class Git implements IGitService {
 
       // Generate AI commit message if not provided and settings allow
       let finalConfigs = configs;
+      const gitScope = getWorkspaceGitScope(workspace);
+      if (isHtmlWikiWorkspace(workspace) && gitScope?.managedRelativePath) {
+        finalConfigs = { ...configs, dir: gitScope.repoPath };
+      }
       if (!configs.commitMessage) {
         logger.debug('No commit message provided, attempting to generate AI commit message');
         const { generateAICommitMessage } = await import('./aiCommitMessage');
-        // Determine source of the call for debugging
         const source = configs.commitOnly ? 'backup' : 'sync';
-        const aiCommitMessage = await generateAICommitMessage(workspace.wikiFolderLocation, source);
+        const aiFolderPath = gitScope?.repoPath ?? workspace.wikiFolderLocation;
+        const aiCommitMessage = await generateAICommitMessage(aiFolderPath, source, gitScope?.managedRelativePath);
         if (aiCommitMessage) {
           finalConfigs = { ...configs, commitMessage: aiCommitMessage };
           logger.debug('Using AI-generated commit message', { commitMessage: aiCommitMessage, source });
@@ -335,6 +347,26 @@ export class Git implements IGitService {
         }
       } else {
         logger.debug('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
+      }
+
+      if (isHtmlWikiWorkspace(workspace) && gitScope?.managedRelativePath) {
+        const hasChanges = await gitOperations.commitScopedChanges(
+          gitScope.repoPath,
+          gitScope.managedRelativePath,
+          finalConfigs.commitMessage ?? i18n.t('LOG.CommitBackupMessage'),
+        );
+        if (!configs.commitOnly) {
+          const observable = this.gitWorker?.commitAndSyncWiki(
+            workspace,
+            { ...finalConfigs, dir: gitScope.repoPath, commitOnly: false },
+            getErrorMessageI18NDict(),
+          );
+          await this.getHasChangeHandler(observable, gitScope.repoPath, workspaceIDToShowNotification);
+        }
+        const changeType = configs.commitOnly ? 'commit' : 'sync';
+        this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
+        logger.info(`[test-id-git-${changeType}-complete]`, { wikiFolderLocation: workspace.wikiFolderLocation });
+        return hasChanges;
       }
 
       const observable = this.gitWorker?.commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
@@ -475,7 +507,33 @@ export class Git implements IGitService {
     }
     // Type assertion through unknown is necessary here because TypeScript cannot verify
     // that the union type of all gitOperations functions matches the generic K constraint
-    return await (operation as unknown as (...arguments__: Parameters<typeof gitOperations[K]>) => ReturnType<typeof gitOperations[K]>)(...arguments_);
+    const inflightKey = `${method}:${JSON.stringify(arguments_)}`;
+    const inflight = this.inflightCallGitOps.get(inflightKey);
+    if (inflight !== undefined) {
+      return await inflight as Awaited<ReturnType<typeof gitOperations[K]>>;
+    }
+
+    const promise = (operation as unknown as (...arguments__: Parameters<typeof gitOperations[K]>) => ReturnType<typeof gitOperations[K]>)(...arguments_);
+    this.inflightCallGitOps.set(inflightKey, promise);
+    try {
+      return await promise;
+    } finally {
+      if (this.inflightCallGitOps.get(inflightKey) === promise) {
+        this.inflightCallGitOps.delete(inflightKey);
+      }
+    }
+  }
+
+  public async getGitLog(repoPath: string, options?: import('./interface').IGitLogOptions): Promise<import('./interface').IGitLogResult> {
+    return this.callGitOp('getGitLog', repoPath, options ?? {});
+  }
+
+  public async getCommitFiles(repoPath: string, commitHash: string, scopedPath?: string): Promise<import('./interface').IFileWithStatus[]> {
+    return this.callGitOp('getCommitFiles', repoPath, commitHash, scopedPath);
+  }
+
+  public async getUnpushedCommitHashes(repoPath: string, remoteUrl?: string | null): Promise<Set<string>> {
+    return this.callGitOp('getUnpushedCommitHashes', repoPath, remoteUrl ?? undefined);
   }
 
   public async checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void> {

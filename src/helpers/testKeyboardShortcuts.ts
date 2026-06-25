@@ -25,12 +25,10 @@
  * NativeService.registerKeyboardShortcut using Electron's globalShortcut API.
  */
 
-export function initTestKeyboardShortcutFallback(): () => void {
-  const isTestEnvironment = process.env.NODE_ENV === 'test';
+export function initTestKeyboardShortcutFallback(isTestEnvironment: boolean): () => void {
   if (!isTestEnvironment) return () => {};
   void window.service.native.log('debug', 'Renderer(Test): initTestKeyboardShortcutFallback called', {
     isTestEnvironment,
-    nodeEnv: process.env.NODE_ENV,
   });
 
   let allShortcuts: Record<string, string> = {};

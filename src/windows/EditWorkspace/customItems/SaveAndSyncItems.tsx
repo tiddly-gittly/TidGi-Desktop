@@ -6,6 +6,8 @@ import { ListItem, ListItemText } from '@/components/ListItem';
 import { TokenForm } from '@/components/TokenForm';
 import { SupportedStorageServices } from '@services/types';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
+import { getWorkspaceStrategy } from '@services/workspaces/strategies';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { SyncedWikiDescription } from '../../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../../AddWorkspace/GitRepoUrlForm';
 import { ListItemVertical, TextField } from '../../Preferences/PreferenceComponents';
@@ -14,41 +16,50 @@ import { useWorkspaceForm } from '../WorkspaceFormContext';
 export function WorkspacePathItem(): React.JSX.Element {
   const { t } = useTranslation();
   const { workspace } = useWorkspaceForm();
-  const wikiFolderLocation = isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : '';
+  const isHtml = isHtmlWikiWorkspace(workspace);
+  const pathValue = isWikiWorkspace(workspace)
+    ? (isHtml ? workspace.htmlFileLocation : workspace.wikiFolderLocation)
+    : '';
+  const menuStrategy = isWikiWorkspace(workspace) ? getWorkspaceStrategy(workspace).menu : undefined;
   return (
     <ListItemVertical>
-      <ListItemText primary={t('EditWorkspace.Path')} secondary={t('EditWorkspace.PathDescription')} />
+      <ListItemText
+        primary={isHtml ? t('EditWorkspace.HtmlFilePath') : t('EditWorkspace.Path')}
+        secondary={isHtml ? t('EditWorkspace.HtmlFilePathDescription') : t('EditWorkspace.PathDescription')}
+      />
       <TextField
         fullWidth
         placeholder='Optional'
         disabled
-        value={wikiFolderLocation}
+        value={pathValue}
       />
-      <Tooltip title={t('EditWorkspace.MoveWorkspaceTooltip') ?? ''} placement='top'>
-        <Button
-          variant='outlined'
-          size='small'
-          sx={{ mt: 1 }}
-          onClick={async () => {
-            const directories = await window.service.native.pickDirectory();
-            if (directories.length > 0) {
-              const newLocation = directories[0];
-              try {
-                await window.service.wikiGitWorkspace.moveWorkspaceLocation(workspace.id, newLocation);
-              } catch (error) {
-                const errorMessage = (error as Error).message;
-                void window.service.native.log('error', `Failed to move workspace: ${errorMessage}`, { error, workspaceID: workspace.id, newLocation });
-                void window.service.notification.show({
-                  title: t('EditWorkspace.MoveWorkspaceFailed'),
-                  body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspace.name, error: errorMessage }),
-                });
+      {!isHtml && menuStrategy?.canMoveWorkspaceLocation && (
+        <Tooltip title={t('EditWorkspace.MoveWorkspaceTooltip') ?? ''} placement='top'>
+          <Button
+            variant='outlined'
+            size='small'
+            sx={{ mt: 1 }}
+            onClick={async () => {
+              const directories = await window.service.native.pickDirectory();
+              if (directories.length > 0) {
+                const newLocation = directories[0];
+                try {
+                  await window.service.wikiGitWorkspace.moveWorkspaceLocation(workspace.id, newLocation);
+                } catch (error) {
+                  const errorMessage = (error as Error).message;
+                  void window.service.native.log('error', `Failed to move workspace: ${errorMessage}`, { error, workspaceID: workspace.id, newLocation });
+                  void window.service.notification.show({
+                    title: t('EditWorkspace.MoveWorkspaceFailed'),
+                    body: t('EditWorkspace.MoveWorkspaceFailedMessage', { name: workspace.name, error: errorMessage }),
+                  });
+                }
               }
-            }
-          }}
-        >
-          {t('EditWorkspace.MoveWorkspace')}
-        </Button>
-      </Tooltip>
+            }}
+          >
+            {t('EditWorkspace.MoveWorkspace')}
+          </Button>
+        </Tooltip>
+      )}
     </ListItemVertical>
   );
 }

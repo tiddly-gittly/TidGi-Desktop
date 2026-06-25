@@ -26,6 +26,7 @@ export interface IConstants {
   appVersion: string;
   environmentVersions: NodeJS.ProcessVersions;
   isDevelopment: boolean;
+  isTest: boolean;
   oSVersion: string;
   platform: string;
 }

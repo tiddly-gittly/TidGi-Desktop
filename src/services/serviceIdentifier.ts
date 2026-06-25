@@ -10,6 +10,7 @@ export default {
   ExternalAPI: Symbol.for('ExternalAPI'),
   Git: Symbol.for('Git'),
   GitServer: Symbol.for('GitServer'),
+  HtmlWiki: Symbol.for('HtmlWiki'),
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
   NotificationService: Symbol.for('NotificationService'),

@@ -16,6 +16,7 @@ import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
 import { consoleLogToLogFile } from './fixer/consoleLogToLogFile';
 import { fixAlertConfirm } from './fixer/fixAlertConfirm';
+import { exposeHtmlWikiSavingBridge } from './htmlWikiSaving';
 
 declare global {
   interface Window {
@@ -42,6 +43,7 @@ switch (browserViewMetaData.windowName) {
     break;
   }
   case WindowNames.view: {
+    exposeHtmlWikiSavingBridge();
     void syncTidgiStateWhenWikiLoads();
     void fixAlertConfirm();
     break;

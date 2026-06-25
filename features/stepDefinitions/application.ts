@@ -474,64 +474,80 @@ When('I close the TidGi application', async function(this: ApplicationWorld) {
   }
 });
 
-When('I prepare to select directory in dialog {string}', async function(this: ApplicationWorld, directoryName: string) {
-  if (!this.app) {
+type SelectablePathKind = 'directory' | 'file';
+
+function resolveSelectablePath(world: ApplicationWorld, kind: SelectablePathKind, inputPath: string): string {
+  const testRoot = path.resolve(process.cwd(), 'test-artifacts', world.scenarioSlug);
+  const expandedPath = inputPath.replace('{tmpDir}', path.join(testRoot, 'wiki-test'));
+  if (path.isAbsolute(expandedPath)) {
+    return expandedPath;
+  }
+  const scenarioPath = path.resolve(testRoot, expandedPath);
+  const projectPath = path.resolve(process.cwd(), expandedPath);
+  if (kind === 'directory') {
+    return scenarioPath;
+  }
+  return fs.existsSync(scenarioPath) ? scenarioPath : projectPath;
+}
+
+export async function chooseFileOrDirectory(
+  world: ApplicationWorld,
+  kind: SelectablePathKind,
+  inputPath: string,
+  inputSelector?: string,
+  options: { registerFileChooser?: boolean } = {},
+): Promise<string> {
+  const targetPath = resolveSelectablePath(world, kind, inputPath);
+  if (kind === 'file' && !await fs.pathExists(targetPath)) {
+    throw new Error(`File does not exist: ${targetPath}`);
+  }
+  await fs.ensureDir(path.dirname(targetPath));
+
+  if (inputSelector) {
+    if (!world.currentWindow) {
+      throw new Error('No current window available');
+    }
+    await world.currentWindow.locator(inputSelector).setInputFiles(targetPath);
+    return targetPath;
+  }
+
+  if (kind === 'file' && options.registerFileChooser !== false && world.currentWindow) {
+    world.currentWindow.once('filechooser', async (fileChooser) => {
+      await fileChooser.setFiles(targetPath);
+    });
+  }
+
+  if (!world.app) {
     throw new Error('Application is not launched');
   }
-  // Use scenario-specific path for isolation
-  const targetPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, directoryName);
-  // Ensure parent directory exists (but do NOT remove target directory - it may be an existing wiki we want to import)
-  await fs.ensureDir(path.dirname(targetPath));
-  // Setup one-time dialog handler that restores after use
-  await this.app.evaluate(({ dialog }, targetDirectory: string) => {
-    // Save original function with proper binding
+  await world.app.evaluate(({ dialog }, selectedPath: string) => {
     const originalShowOpenDialog = dialog.showOpenDialog.bind(dialog);
-    // Override with one-time mock
     dialog.showOpenDialog = async () => {
-      // Restore original immediately after first call
       dialog.showOpenDialog = originalShowOpenDialog;
       return {
         canceled: false,
-        filePaths: [targetDirectory],
+        filePaths: [selectedPath],
       };
     };
   }, targetPath);
+  return targetPath;
+}
+
+When('I choose {word} {string}', async function(
+  this: ApplicationWorld,
+  kind: string,
+  inputPath: string,
+) {
+  await chooseFileOrDirectory(this, kind as SelectablePathKind, inputPath);
 });
 
-When('I prepare to select file {string} for file chooser', async function(this: ApplicationWorld, filePath: string) {
-  const page = this.currentWindow;
-  if (!page) {
-    throw new Error('No current window available');
-  }
-  const targetPath = path.resolve(process.cwd(), filePath);
-  if (!await fs.pathExists(targetPath)) {
-    throw new Error(`File does not exist: ${targetPath}`);
-  }
-  // Register a one-shot Playwright filechooser intercept BEFORE the click that
-  // triggers the file input. This prevents the native OS dialog from appearing
-  // and directly resolves the chooser with the supplied file.
-  page.once('filechooser', async (fileChooser) => {
-    await fileChooser.setFiles(targetPath);
-  });
-});
-
-When('I set file {string} to file input with selector {string}', async function(this: ApplicationWorld, filePath: string, selector: string) {
-  const page = this.currentWindow;
-  if (!page) {
-    throw new Error('No current window available');
-  }
-
-  // Resolve the file path relative to project root
-  const targetPath = path.resolve(process.cwd(), filePath);
-
-  // Verify the file exists
-  if (!await fs.pathExists(targetPath)) {
-    throw new Error(`File does not exist: ${targetPath}`);
-  }
-
-  // Use Playwright's setInputFiles to directly set file to the input element
-  // This works even for hidden inputs
-  await page.locator(selector).setInputFiles(targetPath);
+When('I choose {word} {string} with input selector {string}', async function(
+  this: ApplicationWorld,
+  kind: string,
+  inputPath: string,
+  inputSelector: string,
+) {
+  await chooseFileOrDirectory(this, kind as SelectablePathKind, inputPath, inputSelector);
 });
 
 /**

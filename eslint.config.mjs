@@ -39,4 +39,10 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
+  {
+    files: ['scripts/run-e2e.ts'],
+    rules: {
+      'unicorn/prevent-abbreviations': 'off',
+    },
+  },
 ];

@@ -38,4 +38,3 @@ export function DeferredSectionSkeleton({ sectionRef }: { sectionRef?: React.Ref
 }
 
 export const INITIAL_GENERIC_SECTION_COUNT = 3;
-export const IS_TEST_ENV = process.env.NODE_ENV === 'test';
