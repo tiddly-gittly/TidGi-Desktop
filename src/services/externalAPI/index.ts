@@ -9,8 +9,8 @@ import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMet
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { ModelMessage } from 'ai';
 import type { AiAPIConfig } from 'memeloop';
+
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { generateImageFromProvider } from './callImageGenerationAPI';
@@ -18,6 +18,7 @@ import { streamFromProvider } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
+import type { ModelMessage } from './interface';
 import type {
   AIEmbeddingResponse,
   AIGlobalSettings,
@@ -612,7 +613,7 @@ export class ExternalAPIService implements IExternalAPIService {
       }
 
       // Create the stream with retry for transient failures (429, 5xx, network errors)
-      let result: ReturnType<typeof streamFromProvider>;
+      let result: AsyncIterable<string>;
       try {
         result = await withRetry(
           async () =>
@@ -656,7 +657,7 @@ export class ExternalAPIService implements IExternalAPIService {
       const startTime = Date.now();
 
       // Iterate through stream chunks
-      for await (const chunk of result.textStream) {
+      for await (const chunk of result) {
         // Process content
         fullResponse += chunk;
 
