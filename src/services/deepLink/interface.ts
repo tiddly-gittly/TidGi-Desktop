@@ -14,6 +14,12 @@ export interface IDeepLinkService {
    */
   openDeepLink(url: string): Promise<void>;
   /**
+   * Get the protocol scheme used for deep linking (e.g. 'tidgi' or 'tidgi-test').
+   * Renderer processes should use this instead of importing protocol.ts directly,
+   * as the scheme may differ between test and production modes.
+   */
+  getProtocolScheme(): Promise<string>;
+  /**
    * Process any pending deep link after workspaces are initialized.
    * Should be called after all workspaces are ready.
    */
@@ -25,6 +31,7 @@ export const DeepLinkServiceIPCDescriptor = {
   properties: {
     initializeDeepLink: ProxyPropertyType.Function,
     openDeepLink: ProxyPropertyType.Function,
+    getProtocolScheme: ProxyPropertyType.Function,
     processPendingDeepLink: ProxyPropertyType.Function,
   },
 };

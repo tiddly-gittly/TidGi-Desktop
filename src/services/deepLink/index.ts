@@ -146,6 +146,14 @@ export class DeepLinkService implements IDeepLinkService {
   };
 
   /**
+   * Get the protocol scheme used for deep linking.
+   * Returns 'tidgi-test' in test mode, 'tidgi' otherwise.
+   */
+  public readonly getProtocolScheme: () => Promise<string> = async () => {
+    return isTest ? 'tidgi-test' : TIDGI_PROTOCOL_SCHEME;
+  };
+
+  /**
    * Process any pending deep link after workspaces are initialized
    */
   public async processPendingDeepLink(): Promise<void> {
