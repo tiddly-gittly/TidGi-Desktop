@@ -51,12 +51,13 @@ export function handleNewWindow(
   }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
+  const tidgiProtocolScheme = isTest ? 'tidgi-test' : 'tidgi';
 
   const nextDomain = extractDomain(nextUrl);
   const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl, newWindowContext);
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // Handle tidgi:// deep links internally instead of opening in external browser
-  if (nextUrl.startsWith('tidgi://') || nextUrl.startsWith('tidgi-test://')) {
+  if (nextUrl.startsWith(`${tidgiProtocolScheme}://`)) {
     logger.info('handleNewWindow handling tidgi:// deep link internally', { nextUrl, disposition, function: 'handleNewWindow' });
     void deepLinkService.openDeepLink(nextUrl);
     return { action: 'deny' };
@@ -148,7 +149,7 @@ export function handleNewWindow(
         }
         if (isInternalUrl(url, [appUrl, currentUrl])) {
           if (!isTest) childWindow.show();
-        } else if (url.startsWith('tidgi://') || url.startsWith('tidgi-test://')) {
+        } else if (url.startsWith(`${tidgiProtocolScheme}://`)) {
           // Handle tidgi:// deep links internally
           logger.info('childWindow will-navigate handling tidgi:// deep link internally', { url, function: 'handleNewWindow' });
           _event.preventDefault();

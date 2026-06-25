@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { PageType } from '@/constants/pageTypes';
-import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { PreferenceSections } from '@services/preferences/interface';
@@ -275,7 +274,7 @@ export function Search(
             variant='outlined'
             color='primary'
             onClick={async () => {
-              await window.service.deepLink.openDeepLink(`${TIDGI_PROTOCOL_SCHEME}://preferences/${PreferenceSections.externalAPI}`);
+              await window.service.deepLink.openDeepLink(`tidgi://preferences/${PreferenceSections.externalAPI}`);
             }}
           >
             {t('Preference.OpenExternalAPISettings')}

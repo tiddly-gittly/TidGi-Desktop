@@ -10,6 +10,7 @@ import { isWikiWorkspace } from '@services/workspaces/interface';
 import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 
 import { ViewChannel, WindowChannel } from '@/constants/channels';
+import { isTest } from '@/constants/environment';
 import { isWin } from '@/helpers/system';
 import { container } from '@services/container';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -56,6 +57,7 @@ export default function setupViewEventHandlers(
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
+  const tidgiProtocolScheme = isTest ? 'tidgi-test' : 'tidgi';
 
   handleViewFileContentLoading(view);
   logger.info('Wiki view created', {
@@ -104,8 +106,7 @@ export default function setupViewEventHandlers(
       return;
     }
     // Handle tidgi:// deep links internally (e.g. tidgi://preferences/externalAPI from within wiki pages)
-    // Check both production and test scheme prefixes.
-    if (newUrl.startsWith('tidgi://') || newUrl.startsWith('tidgi-test://')) {
+    if (newUrl.startsWith(`${tidgiProtocolScheme}://`)) {
       logger.info('will-navigate handling tidgi:// deep link internally', { newUrl, function: 'will-navigate' });
       event.preventDefault();
       await deepLinkService.openDeepLink(newUrl);
