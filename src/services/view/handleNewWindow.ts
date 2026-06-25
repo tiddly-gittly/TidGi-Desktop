@@ -4,8 +4,10 @@ import windowStateKeeper from 'electron-window-state';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { MetaDataChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { container } from '@services/container';
+import type { IDeepLinkService } from '@services/deepLink/interface';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -49,10 +51,17 @@ export function handleNewWindow(
     return { action: 'deny' };
   }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 
   const nextDomain = extractDomain(nextUrl);
   const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl, newWindowContext);
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
+  // Handle tidgi:// deep links internally instead of opening in external browser
+  if (nextUrl.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`)) {
+    logger.info('handleNewWindow handling tidgi:// deep link internally', { nextUrl, disposition, function: 'handleNewWindow' });
+    void deepLinkService.openDeepLink(nextUrl);
+    return { action: 'deny' };
+  }
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
     logger.debug('openExternal', { nextUrl, nextDomain, disposition, function: 'handleNewWindow' });
@@ -140,6 +149,12 @@ export function handleNewWindow(
         }
         if (isInternalUrl(url, [appUrl, currentUrl])) {
           if (!isTest) childWindow.show();
+        } else if (url.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`)) {
+          // Handle tidgi:// deep links internally
+          logger.info('childWindow will-navigate handling tidgi:// deep link internally', { url, function: 'handleNewWindow' });
+          _event.preventDefault();
+          void deepLinkService.openDeepLink(url);
+          childWindow.close();
         } else {
           // if not, open in browser
           _event.preventDefault();

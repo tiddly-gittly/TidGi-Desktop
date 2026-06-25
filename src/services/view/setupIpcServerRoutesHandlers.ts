@@ -2,6 +2,7 @@ import { WebContentsView } from 'electron';
 
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
+import type { IDeepLinkService } from '@services/deepLink/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -15,6 +16,7 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+  const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 
   async function resolveHttpStrategy(workspaceIDFromHost: string) {
     const workspace = await workspaceService.get(workspaceIDFromHost);
@@ -157,6 +159,22 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
   ];
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {
     const parsedUrl = new URL(request.url);
+    const workspaceIDFromHost = parsedUrl.host;
+
+    // Handle tidgi://preferences/... deep links at the protocol level.
+    // This catches requests that bypass will-navigate (e.g. TiddlyWiki's
+    // internal link handling that triggers a direct protocol request).
+    if (workspaceIDFromHost === 'preferences') {
+      logger.info('setupIpcServerRoutesHandlers: handling preferences deep link via protocol handler', {
+        function: 'setupIpcServerRoutesHandlers.handlerCallback',
+        url: request.url,
+      });
+      // Fire the deep link to open the preferences window.
+      void deepLinkService.openDeepLink(request.url);
+      // Return 204 No Content so the page stays in place without a reload.
+      return new Response(undefined, { status: 204 });
+    }
+
     let normalizedPathname = parsedUrl.pathname;
     if ((normalizedPathname === '/' || normalizedPathname === '') && parsedUrl.hash.includes('/files/')) {
       const filesIndex = parsedUrl.hash.lastIndexOf('/files/');
@@ -164,7 +182,6 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         normalizedPathname = parsedUrl.hash.slice(filesIndex);
       }
     }
-    const workspaceIDFromHost = parsedUrl.host;
     let effectiveWorkspaceID = workspaceID;
     if (workspaceIDFromHost.toLowerCase() !== workspaceID.toLowerCase()) {
       logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback, using URL-based ID', {
