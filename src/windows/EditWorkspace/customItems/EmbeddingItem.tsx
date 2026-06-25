@@ -196,7 +196,8 @@ export function WorkspaceEmbeddingItem(_props: ICustomItemProps): React.JSX.Elem
                 color='primary'
                 style={{ marginTop: 4, padding: 0 }}
                 onClick={async () => {
-                  const scheme = await window.service.deepLink.getProtocolScheme();
+                  const isTestMode = await window.service.context.get('isTest');
+                  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
                   await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
                 }}
               >

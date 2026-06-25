@@ -1,4 +1,3 @@
-import { isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
@@ -143,14 +142,6 @@ export class DeepLinkService implements IDeepLinkService {
     } catch (error) {
       logger.error(`Invalid URL`, { requestUrl, error, function: 'deepLinkHandler' });
     }
-  };
-
-  /**
-   * Get the protocol scheme used for deep linking.
-   * Returns 'tidgi-test' in test mode, 'tidgi' otherwise.
-   */
-  public readonly getProtocolScheme: () => Promise<string> = async () => {
-    return isTest ? 'tidgi-test' : TIDGI_PROTOCOL_SCHEME;
   };
 
   /**

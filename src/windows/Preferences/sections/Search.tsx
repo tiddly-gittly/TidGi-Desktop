@@ -274,7 +274,8 @@ export function Search(
             variant='outlined'
             color='primary'
             onClick={async () => {
-              const scheme = await window.service.deepLink.getProtocolScheme();
+              const isTestMode = await window.service.context.get('isTest');
+              const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
               await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
             }}
           >
