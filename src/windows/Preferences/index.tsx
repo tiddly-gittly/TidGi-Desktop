@@ -1,5 +1,5 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useInfoSnackbar } from '@/components/InfoSnackbar';
@@ -9,13 +9,14 @@ import { allSections } from '@services/preferences/definitions/registry';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 import React from 'react';
 import { PageInner as Inner, PageRoot as Root } from './PreferenceComponents';
 import { registerCustomSections } from './registerCustomSections';
 import { AllSectionsRenderer } from './SchemaRenderer';
 import { SearchBar } from './SearchBar';
 import { SectionSideBar } from './SectionsSideBar';
+import { usePreferenceGotoTab } from './usePreferenceGotoTab';
 import type { ISectionRecord } from './useSections';
 
 // Register custom section components on module load
@@ -63,14 +64,7 @@ export default function Preferences(): React.JSX.Element {
   };
 
   // handle open preference from other window, and goto some tab
-  useEffect(() => {
-    if (searchQuery) return;
-    const scrollTo = (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).preferenceGotoTab;
-    if (scrollTo === undefined) return;
-    setTimeout(() => {
-      sections[scrollTo].ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  }, [sections, searchQuery]);
+  usePreferenceGotoTab(WindowNames.preferences, sectionReferences, { searchQuery });
 
   const isSearching = searchQuery.trim().length > 0;
 

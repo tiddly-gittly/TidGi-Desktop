@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
-import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { ICustomItemProps } from '@services/preferences/definitions/types';
 import { PreferenceSections } from '@services/preferences/interface';
 import type { EmbeddingStatus } from '@services/wikiEmbedding/interface';
@@ -197,7 +196,9 @@ export function WorkspaceEmbeddingItem(_props: ICustomItemProps): React.JSX.Elem
                 color='primary'
                 style={{ marginTop: 4, padding: 0 }}
                 onClick={async () => {
-                  await window.service.deepLink.openDeepLink(`${TIDGI_PROTOCOL_SCHEME}://preferences/${PreferenceSections.externalAPI}`);
+                  const isTestMode = await window.service.context.get('isTest');
+                  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+                  await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
                 }}
               >
                 {t('Preference.OpenExternalAPISettings')}

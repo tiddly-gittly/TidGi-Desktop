@@ -1,5 +1,5 @@
 /**
- * Protocol scheme used for deep linking.
+ * Protocol scheme used for deep linking and wiki content serving.
  *
  * Keep this file renderer-safe: do not import `environment.ts` here because that
  * transitively imports Electron-only code via `isElectronDevelopment`.

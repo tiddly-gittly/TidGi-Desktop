@@ -436,12 +436,19 @@ function DeferredSectionSkeleton({ sectionRef }: { sectionRef?: React.RefObject<
 export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }: IAllSectionsRendererProps): React.JSX.Element {
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
+  const isTest = usePromiseValue(async () => await window.service.context.get('isTest'));
   const { t } = useTranslation(['translation', 'agent']);
 
   // All hooks must be called unconditionally before any conditional return.
   const [visibleCount, setVisibleCount] = React.useState(INITIAL_SECTION_COUNT);
   React.useEffect(() => {
-    if (query.trim()) return; // don't advance deferred loading while searching
+    if (isTest) {
+      setVisibleCount(allSections.length);
+    }
+  }, [isTest]);
+  React.useEffect(() => {
+    if (isTest) return; // in test mode, all sections are visible immediately
+    if (query.trim()) return;
     if (preference === undefined || visibleCount >= allSections.length) return;
     const id = requestIdleCallback(() => {
       setVisibleCount((c) => Math.min(c + 4, allSections.length));
