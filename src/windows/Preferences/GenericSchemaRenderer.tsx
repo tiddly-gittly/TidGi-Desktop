@@ -301,6 +301,7 @@ export function AllGenericSectionsRenderer<TRecord extends Record<string, unknow
   initialSectionCount = INITIAL_GENERIC_SECTION_COUNT,
 }: IAllGenericSectionsRendererProps<TRecord>): React.JSX.Element {
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
+  const isTest = usePromiseValue(async () => await window.service.context.get('isTest'));
   const { t } = useTranslation();
 
   const visibleSections = React.useMemo(
@@ -310,6 +311,12 @@ export function AllGenericSectionsRenderer<TRecord extends Record<string, unknow
 
   const [visibleCount, setVisibleCount] = React.useState(initialSectionCount);
   React.useEffect(() => {
+    if (isTest) {
+      setVisibleCount(visibleSections.length);
+    }
+  }, [isTest, visibleSections.length]);
+  React.useEffect(() => {
+    if (isTest) return; // in test mode, all sections are visible immediately
     if (query.trim()) return;
     if (visibleCount >= visibleSections.length) return;
     const id = requestIdleCallback(() => {
