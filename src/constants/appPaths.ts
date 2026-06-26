@@ -73,8 +73,11 @@ export const CACHE_DATABASE_FOLDER = path.resolve(USER_DATA_FOLDER, cacheDatabas
 export const LOCAL_GIT_DIRECTORY = isPackaged
   ? path.resolve(process.resourcesPath, 'node_modules', 'dugite', 'git')
   : path.resolve(sourcePath, 'node_modules', 'dugite', 'git');
-// Logging and cache directories
+// Logging, installer, and cache directories
 export const LOG_FOLDER = path.resolve(USER_DATA_FOLDER, 'logs');
+export const INSTALLER_LOG_FOLDER = process.platform === 'win32'
+  ? path.resolve(process.env.LOCALAPPDATA ?? path.join(app.getPath('home'), 'AppData', 'Local'), 'SquirrelTemp')
+  : '';
 export const V8_CACHE_FOLDER = v8CompileCacheLibrary.getCacheDir();
 export const DEFAULT_DOWNLOADS_PATH = path.join(app.getPath('home'), 'Downloads');
 

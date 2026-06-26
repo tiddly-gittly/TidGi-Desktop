@@ -199,3 +199,20 @@ Clean up the local `template/wiki` folder. You can simply "Discard change" of th
 Like you use `pnpm link`, you update the package on another side, but this side is not changed.
 
 Try clean the cache by `pnpm run clean:cache`.
+
+## Windows installer failed and "Open setup log" button does nothing
+
+When installing or updating on Windows, the Squirrel installer may fail with a dialog that offers an "Open setup log" button. In current releases this button can be unresponsive because the bootstrapper looks for a log file name that no longer matches the actual log file written by the updater.
+
+The real log is located at:
+
+```path
+%LocalAppData%\SquirrelTemp\Squirrel-Install.log
+```
+
+Common causes:
+
+- The previous version is still running, locking files such as `ffmpeg.dll`. Make sure TidGi is fully closed (including the tray icon) before installing or updating.
+- Antivirus or Windows Defender is blocking the installer from deleting or writing files under `%LocalAppData%\tidgi`.
+
+Workaround: manually open `%LocalAppData%\SquirrelTemp` and read `Squirrel-Install.log`. After resolving the lock or permission issue (like restart, or close previous version completely), run the installer again.

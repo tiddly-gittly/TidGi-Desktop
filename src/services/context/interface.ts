@@ -8,6 +8,7 @@ export interface IPaths {
   DEFAULT_FIRST_WIKI_FOLDER_PATH: string;
   DESKTOP_PATH: string;
   HTTPS_CERT_KEY_FOLDER: string;
+  INSTALLER_LOG_FOLDER: string;
   LOCALIZATION_FOLDER: string;
   LOG_FOLDER: string;
   MAIN_WINDOW_WEBPACK_ENTRY: string;
