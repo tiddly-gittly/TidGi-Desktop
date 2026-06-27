@@ -21,6 +21,8 @@ export default defineConfig({
       '@memeloop/react-ui/native': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/native/index.js'),
       '@memeloop/react-ui/theme': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/theme/index.js'),
       '@memeloop/react-ui': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js'),
+      'react-transition-group/cjs/TransitionGroupContext.js': path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js'),
+      'react-transition-group/esm/TransitionGroupContext.js': path.resolve(__dirname, './node_modules/react-transition-group/esm/TransitionGroupContext.js'),
     },
   },
   optimizeDeps: {
