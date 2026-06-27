@@ -81,5 +81,3 @@ minimumReleaseAgeExclude:
   - fs-extra@11.4.0
   - inversify@8.2.3
 
-patchedDependencies:
-  react-transition-group@4.4.5: patches/react-transition-group@4.4.5.patch
