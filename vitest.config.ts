@@ -85,8 +85,10 @@ export default defineConfig({
       { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
       { find: /^@memeloop\/react-ui\/chat$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js') },
       { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js') },
-      // MUI imports react-transition-group as a directory; force the ESM entry.
+      // MUI rewrites this import through its browser map, so pin both exposed deep-import forms.
       { find: /^react-transition-group\/TransitionGroupContext$/, replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js') },
+      { find: /^react-transition-group\/cjs\/TransitionGroupContext\.js$/, replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js') },
+      { find: /^react-transition-group\/esm\/TransitionGroupContext\.js$/, replacement: path.resolve(__dirname, './node_modules/react-transition-group/esm/TransitionGroupContext.js') },
       // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
       { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
     ],
