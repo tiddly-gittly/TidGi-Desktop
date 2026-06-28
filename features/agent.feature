@@ -122,7 +122,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | partial assistant text        | *:has-text('partial_chunk_1')            |
       | cancel icon                   | [data-testid='cancel-icon']              |
     # Click cancel button mid-stream
-    When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
+    When I click on a "cancel button" element with selector "[data-testid='agent-cancel-button']"
     # Verify send button returned and stream stopped (no further chunks)
     Then I should see "send icon and send button" elements with selectors:
       | element description | selector                         |
