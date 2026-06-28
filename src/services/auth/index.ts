@@ -1,16 +1,14 @@
 import { isTest } from '@/constants/environment';
 import { getOAuthConfig } from '@/constants/oauthConfig';
-import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
-import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { BrowserWindow, session } from 'electron';
-import { injectable } from 'inversify';
+import { BrowserWindow, session, type WebContents } from 'electron';
+import { inject, injectable } from 'inversify';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
 import type { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
@@ -23,7 +21,16 @@ const defaultUserInfos = {
 @injectable()
 export class Authentication implements IAuthenticationService {
   private cachedUserInfo: IUserInfos | undefined;
+  private initContextMenuForWebContents: ((webContents: WebContents) => Promise<() => void>) | undefined;
   public userInfo$ = new BehaviorSubject<IUserInfos | undefined>(undefined);
+
+  constructor(
+    @inject(serviceIdentifier.Database) private readonly databaseService: IDatabaseService,
+  ) {}
+
+  public setOAuthWindowContextMenuInitializer(initializer: (webContents: WebContents) => Promise<() => void>): void {
+    this.initContextMenuForWebContents = initializer;
+  }
 
   public updateUserInfoSubject(): void {
     this.userInfo$.next(this.getUserInfos());
@@ -57,8 +64,7 @@ export class Authentication implements IAuthenticationService {
    * load UserInfos in sync, and ensure it is an Object
    */
   private readonly getInitUserInfoForCache = (): IUserInfos => {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    let userInfosFromDisk: Partial<IUserInfos> = databaseService.getSetting('userInfos') ?? {};
+    let userInfosFromDisk: Partial<IUserInfos> = this.databaseService.getSetting('userInfos') ?? {};
     userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : {};
     return { ...defaultUserInfos, ...userInfosFromDisk };
   };
@@ -69,8 +75,7 @@ export class Authentication implements IAuthenticationService {
 
   public setUserInfos(newUserInfos: IUserInfos): void {
     this.cachedUserInfo = newUserInfos;
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('userInfos', newUserInfos);
+    this.databaseService.setSetting('userInfos', newUserInfos);
     this.updateUserInfoSubject();
   }
 
@@ -204,8 +209,7 @@ export class Authentication implements IAuthenticationService {
       });
 
       // Add context menu (right-click menu with DevTools) for debugging
-      const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
-      const unregisterContextMenu = await menuService.initContextMenuForWindowWebContents(oauthWindow.webContents);
+      const unregisterContextMenu = await this.initContextMenuForWebContents?.(oauthWindow.webContents) ?? (() => {});
 
       // Setup OAuth redirect handler for this window
       this.setupOAuthRedirectHandler(
@@ -282,8 +286,7 @@ export class Authentication implements IAuthenticationService {
         }
 
         // Force immediate save to disk
-        const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-        await databaseService.immediatelyStoreSettingsToFile();
+        await this.databaseService.immediatelyStoreSettingsToFile();
         logger.debug('Settings saved to disk', { service });
 
         // Update observable

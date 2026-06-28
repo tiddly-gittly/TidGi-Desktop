@@ -8,7 +8,6 @@ import { Observable } from 'rxjs';
 import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
-import { container } from '@services/container';
 import { getLoggerForLabel, logger } from '@services/libs/log';
 import { getAllLocalHostUrlsWithActualIP, getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -33,6 +32,8 @@ export class NativeService implements INativeService {
   constructor(
     @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Wiki) private readonly wikiService: IWikiService,
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
   ) {
     this.setupIpcHandlers();
   }
@@ -69,12 +70,11 @@ export class NativeService implements INativeService {
       logger.info('Starting keyboard shortcut registration', { key, shortcut, serviceName, methodName, function: 'NativeService.registerKeyboardShortcut' });
 
       // Save to preferences
-      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
       const shortcuts = await this.getKeyboardShortcuts();
       logger.debug('Current shortcuts before registration', { shortcuts, function: 'NativeService.registerKeyboardShortcut' });
 
       shortcuts[key] = shortcut;
-      await preferenceService.set('keyboardShortcuts', shortcuts);
+      await this.preferenceService.set('keyboardShortcuts', shortcuts);
       logger.info('Saved shortcut to preferences', { key, shortcut, function: 'NativeService.registerKeyboardShortcut' });
 
       // Register the shortcut
@@ -96,9 +96,8 @@ export class NativeService implements INativeService {
       const shortcutString = shortcuts[key];
 
       // Remove from preferences
-      const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
       delete shortcuts[key];
-      await preferenceService.set('keyboardShortcuts', shortcuts);
+      await this.preferenceService.set('keyboardShortcuts', shortcuts);
 
       // Unregister the shortcut using the actual shortcut string, not the key
       if (shortcutString && globalShortcut.isRegistered(shortcutString)) {
@@ -185,8 +184,7 @@ export class NativeService implements INativeService {
         }
       }
     } else {
-      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-      const activeWorkspace = workspaceService.getActiveWorkspaceSync();
+      const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
       if (activeWorkspace && isWikiWorkspace(activeWorkspace) && activeWorkspace.wikiFolderLocation !== undefined) {
         const absolutePath = path.resolve(path.join(activeWorkspace.wikiFolderLocation, filePath));
         if (showItemInFolder) {
@@ -256,9 +254,7 @@ export class NativeService implements INativeService {
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string> {
-    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const zxWorker = wikiService.getWorker(workspaceID ?? workspaceService.getActiveWorkspaceSync()?.id ?? '');
+    const zxWorker = this.wikiService.getWorker(workspaceID ?? this.workspaceService.getActiveWorkspaceSync()?.id ?? '');
     if (zxWorker === undefined) {
       const error = new ZxNotInitializedError();
       return new Observable<string>((observer) => {
@@ -392,8 +388,7 @@ ${message.message}
 
   public async getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string> {
     let replacedUrl = await getLocalHostUrlWithActualIP(urlToReplace);
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspace = await workspaceService.get(workspaceID);
+    const workspace = await this.workspaceService.get(workspaceID);
     if (workspace !== undefined && isWikiWorkspace(workspace)) {
       replacedUrl = replaceUrlPortWithSettingPort(replacedUrl, workspace.port);
       replacedUrl = getUrlWithCorrectProtocol(workspace, replacedUrl);
@@ -491,8 +486,7 @@ ${message.message}
     }
 
     // Strategy 2: Try relative to workspace folder
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspace = workspaceService.getActiveWorkspaceSync();
+    const workspace = this.workspaceService.getActiveWorkspaceSync();
     if (workspace !== undefined && isWikiWorkspace(workspace)) {
       const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
       if (fs.existsSync(filePathInWorkspaceFolder)) {
@@ -584,8 +578,7 @@ ${message.message}
 
   public async generateMcpToken(): Promise<string> {
     const token = randomBytes(16).toString('hex'); // 32-char hex
-    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-    await preferenceService.set('mcpServerToken', token);
+    await this.preferenceService.set('mcpServerToken', token);
     logger.info('Generated and saved new MCP auth token');
     return token;
   }

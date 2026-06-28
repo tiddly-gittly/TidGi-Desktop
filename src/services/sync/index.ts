@@ -3,7 +3,6 @@ import { inject, injectable } from 'inversify';
 import { WikiChannel } from '@/constants/channels';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { container } from '@services/container';
 import type { ICommitAndSyncConfigs, IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -13,7 +12,6 @@ import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { ISyncOptions, ISyncService } from './interface';
 
@@ -22,6 +20,11 @@ export class Sync implements ISyncService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Wiki) private readonly wikiService: IWikiService,
+    @inject(serviceIdentifier.Git) private readonly gitService: IGitService,
+    @inject(serviceIdentifier.Analytics) private readonly analyticsService: IAnalyticsService,
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
+    @inject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService: IWorkspaceViewService,
   ) {
   }
 
@@ -36,13 +39,6 @@ export class Sync implements ISyncService {
     }
     logger.info('syncWikiIfNeeded started', { workspaceId: workspace.id, storageService: workspace.storageService, force: options?.force });
 
-    // Get Layer 3 services
-    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-    const gitService = container.get<IGitService>(serviceIdentifier.Git);
-    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-
     const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const { commitMessage: overrideCommitMessage, useAICommitMessage = false } = options ?? {};
@@ -52,7 +48,7 @@ export class Sync implements ISyncService {
     const localCommitMessage = useAICommitMessage ? undefined : overrideCommitMessage;
     const { force = false } = options ?? {};
     const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
-    const mainWorkspace = isSubWiki ? workspaceService.getMainWorkspace(workspace) : undefined;
+    const mainWorkspace = isSubWiki ? this.workspaceService.getMainWorkspace(workspace) : undefined;
     const analyticsBaseProperties = {
       storage: storageService,
       commitOnly: storageService === SupportedStorageServices.local,
@@ -66,18 +62,18 @@ export class Sync implements ISyncService {
     // we can only run filter on main wiki (tw don't know what is sub-wiki)
     // Skip draft check when user explicitly triggers sync (force=true), or when syncOnlyWhenNoDraft is disabled.
     if (!force && syncOnlyWhenNoDraft && !(await this.checkCanSyncDueToNoDraft(idToUse))) {
-      await wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [i18n.t('Preference.SyncOnlyWhenNoDraft')]);
-      void analyticsService.track('sync.failed', {
+      await this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [i18n.t('Preference.SyncOnlyWhenNoDraft')]);
+      void this.analyticsService.track('sync.failed', {
         ...analyticsBaseProperties,
         reason: 'draft_blocked',
       });
       return;
     }
-    void analyticsService.track('sync.triggered', analyticsBaseProperties);
+    void this.analyticsService.track('sync.triggered', analyticsBaseProperties);
     if (storageService === SupportedStorageServices.local) {
       // for local workspace, commitOnly, no sync and no force pull.
-      const hasChanges = await gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true, commitMessage: localCommitMessage });
-      void analyticsService.track('sync.completed', {
+      const hasChanges = await this.gitService.commitAndSync(workspace, { dir: wikiFolderLocation, commitOnly: true, commitMessage: localCommitMessage });
+      void this.analyticsService.track('sync.completed', {
         ...analyticsBaseProperties,
         hasChanges,
       });
@@ -88,23 +84,23 @@ export class Sync implements ISyncService {
       // cloud workspace with valid auth: full sync
       const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir: wikiFolderLocation, commitMessage } satisfies ICommitAndSyncConfigs;
       // sync current workspace first
-      const hasChanges = await gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
+      const hasChanges = await this.gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
       if (isSubWiki) {
         // after sync this sub wiki, reload its main workspace
         // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
         if (hasChanges && !workspace.enableFileSystemWatch) {
-          await workspaceViewService.restartWorkspaceViewService(idToUse);
+          await this.workspaceViewService.restartWorkspaceViewService(idToUse);
         }
       } else if (workspace.syncSubWikis !== false) {
         // sync all sub workspace (can be disabled via syncSubWikis setting)
-        const subWorkspaces = await workspaceService.getSubWorkspacesAsList(id);
+        const subWorkspaces = await this.workspaceService.getSubWorkspacesAsList(id);
         const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
           if (!isWikiWorkspace(subWorkspace)) return false;
           const { gitUrl: subGitUrl, storageService: subStorageService, wikiFolderLocation: subGitFolderLocation } = subWorkspace;
 
           if (!subGitUrl) return false;
           const subUserInfo = await this.authService.getStorageServiceUserInfo(subStorageService);
-          const hasChanges = await gitService.syncOrForcePull(subWorkspace, {
+          const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, {
             remoteUrl: subGitUrl,
             userInfo: subUserInfo,
             dir: subGitFolderLocation,
@@ -116,10 +112,10 @@ export class Sync implements ISyncService {
         // any of main or sub has changes, reload main workspace
         // Skip restart if file system watch is enabled - the watcher will handle file changes automatically
         if ((hasChanges || subHasChange) && !workspace.enableFileSystemWatch) {
-          await workspaceViewService.restartWorkspaceViewService(id);
+          await this.workspaceViewService.restartWorkspaceViewService(id);
         }
       }
-      void analyticsService.track('sync.completed', {
+      void this.analyticsService.track('sync.completed', {
         ...analyticsBaseProperties,
         hasChanges,
       });
@@ -127,10 +123,10 @@ export class Sync implements ISyncService {
       // cloud workspace but missing gitUrl or userInfo - log and notify instead of silently doing nothing
       const reason = typeof gitUrl !== 'string' ? 'missing gitUrl' : 'missing userInfo (not authenticated)';
       logger.warn('syncWikiIfNeeded skipped for cloud workspace', { workspaceId: id, reason });
-      await wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [
+      await this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [
         `${i18n.t('Log.SynchronizationFailed')} (${reason})`,
       ]);
-      void analyticsService.track('sync.failed', {
+      void this.analyticsService.track('sync.failed', {
         ...analyticsBaseProperties,
         reason: typeof gitUrl !== 'string' ? 'missing_git_url' : 'missing_user_info',
       });
@@ -139,18 +135,11 @@ export class Sync implements ISyncService {
 
   public async checkCanSyncDueToNoDraft(workspaceID: string): Promise<boolean> {
     try {
-      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-      const workspace = await workspaceService.get(workspaceID);
-      if (workspace && isHtmlWikiWorkspace(workspace)) {
-        return true;
-      }
-
-      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
       // Add timeout so the sync flow doesn't hang forever when the wiki browser view is unresponsive
       const DRAFT_CHECK_TIMEOUT_MS = 5000;
       const draftCheckPromise = Promise.all([
-        wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']),
-        wikiService.wikiOperationInBrowser(WikiChannel.runFilter, workspaceID, ['[list[$:/StoryList]has:field[wysiwyg]]']),
+        this.wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']),
+        this.wikiService.wikiOperationInBrowser(WikiChannel.runFilter, workspaceID, ['[list[$:/StoryList]has:field[wysiwyg]]']),
       ]);
       let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {

@@ -17,10 +17,13 @@ export interface ITheme {
  */
 export interface IThemeService {
   initialize(): Promise<void>;
+  setActiveWikiThemeUpdater(handler: IActiveWikiThemeUpdater): void;
   setThemeSource(themeSource: IThemeSource): Promise<void>;
   shouldUseDarkColors(): Promise<boolean>;
   theme$: BehaviorSubject<ITheme>;
 }
+
+export type IActiveWikiThemeUpdater = (theme: ITheme) => Promise<void>;
 
 export type IThemeSource = 'system' | 'light' | 'dark';
 

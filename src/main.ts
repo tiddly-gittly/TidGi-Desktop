@@ -10,6 +10,8 @@ import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database
 import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
+import { initializeAgentServices } from '@services/bootstrap/agentRuntime';
+import { initializePreferenceReactions, initializeThemeReactions } from '@services/bootstrap/preferenceReactions';
 import { container } from '@services/container';
 import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initRendererI18NHandler } from '@services/libs/i18n';
@@ -26,7 +28,9 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAnalyticsService } from '@services/analytics/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -34,9 +38,11 @@ import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
+import type { IMenuService } from '@services/menu/interface';
 
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
+import type { INotificationService } from '@services/notifications/interface';
 import type { IThemeService } from '@services/theme/interface';
 import type { IUpdaterService } from '@services/updater/interface';
 import type { IViewService } from '@services/view/interface';
@@ -91,8 +97,12 @@ const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentif
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const deviceNetworkService = container.get<IDeviceNetworkService>(serviceIdentifier.DeviceNetwork);
 const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
+const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
 const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
+const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
@@ -153,6 +163,10 @@ const commonInit = async (): Promise<void> => {
   // Initialize workspace menu after database is ready to avoid race condition
   await workspaceService.initializeMenu();
 
+  initializePreferenceReactions({ analyticsService, notificationService, preferenceService, windowService });
+  initializeThemeReactions({ themeService, viewService, wikiService, workspaceService });
+  authService.setOAuthWindowContextMenuInitializer((webContents) => menuService.initContextMenuForWindowWebContents(webContents));
+
   // Apply preferences that need to be set early
   const useHardwareAcceleration = await preferenceService.get('useHardwareAcceleration');
   if (!useHardwareAcceleration) {
@@ -166,8 +180,8 @@ const commonInit = async (): Promise<void> => {
   }
 
   // Initialize agent-related services after database is ready
+  await initializeAgentServices({ agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService });
   await Promise.all([
-    agentDefinitionService.initialize(),
     wikiEmbeddingService.initialize(),
     externalAPIService.initialize(),
   ]);

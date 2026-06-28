@@ -1,56 +1,44 @@
-import { dialog, nativeTheme } from 'electron';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
-import type { IAnalyticsService } from '@services/analytics/interface';
-import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
-import { i18n } from '@services/libs/i18n';
-import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
-import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWindowService } from '@services/windows/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import { defaultPreferences } from './defaultPreferences';
-import type { IPreferences, IPreferenceService } from './interface';
+import type { IPreferenceReactionHandler, IPreferenceResetWithConfirmHandler, IPreferences, IPreferenceService } from './interface';
 import { getPreferenceDifferencesFromDefaults } from './utilities';
 
 @injectable()
 export class Preference implements IPreferenceService {
   private cachedPreferences: IPreferences | undefined;
+  private reactionHandler: IPreferenceReactionHandler | undefined;
+  private resetWithConfirmHandler: IPreferenceResetWithConfirmHandler | undefined;
   public preference$ = new BehaviorSubject<IPreferences | undefined>(undefined);
+
+  constructor(
+    @inject(serviceIdentifier.Database) private readonly databaseService: IDatabaseService,
+  ) {}
+
+  public setReactionHandler(handler: IPreferenceReactionHandler): void {
+    this.reactionHandler = handler;
+  }
+
+  public setResetWithConfirmHandler(handler: IPreferenceResetWithConfirmHandler): void {
+    this.resetWithConfirmHandler = handler;
+  }
 
   public updatePreferenceSubject(): void {
     this.preference$.next(this.getPreferences());
   }
 
   public async resetWithConfirm(): Promise<void> {
-    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-    const preferenceWindow = windowService.get(WindowNames.preferences);
-    if (preferenceWindow !== undefined) {
-      await dialog
-        .showMessageBox(preferenceWindow, {
-          type: 'question',
-          buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
-          message: i18n.t('Preference.Reset'),
-          cancelId: 1,
-        })
-        .then(async ({ response }) => {
-          if (response === 0) {
-            await this.reset();
-            await windowService.requestRestart();
-          }
-        })
-        .catch(console.error);
-    }
+    await this.resetWithConfirmHandler?.();
   }
 
   /**
    * load preferences in sync, and ensure it is an Object
    */
   private readonly getInitPreferencesForCache = (): IPreferences => {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    let preferencesFromDisk = databaseService.getSetting(`preferences`) ?? {};
+    let preferencesFromDisk = this.databaseService.getSetting(`preferences`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
   };
@@ -84,40 +72,7 @@ export class Preference implements IPreferenceService {
    * @param preference new preference settings
    */
   private async reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
-    // Track analytics preference changes
-    if (key === 'analyticsEnabled' || key === 'analyticsHost' || key === 'analyticsHostname' || key === 'analyticsSiteId') {
-      const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
-      if (key === 'analyticsEnabled' && value === false) {
-        await analyticsService.clearPendingEvents();
-      }
-      void analyticsService.track('preferences.analytics_updated', {
-        field: key,
-        enabled: key === 'analyticsEnabled' ? Boolean(value) : undefined,
-      });
-    }
-
-    // maybe pauseNotificationsBySchedule or pauseNotifications or ...
-    if (key.startsWith('pauseNotifications')) {
-      const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
-      await notificationService.updatePauseNotificationsInfo();
-    }
-
-    // Delegate window-related preference changes to WindowService
-    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-    await windowService.reactWhenPreferencesChanged(key, value);
-
-    switch (key) {
-      case 'themeSource': {
-        nativeTheme.themeSource = value as IPreferences['themeSource'];
-        return;
-      }
-      case 'language': {
-        await requestChangeLanguage(value as string);
-        return;
-      }
-      default:
-        break;
-    }
+    await this.reactionHandler?.(key, value);
   }
 
   /**
@@ -130,8 +85,7 @@ export class Preference implements IPreferenceService {
     // Only save preferences that differ from defaults
     const preferencesToSave = getPreferenceDifferencesFromDefaults(newPreferences, defaultPreferences);
 
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    databaseService.setSetting('preferences', preferencesToSave as IPreferences);
+    this.databaseService.setSetting('preferences', preferencesToSave as IPreferences);
     this.updatePreferenceSubject();
   }
 

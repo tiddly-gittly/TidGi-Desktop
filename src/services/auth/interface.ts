@@ -2,6 +2,7 @@ import { AuthenticationChannel } from '@/constants/channels';
 import type { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IWorkspace } from '@services/workspaces/interface';
+import type { WebContents } from 'electron';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 
@@ -73,6 +74,7 @@ export interface IAuthenticationService {
    * Batch update all UserInfos
    */
   setUserInfos(newUserInfos: IUserInfos): void;
+  setOAuthWindowContextMenuInitializer(initializer: (webContents: WebContents) => Promise<() => void>): void;
   /**
    * Setup OAuth redirect handler for a BrowserWindow
    * This intercepts OAuth callbacks and exchanges authorization codes for tokens

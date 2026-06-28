@@ -6,7 +6,6 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
 import { initializePluginSystem, pluginRegistry } from '@services/agentInstance/tools';
-import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -60,6 +59,12 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   @inject(serviceIdentifier.DeviceNetwork)
   private readonly deviceNetworkService!: IDeviceNetworkService;
+
+  @inject(serviceIdentifier.Git)
+  private readonly gitService!: IGitService;
+
+  @inject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
 
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
@@ -404,13 +409,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       // This allows rollback by comparing with commits made during the turn.
       const beforeCommitMap: Record<string, { wikiFolderLocation: string; commitHash: string }> = {};
       try {
-        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-        const gitService = container.get<IGitService>(serviceIdentifier.Git);
-        const workspaces = await workspaceService.getWorkspacesAsList();
+        const workspaces = await this.workspaceService.getWorkspacesAsList();
         for (const ws of workspaces) {
           if (isWikiWorkspace(ws)) {
             try {
-              const hash = await gitService.callGitOp('getHeadCommitHash', ws.wikiFolderLocation);
+              const hash = await this.gitService.callGitOp('getHeadCommitHash', ws.wikiFolderLocation);
               beforeCommitMap[ws.id] = { wikiFolderLocation: ws.wikiFolderLocation, commitHash: hash };
             } catch {
               // Workspace may not have git initialized — skip silently
@@ -695,11 +698,9 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
 
     const allChangedFiles: Array<{ path: string; status: string }> = [];
-    const gitService = container.get<IGitService>(serviceIdentifier.Git);
-
     for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
       try {
-        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        const changedFiles = await this.gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
         for (const file of changedFiles) {
           allChangedFiles.push({ path: file.path, status: file.status });
         }
@@ -729,19 +730,17 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     let rolledBack = 0;
     const errors: string[] = [];
-    const gitService = container.get<IGitService>(serviceIdentifier.Git);
-
     for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
       try {
         // Get the list of files that changed since the beforeCommitHash
-        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        const changedFiles = await this.gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
 
         if (changedFiles.length === 0) continue;
 
         // Restore each file to its state at the beforeCommitHash
         for (const file of changedFiles) {
           try {
-            await gitService.callGitOp('restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
+            await this.gitService.callGitOp('restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
             rolledBack++;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);

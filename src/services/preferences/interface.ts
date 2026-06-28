@@ -94,15 +94,20 @@ export interface IPreferenceService {
   preference$: BehaviorSubject<IPreferences | undefined>;
   reset(): Promise<void>;
   resetWithConfirm(): Promise<void>;
+  setResetWithConfirmHandler(handler: IPreferenceResetWithConfirmHandler): void;
   /**
    * Update preferences, update cache and observable
    */
   set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
+  setReactionHandler(handler: IPreferenceReactionHandler): void;
   /**
    * Manually refresh the observable's content, that will be received by react component.
    */
   updatePreferenceSubject(): void;
 }
+
+export type IPreferenceReactionHandler = <K extends keyof IPreferences>(key: K, value: IPreferences[K]) => Promise<void>;
+export type IPreferenceResetWithConfirmHandler = () => Promise<void>;
 export const PreferenceServiceIPCDescriptor = {
   channel: PreferenceChannel.name,
   properties: {

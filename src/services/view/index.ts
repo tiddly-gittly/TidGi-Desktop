@@ -1,4 +1,3 @@
-import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
 import { inject, injectable } from 'inversify';
@@ -30,15 +29,10 @@ export class View implements IViewService {
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
+    @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
   ) {}
-
-  private get windowService(): IWindowService {
-    return container.get<IWindowService>(serviceIdentifier.Window);
-  }
-
-  private get workspaceService(): IWorkspaceService {
-    return container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  }
 
   public async initialize(): Promise<void> {
     await registerViewMenu();
@@ -208,8 +202,7 @@ export class View implements IViewService {
   ): Promise<WebContentsView> {
     const view = new WebContentsView({ webPreferences: sharedWebPreferences });
 
-    const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
-    const shouldUseDarkColors = await themeService.shouldUseDarkColors();
+    const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
     view.setBackgroundColor(shouldUseDarkColors ? '#212121' : '#ffffff');
 
     if (this.shouldMuteAudio) {
