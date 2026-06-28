@@ -71,8 +71,14 @@ export function createDebouncedMessageUpdater(
           if (messageEntity) {
             // Update existing message
             messageEntity.content = messageData_.content;
+            if (messageData_.parts) messageEntity.parts = messageData_.parts;
+            if (messageData_.toolCalls) messageEntity.toolCalls = messageData_.toolCalls;
+            if (messageData_.attachments) messageEntity.attachments = messageData_.attachments;
+            if (messageData_.detailRef) messageEntity.detailRef = messageData_.detailRef;
+            if (messageData_.reasoning_content) messageEntity.reasoning_content = messageData_.reasoning_content;
             if (messageData_.contentType) messageEntity.contentType = messageData_.contentType;
             if (messageData_.metadata) messageEntity.metadata = messageData_.metadata;
+            if (messageData_.hidden !== undefined) messageEntity.hidden = messageData_.hidden;
             if (messageData_.duration !== undefined) messageEntity.duration = messageData_.duration ?? undefined;
             messageEntity.timestamp = messageData_.timestamp;
             messageEntity.lamportClock = messageData_.lamportClock;
@@ -100,8 +106,14 @@ export function createDebouncedMessageUpdater(
               role: messageData_.role,
               content: messageData_.content,
               originNodeId: 'tidgi-desktop',
+              parts: messageData_.parts,
+              toolCalls: messageData_.toolCalls,
+              attachments: messageData_.attachments,
+              detailRef: messageData_.detailRef,
+              reasoning_content: messageData_.reasoning_content,
               contentType: messageData_.contentType,
               metadata: messageData_.metadata,
+              hidden: messageData_.hidden,
               duration: messageData_.duration,
             });
             const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));

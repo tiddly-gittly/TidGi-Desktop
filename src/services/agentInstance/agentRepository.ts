@@ -125,8 +125,15 @@ export async function updateAgent(
         existingMessage.content = message.content;
         existingMessage.timestamp = message.timestamp;
         existingMessage.lamportClock = message.lamportClock;
+        if (message.parts) existingMessage.parts = message.parts;
+        if (message.toolCalls) existingMessage.toolCalls = message.toolCalls;
+        if (message.attachments) existingMessage.attachments = message.attachments;
+        if (message.detailRef) existingMessage.detailRef = message.detailRef;
+        if (message.reasoning_content) existingMessage.reasoning_content = message.reasoning_content;
         if (message.metadata) existingMessage.metadata = message.metadata;
         if (message.contentType) existingMessage.contentType = message.contentType;
+        if (message.hidden !== undefined) existingMessage.hidden = message.hidden;
+        if (message.duration !== undefined) existingMessage.duration = message.duration ?? undefined;
         await agentMessageRepo.save(existingMessage);
       } else {
         const messageData = pick(message, MESSAGE_FIELDS) as ChatMessage;
