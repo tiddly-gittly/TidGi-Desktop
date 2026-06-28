@@ -399,6 +399,19 @@ When('I press {string} key', async function(this: ApplicationWorld, key: string)
     throw new Error('No current window is available');
   }
 
+  // assistant-ui's ComposerPrimitive.Input submits on Enter only when the
+  // underlying textarea receives the key event. Use locator.press so Playwright
+  // focuses the exact input and dispatches the Enter key to it, rather than
+  // relying on the page's global keyboard focus, which can be unstable in tests.
+  if (key === 'Enter') {
+    const agentInput = currentWindow.locator("[data-testid='agent-message-input']").first();
+    const count = await agentInput.count().catch(() => 0);
+    if (count > 0) {
+      await agentInput.press('Enter');
+      return;
+    }
+  }
+
   await currentWindow.keyboard.press(key);
 });
 

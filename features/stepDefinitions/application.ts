@@ -306,9 +306,14 @@ async function launchTidGiApplication(world: ApplicationWorld): Promise<void> {
     page.on('pageerror', (error: Error) => {
       console.error(`[RENDERER ERROR @ ${key}] ${error.name}: ${error.message}\n${error.stack ?? ''}`);
     });
-    // Silently ignore renderer console errors — 401/404/GraphQL errors are
-    // expected in the test environment and would pollute Cucumber progress output.
-    page.on('console', () => {});
+    // Log renderer console warnings/errors to help diagnose test failures.
+    // Info/debug messages are still suppressed to avoid noisy progress output.
+    page.on('console', (message) => {
+      const type = message.type();
+      if (type === 'error' || type === 'warning') {
+        console.error(`[RENDERER CONSOLE ${type.toUpperCase()} @ ${key}] ${message.text()}`);
+      }
+    });
   };
   for (const page of openedWindows) attachListeners(page);
   const windowTracker = setInterval(() => {
