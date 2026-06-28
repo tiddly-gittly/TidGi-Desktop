@@ -1,5 +1,6 @@
 import { DeviceNetworkChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { BehaviorSubject } from 'rxjs';
 import type {
   CloudDeviceRecord,
   Device,
@@ -21,6 +22,8 @@ export interface DeviceNetworkRuntimeOptions {
 export interface IDeviceNetworkService extends CoreDeviceNetworkService {
   getLocalIdentity(): Promise<LocalDeviceIdentity>;
   configureRuntime(options: DeviceNetworkRuntimeOptions): void;
+  devices$: BehaviorSubject<Device[]>;
+  pairingSessions$: BehaviorSubject<PairingSession[]>;
 }
 
 export const DeviceNetworkServiceIPCDescriptor = {
@@ -31,9 +34,7 @@ export const DeviceNetworkServiceIPCDescriptor = {
     getLocalDevice: ProxyPropertyType.Function,
     getLocalIdentity: ProxyPropertyType.Function,
     listDevices: ProxyPropertyType.Function,
-    observeDevices: ProxyPropertyType.Function,
     listPairingSessions: ProxyPropertyType.Function,
-    observePairingSessions: ProxyPropertyType.Function,
     requestLocalPairing: ProxyPropertyType.Function,
     acceptPairing: ProxyPropertyType.Function,
     rejectPairing: ProxyPropertyType.Function,
@@ -42,7 +43,10 @@ export const DeviceNetworkServiceIPCDescriptor = {
     syncCloudDevices: ProxyPropertyType.Function,
     sendRpc: ProxyPropertyType.Function,
     syncWithDevice: ProxyPropertyType.Function,
+    devices$: ProxyPropertyType.Value$,
+    pairingSessions$: ProxyPropertyType.Value$,
   },
 };
 
 export type { CloudDeviceRecord, Device, PairingSession, SyncResult };
+
