@@ -58,8 +58,8 @@ importers:
         specifier: ^5.2.10
         version: 5.2.10
       '@memeloop/react-ui':
-        specifier: file:../memeloop/packages/memeloop-react-ui
-        version: file:../memeloop/packages/memeloop-react-ui(6f9ba04b2990db71242aaa364628901b)
+        specifier: 0.0.1
+        version: 0.0.1(4ffc0604d2f983822c8277804e7615e9)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.4.3)
@@ -190,8 +190,8 @@ importers:
         specifier: ^5.3.7
         version: 5.3.7(@mui/material@9.0.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(react@19.2.7)
       memeloop:
-        specifier: file:../memeloop/packages/memeloop
-        version: file:../memeloop/packages/memeloop(react@19.2.7)
+        specifier: 0.0.1
+        version: 0.0.1(react@19.2.7)
       menubar:
         specifier: 9.5.2
         version: 9.5.2(electron@41.7.1(supports-color@10.2.2))
@@ -2174,8 +2174,8 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@memeloop/react-ui@file:../memeloop/packages/memeloop-react-ui':
-    resolution: {directory: ../memeloop/packages/memeloop-react-ui, type: directory}
+  '@memeloop/react-ui@0.0.1':
+    resolution: {integrity: sha512-H/eln6IMJM/TJbAy1nzDEuIcvZTDvVI93zBSnq1iZleOHKBhj76RHuqlxtzBtxAc3jAs5m4FJSp4Z2Y1JuLnww==}
     peerDependencies:
       '@assistant-ui/react': '>=0.14.0'
       '@mui/icons-material': '>=6.0.0'
@@ -7010,8 +7010,8 @@ packages:
     resolution: {integrity: sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==}
     engines: {node: '>= 0.8'}
 
-  memeloop@file:../memeloop/packages/memeloop:
-    resolution: {directory: ../memeloop/packages/memeloop, type: directory}
+  memeloop@0.0.1:
+    resolution: {integrity: sha512-q/eX5pxGgV/g9HzlwerhOko+6RP5m4CIAbS3aSNfbpp/rKapG5loJOCEvyAneOA2gwJl40g2gDqkcBKLbfrHCA==}
 
   memize@2.1.1:
     resolution: {integrity: sha512-8Nl+i9S5D6KXnruM03Jgjb+LwSupvR13WBr4hJegaaEyobvowCVupi79y2WSiWvO1mzBWxPwEYE5feCe8vyA5w==}
@@ -11626,7 +11626,7 @@ snapshots:
       any-signal: 4.2.0
       main-event: 1.0.4
       multiformats: 14.0.2
-      nanoid: 5.1.11
+      nanoid: 5.1.16
       progress-events: 1.1.0
       protons-runtime: 7.0.0
       retimeable-signal: 1.0.1
@@ -11842,7 +11842,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@memeloop/react-ui@file:../memeloop/packages/memeloop-react-ui(6f9ba04b2990db71242aaa364628901b)':
+  '@memeloop/react-ui@0.0.1(4ffc0604d2f983822c8277804e7615e9)':
     dependencies:
       '@assistant-ui/react': 0.14.24(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(immer@11.1.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7))
       '@mui/icons-material': 9.0.1(@mui/material@9.0.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react@19.2.7))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react@19.2.17)(react@19.2.7)
@@ -11850,7 +11850,7 @@ snapshots:
       '@rjsf/core': 6.6.1(@rjsf/utils@6.6.1(react@19.2.7))(react@19.2.7)
       '@rjsf/utils': 6.6.1(react@19.2.7)
       '@rjsf/validator-ajv8': 6.6.1(@rjsf/utils@6.6.1(react@19.2.7))
-      memeloop: file:../memeloop/packages/memeloop(react@19.2.7)
+      memeloop: 0.0.1(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
     optionalDependencies:
@@ -17106,7 +17106,7 @@ snapshots:
 
   media-typer@1.1.0: {}
 
-  memeloop@file:../memeloop/packages/memeloop(react@19.2.7):
+  memeloop@0.0.1(react@19.2.7):
     dependencies:
       '@ai-sdk/anthropic': 1.2.12(zod@4.4.3)
       '@ai-sdk/azure': 4.0.1(zod@4.4.3)
