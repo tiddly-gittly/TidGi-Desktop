@@ -398,8 +398,7 @@ ${message.message}
 
   public async getAllLocalHostUrlsWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string[]> {
     let replacedUrls = getAllLocalHostUrlsWithActualIP(urlToReplace);
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspace = await workspaceService.get(workspaceID);
+    const workspace = await this.workspaceService.get(workspaceID);
     if (workspace !== undefined && isWikiWorkspace(workspace)) {
       replacedUrls = replacedUrls.map(url => {
         let processed = replaceUrlPortWithSettingPort(url, workspace.port);

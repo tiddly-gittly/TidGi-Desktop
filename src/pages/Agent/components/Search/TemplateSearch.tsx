@@ -157,6 +157,7 @@ export function TemplateSearch({ placeholder, onTemplateSelect, testId }: Templa
 
     const search = autocomplete({
       container: containerReference.current,
+      panelContainer: containerReference.current,
       renderer: {
         createElement,
         Fragment,
