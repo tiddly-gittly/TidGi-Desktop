@@ -1,6 +1,7 @@
 import { app, safeStorage } from 'electron';
 import settings from 'electron-settings';
 import { inject, injectable } from 'inversify';
+import { BehaviorSubject } from 'rxjs';
 
 import {
   CloudDeviceAuthorizer,
@@ -193,6 +194,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private cloudHeartbeatTimer?: ReturnType<typeof setInterval>;
   private relayReservation?: DeviceRelayReservationToken;
   private runtimeOptions: DeviceNetworkRuntimeOptions = {};
+  public devices$ = new BehaviorSubject<Device[]>([]);
+  public pairingSessions$ = new BehaviorSubject<PairingSession[]>([]);
+  private deviceNetworkUnsubscribers: Array<() => void> = [];
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
@@ -253,6 +257,13 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     }
 
     this.started = true;
+    // Wire core observables to IPC-serializable BehaviorSubjects.
+    // The core's observe methods return unsubscribe functions that cannot cross IPC,
+    // so we mirror their values into Value$ observables exposed to the renderer.
+    this.deviceNetworkUnsubscribers.push(
+      this.core.observeDevices((devices) => this.devices$.next(devices)),
+      this.core.observePairingSessions((sessions) => this.pairingSessions$.next(sessions)),
+    );
     logger.info('DeviceNetworkService started', { peerId: this.identity!.peerId, cloud: !!this.cloudClient });
   }
 
@@ -262,6 +273,10 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       clearInterval(this.cloudHeartbeatTimer);
       this.cloudHeartbeatTimer = undefined;
     }
+    for (const unsubscribe of this.deviceNetworkUnsubscribers) {
+      unsubscribe();
+    }
+    this.deviceNetworkUnsubscribers = [];
     await this.core?.stop();
     this.core = undefined;
     this.started = false;
