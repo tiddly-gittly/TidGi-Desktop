@@ -6,7 +6,6 @@ import {
   CloudDeviceAuthorizer,
   type CloudDeviceClient,
   type CloudDeviceRecord,
-  createAgentRuntimeDeviceRpcHandler,
   createDeviceIdentity,
   type Device,
   type DeviceCapabilities,
@@ -26,16 +25,11 @@ import {
   type TrustedDeviceRecord,
 } from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { IAgentInstanceService } from '@services/agentInstance/interface';
-import { MemeLoopDesktopStorage } from '@services/agentInstance/runtime/storage';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 
-import type { IDeviceNetworkService } from './interface';
+import type { DeviceNetworkRuntimeOptions, IDeviceNetworkService } from './interface';
 
 const DEVICE_IDENTITY_KEY = 'deviceNetwork.identity.v1';
 const TRUSTED_DEVICES_KEY = 'deviceNetwork.trustedDevices.v1';
@@ -198,12 +192,15 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private cloudGrantCache = new Map<string, DeviceConnectionGrant>();
   private cloudHeartbeatTimer?: ReturnType<typeof setInterval>;
   private relayReservation?: DeviceRelayReservationToken;
+  private runtimeOptions: DeviceNetworkRuntimeOptions = {};
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
-    @inject(serviceIdentifier.AgentInstance) private readonly agentInstanceService: IAgentInstanceService,
-    @inject(serviceIdentifier.AgentDefinition) private readonly agentDefinitionService: IAgentDefinitionService,
   ) {}
+
+  public configureRuntime(options: DeviceNetworkRuntimeOptions): void {
+    this.runtimeOptions = options;
+  }
 
   public async getLocalIdentity(): Promise<LocalDeviceIdentity> {
     await this.ensureIdentity();
@@ -230,32 +227,14 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     }
 
     const capabilities = await this.buildCapabilities();
-    const syncStorage = this.createAgentSyncStorage();
     this.core = new Libp2pDeviceNetworkService({
       identity: this.identity!,
       capabilities,
       trustStore: this.trustStore,
       authorizer,
       enableMdns: true,
-      syncStorage,
-      rpcHandler: createAgentRuntimeDeviceRpcHandler({
-        runtime: {
-          createAgent: async ({ definitionId, initialMessage }) => {
-            const agent = await this.agentInstanceService.createAgent(definitionId);
-            if (initialMessage) await this.agentInstanceService.sendMsgToAgent(agent.id, { text: initialMessage });
-            return { conversationId: agent.id };
-          },
-          sendMessage: async ({ conversationId, message }) => {
-            await this.agentInstanceService.sendMsgToAgent(conversationId, { text: message });
-          },
-          cancelAgent: async (conversationId) => {
-            await this.agentInstanceService.cancelAgent(conversationId);
-          },
-        },
-        storage: syncStorage,
-        getAgentDefinitions: () => this.agentDefinitionService.getAgentDefs(),
-        localNodeId: this.identity!.peerId,
-      }),
+      syncStorage: this.runtimeOptions.syncStorage,
+      rpcHandler: this.runtimeOptions.rpcHandler,
     });
     await this.core.start();
 
@@ -441,14 +420,6 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     return relayedAddresses.length > 0 ? relayedAddresses : this.relayReservation?.relayMultiaddrs ?? [];
   }
 
-  private createAgentSyncStorage(): MemeLoopDesktopStorage {
-    return new MemeLoopDesktopStorage({
-      agentInstanceService: this.agentInstanceService,
-      agentDefinitionService: this.agentDefinitionService,
-      notifyAgentChanged: () => {},
-    });
-  }
-
   private async resolveOutboundGrant(peerId: string): Promise<DeviceConnectionGrant | undefined> {
     if (!this.cloudClient || !this.identity) return undefined;
     const cached = this.cloudGrantCache.get(peerId);
@@ -469,9 +440,26 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     if (this.identity) return;
     const stored = settings.getSync(DEVICE_IDENTITY_KEY) as unknown as EncryptedIdentityRecord | undefined;
     if (stored?.peerId && stored?.publicKeyMultibase && stored?.encryptedPrivateKey) {
+      const identity = this.tryLoadStoredIdentity(stored);
+      if (identity) {
+        this.identity = identity;
+        return;
+      }
+    }
+    const identity = await this.createIdentity();
+    await this.saveIdentity(identity);
+    this.identity = identity;
+  }
+
+  private tryLoadStoredIdentity(stored: EncryptedIdentityRecord): RawSeedDeviceIdentity | undefined {
+    if (!safeStorage.isEncryptionAvailable()) {
+      logger.warn('DeviceNetworkService safeStorage encryption unavailable; using an ephemeral device identity for this session');
+      return undefined;
+    }
+    try {
       const encrypted = Buffer.from(stored.encryptedPrivateKey, 'base64');
       const privateKeyRawSeedBase64Url = safeStorage.decryptString(encrypted);
-      this.identity = {
+      return {
         peerId: stored.peerId,
         publicKeyMultibase: stored.publicKeyMultibase,
         privateKeyRef: 'libp2p-raw-seed',
@@ -480,11 +468,10 @@ export class DeviceNetworkService implements IDeviceNetworkService {
         deviceName: stored.deviceName,
         platform: 'desktop',
       };
-      return;
+    } catch (error) {
+      logger.warn('DeviceNetworkService failed to decrypt stored identity; rotating device identity', { error });
+      return undefined;
     }
-    const identity = await this.createIdentity();
-    await this.saveIdentity(identity);
-    this.identity = identity;
   }
 
   private async createIdentity(): Promise<RawSeedDeviceIdentity> {
@@ -492,6 +479,10 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   }
 
   private async saveIdentity(identity: RawSeedDeviceIdentity): Promise<void> {
+    if (!safeStorage.isEncryptionAvailable()) {
+      logger.warn('DeviceNetworkService safeStorage encryption unavailable; generated identity will not be persisted');
+      return;
+    }
     const encrypted = safeStorage.encryptString(identity.privateKeyRawSeedBase64Url);
     const record: EncryptedIdentityRecord = {
       peerId: identity.peerId,
@@ -505,27 +496,11 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   }
 
   private async buildCapabilities(): Promise<DeviceCapabilities> {
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const wikiPaths: Array<{ wikiId: string; title?: string; pathHint?: string }> = [];
     try {
-      const workspaces = await workspaceService.getWorkspacesAsList();
-      for (const workspace of workspaces) {
-        if (isWikiWorkspace(workspace)) {
-          wikiPaths.push({
-            wikiId: workspace.id ?? workspace.name ?? 'default',
-            title: workspace.name,
-            pathHint: workspace.wikiFolderLocation,
-          });
-        }
-      }
+      return await this.runtimeOptions.buildCapabilities?.() ?? emptyCapabilities;
     } catch (error) {
       logger.warn('DeviceNetworkService failed to collect wiki capabilities', { error });
     }
-    return {
-      ...emptyCapabilities,
-      agentLoop: true,
-      hasWiki: wikiPaths.length > 0,
-      wikis: wikiPaths,
-    };
+    return emptyCapabilities;
   }
 }
