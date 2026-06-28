@@ -13,17 +13,20 @@
  * - Split view handling
  */
 
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import type { ChatMessage, WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { WikiChannel } from '@/constants/channels';
+import { isProviderConfigError } from '@/services/externalAPI/errors';
+import { PreferenceSections } from '@/services/preferences/interface';
 import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 import { AgentChatView } from '@memeloop/react-ui/agent';
 import { type MemeLoopChatAdapter, useAui } from '@memeloop/react-ui/chat';
 
+import { E2EComposer } from './components/E2EComposer';
 import { ChatHeader } from './components/ChatHeader';
 import { WikiTiddlerSelector } from './components/WikiTiddlerSelector';
 import { useMessageHandling } from './hooks/useMessageHandling';
@@ -180,9 +183,10 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         if (disposed) return;
         setLocalPeerId(local.peerId);
         setAgentLoopDevices(devices.filter(device => device.peerId !== local.peerId && device.trusted && device.capabilities.agentLoop));
-        unsubscribe = window.service.deviceNetwork.observeDevices((nextDevices) => {
+        const subscription = window.observables.deviceNetwork.devices$.subscribe((nextDevices) => {
           setAgentLoopDevices(nextDevices.filter(device => device.peerId !== local.peerId && device.trusted && device.capabilities.agentLoop));
         });
+        unsubscribe = () => subscription.unsubscribe();
       } catch (error_) {
         setRemoteError(error_ instanceof Error ? error_ : new Error(String(error_)));
       }
@@ -435,10 +439,43 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       onClearFile={handleClearFile}
       onRemoveWikiTiddler={handleRemoveWikiTiddler}
       onWikiTiddlerClick={handleWikiTiddlerClick}
+      composerComponent={E2EComposer}
       disabled={!agent || isWorking}
       placeholder={t('Agent.StartConversation')}
       loadingMessage={t('Agent.LoadingChat')}
       emptyMessage={t('Agent.StartConversation')}
+      renderError={(error_) => {
+        const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
+        if (!isConfigError) {
+          return (
+            <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
+              <Typography>{error_.message}</Typography>
+            </Box>
+          );
+        }
+
+        return (
+          <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
+            <Typography color='error.main' variant='h6' gutterBottom>
+              {t('ConfigError.Title')}
+            </Typography>
+            <Typography color='text.secondary' sx={{ mb: 1.5 }}>
+              {t(`ConfigError.${error_.name}`, { defaultValue: error_.message })}
+            </Typography>
+            <Button
+              variant='outlined'
+              size='small'
+              onClick={async () => {
+                const isTestMode = await window.service.context.get('isTest');
+                const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+                await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+              }}
+            >
+              {t('ConfigError.GoToSettings')}
+            </Button>
+          </Box>
+        );
+      }}
       footer={parametersOpen && (
         <AIModelParametersDialog
           open={parametersOpen}
