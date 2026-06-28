@@ -1,7 +1,7 @@
 import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
 import type { AgentDefinition, AgentHeartbeatConfig, AiAPIConfig, HostAgentToolConfig } from 'memeloop';
 import type { AgentInstanceLatestStatus } from 'memeloop';
-import type { AgentFrameworkConfig, ChatMessage, ChatRole, DetailReference, ToolCall } from 'memeloop';
+import type { AgentFrameworkConfig, AttachmentReference, ChatMessage, ChatMessagePart, ChatRole, DetailReference, ToolCall } from 'memeloop';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
@@ -234,7 +234,13 @@ export class AgentInstanceMessageEntity implements ChatMessage {
   content!: string;
 
   @Column({ type: 'simple-json', nullable: true })
+  parts?: ChatMessagePart[];
+
+  @Column({ type: 'simple-json', nullable: true })
   toolCalls?: ToolCall[];
+
+  @Column({ type: 'simple-json', nullable: true })
+  attachments?: AttachmentReference[];
 
   @Column({ type: 'simple-json', nullable: true })
   detailRef?: DetailReference;
