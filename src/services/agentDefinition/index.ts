@@ -2,10 +2,6 @@
  * Desktop AgentDefinition service implementation: DB-backed definition persistence.
  * memeloop core manages the model, Desktop provides the storage layer.
  */
-import { WikiChannel } from '@/constants/channels';
-import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
-import { isWikiWorkspace } from '@services/workspaces/interface';
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import type { AgentDefinition } from 'memeloop';
@@ -15,13 +11,11 @@ import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
-import type { IAgentInstanceService } from '@services/agentInstance/interface';
-import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IAgentDefinitionService } from './interface';
+import type { AgentTemplateSource, IAgentDefinitionService } from './interface';
 
 const defaultAgentsList = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
   systemPrompt: '',
@@ -60,8 +54,14 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   @inject(serviceIdentifier.AgentBrowser)
   private readonly agentBrowserService!: IAgentBrowserService;
 
+  private templateSource: AgentTemplateSource | undefined;
+
   private dataSource: DataSource | null = null;
   private agentDefRepository: Repository<AgentDefinitionEntity> | null = null;
+
+  public configureTemplateSource(source: AgentTemplateSource): void {
+    this.templateSource = source;
+  }
 
   public async initialize(): Promise<void> {
     try {
@@ -69,8 +69,6 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       this.dataSource = await this.databaseService.getDatabase('agent');
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
       await this.initializeDefaultAgentsIfEmpty();
-      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-      if (agentInstanceService) await agentInstanceService.initialize();
       if (this.agentBrowserService) await this.agentBrowserService.initialize();
     } catch (error) {
       logger.error(`Failed to initialize agent service: ${String(error)}`);
@@ -150,8 +148,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     if (!id.startsWith('temp-')) throw new Error(`Refusing to delete non-temporary agent definition: ${id}`);
     const instanceRepo = this.dataSource!.getRepository(AgentInstanceEntity);
     const stRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
-    const ais = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-    for (const inst of await instanceRepo.find({ where: { agentDefId: id } })) await ais.deleteAgent(inst.id);
+    for (const inst of await instanceRepo.find({ where: { agentDefId: id } })) await instanceRepo.delete(inst.id);
     await stRepo.delete({ agentDefinitionId: id });
     await this.agentDefRepository!.delete(id);
   }
@@ -161,28 +158,11 @@ export class AgentDefinitionService implements IAgentDefinitionService {
 
     // Query active wiki workspaces for agent template tiddlers
     try {
-      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-      const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      const workspaces = await workspaceService.getWorkspacesAsList();
-      const activeMain = workspaces.filter((ws) => isWikiWorkspace(ws) && ws.active && !ws.isSubWiki);
-
-      for (const workspace of activeMain) {
-        try {
-          const tiddlers = await wikiService.wikiOperationInServer(
-            WikiChannel.getTiddlersAsJson,
-            workspace.id,
-            ['[tag[$:/tags/AI/Template]]'],
-          ) as unknown[];
-          if (Array.isArray(tiddlers)) {
-            for (const tiddler of tiddlers) {
-              const agentDefinition = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspace.name);
-              if (agentDefinition) {
-                templates.push(agentDefinition);
-              }
-            }
-          }
-        } catch {
-          // Skip workspaces that fail to respond
+      const templateSources = await this.templateSource?.() ?? [];
+      for (const { tiddler, workspaceName } of templateSources) {
+        const agentDefinition = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspaceName);
+        if (agentDefinition) {
+          templates.push(agentDefinition);
         }
       }
     } catch {

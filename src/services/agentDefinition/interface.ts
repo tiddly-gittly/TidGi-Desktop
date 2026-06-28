@@ -4,10 +4,18 @@
  */
 import { AgentChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { AgentDefinition } from 'memeloop';
+import type { AgentDefinition, TiddlerFieldsForAgent } from 'memeloop';
+
+export interface AgentTemplateTiddlerSource {
+  tiddler: unknown;
+  workspaceName: string;
+}
+
+export type AgentTemplateSource = () => Promise<AgentTemplateTiddlerSource[]>;
 
 export interface IAgentDefinitionService {
   initialize(): Promise<void>;
+  configureTemplateSource(source: AgentTemplateSource): void;
   createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
   updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition>;
   getAgentDefs(): Promise<AgentDefinition[]>;
@@ -15,6 +23,8 @@ export interface IAgentDefinitionService {
   getAgentTemplates(): Promise<AgentDefinition[]>;
   deleteAgentDef(id: string): Promise<void>;
 }
+
+export type { TiddlerFieldsForAgent };
 
 export const AgentDefinitionServiceIPCDescriptor = {
   channel: AgentChannel.definition,

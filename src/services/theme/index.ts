@@ -2,26 +2,27 @@ import { nativeTheme } from 'electron';
 import { inject, injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
-import { WikiChannel } from '@/constants/channels';
 import type { IAnalyticsService } from '@services/analytics/interface';
-import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IViewService } from '@services/view/interface';
-import type { IWikiService } from '@services/wiki/interface';
-import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
-import { DARK_LIGHT_CHANGE_ACTIONS_TAG, type ITheme, type IThemeService, type IThemeSource } from './interface';
+import { type IActiveWikiThemeUpdater, type ITheme, type IThemeService, type IThemeSource } from './interface';
 
 @injectable()
 export class ThemeService implements IThemeService {
   public theme$: BehaviorSubject<ITheme>;
+  private activeWikiThemeUpdater: IActiveWikiThemeUpdater | undefined;
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.Analytics) private readonly analyticsService: IAnalyticsService,
   ) {
     this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
     this.updateActiveWikiTheme = debounce(this.updateActiveWikiTheme.bind(this), 1000) as typeof this.updateActiveWikiTheme;
+  }
+
+  public setActiveWikiThemeUpdater(handler: IActiveWikiThemeUpdater): void {
+    this.activeWikiThemeUpdater = handler;
   }
 
   private updateThemeSubject(newTheme: ITheme): void {
@@ -29,8 +30,7 @@ export class ThemeService implements IThemeService {
   }
 
   public async initialize(): Promise<void> {
-    const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-    const themeSource = await preferenceService.get('themeSource');
+    const themeSource = await this.preferenceService.get('themeSource');
     // apply theme
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
@@ -59,8 +59,7 @@ export class ThemeService implements IThemeService {
     nativeTheme.themeSource = themeSource;
     await this.preferenceService.set('themeSource', themeSource);
     this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
-    const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
-    void analyticsService.track('theme.changed', {
+    void this.analyticsService.track('theme.changed', {
       themeSource,
       darkMode: this.shouldUseDarkColorsSync(),
     });
@@ -72,37 +71,7 @@ export class ThemeService implements IThemeService {
    * Also update browser view background color when theme changes
    */
   private async updateActiveWikiTheme(): Promise<void> {
-    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-    const workspaces = await workspaceService.getWorkspacesAsList();
     const shouldUseDarkColors = this.shouldUseDarkColorsSync();
-    const backgroundColor = shouldUseDarkColors ? '#212121' : '#ffffff';
-    const themeActionData = {
-      'dark-mode': shouldUseDarkColors ? 'yes' : 'no',
-    };
-
-    await Promise.all(
-      workspaces.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.hibernated).map(async (workspace) => {
-        // Keep the worker-side wiki in sync so any later tidgi:// index render uses the current palette.
-        await wikiService.wikiOperationInServer(WikiChannel.invokeActionsByTag, workspace.id, [
-          DARK_LIGHT_CHANGE_ACTIONS_TAG,
-          themeActionData,
-        ]);
-
-        // Update wiki theme via TiddlyWiki actions
-        await wikiService.wikiOperationInBrowser(WikiChannel.invokeActionsByTag, workspace.id, [
-          DARK_LIGHT_CHANGE_ACTIONS_TAG,
-          themeActionData,
-        ]);
-
-        // Update browser view background color
-        const viewService = container.get<IViewService>(serviceIdentifier.View);
-        viewService.forEachView((view, workspaceID) => {
-          if (workspaceID === workspace.id) {
-            view.setBackgroundColor(backgroundColor);
-          }
-        });
-      }),
-    );
+    await this.activeWikiThemeUpdater?.({ shouldUseDarkColors });
   }
 }
