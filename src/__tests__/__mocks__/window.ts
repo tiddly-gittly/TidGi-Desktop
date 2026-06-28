@@ -82,6 +82,10 @@ Object.defineProperty(window, 'observables', {
         });
       }),
     },
+    deviceNetwork: {
+      devices$: serviceInstances.deviceNetwork.devices$!.asObservable(),
+      pairingSessions$: serviceInstances.deviceNetwork.pairingSessions$!.asObservable(),
+    },
   },
 });
 

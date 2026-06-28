@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import type { Device, PairingSession } from '@services/deviceNetwork/interface';
+import useObservable from 'beautiful-react-hooks/useObservable';
 
 function shortPeerId(peerId: string): string {
   if (peerId.length <= 18) return peerId;
@@ -48,22 +49,13 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
     setPairingSessions(nextPairingSessions);
   };
 
+  useObservable(window.observables.deviceNetwork.devices$, setDevices);
+  useObservable(window.observables.deviceNetwork.pairingSessions$, setPairingSessions);
+
   useEffect(() => {
-    let mounted = true;
     void refreshSnapshot().catch((refreshError: unknown) => {
-      if (mounted) setError(errorMessage(refreshError));
+      setError(errorMessage(refreshError));
     });
-    const unsubscribeDevices = window.service.deviceNetwork.observeDevices((nextDevices) => {
-      if (mounted) setDevices(nextDevices);
-    });
-    const unsubscribePairingSessions = window.service.deviceNetwork.observePairingSessions((nextSessions) => {
-      if (mounted) setPairingSessions(nextSessions);
-    });
-    return () => {
-      mounted = false;
-      unsubscribeDevices();
-      unsubscribePairingSessions();
-    };
   }, []);
 
   const runAction = async (actionKey: string, action: () => Promise<void>) => {
