@@ -1,9 +1,26 @@
 import { DeviceNetworkChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { CloudDeviceRecord, Device, DeviceNetworkService as CoreDeviceNetworkService, LocalDeviceIdentity, PairingSession, SyncResult } from 'memeloop';
+import type {
+  CloudDeviceRecord,
+  Device,
+  DeviceCapabilities,
+  DeviceNetworkService as CoreDeviceNetworkService,
+  DeviceRpcHandler,
+  IAgentStorage,
+  LocalDeviceIdentity,
+  PairingSession,
+  SyncResult,
+} from 'memeloop';
+
+export interface DeviceNetworkRuntimeOptions {
+  buildCapabilities?: () => Promise<DeviceCapabilities>;
+  rpcHandler?: DeviceRpcHandler;
+  syncStorage?: IAgentStorage;
+}
 
 export interface IDeviceNetworkService extends CoreDeviceNetworkService {
   getLocalIdentity(): Promise<LocalDeviceIdentity>;
+  configureRuntime(options: DeviceNetworkRuntimeOptions): void;
 }
 
 export const DeviceNetworkServiceIPCDescriptor = {
