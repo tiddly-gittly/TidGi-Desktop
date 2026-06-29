@@ -35,12 +35,12 @@ function xvfbRunAvailable(): boolean {
 
 function reExecUnderXvfb(): never {
   const args = [
-    '-a',                          // auto-select free display number
-    '--server-args=-screen 0 1920x1080x24',  // default screen size for E2E
-    process.execPath,              // node/tsx
-    ...process.execArgv,           // preserve any node flags
-    process.argv[1],               // this script
-    ...process.argv.slice(2),      // cucumber args
+    '-a', // auto-select free display number
+    '--server-args=-screen 0 1920x1080x24', // default screen size for E2E
+    process.execPath, // node/tsx
+    ...process.execArgv, // preserve any node flags
+    process.argv[1], // this script
+    ...process.argv.slice(2), // cucumber args
   ];
   const result = spawnSync('xvfb-run', args, {
     stdio: 'inherit',
