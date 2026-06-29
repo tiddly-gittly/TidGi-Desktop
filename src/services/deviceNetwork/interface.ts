@@ -1,6 +1,5 @@
 import { DeviceNetworkChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { BehaviorSubject } from 'rxjs';
 import type {
   CloudDeviceRecord,
   Device,
@@ -12,6 +11,7 @@ import type {
   PairingSession,
   SyncResult,
 } from 'memeloop';
+import type { BehaviorSubject } from 'rxjs';
 
 export interface DeviceNetworkRuntimeOptions {
   buildCapabilities?: () => Promise<DeviceCapabilities>;
@@ -49,4 +49,3 @@ export const DeviceNetworkServiceIPCDescriptor = {
 };
 
 export type { CloudDeviceRecord, Device, PairingSession, SyncResult };
-

@@ -261,8 +261,12 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     // The core's observe methods return unsubscribe functions that cannot cross IPC,
     // so we mirror their values into Value$ observables exposed to the renderer.
     this.deviceNetworkUnsubscribers.push(
-      this.core.observeDevices((devices) => this.devices$.next(devices)),
-      this.core.observePairingSessions((sessions) => this.pairingSessions$.next(sessions)),
+      this.core.observeDevices((devices) => {
+        this.devices$.next(devices);
+      }),
+      this.core.observePairingSessions((sessions) => {
+        this.pairingSessions$.next(sessions);
+      }),
     );
     logger.info('DeviceNetworkService started', { peerId: this.identity!.peerId, cloud: !!this.cloudClient });
   }

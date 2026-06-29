@@ -6,7 +6,6 @@ import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
-import type { Device, PairingSession } from 'memeloop';
 import { ExternalAPIService } from '@services/externalAPI';
 import type { IGitService, IGitStateChange, IGitSyncProgressEvent } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
@@ -19,6 +18,7 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { Device, PairingSession } from 'memeloop';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
 
