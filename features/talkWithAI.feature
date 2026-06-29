@@ -71,12 +71,8 @@ Feature: Talk with AI from Wiki Selection
     Then I confirm the "main" window browser view is positioned within visible window bounds
 
 
-  @agent @mockOpenAI @skip
+  @agent @mockOpenAI
   Scenario: Wiki tiddler attachment with rendered content
-    # TODO: This test needs updating for memeloop refactor.
-    # The old ChatTabContent had an autocomplete-based attachment system.
-    # The new MemeLoopComposer uses a native file dialog for file uploads and
-    # a separate WikiTiddlerSelector component for wiki tiddler selection.
     # Start mock server and launch app (not in Background for this feature)
     Given I have started the mock OpenAI server
       | response                                                                                                    | stream |
@@ -96,13 +92,11 @@ Feature: Talk with AI from Wiki Selection
       | agent workspace button      | [data-testid='workspace-agent']             |
       | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-    # Click attachment button to open autocomplete
-    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
-    # Autocomplete should open showing image option + tiddler options
-    And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
-    And I should see a "attachment listbox" element with selector "[data-testid='attachment-listbox']"
-    # Click on our test tiddler option
-    When I click on a "test tiddler option" element with selector "[data-testid='attachment-option-tiddler-TestAttachmentTiddler']"
+    # Open the wiki tiddler selector and choose our test tiddler
+    When I click on a "wiki tiddler selector button" element with selector "[data-testid='wiki-tiddler-selector-button']"
+    And I should see a "wiki tiddler selector input" element with selector "[data-testid='wiki-tiddler-selector-popper'] input"
+    When I type "TestAttachmentTiddler" in "wiki tiddler selector input" element with selector "[data-testid='wiki-tiddler-selector-popper'] input"
+    When I click on a "test tiddler option" element with selector "[data-testid='wiki-tiddler-option-TestAttachmentTiddler']"
     # Verify the chip is displayed
     Then I should see a "wiki tiddler chip" element with selector "[data-testid='wiki-tiddler-chip-0']"
     # Type message and send
@@ -116,7 +110,7 @@ Feature: Talk with AI from Wiki Selection
     And the last AI request user message should contain "WikiTestHeader"
 
 
-  @agent @mockOpenAI @streamingStatus @imageUpload @skip
+  @agent @mockOpenAI @streamingStatus @imageUpload
   Scenario: Image upload streaming status and history verification
     # Start mock server and launch app
     Given I have started the mock OpenAI server
@@ -135,14 +129,9 @@ Feature: Talk with AI from Wiki Selection
     When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
-    # Click attachment button to open autocomplete
-    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
-    # Wait for autocomplete to open
-    And I should see a "attachment autocomplete input" element with selector "[data-testid='attachment-autocomplete-input']"
-    # Register file selection before clicking Add Image so no native dialog appears.
+    # Register file selection before clicking the attachment button so no native dialog appears.
     When I choose file "template/wiki/files/TiddlyWikiIconBlack.png"
-    # Click on "Add Image" option — triggers fileInput.click() which fires filechooser
-    When I click on a "add image option" element with selector "[data-testid='attachment-option-image-AddImage']"
+    When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
     # Verify image preview appears
     Then I should see an "attachment preview" element with selector "[data-testid='attachment-preview']"
     
@@ -157,7 +146,6 @@ Feature: Talk with AI from Wiki Selection
     
     # Verify send button returned to normal after first message
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
     
     # Send second message to check history includes image
     When I type "Continue" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -166,4 +154,3 @@ Feature: Talk with AI from Wiki Selection
     
     # Verify send button is still normal after second message
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"

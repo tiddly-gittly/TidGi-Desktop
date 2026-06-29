@@ -31,9 +31,9 @@ Feature: Agent Prompt Editing and Tool Toggle
       | element description        | selector                                                                                                                                                                    |
       | first config tab           | [data-testid='edit-agent-prompt-form'] #config-tab-0                                                                                                                          |
       | expand array item button   | [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开']                                                                              |
-      | system prompt text field   | [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])                                                                  |
-    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
-    When I type "你是一个专门负责回答关于TidGi桌面应用问题的助手。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+      | system prompt text field   | [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])                                                        |
+    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
+    When I type "你是一个专门负责回答关于TidGi桌面应用问题的助手。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
     # Test in the embedded chat: send a message and verify modified prompt is used
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "你好" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -42,13 +42,8 @@ Feature: Agent Prompt Editing and Tool Toggle
     # Verify the edited prompt reached the server
     And the last AI request should contain system prompt "你是一个专门负责回答关于TidGi桌面应用问题的助手。"
 
-  @toolToggle @mockOpenAI @skip
+  @toolToggle @mockOpenAI
   Scenario: Disable tool via plugins tab and verify it is excluded from prompt
-    # TODO: This test needs updating for memeloop refactor.
-    # The new agent framework uses function calling instead of prompt-injected tool descriptions.
-    # Tool names are no longer included in the system prompt, so the prompt-content assertions
-    # must be replaced with a different verification strategy (e.g., check that the disabled
-    # tool is not called in the mock server request log).
     # Two mock responses: first with tool still potentially in prompt, second after disabling
     Given I add mock OpenAI responses:
       | response                                  | stream |
@@ -68,11 +63,11 @@ Feature: Agent Prompt Editing and Tool Toggle
     And the last AI request should contain system prompt "wiki-search"
     # Now navigate to plugins tab (2nd tab due to ui:order, id=config-tab-1) and disable the wiki search tool
     When I click on a "plugins tab" element with selector "[data-testid='edit-agent-prompt-form'] #config-tab-1"
-    # Wait for plugins array items to render after tab switch
-    And I should see a "third plugin item checkbox" element with selector "[data-testid='array-item-enabled-2']"
-    # Wiki search is at index 2 in the plugins array (0=fullReplacement/history, 1=workspacesList, 2=wikiSearch)
+    # Wiki search is at index 2 in the plugins array after default agentTools are merged into the editor config
+    When I click on a "third plugin expand button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开'] >> nth=2"
+    And I should see a "third plugin enabled checkbox" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) input[id$='_plugins_2_enabled']"
     # Click the enabled checkbox to uncheck/disable the wiki search tool
-    When I click on a "wiki search tool enabled checkbox" element with selector "[data-testid='array-item-enabled-2']"
+    When I click on a "wiki search tool enabled checkbox" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) input[id$='_plugins_2_enabled']"
     # Wait for the preview agent to be recreated (form change triggers recreation with 500ms debounce)
     And I wait for 1.5 seconds for "preview agent recreation after form change"
     # Send another message and verify wiki-search is now absent from prompt
