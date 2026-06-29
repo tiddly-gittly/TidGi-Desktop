@@ -5,9 +5,8 @@ import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/tools/scheduledTaskManager';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
-import type { AgentDefinition } from 'memeloop';
-import type { AgentFrameworkConfig } from 'memeloop';
-import React, { useCallback, useEffect, useState } from 'react';
+import { type AgentDefinition, type AgentFrameworkConfig, mergeAgentToolsIntoFrameworkConfig } from 'memeloop';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DesktopAgentChatTab } from '../../adapters';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
@@ -87,6 +86,11 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   // Use stable timestamp to avoid recreating tab on every render
   const [tabTimestamp] = useState(() => Date.now());
   const [forceRecreatePreview, setForceRecreatePreview] = useState(0);
+
+  const editableAgentFrameworkConfig = useMemo(
+    () => agentDefinition ? mergeAgentToolsIntoFrameworkConfig(agentDefinition.agentFrameworkConfig, agentDefinition.agentTools) : undefined,
+    [agentDefinition],
+  );
 
   // ── Schedule editor state ─────────────────────────────────────────────────
   const [scheduleEditor, setScheduleEditor] = useState<ScheduleEditorState>({
@@ -427,6 +431,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
         return {
           ...previous,
           agentFrameworkConfig: formData as AgentFrameworkConfig,
+          agentTools: [],
         };
       },
     );
@@ -573,7 +578,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               <Box sx={{ mt: 2 }} data-testid='edit-agent-prompt-form'>
                 <PromptConfigForm
                   schema={promptSchema}
-                  formData={agentDefinition.agentFrameworkConfig}
+                  formData={editableAgentFrameworkConfig}
                   onChange={handlePromptConfigChange}
                 />
               </Box>

@@ -128,12 +128,75 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public registerBuiltinFrameworks(): void {
+    const promptChildNodeSchema = {
+      type: 'object',
+      title: 'Prompt',
+      additionalProperties: true,
+      properties: {
+        id: { type: 'string', title: 'ID' },
+        caption: { type: 'string', title: 'Caption' },
+        role: { type: 'string', title: 'Role', enum: ['system', 'user', 'assistant', 'tool'] },
+        enabled: { type: 'boolean', title: 'Enabled', default: true },
+        dynamicPosition: { type: 'string', title: 'Dynamic Position', enum: ['deferToEnd'] },
+        tags: { type: 'array', title: 'Tags', items: { type: 'string' } },
+        text: { type: 'string', title: 'Text' },
+      },
+    };
+
+    const promptNodeSchema = {
+      type: 'object',
+      title: 'Prompt',
+      additionalProperties: true,
+      properties: {
+        id: { type: 'string', title: 'ID' },
+        caption: { type: 'string', title: 'Caption' },
+        role: { type: 'string', title: 'Role', enum: ['system', 'user', 'assistant', 'tool'] },
+        enabled: { type: 'boolean', title: 'Enabled', default: true },
+        dynamicPosition: { type: 'string', title: 'Dynamic Position', enum: ['deferToEnd'] },
+        tags: { type: 'array', title: 'Tags', items: { type: 'string' } },
+        text: { type: 'string', title: 'Text' },
+        children: {
+          type: 'array',
+          title: 'Children',
+          items: promptChildNodeSchema,
+        },
+      },
+    };
+
     this.frameworkSchemas.set(AGENT_TOOL_LOOP_ID, {
       type: 'object',
       properties: {
-        prompts: { type: 'array', items: { type: 'object' } },
-        response: { type: 'array', items: { type: 'object' } },
-        plugins: { type: 'array', items: { type: 'object' } },
+        prompts: { type: 'array', title: 'Prompts', items: promptNodeSchema },
+        response: { type: 'array', title: 'Response', items: { type: 'object', additionalProperties: true } },
+        plugins: {
+          type: 'array',
+          title: 'Plugins',
+          items: {
+            type: 'object',
+            title: 'Plugin',
+            additionalProperties: true,
+            properties: {
+              id: { type: 'string', title: 'ID' },
+              toolId: { type: 'string', title: 'Tool ID' },
+              enabled: { type: 'boolean', title: 'Enabled', default: true },
+            },
+          },
+        },
+      },
+      uiSchema: {
+        'ui:order': ['prompts', 'plugins', 'response'],
+        prompts: {
+          items: {
+            text: { 'ui:widget': 'textarea' },
+            tags: { 'ui:widget': 'TagsWidget' },
+            children: {
+              items: {
+                text: { 'ui:widget': 'textarea' },
+                tags: { 'ui:widget': 'TagsWidget' },
+              },
+            },
+          },
+        },
       },
     });
   }

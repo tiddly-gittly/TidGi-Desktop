@@ -14,18 +14,18 @@ import React, { useEffect, useRef } from 'react';
  * ComposerPrimitive.Input.
  */
 export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
-  const rootRef = useRef<HTMLDivElement>(null);
+  const rootReference = useRef<HTMLDivElement>(null);
   const aui = useAui();
 
   useEffect(() => {
-    const input = rootRef.current?.querySelector('.assistant-ui-composer-input');
+    const input = rootReference.current?.querySelector('.assistant-ui-composer-input');
     if (input instanceof HTMLElement) {
       input.setAttribute('data-testid', 'agent-message-input');
     }
   });
 
   useEffect(() => {
-    const input = rootRef.current?.querySelector('.assistant-ui-composer-input');
+    const input = rootReference.current?.querySelector('.assistant-ui-composer-input');
     if (!(input instanceof HTMLElement)) return;
 
     const handler = (event: KeyboardEvent) => {
@@ -46,7 +46,7 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
   }, [aui]);
 
   return (
-    <div ref={rootRef} style={{ display: 'contents' }}>
+    <div ref={rootReference} style={{ display: 'contents' }}>
       <MemeLoopComposer {...props} />
     </div>
   );

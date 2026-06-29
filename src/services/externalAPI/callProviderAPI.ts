@@ -90,9 +90,11 @@ export async function streamFromProvider(
 
     const llmProvider = await createProviderFromConfig(providerConfig);
 
-    // Extract system message from messages if present
-    const systemMessage = messages.find(message => message.role === 'system');
-    const systemPrompt = systemMessage ? getFormattedContent(systemMessage.content) : undefined;
+    const systemPromptSegments = messages
+      .filter(message => message.role === 'system')
+      .map(message => getFormattedContent(message.content).trim())
+      .filter(Boolean);
+    const systemPrompt = systemPromptSegments.length > 0 ? systemPromptSegments.join('\n\n') : undefined;
 
     // Filter out system messages from the messages array since we're handling them separately
     const nonSystemMessages = messages.filter(message => message.role !== 'system');

@@ -26,8 +26,8 @@ import { AIModelParametersDialog } from '@/windows/Preferences/sections/External
 import { AgentChatView } from '@memeloop/react-ui/agent';
 import { type MemeLoopChatAdapter, useAui } from '@memeloop/react-ui/chat';
 
-import { E2EComposer } from './components/E2EComposer';
 import { ChatHeader } from './components/ChatHeader';
+import { E2EComposer } from './components/E2EComposer';
 import { WikiTiddlerSelector } from './components/WikiTiddlerSelector';
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { isChatTab } from './utils/tabTypeGuards';
@@ -186,7 +186,9 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         const subscription = window.observables.deviceNetwork.devices$.subscribe((nextDevices) => {
           setAgentLoopDevices(nextDevices.filter(device => device.peerId !== local.peerId && device.trusted && device.capabilities.agentLoop));
         });
-        unsubscribe = () => subscription.unsubscribe();
+        unsubscribe = () => {
+          subscription.unsubscribe();
+        };
       } catch (error_) {
         setRemoteError(error_ instanceof Error ? error_ : new Error(String(error_)));
       }

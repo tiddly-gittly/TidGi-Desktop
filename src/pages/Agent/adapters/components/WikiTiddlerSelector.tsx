@@ -134,6 +134,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
             size='small'
             onClick={handleButtonClick}
             disabled={disabled}
+            data-testid='wiki-tiddler-selector-button'
           >
             <LibraryBooksIcon />
           </IconButton>
@@ -146,6 +147,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
         style={{ zIndex: 1300 }}
       >
         <Box
+          data-testid='wiki-tiddler-selector-popper'
           sx={{
             width: 360,
             maxHeight: 400,
@@ -189,6 +191,14 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
                 isOptionEqualToValue={(option, value) => option.tiddlerTitle === value.tiddlerTitle && option.workspaceId === value.workspaceId}
                 slotProps={{
                   popper: { disablePortal: true },
+                }}
+                renderOption={(properties, option) => {
+                  const { key, ...optionProperties } = properties;
+                  return (
+                    <li key={key} {...optionProperties} data-testid={`wiki-tiddler-option-${option.tiddlerTitle}`}>
+                      {option.tiddlerTitle}
+                    </li>
+                  );
                 }}
                 open={open}
                 onClose={handleClose}
