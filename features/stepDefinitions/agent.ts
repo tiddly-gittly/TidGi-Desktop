@@ -238,20 +238,32 @@ Then('the last AI request should contain system prompt {string}', async function
     throw new Error('Mock OpenAI server is not running');
   }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+  let lastSystemPrompt = '';
+  await backOff(
+    async () => {
+      const lastRequest = this.mockOpenAIServer!.getLastRequest();
+      if (!lastRequest) {
+        throw new Error('No AI request has been made yet');
+      }
 
-  // Find system message in the request
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
-    throw new Error('No system message found in the AI request');
-  }
+      const systemMessage = lastRequest.messages.find(message => message.role === 'system');
+      if (!systemMessage) {
+        throw new Error('No system message found in the AI request');
+      }
 
-  if (!systemMessage.content || !systemMessage.content.includes(expectedPrompt)) {
-    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`);
-  }
+      lastSystemPrompt = systemMessage.content ?? '';
+      if (!lastSystemPrompt.includes(expectedPrompt)) {
+        throw new Error(`System prompt does not contain expected text yet`);
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  ).catch(() => {
+    const requestPrompts = this.mockOpenAIServer!.getAllRequests().map((request, index) => {
+      const content = request.messages.find(message => message.role === 'system')?.content ?? '';
+      return `${index + 1}: ${content.slice(0, 300)}`;
+    }).join('\n');
+    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${lastSystemPrompt}"\nAll request system prompts:\n${requestPrompts}`);
+  });
 });
 
 Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
