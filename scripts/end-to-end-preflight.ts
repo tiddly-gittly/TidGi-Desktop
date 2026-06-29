@@ -1,7 +1,51 @@
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// X Display auto-detection — re-exec under xvfb-run when no DISPLAY is set.
+// Shared with scripts/run-e2e.ts. Keep in sync.
+// ═══════════════════════════════════════════════════════════════════════════
+const XVFB_WRAPPED_ENV = 'TIDGI_E2E_XVFB_WRAPPED';
+
+function hasXDisplay(): boolean {
+  if (!process.env.DISPLAY) return false;
+  try {
+    spawnSync('xdpyinfo', ['-display', process.env.DISPLAY], { stdio: 'ignore', timeout: 2000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureXvfbWrapper(scriptLabel: string): void {
+  if (process.env[XVFB_WRAPPED_ENV] === '1' || hasXDisplay()) return;
+
+  try {
+    if (spawnSync('which', ['xvfb-run'], { stdio: 'pipe', timeout: 3000 }).status !== 0) {
+      console.error(`[${scriptLabel}] No X display and xvfb-run not found. Install xvfb: sudo apt install xvfb`);
+      process.exit(1);
+    }
+  } catch {
+    console.error(`[${scriptLabel}] No X display and xvfb-run not found. Install xvfb: sudo apt install xvfb`);
+    process.exit(1);
+  }
+
+  console.warn(`[${scriptLabel}] No X display detected — re-executing under xvfb-run`);
+  const result = spawnSync('xvfb-run', [
+    '-a',
+    '--server-args=-screen 0 1920x1080x24',
+    process.execPath,
+    ...process.execArgv,
+    process.argv[1],
+    ...process.argv.slice(2),
+  ], {
+    stdio: 'inherit',
+    env: { ...process.env, [XVFB_WRAPPED_ENV]: '1' },
+  });
+  process.exit(result.status ?? 1);
+}
 
 interface StepTiming {
   name: string;
@@ -192,4 +236,5 @@ function isElementStep(name: string): boolean {
   return /click|type|check/i.test(name);
 }
 
+ensureXvfbWrapper('test:e2e:calibrate');
 runSmokeCalibration();

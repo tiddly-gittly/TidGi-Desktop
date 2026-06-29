@@ -4,6 +4,51 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// X Display auto-detection — re-exec under xvfb-run when no DISPLAY is set.
+// Prevents "Missing X server or $DISPLAY" errors on headless/SSH/CI machines.
+// ═══════════════════════════════════════════════════════════════════════════
+const XVFB_WRAPPED_ENV = 'TIDGI_E2E_XVFB_WRAPPED';
+
+function hasXDisplay(): boolean {
+  if (!process.env.DISPLAY) return false;
+  // Quick probe: try xdpyinfo if available, otherwise trust the env var.
+  try {
+    spawnSync('xdpyinfo', ['-display', process.env.DISPLAY], {
+      stdio: 'ignore',
+      timeout: 2000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function xvfbRunAvailable(): boolean {
+  try {
+    const result = spawnSync('which', ['xvfb-run'], { stdio: 'pipe', timeout: 3000 });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
+function reExecUnderXvfb(): never {
+  const args = [
+    '-a',                          // auto-select free display number
+    '--server-args=-screen 0 1920x1080x24',  // default screen size for E2E
+    process.execPath,              // node/tsx
+    ...process.execArgv,           // preserve any node flags
+    process.argv[1],               // this script
+    ...process.argv.slice(2),      // cucumber args
+  ];
+  const result = spawnSync('xvfb-run', args, {
+    stdio: 'inherit',
+    env: { ...process.env, [XVFB_WRAPPED_ENV]: '1' },
+  });
+  process.exit(result.status ?? 1);
+}
+
 export class E2EArgsValidationError extends Error {
   constructor(
     public readonly title: string,
@@ -242,6 +287,17 @@ function isDirectExecution(): boolean {
 if (isDirectExecution()) {
   const cucumberArguments: string[] = process.argv.slice(2);
   process.env.NODE_ENV = 'test';
+
+  // Auto-wrap under xvfb-run when no X display is available (headless/SSH/CI).
+  if (process.env[XVFB_WRAPPED_ENV] !== '1' && !hasXDisplay()) {
+    if (xvfbRunAvailable()) {
+      console.warn('[run-e2e] No X display detected — re-executing under xvfb-run');
+      reExecUnderXvfb();
+    } else {
+      console.error('[run-e2e] No X display and xvfb-run not found. Install xvfb: sudo apt install xvfb');
+      process.exit(1);
+    }
+  }
 
   try {
     validateCucumberArguments(cucumberArguments);
