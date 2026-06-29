@@ -47,13 +47,13 @@ Feature: Create New Agent Workflow
     # Verify the PromptConfigForm is present with our new test id
     And I should see a "prompt config form" element with selector "[data-testid='prompt-config-form']"
     # Step 4.2: Navigate to the correct tab and expand array items to edit prompt
-    # Look for tabs in the PromptConfigForm
-    And I should see a "config tabs" element with selector "[data-testid='prompt-config-form'] .MuiTabs-root"
-    # Click the first tab to reveal its panel content
-    When I click on a "first config tab" element with selector "[data-testid='prompt-config-form'] .MuiTab-root:first-of-type"
+    # Look for tabs in the PromptConfigForm (MUI Tabs renders as role='tablist')
+    And I should see a "config tabs" element with selector "[data-testid='prompt-config-form'] [role='tablist']"
+    # Click the first tab to reveal its panel content (id from RootObjectFieldTemplate)
+    When I click on a "first config tab" element with selector "[data-testid='prompt-config-form'] #config-tab-0"
     And I should see a "visible tab panel" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
-    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开']"
     # Click the system prompt text field to focus it for editing
     When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
@@ -111,13 +111,13 @@ Feature: Create New Agent Workflow
     # Verify the PromptConfigForm is present
     And I should see a "prompt config form" element with selector "[data-testid='edit-agent-prompt-form']"
     # Step 6.1: Navigate to the correct tab and expand array items to edit prompt
-    # Look for tabs in the PromptConfigForm
-    And I should see a "config tabs" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTabs-root"
-    # Click the first tab to reveal its panel content
-    When I click on a "first config tab" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTab-root:first-of-type"
+    # Look for tabs in the PromptConfigForm (MUI Tabs renders as role='tablist')
+    And I should see a "config tabs" element with selector "[data-testid='edit-agent-prompt-form'] [role='tablist']"
+    # Click the first tab to reveal its panel content (id from RootObjectFieldTemplate)
+    When I click on a "first config tab" element with selector "[data-testid='edit-agent-prompt-form'] #config-tab-0"
     And I should see a "visible tab panel" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
-    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开']"
     # Click the system prompt text field to focus it for editing
     When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"

@@ -404,7 +404,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             </Typography>
             {temporaryAgentDefinition && promptSchema
               ? (
-                <Box sx={{ mt: 2, height: 400, overflow: 'auto' }}>
+                <Box sx={{ mt: 2, height: 400, overflow: 'auto' }} data-testid='prompt-config-form'>
                   <PromptConfigForm
                     schema={promptSchema}
                     formData={temporaryAgentDefinition.agentFrameworkConfig ?? { prompts: [], plugins: [] }}
