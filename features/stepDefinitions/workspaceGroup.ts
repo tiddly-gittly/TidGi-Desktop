@@ -319,6 +319,7 @@ async function waitForDragIntent(
   const deadline = Date.now() + PLAYWRIGHT_TIMEOUT;
   let latestCoordinates = initialCoordinates;
   let attempts = 0;
+  const shouldNudgeDownward = expectedIntent === 'reorder-before' || expectedIntent === 'reorder-after' || expectedIntent === undefined;
 
   while (Date.now() < deadline) {
     attempts++;
@@ -335,11 +336,12 @@ async function waitForDragIntent(
       return latestCoordinates;
     }
 
-    // Nudge downward inside the target when another sidebar item steals hit-testing.
-    latestCoordinates = {
-      targetX: latestCoordinates.targetX,
-      targetY: latestCoordinates.targetY + 4,
-    };
+    if (shouldNudgeDownward) {
+      latestCoordinates = {
+        targetX: latestCoordinates.targetX,
+        targetY: latestCoordinates.targetY + 4,
+      };
+    }
   }
 
   throw await buildDragIntentError(

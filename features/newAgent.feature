@@ -55,9 +55,9 @@ Feature: Create New Agent Workflow
     # Expand array item to show the system prompt text field
     When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开']"
     # Click the system prompt text field to focus it for editing
-    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
-    When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
-    When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
+    When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
+    When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
     # Step 5: Advance to step 3 (Immediate Use)
     When I click on a "next button" element with selector "[data-testid='next-button']"
     # Step 6: Verify third step content (Immediate Use with chat interface)
@@ -119,9 +119,9 @@ Feature: Create New Agent Workflow
     # Expand array item to show the system prompt text field
     When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开']"
     # Click the system prompt text field to focus it for editing
-    When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
-    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
-    When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
+    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
+    When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
     # Step 7: Test in the immediate use section (embedded chat)
     # The immediate use section should show an embedded chat interface
     # Ensure the message input is visible before clicking (it may be scrolled below the prompt editor)
