@@ -26,6 +26,8 @@ Feature: Configuration Error Handling
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Hello" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
+    # Wait for error propagation through the async agent framework
+    And I wait for 2 seconds for "error message to render"
     # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
     Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
       | element description       | selector                                                  |
