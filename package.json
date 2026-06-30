@@ -199,5 +199,8 @@
   "optionalDependencies": {
     "registry-js": "1.16.1"
   },
+  "optionalDependencies": {
+    "registry-js": "1.16.1"
+  },
   "private": false
 }
