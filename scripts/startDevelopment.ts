@@ -17,6 +17,9 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const projectRoot = resolve(__dirname, '..');
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -107,26 +110,44 @@ function detectDesktopSessionEnvironment(): Record<string, string> | null {
 // ── Launcher implementations ─────────────────────────────────────────────────
 
 function launchForge(extraEnvironment: Record<string, string> = {}): void {
+  const electronForgePath = resolve(projectRoot, 'node_modules', '.bin', 'electron-forge');
+
   const child = spawn(
-    'cross-env',
-    ['NODE_ENV=development', 'electron-forge', 'start'],
+    electronForgePath,
+    ['start'],
     {
       stdio: 'inherit',
       env: {
         ...process.env,
+        NODE_ENV: 'development',
         ...extraEnvironment,
         [XVFB_WRAPPED_ENV]: '1',
       },
     },
   );
 
+  child.on('error', (error) => {
+    console.error(`❌ Failed to spawn electron-forge: ${error.message}`);
+    process.exit(1);
+  });
+
+  // DO NOT call process.exit on child exit — electron-forge spawns the real
+  // Electron process and then exits itself. Killing the parent on child exit
+  // would SIGKILL Electron before it finishes initializing ("闪退").
+  // Instead, just forward the exit code when the *script* itself is finished.
   child.on('exit', (code) => {
-    process.exit(code ?? 0);
+    process.exitCode = code ?? 0;
   });
 
   // Forward signals so Ctrl+C works.
-  process.on('SIGINT', () => child.kill('SIGINT'));
-  process.on('SIGTERM', () => child.kill('SIGTERM'));
+  const onSigInt = (): void => {
+    child.kill('SIGINT');
+  };
+  const onSigTerm = (): void => {
+    child.kill('SIGTERM');
+  };
+  process.on('SIGINT', onSigInt);
+  process.on('SIGTERM', onSigTerm);
 }
 
 function reExecUnderXvfb(): never {
