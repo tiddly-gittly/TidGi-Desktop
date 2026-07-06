@@ -4,12 +4,13 @@ import { Alert, Box, Button, CircularProgress, Container, Divider, MenuItem, Tex
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/tools/scheduledTaskManager';
-import { type AgentDefinition, type AgentFrameworkConfig, mergeAgentToolsIntoFrameworkConfig } from 'memeloop';
+import { type AgentDefinition, type AgentFrameworkConfig } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DesktopAgentChatTab } from '../../adapters';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
+import { mergeAgentToolsIntoFrameworkConfig } from '../../utils/mergeAgentTools';
 import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
 
 type ScheduleMode = 'none' | 'interval' | 'daily' | 'cron';

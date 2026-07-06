@@ -27,7 +27,9 @@ Feature: Configuration Error Handling
     When I type "Hello" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Wait for error propagation through the async agent framework
-    And I wait for 2 seconds for "error message to render"
+    And I wait for 5 seconds for "error message to render"
+    # The agent framework creates an error message in the conversation (not via renderError callback)
+    Then I should see 2 messages in chat history
     # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
     Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
       | element description       | selector                                                  |
