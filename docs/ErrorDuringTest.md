@@ -90,3 +90,26 @@ describe('Component', () => {
   });
 });
 ```
+
+## ReferenceError: process is not defined
+
+Electron renderer runs with `contextIsolation: true` and `nodeIntegration: false`. Node.js globals (`process`, `Buffer`, `require`) do not exist there.
+
+This error means a Node.js dependency leaked into the renderer bundle. Common causes:
+
+- A renderer file imports a value (not just a type) from a package that depends on Node.js APIs.
+- An upstream UI package bundles Node.js-only code into its browser build.
+- A file under `src/services/` is imported by renderer code through the `@services` alias. Service files often import from Node.js packages, and Vite's dependency scanner follows those transitive imports into the renderer bundle.
+
+### Rules
+
+- Renderer code (under `src/pages/`, `src/windows/`, `src/components/`) must only use `import type` from packages that have Node.js dependencies. Value imports from those packages will pull their entire dependency tree into the browser bundle.
+- Do not import values from `src/services/` in renderer code, use our existing [IPC proxy](docs/internal/ServiceIPC.md) instead. If you need data from the backend, go through the `window.service.*` IPC bridge. The `@services` alias exists for the main process; renderer files using it for value imports will drag service-level dependencies into the frontend.
+- If you need `process.env` or platform detection in the renderer, use the context service:
+
+```typescript
+const platform = await window.service.context.get('platform');
+const isTest = await window.service.context.get('isTest');
+```
+
+Never reference node-only API like `process` directly in renderer code.
