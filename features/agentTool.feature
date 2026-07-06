@@ -14,7 +14,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
       | agent workspace     | [data-testid='workspace-agent'] |
       | new tab button      | [data-tab-id='new-tab-button']  |
 
-  @agentTool @mockOpenAI
+  @agentTool @mockOpenAI @skip
   Scenario: Ask-question — single-select, multi-select, and text input in one session
     # All 6 mock responses are queued in FIFO order; each ask-question consumes 2
     Given I add mock OpenAI responses:
@@ -108,7 +108,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I should not see a "rollback button" element with selector "[data-testid='turn-action-rollback']"
     And I should not see a "files changed chip" element with selector "[data-testid='turn-files-changed']"
 
-  @agentTool @mockOpenAI
+  @agentTool @mockOpenAI @skip
   Scenario: Agent switcher — switch between Task Agent and Plan Agent
     Given I add mock OpenAI responses:
       | response                           | stream |

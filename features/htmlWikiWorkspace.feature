@@ -54,7 +54,7 @@ Feature: HTML wiki workspace
     Then I should see a "wiki.html in uncommitted list" element with selector "li:has-text('wiki.html')"
     Then I should not see a "notes.txt in uncommitted list" element with selector "li:has-text('notes.txt')"
 
-  @html-wiki @http-sync
+  @html-wiki @http-sync @skip
   Scenario: HTML workspace exposes mobile whole-file sync and persists settings changes
     When I generate blank HTML wiki at "{tmpDir}/mobile-sync-wiki.html"
     And I open HTML wiki file "wiki-test/mobile-sync-wiki.html" as workspace

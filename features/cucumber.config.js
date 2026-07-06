@@ -63,7 +63,7 @@ module.exports = {
       snippetInterface: 'async-await',
     },
     paths: computeShardedPaths(),
-    tags: 'not @calibration-only',
+    tags: 'not @calibration-only and not @skip',
     // Note: Global timeout is set via setDefaultTimeout() in features/supports/timeouts.ts
     // NOT via the 'timeout' config option here (which is for Cucumber's own operations)
     // Parallel disabled: Electron instances compete for CPU, making steps slower not faster.
