@@ -102,6 +102,13 @@ export const messageActions = (
         file: fileData as unknown as File,
         wikiTiddlers,
       });
+      // Refresh agent state so isWorking reflects the terminal status
+      // (observable may fire after loading is already false)
+      try {
+        await get().fetchAgent(storeAgent.id);
+      } catch {
+        // ignore fetch errors — status update is best-effort
+      }
     } catch (error) {
       set({ error: error as Error });
       void window.service.native.log(
