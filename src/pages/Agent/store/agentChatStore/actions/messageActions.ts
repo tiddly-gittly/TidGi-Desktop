@@ -148,7 +148,6 @@ export const messageActions = (
             set({ error: err });
           }
         }
-        }
       } catch {
         if (sendError) {
           const err = sendError instanceof Error ? sendError : new Error(String(sendError));
