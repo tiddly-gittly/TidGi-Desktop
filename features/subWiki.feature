@@ -184,7 +184,7 @@ Feature: Sub-Wiki Functionality
     # Verify the setting was saved to settings.json
     Then settings.json should have workspace "SubWikiSettings" with "includeTagTree" set to "true"
 
-  @subwiki @subwiki-create-ui @calibrate @skip
+  @subwiki @subwiki-create-ui @calibrate
   Scenario: Create sub-wiki workspace via UI
     # This tests creating a sub-wiki through the Add Workspace UI
     Given I cleanup test wiki so it could create a new one on start
@@ -206,7 +206,7 @@ Feature: Sub-Wiki Functionality
     # Select the first (default) wiki workspace from dropdown
     And I select "wiki" from MUI Select with test id "main-wiki-select"
     # Type folder name
-    And I type "SubWikiUI" in "sub wiki folder name input" element with selector "input[aria-describedby*='-helper-text'][value='wiki']"
+    And I type "SubWikiUI" in "sub wiki folder name input" element with selector "[data-testid='subwiki-folder-name-input']"
     # Add tag using Autocomplete - type and press Enter to add the tag
     And I type "UITestTag" in "tag name input" element with selector "[data-testid='tagname-autocomplete-input']"
     And I press "Enter" key

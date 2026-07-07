@@ -1,8 +1,8 @@
 Feature: Configuration Error Handling
   As a user
   When AI configuration is missing or invalid
-  I want to see clear error messages in the conversation
-  So that I can understand what went wrong
+  I want to see clear error messages with actionable buttons
+  So that I can easily fix configuration issues
 
   Background:
     Given I remove test ai settings
@@ -11,7 +11,7 @@ Feature: Configuration Error Handling
     And I should see a "page body" element with selector "body"
 
   @config-error-button
-  Scenario: Configuration error message shows internationalized text
+  Scenario: Configuration error message shows internationalized text and "Go to Settings" button
     # This scenario tests error message display without AI configuration
     # Ensure we are in the agent workspace
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
@@ -28,7 +28,19 @@ Feature: Configuration Error Handling
     And I press "Enter" key
     # Wait for error propagation through the async agent framework
     And I wait for 5 seconds for "error message to render"
-    # The memeloop agent framework creates an error message in the conversation
+    # The agent framework creates an error message in the conversation (not via renderError callback)
     Then I should see 2 messages in chat history
-    # Verify we don't see the raw translation key leaked into the UI
+    # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
+    Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
+      | element description       | selector                                                  |
+      | error message wrapper     | [data-testid='error-message']                             |
+      | configuration issue title | [data-testid='error-message']:has-text('配置问题')        |
+      | go to settings button     | [data-testid='error-message'] button:has-text('前往设置') |
+    # Verify we don't see the raw translation key
     Then I should not see a "raw error key text" element with selector "text='Chat.ConfigError.MissingConfigError'"
+    # Click the button to open preferences
+    When I click on a "go to settings button" element with selector "[data-testid='error-message'] button:has-text('前往设置')"
+    # Switch to preferences window
+    When I switch to "preferences" window
+    # Verify preferences window opened to External Services section
+    Then I should see an "external services section" element with selector "[data-testid='preference-section-externalAPI']"

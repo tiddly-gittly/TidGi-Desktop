@@ -181,6 +181,7 @@ function StringItem<TRecord extends Record<string, unknown>>({
           store.update({ [item.key]: event.target.value } as Partial<TRecord>, item.needsRestart);
         }}
         sx={{ minWidth: 150 }}
+        slotProps={{ htmlInput: { 'data-testid': `preference-${item.key}` } }}
       />
     </ListItem>
   );
