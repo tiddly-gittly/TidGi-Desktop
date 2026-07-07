@@ -71,6 +71,7 @@ export function NewWikiForm({
           label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
           helperText={`${t('AddWorkspace.CreateWiki')}${form.wikiFolderLocation ?? ''}`}
           value={form.wikiFolderName}
+          slotProps={{ htmlInput: { 'data-testid': 'subwiki-folder-name-input' } }}
         />
       </LocationPickerContainer>
       {!isCreateSyncedWorkspace && form.ancestorGitRepos.length > 0 && form.wikiFolderLocation && (

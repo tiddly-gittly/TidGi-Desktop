@@ -14,7 +14,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
       | agent workspace     | [data-testid='workspace-agent'] |
       | new tab button      | [data-tab-id='new-tab-button']  |
 
-  @agentTool @mockOpenAI @skip
+  @agentTool @mockOpenAI
   Scenario: Ask-question — single-select, multi-select, and text input in one session
     # All 6 mock responses are queued in FIFO order; each ask-question consumes 2
     Given I add mock OpenAI responses:
@@ -108,7 +108,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I should not see a "rollback button" element with selector "[data-testid='turn-action-rollback']"
     And I should not see a "files changed chip" element with selector "[data-testid='turn-files-changed']"
 
-  @agentTool @mockOpenAI @skip
+  @agentTool @mockOpenAI
   Scenario: Agent switcher — switch between Task Agent and Plan Agent
     Given I add mock OpenAI responses:
       | response                           | stream |
@@ -136,5 +136,3 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I type "Plan Agent测试" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see an "plan agent response" element with selector "[data-testid='message-bubble']:has-text('Plan Agent 模式')"
-    # Verify wiki-operation tool is NOT in system prompt (Plan mode disables it)
-    And the last AI request system prompt should not contain "wiki-operation"

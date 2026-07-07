@@ -235,6 +235,7 @@ function StringItem({
           }
         }}
         sx={{ minWidth: 150 }}
+        slotProps={{ htmlInput: { 'data-testid': `preference-${item.key}` } }}
       />
     </ListItem>
   );
