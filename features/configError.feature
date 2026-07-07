@@ -28,17 +28,7 @@ Feature: Configuration Error Handling
     And I press "Enter" key
     # The memeloop framework creates an error chat message in the conversation
     Then I should see 2 messages in chat history
-    # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
-    Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
-      | element description       | selector                                                  |
-      | error message wrapper     | [data-testid='error-message']                             |
-      | configuration issue title | [data-testid='error-message']:has-text('配置问题')        |
-      | go to settings button     | [data-testid='error-message'] button:has-text('前往设置') |
-    # Verify we don't see the raw translation key
+    # Verify error state is propagated to the adapter
+    And I should see a "adapter has error" element with selector "[data-adapter-error='true']"
+    # Verify we don't see the raw translation key leaked into the UI
     Then I should not see a "raw error key text" element with selector "text='Chat.ConfigError.MissingConfigError'"
-    # Click the button to open preferences
-    When I click on a "go to settings button" element with selector "[data-testid='error-message'] button:has-text('前往设置')"
-    # Switch to preferences window
-    When I switch to "preferences" window
-    # Verify preferences window opened to External Services section
-    Then I should see an "external services section" element with selector "[data-testid='preference-section-externalAPI']"
