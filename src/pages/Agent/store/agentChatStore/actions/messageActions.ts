@@ -133,6 +133,12 @@ export const messageActions = (
           const err = new Error(msg);
           err.name = 'MissingConfigError';
           set({ error: err });
+        } else if (lastMessage && lastMessage.role !== 'user' && typeof lastMessage.content === 'string' &&
+            (lastMessage.content.includes('MissingConfigError') || lastMessage.content.includes('ConfigError') ||
+             lastMessage.content.includes('AI config') || lastMessage.content.includes('api key'))) {
+          const err = new Error(lastMessage.content);
+          err.name = 'MissingConfigError';
+          set({ error: err });
         }
       } catch {
         if (sendError) {
