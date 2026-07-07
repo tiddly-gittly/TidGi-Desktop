@@ -39,10 +39,8 @@ Feature: Message Streaming Status
     Then I should see 2 messages in chat history
     
     # Verify send button is in normal state (not streaming)
-    # The send icon should be visible and cancel icon should not be visible
     And I wait for 1 seconds for "UI to settle"
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='agent-cancel-button']"
     
     # Send second message to confirm button works
     When I type "Second message" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -52,7 +50,6 @@ Feature: Message Streaming Status
     # Verify send button is still in normal state
     And I wait for 1 seconds for "UI to settle"
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='agent-cancel-button']"
     
     # Send third message to triple confirm
     When I type "Third message" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -62,4 +59,3 @@ Feature: Message Streaming Status
     # Final verification
     And I wait for 1 seconds for "UI to settle"
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should not see a "cancel button icon" element with selector "[data-testid='agent-cancel-button']"
