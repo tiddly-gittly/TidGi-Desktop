@@ -24,6 +24,22 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
     }
   });
 
+  // Expose thread isRunning state as DOM attribute for E2E tests
+  useEffect(() => {
+    const unsubscribe = aui.thread().subscribe(() => {
+      const root = rootReference.current;
+      if (root) {
+        root.setAttribute('data-thread-isrunning', String(aui.thread().getState().isRunning));
+      }
+    });
+    // Initial sync
+    const root = rootReference.current;
+    if (root) {
+      root.setAttribute('data-thread-isrunning', String(aui.thread().getState().isRunning));
+    }
+    return unsubscribe;
+  }, [aui]);
+
   useEffect(() => {
     const input = rootReference.current?.querySelector('.assistant-ui-composer-input');
     if (!(input instanceof HTMLElement)) return;
