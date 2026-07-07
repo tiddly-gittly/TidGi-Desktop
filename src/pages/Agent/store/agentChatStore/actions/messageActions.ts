@@ -141,7 +141,6 @@ export const messageActions = (
       } catch {
         // fetchAgent failed — error already set above if sendError was present
       }
-      }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       err.name = 'MissingConfigError';
