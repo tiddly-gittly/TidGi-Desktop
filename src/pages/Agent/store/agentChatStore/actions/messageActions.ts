@@ -131,6 +131,11 @@ export const messageActions = (
           const err = sendError instanceof Error ? sendError : new Error(String(sendError));
           err.name = 'MissingConfigError';
           set({ error: err });
+        } else if (lastMessage?.role === 'error') {
+          const msg = typeof lastMessage.content === 'string' ? lastMessage.content : 'Agent execution failed';
+          const err = new Error(msg);
+          err.name = 'MissingConfigError';
+          set({ error: err });
         }
       } catch {
         if (sendError) {
