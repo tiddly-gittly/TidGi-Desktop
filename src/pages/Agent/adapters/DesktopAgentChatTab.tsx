@@ -166,7 +166,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [messages, orderedMessageIds],
   );
 
-  const isWorking = loading || agent?.status?.state === 'working';
+  const isWorking = loading;
   const isStreaming = streamingMessageIds.size > 0;
 
   useEffect(() => {
