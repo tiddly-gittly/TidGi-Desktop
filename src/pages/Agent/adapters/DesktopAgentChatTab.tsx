@@ -433,16 +433,18 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [isSplitView],
   );
 
+  const storeError = useAgentChatStore(useShallow((state) => state.error));
+  const effectiveError = adapter.error ?? storeError;
   const errorBanner = React.useMemo(() => {
-    if (!adapterError) return null;
+    if (!effectiveError) return null;
     try {
-      return renderError(adapterError);
+      return renderError(effectiveError);
     } catch {
       return <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-        <Typography>{adapterError.message}</Typography>
+        <Typography>{effectiveError.message}</Typography>
       </Box>;
     }
-  }, [adapterError, renderError]);
+  }, [effectiveError, renderError]);
   const renderError = React.useCallback((error_: Error) => {
     const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
     if (!isConfigError) {
