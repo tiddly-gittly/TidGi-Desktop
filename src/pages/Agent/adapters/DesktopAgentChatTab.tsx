@@ -304,13 +304,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       isRunning: isWorking || remoteRunning,
       isLoading: loading,
       isMessageStreaming: (messageId) => streamingMessageIds.has(messageId),
-      error: error ?? remoteError ?? (agent?.status?.state === 'failed' ? (() => {
-        const lastMsgId = orderedMessages[orderedMessages.length - 1];
-        const lastMsg = lastMsgId ? messages.get(lastMsgId) : undefined;
-        const err = new Error(typeof lastMsg?.content === 'string' ? lastMsg.content : 'Agent execution failed');
-        err.name = 'MissingConfigError';
-        return err;
-      })() : null),
+      error: error ?? remoteError,
       executionTargets,
       activeExecutionTargetId,
       setExecutionTarget,
@@ -321,12 +315,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           await sendRemoteMessage(peerId, text);
         } else {
           await storeSendMessage(text, file, wikiTiddlers);
-          // Fetch agent to refresh status so isWorking reflects the terminal state.
-          // Read error from store (not closure) — storeSendMessage may have set it.
-          const hasError = useAgentChatStore.getState().error;
-          if (agent?.id && !hasError) {
-            await fetchAgent(agent.id);
-          }
         }
         clearAttachments();
       },
@@ -349,7 +337,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     }),
     [
       orderedMessages,
-      messages,
       isWorking,
       remoteRunning,
       loading,
@@ -365,7 +352,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       clearAttachments,
       cancelSelectedTarget,
       agent?.id,
-      agent,
       updateMessage,
       deleteTurn,
       retryTurn,
@@ -433,66 +419,19 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [isSplitView],
   );
 
-  const storeError = useAgentChatStore(useShallow((state) => state.error));
-  const effectiveError = adapter.error ?? storeError;
-  const errorBanner = React.useMemo(() => {
-    if (!effectiveError) return null;
-    try {
-      return renderError(effectiveError);
-    } catch {
-      return <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-        <Typography>{effectiveError.message}</Typography>
-      </Box>;
-    }
-  }, [effectiveError, renderError]);
-  const renderError = React.useCallback((error_: Error) => {
-    const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
-    if (!isConfigError) {
-      return (
-        <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-          <Typography>{error_.message}</Typography>
-        </Box>
-      );
-    }
-    return (
-      <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
-        <Typography color='error.main' variant='h6' gutterBottom>
-          {t('ConfigError.Title')}
-        </Typography>
-        <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-          {t(`ConfigError.${error_.name}`, { defaultValue: error_.message })}
-        </Typography>
-        <Button
-          variant='outlined'
-          size='small'
-          onClick={async () => {
-            const isTestMode = await window.service.context.get('isTest');
-            const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-            await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
-          }}
-        >
-          {t('ConfigError.GoToSettings')}
-        </Button>
-      </Box>
-    );
-  }, [t]);
-
   return (
     <AgentChatView
       adapter={adapter}
       header={
-        <>
-          {errorBanner}
-          <HeaderWithComposerText
-            title={tab.title}
-            onOpenParameters={handleOpenParameters}
-            loading={isWorking}
-            currentAgentDefId={tab.agentDefId}
-            onSwitchAgent={handleSwitchAgent}
-            isStreaming={isStreaming}
-            isSplitView={isSplitView}
-          />
-        </>
+        <HeaderWithComposerText
+          title={tab.title}
+          onOpenParameters={handleOpenParameters}
+          loading={isWorking}
+          currentAgentDefId={tab.agentDefId}
+          onSwitchAgent={handleSwitchAgent}
+          isStreaming={isStreaming}
+          isSplitView={isSplitView}
+        />
       }
       renderAttachmentActions={renderAttachmentActions}
       selectedFile={selectedFile}
