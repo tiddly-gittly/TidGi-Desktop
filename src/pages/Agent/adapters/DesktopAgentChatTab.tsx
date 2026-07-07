@@ -433,19 +433,55 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [isSplitView],
   );
 
+  const adapterError = adapter.error;
+  const renderError = React.useCallback((error_: Error) => {
+    const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
+    if (!isConfigError) {
+      return (
+        <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
+          <Typography>{error_.message}</Typography>
+        </Box>
+      );
+    }
+    return (
+      <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
+        <Typography color='error.main' variant='h6' gutterBottom>
+          {t('ConfigError.Title')}
+        </Typography>
+        <Typography color='text.secondary' sx={{ mb: 1.5 }}>
+          {t(`ConfigError.${error_.name}`, { defaultValue: error_.message })}
+        </Typography>
+        <Button
+          variant='outlined'
+          size='small'
+          onClick={async () => {
+            const isTestMode = await window.service.context.get('isTest');
+            const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+            await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+          }}
+        >
+          {t('ConfigError.GoToSettings')}
+        </Button>
+      </Box>
+    );
+  }, [t]);
+
   return (
     <AgentChatView
       adapter={adapter}
       header={
-        <HeaderWithComposerText
-          title={tab.title}
-          onOpenParameters={handleOpenParameters}
-          loading={isWorking}
-          currentAgentDefId={tab.agentDefId}
-          onSwitchAgent={handleSwitchAgent}
-          isStreaming={isStreaming}
-          isSplitView={isSplitView}
-        />
+        <>
+          {adapterError && renderError(adapterError)}
+          <HeaderWithComposerText
+            title={tab.title}
+            onOpenParameters={handleOpenParameters}
+            loading={isWorking}
+            currentAgentDefId={tab.agentDefId}
+            onSwitchAgent={handleSwitchAgent}
+            isStreaming={isStreaming}
+            isSplitView={isSplitView}
+          />
+        </>
       }
       renderAttachmentActions={renderAttachmentActions}
       selectedFile={selectedFile}
