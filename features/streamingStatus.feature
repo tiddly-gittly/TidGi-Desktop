@@ -40,6 +40,7 @@ Feature: Message Streaming Status
     
     # Verify send button is in normal state (not streaming)
     # The send icon should be visible and cancel icon should not be visible
+    And I wait for 1 seconds for "UI to settle"
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='agent-cancel-button']"
     
@@ -49,6 +50,7 @@ Feature: Message Streaming Status
     Then I should see 4 messages in chat history
     
     # Verify send button is still in normal state
+    And I wait for 1 seconds for "UI to settle"
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='agent-cancel-button']"
     
@@ -58,5 +60,6 @@ Feature: Message Streaming Status
     Then I should see 6 messages in chat history
     
     # Final verification
+    And I wait for 1 seconds for "UI to settle"
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='agent-cancel-button']"

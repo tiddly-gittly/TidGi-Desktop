@@ -315,8 +315,10 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           await sendRemoteMessage(peerId, text);
         } else {
           await storeSendMessage(text, file, wikiTiddlers);
-          // Fetch agent to refresh status so isWorking reflects the terminal state
-          if (agent?.id) {
+          // Fetch agent to refresh status so isWorking reflects the terminal state.
+          // Read error from store (not closure) — storeSendMessage may have set it.
+          const hasError = useAgentChatStore.getState().error;
+          if (agent?.id && !hasError) {
             await fetchAgent(agent.id);
           }
         }
