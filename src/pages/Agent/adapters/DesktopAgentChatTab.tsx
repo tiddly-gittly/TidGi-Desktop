@@ -304,7 +304,13 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       isRunning: isWorking || remoteRunning,
       isLoading: loading,
       isMessageStreaming: (messageId) => streamingMessageIds.has(messageId),
-      error: error ?? remoteError,
+      error: error ?? remoteError ?? (agent?.status?.state === 'failed' ? (() => {
+        const lastMsgId = orderedMessages[orderedMessages.length - 1];
+        const lastMsg = lastMsgId ? messages.get(lastMsgId) : undefined;
+        const err = new Error(typeof lastMsg?.content === 'string' ? lastMsg.content : 'Agent execution failed');
+        err.name = 'MissingConfigError';
+        return err;
+      })() : null),
       executionTargets,
       activeExecutionTargetId,
       setExecutionTarget,
@@ -343,6 +349,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     }),
     [
       orderedMessages,
+      messages,
       isWorking,
       remoteRunning,
       loading,
@@ -358,6 +365,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       clearAttachments,
       cancelSelectedTarget,
       agent?.id,
+      agent,
       updateMessage,
       deleteTurn,
       retryTurn,
