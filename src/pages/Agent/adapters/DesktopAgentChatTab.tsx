@@ -433,7 +433,16 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [isSplitView],
   );
 
-  const adapterError = adapter.error;
+  const errorBanner = React.useMemo(() => {
+    if (!adapterError) return null;
+    try {
+      return renderError(adapterError);
+    } catch {
+      return <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
+        <Typography>{adapterError.message}</Typography>
+      </Box>;
+    }
+  }, [adapterError, renderError]);
   const renderError = React.useCallback((error_: Error) => {
     const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
     if (!isConfigError) {
@@ -471,7 +480,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       adapter={adapter}
       header={
         <>
-          {adapterError && renderError(adapterError)}
+          {errorBanner}
           <HeaderWithComposerText
             title={tab.title}
             onOpenParameters={handleOpenParameters}
