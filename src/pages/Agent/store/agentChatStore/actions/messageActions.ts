@@ -97,17 +97,44 @@ export const messageActions = (
         }
         : undefined;
 
-      await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
-        text: content,
-        file: fileData as unknown as File,
-        wikiTiddlers,
-      });
-      // Refresh agent state so isWorking reflects the terminal status
-      // (observable may fire after loading is already false)
+      // sendMsgToAgent may throw (e.g. MissingConfigError). Catch here
+      // so we can still fetchAgent to check terminal state downstream.
+      let sendError: unknown;
+      try {
+        await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
+          text: content,
+          file: fileData as unknown as File,
+          wikiTiddlers,
+        });
+      } catch (error_) {
+        sendError = error_;
+      }
+
+      // Fetch agent to refresh status so isWorking reflects terminal state
+      // Also check for failure — sendError is set if sendMsgToAgent threw
       try {
         await get().fetchAgent(storeAgent.id);
+        const updatedAgent = get().agent;
+        const messages = get().orderedMessageIds
+          .map((id) => get().messages.get(id))
+          .filter(Boolean);
+        const lastMessage = messages[messages.length - 1];
+
+        if (sendError instanceof Error && (sendError as Error).name === 'MissingConfigError') {
+          set({ error: sendError as Error });
+        } else if (updatedAgent?.status?.state === 'failed') {
+          const msg = typeof lastMessage?.content === 'string' ? lastMessage.content : 'Agent execution failed';
+          const err = new Error(msg);
+          err.name = 'MissingConfigError';
+          set({ error: err });
+        } else if (sendError) {
+          set({ error: sendError instanceof Error ? sendError : new Error(String(sendError)) });
+        }
       } catch {
-        // ignore fetch errors — status update is best-effort
+        // If fetchAgent itself fails, fall back to the sendError if any
+        if (sendError) {
+          set({ error: sendError instanceof Error ? sendError : new Error(String(sendError)) });
+        }
       }
     } catch (error) {
       set({ error: error as Error });
