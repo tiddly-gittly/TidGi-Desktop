@@ -128,16 +128,21 @@ export const messageActions = (
           err.name = 'MissingConfigError';
           set({ error: err });
         } else if (sendError) {
-          set({ error: sendError instanceof Error ? sendError : new Error(String(sendError)) });
+          const err = sendError instanceof Error ? sendError : new Error(String(sendError));
+          err.name = 'MissingConfigError';
+          set({ error: err });
         }
       } catch {
-        // If fetchAgent itself fails, fall back to the sendError if any
         if (sendError) {
-          set({ error: sendError instanceof Error ? sendError : new Error(String(sendError)) });
+          const err = sendError instanceof Error ? sendError : new Error(String(sendError));
+          err.name = 'MissingConfigError';
+          set({ error: err });
         }
       }
     } catch (error) {
-      set({ error: error as Error });
+      const err = error instanceof Error ? error : new Error(String(error));
+      err.name = 'MissingConfigError';
+      set({ error: err });
       void window.service.native.log(
         'error',
         'Failed to send message',
