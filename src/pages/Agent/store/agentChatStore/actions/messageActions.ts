@@ -133,12 +133,21 @@ export const messageActions = (
           const err = new Error(msg);
           err.name = 'MissingConfigError';
           set({ error: err });
-        } else if (lastMessage && lastMessage.role !== 'user' && typeof lastMessage.content === 'string' &&
-            (lastMessage.content.includes('MissingConfigError') || lastMessage.content.includes('ConfigError') ||
-             lastMessage.content.includes('AI config') || lastMessage.content.includes('api key'))) {
-          const err = new Error(lastMessage.content);
-          err.name = 'MissingConfigError';
-          set({ error: err });
+        } else if (lastMessage && lastMessage.role !== 'user') {
+          const content = typeof lastMessage.content === 'string' ? lastMessage.content : '';
+          // Set error if agent failed, or message indicates error, or message
+          // was produced without AI config (empty or contains error keywords).
+          if (updatedAgent?.status?.state === 'failed' ||
+              lastMessage.role === 'error' ||
+              content.includes('MissingConfigError') || content.includes('ConfigError') ||
+              content.includes('API key') || content.includes('api key') ||
+              content.includes('configuration') ||
+              !content.trim()) {
+            const err = new Error(content || 'Agent execution failed');
+            err.name = 'MissingConfigError';
+            set({ error: err });
+          }
+        }
         }
       } catch {
         if (sendError) {
