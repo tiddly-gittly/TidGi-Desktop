@@ -28,6 +28,8 @@ Feature: Configuration Error Handling
     And I press "Enter" key
     # The memeloop framework creates an error chat message in the conversation
     Then I should see 2 messages in chat history
+    # Diagnostic: verify adapter received the error
+    And I should see a "adapter has error" element with selector "[data-adapter-error='true']"
     # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
     Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
       | element description       | selector                                                  |
