@@ -1,5 +1,5 @@
 import { MemeLoopComposer, type MemeLoopComposerProps } from '@memeloop/react-ui/chat';
-import { useAui } from '@memeloop/react-ui/chat';
+import { useAui, useAuiState } from '@memeloop/react-ui/chat';
 import React, { useEffect, useRef } from 'react';
 
 /**
@@ -16,6 +16,7 @@ import React, { useEffect, useRef } from 'react';
 export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
   const rootReference = useRef<HTMLDivElement>(null);
   const aui = useAui();
+  const threadIsRunning = useAuiState((s) => s.thread.isRunning);
 
   useEffect(() => {
     const input = rootReference.current?.querySelector('.assistant-ui-composer-input');
@@ -23,22 +24,6 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
       input.setAttribute('data-testid', 'agent-message-input');
     }
   });
-
-  // Expose thread isRunning state as DOM attribute for E2E tests
-  useEffect(() => {
-    const unsubscribe = aui.thread().subscribe(() => {
-      const root = rootReference.current;
-      if (root) {
-        root.setAttribute('data-thread-isrunning', String(aui.thread().getState().isRunning));
-      }
-    });
-    // Initial sync
-    const root = rootReference.current;
-    if (root) {
-      root.setAttribute('data-thread-isrunning', String(aui.thread().getState().isRunning));
-    }
-    return unsubscribe;
-  }, [aui]);
 
   useEffect(() => {
     const input = rootReference.current?.querySelector('.assistant-ui-composer-input');
@@ -62,7 +47,7 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
   }, [aui]);
 
   return (
-    <div ref={rootReference} style={{ display: 'contents' }}>
+    <div ref={rootReference} style={{ display: 'contents' }} data-thread-isrunning={String(threadIsRunning)}>
       <MemeLoopComposer {...props} />
     </div>
   );
