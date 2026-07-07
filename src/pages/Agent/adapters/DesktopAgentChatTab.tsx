@@ -424,6 +424,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       adapter={adapter}
       header={
         <Box data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))} data-testid='chat-header'>
+        <Box data-testid='error-message'>ERROR TEST</Box>
         {(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')) ? (() => {
           const err = error ?? remoteError ?? new Error('Agent execution failed');
           if (!(err instanceof Error && err.name)) {
