@@ -111,12 +111,6 @@ export const messageActions = (
       }
 
       // Fetch agent to refresh status so isWorking reflects terminal state.
-      // Set error synchronously if we have one, then fetch agent in background.
-      if (sendError) {
-        const err = sendError instanceof Error ? sendError : new Error(String(sendError));
-        err.name = 'MissingConfigError';
-        set({ error: err });
-      }
       try {
         await get().fetchAgent(storeAgent.id);
         const updatedAgent = get().agent;
@@ -125,21 +119,27 @@ export const messageActions = (
           .filter(Boolean);
         const lastMessage = messages[messages.length - 1];
 
-        if (!sendError) {
-          if (updatedAgent?.status?.state === 'failed') {
-            const msg = typeof lastMessage?.content === 'string' ? lastMessage.content : 'Agent execution failed';
-            const err = new Error(msg);
-            err.name = 'MissingConfigError';
-            set({ error: err });
-          } else if (lastMessage?.role === 'error') {
-            const msg = typeof lastMessage.content === 'string' ? lastMessage.content : 'Agent execution failed';
-            const err = new Error(msg);
-            err.name = 'MissingConfigError';
-            set({ error: err });
-          }
+        if (sendError) {
+          const err = sendError instanceof Error ? sendError : new Error(String(sendError));
+          err.name = 'MissingConfigError';
+          set({ error: err });
+        } else if (updatedAgent?.status?.state === 'failed') {
+          const msg = typeof lastMessage?.content === 'string' ? lastMessage.content : 'Agent execution failed';
+          const err = new Error(msg);
+          err.name = 'MissingConfigError';
+          set({ error: err });
+        } else if (lastMessage?.role === 'error') {
+          const msg = typeof lastMessage.content === 'string' ? lastMessage.content : 'Agent execution failed';
+          const err = new Error(msg);
+          err.name = 'MissingConfigError';
+          set({ error: err });
         }
       } catch {
-        // fetchAgent failed — error already set above if sendError was present
+        if (sendError) {
+          const err = sendError instanceof Error ? sendError : new Error(String(sendError));
+          err.name = 'MissingConfigError';
+          set({ error: err });
+        }
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
