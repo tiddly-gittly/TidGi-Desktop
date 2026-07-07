@@ -424,6 +424,38 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       adapter={adapter}
       header={
         <Box data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))} data-testid='chat-header'>
+        {(error ?? remoteError) ? (() => {
+          const err = (error ?? remoteError)!;
+          const isConfigError = isProviderConfigError(err) || err.name === 'MissingConfigError';
+          if (!isConfigError) {
+            return (
+              <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
+                <Typography>{err.message}</Typography>
+              </Box>
+            );
+          }
+          return (
+            <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
+              <Typography color='error.main' variant='h6' gutterBottom>
+                {t('ConfigError.Title')}
+              </Typography>
+              <Typography color='text.secondary' sx={{ mb: 1.5 }}>
+                {t(`ConfigError.${err.name}`, { defaultValue: err.message })}
+              </Typography>
+              <Button
+                variant='outlined'
+                size='small'
+                onClick={async () => {
+                  const isTestMode = await window.service.context.get('isTest');
+                  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+                  await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+                }}
+              >
+                {t('ConfigError.GoToSettings')}
+              </Button>
+            </Box>
+          );
+        })() : null}
         <HeaderWithComposerText
           title={tab.title}
           onOpenParameters={handleOpenParameters}
