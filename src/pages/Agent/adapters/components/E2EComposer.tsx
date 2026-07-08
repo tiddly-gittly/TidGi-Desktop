@@ -49,7 +49,7 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
 
   return (
     <div ref={rootReference} style={{ display: 'contents' }}>
-      <span data-testid='error-message' data-thread-isrunning={String(threadIsRunning)} />
+      <span data-testid='error-message' data-thread-isrunning={String(threadIsRunning)}>error</span>
       <MemeLoopComposer {...props} />
     </div>
   );
