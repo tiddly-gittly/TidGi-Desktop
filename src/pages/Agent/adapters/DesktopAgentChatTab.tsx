@@ -420,10 +420,10 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
   );
 
   return (
+    <div id='tidgi-error-banner' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}>
     <AgentChatView
       adapter={adapter}
       header={
-        <div id='tidgi-error-banner' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}>
         <HeaderWithComposerText
           title={tab.title}
           onOpenParameters={handleOpenParameters}
@@ -433,7 +433,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           isStreaming={isStreaming}
           isSplitView={isSplitView}
         />
-        </div>
       }
       renderAttachmentActions={renderAttachmentActions}
       selectedFile={selectedFile}
@@ -505,5 +504,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         />
       )}
     />
+    </div>
   );
 };
