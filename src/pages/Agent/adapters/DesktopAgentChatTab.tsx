@@ -535,5 +535,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         </>
       }
     />
+    <Box data-testid='error-message' sx={{ p: 1 }}>OUTSIDE</Box>
   );
 };
