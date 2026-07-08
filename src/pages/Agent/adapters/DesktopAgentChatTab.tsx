@@ -423,7 +423,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     <AgentChatView
       adapter={adapter}
       header={
-        <Box id='error-message' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}>
+        <div id='error-message' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}></div>
         <HeaderWithComposerText
           title={tab.title}
           onOpenParameters={handleOpenParameters}
@@ -433,7 +433,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           isStreaming={isStreaming}
           isSplitView={isSplitView}
         />
-        </Box>
       }
       renderAttachmentActions={renderAttachmentActions}
       selectedFile={selectedFile}
