@@ -482,6 +482,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       }}
       footer={
         <>
+          <Box data-testid='error-message' sx={{ p: 1 }}>TEST</Box>
           {(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')) ? (() => {
             const err = (error ?? remoteError ?? new Error('Agent execution failed')) as Error;
             err.name = 'MissingConfigError';
