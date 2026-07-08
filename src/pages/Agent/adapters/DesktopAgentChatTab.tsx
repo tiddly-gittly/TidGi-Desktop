@@ -423,6 +423,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     <AgentChatView
       adapter={adapter}
       header={
+        <>
         <div id='error-message' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}></div>
         <HeaderWithComposerText
           title={tab.title}
@@ -433,6 +434,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           isStreaming={isStreaming}
           isSplitView={isSplitView}
         />
+        </>
       }
       renderAttachmentActions={renderAttachmentActions}
       selectedFile={selectedFile}
