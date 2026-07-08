@@ -420,6 +420,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
   );
 
   return (
+    <>
     <AgentChatView
       adapter={adapter}
       header={
@@ -536,5 +537,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       }
     />
     <Box data-testid='error-message' sx={{ p: 1 }}>OUTSIDE</Box>
+    </>
   );
 };
