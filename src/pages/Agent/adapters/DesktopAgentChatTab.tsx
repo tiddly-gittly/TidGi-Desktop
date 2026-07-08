@@ -531,6 +531,8 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           }}
         />
       )}
+        </>
+      }
     />
   );
 };
