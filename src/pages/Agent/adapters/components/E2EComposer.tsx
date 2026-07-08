@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import { MemeLoopComposer, type MemeLoopComposerProps } from '@memeloop/react-ui/chat';
 import { useAui, useAuiState } from '@memeloop/react-ui/chat';
 import React, { useEffect, useRef } from 'react';
@@ -48,6 +49,7 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
 
   return (
     <div ref={rootReference} style={{ display: 'contents' }} data-thread-isrunning={String(threadIsRunning)}>
+      <Box data-testid='error-message'>composer test</Box>
       <MemeLoopComposer {...props} />
     </div>
   );
