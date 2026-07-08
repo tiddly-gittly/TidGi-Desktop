@@ -136,4 +136,5 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I type "Plan Agent测试" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see an "plan agent response" element with selector "[data-testid='message-bubble']:has-text('Plan Agent 模式')"
-    And I should see 2 messages in chat history
+    # Verify wiki-operation tool is NOT in system prompt (Plan mode disables it)
+    And the last AI request system prompt should not contain "wiki-operation"
