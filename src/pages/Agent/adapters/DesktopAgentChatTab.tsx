@@ -423,7 +423,8 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     <AgentChatView
       adapter={adapter}
       header={
-        <Box data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))} data-testid='chat-header'>
+        <Box data-testid='chat-header' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}>
+        <Box data-testid='error-message' sx={{ p: 1 }}> </Box>
         <HeaderWithComposerText
           title={tab.title}
           onOpenParameters={handleOpenParameters}
