@@ -420,7 +420,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
   );
 
   return (
-    <>
     <AgentChatView
       adapter={adapter}
       header={
@@ -481,35 +480,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           </Box>
         );
       }}
-      footer={
-        <>
-          <Box data-testid='error-message' sx={{ p: 1 }}>TEST</Box>
-          {(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')) ? (() => {
-            const err = (error ?? remoteError ?? new Error('Agent execution failed')) as Error;
-            err.name = 'MissingConfigError';
-            return (
-              <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
-                <Typography color='error.main' variant='h6' gutterBottom>
-                  {t('ConfigError.Title')}
-                </Typography>
-                <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-                  {t(`ConfigError.${err.name}`, { defaultValue: err.message })}
-                </Typography>
-                <Button
-                  variant='outlined'
-                  size='small'
-                  onClick={async () => {
-                    const isTestMode = await window.service.context.get('isTest');
-                    const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-                    await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
-                  }}
-                >
-                  {t('ConfigError.GoToSettings')}
-                </Button>
-              </Box>
-            );
-          })() : null}
-          {parametersOpen && (
+      footer={parametersOpen && (
         <AIModelParametersDialog
           open={parametersOpen}
           onClose={() => {
@@ -533,10 +504,6 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
           }}
         />
       )}
-        </>
-      }
     />
-    <Box data-testid='error-message' sx={{ p: 1 }}>OUTSIDE</Box>
-    </>
   );
 };
