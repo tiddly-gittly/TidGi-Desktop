@@ -424,7 +424,7 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
       adapter={adapter}
       header={
         <>
-        <div id='error-message' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}></div>
+        <div id='tidgi-error-banner' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}></div>
         <HeaderWithComposerText
           title={tab.title}
           onOpenParameters={handleOpenParameters}
