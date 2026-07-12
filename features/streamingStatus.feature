@@ -39,9 +39,9 @@ Feature: Message Streaming Status
     Then I should see 2 messages in chat history
     
     # Verify send button is in normal state (not streaming)
-    # The send icon should be visible and thread should not be running
+    # The send icon should be visible and cancel icon should not be visible
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should see a "thread not running" element with selector "[data-thread-isrunning='false']"
+    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
     
     # Send second message to confirm button works
     When I type "Second message" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -50,7 +50,7 @@ Feature: Message Streaming Status
     
     # Verify send button is still in normal state
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should see a "thread not running" element with selector "[data-thread-isrunning='false']"
+    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
     
     # Send third message to triple confirm
     When I type "Third message" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -59,4 +59,4 @@ Feature: Message Streaming Status
     
     # Final verification
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
-    And I should see a "thread not running" element with selector "[data-thread-isrunning='false']"
+    And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"

@@ -45,7 +45,7 @@ export async function createMemeLoopUserMessage(input: {
   let messageContent = input.content.text;
   if (wikiTiddlersMetadata.length > 0) {
     const tiddlerBlocks = wikiTiddlersMetadata.map(
-      (tiddler) => `[Wiki Tiddler: ${tiddler.tiddlerTitle} (${tiddler.workspaceName})]\n${tiddler.renderedContent}\n[End of tiddler: ${tiddler.tiddlerTitle}]`,
+      (tiddler) => `[Wiki Entry from ${tiddler.workspaceName}: ${tiddler.tiddlerTitle}]\n${tiddler.renderedContent}\n[End Wiki Entry]`,
     );
     messageContent = `${tiddlerBlocks.join('\n\n')}\n\n${messageContent}`;
   }

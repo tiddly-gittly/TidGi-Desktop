@@ -377,12 +377,11 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
     [tab.agentDefId, tab.id, updateTabData, fetchAgent],
   );
 
-  const renderAttachmentActions = (
+  const renderAttachmentPicker: NonNullable<React.ComponentProps<typeof AgentChatView>['renderAttachmentPicker']> = ({ disabled, openFilePicker }) => (
     <WikiTiddlerSelector
-      disabled={!agent || isWorking}
-      onSelect={(tiddler) => {
-        handleWikiTiddlerSelect(tiddler);
-      }}
+      disabled={disabled}
+      onAddImage={openFilePicker}
+      onSelect={handleWikiTiddlerSelect}
     />
   );
 
@@ -420,90 +419,90 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
   );
 
   return (
-    <div id='tidgi-error-banner' data-adapter-error={String(!!(error ?? remoteError ?? (agent?.status?.state === 'failed' || agent?.status?.state === 'input-required')))}>
-    <AgentChatView
-      adapter={adapter}
-      header={
-        <HeaderWithComposerText
-          title={tab.title}
-          onOpenParameters={handleOpenParameters}
-          loading={isWorking}
-          currentAgentDefId={tab.agentDefId}
-          onSwitchAgent={handleSwitchAgent}
-          isStreaming={isStreaming}
-          isSplitView={isSplitView}
-        />
-      }
-      renderAttachmentActions={renderAttachmentActions}
-      selectedFile={selectedFile}
-      selectedWikiTiddlers={selectedWikiTiddlers}
-      onFileSelect={handleFileSelect}
-      onWikiTiddlerSelect={handleWikiTiddlerSelect}
-      onClearFile={handleClearFile}
-      onRemoveWikiTiddler={handleRemoveWikiTiddler}
-      onWikiTiddlerClick={handleWikiTiddlerClick}
-      composerComponent={E2EComposer}
-      disabled={!agent || isWorking}
-      placeholder={t('Agent.StartConversation')}
-      loadingMessage={t('Agent.LoadingChat')}
-      emptyMessage={t('Agent.StartConversation')}
-      renderError={(error_) => {
-        const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
-        if (!isConfigError) {
+    <div>
+      <AgentChatView
+        adapter={adapter}
+        header={
+          <HeaderWithComposerText
+            title={tab.title}
+            onOpenParameters={handleOpenParameters}
+            loading={isWorking}
+            currentAgentDefId={tab.agentDefId}
+            onSwitchAgent={handleSwitchAgent}
+            isStreaming={isStreaming}
+            isSplitView={isSplitView}
+          />
+        }
+        renderAttachmentPicker={renderAttachmentPicker}
+        selectedFile={selectedFile}
+        selectedWikiTiddlers={selectedWikiTiddlers}
+        onFileSelect={handleFileSelect}
+        onWikiTiddlerSelect={handleWikiTiddlerSelect}
+        onClearFile={handleClearFile}
+        onRemoveWikiTiddler={handleRemoveWikiTiddler}
+        onWikiTiddlerClick={handleWikiTiddlerClick}
+        composerComponent={E2EComposer}
+        disabled={!agent || isWorking}
+        placeholder={t('Agent.StartConversation')}
+        loadingMessage={t('Agent.LoadingChat')}
+        emptyMessage={t('Agent.StartConversation')}
+        renderError={(error_) => {
+          const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
+          if (!isConfigError) {
+            return (
+              <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
+                <Typography>{error_.message}</Typography>
+              </Box>
+            );
+          }
+
           return (
-            <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-              <Typography>{error_.message}</Typography>
+            <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
+              <Typography color='error.main' variant='h6' gutterBottom>
+                {t('Chat.ConfigError.Title')}
+              </Typography>
+              <Typography color='text.secondary' sx={{ mb: 1.5 }}>
+                {t(`Chat.ConfigError.${error_.name}`, { defaultValue: error_.message })}
+              </Typography>
+              <Button
+                variant='outlined'
+                size='small'
+                onClick={async () => {
+                  const isTestMode = await window.service.context.get('isTest');
+                  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+                  await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+                }}
+              >
+                {t('Chat.ConfigError.GoToSettings')}
+              </Button>
             </Box>
           );
-        }
-
-        return (
-          <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
-            <Typography color='error.main' variant='h6' gutterBottom>
-              {t('ConfigError.Title')}
-            </Typography>
-            <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-              {t(`ConfigError.${error_.name}`, { defaultValue: error_.message })}
-            </Typography>
-            <Button
-              variant='outlined'
-              size='small'
-              onClick={async () => {
-                const isTestMode = await window.service.context.get('isTest');
-                const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-                await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
-              }}
-            >
-              {t('ConfigError.GoToSettings')}
-            </Button>
-          </Box>
-        );
-      }}
-      footer={parametersOpen && (
-        <AIModelParametersDialog
-          open={parametersOpen}
-          onClose={() => {
-            setParametersOpen(false);
-          }}
-          config={{
-            api: agent?.aiApiConfig?.api || { provider: 'openai', model: 'gpt-3.5-turbo' },
-            modelParameters: agent?.aiApiConfig?.modelParameters || {
-              temperature: 0.7,
-              maxTokens: 1000,
-              topP: 0.95,
-            },
-          }}
-          onSave={async (newConfig) => {
-            if (agent && tab.agentId) {
-              await updateAgent({
-                aiApiConfig: newConfig,
-              });
+        }}
+        footer={parametersOpen && (
+          <AIModelParametersDialog
+            open={parametersOpen}
+            onClose={() => {
               setParametersOpen(false);
-            }
-          }}
-        />
-      )}
-    />
+            }}
+            config={{
+              api: agent?.aiApiConfig?.api || { provider: 'openai', model: 'gpt-3.5-turbo' },
+              modelParameters: agent?.aiApiConfig?.modelParameters || {
+                temperature: 0.7,
+                maxTokens: 1000,
+                topP: 0.95,
+              },
+            }}
+            onSave={async (newConfig) => {
+              if (agent && tab.agentId) {
+                await updateAgent({
+                  aiApiConfig: newConfig,
+                });
+                setParametersOpen(false);
+              }
+            }}
+          />
+        )}
+      />
     </div>
   );
 };

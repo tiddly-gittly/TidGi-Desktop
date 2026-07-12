@@ -97,68 +97,19 @@ export const messageActions = (
         }
         : undefined;
 
-      // sendMsgToAgent may throw (e.g. MissingConfigError). Catch here
-      // so we can still fetchAgent to check terminal state downstream.
-      let sendError: unknown;
-      try {
-        await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
-          text: content,
-          file: fileData as unknown as File,
-          wikiTiddlers,
-        });
-      } catch (error_) {
-        sendError = error_;
-      }
+      // sendMsgToAgent throws on hard errors (including configuration errors
+      // emitted by the LLM provider). The service persists a role='error'
+      // message before re-throwing, so the chat history still contains the
+      // failure record.
+      await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
+        text: content,
+        file: fileData as unknown as File,
+        wikiTiddlers,
+      });
 
-      // Fetch agent to refresh status so isWorking reflects terminal state.
-      try {
-        await get().fetchAgent(storeAgent.id);
-        const updatedAgent = get().agent;
-        const messages = get().orderedMessageIds
-          .map((id) => get().messages.get(id))
-          .filter(Boolean);
-        const lastMessage = messages[messages.length - 1];
-
-        if (sendError) {
-          const err = sendError instanceof Error ? sendError : new Error(String(sendError));
-          err.name = 'MissingConfigError';
-          set({ error: err });
-        } else if (updatedAgent?.status?.state === 'failed') {
-          const msg = typeof lastMessage?.content === 'string' ? lastMessage.content : 'Agent execution failed';
-          const err = new Error(msg);
-          err.name = 'MissingConfigError';
-          set({ error: err });
-        } else if (lastMessage?.role === 'error') {
-          const msg = typeof lastMessage.content === 'string' ? lastMessage.content : 'Agent execution failed';
-          const err = new Error(msg);
-          err.name = 'MissingConfigError';
-          set({ error: err });
-        } else if (lastMessage && lastMessage.role !== 'user') {
-          const content = typeof lastMessage.content === 'string' ? lastMessage.content : '';
-          // Set error if agent failed, or message indicates error, or message
-          // was produced without AI config (empty or contains error keywords).
-          if (updatedAgent?.status?.state === 'failed' ||
-              lastMessage.role === 'error' ||
-              content.includes('MissingConfigError') || content.includes('ConfigError') ||
-              content.includes('API key') || content.includes('api key') ||
-              content.includes('configuration') ||
-              !content.trim()) {
-            const err = new Error(content || 'Agent execution failed');
-            err.name = 'MissingConfigError';
-            set({ error: err });
-          }
-        }
-      } catch {
-        if (sendError) {
-          const err = sendError instanceof Error ? sendError : new Error(String(sendError));
-          err.name = 'MissingConfigError';
-          set({ error: err });
-        }
-      }
+      // Refresh UI state after a successful turn.
+      await get().fetchAgent(storeAgent.id);
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      err.name = 'MissingConfigError';
-      set({ error: err });
       void window.service.native.log(
         'error',
         'Failed to send message',

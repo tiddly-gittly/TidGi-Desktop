@@ -35,7 +35,7 @@ Feature: Create New Agent Workflow
     # Wait for autocomplete panel to load with templates (async operation in CI)
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
     # Using description text to select specific agent, more precise than just name
-    When I click on a "Example Agent template" element with selector '[data-testid="template-search-input"] .aa-ItemWrapper:has-text("通用助手")'
+    When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("General-purpose TiddlyWiki AI assistant")'
     # Fill in agent name while still in step 1
     When I clear text in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"
@@ -121,9 +121,9 @@ Feature: Create New Agent Workflow
     # Expand array item to show the system prompt text field
     When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
     # Click the system prompt text field to focus it for editing
-    When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
-    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
-    When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])"
+    When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
+    When I type "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。" in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     # Step 7: Test in the immediate use section (embedded chat)
     # The immediate use section should show an embedded chat interface
     # Ensure the message input is visible before clicking (it may be scrolled below the prompt editor)

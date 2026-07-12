@@ -206,7 +206,7 @@ Feature: Sub-Wiki Functionality
     # Select the first (default) wiki workspace from dropdown
     And I select "wiki" from MUI Select with test id "main-wiki-select"
     # Type folder name
-    And I type "SubWikiUI" in "sub wiki folder name input" element with selector "[data-testid='subwiki-folder-name-input']"
+    And I type "SubWikiUI" in "sub wiki folder name input" element with selector "input[aria-describedby*='-helper-text'][value='wiki']"
     # Add tag using Autocomplete - type and press Enter to add the tag
     And I type "UITestTag" in "tag name input" element with selector "[data-testid='tagname-autocomplete-input']"
     And I press "Enter" key
