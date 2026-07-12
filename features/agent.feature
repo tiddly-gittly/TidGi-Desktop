@@ -21,7 +21,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Add scenario-specific responses to the mock server
     Given I add mock OpenAI responses:
       | response                                                                                                                                                             | stream |
-      | <tool_use name="wiki-search">{"workspaceName":"wiki","filter":"[title[Index]]"}</tool_use>                                                          | false  |
+      | <tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>                                                          | false  |
       | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |
     # Proceed with agent workflow in main window
     # Step 1: Click new tab button
@@ -40,9 +40,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I press "Enter" key
     Then I should see 4 messages in chat history
     # Verify the last message contains the AI explanation about Index
-    And I should see "explanation about Index in last message" elements with selectors:
-      | element description              | selector                                                    |
-      | explanation about Index          | [data-testid='message-bubble']:has-text('Index') |
+    And I should see "explanation in last message and explanation about edit" elements with selectors:
+      | element description         | selector                                                    |
+      | explanation in last message | [data-testid='message-bubble']:has-text('Index') |
+      | explanation about edit      | [data-testid='message-bubble']:has-text('编辑')  |
 
   @agent @mockOpenAI
   Scenario: Wiki operation
@@ -67,10 +68,12 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I type "在 wiki 里创建一个新笔记，内容为 test" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 6 messages in chat history
-    And I should see "tool result with workspace and wiki text" elements with selectors:
-      | element description       | selector                                                     |
-      | workspace not exist error | [data-testid='message-bubble']:has-text('test-expected-to-fail') |
-      | wiki in result           | [data-testid='message-bubble']:has-text('wiki')               |
+    # Verify error and success messages
+    And I should see "workspace not exist error and success in last message and wiki workspace in last message" elements with selectors:
+      | element description            | selector                                                                 |
+      | workspace not exist error      | [data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在') |
+      | success in last message        | [data-testid='message-bubble']:has-text('已成功')             |
+      | wiki workspace in last message | [data-testid='message-bubble']:has-text('wiki')               |
 
   @agent
   Scenario: Create default agent from New Tab quick access
@@ -122,7 +125,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | partial assistant text        | *:has-text('partial_chunk_1')            |
       | cancel icon                   | [data-testid='cancel-icon']              |
     # Click cancel button mid-stream
-    When I click on a "cancel button" element with selector "[data-testid='agent-cancel-button']"
+    When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
     # Verify send button returned and stream stopped (no further chunks)
     Then I should see "send icon and send button" elements with selectors:
       | element description | selector                         |

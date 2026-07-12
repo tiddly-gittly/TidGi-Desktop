@@ -68,7 +68,7 @@ Feature: HTML wiki workspace
     When I open edit workspace window for workspace with name "mobile-sync-wiki"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I type "Renamed HTML Workspace" in "workspace name" element with selector "[data-testid='preference-name']"
+    When I type "Renamed HTML Workspace" in "workspace name" element with selector "input[value='mobile-sync-wiki']"
     And I click on a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
     Then I should not see a "save workspace button" element with selector "[data-testid='edit-workspace-save-button']"
     Then settings.json should have workspace "Renamed HTML Workspace" with "name" set to "Renamed HTML Workspace"

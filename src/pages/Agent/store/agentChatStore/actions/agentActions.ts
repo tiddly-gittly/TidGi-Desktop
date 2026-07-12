@@ -218,15 +218,6 @@ export const agentActions = (
                 get().setMessageStreaming(message.messageId, false);
               }
             });
-
-            // When the agent fails, set error to trigger renderError callback
-            if (fullAgent.status.state === 'failed') {
-              const lastMessage = fullAgent.messages[fullAgent.messages.length - 1];
-              const errorMessage = lastMessage?.content && typeof lastMessage.content === 'string'
-                ? lastMessage.content
-                : 'Agent execution failed';
-              set({ error: new Error(errorMessage) });
-            }
           }
 
           // Build a new Map with new messages added immutably

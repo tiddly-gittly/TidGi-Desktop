@@ -69,11 +69,9 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
         const error = new Error(message);
         if (errorName) error.name = errorName;
         logger.error('MemeLoop LLM provider error', { errorDetail: response.errorDetail, requestId: currentRequestId });
-        // Yield the error text so the core loop can persist it as an assistant
-        // message instead of aborting the entire turn. This keeps streaming
-        // error handling consistent with update/done responses.
-        yield message;
-        return;
+        // Let the host turn boundary persist the canonical error message and
+        // terminate the turn as failed.
+        throw error;
       }
 
       if ((response.status === 'update' || response.status === 'done') && response.content) {

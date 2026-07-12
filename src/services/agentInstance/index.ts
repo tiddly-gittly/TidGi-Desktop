@@ -340,7 +340,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       timestamp: Date.now(),
       lamportClock: Date.now(),
       role: 'error',
-      content: `Error: ${error_ instanceof Error ? error_.message : String(error_)}`,
+      content: error_ instanceof Error ? error_.message : String(error_),
       duration: 1,
       metadata: {
         errorDetail: error_ instanceof Error ? { message: error_.message, name: error_.name } : { message: String(error_) },
@@ -542,7 +542,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         });
 
         this.cancelTokenMap.delete(agentId);
-        throw error;
+        return;
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);

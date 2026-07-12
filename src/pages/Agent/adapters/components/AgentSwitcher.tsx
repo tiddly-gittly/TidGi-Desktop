@@ -67,7 +67,6 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
     [currentAgentDefId, onSwitch, handleClose],
   );
 
-  // Load agent definitions when dropdown opens
   useEffect(() => {
     if (!open) return;
     void (async () => {

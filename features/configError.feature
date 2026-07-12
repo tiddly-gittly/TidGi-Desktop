@@ -26,18 +26,16 @@ Feature: Configuration Error Handling
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Hello" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    # The memeloop framework creates an error chat message in the conversation
-    Then I should see 2 messages in chat history
     # Verify error message wrapper, internationalized title, and "Go to Settings" button are present
     Then I should see "error message wrapper and configuration issue title and go to settings button" elements with selectors:
-      | element description       | selector                         |
-      | error message wrapper     | [id='tidgi-error-banner']                   |
-      | configuration issue title | [id='tidgi-error-banner']:has-text('配置问题') |
-      | go to settings button     | [id='tidgi-error-banner'] button:has-text('前往设置') |
+      | element description       | selector                                                  |
+      | error message wrapper     | [data-testid='error-message']                             |
+      | configuration issue title | [data-testid='error-message']:has-text('配置问题')        |
+      | go to settings button     | [data-testid='error-message'] button:has-text('前往设置') |
     # Verify we don't see the raw translation key
     Then I should not see a "raw error key text" element with selector "text='Chat.ConfigError.MissingConfigError'"
     # Click the button to open preferences
-    When I click on a "go to settings button" element with selector "[id='tidgi-error-banner'] button:has-text('前往设置')"
+    When I click on a "go to settings button" element with selector "[data-testid='error-message'] button:has-text('前往设置')"
     # Switch to preferences window
     When I switch to "preferences" window
     # Verify preferences window opened to External Services section

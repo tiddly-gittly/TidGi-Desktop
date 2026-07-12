@@ -109,7 +109,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I should not see a "files changed chip" element with selector "[data-testid='turn-files-changed']"
 
   @agentTool @mockOpenAI
-  Scenario: Agent switcher — switch between Task Agent and Plan Agent
+  Scenario: Agent switcher — switch between General Assistant and Code Assistant
     Given I add mock OpenAI responses:
       | response                           | stream |
       | Task Agent 模式的回复。            | false  |
@@ -124,11 +124,11 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I type "Task Agent测试" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see an "task agent response" element with selector "[data-testid='message-bubble']:has-text('Task Agent 模式')"
-    # Switch to Plan Agent via the switcher dropdown
+    # Switch to the canonical MemeLoop Code Assistant profile via the switcher dropdown
     When I click on a "agent switcher button" element with selector "[data-testid='agent-switcher-button']"
     Then I should see an "agent switcher dropdown" element with selector "[data-testid='agent-switcher-dropdown']"
-    And I should see a "plan agent option" element with selector "*:has-text('代码助手')"
-    When I click on a "plan agent option" element with selector "*:has-text('代码助手')"
+    And I should see a "code assistant option" element with selector "[data-testid='agent-switcher-option-memeloop:code-assistant']"
+    When I click on a "code assistant option" element with selector "[data-testid='agent-switcher-option-memeloop:code-assistant']"
     # After switching, chat history resets (new agent instance), input should be available
     Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Send message with Plan Agent

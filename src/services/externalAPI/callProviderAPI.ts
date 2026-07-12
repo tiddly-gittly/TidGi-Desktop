@@ -7,29 +7,6 @@ import type { ModelMessage } from './interface';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
 
-interface ModelMessageContent {
-  text?: string;
-  content?: string;
-}
-
-function getFormattedContent(content: ModelMessage['content']): string {
-  if (typeof content === 'string') {
-    return content;
-  }
-  if (Array.isArray(content)) {
-    return content
-      .map(part => {
-        if (typeof part === 'string') return part;
-        const typedPart = part as ModelMessageContent;
-        if (typedPart.text) return typedPart.text;
-        if (typedPart.content) return typedPart.content;
-        return '';
-      })
-      .join('');
-  }
-  return '';
-}
-
 /**
  * Map Desktop's AIProviderConfig to a memeloop core ILLMProvider.
  *
@@ -90,23 +67,15 @@ export async function streamFromProvider(
 
     const llmProvider = await createProviderFromConfig(providerConfig);
 
-    const systemPromptSegments = messages
-      .filter(message => message.role === 'system')
-      .map(message => getFormattedContent(message.content).trim())
-      .filter(Boolean);
-    const systemPrompt = systemPromptSegments.length > 0 ? systemPromptSegments.join('\n\n') : undefined;
-
-    // Filter out system messages from the messages array since we're handling them separately
-    const nonSystemMessages = messages.filter(message => message.role !== 'system');
-
-    // Ensure we have at least one message to avoid AI library errors
-    const finalMessages: Array<ModelMessage> = nonSystemMessages.length > 0 ? nonSystemMessages : [{ role: 'user' as const, content: 'Hi' }];
-
+    // Pass memeloop's messages directly. The core has already built the correct
+    // prompt structure (including agent-specific system prompts and tool
+    // descriptions); merging system messages here can leak tools such as
+    // wiki-operation into the first system prompt and break per-agent prompt
+    // isolation.
     const chatResult = await llmProvider.chat({
       model,
-      messages: finalMessages,
+      messages,
       stream: true,
-      system: systemPrompt,
       temperature,
       abortSignal: signal,
     });
