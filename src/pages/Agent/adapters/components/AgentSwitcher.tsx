@@ -113,7 +113,11 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
         anchorEl={anchorElement}
         placement='bottom-start'
         style={{ zIndex: 1500 }}
-        modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
+        modifiers={[
+          { name: 'offset', options: { offset: [0, 4] } },
+          { name: 'flip', enabled: true },
+          { name: 'preventOverflow', enabled: true },
+        ]}
       >
         <ClickAwayListener onClickAway={handleClose}>
           <DropdownPaper data-testid='agent-switcher-dropdown'>
