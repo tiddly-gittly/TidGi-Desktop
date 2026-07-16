@@ -15,6 +15,7 @@
     "start:dev:debug-vite": "cross-env NODE_ENV=development DEBUG=electron-forge:* electron-forge start",
     "start:dev:debug-react": "cross-env NODE_ENV=development DEBUG_REACT=true electron-forge start",
     "build:plugin": "zx scripts/compilePlugins.mjs",
+    "sync:memeloop": "pnpm update @memeloop/react-ui memeloop",
     "test": "pnpm run test:unit && pnpm run test:prepare-e2e && pnpm run test:e2e:calibrate && pnpm run test:e2e",
     "test:unit": "cross-env ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron --max-old-space-size=8192 ./node_modules/vitest/vitest.mjs run",
     "test:unit:coverage": "pnpm run test:unit --coverage",
