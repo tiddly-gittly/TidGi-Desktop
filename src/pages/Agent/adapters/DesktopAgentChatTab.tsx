@@ -24,9 +24,10 @@ import { isProviderConfigError } from '@/services/externalAPI/errors';
 import { PreferenceSections } from '@/services/preferences/interface';
 import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 import { AgentChatView } from '@memeloop/react-ui/agent';
-import { type MemeLoopChatAdapter, useAui } from '@memeloop/react-ui/chat';
+import { type MemeLoopChatAdapter, MessageContent } from '@memeloop/react-ui/chat';
 
 import { ChatHeader } from './components/ChatHeader';
+import { ChatToolbar } from './components/ChatToolbar';
 import { E2EComposer } from './components/E2EComposer';
 import { WikiTiddlerSelector } from './components/WikiTiddlerSelector';
 import { useMessageHandling } from './hooks/useMessageHandling';
@@ -65,13 +66,55 @@ interface DesktopAgentChatTabProps {
 }
 
 /**
- * Wraps ChatHeader so it can read the current composer text from the assistant-ui
- * runtime for prompt preview.
+ * Renders a configuration error inside a message or empty state.
+ * Detects the raw i18n key prefix `Chat.ConfigError.<Key>` and translates it.
  */
-function HeaderWithComposerText(props: React.ComponentProps<typeof ChatHeader>) {
-  const aui = useAui();
-  const text = aui.composer().getState().text;
-  return <ChatHeader {...props} inputText={text} />;
+function ConfigErrorMessage({
+  error,
+  params,
+}: {
+  error: Error;
+  params?: Record<string, unknown>;
+}) {
+  const { t } = useTranslation('agent');
+  const key = getConfigErrorKey(error);
+
+  return (
+    <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
+      <Typography color='error.main' variant='h6' gutterBottom>
+        {t('Chat.ConfigError.Title')}
+      </Typography>
+      <Typography color='text.secondary' sx={{ mb: 1.5 }}>
+        {t(`Chat.ConfigError.${key}`, { defaultValue: error.message, ...params })}
+      </Typography>
+      <Button
+        variant='outlined'
+        size='small'
+        onClick={async () => {
+          const isTestMode = await window.service.context.get('isTest');
+          const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+          await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+        }}
+      >
+        {t('Chat.ConfigError.GoToSettings')}
+      </Button>
+    </Box>
+  );
+}
+
+function getConfigErrorKey(error: Error): string {
+  if (error.message.startsWith('Chat.ConfigError.')) {
+    return error.message.slice('Chat.ConfigError.'.length);
+  }
+  return error.name;
+}
+
+function isConfigError(error: Error): boolean {
+  return (
+    error.message.startsWith('Chat.ConfigError.') ||
+    isProviderConfigError(error) ||
+    error.name === 'MissingConfigError'
+  );
 }
 
 /**
@@ -419,18 +462,20 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
   );
 
   return (
-    <div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
       <AgentChatView
         adapter={adapter}
-        header={
-          <HeaderWithComposerText
-            title={tab.title}
-            onOpenParameters={handleOpenParameters}
-            loading={isWorking}
+        header={<ChatHeader title={tab.title} isSplitView={isSplitView} />}
+        composerToolbar={
+          <ChatToolbar
+            tabId={tab.id}
             currentAgentDefId={tab.agentDefId}
             onSwitchAgent={handleSwitchAgent}
+            onOpenParameters={handleOpenParameters}
+            loading={isWorking}
             isStreaming={isStreaming}
             isSplitView={isSplitView}
+            embedded
           />
         }
         renderAttachmentPicker={renderAttachmentPicker}
@@ -447,62 +492,62 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         loadingMessage={t('Agent.LoadingChat')}
         emptyMessage={t('Agent.StartConversation')}
         renderError={(error_) => {
-          const isConfigError = isProviderConfigError(error_) || error_.name === 'MissingConfigError';
-          if (!isConfigError) {
+          if (!isConfigError(error_)) {
             return (
               <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
                 <Typography>{error_.message}</Typography>
               </Box>
             );
           }
-
-          return (
-            <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
-              <Typography color='error.main' variant='h6' gutterBottom>
-                {t('Chat.ConfigError.Title')}
-              </Typography>
-              <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-                {t(`Chat.ConfigError.${error_.name}`, { defaultValue: error_.message })}
-              </Typography>
-              <Button
-                variant='outlined'
-                size='small'
-                onClick={async () => {
-                  const isTestMode = await window.service.context.get('isTest');
-                  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-                  await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
-                }}
-              >
-                {t('Chat.ConfigError.GoToSettings')}
-              </Button>
-            </Box>
-          );
+          return <ConfigErrorMessage error={error_} />;
         }}
-        footer={parametersOpen && (
-          <AIModelParametersDialog
-            open={parametersOpen}
-            onClose={() => {
-              setParametersOpen(false);
-            }}
-            config={{
-              api: agent?.aiApiConfig?.api || { provider: 'openai', model: 'gpt-3.5-turbo' },
-              modelParameters: agent?.aiApiConfig?.modelParameters || {
-                temperature: 0.7,
-                maxTokens: 1000,
-                topP: 0.95,
-              },
-            }}
-            onSave={async (newConfig) => {
-              if (agent && tab.agentId) {
-                await updateAgent({
-                  aiApiConfig: newConfig,
-                });
-                setParametersOpen(false);
-              }
-            }}
-          />
-        )}
+        renderMessageContent={(message, _isUser) => {
+          // Render known config errors (raw i18n key prefix) as a rich card
+          // regardless of their role. Some error paths store them as role='error',
+          // others may fall back to role='assistant'; the key is the reliable signal.
+          const isConfigErrorMessage = message.role === 'error' || message.content.startsWith('Chat.ConfigError.');
+          if (!isConfigErrorMessage) {
+            return <MessageContent message={message} />;
+          }
+
+          const errorDetail = message.metadata?.errorDetail;
+          const typedErrorDetail = (typeof errorDetail === 'object' && errorDetail !== null
+            ? errorDetail
+            : {}) as { name?: unknown; params?: Record<string, unknown> };
+          const error = new Error(message.content);
+          error.name = typeof typedErrorDetail.name === 'string' ? typedErrorDetail.name : 'Error';
+          if (!isConfigError(error)) {
+            return <MessageContent message={message} />;
+          }
+
+          const parameters = typeof typedErrorDetail.params === 'object' && typedErrorDetail.params !== null
+            ? typedErrorDetail.params
+            : undefined;
+          return <ConfigErrorMessage error={error} params={parameters} />;
+        }}
       />
-    </div>
+      <AIModelParametersDialog
+        open={parametersOpen}
+        onClose={() => {
+          setParametersOpen(false);
+        }}
+        config={{
+          default: agent?.aiApiConfig?.default || { provider: 'openai', model: 'gpt-3.5-turbo' },
+          modelParameters: agent?.aiApiConfig?.modelParameters || {
+            temperature: 0.7,
+            maxTokens: 1000,
+            topP: 0.95,
+          },
+        }}
+        onSave={async (newConfig) => {
+          if (agent && tab.agentId) {
+            await updateAgent({
+              aiApiConfig: newConfig,
+            });
+            setParametersOpen(false);
+          }
+        }}
+      />
+    </Box>
   );
 };
