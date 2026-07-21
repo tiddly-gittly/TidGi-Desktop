@@ -2,11 +2,7 @@ import fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  patchSetupExeLogButton,
-  prepareSquirrelVendor,
-  SETUP_LOG_FORMAT_UTF16,
-} from '../prepareSquirrelVendor';
+import { patchSetupExeLogButton, prepareSquirrelVendor, SETUP_LOG_FORMAT_UTF16 } from '../prepareSquirrelVendor';
 
 const stockSetupExe = path.join(__dirname, '..', '..', 'node_modules', 'electron-winstaller', 'vendor', 'Setup.exe');
 

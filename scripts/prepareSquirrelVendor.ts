@@ -50,31 +50,31 @@ export function patchSetupExeLogButton(setupExePath: string): boolean {
 }
 
 export function prepareSquirrelVendor(
-  sourceVendorDir = path.join(__dirname, '..', 'node_modules', 'electron-winstaller', 'vendor'),
-  targetVendorDir = SQUIRREL_VENDOR_DIR,
-): { patched: boolean; targetVendorDir: string } {
-  if (!fs.existsSync(sourceVendorDir)) {
-    throw new Error(`electron-winstaller vendor not found at ${sourceVendorDir}`);
+  sourceVendorDirectory = path.join(__dirname, '..', 'node_modules', 'electron-winstaller', 'vendor'),
+  targetVendorDirectory = SQUIRREL_VENDOR_DIR,
+): { patched: boolean; targetVendorDirectory: string } {
+  if (!fs.existsSync(sourceVendorDirectory)) {
+    throw new Error(`electron-winstaller vendor not found at ${sourceVendorDirectory}`);
   }
 
-  fs.mkdirSync(path.dirname(targetVendorDir), { recursive: true });
-  fs.rmSync(targetVendorDir, { recursive: true, force: true });
-  fs.copySync(sourceVendorDir, targetVendorDir);
+  fs.mkdirSync(path.dirname(targetVendorDirectory), { recursive: true });
+  fs.rmSync(targetVendorDirectory, { recursive: true, force: true });
+  fs.copySync(sourceVendorDirectory, targetVendorDirectory);
 
-  const setupExePath = path.join(targetVendorDir, 'Setup.exe');
+  const setupExePath = path.join(targetVendorDirectory, 'Setup.exe');
   if (!fs.existsSync(setupExePath)) {
     throw new Error(`Setup.exe missing after vendor copy: ${setupExePath}`);
   }
 
   const patched = patchSetupExeLogButton(setupExePath);
-  return { patched, targetVendorDir };
+  return { patched, targetVendorDirectory };
 }
 
 if (require.main === module) {
   const result = prepareSquirrelVendor();
   console.log(
     result.patched
-      ? `Prepared Squirrel vendor with Setup.exe log-button patch at ${result.targetVendorDir}`
-      : `Prepared Squirrel vendor (Setup.exe already patched or unchanged) at ${result.targetVendorDir}`,
+      ? `Prepared Squirrel vendor with Setup.exe log-button patch at ${result.targetVendorDirectory}`
+      : `Prepared Squirrel vendor (Setup.exe already patched or unchanged) at ${result.targetVendorDirectory}`,
   );
 }
