@@ -38,7 +38,6 @@ export const developersSection: ISectionDefinition = {
       descriptionKey: 'Preference.OpenInstallerLogFolderDetail',
       handler: 'native.openPath',
       args: ['INSTALLER_LOG_FOLDER'],
-      platform: 'win32',
     },
     { type: 'divider' },
     {

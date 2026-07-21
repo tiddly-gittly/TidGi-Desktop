@@ -356,8 +356,7 @@
     "Contribute": "向此网站贡献内容",
     "Description": "点击「打开」按钮会在新窗口打开页面，页面初次打开需要5秒到1分钟时间从互联网加载，断网不可用。你可以随意修改打开的页面的内容，作为沙箱游乐场随意尝试学到的功能，如果想保存修改的结果，可以点击太微的保存按钮，保存为HTML格式的单页知识库。",
     "List": "帮助列表",
-    "Tags": {
-    }
+    "Tags": {}
   },
   "KeyboardShortcut": {
     "Clear": "清除",
@@ -578,8 +577,8 @@
     "OpenMetaDataFolderDetail": "太微的数据和太记的工作区数据是分开存放的，太记的数据包含工作区的设置等，它们以 JSON 形式存放在这个文件夹里。",
     "OpenV8CacheFolder": "打开V8缓存文件夹",
     "OpenV8CacheFolderDetail": "V8缓存文件夹存有加速应用启动的快取文件",
-    "OpenInstallerLogFolder": "打开安装包日志文件夹",
-    "OpenInstallerLogFolderDetail": "Windows 安装程序日志文件夹 (SquirrelTemp) 包含应用安装和更新的日志",
+    "OpenInstallerLogFolder": "打开安装/软件包日志文件夹",
+    "OpenInstallerLogFolderDetail": "Windows：SquirrelTemp（应用安装器日志）。macOS/Linux：/var/log（系统安装与包管理日志，如 install.log、dpkg.log）。Zip/DMG 拖拽安装没有单独安装器日志，请改用应用日志文件夹。",
     "ViewDebugPanel": "视图调试面板",
     "ViewDebugPanelDetail": "显示所有已打开的 WebContentsView 实例，包括它们的位置、内存占用、URL 和 DevTools 入口",
     "ViewDebugRefresh": "刷新",

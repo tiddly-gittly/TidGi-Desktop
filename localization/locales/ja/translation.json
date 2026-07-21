@@ -330,8 +330,7 @@
     "Contribute": "このサイトにコンテンツを提供する",
     "Description": "「開く」ボタンをクリックすると、新しいウィンドウでページが開きます。初回のページ読み込みには5秒から1分かかり、インターネットからのロードが必要です（オフラインでは利用できません）。開いたページの内容は自由に編集可能で、学んだ機能をサンドボックスプレイグラウンドとして試すことができます。変更内容を保存したい場合は、TiddlyWikiの保存ボタンをクリックしてHTML形式の単一ページWikiとして保存してください。",
     "List": "ヘルプリスト",
-    "Tags": {
-    }
+    "Tags": {}
   },
   "KeyboardShortcut": {
     "Clear": "クリア",
@@ -511,8 +510,8 @@
     "OpenMetaDataFolderDetail": "太微のデータと太記のワークスペースデータは別々に保存されています。太記のデータにはワークスペースの設定などが含まれており、それらはJSON形式でこのフォルダ内に保存されています。",
     "OpenV8CacheFolder": "V8キャッシュフォルダを開く",
     "OpenV8CacheFolderDetail": "V8キャッシュフォルダには、アプリケーションの起動を高速化するためのキャッシュファイルが保存されています。",
-    "OpenInstallerLogFolder": "インストーラーログフォルダを開く",
-    "OpenInstallerLogFolderDetail": "Windowsインストーラーログフォルダ (SquirrelTemp) には、アプリケーションのインストールと更新のログが含まれています。",
+    "OpenInstallerLogFolder": "インストーラー / パッケージのログフォルダーを開く",
+    "OpenInstallerLogFolderDetail": "Windows: SquirrelTemp（アプリインストーラー）。macOS/Linux: /var/log（install.log や dpkg.log など）。Zip/DMG のドラッグインストールには専用ログはなく、アプリのログフォルダーを使ってください。",
     "Performance": "性能",
     "PrivacyAndSecurity": "プライバシーとセキュリティ",
     "ReceivePreReleaseUpdates": "プレリリース更新を受信する",
@@ -579,8 +578,7 @@
   },
   "Save": "保存",
   "Schema": {
-    "ProviderModel": {
-    }
+    "ProviderModel": {}
   },
   "Scripting": {
     "ExecutingScript": "スクリプトを実行中です"

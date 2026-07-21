@@ -202,17 +202,29 @@ Try clean the cache by `pnpm run clean:cache`.
 
 ## Windows installer failed and "Open setup log" button does nothing
 
-When installing or updating on Windows, the Squirrel installer may fail with a dialog that offers an "Open setup log" button. In current releases this button can be unresponsive because the bootstrapper looks for a log file name that no longer matches the actual log file written by the updater.
+When installing or updating on Windows, the Squirrel installer may fail with a dialog that offers an "Open setup log" button.
 
-The real log is located at:
+### Root cause
 
-```path
-%LocalAppData%\SquirrelTemp\Squirrel-Install.log
-```
+`electron-winstaller` ships mismatched binaries:
 
-Common causes:
+- **Setup.exe 1.9.1** opens `%LocalAppData%\SquirrelTemp\SquirrelSetup.log`
+- **Squirrel.exe / Update.exe 2.0.1** writes `%LocalAppData%\SquirrelTemp\Squirrel-Install.log` (and rotated `Squirrel-Install.1.log`)
 
-- The previous version is still running, locking files such as `ffmpeg.dll`. Make sure TidGi is fully closed (including the tray icon) before installing or updating.
-- Antivirus or Windows Defender is blocking the installer from deleting or writing files under `%LocalAppData%\tidgi`.
+The button therefore targets a file that does not exist, so nothing visible happens. Upstream: [Squirrel#1912](https://github.com/Squirrel/Squirrel.Windows/issues/1912). Official NuGet `squirrel.windows@2.0.1` has the same Setup.exe.
 
-Workaround: manually open `%LocalAppData%\SquirrelTemp` and read `Squirrel-Install.log`. After resolving the lock or permission issue (like restart, or close previous version completely), run the installer again.
+### Fix in TidGi (from the build that includes this change)
+
+[`scripts/prepareSquirrelVendor.ts`](../scripts/prepareSquirrelVendor.ts) copies the stock vendor and patches Setup.exe so the button opens the `%LocalAppData%\SquirrelTemp` folder (where the real logs are). Forge uses that vendor via `vendorDirectory` on maker-squirrel (`forge.config.ts` `preMake` hook). **This patch only runs when packaging on Windows**; macOS/Linux makers (zip/deb/rpm) never touch Squirrel.
+
+Preferences → Developers → "Open installer / package log folder" works on all platforms:
+
+| Platform | Folder |
+|----------|--------|
+| Windows | `%LocalAppData%\SquirrelTemp` |
+| macOS / Linux | `/var/log` (system package logs; zip/DMG drag-install has no dedicated installer log — use the app log folder) |
+
+Common install-failure causes:
+
+- A previous install left `Update.exe` / `squirrel.exe --updateSelf` running and locking files under `%LocalAppData%\tidgi`. Fully quit the stuck installer processes (or reboot), then run the installer again.
+- Antivirus or Windows Defender blocking deletes/writes under `%LocalAppData%\tidgi`.

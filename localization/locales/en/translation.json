@@ -359,8 +359,7 @@
     "Contribute": "Contribute to this site",
     "Description": "Clicking the \"Open\" button will open the page in a new window. The page needs to be loaded from the Internet for the first time (5s - 1min), so it is not available when the network is disconnected. \nYou can modify the content of the opened page at will as a sandbox playground to try out the learned features. If you want to save the modified results, you can click Tiddlywiki's save button to save it as a single-page wiki in HTML format.",
     "List": "Helps List",
-    "Tags": {
-    }
+    "Tags": {}
   },
   "KeyboardShortcut": {
     "Clear": "clear",
@@ -563,8 +562,8 @@
     "OpenMetaDataFolderDetail": "TiddlyWiki's data and TidGi's workspace metadata are stored separately. TidGi's metadata includes workspace settings, etc., which are stored in this folder in JSON format.",
     "OpenV8CacheFolder": "Open the V8 cache folder",
     "OpenV8CacheFolderDetail": "The V8 cache folder stores cached files that accelerate application startup",
-    "OpenInstallerLogFolder": "Open the installer log folder",
-    "OpenInstallerLogFolderDetail": "The Windows installer log folder (SquirrelTemp) contains logs from application installation and updates",
+    "OpenInstallerLogFolder": "Open the installer / package log folder",
+    "OpenInstallerLogFolderDetail": "Windows: SquirrelTemp (app installer). macOS/Linux: /var/log (system package logs such as install.log or dpkg.log). Zip/DMG drag-install has no separate installer log — use the app log folder instead.",
     "ViewDebugPanel": "View Debug Panel",
     "ViewDebugPanelDetail": "Show all open WebContentsView instances with their bounds, memory usage, URL, and DevTools access",
     "ViewDebugRefresh": "Refresh",

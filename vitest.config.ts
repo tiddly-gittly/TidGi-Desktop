@@ -21,6 +21,7 @@ export default defineConfig({
     // @ts-expect-error - environmentMatchGlobs may not exist in vitest 4 types
     environmentMatchGlobs: [
       ['features/**', 'node'],
+      ['scripts/**', 'node'],
     ],
 
     // Setup files
@@ -31,6 +32,7 @@ export default defineConfig({
       'src/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
       'src/**/*.(test|spec).(ts|tsx|js)',
       'features/**/*.(test|spec).(ts|tsx|js)',
+      'scripts/**/__tests__/**/*.(test|spec).(ts|tsx|js)',
     ],
 
     // Global test settings - this makes vi, expect, etc. available globally

@@ -75,9 +75,25 @@ export const LOCAL_GIT_DIRECTORY = isPackaged
   : path.resolve(sourcePath, 'node_modules', 'dugite', 'git');
 // Logging, installer, and cache directories
 export const LOG_FOLDER = path.resolve(USER_DATA_FOLDER, 'logs');
-export const INSTALLER_LOG_FOLDER = process.platform === 'win32'
-  ? path.resolve(process.env.LOCALAPPDATA ?? path.join(app.getPath('home'), 'AppData', 'Local'), 'SquirrelTemp')
-  : '';
+/**
+ * Folder that holds installer / package-manager logs.
+ * - Windows: SquirrelTemp (Setup / Update.exe)
+ * - macOS / Linux: /var/log (install.log, dpkg.log, etc.; zip/dmg drag-install has no dedicated app installer log)
+ */
+export const INSTALLER_LOG_FOLDER = (() => {
+  switch (process.platform) {
+    case 'win32': {
+      return path.resolve(process.env.LOCALAPPDATA ?? path.join(app.getPath('home'), 'AppData', 'Local'), 'SquirrelTemp');
+    }
+    case 'darwin':
+    case 'linux': {
+      return '/var/log';
+    }
+    default: {
+      return '';
+    }
+  }
+})();
 export const V8_CACHE_FOLDER = v8CompileCacheLibrary.getCacheDir();
 export const DEFAULT_DOWNLOADS_PATH = path.join(app.getPath('home'), 'Downloads');
 

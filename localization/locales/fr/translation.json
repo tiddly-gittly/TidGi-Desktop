@@ -330,8 +330,7 @@
     "Contribute": "Contribuer à ce site",
     "Description": "Cliquer sur le bouton \"Ouvrir\" ouvrira la page dans une nouvelle fenêtre. La page doit être chargée depuis Internet pour la première fois (5s - 1min), elle n'est donc pas disponible lorsque le réseau est déconnecté. \nVous pouvez modifier le contenu de la page ouverte à volonté comme un terrain de jeu sandbox pour essayer les fonctionnalités apprises. Si vous souhaitez enregistrer les résultats modifiés, vous pouvez cliquer sur le bouton d'enregistrement de Tiddlywiki pour l'enregistrer en tant que wiki à page unique au format HTML.",
     "List": "Liste des aides",
-    "Tags": {
-    }
+    "Tags": {}
   },
   "KeyboardShortcut": {
     "Clear": "effacer",
@@ -512,8 +511,8 @@
     "OpenMetaDataFolderDetail": "Les données de TiddlyWiki et les métadonnées de l'espace de travail de TidGi sont stockées séparément. Les métadonnées de TidGi incluent les paramètres de l'espace de travail, etc., qui sont stockées dans ce dossier au format JSON.",
     "OpenV8CacheFolder": "Ouvrir le dossier de cache V8",
     "OpenV8CacheFolderDetail": "Le dossier de cache V8 stocke les fichiers mis en cache qui accélèrent le démarrage de l'application",
-    "OpenInstallerLogFolder": "Ouvrir le dossier des journaux d'installation",
-    "OpenInstallerLogFolderDetail": "Le dossier des journaux d'installation Windows (SquirrelTemp) contient les journaux d'installation et de mise à jour de l'application",
+    "OpenInstallerLogFolder": "Ouvrir le dossier des journaux d'installation / paquets",
+    "OpenInstallerLogFolderDetail": "Windows : SquirrelTemp (installeur de l'application). macOS/Linux : /var/log (journaux système tels que install.log ou dpkg.log). L'installation par Zip/DMG n'a pas de journal dédié — utilisez le dossier des journaux de l'application.",
     "Performance": "Performance",
     "PrivacyAndSecurity": "Confidentialité & Sécurité",
     "ReceivePreReleaseUpdates": "Recevoir les mises à jour préliminaires",
@@ -580,8 +579,7 @@
   },
   "Save": "sauvegarder",
   "Schema": {
-    "ProviderModel": {
-    }
+    "ProviderModel": {}
   },
   "Scripting": {
     "ExecutingScript": "Exécution du script"

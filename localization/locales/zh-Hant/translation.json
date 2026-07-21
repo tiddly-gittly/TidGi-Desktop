@@ -330,8 +330,7 @@
     "Contribute": "向此網站貢獻內容",
     "Description": "點擊「打開」按鈕會在新窗口打開頁面，頁面初次打開需要5秒到1分鐘時間從網路載入，斷網不可用。你可以隨意修改打開的頁面的內容，作為沙盒遊樂場隨意嘗試學到的功能，如果想保存修改的結果，可以點擊太微的保存按鈕，保存為HTML格式的單頁知識庫。",
     "List": "幫助列表",
-    "Tags": {
-    }
+    "Tags": {}
   },
   "KeyboardShortcut": {
     "Clear": "清除",
@@ -515,8 +514,8 @@
     "OpenMetaDataFolderDetail": "太微的數據和太記的工作區數據是分開存放的，太記的封包含工作區的設置等，它們以 JSON 形式存放在這個文件夾裡。",
     "OpenV8CacheFolder": "打開V8快取文件夾",
     "OpenV8CacheFolderDetail": "V8快取文件夾存有加速應用啟動的快取文件",
-    "OpenInstallerLogFolder": "打開安裝包日誌文件夾",
-    "OpenInstallerLogFolderDetail": "Windows 安裝程序日誌文件夾 (SquirrelTemp) 包含應用安裝和更新的日誌",
+    "OpenInstallerLogFolder": "開啟安裝/軟體包日誌資料夾",
+    "OpenInstallerLogFolderDetail": "Windows：SquirrelTemp（應用程式安裝程式日誌）。macOS/Linux：/var/log（系統安裝與套件管理日誌，如 install.log、dpkg.log）。Zip/DMG 拖曳安裝沒有單獨安裝程式日誌，請改用應用程式日誌資料夾。",
     "Performance": "性能",
     "PrivacyAndSecurity": "隱私和安全",
     "ReceivePreReleaseUpdates": "接收預發布更新",
@@ -598,8 +597,7 @@
   },
   "Save": "保存",
   "Schema": {
-    "ProviderModel": {
-    }
+    "ProviderModel": {}
   },
   "Scripting": {
     "ExecutingScript": "正在執行腳本"
