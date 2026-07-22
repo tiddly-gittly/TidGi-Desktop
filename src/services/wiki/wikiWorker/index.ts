@@ -15,6 +15,7 @@ import { Observable } from 'rxjs';
 
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
+import type { ITiddlerRoutingInfo } from '../plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { getWikiInstance } from './globals';
@@ -116,10 +117,20 @@ async function beforeExit(): Promise<void> {
   }
 }
 
+async function getTiddlerRoutingInfo(tiddlerTitle: string): Promise<ITiddlerRoutingInfo> {
+  const wikiInstance = getWikiInstance();
+  const syncAdaptor = wikiInstance?.syncadaptor as { getTiddlerRoutingInfo?: (title: string) => Promise<ITiddlerRoutingInfo> } | undefined;
+  if (syncAdaptor?.getTiddlerRoutingInfo) {
+    return await syncAdaptor.getTiddlerRoutingInfo(tiddlerTitle);
+  }
+  return { featureAvailable: false };
+}
+
 // All exposed methods should be async.
 const wikiWorker = {
   startNodeJSWiki,
   getTiddlerFileMetadata: async (tiddlerTitle: string) => getWikiInstance()?.boot.files[tiddlerTitle],
+  getTiddlerRoutingInfo,
   executeZxScript,
   extractWikiHTML,
   packetHTMLFromWikiFolder,

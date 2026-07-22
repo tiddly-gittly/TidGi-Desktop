@@ -9,6 +9,7 @@ import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { moveExternalAttachmentIfNeeded } from './externalAttachmentUtilities';
 import type { ExtendedUtilities } from './routingUtilities.type';
+import type { ITiddlerRoutingInfo } from './tiddlerRoutingInfo';
 import { isFileLockError } from './utilities';
 
 /**
@@ -97,6 +98,25 @@ export class FileSystemAdaptor {
     } catch (error) {
       this.logger.alert('filesystem: Failed to update sub-wikis cache:', error);
     }
+  }
+
+  /**
+   * Explain where a tiddler would be routed, using the same rules as save routing.
+   * Intended for UI plugins (e.g. routing-chain indicator) so they do not reimplement priority.
+   */
+  public async getTiddlerRoutingInfo(tiddlerTitle: string): Promise<ITiddlerRoutingInfo> {
+    await this.updateSubWikisCache();
+    // Use $tw.wiki (same as getTiddlerFileInfo / save routing) so tag index and filters stay consistent.
+    const tiddler = $tw.wiki.getTiddler?.(tiddlerTitle) ?? this.wiki.getTiddler?.(tiddlerTitle);
+    const tiddlerTags = tiddler?.fields.tags ?? [];
+    return ($tw.utils as unknown as ExtendedUtilities).buildTiddlerRoutingInfo(
+      tiddlerTitle,
+      tiddlerTags,
+      this.wikisWithRouting,
+      this.workspaceID,
+      $tw.wiki,
+      $tw.rootWidget,
+    );
   }
 
   isReady(): boolean {

@@ -14,6 +14,8 @@ These configs are editable by user using EditWorkspace's SubWiki section.
 
 Tiddlers not matched to any sub-wiki are saved to the main workspace.
 
+UI plugins can call `window.service.wiki.getTiddlerRoutingInfo(title)` to read the same decision (winning workspace + tag chain) without reimplementing priority rules. `featureAvailable` is true only when the main wiki has at least one sub-wiki with routing settings enabled.
+
 ## File Watching
 
 WatchFileSystemAdaptor reads the external attachment folder name from `$:/config/ExternalAttachments/WikiFolderToMove` (default `files`) and excludes this folder from watching. This prevents external attachments from being repeatedly created as tiddlers.

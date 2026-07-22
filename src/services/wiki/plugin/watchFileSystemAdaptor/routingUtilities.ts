@@ -1,10 +1,22 @@
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { workspaceSorter } from '@services/workspaces/utilities';
+import type { ITiddlerRoutingInfo, TiddlerRoutingMatchKind } from './tiddlerRoutingInfo';
 
 /**
  * Sub-wiki routing utilities for matching tiddlers/files to workspaces.
- * These utilities are exposed as $tw.utils functions for use in plugins.
+ * These utilities are exposed as $tw.utils functions for use in plugins / IPC APIs.
  */
+
+/**
+ * Detailed explanation of why a tiddler is routed to a workspace.
+ * Kept in sync with FileSystemAdaptor save routing so UI plugins do not reimplement priority rules.
+ */
+interface ITiddlerRoutingExplanation {
+  workspace: IWikiWorkspace;
+  kind: TiddlerRoutingMatchKind;
+  chain: string;
+  rootTag?: string;
+}
 
 /**
  * Check if a workspace has routing configuration (tagNames or fileSystemPathFilter).
@@ -19,6 +31,20 @@ function hasRoutingConfig(workspaceItem: IWorkspace): boolean {
 }
 
 /**
+ * True when there is at least one sub-wiki (of this main wiki) that has routing config enabled.
+ */
+function hasActiveSubWikiRouting(
+  workspacesWithRouting: IWikiWorkspace[],
+  mainWorkspaceId: string,
+): boolean {
+  return workspacesWithRouting.some((workspaceItem) =>
+    workspaceItem.isSubWiki &&
+    workspaceItem.mainWikiID === mainWorkspaceId &&
+    hasRoutingConfig(workspaceItem)
+  );
+}
+
+/**
  * Check if a workspace is a wiki workspace with routing configuration.
  * This filters to wiki workspaces that are either the main workspace or sub-wikis of it.
  */
@@ -26,20 +52,15 @@ function isWikiWorkspaceWithRouting(
   workspaceItem: IWorkspace,
   mainWorkspaceId: string,
 ): workspaceItem is IWikiWorkspace {
-  // Must have wiki folder location
   if (!('wikiFolderLocation' in workspaceItem) || !workspaceItem.wikiFolderLocation) {
     return false;
   }
 
-  // Must have routing config
   if (!hasRoutingConfig(workspaceItem)) {
     return false;
   }
 
-  // Include if it's the main workspace
   const isMain = workspaceItem.id === mainWorkspaceId;
-
-  // Include if it's a sub-wiki of the current main workspace
   const isSubWiki = 'isSubWiki' in workspaceItem &&
     workspaceItem.isSubWiki &&
     'mainWikiID' in workspaceItem &&
@@ -50,23 +71,73 @@ function isWikiWorkspaceWithRouting(
 
 /**
  * Check if a tiddler matches a workspace's direct tag routing.
- * Returns true if:
- * - Any of the tiddler's tags match any of the workspace's tagNames
- * - The tiddler's title IS one of the tagNames (it's a "tag tiddler")
  */
 function matchesDirectTag(
   tiddlerTitle: string,
   tiddlerTags: string[],
   workspaceTagNames: string[],
 ): boolean {
+  return getDirectTagMatch(tiddlerTitle, tiddlerTags, workspaceTagNames) !== undefined;
+}
+
+/**
+ * Return the workspace tagName that directly matches this tiddler, if any.
+ */
+function getDirectTagMatch(
+  tiddlerTitle: string,
+  tiddlerTags: string[],
+  workspaceTagNames: string[],
+): string | undefined {
   if (workspaceTagNames.length === 0) {
-    return false;
+    return undefined;
   }
 
-  const hasMatchingTag = workspaceTagNames.some(tagName => tiddlerTags.includes(tagName));
-  const isTitleATagName = workspaceTagNames.includes(tiddlerTitle);
+  if (workspaceTagNames.includes(tiddlerTitle)) {
+    return tiddlerTitle;
+  }
 
-  return hasMatchingTag || isTitleATagName;
+  return workspaceTagNames.find((tagName) => tiddlerTags.includes(tagName));
+}
+
+/**
+ * Find a downward tag-tree path from root to target using getTiddlersWithTag BFS.
+ */
+function findTagTreePath(
+  rootTag: string,
+  targetTitle: string,
+  wiki: typeof $tw.wiki,
+  maxDepth = 32,
+): string[] | undefined {
+  if (typeof wiki.getTiddlersWithTag !== 'function') {
+    return undefined;
+  }
+
+  if (rootTag === targetTitle) {
+    return [rootTag];
+  }
+
+  const queue: string[][] = [[rootTag]];
+  const seen = new Set<string>([rootTag]);
+
+  while (queue.length > 0) {
+    const currentPath = queue.shift()!;
+    if (currentPath.length > maxDepth) {
+      continue;
+    }
+    const last = currentPath[currentPath.length - 1];
+    const children = wiki.getTiddlersWithTag(last) ?? [];
+    for (const child of children) {
+      if (child === targetTitle) {
+        return [...currentPath, child];
+      }
+      if (!seen.has(child)) {
+        seen.add(child);
+        queue.push([...currentPath, child]);
+      }
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -101,26 +172,87 @@ function matchesCustomFilter(
   filterExpression: string,
   wiki: typeof $tw.wiki,
 ): boolean {
-  const filters = filterExpression.split('\n').map(f => f.trim()).filter(f => f.length > 0);
+  return getMatchedCustomFilter(tiddlerTitle, filterExpression, wiki) !== undefined;
+}
+
+function getMatchedCustomFilter(
+  tiddlerTitle: string,
+  filterExpression: string,
+  wiki: typeof $tw.wiki,
+): string | undefined {
+  const filters = filterExpression.split('\n').map((f) => f.trim()).filter((f) => f.length > 0);
 
   for (const filter of filters) {
     const result = wiki.filterTiddlers(filter, undefined, wiki.makeTiddlerIterator([tiddlerTitle]));
     if (result.length > 0) {
-      return true;
+      return filter;
     }
   }
 
-  return false;
+  return undefined;
+}
+
+/**
+ * Explain why a tiddler is routed to a workspace (same priority rules as save routing).
+ * Workspaces must already be sorted by the product's routing priority.
+ */
+function explainTiddlerRouting(
+  tiddlerTitle: string,
+  tiddlerTags: string[],
+  workspacesWithRouting: IWikiWorkspace[],
+  wiki: typeof $tw.wiki,
+  rootWidget: typeof $tw.rootWidget,
+): ITiddlerRoutingExplanation | undefined {
+  for (const workspaceItem of workspacesWithRouting) {
+    const directRoot = getDirectTagMatch(tiddlerTitle, tiddlerTags, workspaceItem.tagNames);
+    if (directRoot !== undefined) {
+      const chain = directRoot === tiddlerTitle ? directRoot : `${directRoot} → ${tiddlerTitle}`;
+      return {
+        workspace: workspaceItem,
+        kind: 'direct-tag',
+        chain,
+        rootTag: directRoot,
+      };
+    }
+
+    if (workspaceItem.includeTagTree && workspaceItem.tagNames.length > 0) {
+      for (const rootTag of workspaceItem.tagNames) {
+        // Match with the same operator used by save routing.
+        const matched = wiki.filterTiddlers(
+          `[in-tagtree-of:inclusive<tagName>]`,
+          rootWidget.makeFakeWidgetWithVariables({ tagName: rootTag }),
+          wiki.makeTiddlerIterator([tiddlerTitle]),
+        );
+        if (matched.length > 0) {
+          const path = findTagTreePath(rootTag, tiddlerTitle, wiki) ?? [rootTag, tiddlerTitle];
+          return {
+            workspace: workspaceItem,
+            kind: 'tag-tree',
+            chain: path.join(' → '),
+            rootTag,
+          };
+        }
+      }
+    }
+
+    if (workspaceItem.fileSystemPathFilterEnable && workspaceItem.fileSystemPathFilter) {
+      const matchedFilter = getMatchedCustomFilter(tiddlerTitle, workspaceItem.fileSystemPathFilter, wiki);
+      if (matchedFilter !== undefined) {
+        return {
+          workspace: workspaceItem,
+          kind: 'filter',
+          chain: matchedFilter,
+        };
+      }
+    }
+  }
+
+  return undefined;
 }
 
 /**
  * Match a tiddler to a workspace based on routing rules.
  * Checks workspaces in order (priority) and returns the first match.
- *
- * For each workspace, checks in order (any match wins):
- * 1. Direct tag match (including if tiddler's title IS one of the tagNames)
- * 2. If includeTagTree is enabled, use in-tagtree-of filter for recursive tag matching
- * 3. If fileSystemPathFilterEnable is enabled, use custom filter expressions
  */
 function matchTiddlerToWorkspace(
   tiddlerTitle: string,
@@ -129,35 +261,54 @@ function matchTiddlerToWorkspace(
   wiki: typeof $tw.wiki,
   rootWidget: typeof $tw.rootWidget,
 ): IWikiWorkspace | undefined {
-  for (const workspace of workspacesWithRouting) {
-    // 1. Direct tag match
-    if (matchesDirectTag(tiddlerTitle, tiddlerTags, workspace.tagNames)) {
-      return workspace;
-    }
+  return explainTiddlerRouting(tiddlerTitle, tiddlerTags, workspacesWithRouting, wiki, rootWidget)?.workspace;
+}
 
-    // 2. Tag tree match (if enabled)
-    if (workspace.includeTagTree && workspace.tagNames.length > 0) {
-      if (matchesTagTree(tiddlerTitle, workspace.tagNames, wiki, rootWidget)) {
-        return workspace;
-      }
-    }
-
-    // 3. Custom filter match (if enabled)
-    if (workspace.fileSystemPathFilterEnable && workspace.fileSystemPathFilter) {
-      if (matchesCustomFilter(tiddlerTitle, workspace.fileSystemPathFilter, wiki)) {
-        return workspace;
-      }
-    }
+/**
+ * Build the IPC/UI payload for a tiddler's routing decision.
+ */
+function buildTiddlerRoutingInfo(
+  tiddlerTitle: string,
+  tiddlerTags: string[],
+  workspacesWithRouting: IWikiWorkspace[],
+  mainWorkspaceId: string,
+  wiki: typeof $tw.wiki,
+  rootWidget: typeof $tw.rootWidget,
+): ITiddlerRoutingInfo {
+  const featureAvailable = hasActiveSubWikiRouting(workspacesWithRouting, mainWorkspaceId);
+  if (!featureAvailable) {
+    return { featureAvailable: false };
   }
 
-  return undefined;
+  const explanation = explainTiddlerRouting(tiddlerTitle, tiddlerTags, workspacesWithRouting, wiki, rootWidget);
+  if (!explanation) {
+    return { featureAvailable: true };
+  }
+
+  return {
+    featureAvailable: true,
+    match: {
+      workspaceId: explanation.workspace.id,
+      workspaceName: explanation.workspace.name,
+      isSubWiki: Boolean(explanation.workspace.isSubWiki),
+      kind: explanation.kind,
+      chain: explanation.chain,
+      rootTag: explanation.rootTag,
+    },
+  };
 }
 
 declare const exports: Record<string, unknown>;
 exports.hasRoutingConfig = hasRoutingConfig;
+exports.hasActiveSubWikiRouting = hasActiveSubWikiRouting;
 exports.isWikiWorkspaceWithRouting = isWikiWorkspaceWithRouting;
 exports.workspaceSorter = workspaceSorter;
 exports.matchesDirectTag = matchesDirectTag;
+exports.getDirectTagMatch = getDirectTagMatch;
+exports.findTagTreePath = findTagTreePath;
 exports.matchesTagTree = matchesTagTree;
 exports.matchesCustomFilter = matchesCustomFilter;
+exports.getMatchedCustomFilter = getMatchedCustomFilter;
+exports.explainTiddlerRouting = explainTiddlerRouting;
 exports.matchTiddlerToWorkspace = matchTiddlerToWorkspace;
+exports.buildTiddlerRoutingInfo = buildTiddlerRoutingInfo;

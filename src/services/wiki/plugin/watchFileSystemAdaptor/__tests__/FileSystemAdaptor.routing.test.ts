@@ -8,7 +8,7 @@ import { FileSystemAdaptor } from '../FileSystemAdaptor';
 // path.resolve makes paths absolute; on Windows '/test/wiki/tiddlers' becomes 'C:\test\wiki\tiddlers'
 const RESOLVED_TIDDLERS_PATH = path.resolve('/test/wiki/tiddlers');
 // @ts-expect-error TS2459: Module declares 'matchTiddlerToWorkspace' locally, but it is not exported. Ignore: TiddlyWiki uses exports.xxx style.
-import { isWikiWorkspaceWithRouting, matchTiddlerToWorkspace } from '../routingUtilities';
+import { buildTiddlerRoutingInfo, isWikiWorkspaceWithRouting, matchTiddlerToWorkspace } from '../routingUtilities';
 
 // Mock the workspace service
 vi.mock('@services/wiki/wikiWorker/services', () => ({
@@ -36,6 +36,7 @@ const mockUtils = {
   getFileExtensionInfo: vi.fn(() => ({ type: 'application/x-tiddler' })),
   matchTiddlerToWorkspace,
   isWikiWorkspaceWithRouting,
+  buildTiddlerRoutingInfo,
 };
 
 // Setup TiddlyWiki global
@@ -50,6 +51,8 @@ global.$tw = {
   wiki: {
     filterTiddlers: vi.fn(() => []),
     makeTiddlerIterator: vi.fn((titles: string[]) => titles),
+    getTiddler: vi.fn(() => undefined),
+    getTiddlersWithTag: vi.fn(() => []),
   },
   rootWidget: {
     makeFakeWidgetWithVariables: vi.fn(() => ({})),
@@ -1019,6 +1022,92 @@ describe('FileSystemAdaptor - Routing Logic', () => {
           directory: '/test/wiki/subwiki/first',
         }),
       );
+    });
+  });
+
+  describe('getTiddlerRoutingInfo', () => {
+    beforeEach(async () => {
+      vi.mocked(workspace.get).mockResolvedValue(
+        {
+          id: 'test-workspace',
+          name: 'Test Workspace',
+          wikiFolderLocation: '/test/wiki',
+        } as Parameters<typeof workspace.get>[0] extends Promise<infer T> ? T : never,
+      );
+
+      mockWiki = {
+        getTiddlerText: vi.fn((title) => {
+          if (title === '$:/info/tidgi/workspaceID') return 'test-workspace';
+          return '';
+        }),
+        getTiddler: vi.fn((title: string) => {
+          if (title === 'ChildTiddler') {
+            return { fields: { title: 'ChildTiddler', tags: ['ParentTag'] } };
+          }
+          return undefined;
+        }),
+        tiddlerExists: vi.fn(() => false),
+        addTiddler: vi.fn(),
+      } as unknown as Wiki;
+    });
+
+    it('reports featureAvailable=false without routed sub-wiki', async () => {
+      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([]);
+
+      adaptor = new FileSystemAdaptor({
+        wiki: mockWiki,
+        // @ts-expect-error - TiddlyWiki global
+        boot: global.$tw.boot,
+      });
+
+      const info = await adaptor.getTiddlerRoutingInfo('ChildTiddler');
+      expect(info).toEqual({ featureAvailable: false });
+    });
+
+    it('returns match payload for tag-tree routing', async () => {
+      const subWiki = {
+        id: 'sub-wiki-tagtree',
+        name: 'Sub Wiki TagTree',
+        isSubWiki: true,
+        mainWikiID: 'test-workspace',
+        tagNames: ['RootTag'],
+        includeTagTree: true,
+        wikiFolderLocation: '/test/wiki/subwiki/tagtree',
+      };
+
+      vi.mocked(workspace.getWorkspacesAsList).mockResolvedValue([subWiki] as IWikiWorkspace[]);
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.wiki.getTiddler = vi.fn((title: string) => {
+        if (title === 'ChildTiddler') {
+          return { fields: { title: 'ChildTiddler', tags: ['ParentTag'] } };
+        }
+        return undefined;
+      });
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.wiki.filterTiddlers = vi.fn(() => ['ChildTiddler']);
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.wiki.getTiddlersWithTag = vi.fn((tag: string) => {
+        if (tag === 'RootTag') return ['ParentTag'];
+        if (tag === 'ParentTag') return ['ChildTiddler'];
+        return [];
+      });
+
+      adaptor = new FileSystemAdaptor({
+        wiki: mockWiki,
+        // @ts-expect-error - TiddlyWiki global
+        boot: global.$tw.boot,
+      });
+
+      const info = await adaptor.getTiddlerRoutingInfo('ChildTiddler');
+      expect(info.featureAvailable).toBe(true);
+      expect(info.match).toEqual({
+        workspaceId: 'sub-wiki-tagtree',
+        workspaceName: 'Sub Wiki TagTree',
+        isSubWiki: true,
+        kind: 'tag-tree',
+        chain: 'RootTag → ParentTag → ChildTiddler',
+        rootTag: 'RootTag',
+      });
     });
   });
 });

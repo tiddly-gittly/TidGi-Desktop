@@ -32,6 +32,7 @@ import { Observable } from 'rxjs';
 import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
 import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
+import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers } from './wikiWorker/ipcServerRoutes';
 
@@ -1005,6 +1006,15 @@ export class Wiki implements IWikiService {
         return tiddlerFileMetadata.filepath;
       }
     }
+  }
+
+  public async getTiddlerRoutingInfo(title: string, workspaceID?: string): Promise<ITiddlerRoutingInfo> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const wikiWorker = this.getWorker(workspaceID ?? (await workspaceService.getActiveWorkspace())?.id ?? '');
+    if (wikiWorker !== undefined) {
+      return await wikiWorker.getTiddlerRoutingInfo(title);
+    }
+    return { featureAvailable: false };
   }
 
   public async getWikiErrorLogs(_workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }> {
