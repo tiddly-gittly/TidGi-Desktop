@@ -15,16 +15,16 @@ const makeWiki = (tagMap: Record<string, string[]> = {}) => ({
 describe('routingUtilities', () => {
   describe('hasRoutingConfig / hasActiveSubWikiRouting', () => {
     it('detects tagNames and filter routing configs', () => {
-      expect(hasRoutingConfig({ tagNames: ['A'] } as unknown as IWikiWorkspace)).toBe(true);
+      expect(hasRoutingConfig({ tagNames: ['A'] })).toBe(true);
       expect(hasRoutingConfig({
         tagNames: [],
         fileSystemPathFilterEnable: true,
         fileSystemPathFilter: '[tag[A]]',
-      } as unknown as IWikiWorkspace)).toBe(true);
+      })).toBe(true);
       expect(hasRoutingConfig({
         tagNames: [],
         fileSystemPathFilterEnable: false,
-      } as unknown as IWikiWorkspace)).toBe(false);
+      })).toBe(false);
     });
 
     it('requires a sub-wiki with routing for feature availability', () => {
@@ -55,7 +55,7 @@ describe('routingUtilities', () => {
           tagNames: [],
           fileSystemPathFilterEnable: false,
           fileSystemPathFilter: null,
-        } as unknown as IWikiWorkspace,
+        },
       ], mainId)).toBe(false);
     });
   });
@@ -152,7 +152,7 @@ describe('routingUtilities', () => {
     });
 
     it('explains direct tag match', () => {
-      wiki.filterTiddlers = vi.fn(() => []) as typeof wiki.filterTiddlers;
+      wiki.filterTiddlers = vi.fn(() => []);
 
       const explanation = explainTiddlerRouting('Note', ['PrivateRoot'], [main, sub], wiki, rootWidget);
       expect(explanation?.kind).toBe('direct-tag');
@@ -185,7 +185,7 @@ describe('routingUtilities', () => {
         fileSystemPathFilter: '[prefix[$:/Deck/]]',
       } as unknown as IWikiWorkspace;
 
-      wiki.filterTiddlers = vi.fn((filter: string) => filter.includes('prefix') ? ['$:/Deck/A'] : []) as typeof wiki.filterTiddlers;
+      wiki.filterTiddlers = vi.fn((filter: string) => filter.includes('prefix') ? ['$:/Deck/A'] : []);
 
       const explanation = explainTiddlerRouting('$:/Deck/A', [], [main, filterWorkspace], wiki, rootWidget);
       expect(explanation?.kind).toBe('filter');

@@ -3,11 +3,11 @@ import type { IGitUserInfos } from '@services/git/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
+import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers, IWikiServerRouteResponse } from './wikiWorker/ipcServerRoutes';
-import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 
 /**
  * Handle wiki worker startup and restart

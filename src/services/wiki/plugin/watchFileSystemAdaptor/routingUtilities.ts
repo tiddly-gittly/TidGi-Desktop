@@ -290,7 +290,7 @@ function buildTiddlerRoutingInfo(
     match: {
       workspaceId: explanation.workspace.id,
       workspaceName: explanation.workspace.name,
-      isSubWiki: Boolean(explanation.workspace.isSubWiki),
+      isSubWiki: explanation.workspace.isSubWiki,
       kind: explanation.kind,
       chain: explanation.chain,
       rootTag: explanation.rootTag,
