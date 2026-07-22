@@ -3,11 +3,11 @@
  */
 
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
-import type { ITiddlerRoutingInfo } from './tiddlerRoutingInfo';
+import type { ITiddlerRoutingInfo, TiddlerRoutingMatchKind } from './tiddlerRoutingInfo';
 
-interface ITiddlerRoutingExplanation {
+export interface ITiddlerRoutingExplanation {
   workspace: IWikiWorkspace;
-  kind: 'direct-tag' | 'tag-tree' | 'filter';
+  kind: TiddlerRoutingMatchKind;
   chain: string;
   rootTag?: string;
 }

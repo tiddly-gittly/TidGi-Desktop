@@ -1,22 +1,12 @@
 import type { IWikiWorkspace, IWorkspace } from '@services/workspaces/interface';
 import { workspaceSorter } from '@services/workspaces/utilities';
-import type { ITiddlerRoutingInfo, TiddlerRoutingMatchKind } from './tiddlerRoutingInfo';
+import type { ITiddlerRoutingExplanation } from './routingUtilities.type';
+import type { ITiddlerRoutingInfo } from './tiddlerRoutingInfo';
 
 /**
  * Sub-wiki routing utilities for matching tiddlers/files to workspaces.
  * These utilities are exposed as $tw.utils functions for use in plugins / IPC APIs.
  */
-
-/**
- * Detailed explanation of why a tiddler is routed to a workspace.
- * Kept in sync with FileSystemAdaptor save routing so UI plugins do not reimplement priority rules.
- */
-interface ITiddlerRoutingExplanation {
-  workspace: IWikiWorkspace;
-  kind: TiddlerRoutingMatchKind;
-  chain: string;
-  rootTag?: string;
-}
 
 /**
  * Check if a workspace has routing configuration (tagNames or fileSystemPathFilter).
@@ -118,9 +108,10 @@ function findTagTreePath(
 
   const queue: string[][] = [[rootTag]];
   const seen = new Set<string>([rootTag]);
+  let head = 0;
 
-  while (queue.length > 0) {
-    const currentPath = queue.shift()!;
+  while (head < queue.length) {
+    const currentPath = queue[head++];
     if (currentPath.length > maxDepth) {
       continue;
     }
