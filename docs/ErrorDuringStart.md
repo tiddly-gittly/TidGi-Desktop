@@ -224,6 +224,27 @@ Preferences → Developers → "Open installer / package log folder" works on al
 | Windows | `%LocalAppData%\SquirrelTemp` |
 | macOS / Linux | `/var/log` (system package logs; zip/DMG drag-install has no dedicated installer log — use the app log folder) |
 
+### Setup UI stays open for minutes after TidGi already launched
+
+This is a separate issue from a failed install. Typical process tree while “stuck”:
+
+1. `Install-TidGi-*.exe` (Setup splash)
+2. `%LocalAppData%\SquirrelTemp\Update.exe --install`
+3. `app-*\Squirrel.exe --updateSelf=...\SquirrelTemp\Update.exe` (waits forever for step 2 to exit — by design)
+4. `tidgi.exe --squirrel-firstrun` (app already usable)
+
+Stock Squirrel finishes install by calling `CreateUninstallerRegistryEntry`, which **synchronously downloads** the NuGet `iconUrl` to write Programs and Features’ `DisplayIcon`. TidGi previously set `iconUrl` to `raw.githubusercontent.com`, which often stalls for many minutes (or until timeout) on some networks. Evidence from a local install: install log stopped after `cleanDeadVersions`, then `Finished` and `app.ico` appeared together ~5.5 minutes later.
+
+**Fix in TidGi:**
+
+1. [`build-resources/tidgi.nuspectemplate`](../build-resources/tidgi.nuspectemplate) omits `<iconUrl>` so Setup never downloads an icon.
+2. Forge packs local [`build-resources/icon.ico`](../build-resources/icon.ico) as an `extraResource`.
+3. [`src/helpers/squirrelStartup.ts`](../src/helpers/squirrelStartup.ts) on `--squirrel-install` / `--squirrel-updated` copies it to `%LocalAppData%\tidgi\app.ico` and sets the uninstall `DisplayIcon` registry value (stock Squirrel only sets `DisplayIcon` inside the download branch, so a pre-existing `app.ico` alone is not enough).
+
+Until you install a build that includes this, it is safe to end the Setup / `SquirrelTemp\Update.exe` / `--updateSelf` processes once TidGi is already open — do not kill GitHub Desktop’s `Update.exe`.
+
+Dependency note: bumping `electron-winstaller` does not fix this (same Squirrel 2.0.1 behavior). Long-term alternatives are Velopack / non-Squirrel makers; not required for this hang.
+
 Common install-failure causes:
 
 - A previous install left `Update.exe` / `squirrel.exe --updateSelf` running and locking files under `%LocalAppData%\tidgi`. Fully quit the stuck installer processes (or reboot), then run the installer again.
