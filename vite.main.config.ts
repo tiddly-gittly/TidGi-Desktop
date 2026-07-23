@@ -33,23 +33,31 @@ function utilityProcessPlugin(): Plugin {
   const cleanUrl = (url: string) => url.replace(queryRE, '');
   const assetReferenceRE = /__VITE_UTILITY_PROCESS_ASSET__([\w$]+)__/g;
 
+  const parseRequest = (id: string): Record<string, string> | null => {
+    const search = id.match(/\?(.*)$/s)?.[1];
+    if (!search) return null;
+    return Object.fromEntries(new URLSearchParams(search));
+  };
+
   return {
     name: 'vite:utility-process',
     apply: 'build',
     enforce: 'pre',
     resolveId(id, importer) {
-      if (id.includes('?utilityProcess') && importer) {
+      const query = parseRequest(id);
+      if (query && query.utilityProcess !== undefined && importer) {
         return `${id}&importer=${importer}`;
       }
     },
     load(id) {
-      if (!id.includes('?utilityProcess') || !id.includes('importer=')) return;
+      const query = parseRequest(id);
+      if (!query || query.utilityProcess === undefined || !query.importer) return;
 
       const cleanPath = cleanUrl(id);
       const hash = this.emitFile({
         type: 'chunk',
         id: cleanPath,
-        importer: id.split('importer=')[1],
+        importer: query.importer,
       });
       const assetReferenceId = `__VITE_UTILITY_PROCESS_ASSET__${hash}__`;
 

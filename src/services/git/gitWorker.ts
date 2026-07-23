@@ -5,6 +5,17 @@ import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface
 import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { exec as gitExec } from 'dugite';
 
+// Log any uncaught errors to stderr before the utility process exits,
+// so the main process can capture them via child.stderr.
+process.on('uncaughtException', (error: Error) => {
+  process.stderr.write(`[gitWorker] Uncaught exception: ${error.stack ?? error.message}\n`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason: unknown) => {
+  process.stderr.write(`[gitWorker] Unhandled rejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}\n`);
+  process.exit(1);
+});
+
 /**
  * Decode git's octal-escaped non-ASCII filenames in log messages.
  * Git quotes non-ASCII paths as `"\344\270\211..."` by default (core.quotepath=true).
