@@ -55,4 +55,52 @@ describe('workspacePaths', () => {
       managedDisplayName: 'my.wiki.html',
     });
   });
+
+  it('uses the wiki folder as the repo when gitRepoPath is unset (backward compatible)', () => {
+    const workspace = {
+      id: 'w1',
+      name: 'demo',
+      active: false,
+      order: 0,
+      picturePath: null,
+      wikiFolderLocation: 'C:\\projects\\game\\wiki',
+      gitRepoPath: null,
+      gitManagedRelativePath: null,
+    };
+    const scope = getWorkspaceGitScope(workspace);
+    expect(scope?.repoPath).toBe('C:/projects/game/wiki');
+    expect(scope?.managedRelativePath).toBeUndefined();
+  });
+
+  it('scopes git to an ancestor repo when gitRepoPath is configured', () => {
+    const workspace = {
+      id: 'w1',
+      name: 'demo',
+      active: false,
+      order: 0,
+      picturePath: null,
+      wikiFolderLocation: 'C:\\projects\\game\\wiki',
+      gitRepoPath: '..',
+      gitManagedRelativePath: 'wiki',
+    };
+    const scope = getWorkspaceGitScope(workspace);
+    expect(scope?.repoPath).toBe('C:/projects/game');
+    expect(scope?.managedRelativePath).toBe('wiki');
+    expect(scope?.managedAbsolutePath).toBe('C:/projects/game/wiki');
+  });
+
+  it('defaults managedRelativePath to the wiki folder name when only gitRepoPath is set', () => {
+    const workspace = {
+      id: 'w1',
+      name: 'demo',
+      active: false,
+      order: 0,
+      picturePath: null,
+      wikiFolderLocation: 'C:\\projects\\game\\mywiki',
+      gitRepoPath: '..',
+    };
+    const scope = getWorkspaceGitScope(workspace);
+    expect(scope?.repoPath).toBe('C:/projects/game');
+    expect(scope?.managedRelativePath).toBe('mywiki');
+  });
 });

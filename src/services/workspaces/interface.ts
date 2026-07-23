@@ -73,6 +73,8 @@ export const syncableConfigDefaultValues = {
   isSubWiki: false,
   mainWikiID: null as string | null,
   mainWikiToLink: null as string | null,
+  gitRepoPath: null as string | null,
+  gitManagedRelativePath: null as string | null,
 } as const;
 
 export const localConfigDefaultValues = {
@@ -289,6 +291,19 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    * When enabled, the file system watcher will skip symlinks to avoid redundant file sync operations.
    */
   ignoreSymlinks: boolean;
+  /**
+   * Git repository root path relative to `wikiFolderLocation`, used when the wiki folder lives inside
+   * an ancestor Git repo (to avoid creating a nested repo). Uses OS-style relative segments (e.g. "..", "../..").
+   * null/undefined means the wiki folder itself is the Git repo (default, backward-compatible behavior).
+   * Synced via tidgi.config.json so it follows the wiki across devices.
+   */
+  gitRepoPath: string | null;
+  /**
+   * Path of the managed wiki folder relative to the Git repo root (`gitRepoPath`), used together with
+   * `gitRepoPath` to scope Git operations to the wiki subfolder. null/undefined means track the whole repo.
+   * Synced via tidgi.config.json.
+   */
+  gitManagedRelativePath: string | null;
 }
 export type IWorkspace = IWikiWorkspace | IDedicatedWorkspace;
 
@@ -369,6 +384,8 @@ export type INewWikiWorkspaceConfig =
     | 'includeTagTree'
     | 'fileSystemPathFilterEnable'
     | 'fileSystemPathFilter'
+    | 'gitRepoPath'
+    | 'gitManagedRelativePath'
   >
   & {
     useTidgiConfig?: boolean;

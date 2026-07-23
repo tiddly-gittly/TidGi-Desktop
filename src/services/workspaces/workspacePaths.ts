@@ -1,4 +1,5 @@
 import { isHtmlWiki } from '@/constants/fileNames';
+import path from 'node:path';
 import type { IWikiWorkspace, IWorkspace } from './interface';
 import { WorkspaceType } from './workspaceType';
 
@@ -82,6 +83,11 @@ export function getWorkspaceManagedPath(workspace: IWikiWorkspace): string {
 
 /**
  * Resolve git scope for a workspace. HTML workspaces limit git to one file inside repo root.
+ *
+ * For folder workspaces, if `gitRepoPath` (relative to wikiFolderLocation) is configured,
+ * the repo root is resolved to that ancestor directory and git operations are scoped to
+ * `gitManagedRelativePath` (the wiki folder relative to the repo root). This avoids creating
+ * a nested Git repo when the wiki lives inside an existing repo.
  */
 export function getWorkspaceGitScope(workspace: IWorkspace): IWorkspaceGitScope | undefined {
   if (!isWikiWorkspace(workspace)) {
@@ -97,6 +103,22 @@ export function getWorkspaceGitScope(workspace: IWorkspace): IWorkspaceGitScope 
     };
   }
   const folderPath = splitPortablePath(workspace.wikiFolderLocation);
+  // When an outer Git repo is configured, resolve it relative to the wiki folder.
+  const configuredRepoPath = workspace.gitRepoPath;
+  if (typeof configuredRepoPath === 'string' && configuredRepoPath.trim() !== '' && configuredRepoPath.trim() !== '.') {
+    // Resolve relative to the wiki folder and normalize to forward slashes for cross-platform consistency
+    // (the rest of the codebase, e.g. splitPortablePath, uses forward-slash-normalized paths).
+    const repoRoot = path.resolve(workspace.wikiFolderLocation, configuredRepoPath).replace(/\\/g, '/');
+    const managedRelativePath = typeof workspace.gitManagedRelativePath === 'string' && workspace.gitManagedRelativePath.trim() !== ''
+      ? workspace.gitManagedRelativePath
+      : folderPath.baseName;
+    return {
+      repoPath: repoRoot,
+      managedRelativePath,
+      managedAbsolutePath: folderPath.normalized,
+      managedDisplayName: folderPath.baseName,
+    };
+  }
   return {
     repoPath: folderPath.normalized,
     managedAbsolutePath: folderPath.normalized,

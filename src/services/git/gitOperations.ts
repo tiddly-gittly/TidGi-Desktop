@@ -87,6 +87,34 @@ export async function commitScopedChanges(repoPath: string, scopedPath: string, 
 }
 
 /**
+ * Walk up the filesystem from `startPath` and return absolute paths of every ancestor
+ * directory that contains a `.git` (i.e. is a Git repository root). Used to detect
+ * existing outer Git repos so we can avoid creating a nested repo when a wiki is created
+ * inside an already-versioned folder (e.g. a game project), and to populate the list of
+ * candidate repos in workspace settings.
+ *
+ * Stops after `maxDepth` ancestor levels (default 8) to avoid scanning the whole drive.
+ */
+export async function discoverAncestorGitRepos(startPath: string, maxDepth = 8): Promise<string[]> {
+  const repos: string[] = [];
+  let current = path.resolve(startPath);
+  for (let depth = 0; depth < maxDepth; depth++) {
+    try {
+      // Second arg true => only check for .git folder existence, don't run git.
+      if (await hasGit(current, true)) {
+        repos.push(current);
+      }
+    } catch {
+      // ignore stat errors (e.g. permission denied) and keep walking
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return repos;
+}
+
+/**
  * Get the current HEAD commit hash for a repository
  */
 export async function getHeadCommitHash(repoPath: string): Promise<string> {

@@ -15,9 +15,29 @@ function splitFilePath(filePath: string): { directory: string; baseName: string 
     return { directory: '.', baseName: filePath };
   }
   return {
-    directory: filePath.slice(0, lastSeparatorIndex),
+    // Normalize to forward slashes for cross-platform consistency with the main-process scope.
+    directory: filePath.slice(0, lastSeparatorIndex).replace(/\\/g, '/'),
     baseName: filePath.slice(lastSeparatorIndex + 1),
   };
+}
+
+/**
+ * Resolve a relative path (containing only "." and ".." segments) against an absolute base path,
+ * without importing node:path. Normalizes separators to "/".
+ */
+function resolveRelativePath(basePath: string, relativePath: string): string {
+  const normalizedBase = basePath.replace(/\\/g, '/').replace(/\/+$/, '');
+  const segments = normalizedBase.split('/').filter((segment) => segment.length > 0);
+  const relativeSegments = relativePath.replace(/\\/g, '/').split('/').filter((segment) => segment.length > 0 && segment !== '.');
+  for (const segment of relativeSegments) {
+    if (segment === '..') {
+      segments.pop();
+    } else {
+      segments.push(segment);
+    }
+  }
+  const isWindowsAbsolute = /^[A-Za-z]:/.test(normalizedBase);
+  return (isWindowsAbsolute ? '' : '/') + segments.join('/');
 }
 
 function isHtmlWikiWorkspace(workspace: IWorkspace): boolean {
@@ -44,6 +64,20 @@ export function getWorkspaceGitLogScope(workspace: IWorkspace): IWorkspaceGitLog
   }
 
   const { baseName } = splitFilePath(workspace.wikiFolderLocation);
+  const configuredRepoPath = workspace.gitRepoPath;
+  if (typeof configuredRepoPath === 'string' && configuredRepoPath.trim() !== '' && configuredRepoPath.trim() !== '.') {
+    const repoRoot = resolveRelativePath(workspace.wikiFolderLocation, configuredRepoPath);
+    const scopedPath = typeof workspace.gitManagedRelativePath === 'string' && workspace.gitManagedRelativePath.trim() !== ''
+      ? workspace.gitManagedRelativePath
+      : baseName;
+    return {
+      repoPath: repoRoot,
+      scopedPath,
+      managedDisplayName: baseName,
+      managedAbsolutePath: workspace.wikiFolderLocation,
+      isSingleFileScope: false,
+    };
+  }
   return {
     repoPath: workspace.wikiFolderLocation,
     managedDisplayName: baseName,
@@ -61,6 +95,31 @@ export function getGitLogOptionsForWorkspace(workspace: IWorkspace, baseOptions:
     ...baseOptions,
     scopedPath: scope.scopedPath,
   };
+}
+
+/**
+ * Split an absolute path into its portable segments (handles both "/" and "\\"), dropping drive
+ * letter on Windows so segment counts are comparable. Returns empty array for root paths.
+ */
+function splitPathSegments(filePath: string): string[] {
+  return filePath.replace(/\\/g, '/').replace(/\/+$/, '').split('/').filter((segment) => segment.length > 0 && !/^[A-Za-z]:$/.test(segment));
+}
+
+/**
+ * Compute the `gitRepoPath` (relative path from `wikiFolderLocation` up to `ancestorRepoRoot`) and
+ * `gitManagedRelativePath` (wiki folder path relative to the repo root) for storing in workspace
+ * config. `ancestorRepoRoot` must be an ancestor directory of `wikiFolderLocation`.
+ *
+ * Returns `{ gitRepoPath, gitManagedRelativePath }` where gitRepoPath uses "../" segments (or "." if
+ * the wiki folder itself is the repo root). Renderer-safe (no node:path import).
+ */
+export function computeGitScopePaths(wikiFolderLocation: string, ancestorRepoRoot: string): { gitRepoPath: string; gitManagedRelativePath: string } {
+  const wikiSegs = splitPathSegments(wikiFolderLocation);
+  const repoSegs = splitPathSegments(ancestorRepoRoot);
+  const depthDiff = Math.max(0, wikiSegs.length - repoSegs.length);
+  const gitRepoPath = depthDiff === 0 ? '.' : Array(depthDiff).fill('..').join('/');
+  const managedRelativePath = wikiSegs.slice(repoSegs.length).join('/');
+  return { gitRepoPath, gitManagedRelativePath: managedRelativePath };
 }
 
 export type { IWorkspaceGitScope };

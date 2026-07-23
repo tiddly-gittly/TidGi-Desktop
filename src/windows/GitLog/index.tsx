@@ -49,7 +49,21 @@ export default function GitHistory(): React.JSX.Element {
     );
   }
 
-  const { entries, loading, loadingMore, error, workspaceInfo, currentBranch, lastChangeType, setLastChangeType, hasMore, loadMore, setSearchParams } = useGitLogData(workspaceID);
+  const {
+    entries,
+    loading,
+    loadingMore,
+    error,
+    workspaceInfo,
+    currentBranch,
+    lastChangeType,
+    setLastChangeType,
+    hasMore,
+    loadMore,
+    setSearchParams,
+    trackedRepoPath,
+    trackedScopedPath,
+  } = useGitLogData(workspaceID);
   const {
     selectedCommit,
     selectedCommitHashes,
@@ -295,6 +309,14 @@ export default function GitHistory(): React.JSX.Element {
 
       <ContentWrapper>
         <GitLogWrapper data-testid='git-log-list'>
+          {trackedRepoPath && (
+            <Alert severity='info' icon={false} sx={{ borderRadius: 0, py: 0.5, px: 1.5 }} data-testid='git-log-tracked-repo-banner'>
+              <Typography variant='caption' component='span'>
+                {t('GitLog.TrackedRepo')}: <strong>{trackedRepoPath}</strong>
+                {trackedScopedPath ? ` (${t('GitLog.TrackedScope')}: ${trackedScopedPath})` : ''}
+              </Typography>
+            </Alert>
+          )}
           <TabsContainer>
             <Tabs
               value={viewMode}

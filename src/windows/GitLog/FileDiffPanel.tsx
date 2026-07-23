@@ -8,6 +8,17 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceGitLogScope } from './workspaceGitScope';
+
+/**
+ * Resolve the actual Git repo root for a workspace. For scoped workspaces (folder wiki inside an
+ * ancestor repo, or HTML wiki) this is the outer repo; otherwise it is the wiki folder itself.
+ */
+function resolveRepoPath(workspace: IWikiWorkspace): string {
+  return getWorkspaceGitLogScope(workspace)?.repoPath ?? workspace.wikiFolderLocation;
+}
+
 const Panel = styled(Box)`
   padding: 0;
   height: 100%;
@@ -176,7 +187,7 @@ export function FileDiffPanel(
       if (!workspace) return;
 
       // Load full diff without limits (pass very large values)
-      const fileDiffResult = await window.service.git.callGitOp('getFileDiff', workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      const fileDiffResult = await window.service.git.callGitOp('getFileDiff', resolveRepoPath(workspace), commitHash, filePath, 50000, 1000000);
       setDiff(fileDiffResult.content);
       setIsDiffTruncated(fileDiffResult.isTruncated);
     } catch (error) {
@@ -199,7 +210,7 @@ export function FileDiffPanel(
 
     try {
       for (const selectedPath of selectedPaths) {
-        await window.service.git.discardFileChanges(workspace.wikiFolderLocation, selectedPath);
+        await window.service.git.discardFileChanges(resolveRepoPath(workspace), selectedPath);
       }
       showSnackbar(t('GitLog.DiscardSuccess'), 'success');
       onDiscardSuccess?.(selectedPaths);
@@ -217,7 +228,7 @@ export function FileDiffPanel(
 
     try {
       for (const selectedPath of selectedPaths) {
-        await window.service.git.addToGitignore(workspace.wikiFolderLocation, selectedPath);
+        await window.service.git.addToGitignore(resolveRepoPath(workspace), selectedPath);
       }
       showSnackbar(t('GitLog.IgnoreSuccess'), 'success');
       onDiscardSuccess?.(selectedPaths);
@@ -238,7 +249,7 @@ export function FileDiffPanel(
 
     try {
       for (const extension of extensions) {
-        await window.service.git.addToGitignore(workspace.wikiFolderLocation, `*.${extension}`);
+        await window.service.git.addToGitignore(resolveRepoPath(workspace), `*.${extension}`);
       }
       showSnackbar(t('GitLog.IgnoreSuccess'), 'success');
       onDiscardSuccess?.(selectedPaths);
@@ -254,7 +265,7 @@ export function FileDiffPanel(
     const workspace = await getWorkspace();
     if (!workspace) return;
 
-    const fullPath = selectedPaths.map((selectedPath) => `${workspace.wikiFolderLocation}/${selectedPath}`).join('\n');
+    const fullPath = selectedPaths.map((selectedPath) => `${resolveRepoPath(workspace)}/${selectedPath}`).join('\n');
     await navigator.clipboard.writeText(fullPath);
     showSnackbar(t('GitLog.CopySuccess'), 'success');
   };
@@ -270,7 +281,7 @@ export function FileDiffPanel(
     const workspace = await getWorkspace();
     if (!workspace) return;
 
-    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    const fullPath = `${resolveRepoPath(workspace)}/${filePath}`;
     await window.service.native.openPath(fullPath, true);
   };
 
@@ -279,7 +290,7 @@ export function FileDiffPanel(
     const workspace = await getWorkspace();
     if (!workspace) return;
 
-    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    const fullPath = `${resolveRepoPath(workspace)}/${filePath}`;
     await window.service.native.openInEditor(fullPath);
   };
 
@@ -288,7 +299,7 @@ export function FileDiffPanel(
     const workspace = await getWorkspace();
     if (!workspace) return;
 
-    const fullPath = `${workspace.wikiFolderLocation}/${filePath}`;
+    const fullPath = `${resolveRepoPath(workspace)}/${filePath}`;
     await window.service.native.openPath(fullPath, false);
   };
 
@@ -301,7 +312,7 @@ export function FileDiffPanel(
       if (!workspace) return;
 
       // Load full content without limits (pass very large values)
-      const fileContentResult = await window.service.git.callGitOp('getFileContent', workspace.wikiFolderLocation, commitHash, filePath, 50000, 1000000);
+      const fileContentResult = await window.service.git.callGitOp('getFileContent', resolveRepoPath(workspace), commitHash, filePath, 50000, 1000000);
       setFileContent(fileContentResult.content);
       setIsContentTruncated(fileContentResult.isTruncated);
     } catch (error) {
@@ -335,7 +346,7 @@ export function FileDiffPanel(
         const isImageExtension = imageExtensions.some((extension) => filePath.toLowerCase().endsWith(extension));
 
         // First, try to get the diff to check if it's a binary file
-        const fileDiffResult = await window.service.git.callGitOp('getFileDiff', workspace.wikiFolderLocation, commitHash, filePath);
+        const fileDiffResult = await window.service.git.callGitOp('getFileDiff', resolveRepoPath(workspace), commitHash, filePath);
         const isBinaryFile = fileDiffResult.content.includes('Binary files') || fileDiffResult.content.includes('differ');
 
         // Handle binary files
@@ -345,7 +356,7 @@ export function FileDiffPanel(
             setIsImage(true);
             setImageError('');
             try {
-              const imageComparison = await window.service.git.callGitOp('getImageComparison', workspace.wikiFolderLocation, commitHash, filePath);
+              const imageComparison = await window.service.git.callGitOp('getImageComparison', resolveRepoPath(workspace), commitHash, filePath);
               setImageDataUrl(imageComparison.current || '');
               setPreviousImageDataUrl(imageComparison.previous || '');
             } catch (error) {
@@ -362,7 +373,7 @@ export function FileDiffPanel(
         } else {
           // For text files, get both diff and content
           setIsImage(false);
-          const fileContentResult = await window.service.git.callGitOp('getFileContent', workspace.wikiFolderLocation, commitHash, filePath);
+          const fileContentResult = await window.service.git.callGitOp('getFileContent', resolveRepoPath(workspace), commitHash, filePath);
           setDiff(fileDiffResult.content);
           setFileContent(fileContentResult.content);
           setIsDiffTruncated(fileDiffResult.isTruncated);

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { commitScopedChanges, getCommitFiles, getGitLog, initScopedWikiGit } from '../gitOperations';
+import { commitScopedChanges, discoverAncestorGitRepos, getCommitFiles, getGitLog, initScopedWikiGit } from '../gitOperations';
 
 async function initRepo(repoPath: string): Promise<void> {
   await gitExec(['init'], repoPath);
@@ -150,5 +150,36 @@ describe('git scoped operations for HTML wiki', () => {
 
     const show = await gitExec(['show', 'HEAD:wiki.html'], repoPath);
     expect(show.stdout).toContain('commit me');
+  });
+
+  it('discoverAncestorGitRepos walks up and lists every ancestor that is a git repo', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-ancestor-'));
+    try {
+      // root/.git
+      await initRepo(root);
+      // root/level1/level2/wiki
+      const wikiFolder = path.join(root, 'level1', 'level2', 'wiki');
+      await fs.mkdir(wikiFolder, { recursive: true });
+      // also make level1 a git repo (nested ancestor)
+      await initRepo(path.join(root, 'level1'));
+
+      const ancestors = await discoverAncestorGitRepos(wikiFolder);
+      // nearest first: level1, then root
+      expect(ancestors).toEqual([path.join(root, 'level1'), root]);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('discoverAncestorGitRepos returns empty list when no ancestor has git', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-ancestor-none-'));
+    try {
+      const wikiFolder = path.join(root, 'a', 'b');
+      await fs.mkdir(wikiFolder, { recursive: true });
+      const ancestors = await discoverAncestorGitRepos(wikiFolder);
+      expect(ancestors).toEqual([]);
+    } finally {
+      await fs.rm(root, { recursive: true, force: true });
+    }
   });
 });

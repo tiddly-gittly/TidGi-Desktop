@@ -157,6 +157,10 @@ export class Git implements IGitService {
     return remoteUrl;
   }
 
+  public async discoverAncestorGitRepos(startPath: string): Promise<string[]> {
+    return gitOperations.discoverAncestorGitRepos(startPath);
+  }
+
   /**
    * Update in-wiki settings for git. Only needed if the wiki is config to synced.
    * @param {string} remoteUrl
@@ -328,8 +332,13 @@ export class Git implements IGitService {
       // Generate AI commit message if not provided and settings allow
       let finalConfigs = configs;
       const gitScope = getWorkspaceGitScope(workspace);
-      if (isHtmlWikiWorkspace(workspace) && gitScope?.managedRelativePath) {
-        finalConfigs = { ...configs, dir: gitScope.repoPath };
+      // Scoped workspaces (HTML wiki tracking a single file, or folder wiki tracking a subfolder of
+      // an ancestor repo) commit/push against the outer repoPath and limit staging to managedRelativePath.
+      const scopedRepoPath = gitScope?.repoPath;
+      const scopedManagedPath = gitScope?.managedRelativePath;
+      const isScoped = scopedRepoPath !== undefined && scopedManagedPath !== undefined;
+      if (isScoped) {
+        finalConfigs = { ...configs, dir: scopedRepoPath };
       }
       if (!configs.commitMessage) {
         logger.debug('No commit message provided, attempting to generate AI commit message');
@@ -349,19 +358,19 @@ export class Git implements IGitService {
         logger.debug('Commit message already provided, skipping AI generation', { commitMessage: configs.commitMessage });
       }
 
-      if (isHtmlWikiWorkspace(workspace) && gitScope?.managedRelativePath) {
+      if (isScoped) {
         const hasChanges = await gitOperations.commitScopedChanges(
-          gitScope.repoPath,
-          gitScope.managedRelativePath,
+          scopedRepoPath,
+          scopedManagedPath,
           finalConfigs.commitMessage ?? i18n.t('LOG.CommitBackupMessage'),
         );
         if (!configs.commitOnly) {
           const observable = this.gitWorker?.commitAndSyncWiki(
             workspace,
-            { ...finalConfigs, dir: gitScope.repoPath, commitOnly: false },
+            { ...finalConfigs, dir: scopedRepoPath, commitOnly: false },
             getErrorMessageI18NDict(),
           );
-          await this.getHasChangeHandler(observable, gitScope.repoPath, workspaceIDToShowNotification);
+          await this.getHasChangeHandler(observable, scopedRepoPath, workspaceIDToShowNotification);
         }
         const changeType = configs.commitOnly ? 'commit' : 'sync';
         this.notifyGitStateChange(workspace.wikiFolderLocation, changeType);
@@ -403,7 +412,10 @@ export class Git implements IGitService {
     let releaseLock: (() => void) | undefined;
     try {
       releaseLock = await this.acquireOperationLock(workspaceID);
-      const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
+      const gitScope = getWorkspaceGitScope(workspace);
+      const scopedRepoPath = gitScope?.repoPath;
+      const scopedConfigs = gitScope?.managedRelativePath !== undefined && scopedRepoPath !== undefined ? { ...configs, dir: scopedRepoPath } : configs;
+      const observable = this.gitWorker?.forcePullWiki(workspace, scopedConfigs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
       // Notify git state change
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');

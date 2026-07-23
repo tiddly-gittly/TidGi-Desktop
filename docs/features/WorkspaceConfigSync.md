@@ -56,6 +56,8 @@ These fields represent user preferences that should follow the wiki across devic
 | `fileSystemPathFilter`       | Path filter expressions                      |
 | `rootTiddler`                | Root tiddler for lazy loading                |
 | `https`                      | HTTPS configuration                          |
+| `gitRepoPath`                | Git repo root relative to wiki folder (e.g. `..`); null = wiki folder is the repo |
+| `gitManagedRelativePath`     | Wiki folder path relative to repo root; null = track whole repo |
 
 ## File Location
 

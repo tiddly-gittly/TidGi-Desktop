@@ -134,6 +134,12 @@ export interface IGitService {
   /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
   getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined>;
   /**
+   * Walk up from `startPath` and return absolute paths of every ancestor directory that is a Git
+   * repository root. Used to detect outer repos when creating a wiki inside an already-versioned
+   * folder, and to populate the candidate-repo list in workspace settings.
+   */
+  discoverAncestorGitRepos(startPath: string): Promise<string[]>;
+  /**
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
@@ -216,6 +222,7 @@ export const GitServiceIPCDescriptor = {
     forcePull: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
+    discoverAncestorGitRepos: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,
     gitSyncProgress$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,

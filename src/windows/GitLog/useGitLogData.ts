@@ -22,6 +22,10 @@ export interface IGitLogData {
   loadMore: () => Promise<void>;
   setSearchParams: (parameters: ISearchParameters) => void;
   isSearchMode: boolean;
+  /** Absolute path of the Git repo currently being tracked (may be an ancestor of the wiki folder). */
+  trackedRepoPath: string | null;
+  /** Subpath inside the repo that TidGi tracks; undefined means the whole repo. */
+  trackedScopedPath: string | null;
 }
 
 export function useGitLogData(workspaceID: string): IGitLogData {
@@ -43,6 +47,10 @@ export function useGitLogData(workspaceID: string): IGitLogData {
 
   const isSearchMode = searchParameters.mode !== 'none';
   const hasMore = entries.length < totalCount;
+
+  const gitLogScope = useMemo(() => (workspaceInfo ? getWorkspaceGitLogScope(workspaceInfo) : undefined), [workspaceInfo]);
+  const trackedRepoPath = gitLogScope?.repoPath ?? null;
+  const trackedScopedPath = gitLogScope?.scopedPath ?? null;
 
   // Get workspace info once
   useEffect(() => {
@@ -368,5 +376,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
     loadMore,
     setSearchParams: setSearchParameters,
     isSearchMode,
+    trackedRepoPath,
+    trackedScopedPath,
   };
 }
