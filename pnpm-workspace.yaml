@@ -82,3 +82,4 @@ minimumReleaseAgeExclude:
   - inversify@8.2.3
   - '@memeloop/react-ui@0.0.2'
   - memeloop@0.0.1
+  - multiformats@14.0.5
