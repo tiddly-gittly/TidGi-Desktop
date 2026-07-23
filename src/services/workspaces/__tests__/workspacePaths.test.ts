@@ -1,7 +1,14 @@
+import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { getWorkspaceGitScope, getWorkspaceType, isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from '@services/workspaces/workspacePaths';
 import { WorkspaceType } from '@services/workspaces/workspaceType';
+
+// Build cross-platform absolute paths so path.resolve behaves identically on Linux/Windows CI.
+const gameRoot = path.resolve('/tmp/projects/game').replace(/\\/g, '/');
+const wikiFolder = path.resolve('/tmp/projects/game/wiki').replace(/\\/g, '/');
+const mywikiFolder = path.resolve('/tmp/projects/game/mywiki').replace(/\\/g, '/');
 
 describe('workspacePaths', () => {
   it('detects html workspace type', () => {
@@ -79,14 +86,14 @@ describe('workspacePaths', () => {
       active: false,
       order: 0,
       picturePath: null,
-      wikiFolderLocation: 'C:\\projects\\game\\wiki',
+      wikiFolderLocation: wikiFolder,
       gitRepoPath: '..',
       gitManagedRelativePath: 'wiki',
     };
     const scope = getWorkspaceGitScope(workspace);
-    expect(scope?.repoPath).toBe('C:/projects/game');
+    expect(scope?.repoPath).toBe(gameRoot);
     expect(scope?.managedRelativePath).toBe('wiki');
-    expect(scope?.managedAbsolutePath).toBe('C:/projects/game/wiki');
+    expect(scope?.managedAbsolutePath).toBe(wikiFolder);
   });
 
   it('defaults managedRelativePath to the wiki folder name when only gitRepoPath is set', () => {
@@ -96,11 +103,11 @@ describe('workspacePaths', () => {
       active: false,
       order: 0,
       picturePath: null,
-      wikiFolderLocation: 'C:\\projects\\game\\mywiki',
+      wikiFolderLocation: mywikiFolder,
       gitRepoPath: '..',
     };
     const scope = getWorkspaceGitScope(workspace);
-    expect(scope?.repoPath).toBe('C:/projects/game');
+    expect(scope?.repoPath).toBe(gameRoot);
     expect(scope?.managedRelativePath).toBe('mywiki');
   });
 });
