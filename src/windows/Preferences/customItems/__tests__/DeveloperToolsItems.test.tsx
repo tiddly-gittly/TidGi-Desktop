@@ -53,6 +53,9 @@ describe('DeveloperTools custom items', () => {
     if (!('view' in window.service)) {
       (window.service as Record<string, unknown>).view = {};
     }
+    if (!('git' in window.service)) {
+      (window.service as Record<string, unknown>).git = {};
+    }
 
     Object.defineProperty(window.service.preference, 'set', {
       value: vi.fn(async (key: string, value: unknown) => {
@@ -112,6 +115,12 @@ describe('DeveloperTools custom items', () => {
 
     Object.defineProperty(window.service.wiki, 'getWorkersInfo', {
       value: vi.fn().mockResolvedValue([]),
+      writable: true,
+      configurable: true,
+    });
+
+    Object.defineProperty(window.service.git, 'getWorkerInfo', {
+      value: vi.fn().mockResolvedValue(undefined),
       writable: true,
       configurable: true,
     });
