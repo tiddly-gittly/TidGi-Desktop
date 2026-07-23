@@ -21,15 +21,37 @@ export function GitRepoScopeItem(): React.JSX.Element | null {
 
   useEffect(() => {
     if (!isWikiWorkspace(workspace) || isHtmlWikiWorkspace(workspace)) return;
-    void (async () => {
-      try {
-        // Walk up from the wiki folder; the first result is the wiki folder itself if it has .git.
-        const repos = await window.service.git.discoverAncestorGitRepos(workspace.wikiFolderLocation);
-        setAncestorRepos(repos);
-      } catch {
-        setAncestorRepos([]);
-      }
-    })();
+    let cancelled = false;
+    // Defer the filesystem walk to idle time so its state update (and the RadioGroup re-render it
+    // triggers) doesn't contend with the initial render burst of the EditWorkspace window. This
+    // keeps time-sensitive interactions — e.g. toggling a switch and waiting for the save button
+    // to appear — from racing the ancestor-repo detection on slow CI runners.
+    const run = (): void => {
+      if (cancelled) return;
+      void (async () => {
+        try {
+          // Walk up from the wiki folder; the first result is the wiki folder itself if it has .git.
+          const repos = await window.service.git.discoverAncestorGitRepos(workspace.wikiFolderLocation);
+          if (!cancelled) setAncestorRepos(repos);
+        } catch {
+          if (!cancelled) setAncestorRepos([]);
+        }
+      })();
+    };
+    const requestIdle = (window as unknown as { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback;
+    if (typeof requestIdle === 'function') {
+      const handle = requestIdle(run, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        const cancelIdle = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+        cancelIdle?.(handle);
+      };
+    }
+    const timer = window.setTimeout(run, 200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [workspace, workspace.wikiFolderLocation]);
 
   const wikiFolderLocation = isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : undefined;
