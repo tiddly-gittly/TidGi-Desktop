@@ -101,6 +101,29 @@ describe('git scoped operations for HTML wiki', () => {
     }
   });
 
+  it('initScopedWikiGit throws when the scoped path is gitignored by the outer repo', async () => {
+    // Reproduces the CI/e2e situation: a wiki is created inside an existing repo under a path that
+    // the outer repo's .gitignore excludes (e.g. TidGi-Desktop's `/test-artifacts`). `git add` of an
+    // ignored path exits non-zero, so initScopedWikiGit throws — which is the contract the caller
+    // (initWikiGitTransaction) relies on to fall back to an independent repo.
+    const outerRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-git-ignored-scope-'));
+    try {
+      await initRepo(outerRepo);
+      await fs.writeFile(path.join(outerRepo, '.gitignore'), 'wiki2/\n', 'utf-8');
+
+      const wikiFolder = path.join(outerRepo, 'wiki2');
+      await fs.mkdir(path.join(wikiFolder, 'tiddlers'), { recursive: true });
+      await fs.writeFile(path.join(wikiFolder, 'tiddlywiki.info'), '{}', 'utf-8');
+
+      await expect(initScopedWikiGit(outerRepo, 'wiki2')).rejects.toThrow(/Failed to stage/);
+      // Nothing should have been committed into the outer repo.
+      const show = await gitExec(['show', 'HEAD:tiddlywiki.info'], outerRepo);
+      expect(show.exitCode).not.toBe(0);
+    } finally {
+      await fs.rm(outerRepo, { recursive: true, force: true });
+    }
+  });
+
   it('getGitLog with scopedPath does not hang when repo contains nested git directory', async () => {
     const nestedRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-git-nested-'));
     try {

@@ -96,7 +96,18 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           scopedRepoPath !== wikiFolderLocation;
         if (useOuterRepo && await hasGit(scopedRepoPath)) {
           const gitService = container.get<IGitService>(serviceIdentifier.Git);
-          await gitService.initScopedWikiGit(scopedRepoPath, scopedManagedPath);
+          try {
+            await gitService.initScopedWikiGit(scopedRepoPath, scopedManagedPath);
+          } catch (scopedInitError) {
+            // The outer repo can't track this wiki — e.g. the wiki path is gitignored by the outer
+            // repo (common in CI where the wiki is created inside the app's own repo under an
+            // ignored test-artifacts folder), or the outer repo has a failing hook. Fall back to an
+            // independent repo inside the wiki folder and clear the scope config so future git ops
+            // target the wiki's own repo instead of the unusable outer one.
+            logger.warn(`initScopedWikiGit failed on outer repo ${scopedRepoPath}, falling back to independent repo`, { error: scopedInitError as Error });
+            await workspaceService.update(newWorkspace.id, { gitRepoPath: null, gitManagedRelativePath: null });
+            await gitService.initWikiGit(wikiFolderLocation, false);
+          }
         } else if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
             const gitService = container.get<IGitService>(serviceIdentifier.Git);
