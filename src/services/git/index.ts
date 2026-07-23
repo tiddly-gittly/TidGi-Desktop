@@ -1,11 +1,9 @@
-import { createWorkerProxy } from '@services/libs/workerAdapter';
-import { dialog, net } from 'electron';
+import { createWorkerProxy, type WorkerPeer } from '@services/libs/workerAdapter';
+import { dialog, net, type UtilityProcess } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observer } from 'rxjs';
-import { Worker } from 'worker_threads';
-// @ts-expect-error - Vite worker import with ?nodeWorker query
-import GitWorkerFactory from './gitWorker?nodeWorker';
+import GitWorkerFactory from './gitWorker?utilityProcess';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
@@ -31,7 +29,13 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 @injectable()
 export class Git implements IGitService {
   private gitWorker?: GitWorker;
-  private nativeWorker?: Worker;
+  private nativeWorker?: UtilityProcess;
+  /** Crash counter for auto-restart loop protection. Resets on successful operation. */
+  private crashCount = 0;
+  private crashResetTimer?: ReturnType<typeof setTimeout>;
+  /** Max restarts within the crash window before giving up. */
+  private static readonly MAX_CRASHES = 5;
+  private static readonly CRASH_WINDOW_MS = 30_000;
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
   private operationLocks = new Map<string, Promise<void>>();
@@ -124,17 +128,14 @@ export class Git implements IGitService {
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
 
-    logger.debug(`Initializing gitWorker`, {
+    logger.debug(`Initializing gitWorker as utility process`, {
       function: 'Git.initWorker',
       LOCAL_GIT_DIRECTORY,
     });
 
     try {
-      // Use Vite's ?nodeWorker import instead of dynamic Worker path
-      const worker = (GitWorkerFactory as () => Worker)();
-      this.nativeWorker = worker;
-      this.gitWorker = createWorkerProxy<GitWorker>(worker);
-      logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
+      this.spawnGitWorker();
+      logger.debug('gitWorker utility process initialized successfully', { function: 'Git.initWorker' });
     } catch (error) {
       logger.error('Failed to initialize gitWorker', {
         function: 'Git.initWorker',
@@ -142,6 +143,79 @@ export class Git implements IGitService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Spawn the Git worker as an Electron UtilityProcess.
+   *
+   * UtilityProcess provides true process-level crash isolation — if dugite's
+   * native libgit2 segfaults, only the utility process dies, not the main
+   * Electron process. We auto-restart on crash with loop protection.
+   */
+  private spawnGitWorker(): void {
+    const child = GitWorkerFactory({
+      stdio: 'pipe',
+      serviceName: 'git-worker',
+      // dugite loads native libgit2; on macOS this needs unsigned library loading
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+
+    this.nativeWorker = child;
+    this.gitWorker = createWorkerProxy<GitWorker>(child as unknown as WorkerPeer);
+
+    // Pipe stdout/stderr to our logger for debugging
+    child.stdout?.on('data', (data: Buffer) => {
+      logger.debug(`gitWorker stdout: ${data.toString().trim()}`, { function: 'Git.spawnGitWorker.stdout' });
+    });
+    child.stderr?.on('data', (data: Buffer) => {
+      logger.warn(`gitWorker stderr: ${data.toString().trim()}`, { function: 'Git.spawnGitWorker.stderr' });
+    });
+
+    // Auto-restart on unexpected crash (true process isolation — main process survives)
+    child.on('exit', (code: number) => {
+      this.nativeWorker = undefined;
+      this.gitWorker = undefined;
+
+      if (code === 0) {
+        logger.info('gitWorker utility process exited cleanly', { function: 'Git.spawnGitWorker.exit' });
+        return;
+      }
+
+      logger.error(`gitWorker utility process crashed with code ${code}`, {
+        function: 'Git.spawnGitWorker.exit',
+        code,
+        crashCount: this.crashCount,
+      });
+
+      // Crash loop protection: if too many crashes in a short window, stop restarting
+      this.crashCount++;
+      if (this.crashResetTimer) {
+        clearTimeout(this.crashResetTimer);
+      }
+      this.crashResetTimer = setTimeout(() => {
+        this.crashCount = 0;
+      }, Git.CRASH_WINDOW_MS);
+
+      if (this.crashCount > Git.MAX_CRASHES) {
+        logger.error(
+          `gitWorker crashed ${this.crashCount} times within ${Git.CRASH_WINDOW_MS / 1000}s, giving up auto-restart to avoid crash loop`,
+          { function: 'Git.spawnGitWorker.exit', crashCount: this.crashCount },
+        );
+        return;
+      }
+
+      logger.warn(`Auto-restarting gitWorker (attempt ${this.crashCount}/${Git.MAX_CRASHES})`, {
+        function: 'Git.spawnGitWorker.exit',
+      });
+      try {
+        this.spawnGitWorker();
+      } catch (restartError) {
+        logger.error('Failed to restart gitWorker', {
+          function: 'Git.spawnGitWorker.restart',
+          error: restartError,
+        });
+      }
+    });
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {

@@ -1,14 +1,19 @@
 /**
- * Utility functions for Native Node.js Worker Threads communication
- * Replaces threads.js with native worker_threads API
+ * Utility functions for Worker Threads and Electron UtilityProcess communication.
  *
- * Note: Service registration for workers will be handled by electron-ipc-cat/worker in the future
- * This file contains TidGi-specific worker proxy functionality (e.g., git worker)
+ * Replaces threads.js with native worker_threads / utilityProcess API.
+ * Both `Worker` and `UtilityProcess` satisfy the `WorkerPeer` interface, so
+ * `createWorkerProxy` works with either — the caller decides which process
+ * model to use.
+ *
+ * Note: Service registration for workers calling back to main process
+ * services is handled by `electron-ipc-cat` (attachWorker / attachUtilityProcess).
+ * This file contains TidGi-specific RPC proxy functionality (e.g. git worker
+ * method calls).
  */
 
 import { cloneDeep } from 'lodash';
 import { Observable, Subject } from 'rxjs';
-import { Worker } from 'worker_threads';
 
 export interface WorkerMessage<T = unknown> {
   type: 'call' | 'response' | 'error' | 'stream' | 'complete';
@@ -24,12 +29,26 @@ export interface WorkerMessage<T = unknown> {
 }
 
 /**
- * Create a worker proxy that mimics threads.js API
- * Usage: const proxy = createWorkerProxy<WorkerType>(worker);
+ * Minimal peer interface that both Node.js `Worker` and Electron
+ * `UtilityProcess` satisfy. Used by `createWorkerProxy` on the main-process
+ * side to send/receive RPC messages.
+ */
+export interface WorkerPeer {
+  postMessage(message: unknown): void;
+  on(event: 'message', handler: (message: unknown) => void): void;
+  on(event: 'error', handler: (error: Error) => void): void;
+  on(event: 'exit', handler: (code: number) => void): void;
+}
+
+/**
+ * Create a worker proxy that mimics threads.js API.
+ * Works with both `Worker` (worker_threads) and `UtilityProcess`.
+ *
+ * Usage: const proxy = createWorkerProxy<WorkerType>(workerOrUtilityProcess);
  */
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-explicit-any -- T is needed to provide type safety for the returned proxy object, any is needed to support various worker method signatures
 export function createWorkerProxy<T extends Record<string, (...arguments_: any[]) => any>>(
-  worker: Worker,
+  peer: WorkerPeer,
 ): T {
   const pendingCalls = new Map<string, {
     resolve: (value: unknown) => void;
@@ -37,8 +56,9 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
     subject?: Subject<unknown>;
   }>();
 
-  // Listen to worker messages
-  worker.on('message', (message: WorkerMessage) => {
+  // Listen to peer messages
+  peer.on('message', (rawMessage: unknown) => {
+    const message = rawMessage as WorkerMessage;
     const pending = pendingCalls.get(message.id!);
     if (!pending) return;
 
@@ -70,15 +90,25 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
     }
   });
 
-  worker.on('error', (error: unknown) => {
-    const error_ = error instanceof Error ? error : new Error(String(error));
-    // Reject all pending calls
+  // Reject all pending calls on error or unexpected exit
+  const rejectAll = (error: Error): void => {
     for (const [id, pending] of pendingCalls.entries()) {
-      pending.reject(error_);
+      pending.reject(error);
       if (pending.subject) {
-        pending.subject.error(error_);
+        pending.subject.error(error);
       }
       pendingCalls.delete(id);
+    }
+  };
+
+  peer.on('error', (error: unknown) => {
+    const error_ = error instanceof Error ? error : new Error(String(error));
+    rejectAll(error_);
+  });
+
+  peer.on('exit', (code: number) => {
+    if (code !== 0) {
+      rejectAll(new Error(`Peer process exited with code ${code}`));
     }
   });
 
@@ -124,7 +154,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
             const serializedArguments = arguments_.map((argument) => cloneDeep(argument));
 
             try {
-              worker.postMessage({
+              peer.postMessage({
                 type: 'call',
                 id,
                 method,
@@ -150,7 +180,7 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
             const serializedArguments = arguments_.map((argument) => cloneDeep(argument));
 
             try {
-              worker.postMessage({
+              peer.postMessage({
                 type: 'call',
                 id,
                 method,
@@ -169,8 +199,124 @@ export function createWorkerProxy<T extends Record<string, (...arguments_: any[]
 }
 
 /**
- * Worker-side message handler. Messages are processed sequentially so async
- * operations (e.g. git commands) do not interleave on the same repo.
+ * Message port interface for the child side (worker thread or utility process).
+ */
+interface MessagePortLike {
+  postMessage(message: unknown): void;
+  on(event: 'message', handler: (message: unknown) => void): void;
+}
+
+/**
+ * Core message handler shared by both worker_threads and utility process.
+ * Messages are processed sequentially so async operations (e.g. git commands)
+ * do not interleave on the same repo.
+ */
+function handleMessages(
+  methods: Record<string, (...arguments_: unknown[]) => unknown>,
+  port: MessagePortLike,
+): void {
+  port.on('message', async (rawMessage: unknown) => {
+    const message = rawMessage as WorkerMessage;
+    const { id, method, args, type } = message;
+
+    if (type !== 'call' || !method) return;
+
+    const implementation = methods[method];
+    if (!implementation) {
+      port.postMessage(
+        {
+          type: 'error',
+          id,
+          error: {
+            message: `Method '${method}' not found in worker`,
+            name: 'MethodNotFoundError',
+          },
+        } satisfies WorkerMessage,
+      );
+      return;
+    }
+
+    try {
+      // Worker methods are registered dynamically, so the runtime result needs explicit narrowing below.
+      const result: unknown = implementation(...(args || []));
+      // Check if result is Observable
+      if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
+        (result as Observable<unknown>).subscribe({
+          next: (value: unknown) => {
+            port.postMessage(
+              {
+                type: 'stream',
+                id,
+                result: value,
+              } satisfies WorkerMessage,
+            );
+          },
+          error: (error: Error) => {
+            port.postMessage(
+              {
+                type: 'error',
+                id,
+                error: {
+                  message: error.message,
+                  stack: error.stack,
+                  name: error.name,
+                },
+              } satisfies WorkerMessage,
+            );
+          },
+          complete: () => {
+            port.postMessage(
+              {
+                type: 'complete',
+                id,
+              } satisfies WorkerMessage,
+            );
+          },
+        });
+        // Note: we do NOT await Observable completion — some Observables (e.g.
+        // startNodeJSWiki) never complete, they only emit next values. Awaiting
+        // would permanently block the message handler. Per-workspace git
+        // serialization is handled by operationLocks in GitService instead.
+      } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
+        // Handle Promise
+        const resolvedValue = await (result as Promise<unknown>);
+        port.postMessage(
+          {
+            type: 'response',
+            id,
+            result: resolvedValue,
+          } satisfies WorkerMessage,
+        );
+      } else {
+        // Handle synchronous result
+        port.postMessage(
+          {
+            type: 'response',
+            id,
+            result,
+          } satisfies WorkerMessage,
+        );
+      }
+    } catch (error) {
+      const error_ = error as Error;
+      port.postMessage(
+        {
+          type: 'error',
+          id,
+          error: {
+            message: error_.message,
+            stack: error_.stack,
+            name: error_.name,
+          },
+        } satisfies WorkerMessage,
+      );
+    }
+  });
+}
+
+/**
+ * Worker-thread-side message handler.
+ * Uses `parentPort` from `worker_threads` (messages arrive as raw values).
  *
  * Usage in worker: handleWorkerMessages({ methodName: implementation });
  */
@@ -183,93 +329,47 @@ export function handleWorkerMessages(methods: Record<string, (...arguments_: any
     throw new Error('This function must be called in a worker thread');
   }
 
-  parentPort.on('message', async (message: WorkerMessage) => {
-    const { id, method, args, type } = message;
+  handleMessages(methods, parentPort);
+}
 
-    if (type !== 'call' || !method) return;
+/**
+ * Utility-process-side message handler.
+ * Uses `process.parentPort` from Electron (messages arrive wrapped in
+ * `{ data, ports }` event objects, so we unwrap `event.data`).
+ *
+ * Usage in utility process: handleUtilityProcessMessages({ methodName: implementation });
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function handleUtilityProcessMessages(methods: Record<string, (...arguments_: any[]) => any>): void {
+  const port = (process as { parentPort?: MessagePortLike }).parentPort;
 
-    const implementation = methods[method];
-    if (!implementation) {
-      parentPort.postMessage({
-        type: 'error',
-        id,
-        error: {
-          message: `Method '${method}' not found in worker`,
-          name: 'MethodNotFoundError',
-        },
-      });
-      return;
-    }
+  if (!port) {
+    throw new Error('This function must be called in an Electron utility process');
+  }
 
-    try {
-      // Worker methods are registered dynamically, so the runtime result needs explicit narrowing below.
-      const result: unknown = implementation(...(args || []));
-      // Check if result is Observable
-      if (result && typeof result === 'object' && 'subscribe' in result && typeof result.subscribe === 'function') {
-        (result as Observable<unknown>).subscribe({
-          next: (value: unknown) => {
-            parentPort.postMessage({
-              type: 'stream',
-              id,
-              result: value,
-            });
-          },
-          error: (error: Error) => {
-            parentPort.postMessage({
-              type: 'error',
-              id,
-              error: {
-                message: error.message,
-                stack: error.stack,
-                name: error.name,
-              },
-            });
-          },
-          complete: () => {
-            parentPort.postMessage({
-              type: 'complete',
-              id,
-            });
-          },
-        });
-        // Note: we do NOT await Observable completion — some Observables (e.g.
-        // startNodeJSWiki) never complete, they only emit next values. Awaiting
-        // would permanently block the message handler. Per-workspace git
-        // serialization is handled by operationLocks in GitService instead.
-      } else if (result && typeof result === 'object' && 'then' in result && typeof result.then === 'function') {
-        // Handle Promise
-        const resolvedValue = await (result as Promise<unknown>);
-        parentPort.postMessage({
-          type: 'response',
-          id,
-          result: resolvedValue,
-        });
-      } else {
-        // Handle synchronous result
-        parentPort.postMessage({
-          type: 'response',
-          id,
-          result,
+  // Wrap to unwrap the { data, ports } event envelope
+  handleMessages(methods, {
+    postMessage: (message: unknown) => {
+      port.postMessage(message);
+    },
+    on: (event, handler) => {
+      if (event === 'message') {
+        // Electron utility process delivers { data, ports } events
+        (port as { on(event_: string, handler_: (...arguments_: unknown[]) => void): void }).on(event, (event_: unknown) => {
+          handler((event_ as { data: WorkerMessage }).data);
         });
       }
-    } catch (error) {
-      const error_ = error as Error;
-      parentPort.postMessage({
-        type: 'error',
-        id,
-        error: {
-          message: error_.message,
-          stack: error_.stack,
-          name: error_.name,
-        },
-      });
-    }
+    },
   });
 }
 
 /**
- * Terminate worker gracefully
+ * Terminate a worker peer gracefully.
+ * Works with both `Worker` (terminate) and `UtilityProcess` (kill).
  */
-export async function terminateWorker(worker: Worker): Promise<number> {
-  return await worker.terminate();
+export async function terminateWorker(peer: { terminate(): Promise<number> } | { kill(): boolean }): Promise<number> {
+  if ('terminate' in peer) {
+    return await peer.terminate();
+  }
+  return peer.kill() ? 0 : 1;
 }

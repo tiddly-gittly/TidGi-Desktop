@@ -1,6 +1,6 @@
 import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
-import { handleWorkerMessages } from '@services/libs/workerAdapter';
+import { handleUtilityProcessMessages } from '@services/libs/workerAdapter';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { exec as gitExec } from 'dugite';
@@ -281,5 +281,5 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
 const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, forcePullWiki, getModifiedFileList, getRemoteUrl };
 export type GitWorker = typeof gitWorker;
 
-// Initialize worker message handling
-handleWorkerMessages(gitWorker);
+// Initialize utility process message handling
+handleUtilityProcessMessages(gitWorker);

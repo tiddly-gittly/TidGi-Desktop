@@ -5,6 +5,14 @@ declare module '@fetsorn/vite-node-worker' {
   export function workerPlugin(): Plugin;
 }
 
+// `?utilityProcess` import — emits the module as a separate chunk and returns
+// a factory that calls `utilityProcess.fork(path)`. See vite.main.config.ts
+// `utilityProcessPlugin` for the implementation.
+declare module '*?utilityProcess' {
+  import type { UtilityProcess } from 'electron';
+  export default function forkUtilityProcess(options?: Record<string, unknown>): UtilityProcess;
+}
+
 // Electron Forge Vite Plugin 提供的全局变量
 // https://www.electronforge.io/config/plugins/vite
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;

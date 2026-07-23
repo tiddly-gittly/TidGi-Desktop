@@ -72,7 +72,7 @@
     "date-fns": "4.4.0",
     "dugite": "3.2.2",
     "electron-dl": "^4.0.0",
-    "electron-ipc-cat": "2.4.0",
+    "electron-ipc-cat": "2.5.0",
     "electron-settings": "5.0.0",
     "electron-unhandled": "5.0.0",
     "electron-window-state": "5.0.3",

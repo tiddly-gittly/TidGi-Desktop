@@ -2,7 +2,7 @@ import { workerPlugin } from '@fetsorn/vite-node-worker';
 import fs from 'fs-extra';
 import path from 'path';
 import swc from 'unplugin-swc';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
 
 // Dynamically read TypeORM's optional peer dependencies to avoid hardcoding
@@ -16,6 +16,66 @@ const typeormOptionalDepsRegex = typeormOptionalDepNames.map(
   (dep) => new RegExp(`^${dep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/.*)?$`),
 );
 
+/**
+ * Vite plugin for `?utilityProcess` imports.
+ *
+ * Similar to `@fetsorn/vite-node-worker`'s `?nodeWorker`, but emits a factory
+ * that calls `utilityProcess.fork(path)` instead of `new Worker(new URL(path))`.
+ * UtilityProcess provides true process-level crash isolation.
+ *
+ * The generated code uses `require('path').resolve(__dirname, ...)` directly
+ * (instead of `new URL(..., import.meta.url)`) to avoid the CJS
+ * `import.meta.url` → `{}.url` breakage that the `fix-vite-node-worker-url`
+ * plugin works around for worker_threads.
+ */
+function utilityProcessPlugin(): Plugin {
+  const queryRE = /[?#].*$/s;
+  const cleanUrl = (url: string) => url.replace(queryRE, '');
+  const assetReferenceRE = /__VITE_UTILITY_PROCESS_ASSET__([\w$]+)__/g;
+
+  return {
+    name: 'vite:utility-process',
+    apply: 'build',
+    enforce: 'pre',
+    resolveId(id, importer) {
+      if (id.includes('?utilityProcess') && importer) {
+        return `${id}&importer=${importer}`;
+      }
+    },
+    load(id) {
+      if (!id.includes('?utilityProcess') || !id.includes('importer=')) return;
+
+      const cleanPath = cleanUrl(id);
+      const hash = this.emitFile({
+        type: 'chunk',
+        id: cleanPath,
+        importer: id.split('importer=')[1],
+      });
+      const assetReferenceId = `__VITE_UTILITY_PROCESS_ASSET__${hash}__`;
+
+      return `
+        import { utilityProcess } from 'electron';
+        const workerPath = require('path').resolve(__dirname, ${assetReferenceId});
+        export default function forkUtilityProcess(options) {
+          return utilityProcess.fork(workerPath, [], options);
+        }`;
+    },
+    renderChunk(code, chunk) {
+      if (!assetReferenceRE.test(code)) return null;
+      assetReferenceRE.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      let result = code;
+      while ((match = assetReferenceRE.exec(code))) {
+        const [full, hash] = match;
+        const filename = this.getFileName(hash);
+        const relativePath = path.posix.relative(path.dirname(chunk.fileName), filename);
+        result = result.replace(full, JSON.stringify(relativePath));
+      }
+      return { code: result, map: null };
+    },
+  };
+}
+
 export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
@@ -25,10 +85,12 @@ export default defineConfig({
       ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-main' })]
       : []),
     workerPlugin(),
+    utilityProcessPlugin(),
     // Rolldown replaces import.meta.url with {}.url in CJS output, breaking
     // node Worker(new URL(...)) calls from vite-node-worker plugin.
     // Replace with __dirname-based path (CJS has __dirname natively).
-    // TODO: switch to child_process for crash isolation, then remove this.
+    // Only needed for ?nodeWorker (Wiki Worker); ?utilityProcess uses
+    // require('path').resolve(__dirname, ...) directly.
     {
       name: 'fix-vite-node-worker-url',
       enforce: 'post',
