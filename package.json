@@ -145,7 +145,6 @@
     "@electron-forge/plugin-auto-unpack-natives": "8.0.0-alpha.9",
     "@electron-forge/plugin-vite": "8.0.0-alpha.9",
     "@electron/rebuild": "^4.0.4",
-    "@fetsorn/vite-node-worker": "^1.0.1",
     "@reforged/maker-appimage": "5.2.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

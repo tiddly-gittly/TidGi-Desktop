@@ -339,9 +339,6 @@ importers:
       '@electron/rebuild':
         specifier: ^4.0.4
         version: 4.0.4
-      '@fetsorn/vite-node-worker':
-        specifier: ^1.0.1
-        version: 1.0.1
       '@reforged/maker-appimage':
         specifier: 5.2.0
         version: 5.2.0(bluebird@3.7.2)(supports-color@10.2.2)
@@ -1656,9 +1653,6 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
-
-  '@fetsorn/vite-node-worker@1.0.1':
-    resolution: {integrity: sha512-uQCIrfW5tzTXzpfJTS0/+lpzNsYI6Y0w+6oaTBvvQ6gJ8/ttqmRy4P2Q9dzksmlzYOY6Bcq17kI61eHrJ3qbug==}
 
   '@fontsource/roboto@5.2.10':
     resolution: {integrity: sha512-8HlA5FtSfz//oFSr2eL7GFXAiE7eIkcGOtx7tjsLKq+as702x9+GU7K95iDeWFapHC4M2hv9RrpXKRTGGBI8Zg==}
@@ -9460,10 +9454,6 @@ snapshots:
       levn: 0.4.1
 
   '@exodus/bytes@1.15.1': {}
-
-  '@fetsorn/vite-node-worker@1.0.1':
-    dependencies:
-      magic-string: 0.30.21
 
   '@fontsource/roboto@5.2.10': {}
 

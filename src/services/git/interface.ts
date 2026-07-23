@@ -1,4 +1,5 @@
 import { GitChannel } from '@/constants/channels';
+import type { IWorkerInfo } from '@services/wiki/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ICommitAndSyncOptions, ModifiedFileList } from 'git-sync-js';
@@ -199,6 +200,11 @@ export interface IGitService {
    * @param options.onlyWhenGitLogOpened - Only notify if git log window is open (default: true)
    */
   notifyFileChange(wikiFolderLocation: string, options?: { onlyWhenGitLogOpened?: boolean }): void;
+  /**
+   * Get info about the Git utility process for the debug panel.
+   * Returns undefined if the git worker is not running.
+   */
+  getWorkerInfo(): Promise<IWorkerInfo | undefined>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
@@ -221,6 +227,7 @@ export const GitServiceIPCDescriptor = {
     initWikiGit: ProxyPropertyType.Function,
     initScopedWikiGit: ProxyPropertyType.Function,
     notifyFileChange: ProxyPropertyType.Function,
+    getWorkerInfo: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     amendCommitMessage: ProxyPropertyType.Function,
     undoCommit: ProxyPropertyType.Function,

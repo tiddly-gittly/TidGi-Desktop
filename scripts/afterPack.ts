@@ -50,7 +50,7 @@ export default async (
     const cwd = path.resolve(buildPath, '..');
     const projectRoot = path.resolve(__dirname, '..');
 
-    console.log('Copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which cannot be prepared properly by webpack');
+    console.log('Copy npm packages with utility process dependencies with binary (dugite) or __filename usages (tiddlywiki), which cannot be prepared properly by webpack');
 
     if (['production', 'test'].includes(process.env.NODE_ENV ?? '')) {
       console.log('Copying tiddlywiki dependency to dist');

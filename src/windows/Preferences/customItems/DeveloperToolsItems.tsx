@@ -86,16 +86,18 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
   const [diagData, setDiagData] = useState<{ processInfo: IProcessInfo; viewsInfo: IViewInfo[]; workersInfo: IWorkerInfo[] } | undefined>(undefined);
 
   const loadDiagData = async () => {
-    const [processInfoResult, workersInfoResult, viewsInfoResult] = await Promise.all([
+    const [processInfoResult, workersInfoResult, viewsInfoResult, gitWorkerInfoResult] = await Promise.all([
       window.service.native.getProcessInfo(),
       window.service.wiki.getWorkersInfo(),
       window.service.view.getViewsInfo(),
+      window.service.git.getWorkerInfo(),
     ]);
-    setDiagData({
-      processInfo: processInfoResult,
-      workersInfo: workersInfoResult,
-      viewsInfo: viewsInfoResult,
-    });
+    // Merge wiki workers and git worker into a single list for the diagnostic panel
+    const allWorkers = [...workersInfoResult];
+    if (gitWorkerInfoResult !== undefined) {
+      allWorkers.push(gitWorkerInfoResult);
+    }
+    setDiagData({ processInfo: processInfoResult, workersInfo: allWorkers, viewsInfo: viewsInfoResult });
   };
 
   return (
@@ -187,8 +189,13 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                       <TableRow>
                         <TableCell>{t('Preference.WorkerDebugWorkspace')}</TableCell>
                         <TableCell>
-                          <Tooltip title={t('Preference.WorkerDebugThreadIdTooltip')} placement='top'>
-                            <span>{t('Preference.WorkerDebugThreadId')}</span>
+                          <Tooltip title={t('Preference.WorkerDebugPIDTooltip')} placement='top'>
+                            <span>PID</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title={t('Preference.RendererCPUTooltip')} placement='top'>
+                            <span>{t('Preference.RendererCPU')}</span>
                           </Tooltip>
                         </TableCell>
                         <TableCell>{t('Preference.WorkerDebugPort')}</TableCell>
@@ -214,10 +221,23 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                             <Typography variant='caption' sx={{ color: 'text.secondary' }}>{info.workspaceID.slice(0, 8)}</Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant='body2'>{info.isRunning && info.threadId > 0 ? info.threadId : '-'}</Typography>
+                            <Typography variant='body2'>{info.isRunning && info.pid > 0 ? info.pid : '-'}</Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant='body2'>{info.isRunning ? info.port : '-'}</Typography>
+                            {info.cpu_percent >= 0
+                              ? (
+                                <Typography
+                                  variant='body2'
+                                  color={info.cpu_percent > 20 ? 'error' : info.cpu_percent > 5 ? 'warning.main' : 'text.primary'}
+                                  sx={{ fontWeight: 'bold' }}
+                                >
+                                  {`${info.cpu_percent.toFixed(1)} %`}
+                                </Typography>
+                              )
+                              : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant='body2'>{info.isRunning && info.port > 0 ? info.port : '-'}</Typography>
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -244,7 +264,7 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                             <Button
                               size='small'
                               variant='outlined'
-                              disabled={!info.isRunning}
+                              disabled={!info.isRunning || info.port <= 0}
                               onClick={() => {
                                 void window.service.native.openURI(`http://127.0.0.1:${info.port}`);
                               }}
@@ -256,7 +276,7 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                       ))}
                       {diagData.workersInfo.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={7} align='center'>
+                          <TableCell colSpan={8} align='center'>
                             <Typography sx={{ color: 'text.secondary' }}>{t('Preference.WorkerDebugEmpty')}</Typography>
                           </TableCell>
                         </TableRow>

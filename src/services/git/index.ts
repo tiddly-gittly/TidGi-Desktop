@@ -1,5 +1,5 @@
 import { createWorkerProxy, type WorkerPeer } from '@services/libs/workerAdapter';
-import { dialog, net, type UtilityProcess } from 'electron';
+import { app, dialog, net, type UtilityProcess } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observer } from 'rxjs';
@@ -16,6 +16,7 @@ import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkerInfo } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
@@ -216,6 +217,27 @@ export class Git implements IGitService {
         });
       }
     });
+  }
+
+  public async getWorkerInfo(): Promise<IWorkerInfo | undefined> {
+    if (!this.nativeWorker) return undefined;
+    const pid = this.nativeWorker.pid ?? -1;
+    const metricsMap = new Map<number, Electron.ProcessMetric>();
+    for (const metric of app.getAppMetrics()) {
+      metricsMap.set(metric.pid, metric);
+    }
+    const metric = pid > 0 ? metricsMap.get(pid) : undefined;
+    return {
+      workspaceID: 'git-worker',
+      workspaceName: 'Git Worker',
+      port: 0,
+      isRunning: this.nativeWorker !== undefined,
+      pid,
+      cpu_percent: Math.round((metric?.cpu.percentCPUUsage ?? -1) * 100) / 100,
+      rss_MB: metric ? Math.round(metric.memory.workingSetSize / 1024) : -1,
+      heapUsed_MB: -1,
+      heapTotal_MB: -1,
+    };
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {

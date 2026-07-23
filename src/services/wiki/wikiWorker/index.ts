@@ -7,11 +7,22 @@ import './preload';
 import 'source-map-support/register';
 import { uninstall } from '@/helpers/installV8Cache';
 
-import { handleWorkerMessages } from '@services/libs/workerAdapter';
+import { handleUtilityProcessMessages } from '@services/libs/workerAdapter';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
+
+// Log any uncaught errors to stderr before the utility process exits,
+// so the main process can capture them via child.stderr.
+process.on('uncaughtException', (error: Error) => {
+  process.stderr.write(`[wikiWorker] Uncaught exception: ${error.stack ?? error.message}\n`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason: unknown) => {
+  process.stderr.write(`[wikiWorker] Unhandled rejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}\n`);
+  process.exit(1);
+});
 
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
@@ -146,5 +157,5 @@ const wikiWorker = {
 };
 export type WikiWorker = typeof wikiWorker;
 
-// Initialize worker message handling
-handleWorkerMessages(wikiWorker);
+// Initialize utility process message handling
+handleUtilityProcessMessages(wikiWorker);

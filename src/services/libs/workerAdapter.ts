@@ -1,15 +1,13 @@
 /**
- * Utility functions for Worker Threads and Electron UtilityProcess communication.
+ * RPC proxy for Electron UtilityProcess communication.
  *
- * Replaces threads.js with native worker_threads / utilityProcess API.
- * Both `Worker` and `UtilityProcess` satisfy the `WorkerPeer` interface, so
- * `createWorkerProxy` works with either — the caller decides which process
- * model to use.
+ * All background workers (Git, Wiki) run as Electron UtilityProcess instances
+ * for true process-level crash isolation. `createWorkerProxy` on the main-process
+ * side sends RPC calls; `handleUtilityProcessMessages` on the child side
+ * dispatches them to registered method implementations.
  *
- * Note: Service registration for workers calling back to main process
- * services is handled by `electron-ipc-cat` (attachWorker / attachUtilityProcess).
- * This file contains TidGi-specific RPC proxy functionality (e.g. git worker
- * method calls).
+ * Service registration for workers calling back to main process services is
+ * handled by `electron-ipc-cat` (`attachUtilityProcess`).
  */
 
 import { cloneDeep } from 'lodash';
@@ -29,9 +27,9 @@ export interface WorkerMessage<T = unknown> {
 }
 
 /**
- * Minimal peer interface that both Node.js `Worker` and Electron
- * `UtilityProcess` satisfy. Used by `createWorkerProxy` on the main-process
- * side to send/receive RPC messages.
+ * Minimal peer interface satisfied by Electron `UtilityProcess`.
+ * Used by `createWorkerProxy` on the main-process side to send/receive
+ * RPC messages.
  */
 export interface WorkerPeer {
   postMessage(message: unknown): void;
@@ -41,10 +39,9 @@ export interface WorkerPeer {
 }
 
 /**
- * Create a worker proxy that mimics threads.js API.
- * Works with both `Worker` (worker_threads) and `UtilityProcess`.
+ * Create a utility process proxy that mimics threads.js API.
  *
- * Usage: const proxy = createWorkerProxy<WorkerType>(workerOrUtilityProcess);
+ * Usage: const proxy = createWorkerProxy<WorkerType>(utilityProcess);
  */
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters, @typescript-eslint/no-explicit-any -- T is needed to provide type safety for the returned proxy object, any is needed to support various worker method signatures
 export function createWorkerProxy<T extends Record<string, (...arguments_: any[]) => any>>(
@@ -207,7 +204,7 @@ interface MessagePortLike {
 }
 
 /**
- * Core message handler shared by both worker_threads and utility process.
+ * Core message handler for utility process children.
  * Messages are processed sequentially so async operations (e.g. git commands)
  * do not interleave on the same repo.
  */
@@ -315,24 +312,6 @@ function handleMessages(
 }
 
 /**
- * Worker-thread-side message handler.
- * Uses `parentPort` from `worker_threads` (messages arrive as raw values).
- *
- * Usage in worker: handleWorkerMessages({ methodName: implementation });
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function handleWorkerMessages(methods: Record<string, (...arguments_: any[]) => any>): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { parentPort } = require('worker_threads') as typeof import('worker_threads');
-
-  if (!parentPort) {
-    throw new Error('This function must be called in a worker thread');
-  }
-
-  handleMessages(methods, parentPort);
-}
-
-/**
  * Utility-process-side message handler.
  * Uses `process.parentPort` from Electron (messages arrive wrapped in
  * `{ data, ports }` event objects, so we unwrap `event.data`).
@@ -364,8 +343,7 @@ export function handleUtilityProcessMessages(methods: Record<string, (...argumen
 }
 
 /**
- * Terminate a worker peer gracefully.
- * Works with both `Worker` (terminate) and `UtilityProcess` (kill).
+ * Terminate a utility process gracefully.
  */
 export async function terminateWorker(peer: { terminate(): Promise<number> } | { kill(): boolean }): Promise<number> {
   if ('terminate' in peer) {

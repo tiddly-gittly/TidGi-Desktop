@@ -1,10 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-declare module '@fetsorn/vite-node-worker' {
-  import type { Plugin } from 'vite';
-  export function workerPlugin(): Plugin;
-}
-
 // `?utilityProcess` import — emits the module as a separate chunk and returns
 // a factory that calls `utilityProcess.fork(path)`. See vite.main.config.ts
 // `utilityProcessPlugin` for the implementation.

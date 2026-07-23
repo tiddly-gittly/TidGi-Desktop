@@ -1,4 +1,3 @@
-import { workerPlugin } from '@fetsorn/vite-node-worker';
 import fs from 'fs-extra';
 import path from 'path';
 import swc from 'unplugin-swc';
@@ -92,27 +91,7 @@ export default defineConfig({
     ...(process.env.ANALYZE === 'true'
       ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-main' })]
       : []),
-    workerPlugin(),
     utilityProcessPlugin(),
-    // Rolldown replaces import.meta.url with {}.url in CJS output, breaking
-    // node Worker(new URL(...)) calls from vite-node-worker plugin.
-    // Replace with __dirname-based path (CJS has __dirname natively).
-    // Only needed for ?nodeWorker (Wiki Worker); ?utilityProcess uses
-    // require('path').resolve(__dirname, ...) directly.
-    {
-      name: 'fix-vite-node-worker-url',
-      enforce: 'post',
-      generateBundle(_, bundle) {
-        for (const chunk of Object.values(bundle)) {
-          if (chunk.type === 'chunk') {
-            chunk.code = chunk.code.replace(
-              /new URL\(["'`](\.[^"'`]+)["'`],\s*\{}\.url\)/g,
-              `require('path').resolve(__dirname, "$1")`,
-            );
-          }
-        }
-      },
-    },
     swc.vite({
       jsc: {
         parser: { syntax: 'typescript', decorators: true },

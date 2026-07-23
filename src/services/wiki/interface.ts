@@ -99,13 +99,14 @@ export interface IWikiService {
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export interface IWorkerInfo {
+  cpu_percent: number;
   heapTotal_MB: number;
   heapUsed_MB: number;
   isRunning: boolean;
+  /** OS process ID of the Electron UtilityProcess. -1 if not running. */
+  pid: number;
   port: number;
   rss_MB: number;
-  /** Node.js worker_threads thread ID. -1 if the worker is not running. */
-  threadId: number;
   workspaceID: string;
   workspaceName: string;
 }

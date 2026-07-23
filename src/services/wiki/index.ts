@@ -1,15 +1,14 @@
 import { findAvailablePort } from '@services/libs/port';
-import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
-import { dialog, shell } from 'electron';
-import { attachWorker } from 'electron-ipc-cat/server';
+import { createWorkerProxy, terminateWorker, type WorkerPeer } from '@services/libs/workerAdapter';
+import { app, dialog, shell, type UtilityProcess } from 'electron';
+import { attachUtilityProcess } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
 import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
-import { Worker } from 'worker_threads';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - Vite worker import with ?nodeWorker query
-import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
+import { Observable } from 'rxjs';
+import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
+import WikiWorkerFactory from './wikiWorker/index?utilityProcess';
 
 import { container } from '@services/container';
 
@@ -28,8 +27,6 @@ import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/wo
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { Observable } from 'rxjs';
-import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
 import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
 import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
@@ -88,7 +85,7 @@ export class Wiki implements IWikiService {
   }
 
   // key is same to workspace id, so we can get this worker by workspace id
-  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: Worker; proxy: WikiWorker }>> = {};
+  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: UtilityProcess; proxy: WikiWorker }>> = {};
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -97,14 +94,22 @@ export class Wiki implements IWikiService {
   public async getWorkersInfo(): Promise<IWorkerInfo[]> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaces = await workspaceService.getWorkspacesAsList();
+    // Build a PID → CPU% map from Electron's app metrics (covers utility processes)
+    const metricsMap = new Map<number, Electron.ProcessMetric>();
+    for (const metric of app.getAppMetrics()) {
+      metricsMap.set(metric.pid, metric);
+    }
     return Promise.all(
       workspaces
         .filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && !w.isSubWiki)
         .map(async (workspace) => {
-          const workerProxy = this.wikiWorkers[workspace.id]?.proxy;
+          const workerEntry = this.wikiWorkers[workspace.id];
+          const workerProxy = workerEntry?.proxy;
           let rss_MB = -1;
           let heapUsed_MB = -1;
           let heapTotal_MB = -1;
+          let cpu_percent = -1;
+          const pid = workerEntry?.nativeWorker.pid ?? -1;
           if (workerProxy !== undefined) {
             try {
               const mem = await workerProxy.getMemoryUsage();
@@ -115,12 +120,17 @@ export class Wiki implements IWikiService {
               // worker may be busy or not yet ready
             }
           }
+          if (pid > 0) {
+            const metric = metricsMap.get(pid);
+            cpu_percent = metric?.cpu.percentCPUUsage ?? -1;
+          }
           return {
             workspaceID: workspace.id,
             workspaceName: workspace.name,
             port: workspace.port,
-            isRunning: this.wikiWorkers[workspace.id] !== undefined,
-            threadId: this.wikiWorkers[workspace.id]?.nativeWorker.threadId ?? -1,
+            isRunning: workerEntry !== undefined,
+            pid,
+            cpu_percent: Math.round(cpu_percent * 100) / 100,
             rss_MB,
             heapUsed_MB,
             heapTotal_MB,
@@ -129,7 +139,7 @@ export class Wiki implements IWikiService {
     );
   }
 
-  private getNativeWorker(id: string): Worker | undefined {
+  private getNativeWorker(id: string): UtilityProcess | undefined {
     return this.wikiWorkers[id]?.nativeWorker;
   }
 
@@ -257,13 +267,18 @@ export class Wiki implements IWikiService {
       function: 'Wiki.startWiki',
     });
 
-    // Create native nodejs worker using Vite's ?nodeWorker import
-    const wikiWorker = (WikiWorkerFactory as () => Worker)();
+    // Create utility process using Vite's ?utilityProcess import
+    const wikiWorker = WikiWorkerFactory({
+      stdio: 'pipe',
+      serviceName: `wiki-worker-${workspaceID}`,
+      // tiddlywiki/dugite may load native modules; on macOS this needs unsigned library loading
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
 
-    // Attach worker to all registered services (from bindServiceAndProxy)
-    const detachWorker = attachWorker(wikiWorker);
+    // Attach utility process to all registered services (from bindServiceAndProxy)
+    const detachWorker = attachUtilityProcess(wikiWorker);
 
-    const worker = createWorkerProxy<WikiWorker>(wikiWorker);
+    const worker = createWorkerProxy<WikiWorker>(wikiWorker as unknown as WorkerPeer);
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
@@ -298,12 +313,8 @@ export class Wiki implements IWikiService {
         originalReject(...arguments_);
       };
 
-      // Handle worker errors
-      wikiWorker.on('error', (error: Error) => {
-        logger.error(error.message, { function: 'Worker.error', ...loggerMeta });
-        reject(new WikiRuntimeError(error, name, false));
-      });
-
+      // UtilityProcess emits 'exit' on crash (not 'error' like worker_threads).
+      // The exit handler below already rejects on non-zero exit codes.
       // Capture worker stderr to diagnose crashes
       if (wikiWorker.stderr) {
         wikiWorker.stderr.on('data', (data: Buffer | string) => {
@@ -506,8 +517,12 @@ export class Wiki implements IWikiService {
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {
     // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
-    const nativeWorker = (WikiWorkerFactory as () => Worker)();
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+    const nativeWorker = WikiWorkerFactory({
+      stdio: 'pipe',
+      serviceName: 'wiki-worker-extract-html',
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+    const worker = createWorkerProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
 
     try {
       if (!isHtmlWiki(htmlWikiPath)) {
@@ -528,8 +543,12 @@ export class Wiki implements IWikiService {
   }
 
   public async packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void> {
-    const nativeWorker = (WikiWorkerFactory as () => Worker)();
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+    const nativeWorker = WikiWorkerFactory({
+      stdio: 'pipe',
+      serviceName: 'wiki-worker-packet-html',
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+    const worker = createWorkerProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
 
     try {
       await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation) });
@@ -615,7 +634,7 @@ export class Wiki implements IWikiService {
   }
 
   /**
-   * Stop all worker_thread, use and await this before app.quit()
+   * Stop all wiki utility processes, use and await this before app.quit()
    */
   public async stopAllWiki(): Promise<void> {
     logger.debug('stopAllWiki', {
