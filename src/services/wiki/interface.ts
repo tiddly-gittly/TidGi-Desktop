@@ -3,6 +3,7 @@ import type { IGitUserInfos } from '@services/git/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
+import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { WikiWorker } from './wikiWorker';
@@ -44,6 +45,11 @@ export interface IWikiService {
    * @param title tiddler title to open
    */
   getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined>;
+  /**
+   * Explain which workspace a tiddler would be routed to (same rules as FileSystemAdaptor save routing).
+   * `featureAvailable` is true only when the main wiki has at least one sub-wiki with routing settings enabled.
+   */
+  getTiddlerRoutingInfo(title: string, workspaceID?: string): Promise<ITiddlerRoutingInfo>;
   getWikiChangeObserver$(workspaceID: string): Observable<ITidGiChangedTiddlers>;
   getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
   /**
@@ -118,6 +124,7 @@ export const WikiServiceIPCDescriptor = {
     getWikiErrorLogs: ProxyPropertyType.Function,
     getWorkersInfo: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,
+    getTiddlerRoutingInfo: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
