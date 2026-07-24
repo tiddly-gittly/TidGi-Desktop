@@ -7,7 +7,7 @@ import './preload';
 import 'source-map-support/register';
 import { uninstall } from '@/helpers/installV8Cache';
 
-import { handleUtilityProcessMessages } from '@services/libs/workerAdapter';
+import { handleUtilityProcessMessages } from 'electron-ipc-cat/host';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';

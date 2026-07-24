@@ -1,9 +1,9 @@
 import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
-import { handleUtilityProcessMessages } from '@services/libs/workerAdapter';
 import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { exec as gitExec } from 'dugite';
+import { handleUtilityProcessMessages } from 'electron-ipc-cat/host';
 
 // Log any uncaught errors to stderr before the utility process exits,
 // so the main process can capture them via child.stderr.

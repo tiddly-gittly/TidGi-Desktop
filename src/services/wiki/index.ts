@@ -1,6 +1,6 @@
 import { findAvailablePort } from '@services/libs/port';
-import { createWorkerProxy, terminateWorker, type WorkerPeer } from '@services/libs/workerAdapter';
 import { app, dialog, shell, type UtilityProcess } from 'electron';
+import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
 import { attachUtilityProcess } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
 import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-extra';
@@ -278,7 +278,7 @@ export class Wiki implements IWikiService {
     // Attach utility process to all registered services (from bindServiceAndProxy)
     const detachWorker = attachUtilityProcess(wikiWorker);
 
-    const worker = createWorkerProxy<WikiWorker>(wikiWorker as unknown as WorkerPeer);
+    const worker = createWorkerMethodProxy<WikiWorker>(wikiWorker as unknown as WorkerPeer);
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
@@ -293,7 +293,7 @@ export class Wiki implements IWikiService {
     await new Promise<void>((resolve, reject) => {
       // Add a safety timeout to prevent startWiki from hanging indefinitely.
       // The worker may boot TiddlyWiki successfully but the 'booted' message might
-      // not arrive via the workerAdapter Observable due to thread communication issues.
+      // not arrive via the RPC Observable due to process communication issues.
       const startWikiTimeout = setTimeout(() => {
         logger.error('startWiki timed out waiting for booted message', {
           ...loggerMeta,
@@ -522,7 +522,7 @@ export class Wiki implements IWikiService {
       serviceName: 'wiki-worker-extract-html',
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
+    const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
 
     try {
       if (!isHtmlWiki(htmlWikiPath)) {
@@ -548,7 +548,7 @@ export class Wiki implements IWikiService {
       serviceName: 'wiki-worker-packet-html',
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
+    const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
 
     try {
       await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation) });
@@ -620,7 +620,7 @@ export class Wiki implements IWikiService {
       }
     }
     // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
-    // Must be done after terminateWorker/detachWorker so the workerAdapter proxy listeners remain intact during beforeExit/terminate.
+    // Must be done after terminateWorker/detachWorker so the RPC proxy listeners remain intact during beforeExit/terminate.
     if (nativeWorker !== undefined) {
       try {
         nativeWorker.removeAllListeners();

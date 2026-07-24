@@ -64,4 +64,5 @@ minimumReleaseAgeExclude:
   - git-sync-js@2.4.0
   - typescript-eslint@8.61.0
   - tidgi-shared@0.1.6
-  - electron-ipc-cat@2.5.0
+  - electron-ipc-cat@2.6.0
+  - vite-plugin-electron-utility-process@1.0.0

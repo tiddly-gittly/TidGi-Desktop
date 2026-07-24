@@ -1,5 +1,5 @@
-import { createWorkerProxy, type WorkerPeer } from '@services/libs/workerAdapter';
 import { app, dialog, net, type UtilityProcess } from 'electron';
+import { createWorkerMethodProxy, type WorkerPeer } from 'electron-ipc-cat/host';
 import { backOff } from 'exponential-backoff';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
@@ -177,7 +177,7 @@ export class Git implements IGitService {
       });
 
       this.nativeWorker = child;
-      this.gitWorker = createWorkerProxy<GitWorker>(child as unknown as WorkerPeer);
+      this.gitWorker = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
 
       // Pipe stdout/stderr to our logger for debugging
       child.stdout?.on('data', (data: Buffer) => {

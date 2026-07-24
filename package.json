@@ -72,7 +72,7 @@
     "date-fns": "4.4.0",
     "dugite": "3.2.2",
     "electron-dl": "^4.0.0",
-    "electron-ipc-cat": "2.5.0",
+    "electron-ipc-cat": "2.6.0",
     "electron-settings": "5.0.0",
     "electron-unhandled": "5.0.0",
     "electron-window-state": "5.0.3",
@@ -190,6 +190,7 @@
     "unplugin-swc": "^1.5.9",
     "vite": "^8.0.16",
     "vite-bundle-analyzer": "^1.3.8",
+    "vite-plugin-electron-utility-process": "1.0.0",
     "vite-plugin-monaco-editor": "^1.1.0",
     "vitest": "^4.1.8"
   },

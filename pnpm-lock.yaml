@@ -126,8 +126,8 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       electron-ipc-cat:
-        specifier: 2.5.0
-        version: 2.5.0(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2)
+        specifier: 2.6.0
+        version: 2.6.0(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2)
       electron-settings:
         specifier: 5.0.0
         version: 5.0.0(electron@41.7.1(supports-color@10.2.2))
@@ -474,6 +474,9 @@ importers:
       vite-bundle-analyzer:
         specifier: ^1.3.8
         version: 1.3.8
+      vite-plugin-electron-utility-process:
+        specifier: link:../vite-plugin-electron-utility-process
+        version: link:../vite-plugin-electron-utility-process
       vite-plugin-monaco-editor:
         specifier: ^1.1.0
         version: 1.1.0(monaco-editor@0.55.1)
@@ -4100,6 +4103,12 @@ packages:
 
   electron-ipc-cat@2.5.0:
     resolution: {integrity: sha512-i3uy0fCs57yNH76IZHuG/SFGPWSbiwxsyAtkGl3qsvavJ5wbb/lPoX3KFz9gtHKT5FCD9Ct4Pr1bGP0XqZIJfg==}
+    peerDependencies:
+      electron: '>= 13.0.0'
+      rxjs: '>= 7.5.0'
+
+  electron-ipc-cat@2.6.0:
+    resolution: {integrity: sha512-fhgkRfhTR7wqDY4ZYxOTzm0AbardiPUeNd3rV+9/HDyREtpfWODy6UdwfNik2nqCJFj4aH5u0ImYC+RkinYCmw==}
     peerDependencies:
       electron: '>= 13.0.0'
       rxjs: '>= 7.5.0'
@@ -11960,6 +11969,13 @@ snapshots:
       rxjs: 7.8.2
       serialize-error: 12.0.0
 
+  electron-ipc-cat@2.6.0(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2):
+    dependencies:
+      electron: 41.7.1(supports-color@10.2.2)
+      memize: 2.1.1
+      rxjs: 7.8.2
+      serialize-error: 12.0.0
+
   electron-is-dev@3.0.1: {}
 
   electron-positioner@4.1.0: {}
@@ -15656,7 +15672,7 @@ snapshots:
 
   tidgi-shared@0.1.6(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2):
     dependencies:
-      electron-ipc-cat: 2.4.0(electron@41.7.1)(rxjs@7.8.2)
+      electron-ipc-cat: 2.5.0(electron@41.7.1(supports-color@10.2.2))(rxjs@7.8.2)
     optionalDependencies:
       rxjs: 7.8.2
     transitivePeerDependencies:
