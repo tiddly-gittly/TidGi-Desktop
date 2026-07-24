@@ -27,16 +27,19 @@ function splitFilePath(filePath: string): { directory: string; baseName: string 
  */
 function resolveRelativePath(basePath: string, relativePath: string): string {
   const normalizedBase = basePath.replace(/\\/g, '/').replace(/\/+$/, '');
+  const isWindowsAbsolute = /^[A-Za-z]:/.test(normalizedBase);
   const segments = normalizedBase.split('/').filter((segment) => segment.length > 0);
+  // The drive-letter segment (e.g. "C:") is the root anchor on Windows; ".." must not pop past it.
+  // On POSIX there is no anchor segment, so clamp at length 0.
+  const minSegments = isWindowsAbsolute && segments.length > 0 ? 1 : 0;
   const relativeSegments = relativePath.replace(/\\/g, '/').split('/').filter((segment) => segment.length > 0 && segment !== '.');
   for (const segment of relativeSegments) {
     if (segment === '..') {
-      segments.pop();
+      if (segments.length > minSegments) segments.pop();
     } else {
       segments.push(segment);
     }
   }
-  const isWindowsAbsolute = /^[A-Za-z]:/.test(normalizedBase);
   return (isWindowsAbsolute ? '' : '/') + segments.join('/');
 }
 

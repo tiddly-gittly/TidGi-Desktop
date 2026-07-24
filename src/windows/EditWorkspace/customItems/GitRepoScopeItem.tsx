@@ -82,12 +82,16 @@ export function GitRepoScopeItem(): React.JSX.Element | null {
       return wikiFolderLocation;
     }
     // Resolve the configured relative path back to an absolute ancestor for matching the radio.
-    const wikiSegs = wikiFolderLocation.replace(/\\/g, '/').replace(/\/+$/, '').split('/').filter((s) => s.length > 0 && !/^[A-Za-z]:$/.test(s));
+    // Keep the drive-letter segment (e.g. "C:") and normalize to forward slashes, because candidates
+    // come from the main process as OS-native paths (backslashes on Windows) — we compare against a
+    // forward-slash-normalized view of each candidate so the stored selection matches after reload.
+    const wikiSegs = wikiFolderLocation.replace(/\\/g, '/').replace(/\/+$/, '').split('/').filter((s) => s.length > 0);
     const upCount = configuredRepoPath.replace(/\\/g, '/').split('/').filter((s) => s === '..').length;
     const repoSegs = wikiSegs.slice(0, Math.max(0, wikiSegs.length - upCount));
     const isWindowsAbsolute = /^[A-Za-z]:/.test(wikiFolderLocation);
     const resolved = (isWindowsAbsolute ? '' : '/') + repoSegs.join('/');
-    return candidates.includes(resolved) ? resolved : wikiFolderLocation;
+    const match = candidates.find((candidate) => candidate.replace(/\\/g, '/') === resolved);
+    return match ?? wikiFolderLocation;
   }, [workspace.gitRepoPath, wikiFolderLocation, candidates]);
 
   const handleSelect = (repoRoot: string): void => {

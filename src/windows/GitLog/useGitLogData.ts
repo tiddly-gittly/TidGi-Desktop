@@ -24,7 +24,7 @@ export interface IGitLogData {
   isSearchMode: boolean;
   /** Absolute path of the Git repo currently being tracked (may be an ancestor of the wiki folder). */
   trackedRepoPath: string | null;
-  /** Subpath inside the repo that TidGi tracks; undefined means the whole repo. */
+  /** Subpath inside the repo that TidGi tracks; null means the whole repo. */
   trackedScopedPath: string | null;
 }
 

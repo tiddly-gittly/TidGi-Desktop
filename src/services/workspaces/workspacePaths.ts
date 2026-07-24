@@ -1,5 +1,4 @@
 import { isHtmlWiki } from '@/constants/fileNames';
-import path from 'node:path';
 import type { IWikiWorkspace, IWorkspace } from './interface';
 import { WorkspaceType } from './workspaceType';
 
@@ -11,6 +10,30 @@ function splitPortablePath(filePath: string): { baseName: string; directory: str
     directory: separatorIndex <= 0 ? normalized : normalized.slice(0, separatorIndex),
     normalized,
   };
+}
+
+/**
+ * Resolve a relative path (containing only "." and ".." segments) against an absolute base path,
+ * without importing node:path so this module stays safe to load in the renderer (where node builtins
+ * are externalized away). Normalizes separators to "/" and clamps at the drive/root so excessive ".."
+ * segments never resolve above the filesystem root.
+ */
+function resolvePortablePath(basePath: string, relativePath: string): string {
+  const normalizedBase = basePath.replace(/\\/g, '/').replace(/\/+$/, '');
+  const isWindowsAbsolute = /^[A-Za-z]:/.test(normalizedBase);
+  // Keep the drive-letter segment (e.g. "C:") as the root anchor that ".." cannot pop past.
+  const segments = normalizedBase.split('/').filter((segment) => segment.length > 0);
+  const rootAnchorIndex = isWindowsAbsolute && segments.length > 0 ? 0 : -1;
+  for (const segment of relativePath.replace(/\\/g, '/').split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') {
+      // Don't pop the drive-letter anchor (or empty past root on POSIX).
+      if (segments.length > rootAnchorIndex + 1) segments.pop();
+    } else {
+      segments.push(segment);
+    }
+  }
+  return (isWindowsAbsolute ? '' : '/') + segments.join('/');
 }
 
 function isWikiWorkspace(workspace: IWorkspace): workspace is IWikiWorkspace {
@@ -108,7 +131,7 @@ export function getWorkspaceGitScope(workspace: IWorkspace): IWorkspaceGitScope 
   if (typeof configuredRepoPath === 'string' && configuredRepoPath.trim() !== '' && configuredRepoPath.trim() !== '.') {
     // Resolve relative to the wiki folder and normalize to forward slashes for cross-platform consistency
     // (the rest of the codebase, e.g. splitPortablePath, uses forward-slash-normalized paths).
-    const repoRoot = path.resolve(workspace.wikiFolderLocation, configuredRepoPath).replace(/\\/g, '/');
+    const repoRoot = resolvePortablePath(workspace.wikiFolderLocation, configuredRepoPath);
     const managedRelativePath = typeof workspace.gitManagedRelativePath === 'string' && workspace.gitManagedRelativePath.trim() !== ''
       ? workspace.gitManagedRelativePath
       : folderPath.baseName;
