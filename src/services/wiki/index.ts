@@ -105,11 +105,10 @@ export class Wiki implements IWikiService {
         .map(async (workspace) => {
           const workerEntry = this.wikiWorkers[workspace.id];
           const workerProxy = workerEntry?.proxy;
-          let rss_MB = -1;
-          let heapUsed_MB = -1;
-          let heapTotal_MB = -1;
-          let cpu_percent = -1;
-          const pid = workerEntry?.nativeWorker.pid ?? -1;
+          let rss_MB: number | null = null;
+          let heapUsed_MB: number | null = null;
+          let heapTotal_MB: number | null = null;
+          const pid = workerEntry?.nativeWorker.pid ?? null;
           if (workerProxy !== undefined) {
             try {
               const mem = await workerProxy.getMemoryUsage();
@@ -120,9 +119,10 @@ export class Wiki implements IWikiService {
               // worker may be busy or not yet ready
             }
           }
-          if (pid > 0) {
+          let cpu_percent: number | null = null;
+          if (pid !== null) {
             const metric = metricsMap.get(pid);
-            cpu_percent = metric?.cpu.percentCPUUsage ?? -1;
+            cpu_percent = metric ? Math.round(metric.cpu.percentCPUUsage * 100) / 100 : null;
           }
           return {
             workspaceID: workspace.id,
@@ -130,7 +130,7 @@ export class Wiki implements IWikiService {
             port: workspace.port,
             isRunning: workerEntry !== undefined,
             pid,
-            cpu_percent: Math.round(cpu_percent * 100) / 100,
+            cpu_percent,
             rss_MB,
             heapUsed_MB,
             heapTotal_MB,

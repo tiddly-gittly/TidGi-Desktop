@@ -289,7 +289,19 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
   }
 }
 
-const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, forcePullWiki, getModifiedFileList, getRemoteUrl };
+const gitWorker = {
+  initWikiGit,
+  commitAndSyncWiki,
+  cloneWiki,
+  forcePullWiki,
+  getModifiedFileList,
+  getRemoteUrl,
+  getMemoryUsage: async () => {
+    const mem = process.memoryUsage();
+    const toMB = (bytes: number): number => Math.round(bytes / 1024 / 1024);
+    return { rss_MB: toMB(mem.rss), heapUsed_MB: toMB(mem.heapUsed), heapTotal_MB: toMB(mem.heapTotal) };
+  },
+};
 export type GitWorker = typeof gitWorker;
 
 // Initialize utility process message handling

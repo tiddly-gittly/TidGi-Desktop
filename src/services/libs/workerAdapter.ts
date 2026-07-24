@@ -205,8 +205,8 @@ interface MessagePortLike {
 
 /**
  * Core message handler for utility process children.
- * Messages are processed sequentially so async operations (e.g. git commands)
- * do not interleave on the same repo.
+ * Each message spawns an async handler — callers are responsible for
+ * serialization if interleaving must be avoided (e.g. per-repo git locks).
  */
 function handleMessages(
   methods: Record<string, (...arguments_: unknown[]) => unknown>,

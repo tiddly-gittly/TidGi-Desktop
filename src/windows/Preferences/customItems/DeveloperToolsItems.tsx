@@ -221,10 +221,10 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                             <Typography variant='caption' sx={{ color: 'text.secondary' }}>{info.workspaceID.slice(0, 8)}</Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant='body2'>{info.isRunning && info.pid > 0 ? info.pid : '-'}</Typography>
+                            <Typography variant='body2'>{info.isRunning && info.pid !== null ? info.pid : '-'}</Typography>
                           </TableCell>
                           <TableCell>
-                            {info.cpu_percent >= 0
+                            {info.cpu_percent !== null
                               ? (
                                 <Typography
                                   variant='body2'
@@ -237,7 +237,7 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                               : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
                           </TableCell>
                           <TableCell>
-                            <Typography variant='body2'>{info.isRunning && info.port > 0 ? info.port : '-'}</Typography>
+                            <Typography variant='body2'>{info.isRunning && info.port !== null ? info.port : '-'}</Typography>
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -247,7 +247,7 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                             />
                           </TableCell>
                           <TableCell>
-                            {info.rss_MB >= 0
+                            {info.rss_MB !== null
                               ? (
                                 <Typography variant='body2' color={info.rss_MB > 500 ? 'error' : info.rss_MB > 200 ? 'warning.main' : 'success.main'} sx={{ fontWeight: 'bold' }}>
                                   {`${info.rss_MB} MB`}
@@ -256,15 +256,15 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
                               : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
                           </TableCell>
                           <TableCell>
-                            {info.heapUsed_MB >= 0
-                              ? <Typography variant='body2'>{`${info.heapUsed_MB} / ${info.heapTotal_MB} MB`}</Typography>
+                            {info.heapUsed_MB !== null
+                              ? <Typography variant='body2'>{`${info.heapUsed_MB} / ${info.heapTotal_MB ?? '-'} MB`}</Typography>
                               : <Typography variant='caption' sx={{ color: 'text.secondary' }}>-</Typography>}
                           </TableCell>
                           <TableCell>
                             <Button
                               size='small'
                               variant='outlined'
-                              disabled={!info.isRunning || info.port <= 0}
+                              disabled={!info.isRunning || info.port === null}
                               onClick={() => {
                                 void window.service.native.openURI(`http://127.0.0.1:${info.port}`);
                               }}

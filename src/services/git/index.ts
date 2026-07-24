@@ -1,5 +1,6 @@
 import { createWorkerProxy, type WorkerPeer } from '@services/libs/workerAdapter';
 import { app, dialog, net, type UtilityProcess } from 'electron';
+import { backOff } from 'exponential-backoff';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observer } from 'rxjs';
@@ -31,12 +32,8 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 export class Git implements IGitService {
   private gitWorker?: GitWorker;
   private nativeWorker?: UtilityProcess;
-  /** Crash counter for auto-restart loop protection. Resets on successful operation. */
-  private crashCount = 0;
-  private crashResetTimer?: ReturnType<typeof setTimeout>;
-  /** Max restarts within the crash window before giving up. */
-  private static readonly MAX_CRASHES = 5;
-  private static readonly CRASH_WINDOW_MS = 30_000;
+  /** Set to true when the worker is being intentionally stopped, to suppress auto-restart. */
+  private stopping = false;
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
   private operationLocks = new Map<string, Promise<void>>();
@@ -134,109 +131,115 @@ export class Git implements IGitService {
       LOCAL_GIT_DIRECTORY,
     });
 
-    try {
-      this.spawnGitWorker();
-      logger.debug('gitWorker utility process initialized successfully', { function: 'Git.initWorker' });
-    } catch (error) {
-      logger.error('Failed to initialize gitWorker', {
-        function: 'Git.initWorker',
+    // Use backOff for crash auto-restart with exponential delay and attempt limiting.
+    // The function spawns the worker and returns a promise that rejects on crash,
+    // resolves on clean exit. backOff handles retry timing so we don't maintain
+    // manual crash counters and timers.
+    void backOff(
+      () => this.spawnGitWorkerAndWaitForExit(),
+      {
+        numOfAttempts: 6, // 1 initial spawn + 5 restart attempts
+        startingDelay: 1_000,
+        maxDelay: 30_000,
+        timeMultiple: 2,
+        retry: (error: unknown) => {
+          // Don't retry if we're intentionally stopping
+          if (this.stopping) return false;
+          logger.warn('gitWorker will be restarted by backOff', { error });
+          return true;
+        },
+      },
+    ).then(() => {
+      logger.info('gitWorker utility process exited cleanly', { function: 'Git.initWorker.cleanExit' });
+    }).catch((error: unknown) => {
+      logger.error('gitWorker exhausted all restart attempts, giving up', {
+        function: 'Git.initWorker.exhausted',
         error,
       });
-      throw error;
-    }
+    });
   }
 
   /**
-   * Spawn the Git worker as an Electron UtilityProcess.
+   * Spawn the Git worker as an Electron UtilityProcess and return a promise
+   * that resolves on clean exit (code 0) or rejects on crash (non-zero exit).
    *
    * UtilityProcess provides true process-level crash isolation — if dugite's
    * native libgit2 segfaults, only the utility process dies, not the main
-   * Electron process. We auto-restart on crash with loop protection.
+   * Electron process.
    */
-  private spawnGitWorker(): void {
-    const child = GitWorkerFactory({
-      stdio: 'pipe',
-      serviceName: 'git-worker',
-      // dugite loads native libgit2; on macOS this needs unsigned library loading
-      allowLoadingUnsignedLibraries: process.platform === 'darwin',
-    });
-
-    this.nativeWorker = child;
-    this.gitWorker = createWorkerProxy<GitWorker>(child as unknown as WorkerPeer);
-
-    // Pipe stdout/stderr to our logger for debugging
-    child.stdout?.on('data', (data: Buffer) => {
-      logger.debug(`gitWorker stdout: ${data.toString().trim()}`, { function: 'Git.spawnGitWorker.stdout' });
-    });
-    child.stderr?.on('data', (data: Buffer) => {
-      logger.warn(`gitWorker stderr: ${data.toString().trim()}`, { function: 'Git.spawnGitWorker.stderr' });
-    });
-
-    // Auto-restart on unexpected crash (true process isolation — main process survives)
-    child.on('exit', (code: number) => {
-      this.nativeWorker = undefined;
-      this.gitWorker = undefined;
-
-      if (code === 0) {
-        logger.info('gitWorker utility process exited cleanly', { function: 'Git.spawnGitWorker.exit' });
-        return;
-      }
-
-      logger.error(`gitWorker utility process crashed with code ${code}`, {
-        function: 'Git.spawnGitWorker.exit',
-        code,
-        crashCount: this.crashCount,
+  private spawnGitWorkerAndWaitForExit(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const child = GitWorkerFactory({
+        stdio: 'pipe',
+        serviceName: 'git-worker',
+        // dugite loads native libgit2; on macOS this needs unsigned library loading
+        allowLoadingUnsignedLibraries: process.platform === 'darwin',
       });
 
-      // Crash loop protection: if too many crashes in a short window, stop restarting
-      this.crashCount++;
-      if (this.crashResetTimer) {
-        clearTimeout(this.crashResetTimer);
-      }
-      this.crashResetTimer = setTimeout(() => {
-        this.crashCount = 0;
-      }, Git.CRASH_WINDOW_MS);
+      this.nativeWorker = child;
+      this.gitWorker = createWorkerProxy<GitWorker>(child as unknown as WorkerPeer);
 
-      if (this.crashCount > Git.MAX_CRASHES) {
-        logger.error(
-          `gitWorker crashed ${this.crashCount} times within ${Git.CRASH_WINDOW_MS / 1000}s, giving up auto-restart to avoid crash loop`,
-          { function: 'Git.spawnGitWorker.exit', crashCount: this.crashCount },
-        );
-        return;
-      }
-
-      logger.warn(`Auto-restarting gitWorker (attempt ${this.crashCount}/${Git.MAX_CRASHES})`, {
-        function: 'Git.spawnGitWorker.exit',
+      // Pipe stdout/stderr to our logger for debugging
+      child.stdout?.on('data', (data: Buffer) => {
+        logger.debug(`gitWorker stdout: ${data.toString().trim()}`, { function: 'Git.spawnGitWorkerAndWaitForExit.stdout' });
       });
-      try {
-        this.spawnGitWorker();
-      } catch (restartError) {
-        logger.error('Failed to restart gitWorker', {
-          function: 'Git.spawnGitWorker.restart',
-          error: restartError,
-        });
-      }
+      child.stderr?.on('data', (data: Buffer) => {
+        logger.warn(`gitWorker stderr: ${data.toString().trim()}`, { function: 'Git.spawnGitWorkerAndWaitForExit.stderr' });
+      });
+
+      child.on('exit', (code: number) => {
+        this.nativeWorker = undefined;
+        this.gitWorker = undefined;
+
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`gitWorker utility process crashed with exit code ${code}`));
+        }
+      });
     });
   }
 
   public async getWorkerInfo(): Promise<IWorkerInfo | undefined> {
     if (!this.nativeWorker) return undefined;
-    const pid = this.nativeWorker.pid ?? -1;
+    const pid = this.nativeWorker.pid ?? null;
+
+    // Get CPU and RSS from Electron's app metrics
     const metricsMap = new Map<number, Electron.ProcessMetric>();
     for (const metric of app.getAppMetrics()) {
       metricsMap.set(metric.pid, metric);
     }
-    const metric = pid > 0 ? metricsMap.get(pid) : undefined;
+    const metric = pid !== null ? metricsMap.get(pid) : undefined;
+
+    // Get heap usage from the worker itself via RPC
+    let heapUsed_MB: number | null = null;
+    let heapTotal_MB: number | null = null;
+    let rss_MB: number | null = null;
+    if (this.gitWorker) {
+      try {
+        const mem = await this.gitWorker.getMemoryUsage();
+        heapUsed_MB = mem.heapUsed_MB;
+        heapTotal_MB = mem.heapTotal_MB;
+        rss_MB = mem.rss_MB;
+      } catch {
+        // worker may be busy or not yet ready
+      }
+    }
+    // Fall back to app metrics RSS if worker RPC failed
+    if (rss_MB === null && metric) {
+      rss_MB = Math.round(metric.memory.workingSetSize / 1024);
+    }
+
     return {
       workspaceID: 'git-worker',
       workspaceName: 'Git Worker',
-      port: 0,
+      port: null,
       isRunning: this.nativeWorker !== undefined,
       pid,
-      cpu_percent: Math.round((metric?.cpu.percentCPUUsage ?? -1) * 100) / 100,
-      rss_MB: metric ? Math.round(metric.memory.workingSetSize / 1024) : -1,
-      heapUsed_MB: -1,
-      heapTotal_MB: -1,
+      cpu_percent: metric ? Math.round(metric.cpu.percentCPUUsage * 100) / 100 : null,
+      rss_MB,
+      heapUsed_MB,
+      heapTotal_MB,
     };
   }
 
