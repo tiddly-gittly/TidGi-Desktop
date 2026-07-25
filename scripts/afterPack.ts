@@ -78,8 +78,11 @@ export default async (
         { segments: ['tiddlywiki', 'plugins', 'tiddlywiki', 'filesystem'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'plugins', 'tiddlywiki', 'tiddlyweb'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'tiddlywiki.js'], critical: 'tiddlywiki' },
-        // node binary
+        // better-sqlite3: electron-rebuild compiles from source for Electron
+        // (prebuilds/ are deleted before rebuild in CI to force compilation)
         { segments: ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'], critical: 'better-sqlite3' },
+        { segments: ['better-sqlite3', 'package.json'], critical: 'better-sqlite3' },
+        { segments: ['better-sqlite3', 'lib'], critical: 'better-sqlite3' },
         // nsfw native module
         { segments: ['nsfw', 'build', 'Release', 'nsfw.node'], critical: 'nsfw' },
         // rotating-file-stream: pure ESM, external for Node.js native require().
