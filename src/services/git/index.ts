@@ -20,8 +20,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { isWikiWorkspace, type IWorkspace } from '@services/workspaces/interface';
-import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
+import { isWikiWorkspace, type IWorkspace, type IWorkspaceGitScope } from '@services/workspaces/interface';
+import { computeGitScopePaths, getWorkspaceGitScope as resolveWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitSyncProgressEvent, IGitUserInfos } from './interface';
@@ -159,6 +159,14 @@ export class Git implements IGitService {
 
   public async discoverAncestorGitRepos(startPath: string): Promise<string[]> {
     return gitOperations.discoverAncestorGitRepos(startPath);
+  }
+
+  public async getWorkspaceGitScope(workspace: IWorkspace): Promise<IWorkspaceGitScope | undefined> {
+    return resolveWorkspaceGitScope(workspace);
+  }
+
+  public async computeGitScopePaths(wikiFolderLocation: string, ancestorRepoRoot: string): Promise<{ gitRepoPath: string; gitManagedRelativePath: string }> {
+    return computeGitScopePaths(wikiFolderLocation, ancestorRepoRoot);
   }
 
   /**
@@ -331,7 +339,7 @@ export class Git implements IGitService {
 
       // Generate AI commit message if not provided and settings allow
       let finalConfigs = configs;
-      const gitScope = getWorkspaceGitScope(workspace);
+      const gitScope = resolveWorkspaceGitScope(workspace);
       // Scoped workspaces (HTML wiki tracking a single file, or folder wiki tracking a subfolder of
       // an ancestor repo) commit/push against the outer repoPath and limit staging to managedRelativePath.
       const scopedRepoPath = gitScope?.repoPath;
@@ -412,7 +420,7 @@ export class Git implements IGitService {
     let releaseLock: (() => void) | undefined;
     try {
       releaseLock = await this.acquireOperationLock(workspaceID);
-      const gitScope = getWorkspaceGitScope(workspace);
+      const gitScope = resolveWorkspaceGitScope(workspace);
       const scopedRepoPath = gitScope?.repoPath;
       const scopedConfigs = gitScope?.managedRelativePath !== undefined && scopedRepoPath !== undefined ? { ...configs, dir: scopedRepoPath } : configs;
       const observable = this.gitWorker?.forcePullWiki(workspace, scopedConfigs, getErrorMessageI18NDict());

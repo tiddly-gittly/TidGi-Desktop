@@ -187,8 +187,9 @@ describe('git scoped operations for HTML wiki', () => {
       await initRepo(path.join(root, 'level1'));
 
       const ancestors = await discoverAncestorGitRepos(wikiFolder);
-      // nearest first: level1, then root
-      expect(ancestors).toEqual([path.join(root, 'level1'), root]);
+      // nearest first: level1, then root. Outputs are forward-slash normalized for cross-platform consistency.
+      const expected = [path.join(root, 'level1'), root].map((p) => p.replace(/\\/g, '/'));
+      expect(ancestors).toEqual(expected);
     } finally {
       await fs.rm(root, { recursive: true, force: true });
     }

@@ -2,7 +2,6 @@ import { FormControlLabel, ListItemText, Radio, RadioGroup, Typography } from '@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { computeGitScopePaths } from '@/windows/GitLog/workspaceGitScope';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import { ListItemVertical } from '../../Preferences/PreferenceComponents';
@@ -13,94 +12,78 @@ import { useWorkspaceForm } from '../WorkspaceFormContext';
  * this wiki. Detects ancestor Git repos and offers the wiki folder itself plus every ancestor as
  * candidates. Stores the choice as portable relative paths (`gitRepoPath`/`gitManagedRelativePath`)
  * in the workspace config so it follows the wiki across devices.
+ *
+ * All path math (resolving the stored relative config back to an absolute repo, and computing the
+ * portable relative paths to store) is delegated to the main process via IPC — the renderer only
+ * renders the candidate list and the current selection it receives from the backend.
  */
 export function GitRepoScopeItem(): React.JSX.Element | null {
   const { t } = useTranslation();
   const { workspace, workspaceSetter } = useWorkspaceForm();
   const [ancestorRepos, setAncestorRepos] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!isWikiWorkspace(workspace) || isHtmlWikiWorkspace(workspace)) return;
-    let cancelled = false;
-    // Defer the filesystem walk to idle time so its state update (and the RadioGroup re-render it
-    // triggers) doesn't contend with the initial render burst of the EditWorkspace window. This
-    // keeps time-sensitive interactions — e.g. toggling a switch and waiting for the save button
-    // to appear — from racing the ancestor-repo detection on slow CI runners.
-    const run = (): void => {
-      if (cancelled) return;
-      void (async () => {
-        try {
-          // Walk up from the wiki folder; the first result is the wiki folder itself if it has .git.
-          const repos = await window.service.git.discoverAncestorGitRepos(workspace.wikiFolderLocation);
-          if (!cancelled) setAncestorRepos(repos);
-        } catch {
-          if (!cancelled) setAncestorRepos([]);
-        }
-      })();
-    };
-    const requestIdle = (window as unknown as { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback;
-    if (typeof requestIdle === 'function') {
-      const handle = requestIdle(run, { timeout: 2000 });
-      return () => {
-        cancelled = true;
-        const cancelIdle = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
-        cancelIdle?.(handle);
-      };
-    }
-    const timer = window.setTimeout(run, 200);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [workspace, workspace.wikiFolderLocation]);
+  // Absolute repo root the stored config currently resolves to (forward-slash normalized by the
+  // main process). Undefined until the backend resolves it.
+  const [currentRepoPath, setCurrentRepoPath] = useState<string | undefined>(undefined);
 
   const wikiFolderLocation = isWikiWorkspace(workspace) ? workspace.wikiFolderLocation : undefined;
-  if (!isWikiWorkspace(workspace) || isHtmlWikiWorkspace(workspace) || !wikiFolderLocation) {
+  // Normalize once so candidates, the radio values, and the backend-resolved currentRepoPath are
+  // all in the same forward-slash form and directly comparable.
+  const wikiFolder = wikiFolderLocation?.replace(/\\/g, '/');
+
+  // Detect ancestor Git repos. `requestIdleCallback` is always available in Electron, so we defer
+  // the filesystem walk to idle time without a fallback. Depends only on the folder path so editing
+  // unrelated form fields doesn't re-walk the filesystem.
+  useEffect(() => {
+    if (!isWikiWorkspace(workspace) || isHtmlWikiWorkspace(workspace) || !wikiFolderLocation) return;
+    let cancelled = false;
+    const handle = window.requestIdleCallback(async () => {
+      try {
+        const repos = await window.service.git.discoverAncestorGitRepos(wikiFolderLocation);
+        if (!cancelled) setAncestorRepos(repos);
+      } catch {
+        if (!cancelled) setAncestorRepos([]);
+      }
+    }, { timeout: 2000 });
+    return () => {
+      cancelled = true;
+      window.cancelIdleCallback(handle);
+    };
+  }, [wikiFolderLocation]);
+
+  // Resolve the currently tracked repo root from the stored config in the main process.
+  useEffect(() => {
+    if (!isWikiWorkspace(workspace) || !wikiFolder) return;
+    let cancelled = false;
+    void (async () => {
+      const scope = await window.service.git.getWorkspaceGitScope(workspace);
+      if (!cancelled) setCurrentRepoPath(scope?.repoPath ?? wikiFolder);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace, workspace.gitRepoPath, workspace.gitManagedRelativePath, wikiFolder]);
+
+  if (!isWikiWorkspace(workspace) || isHtmlWikiWorkspace(workspace) || !wikiFolder) {
     return null;
   }
 
-  // Build the candidate list: the wiki folder itself (inner) + each strict ancestor repo.
+  // Candidates: the wiki folder (inner) first, then each strict ancestor repo. Dedup handles the
+  // case where the wiki folder itself already has .git (it appears in ancestorRepos too).
   const candidates = useMemo(() => {
-    const list: string[] = [];
-    if (ancestorRepos.length === 0) return list;
-    const wikiRepoIndex = ancestorRepos.indexOf(wikiFolderLocation);
-    if (wikiRepoIndex >= 0) {
-      list.push(wikiFolderLocation);
-      list.push(...ancestorRepos.filter((repo) => repo !== wikiFolderLocation));
-    } else {
-      // Wiki folder has no .git of its own; still offer it as "inner (will create)" option.
-      list.push(wikiFolderLocation);
-      list.push(...ancestorRepos);
-    }
-    return list;
-  }, [ancestorRepos, wikiFolderLocation]);
+    if (ancestorRepos.length === 0) return [];
+    return [...new Set<string>([wikiFolder, ...ancestorRepos])];
+  }, [ancestorRepos, wikiFolder]);
 
-  // Determine the currently selected repo root from the stored config.
-  const currentSelection = useMemo(() => {
-    const configuredRepoPath = workspace.gitRepoPath;
-    if (typeof configuredRepoPath !== 'string' || configuredRepoPath.trim() === '' || configuredRepoPath.trim() === '.') {
-      return wikiFolderLocation;
-    }
-    // Resolve the configured relative path back to an absolute ancestor for matching the radio.
-    // Keep the drive-letter segment (e.g. "C:") and normalize to forward slashes, because candidates
-    // come from the main process as OS-native paths (backslashes on Windows) — we compare against a
-    // forward-slash-normalized view of each candidate so the stored selection matches after reload.
-    const wikiSegs = wikiFolderLocation.replace(/\\/g, '/').replace(/\/+$/, '').split('/').filter((s) => s.length > 0);
-    const upCount = configuredRepoPath.replace(/\\/g, '/').split('/').filter((s) => s === '..').length;
-    const repoSegs = wikiSegs.slice(0, Math.max(0, wikiSegs.length - upCount));
-    const isWindowsAbsolute = /^[A-Za-z]:/.test(wikiFolderLocation);
-    const resolved = (isWindowsAbsolute ? '' : '/') + repoSegs.join('/');
-    const match = candidates.find((candidate) => candidate.replace(/\\/g, '/') === resolved);
-    return match ?? wikiFolderLocation;
-  }, [workspace.gitRepoPath, wikiFolderLocation, candidates]);
+  const currentSelection = currentRepoPath ?? wikiFolder;
 
-  const handleSelect = (repoRoot: string): void => {
-    if (repoRoot === wikiFolderLocation) {
+  const handleSelect = async (repoRoot: string): Promise<void> => {
+    if (!wikiFolderLocation) return;
+    if (repoRoot === wikiFolder) {
       // Inner: clear scope, wiki folder is its own repo.
       workspaceSetter({ ...workspace, gitRepoPath: null, gitManagedRelativePath: null });
       return;
     }
-    const scope = computeGitScopePaths(wikiFolderLocation, repoRoot);
+    const scope = await window.service.git.computeGitScopePaths(wikiFolderLocation, repoRoot);
     workspaceSetter({ ...workspace, gitRepoPath: scope.gitRepoPath, gitManagedRelativePath: scope.gitManagedRelativePath });
   };
 
@@ -120,7 +103,7 @@ export function GitRepoScopeItem(): React.JSX.Element | null {
           <RadioGroup
             value={currentSelection}
             onChange={(_event, value: string) => {
-              handleSelect(value);
+              void handleSelect(value);
             }}
             data-testid='git-repo-scope-radio-group'
           >
@@ -129,7 +112,7 @@ export function GitRepoScopeItem(): React.JSX.Element | null {
                 key={repoRoot}
                 value={repoRoot}
                 control={<Radio size='small' />}
-                label={repoRoot === wikiFolderLocation
+                label={repoRoot === wikiFolder
                   ? t('EditWorkspace.GitRepoScopeInner', { wikiFolder: repoRoot })
                   : t('EditWorkspace.GitRepoScopeAncestor', { repoPath: repoRoot })}
               />

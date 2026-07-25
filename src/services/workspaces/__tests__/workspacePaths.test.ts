@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { getWorkspaceGitScope, getWorkspaceType, isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from '@services/workspaces/workspacePaths';
+import { computeGitScopePaths, getWorkspaceGitScope, getWorkspaceType, isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from '@services/workspaces/workspacePaths';
 import { WorkspaceType } from '@services/workspaces/workspaceType';
 
 // Build cross-platform absolute paths so path.resolve behaves identically on Linux/Windows CI.
@@ -60,6 +60,7 @@ describe('workspacePaths', () => {
       managedRelativePath: 'my.wiki.html',
       managedAbsolutePath: 'C:/data/my.wiki.html',
       managedDisplayName: 'my.wiki.html',
+      isSingleFileScope: true,
     });
   });
 
@@ -109,5 +110,57 @@ describe('workspacePaths', () => {
     const scope = getWorkspaceGitScope(workspace);
     expect(scope?.repoPath).toBe(gameRoot);
     expect(scope?.managedRelativePath).toBe('mywiki');
+  });
+
+  it('marks html scope as single-file and folder scope as non-single-file', () => {
+    const htmlWorkspace = {
+      id: 'w1',
+      name: 'demo',
+      active: false,
+      order: 0,
+      picturePath: null,
+      wikiFolderLocation: 'C:\\data',
+      workspaceType: WorkspaceType.html,
+      htmlFileLocation: 'C:\\data\\my.wiki.html',
+    };
+    expect(getWorkspaceGitScope(htmlWorkspace)?.isSingleFileScope).toBe(true);
+
+    const folderWorkspace = {
+      id: 'w2',
+      name: 'demo',
+      active: false,
+      order: 0,
+      picturePath: null,
+      wikiFolderLocation: 'C:\\projects\\game\\wiki',
+      gitRepoPath: '..',
+      gitManagedRelativePath: 'wiki',
+    };
+    expect(getWorkspaceGitScope(folderWorkspace)?.isSingleFileScope).toBe(false);
+  });
+});
+
+describe('computeGitScopePaths', () => {
+  it('computes ../.. scope for a wiki two levels deep', () => {
+    const scope = computeGitScopePaths('C:/projects/game/sub/wiki', 'C:/projects/game');
+    expect(scope.gitRepoPath).toBe('../..');
+    expect(scope.gitManagedRelativePath).toBe('sub/wiki');
+  });
+
+  it('computes .. scope for a wiki one level deep', () => {
+    const scope = computeGitScopePaths('C:/projects/game/wiki', 'C:/projects/game');
+    expect(scope.gitRepoPath).toBe('..');
+    expect(scope.gitManagedRelativePath).toBe('wiki');
+  });
+
+  it('returns . when the wiki folder is the repo root', () => {
+    const scope = computeGitScopePaths('C:/projects/game', 'C:/projects/game');
+    expect(scope.gitRepoPath).toBe('.');
+    expect(scope.gitManagedRelativePath).toBe('');
+  });
+
+  it('handles backslash paths and normalizes them', () => {
+    const scope = computeGitScopePaths('C:\\projects\\game\\wiki', 'C:\\projects\\game');
+    expect(scope.gitRepoPath).toBe('..');
+    expect(scope.gitManagedRelativePath).toBe('wiki');
   });
 });

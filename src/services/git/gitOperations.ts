@@ -102,7 +102,9 @@ export async function discoverAncestorGitRepos(startPath: string, maxDepth = 8):
     try {
       // Second arg true => only check for .git folder existence, don't run git.
       if (await hasGit(current, true)) {
-        repos.push(current);
+        // Normalize to forward slashes so results are cross-platform consistent and directly
+        // comparable with the repoPath returned by getWorkspaceGitScope (which is also normalized).
+        repos.push(current.replace(/\\/g, '/'));
       }
     } catch {
       // ignore stat errors (e.g. permission denied) and keep walking

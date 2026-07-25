@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 import { SupportedStorageServices } from '@services/types';
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
-import { getWorkspaceGitLogScope } from './workspaceGitScope';
 
 const Panel = styled(Box)`
   height: 100%;
@@ -188,7 +187,7 @@ export function CommitDetailsPanel(
       }
 
       // Resolve the actual Git repo root (may be an ancestor repo for scoped workspaces).
-      const repoPath = getWorkspaceGitLogScope(workspace)?.repoPath ?? workspace.wikiFolderLocation;
+      const repoPath = (await window.service.git.getWorkspaceGitScope(workspace))?.repoPath ?? workspace.wikiFolderLocation;
       for (const selectedEntry of committedSelections) {
         void window.service.native.log('debug', 'handleRevert: calling revertCommit', { workspaceID, commitHash: selectedEntry.hash });
         await window.service.git.revertCommit(repoPath, selectedEntry.hash, selectedEntry.message);
@@ -217,7 +216,7 @@ export function CommitDetailsPanel(
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
       // Resolve the actual Git repo root (may be an ancestor repo for scoped workspaces).
-      const repoPath = getWorkspaceGitLogScope(workspace)?.repoPath ?? workspace.wikiFolderLocation;
+      const repoPath = (await window.service.git.getWorkspaceGitScope(workspace))?.repoPath ?? workspace.wikiFolderLocation;
       // Pass hashes newest-first (committedSelections is derived from entries which are newest-first).
       await window.service.git.undoCommits(
         repoPath,
@@ -252,7 +251,7 @@ export function CommitDetailsPanel(
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
       // Resolve the actual Git repo root (may be an ancestor repo for scoped workspaces).
-      const repoPath = getWorkspaceGitLogScope(workspace)?.repoPath ?? workspace.wikiFolderLocation;
+      const repoPath = (await window.service.git.getWorkspaceGitScope(workspace))?.repoPath ?? workspace.wikiFolderLocation;
       await window.service.git.amendCommitMessage(repoPath, trimmedMessage);
       setIsEditMessageOpen(false);
       if (onCommitSuccess) {

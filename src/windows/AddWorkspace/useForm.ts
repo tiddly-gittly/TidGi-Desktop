@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { computeGitScopePaths } from '@/windows/GitLog/workspaceGitScope';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import type { INewWikiWorkspaceConfig, IWikiWorkspace } from '@services/workspaces/interface';
@@ -184,20 +183,21 @@ export interface IWikiWorkspaceFormProps {
  * Fill in default value for newly created wiki.
  * @param form New wiki form value
  */
-export function workspaceConfigFromForm(
+export async function workspaceConfigFromForm(
   form: INewWikiRequiredFormData,
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
   options?: { useTidgiConfig?: boolean; selectedImportConfig?: Partial<ISyncableWikiConfig> },
-): INewWikiWorkspaceConfig {
+): Promise<INewWikiWorkspaceConfig> {
   // For local folder wikis created inside an ancestor Git repo, scope Git to the wiki subfolder of
-  // that outer repo instead of initializing a nested repo. Synced wikis keep their own repo.
+  // that outer repo instead of initializing a nested repo. Synced wikis keep their own repo. The
+  // portable relative paths are computed in the main process via IPC so the renderer does no path math.
   let gitRepoPath: string | null = null;
   let gitManagedRelativePath: string | null = null;
   if (!isCreateSyncedWorkspace && form.useOuterGitRepo && form.ancestorGitRepos.length > 0) {
     const chosenRepoRoot = form.ancestorGitRepos[form.selectedAncestorRepoIndex] ?? form.ancestorGitRepos[0];
     if (form.wikiFolderLocation && chosenRepoRoot) {
-      const scope = computeGitScopePaths(form.wikiFolderLocation, chosenRepoRoot);
+      const scope = await window.service.git.computeGitScopePaths(form.wikiFolderLocation, chosenRepoRoot);
       gitRepoPath = scope.gitRepoPath;
       gitManagedRelativePath = scope.gitManagedRelativePath;
     }

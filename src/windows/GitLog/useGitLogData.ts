@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { filter } from 'rxjs/operators';
 
 import type { getGitLog } from '@services/git/gitOperations';
+import type { IWorkspaceGitScope } from '@services/workspaces/interface';
 import type { ISearchParameters } from './SearchBar';
 import type { GitLogEntry } from './types';
-import { getWorkspaceGitLogScope } from './workspaceGitScope';
 
 export interface IGitLogData {
   entries: GitLogEntry[];
@@ -35,6 +35,11 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   const [error, setError] = useState<string | null>(null);
   const [currentBranch, setCurrentBranch] = useState<string | null>(null);
   const [workspaceInfo, setWorkspaceInfo] = useState<IWorkspace | null>(null);
+  // Git scope (repo root + managed subpath) resolved by the main process so the renderer does no
+  // path math. Fetched alongside workspaceInfo and mirrored into a ref for synchronous reads inside
+  // the loadGitLog/loadMore effects without adding it to their dependency arrays.
+  const [gitLogScope, setGitLogScope] = useState<IWorkspaceGitScope | undefined>(undefined);
+  const gitLogScopeReference = useRef<IWorkspaceGitScope | undefined>(undefined);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [lastChangeType, setLastChangeType] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -48,9 +53,8 @@ export function useGitLogData(workspaceID: string): IGitLogData {
   const isSearchMode = searchParameters.mode !== 'none';
   const hasMore = entries.length < totalCount;
 
-  const gitLogScope = useMemo(() => (workspaceInfo ? getWorkspaceGitLogScope(workspaceInfo) : undefined), [workspaceInfo]);
   const trackedRepoPath = gitLogScope?.repoPath ?? null;
-  const trackedScopedPath = gitLogScope?.scopedPath ?? null;
+  const trackedScopedPath = gitLogScope?.managedRelativePath ?? null;
 
   // Get workspace info once
   useEffect(() => {
@@ -69,6 +73,10 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           throw new Error('Not a wiki workspace');
         }
 
+        // Resolve git scope in the main process (no path math in the renderer).
+        const scope = await window.service.git.getWorkspaceGitScope(workspace);
+        gitLogScopeReference.current = scope;
+        setGitLogScope(scope);
         setWorkspaceInfo(workspace);
       } catch (error_) {
         const error = error_ as Error;
@@ -173,10 +181,10 @@ export function useGitLogData(workspaceID: string): IGitLogData {
           options.searchMode = 'none';
         }
 
-        const gitScope = getWorkspaceGitLogScope(workspaceInfo);
+        const gitScope = gitLogScopeReference.current;
         const repoPath = gitScope?.repoPath ?? workspaceInfo.wikiFolderLocation;
-        if (gitScope?.scopedPath && options.searchMode === 'none') {
-          options.scopedPath = gitScope.scopedPath;
+        if (gitScope?.managedRelativePath && options.searchMode === 'none') {
+          options.scopedPath = gitScope.managedRelativePath;
         }
 
         // Get git log from service
@@ -197,7 +205,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
               const files = await window.service.git.getCommitFiles(
                 repoPath,
                 entry.hash,
-                gitScope?.scopedPath,
+                gitScope?.managedRelativePath,
               );
               return { ...entry, files };
             } catch (error) {
@@ -313,10 +321,10 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         options.searchMode = 'none';
       }
 
-      const gitScope = getWorkspaceGitLogScope(workspaceInfo);
+      const gitScope = gitLogScopeReference.current;
       const repoPath = gitScope?.repoPath ?? workspaceInfo.wikiFolderLocation;
-      if (gitScope?.scopedPath && options.searchMode === 'none') {
-        options.scopedPath = gitScope.scopedPath;
+      if (gitScope?.managedRelativePath && options.searchMode === 'none') {
+        options.scopedPath = gitScope.managedRelativePath;
       }
 
       const result = await window.service.git.getGitLog(repoPath, options);
@@ -335,7 +343,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
             const files = await window.service.git.getCommitFiles(
               repoPath,
               entry.hash,
-              gitScope?.scopedPath,
+              gitScope?.managedRelativePath,
             );
             return { ...entry, files };
           } catch (error) {

@@ -1,5 +1,5 @@
 import { GitChannel } from '@/constants/channels';
-import type { IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspace, IWorkspaceGitScope } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ICommitAndSyncOptions, ModifiedFileList } from 'git-sync-js';
 import type { BehaviorSubject } from 'rxjs';
@@ -140,6 +140,19 @@ export interface IGitService {
    */
   discoverAncestorGitRepos(startPath: string): Promise<string[]>;
   /**
+   * Resolve the Git scope for a workspace (repo root + managed subpath) by applying the stored
+   * `gitRepoPath`/`gitManagedRelativePath`. Centralized in the main process so the renderer never
+   * does path math — the renderer passes the workspace object (e.g. the live form state) and reads
+   * the result. Returns undefined when the workspace isn't a wiki workspace.
+   */
+  getWorkspaceGitScope(workspace: IWorkspace): Promise<IWorkspaceGitScope | undefined>;
+  /**
+   * Compute the portable `gitRepoPath`/`gitManagedRelativePath` to store in workspace config for a
+   * wiki folder living inside `ancestorRepoRoot`. Main-process-only path math; the renderer calls
+   * this via IPC instead of reimplementing relative-path resolution.
+   */
+  computeGitScopePaths(wikiFolderLocation: string, ancestorRepoRoot: string): Promise<{ gitRepoPath: string; gitManagedRelativePath: string }>;
+  /**
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
@@ -223,6 +236,8 @@ export const GitServiceIPCDescriptor = {
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     discoverAncestorGitRepos: ProxyPropertyType.Function,
+    getWorkspaceGitScope: ProxyPropertyType.Function,
+    computeGitScopePaths: ProxyPropertyType.Function,
     gitStateChange$: ProxyPropertyType.Value$,
     gitSyncProgress$: ProxyPropertyType.Value$,
     initWikiGit: ProxyPropertyType.Function,
