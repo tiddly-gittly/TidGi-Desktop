@@ -87,6 +87,11 @@ export class Wiki implements IWikiService {
   // key is same to workspace id, so we can get this worker by workspace id
   private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: UtilityProcess; proxy: WikiWorker; rejectStartWiki?: (error: Error) => void }>> = {};
 
+  // Tracks in-flight startWiki promises so restartWiki can wait for an ongoing
+  // startWiki to settle before calling stopWiki, avoiding a race where stopWiki
+  // terminates a worker that is still booting.
+  private startWikiPromises: Partial<Record<string, Promise<void>>> = {};
+
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
   }
@@ -290,7 +295,7 @@ export class Wiki implements IWikiService {
 
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 
-    await new Promise<void>((resolve, reject) => {
+    const bootPromise = new Promise<void>((resolve, reject) => {
       // Add a safety timeout to prevent startWiki from hanging indefinitely.
       // The worker may boot TiddlyWiki successfully but the 'booted' message might
       // not arrive via the RPC Observable due to process communication issues.
@@ -443,6 +448,14 @@ export class Wiki implements IWikiService {
         },
       });
     });
+    this.startWikiPromises[workspaceID] = bootPromise;
+    try {
+      await bootPromise;
+    } finally {
+      if (this.startWikiPromises[workspaceID] === bootPromise) {
+        delete this.startWikiPromises[workspaceID];
+      }
+    }
     void this.afterWikiStart(workspaceID);
   }
 
@@ -983,6 +996,15 @@ export class Wiki implements IWikiService {
 
     const userName = await this.authService.getUserName(workspace);
     if (!isSubWiki) {
+      // Wait for any in-flight startWiki to settle before stopping.
+      // This prevents a race where stopWiki terminates a worker that is still
+      // booting (e.g. during app startup), which causes ERR_ABORTED (-3) in the
+      // webview and leaves the view blank after reload.
+      const pendingStart = this.startWikiPromises[id];
+      if (pendingStart) {
+        logger.info(`restartWiki: waiting for in-flight startWiki for ${id}`, { function: 'restartWiki' });
+        await pendingStart.catch(() => {});
+      }
       await this.stopWiki(id);
       await this.startWiki(id, userName);
     }
