@@ -61,6 +61,13 @@ export const syncableConfigFields = [
   'https',
   'isSubWiki',
   'mainWikiID',
+  // Git repository scope: when the wiki folder lives inside an ancestor Git repo,
+  // these point TidGi at that outer repo (scoped to the wiki subfolder) instead of
+  // initializing a nested repo inside the wiki folder.
+  // - gitRepoPath: repo root relative to wikiFolderLocation (e.g. "..", "../.."); null/undefined = wiki folder itself is the repo
+  // - gitManagedRelativePath: wiki folder path relative to repo root (e.g. "mywiki"); null/undefined = whole repo
+  'gitRepoPath',
+  'gitManagedRelativePath',
 ] as const;
 
 /**
@@ -101,6 +108,8 @@ export const syncableConfigDefaultValues = {
   https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
   isSubWiki: false,
   mainWikiID: null as string | null,
+  gitRepoPath: null as string | null,
+  gitManagedRelativePath: null as string | null,
 } as const;
 
 /**
@@ -133,6 +142,8 @@ export type ISyncableWikiConfig = {
   https?: { enabled: boolean; tlsCert?: string; tlsKey?: string };
   isSubWiki: boolean;
   mainWikiID: string | null;
+  gitRepoPath: string | null;
+  gitManagedRelativePath: string | null;
 };
 
 /**

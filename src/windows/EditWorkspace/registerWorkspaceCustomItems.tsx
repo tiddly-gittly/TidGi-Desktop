@@ -4,6 +4,7 @@
 import { registerCustomComponent } from '../Preferences/customComponentRegistry';
 import { WorkspaceAvatarItem } from './customItems/AppearanceItems';
 import { WorkspaceEmbeddingItem } from './customItems/EmbeddingItem';
+import { GitRepoScopeItem } from './customItems/GitRepoScopeItem';
 import { LastUrlItem } from './customItems/MiscItems';
 import { GitRepoUrlItem, StorageServiceSwitchItem, TokenFormItem, WorkspacePathItem } from './customItems/SaveAndSyncItems';
 import {
@@ -31,6 +32,7 @@ export function registerWorkspaceCustomItems(): void {
   registerCustomComponent('workspace.storageServiceSwitch', StorageServiceSwitchItem);
   registerCustomComponent('workspace.tokenForm', TokenFormItem);
   registerCustomComponent('workspace.gitRepoUrl', GitRepoUrlItem);
+  registerCustomComponent('workspace.gitRepoScope', GitRepoScopeItem);
   registerCustomComponent('workspace.lastUrl', LastUrlItem);
   registerCustomComponent('workspace.embedding', WorkspaceEmbeddingItem);
 

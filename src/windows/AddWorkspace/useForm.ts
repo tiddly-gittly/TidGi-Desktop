@@ -114,6 +114,32 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   useEffect(() => {
     void (async function getDefaultWikiHtmlPathEffect() {})();
   }, []);
+
+  /**
+   * Ancestor Git repo detection: when creating a wiki inside an already-versioned folder (e.g. a
+   * game project), we offer to use the outer repo instead of creating a nested one. Holds the list
+   * of ancestor repo roots (nearest first) and the user's choice.
+   */
+  const [ancestorGitRepos, ancestorGitReposSetter] = useState<string[]>([]);
+  const [useOuterGitRepo, useOuterGitRepoSetter] = useState<boolean>(true);
+  const [selectedAncestorRepoIndex, selectedAncestorRepoIndexSetter] = useState<number>(0);
+  useEffect(() => {
+    void (async function detectAncestorGitReposEffect(): Promise<void> {
+      if (!parentFolderLocation) {
+        ancestorGitReposSetter([]);
+        return;
+      }
+      try {
+        const repos = await window.service.git.discoverAncestorGitRepos(parentFolderLocation);
+        ancestorGitReposSetter(repos);
+        // Default to using the nearest ancestor repo when one is detected.
+        useOuterGitRepoSetter(repos.length > 0);
+        selectedAncestorRepoIndexSetter(0);
+      } catch {
+        ancestorGitReposSetter([]);
+      }
+    })();
+  }, [parentFolderLocation]);
   return {
     storageProvider,
     storageProviderSetter,
@@ -136,6 +162,11 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     mainWikiToLinkIndex,
     wikiHtmlPath,
     wikiHtmlPathSetter,
+    ancestorGitRepos,
+    useOuterGitRepo,
+    useOuterGitRepoSetter,
+    selectedAncestorRepoIndex,
+    selectedAncestorRepoIndexSetter,
   };
 }
 
@@ -152,12 +183,25 @@ export interface IWikiWorkspaceFormProps {
  * Fill in default value for newly created wiki.
  * @param form New wiki form value
  */
-export function workspaceConfigFromForm(
+export async function workspaceConfigFromForm(
   form: INewWikiRequiredFormData,
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
   options?: { useTidgiConfig?: boolean; selectedImportConfig?: Partial<ISyncableWikiConfig> },
-): INewWikiWorkspaceConfig {
+): Promise<INewWikiWorkspaceConfig> {
+  // For local folder wikis created inside an ancestor Git repo, scope Git to the wiki subfolder of
+  // that outer repo instead of initializing a nested repo. Synced wikis keep their own repo. The
+  // portable relative paths are computed in the main process via IPC so the renderer does no path math.
+  let gitRepoPath: string | null = null;
+  let gitManagedRelativePath: string | null = null;
+  if (!isCreateSyncedWorkspace && form.useOuterGitRepo && form.ancestorGitRepos.length > 0) {
+    const chosenRepoRoot = form.ancestorGitRepos[form.selectedAncestorRepoIndex] ?? form.ancestorGitRepos[0];
+    if (form.wikiFolderLocation && chosenRepoRoot) {
+      const scope = await window.service.git.computeGitScopePaths(form.wikiFolderLocation, chosenRepoRoot);
+      gitRepoPath = scope.gitRepoPath;
+      gitManagedRelativePath = scope.gitManagedRelativePath;
+    }
+  }
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
@@ -172,6 +216,8 @@ export function workspaceConfigFromForm(
     tokenAuth: false,
     enableFileSystemWatch: false,
     useTidgiConfig: options?.useTidgiConfig,
+    gitRepoPath,
+    gitManagedRelativePath,
     ...(options?.selectedImportConfig as Partial<INewWikiWorkspaceConfig> | undefined),
     // Additional fields will be set with default values in `sanitizeWorkspace`, see also `INewWikiWorkspaceConfig`
   };

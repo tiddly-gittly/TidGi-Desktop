@@ -45,6 +45,8 @@ Feature: Git Log Window
       | element description           | selector                                                     |
       | git log list                  | [data-testid='git-log-list']                                 |
       | commit with default message   | p.MuiTypography-body2:has-text('使用太记桌面版备份')          |
+    # The tracked-repo banner should be visible so users know which Git repo is being shown
+    Then I should see a "tracked git repo banner" element with selector "[data-testid='git-log-tracked-repo-banner']"
     # Click on the commit row containing GitLogTestTiddler file
     When I click on a "commit row with GitLogTestTiddler" element with selector "[data-testid^='commit-row-']:has-text('GitLogTestTiddler')"
     # Verify the filename appears in the details panel (may include path like tiddlers/GitLogTestTiddler.tid)
