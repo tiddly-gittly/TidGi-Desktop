@@ -948,6 +948,11 @@ export class Wiki implements IWikiService {
           // wait some time and restart the wiki will solve this
           logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
           await this.restartWiki(workspace);
+        } else if ((error as Error).message.includes('stopped during workspace restart')) {
+          // startWiki was cancelled by stopWiki (e.g. from restartWorkspaceViewService).
+          // The restart flow already handles re-initialization, so swallow the error
+          // here to prevent an unhandled rejection from the original initializeWorkspaceView call.
+          logger.info('startWiki cancelled by stopWiki, restart flow will handle re-init', { function: 'startWiki', workspaceId: id });
         } else {
           logger.warn('unexpected error, throw it', { function: 'startWiki' });
           throw error;
