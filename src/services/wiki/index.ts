@@ -85,7 +85,7 @@ export class Wiki implements IWikiService {
   }
 
   // key is same to workspace id, so we can get this worker by workspace id
-  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: UtilityProcess; proxy: WikiWorker }>> = {};
+  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: UtilityProcess; proxy: WikiWorker; rejectStartWiki?: (error: Error) => void }>> = {};
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -312,6 +312,12 @@ export class Wiki implements IWikiService {
         clearTimeout(startWikiTimeout);
         originalReject(...arguments_);
       };
+
+      // Store reject so stopWiki can cancel the pending startWiki promise
+      // when the worker is terminated before the 'booted' message arrives.
+      if (this.wikiWorkers[workspaceID]) {
+        this.wikiWorkers[workspaceID].rejectStartWiki = reject;
+      }
 
       // UtilityProcess emits 'exit' on crash (not 'error' like worker_threads).
       // The exit handler below already rejects on non-zero exit codes.
@@ -617,6 +623,18 @@ export class Wiki implements IWikiService {
         detachWorker();
       } catch {
         /* ignore */
+      }
+    }
+    // Cancel any pending startWiki promise before removing listeners.
+    // When the worker is terminated before the 'booted' message arrives,
+    // the exit handler may not fire (removeAllListeners removes it first),
+    // so we must explicitly reject the promise to prevent a 60s timeout
+    // from firing later and causing an unhandled rejection.
+    if (workerData?.rejectStartWiki) {
+      try {
+        workerData.rejectStartWiki(new Error(`Wiki ${id} stopped during workspace restart`));
+      } catch {
+        /* Promise may already be settled */
       }
     }
     // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
