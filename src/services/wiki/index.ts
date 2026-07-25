@@ -162,6 +162,18 @@ export class Wiki implements IWikiService {
       logger.warn(`Wiki worker for ${workspaceID} already running — skipping duplicate startWiki call`);
       return;
     }
+
+    // Create a deferred promise early so restartWiki can await it even before
+    // the worker boots. This prevents a race where stopWiki is called during
+    // worker initialization (before bootPromise is created).
+    let resolveStartWikiDeferred!: () => void;
+    let rejectStartWikiDeferred!: (error: unknown) => void;
+    const startWikiDeferred = new Promise<void>((resolve, reject) => {
+      resolveStartWikiDeferred = resolve;
+      rejectStartWikiDeferred = reject;
+    });
+    this.startWikiPromises[workspaceID] = startWikiDeferred;
+
     // use Promise to handle worker callbacks
     const workspace = await workspaceService.get(workspaceID);
     if (workspace === undefined) {
@@ -448,11 +460,14 @@ export class Wiki implements IWikiService {
         },
       });
     });
-    this.startWikiPromises[workspaceID] = bootPromise;
     try {
       await bootPromise;
+      resolveStartWikiDeferred();
+    } catch (error) {
+      rejectStartWikiDeferred(error);
+      throw error;
     } finally {
-      if (this.startWikiPromises[workspaceID] === bootPromise) {
+      if (this.startWikiPromises[workspaceID] === startWikiDeferred) {
         delete this.startWikiPromises[workspaceID];
       }
     }
