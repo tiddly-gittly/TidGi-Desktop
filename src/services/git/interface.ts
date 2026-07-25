@@ -179,29 +179,29 @@ export interface IGitService {
   /**
    * Checkout a specific commit
    */
-  checkoutCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
+  checkoutCommit(workspace: IWorkspace, commitHash: string): Promise<void>;
   /**
    * Revert a specific commit (using git revert)
    * @param commitMessage - Optional original commit message to include in revert message
    */
-  revertCommit(wikiFolderPath: string, commitHash: string, commitMessage?: string): Promise<void>;
+  revertCommit(workspace: IWorkspace, commitHash: string, commitMessage?: string): Promise<void>;
   /**
    * Amend latest commit message
    */
-  amendCommitMessage(wikiFolderPath: string, newMessage: string): Promise<void>;
+  amendCommitMessage(workspace: IWorkspace, newMessage: string): Promise<void>;
   /**
    * Undo a specific commit by resetting to the parent and keeping changes as unstaged
    */
-  undoCommit(wikiFolderPath: string, commitHash: string): Promise<void>;
+  undoCommit(workspace: IWorkspace, commitHash: string): Promise<void>;
   /**
    * Undo multiple commits sequentially, firing only one git-state notification at the end.
    * Commits must be ordered newest-first (same order as git log).
    */
-  undoCommits(wikiFolderPath: string, commitHashes: string[]): Promise<void>;
+  undoCommits(workspace: IWorkspace, commitHashes: string[]): Promise<void>;
   /**
    * Discard changes for a specific file (restore from HEAD)
    */
-  discardFileChanges(wikiFolderPath: string, filePath: string): Promise<void>;
+  discardFileChanges(workspace: IWorkspace, filePath: string): Promise<void>;
   /**
    * Add a file pattern to .gitignore
    */

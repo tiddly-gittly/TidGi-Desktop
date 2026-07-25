@@ -5,6 +5,7 @@ import { styled } from '@mui/material/styles';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
+import type { IWorkspace } from '@services/workspaces/interface';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +18,11 @@ async function getRepoPath(workspaceID: string): Promise<string | null> {
   if (!workspace) return null;
   const scope = await window.service.git.getWorkspaceGitScope(workspace);
   return scope?.repoPath ?? null;
+}
+
+async function getWorkspace(workspaceID: string): Promise<IWorkspace | null> {
+  const workspace = await window.service.workspace.get(workspaceID);
+  return workspace ?? null;
 }
 
 const Panel = styled(Box)`
@@ -201,12 +207,12 @@ export function FileDiffPanel(
 
   const handleDiscardChanges = async () => {
     if (selectedPaths.length === 0 || !canDiscardChanges) return;
-    const repoPath = await fetchRepoPath();
-    if (!repoPath) return;
+    const workspace = await getWorkspace(workspaceID);
+    if (!workspace) return;
 
     try {
       for (const selectedPath of selectedPaths) {
-        await window.service.git.discardFileChanges(repoPath, selectedPath);
+        await window.service.git.discardFileChanges(workspace, selectedPath);
       }
       showSnackbar(t('GitLog.DiscardSuccess'), 'success');
       onDiscardSuccess?.(selectedPaths);
