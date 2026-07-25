@@ -16,6 +16,12 @@ process.on('unhandledRejection', (reason: unknown) => {
   process.exit(1);
 });
 
+// Keep the utility process alive between IPC calls.
+// Without this, the process exits when the event loop is empty (after IPC
+// handlers are set up but before any git operation is requested).
+process.stdin?.resume();
+setInterval(() => {}, 60000);
+
 /**
  * Decode git's octal-escaped non-ASCII filenames in log messages.
  * Git quotes non-ASCII paths as `"\344\270\211..."` by default (core.quotepath=true).

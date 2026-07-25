@@ -24,6 +24,16 @@ process.on('unhandledRejection', (reason: unknown) => {
   process.exit(1);
 });
 
+// Keep the utility process alive until the wiki HTTP server starts.
+// Without this, the process exits when the event loop is empty (after IPC
+// handlers are set up but before startNodeJSWiki creates the HTTP server).
+// In worker_threads the MessagePort keeps the thread alive, but utilityProcess
+// has no such guarantee — we must hold an explicit handle.
+// process.stdin.resume() may not work in utilityProcess, so we use a
+// keep-alive interval that runs for the lifetime of the worker.
+process.stdin?.resume();
+setInterval(() => {}, 60000);
+
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import type { ITiddlerRoutingInfo } from '../plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
