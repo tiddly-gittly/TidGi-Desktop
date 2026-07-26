@@ -12,7 +12,7 @@
       remote URLs (GitHub raw / electron-winstaller default) often hang for minutes on some networks.
       Uninstall DisplayIcon is set offline instead: forge packs build-resources/icon.ico as an
       extraResource, and src/helpers/squirrelStartup.ts copies it to %LocalAppData%\tidgi\app.ico
-      during --squirrel-install / --squirrel-updated.
+      during Squirrel install or update events.
     -->
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description><%- description %></description>
