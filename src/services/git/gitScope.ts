@@ -17,7 +17,11 @@ export function filterFilesByScope<T extends { path: string }>(files: T[], scope
     return files;
   }
   const managed = scope.managedRelativePath.replace(/\\/g, '/');
-  return files.filter((file) => file.path.replace(/\\/g, '/') === managed);
+  const managedPrefix = `${managed}/`;
+  return files.filter((file) => {
+    const filePath = file.path.replace(/\\/g, '/');
+    return filePath === managed || filePath.startsWith(managedPrefix);
+  });
 }
 
 export function scopeFromWorkspaceGitScope(gitScope: IWorkspaceGitScope | undefined): IGitScopeOptions | undefined {
@@ -32,11 +36,12 @@ export function hasUncommittedChangesInScope(statusOutput: string, scope?: IGitS
     return statusOutput.trim().length > 0;
   }
   const managed = scope.managedRelativePath.replace(/\\/g, '/');
+  const managedPrefix = `${managed}/`;
   return statusOutput
     .split('\n')
     .filter(Boolean)
     .some((line) => {
       const filePath = line.slice(3).trim().replace(/\\/g, '/');
-      return filePath === managed || filePath.endsWith(`/${managed}`);
+      return filePath === managed || filePath.startsWith(managedPrefix);
     });
 }

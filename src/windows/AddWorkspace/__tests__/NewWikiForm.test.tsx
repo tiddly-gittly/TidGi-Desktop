@@ -55,6 +55,11 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
   workspaceList: [] as IWorkspace[],
   wikiHtmlPath: '',
   wikiHtmlPathSetter: vi.fn(),
+  ancestorGitRepos: [] as string[],
+  useOuterGitRepo: false,
+  useOuterGitRepoSetter: vi.fn(),
+  selectedAncestorRepoIndex: 0,
+  selectedAncestorRepoIndexSetter: vi.fn(),
   ...overrides,
 });
 
@@ -259,6 +264,34 @@ describe('NewWikiForm Component', () => {
       await renderNewWikiForm({ form });
 
       expect(screen.getByText('AddWorkspace.CreateWiki/test/parent/my-wiki')).toBeInTheDocument();
+    });
+
+    it('shows the git repo strategy radio group when an ancestor repo is detected', async () => {
+      const form = createMockForm({
+        parentFolderLocation: '/test/parent',
+        wikiFolderName: 'wiki',
+        wikiFolderLocation: '/test/parent/wiki',
+        ancestorGitRepos: ['/test/parent'],
+        useOuterGitRepo: true,
+      });
+
+      await renderNewWikiForm({ form, isCreateSyncedWorkspace: false });
+
+      expect(screen.getByTestId('git-repo-strategy-radio-group')).toBeInTheDocument();
+    });
+
+    it('does not show the git repo strategy radio group for synced workspaces', async () => {
+      const form = createMockForm({
+        parentFolderLocation: '/test/parent',
+        wikiFolderName: 'wiki',
+        wikiFolderLocation: '/test/parent/wiki',
+        ancestorGitRepos: ['/test/parent'],
+        useOuterGitRepo: true,
+      });
+
+      await renderNewWikiForm({ form, isCreateSyncedWorkspace: true });
+
+      expect(screen.queryByTestId('git-repo-strategy-radio-group')).not.toBeInTheDocument();
     });
 
     it('should show helper text for sub workspace linking', async () => {

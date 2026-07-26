@@ -3,6 +3,7 @@ import type { IGitUserInfos } from '@services/git/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
+import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { WikiWorker } from './wikiWorker';
@@ -44,6 +45,11 @@ export interface IWikiService {
    * @param title tiddler title to open
    */
   getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined>;
+  /**
+   * Explain which workspace a tiddler would be routed to (same rules as FileSystemAdaptor save routing).
+   * `featureAvailable` is true only when the main wiki has at least one sub-wiki with routing settings enabled.
+   */
+  getTiddlerRoutingInfo(title: string, workspaceID?: string): Promise<ITiddlerRoutingInfo>;
   getWikiChangeObserver$(workspaceID: string): Observable<ITidGiChangedTiddlers>;
   getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
   /**
@@ -93,13 +99,19 @@ export interface IWikiService {
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export interface IWorkerInfo {
-  heapTotal_MB: number;
-  heapUsed_MB: number;
+  /** CPU usage percentage (0–100+). `null` if unavailable. */
+  cpu_percent: number | null;
+  /** Total heap size in MB. `null` if unavailable. */
+  heapTotal_MB: number | null;
+  /** Used heap size in MB. `null` if unavailable. */
+  heapUsed_MB: number | null;
   isRunning: boolean;
-  port: number;
-  rss_MB: number;
-  /** Node.js worker_threads thread ID. -1 if the worker is not running. */
-  threadId: number;
+  /** OS process ID of the Electron UtilityProcess. `null` if not running. */
+  pid: number | null;
+  /** HTTP port the wiki server listens on. `null` for non-wiki workers (e.g. Git Worker). */
+  port: number | null;
+  /** Resident set size (physical RAM) in MB. `null` if unavailable. */
+  rss_MB: number | null;
   workspaceID: string;
   workspaceName: string;
 }
@@ -118,6 +130,7 @@ export const WikiServiceIPCDescriptor = {
     getWikiErrorLogs: ProxyPropertyType.Function,
     getWorkersInfo: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,
+    getTiddlerRoutingInfo: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,

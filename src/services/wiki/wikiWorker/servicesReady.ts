@@ -23,7 +23,7 @@ export function onWorkerServicesReady(callback: () => void): void {
 
 /**
  * Mark worker services as ready and execute all pending callbacks
- * This should be called by main process after attachWorker is complete
+ * This should be called by main process after attachUtilityProcess is complete
  */
 export async function notifyServicesReady(): Promise<void> {
   console.log('[servicesReady] Worker services marked as ready');

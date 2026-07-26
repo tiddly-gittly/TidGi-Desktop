@@ -7,14 +7,36 @@ import './preload';
 import 'source-map-support/register';
 import { uninstall } from '@/helpers/installV8Cache';
 
-import { handleWorkerMessages } from '@services/libs/workerAdapter';
+import { handleUtilityProcessMessages } from 'electron-ipc-cat/host';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
 
+// Log any uncaught errors to stderr before the utility process exits,
+// so the main process can capture them via child.stderr.
+process.on('uncaughtException', (error: Error) => {
+  process.stderr.write(`[wikiWorker] Uncaught exception: ${error.stack ?? error.message}\n`);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason: unknown) => {
+  process.stderr.write(`[wikiWorker] Unhandled rejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}\n`);
+  process.exit(1);
+});
+
+// Keep the utility process alive until the wiki HTTP server starts.
+// Without this, the process exits when the event loop is empty (after IPC
+// handlers are set up but before startNodeJSWiki creates the HTTP server).
+// In worker_threads the MessagePort keeps the thread alive, but utilityProcess
+// has no such guarantee — we must hold an explicit handle.
+// process.stdin.resume() may not work in utilityProcess, so we use a
+// keep-alive interval that runs for the lifetime of the worker.
+process.stdin?.resume();
+setInterval(() => {}, 60000);
+
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
+import type { ITiddlerRoutingInfo } from '../plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { getWikiInstance } from './globals';
@@ -116,10 +138,20 @@ async function beforeExit(): Promise<void> {
   }
 }
 
+async function getTiddlerRoutingInfo(tiddlerTitle: string): Promise<ITiddlerRoutingInfo> {
+  const wikiInstance = getWikiInstance();
+  const syncAdaptor = wikiInstance?.syncadaptor as { getTiddlerRoutingInfo?: (title: string) => Promise<ITiddlerRoutingInfo> } | undefined;
+  if (syncAdaptor?.getTiddlerRoutingInfo) {
+    return await syncAdaptor.getTiddlerRoutingInfo(tiddlerTitle);
+  }
+  return { featureAvailable: false };
+}
+
 // All exposed methods should be async.
 const wikiWorker = {
   startNodeJSWiki,
   getTiddlerFileMetadata: async (tiddlerTitle: string) => getWikiInstance()?.boot.files[tiddlerTitle],
+  getTiddlerRoutingInfo,
   executeZxScript,
   extractWikiHTML,
   packetHTMLFromWikiFolder,
@@ -135,5 +167,5 @@ const wikiWorker = {
 };
 export type WikiWorker = typeof wikiWorker;
 
-// Initialize worker message handling
-handleWorkerMessages(wikiWorker);
+// Initialize utility process message handling
+handleUtilityProcessMessages(wikiWorker);

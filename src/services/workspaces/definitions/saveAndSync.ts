@@ -43,6 +43,11 @@ export const saveAndSyncSection: IGenericSectionDefinition = {
       titleKey: 'AddWorkspace.GitRepoUrl',
     },
     {
+      type: 'custom',
+      componentId: 'workspace.gitRepoScope',
+      titleKey: 'EditWorkspace.GitRepoScopeTitle',
+    },
+    {
       type: 'preference-boolean',
       key: 'syncOnInterval',
       titleKey: 'EditWorkspace.SyncOnInterval',

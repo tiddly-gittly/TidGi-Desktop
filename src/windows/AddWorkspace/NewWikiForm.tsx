@@ -1,5 +1,5 @@
 import FolderIcon from '@mui/icons-material/Folder';
-import { Autocomplete, AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
+import { Autocomplete, AutocompleteRenderInputParams, FormControlLabel, MenuItem, Radio, RadioGroup, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +73,50 @@ export function NewWikiForm({
           value={form.wikiFolderName}
         />
       </LocationPickerContainer>
+      {!isCreateSyncedWorkspace && form.ancestorGitRepos.length > 0 && form.wikiFolderLocation && (
+        <RadioGroup
+          value={form.useOuterGitRepo ? 'outer' : 'inner'}
+          onChange={(_event, value: string) => {
+            form.useOuterGitRepoSetter(value === 'outer');
+          }}
+          sx={{ pl: 1, mt: 1 }}
+          data-testid='git-repo-strategy-radio-group'
+        >
+          <Typography variant='body2' color='textSecondary' sx={{ mb: 0.5 }}>
+            {t('AddWorkspace.GitRepoStrategyDescription')}
+          </Typography>
+          <FormControlLabel
+            value='outer'
+            control={<Radio size='small' />}
+            label={t('AddWorkspace.UseOuterGitRepo', { repoPath: form.ancestorGitRepos[form.selectedAncestorRepoIndex] ?? form.ancestorGitRepos[0] })}
+          />
+          {form.ancestorGitRepos.length > 1 && (
+            <RadioGroup
+              row
+              value={form.selectedAncestorRepoIndex}
+              onChange={(_event, value: string) => {
+                form.selectedAncestorRepoIndexSetter(Number(value));
+              }}
+              sx={{ pl: 3, mb: 0.5 }}
+              data-testid='ancestor-repo-select-radio-group'
+            >
+              {form.ancestorGitRepos.map((repoPath, index) => (
+                <FormControlLabel
+                  key={repoPath}
+                  value={index}
+                  control={<Radio size='small' />}
+                  label={repoPath}
+                />
+              ))}
+            </RadioGroup>
+          )}
+          <FormControlLabel
+            value='inner'
+            control={<Radio size='small' />}
+            label={t('AddWorkspace.UseInnerGitRepo')}
+          />
+        </RadioGroup>
+      )}
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelect

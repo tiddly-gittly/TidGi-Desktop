@@ -165,6 +165,16 @@
       "type": ["string", "null"],
       "description": "Canonical workspace ID of the main wiki this sub-wiki is attached to",
       "default": null
+    },
+    "gitRepoPath": {
+      "type": ["string", "null"],
+      "description": "Git repository root path relative to wikiFolderLocation (e.g. '..'). null means the wiki folder itself is the Git repo.",
+      "default": null
+    },
+    "gitManagedRelativePath": {
+      "type": ["string", "null"],
+      "description": "Managed wiki folder path relative to the Git repo root (e.g. 'mywiki'). null means track the whole repo.",
+      "default": null
     }
   },
   "required": ["version"],

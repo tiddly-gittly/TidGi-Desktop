@@ -83,7 +83,32 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       if (await hasGit(wikiFolderLocation)) {
         logger.warn('Skip git init because it already has a git setup.', { wikiFolderLocation });
       } else {
-        if (isSyncedWiki) {
+        // When the wiki folder lives inside an existing ancestor Git repo, scope Git operations to
+        // the wiki subfolder of that outer repo instead of creating a nested repo. Only applies to
+        // local folder wikis (synced wikis need their own remote; HTML wikis have their own scope).
+        const gitScope = getWorkspaceGitScope(newWorkspace);
+        const scopedRepoPath = gitScope?.repoPath;
+        const scopedManagedPath = gitScope?.managedRelativePath;
+        const useOuterRepo = !isSyncedWiki &&
+          !isHtmlWikiWorkspace(newWorkspace) &&
+          scopedRepoPath !== undefined &&
+          scopedManagedPath !== undefined &&
+          scopedRepoPath !== wikiFolderLocation;
+        if (useOuterRepo && await hasGit(scopedRepoPath)) {
+          const gitService = container.get<IGitService>(serviceIdentifier.Git);
+          try {
+            await gitService.initScopedWikiGit(scopedRepoPath, scopedManagedPath);
+          } catch (scopedInitError) {
+            // The outer repo can't track this wiki — e.g. the wiki path is gitignored by the outer
+            // repo (common in CI where the wiki is created inside the app's own repo under an
+            // ignored test-artifacts folder), or the outer repo has a failing hook. Fall back to an
+            // independent repo inside the wiki folder and clear the scope config so future git ops
+            // target the wiki's own repo instead of the unusable outer one.
+            logger.warn(`initScopedWikiGit failed on outer repo ${scopedRepoPath}, falling back to independent repo`, { error: scopedInitError as Error });
+            await workspaceService.update(newWorkspace.id, { gitRepoPath: null, gitManagedRelativePath: null });
+            await gitService.initWikiGit(wikiFolderLocation, false);
+          }
+        } else if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
             const gitService = container.get<IGitService>(serviceIdentifier.Git);
             await gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, !isSubWiki, gitUrl, userInfo);
