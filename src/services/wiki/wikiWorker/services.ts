@@ -3,7 +3,7 @@
  * Exposed to the wiki worker and attached to $tw.tidgi.service in startNodeJSWiki
  */
 
-import { createWorkerProxy, type WorkerProxy } from 'electron-ipc-cat/worker';
+import { createDefaultUtilityProcessTransport, createWorkerProxy, type WorkerProxy } from 'electron-ipc-cat/worker';
 import { Observable } from 'rxjs';
 
 import { AgentBrowserServiceIPCDescriptor, type IAgentBrowserService } from '@services/agentBrowser/interface';
@@ -32,32 +32,35 @@ import { type IWindowService, WindowServiceIPCDescriptor } from '@services/windo
 import { type IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { type IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
+// Create the utility process transport once — all proxies share it.
+const utilityProcessTransport = createDefaultUtilityProcessTransport();
+
 // Create service proxies
-export const agentBrowser = createWorkerProxy<WorkerProxy<IAgentBrowserService>>(AgentBrowserServiceIPCDescriptor, Observable);
-export const agentDefinition = createWorkerProxy<WorkerProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor, Observable);
-export const agentInstance = createWorkerProxy<WorkerProxy<IAgentInstanceService>>(AgentInstanceServiceIPCDescriptor, Observable);
-export const auth = createWorkerProxy<WorkerProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor, Observable);
-export const context = createWorkerProxy<WorkerProxy<IContextService>>(ContextServiceIPCDescriptor, Observable);
-export const database = createWorkerProxy<WorkerProxy<IDatabaseService>>(DatabaseServiceIPCDescriptor, Observable);
-export const deepLink = createWorkerProxy<WorkerProxy<IDeepLinkService>>(DeepLinkServiceIPCDescriptor, Observable);
-export const externalAPI = createWorkerProxy<WorkerProxy<IExternalAPIService>>(ExternalAPIServiceIPCDescriptor, Observable);
-export const git = createWorkerProxy<WorkerProxy<IGitService>>(GitServiceIPCDescriptor, Observable);
-export const gitServer = createWorkerProxy<WorkerProxy<IGitServerService>>(GitServerServiceIPCDescriptor, Observable);
-export const menu = createWorkerProxy<WorkerProxy<IMenuService>>(MenuServiceIPCDescriptor, Observable);
-export const native = createWorkerProxy<WorkerProxy<INativeService>>(NativeServiceIPCDescriptor, Observable);
-export const notification = createWorkerProxy<WorkerProxy<INotificationService>>(NotificationServiceIPCDescriptor, Observable);
-export const preference = createWorkerProxy<WorkerProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor, Observable);
-export const sync = createWorkerProxy<WorkerProxy<ISyncService>>(SyncServiceIPCDescriptor, Observable);
-export const systemPreference = createWorkerProxy<WorkerProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor, Observable);
-export const theme = createWorkerProxy<WorkerProxy<IThemeService>>(ThemeServiceIPCDescriptor, Observable);
-export const updater = createWorkerProxy<WorkerProxy<IUpdaterService>>(UpdaterServiceIPCDescriptor, Observable);
-export const view = createWorkerProxy<WorkerProxy<IViewService>>(ViewServiceIPCDescriptor, Observable);
-export const wiki = createWorkerProxy<WorkerProxy<IWikiService>>(WikiServiceIPCDescriptor, Observable);
-export const wikiEmbedding = createWorkerProxy<WorkerProxy<IWikiEmbeddingService>>(WikiEmbeddingServiceIPCDescriptor, Observable);
-export const wikiGitWorkspace = createWorkerProxy<WorkerProxy<IWikiGitWorkspaceService>>(WikiGitWorkspaceServiceIPCDescriptor, Observable);
-export const window = createWorkerProxy<WorkerProxy<IWindowService>>(WindowServiceIPCDescriptor, Observable);
-export const workspace = createWorkerProxy<WorkerProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor, Observable);
-export const workspaceView = createWorkerProxy<WorkerProxy<IWorkspaceViewService>>(WorkspaceViewServiceIPCDescriptor, Observable);
+export const agentBrowser = createWorkerProxy<WorkerProxy<IAgentBrowserService>>(AgentBrowserServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const agentDefinition = createWorkerProxy<WorkerProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const agentInstance = createWorkerProxy<WorkerProxy<IAgentInstanceService>>(AgentInstanceServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const auth = createWorkerProxy<WorkerProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const context = createWorkerProxy<WorkerProxy<IContextService>>(ContextServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const database = createWorkerProxy<WorkerProxy<IDatabaseService>>(DatabaseServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const deepLink = createWorkerProxy<WorkerProxy<IDeepLinkService>>(DeepLinkServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const externalAPI = createWorkerProxy<WorkerProxy<IExternalAPIService>>(ExternalAPIServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const git = createWorkerProxy<WorkerProxy<IGitService>>(GitServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const gitServer = createWorkerProxy<WorkerProxy<IGitServerService>>(GitServerServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const menu = createWorkerProxy<WorkerProxy<IMenuService>>(MenuServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const native = createWorkerProxy<WorkerProxy<INativeService>>(NativeServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const notification = createWorkerProxy<WorkerProxy<INotificationService>>(NotificationServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const preference = createWorkerProxy<WorkerProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const sync = createWorkerProxy<WorkerProxy<ISyncService>>(SyncServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const systemPreference = createWorkerProxy<WorkerProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const theme = createWorkerProxy<WorkerProxy<IThemeService>>(ThemeServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const updater = createWorkerProxy<WorkerProxy<IUpdaterService>>(UpdaterServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const view = createWorkerProxy<WorkerProxy<IViewService>>(ViewServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const wiki = createWorkerProxy<WorkerProxy<IWikiService>>(WikiServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const wikiEmbedding = createWorkerProxy<WorkerProxy<IWikiEmbeddingService>>(WikiEmbeddingServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const wikiGitWorkspace = createWorkerProxy<WorkerProxy<IWikiGitWorkspaceService>>(WikiGitWorkspaceServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const window = createWorkerProxy<WorkerProxy<IWindowService>>(WindowServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const workspace = createWorkerProxy<WorkerProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor, Observable, utilityProcessTransport);
+export const workspaceView = createWorkerProxy<WorkerProxy<IWorkspaceViewService>>(WorkspaceViewServiceIPCDescriptor, Observable, utilityProcessTransport);
 
 /**
  * All service proxies collected in one object

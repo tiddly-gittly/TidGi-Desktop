@@ -99,13 +99,19 @@ export interface IWikiService {
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export interface IWorkerInfo {
-  heapTotal_MB: number;
-  heapUsed_MB: number;
+  /** CPU usage percentage (0–100+). `null` if unavailable. */
+  cpu_percent: number | null;
+  /** Total heap size in MB. `null` if unavailable. */
+  heapTotal_MB: number | null;
+  /** Used heap size in MB. `null` if unavailable. */
+  heapUsed_MB: number | null;
   isRunning: boolean;
-  port: number;
-  rss_MB: number;
-  /** Node.js worker_threads thread ID. -1 if the worker is not running. */
-  threadId: number;
+  /** OS process ID of the Electron UtilityProcess. `null` if not running. */
+  pid: number | null;
+  /** HTTP port the wiki server listens on. `null` for non-wiki workers (e.g. Git Worker). */
+  port: number | null;
+  /** Resident set size (physical RAM) in MB. `null` if unavailable. */
+  rss_MB: number | null;
   workspaceID: string;
   workspaceName: string;
 }

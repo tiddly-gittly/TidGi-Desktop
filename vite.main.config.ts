@@ -1,9 +1,9 @@
-import { workerPlugin } from '@fetsorn/vite-node-worker';
 import fs from 'fs-extra';
 import path from 'path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
+import { utilityProcessPlugin } from 'vite-plugin-electron-utility-process';
 
 // Dynamically read TypeORM's optional peer dependencies to avoid hardcoding
 const typeormPackageJson = fs.readJsonSync(path.resolve(__dirname, 'node_modules/typeorm/package.json')) as Record<string, unknown>;
@@ -24,25 +24,7 @@ export default defineConfig({
     ...(process.env.ANALYZE === 'true'
       ? [analyzer({ analyzerMode: 'static', openAnalyzer: false, fileName: 'bundle-analyzer-main' })]
       : []),
-    workerPlugin(),
-    // Rolldown replaces import.meta.url with {}.url in CJS output, breaking
-    // node Worker(new URL(...)) calls from vite-node-worker plugin.
-    // Replace with __dirname-based path (CJS has __dirname natively).
-    // TODO: switch to child_process for crash isolation, then remove this.
-    {
-      name: 'fix-vite-node-worker-url',
-      enforce: 'post',
-      generateBundle(_, bundle) {
-        for (const chunk of Object.values(bundle)) {
-          if (chunk.type === 'chunk') {
-            chunk.code = chunk.code.replace(
-              /new URL\(["'`](\.[^"'`]+)["'`],\s*\{}\.url\)/g,
-              `require('path').resolve(__dirname, "$1")`,
-            );
-          }
-        }
-      },
-    },
+    utilityProcessPlugin(),
     swc.vite({
       jsc: {
         parser: { syntax: 'typescript', decorators: true },

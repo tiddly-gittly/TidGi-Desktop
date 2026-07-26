@@ -1,11 +1,12 @@
 import uniqBy from 'lodash/uniqBy';
 import { useEffect, useState } from 'react';
-import { LastArrayElement } from 'type-fest';
 import helpPages from './helpPages.json';
 
+type HelpPageItem = (typeof helpPages.default)[number];
+
 function makeFallbackUrlsArray(
-  item: LastArrayElement<typeof helpPages.default>,
-): Omit<LastArrayElement<typeof helpPages.default>, 'fallbackUrls' | 'language' | 'tags'> & { fallbackUrls: string[]; language: string[]; tags: string[] } {
+  item: HelpPageItem,
+): Omit<HelpPageItem, 'fallbackUrls' | 'language' | 'tags'> & { fallbackUrls: string[]; language: string[]; tags: string[] } {
   return { ...item, fallbackUrls: item.fallbackUrls?.split(' ') ?? [], language: item.language.split(' ') ?? [], tags: item.tags.split(' ') ?? [] };
 }
 

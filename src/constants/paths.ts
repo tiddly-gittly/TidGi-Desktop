@@ -57,7 +57,28 @@ export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'tiddly
  * When wiki uses a local TiddlyWiki installation, we still need to load TidGi's custom plugins from here.
  */
 export const TIDDLYWIKI_BUILT_IN_PLUGINS_PATH = path.resolve(PACKAGE_PATH_BASE, 'tiddlywiki', 'plugins');
-export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+// better-sqlite3 v13+ uses prebuilt binaries in prebuilds/ instead of build/Release/
+// Fallback to build/Release/ for older versions or electron-rebuild output
+function getSqliteBinaryPath(): string {
+  const prebuildDirectory = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'prebuilds');
+  let isMusl = false;
+  if (process.platform === 'linux') {
+    try {
+      const report = process.report?.getReport?.() as { header?: { glibcVersionRuntime?: string } } | undefined;
+      isMusl = !report?.header?.glibcVersionRuntime;
+    } catch {
+      isMusl = false;
+    }
+  }
+  const platform = isMusl ? 'linuxmusl' : process.platform;
+  const prebuiltPath = path.resolve(prebuildDirectory, `${platform}-${process.arch}.node`);
+  if (existsSync(prebuiltPath)) {
+    return prebuiltPath;
+  }
+  return path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+}
+
+export const SQLITE_BINARY_PATH = getSqliteBinaryPath();
 
 /**
  * Check if a wiki folder has its own TiddlyWiki installation and return the appropriate boot path.

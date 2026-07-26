@@ -189,6 +189,18 @@ export default function setupViewEventHandlers(
     }
 
     if (view.webContents == null || view.webContents.isDestroyed()) return;
+    // ERR_ABORTED (-3) happens when a navigation is cancelled mid-flight, most
+    // commonly during workspace restarts: stopWiki terminates the worker while
+    // the view is still loading tidgi://…, aborting the in-flight request.
+    // The restart flow will re-load the URL, so we retry here as a safety net
+    // to recover from cases where the second load doesn't happen automatically.
+    if (isMainFrame && errorCode === -3 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('tidgi://')) {
+      setTimeout(async () => {
+        if (view.webContents == null || view.webContents.isDestroyed()) return;
+        await loadInitialUrlWithCatch();
+      }, 500);
+      return;
+    }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
       if (errorCode === -102 && view.webContents.getURL().length > 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {

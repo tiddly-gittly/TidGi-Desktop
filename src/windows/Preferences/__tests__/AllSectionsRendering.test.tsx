@@ -62,6 +62,7 @@ describe('Preferences - All Sections Rendering', () => {
       value: vi.fn().mockImplementation(async (key: string) => {
         const contextValues: Record<string, string> = {
           platform: 'win32',
+          isTest: 'true',
           LOG_FOLDER: 'C:\\logs',
           SETTINGS_FOLDER: 'C:\\settings',
           V8_CACHE_FOLDER: 'C:\\v8cache',

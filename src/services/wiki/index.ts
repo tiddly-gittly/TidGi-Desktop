@@ -1,15 +1,14 @@
 import { findAvailablePort } from '@services/libs/port';
-import { createWorkerProxy, terminateWorker } from '@services/libs/workerAdapter';
-import { dialog, shell } from 'electron';
-import { attachWorker } from 'electron-ipc-cat/server';
+import { app, dialog, shell, type UtilityProcess } from 'electron';
+import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
+import { attachUtilityProcess } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
 import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
-import { Worker } from 'worker_threads';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - Vite worker import with ?nodeWorker query
-import WikiWorkerFactory from './wikiWorker/index?nodeWorker';
+import { Observable } from 'rxjs';
+import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
+import WikiWorkerFactory from './wikiWorker/index?utilityProcess';
 
 import { container } from '@services/container';
 
@@ -28,8 +27,6 @@ import type { IWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/wo
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { Observable } from 'rxjs';
-import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
 import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
 import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
@@ -88,7 +85,12 @@ export class Wiki implements IWikiService {
   }
 
   // key is same to workspace id, so we can get this worker by workspace id
-  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: Worker; proxy: WikiWorker }>> = {};
+  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: UtilityProcess; proxy: WikiWorker; rejectStartWiki?: (error: Error) => void }>> = {};
+
+  // Tracks in-flight startWiki promises so restartWiki can wait for an ongoing
+  // startWiki to settle before calling stopWiki, avoiding a race where stopWiki
+  // terminates a worker that is still booting.
+  private startWikiPromises: Partial<Record<string, Promise<void>>> = {};
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -97,14 +99,21 @@ export class Wiki implements IWikiService {
   public async getWorkersInfo(): Promise<IWorkerInfo[]> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaces = await workspaceService.getWorkspacesAsList();
+    // Build a PID → CPU% map from Electron's app metrics (covers utility processes)
+    const metricsMap = new Map<number, Electron.ProcessMetric>();
+    for (const metric of app.getAppMetrics()) {
+      metricsMap.set(metric.pid, metric);
+    }
     return Promise.all(
       workspaces
         .filter((w): w is IWikiWorkspace => isWikiWorkspace(w) && !w.isSubWiki)
         .map(async (workspace) => {
-          const workerProxy = this.wikiWorkers[workspace.id]?.proxy;
-          let rss_MB = -1;
-          let heapUsed_MB = -1;
-          let heapTotal_MB = -1;
+          const workerEntry = this.wikiWorkers[workspace.id];
+          const workerProxy = workerEntry?.proxy;
+          let rss_MB: number | null = null;
+          let heapUsed_MB: number | null = null;
+          let heapTotal_MB: number | null = null;
+          const pid = workerEntry?.nativeWorker.pid ?? null;
           if (workerProxy !== undefined) {
             try {
               const mem = await workerProxy.getMemoryUsage();
@@ -115,12 +124,18 @@ export class Wiki implements IWikiService {
               // worker may be busy or not yet ready
             }
           }
+          let cpu_percent: number | null = null;
+          if (pid !== null) {
+            const metric = metricsMap.get(pid);
+            cpu_percent = metric ? Math.round(metric.cpu.percentCPUUsage * 100) / 100 : null;
+          }
           return {
             workspaceID: workspace.id,
             workspaceName: workspace.name,
             port: workspace.port,
-            isRunning: this.wikiWorkers[workspace.id] !== undefined,
-            threadId: this.wikiWorkers[workspace.id]?.nativeWorker.threadId ?? -1,
+            isRunning: workerEntry !== undefined,
+            pid,
+            cpu_percent,
             rss_MB,
             heapUsed_MB,
             heapTotal_MB,
@@ -129,7 +144,7 @@ export class Wiki implements IWikiService {
     );
   }
 
-  private getNativeWorker(id: string): Worker | undefined {
+  private getNativeWorker(id: string): UtilityProcess | undefined {
     return this.wikiWorkers[id]?.nativeWorker;
   }
 
@@ -147,6 +162,18 @@ export class Wiki implements IWikiService {
       logger.warn(`Wiki worker for ${workspaceID} already running — skipping duplicate startWiki call`);
       return;
     }
+
+    // Create a deferred promise early so restartWiki can await it even before
+    // the worker boots. This prevents a race where stopWiki is called during
+    // worker initialization (before bootPromise is created).
+    let resolveStartWikiDeferred!: () => void;
+    let rejectStartWikiDeferred!: (error: unknown) => void;
+    const startWikiDeferred = new Promise<void>((resolve, reject) => {
+      resolveStartWikiDeferred = resolve;
+      rejectStartWikiDeferred = reject;
+    });
+    this.startWikiPromises[workspaceID] = startWikiDeferred;
+
     // use Promise to handle worker callbacks
     const workspace = await workspaceService.get(workspaceID);
     if (workspace === undefined) {
@@ -257,13 +284,18 @@ export class Wiki implements IWikiService {
       function: 'Wiki.startWiki',
     });
 
-    // Create native nodejs worker using Vite's ?nodeWorker import
-    const wikiWorker = (WikiWorkerFactory as () => Worker)();
+    // Create utility process using Vite's ?utilityProcess import
+    const wikiWorker = WikiWorkerFactory({
+      stdio: 'pipe',
+      serviceName: `wiki-worker-${workspaceID}`,
+      // tiddlywiki/dugite may load native modules; on macOS this needs unsigned library loading
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
 
-    // Attach worker to all registered services (from bindServiceAndProxy)
-    const detachWorker = attachWorker(wikiWorker);
+    // Attach utility process to all registered services (from bindServiceAndProxy)
+    const detachWorker = attachUtilityProcess(wikiWorker);
 
-    const worker = createWorkerProxy<WikiWorker>(wikiWorker);
+    const worker = createWorkerMethodProxy<WikiWorker>(wikiWorker as unknown as WorkerPeer);
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
@@ -275,10 +307,10 @@ export class Wiki implements IWikiService {
 
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
 
-    await new Promise<void>((resolve, reject) => {
+    const bootPromise = new Promise<void>((resolve, reject) => {
       // Add a safety timeout to prevent startWiki from hanging indefinitely.
       // The worker may boot TiddlyWiki successfully but the 'booted' message might
-      // not arrive via the workerAdapter Observable due to thread communication issues.
+      // not arrive via the RPC Observable due to process communication issues.
       const startWikiTimeout = setTimeout(() => {
         logger.error('startWiki timed out waiting for booted message', {
           ...loggerMeta,
@@ -298,12 +330,14 @@ export class Wiki implements IWikiService {
         originalReject(...arguments_);
       };
 
-      // Handle worker errors
-      wikiWorker.on('error', (error: Error) => {
-        logger.error(error.message, { function: 'Worker.error', ...loggerMeta });
-        reject(new WikiRuntimeError(error, name, false));
-      });
+      // Store reject so stopWiki can cancel the pending startWiki promise
+      // when the worker is terminated before the 'booted' message arrives.
+      if (this.wikiWorkers[workspaceID]) {
+        this.wikiWorkers[workspaceID].rejectStartWiki = reject;
+      }
 
+      // UtilityProcess emits 'exit' on crash (not 'error' like worker_threads).
+      // The exit handler below already rejects on non-zero exit codes.
       // Capture worker stderr to diagnose crashes
       if (wikiWorker.stderr) {
         wikiWorker.stderr.on('data', (data: Buffer | string) => {
@@ -426,6 +460,17 @@ export class Wiki implements IWikiService {
         },
       });
     });
+    try {
+      await bootPromise;
+      resolveStartWikiDeferred();
+    } catch (error) {
+      rejectStartWikiDeferred(error);
+      throw error;
+    } finally {
+      if (this.startWikiPromises[workspaceID] === startWikiDeferred) {
+        delete this.startWikiPromises[workspaceID];
+      }
+    }
     void this.afterWikiStart(workspaceID);
   }
 
@@ -506,8 +551,12 @@ export class Wiki implements IWikiService {
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {
     // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
-    const nativeWorker = (WikiWorkerFactory as () => Worker)();
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+    const nativeWorker = WikiWorkerFactory({
+      stdio: 'pipe',
+      serviceName: 'wiki-worker-extract-html',
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+    const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
 
     try {
       if (!isHtmlWiki(htmlWikiPath)) {
@@ -528,8 +577,12 @@ export class Wiki implements IWikiService {
   }
 
   public async packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void> {
-    const nativeWorker = (WikiWorkerFactory as () => Worker)();
-    const worker = createWorkerProxy<WikiWorker>(nativeWorker);
+    const nativeWorker = WikiWorkerFactory({
+      stdio: 'pipe',
+      serviceName: 'wiki-worker-packet-html',
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+    const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
 
     try {
       await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation) });
@@ -600,8 +653,20 @@ export class Wiki implements IWikiService {
         /* ignore */
       }
     }
+    // Cancel any pending startWiki promise before removing listeners.
+    // When the worker is terminated before the 'booted' message arrives,
+    // the exit handler may not fire (removeAllListeners removes it first),
+    // so we must explicitly reject the promise to prevent a 60s timeout
+    // from firing later and causing an unhandled rejection.
+    if (workerData?.rejectStartWiki) {
+      try {
+        workerData.rejectStartWiki(new Error(`Wiki ${id} stopped during workspace restart`));
+      } catch {
+        /* Promise may already be settled */
+      }
+    }
     // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
-    // Must be done after terminateWorker/detachWorker so the workerAdapter proxy listeners remain intact during beforeExit/terminate.
+    // Must be done after terminateWorker/detachWorker so the RPC proxy listeners remain intact during beforeExit/terminate.
     if (nativeWorker !== undefined) {
       try {
         nativeWorker.removeAllListeners();
@@ -615,7 +680,7 @@ export class Wiki implements IWikiService {
   }
 
   /**
-   * Stop all worker_thread, use and await this before app.quit()
+   * Stop all wiki utility processes, use and await this before app.quit()
    */
   public async stopAllWiki(): Promise<void> {
     logger.debug('stopAllWiki', {
@@ -911,6 +976,11 @@ export class Wiki implements IWikiService {
           // wait some time and restart the wiki will solve this
           logger.warn('startWiki handle error, restarting', { function: 'startWiki', error });
           await this.restartWiki(workspace);
+        } else if ((error as Error).message.includes('stopped during workspace restart')) {
+          // startWiki was cancelled by stopWiki (e.g. from restartWorkspaceViewService).
+          // The restart flow already handles re-initialization, so swallow the error
+          // here to prevent an unhandled rejection from the original initializeWorkspaceView call.
+          logger.info('startWiki cancelled by stopWiki, restart flow will handle re-init', { function: 'startWiki', workspaceId: id });
         } else {
           logger.warn('unexpected error, throw it', { function: 'startWiki' });
           throw error;
@@ -941,6 +1011,15 @@ export class Wiki implements IWikiService {
 
     const userName = await this.authService.getUserName(workspace);
     if (!isSubWiki) {
+      // Wait for any in-flight startWiki to settle before stopping.
+      // This prevents a race where stopWiki terminates a worker that is still
+      // booting (e.g. during app startup), which causes ERR_ABORTED (-3) in the
+      // webview and leaves the view blank after reload.
+      const pendingStart = this.startWikiPromises[id];
+      if (pendingStart) {
+        logger.info(`restartWiki: waiting for in-flight startWiki for ${id}`, { function: 'restartWiki' });
+        await pendingStart.catch(() => {});
+      }
       await this.stopWiki(id);
       await this.startWiki(id, userName);
     }

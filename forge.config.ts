@@ -30,8 +30,10 @@ const config: ForgeConfig = {
     ],
     icon: 'build-resources/icon.ico',
     asar: {
-      // Unpack worker files, native modules path, and ALL .node binaries (including better-sqlite3)
-      unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/native_modules/path.txt,**/{.**,**}/**/*.node}',
+      // Unpack worker files, utility process files, native modules path, and ALL .node binaries (including better-sqlite3)
+      // UtilityProcess files must be unpacked because utilityProcess.fork() reads from the
+      // real filesystem, unlike Worker which can read from inside an asar.
+      unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/*Worker*,**/.webpack/main/native_modules/path.txt,**/{.**,**}/**/*.node}',
     },
     extraResource: ['localization', 'template/wiki', 'build-resources/tidgiMiniWindow@2x.png', 'build-resources/tidgiMiniWindowTemplate@2x.png'],
     // @ts-expect-error - mac config is valid

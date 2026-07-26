@@ -1,11 +1,10 @@
-import { createWorkerProxy } from '@services/libs/workerAdapter';
-import { dialog, net } from 'electron';
+import { app, dialog, net, type UtilityProcess } from 'electron';
+import { createWorkerMethodProxy, type WorkerPeer } from 'electron-ipc-cat/host';
+import { backOff } from 'exponential-backoff';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observer } from 'rxjs';
-import { Worker } from 'worker_threads';
-// @ts-expect-error - Vite worker import with ?nodeWorker query
-import GitWorkerFactory from './gitWorker?nodeWorker';
+import GitWorkerFactory from './gitWorker?utilityProcess';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
@@ -18,6 +17,7 @@ import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkerInfo } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace, type IWorkspaceGitScope } from '@services/workspaces/interface';
@@ -31,7 +31,9 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 @injectable()
 export class Git implements IGitService {
   private gitWorker?: GitWorker;
-  private nativeWorker?: Worker;
+  private nativeWorker?: UtilityProcess;
+  /** Set to true when the worker is being intentionally stopped, to suppress auto-restart. */
+  private stopping = false;
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
   private operationLocks = new Map<string, Promise<void>>();
@@ -135,24 +137,121 @@ export class Git implements IGitService {
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
 
-    logger.debug(`Initializing gitWorker`, {
+    logger.debug(`Initializing gitWorker as utility process`, {
       function: 'Git.initWorker',
       LOCAL_GIT_DIRECTORY,
     });
 
-    try {
-      // Use Vite's ?nodeWorker import instead of dynamic Worker path
-      const worker = (GitWorkerFactory as () => Worker)();
-      this.nativeWorker = worker;
-      this.gitWorker = createWorkerProxy<GitWorker>(worker);
-      logger.debug('gitWorker initialized successfully', { function: 'Git.initWorker' });
-    } catch (error) {
-      logger.error('Failed to initialize gitWorker', {
-        function: 'Git.initWorker',
+    // Use backOff for crash auto-restart with exponential delay and attempt limiting.
+    // The function spawns the worker and returns a promise that rejects on crash,
+    // resolves on clean exit. backOff handles retry timing so we don't maintain
+    // manual crash counters and timers.
+    void backOff(
+      () => this.spawnGitWorkerAndWaitForExit(),
+      {
+        numOfAttempts: 6, // 1 initial spawn + 5 restart attempts
+        startingDelay: 1_000,
+        maxDelay: 30_000,
+        timeMultiple: 2,
+        retry: (error: unknown) => {
+          // Don't retry if we're intentionally stopping
+          if (this.stopping) return false;
+          logger.warn('gitWorker will be restarted by backOff', { error });
+          return true;
+        },
+      },
+    ).then(() => {
+      logger.info('gitWorker utility process exited cleanly', { function: 'Git.initWorker.cleanExit' });
+    }).catch((error: unknown) => {
+      logger.error('gitWorker exhausted all restart attempts, giving up', {
+        function: 'Git.initWorker.exhausted',
         error,
       });
-      throw error;
+    });
+  }
+
+  /**
+   * Spawn the Git worker as an Electron UtilityProcess and return a promise
+   * that resolves on clean exit (code 0) or rejects on crash (non-zero exit).
+   *
+   * UtilityProcess provides true process-level crash isolation — if dugite's
+   * native libgit2 segfaults, only the utility process dies, not the main
+   * Electron process.
+   */
+  private spawnGitWorkerAndWaitForExit(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const child = GitWorkerFactory({
+        stdio: 'pipe',
+        serviceName: 'git-worker',
+        // dugite loads native libgit2; on macOS this needs unsigned library loading
+        allowLoadingUnsignedLibraries: process.platform === 'darwin',
+      });
+
+      this.nativeWorker = child;
+      this.gitWorker = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
+
+      // Pipe stdout/stderr to our logger for debugging
+      child.stdout?.on('data', (data: Buffer) => {
+        logger.debug(`gitWorker stdout: ${data.toString().trim()}`, { function: 'Git.spawnGitWorkerAndWaitForExit.stdout' });
+      });
+      child.stderr?.on('data', (data: Buffer) => {
+        logger.warn(`gitWorker stderr: ${data.toString().trim()}`, { function: 'Git.spawnGitWorkerAndWaitForExit.stderr' });
+      });
+
+      child.on('exit', (code: number) => {
+        this.nativeWorker = undefined;
+        this.gitWorker = undefined;
+
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`gitWorker utility process crashed with exit code ${code}`));
+        }
+      });
+    });
+  }
+
+  public async getWorkerInfo(): Promise<IWorkerInfo | undefined> {
+    if (!this.nativeWorker) return undefined;
+    const pid = this.nativeWorker.pid ?? null;
+
+    // Get CPU and RSS from Electron's app metrics
+    const metricsMap = new Map<number, Electron.ProcessMetric>();
+    for (const metric of app.getAppMetrics()) {
+      metricsMap.set(metric.pid, metric);
     }
+    const metric = pid !== null ? metricsMap.get(pid) : undefined;
+
+    // Get heap usage from the worker itself via RPC
+    let heapUsed_MB: number | null = null;
+    let heapTotal_MB: number | null = null;
+    let rss_MB: number | null = null;
+    if (this.gitWorker) {
+      try {
+        const mem = await this.gitWorker.getMemoryUsage();
+        heapUsed_MB = mem.heapUsed_MB;
+        heapTotal_MB = mem.heapTotal_MB;
+        rss_MB = mem.rss_MB;
+      } catch {
+        // worker may be busy or not yet ready
+      }
+    }
+    // Fall back to app metrics RSS if worker RPC failed
+    if (rss_MB === null && metric) {
+      rss_MB = Math.round(metric.memory.workingSetSize / 1024);
+    }
+
+    return {
+      workspaceID: 'git-worker',
+      workspaceName: 'Git Worker',
+      port: null,
+      isRunning: this.nativeWorker !== undefined,
+      pid,
+      cpu_percent: metric ? Math.round(metric.cpu.percentCPUUsage * 100) / 100 : null,
+      rss_MB,
+      heapUsed_MB,
+      heapTotal_MB,
+    };
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
