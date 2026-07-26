@@ -835,10 +835,10 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // The over.id itself is still correct (collision detection resolves the
       // right target), but over.rect can be stale.
       const activeRect = active.rect.current.translated;
-      // Prefer the pointer Y derived from the initial pointerdown + delta,
-      // which is deterministic across platforms. Fall back to the global
-      // pointermove listener, then to rect centers for rare edge cases.
-      const pointerY = activatorPointerY ?? pointerYReference.current ?? (activeRect
+      // Prefer the live pointer captured before dnd-kit's handlers run.
+      // The cumulative drag delta is relative to the initial layout and can
+      // become inaccurate after an earlier drop rearranges sidebar items.
+      const pointerY = pointerYReference.current ?? activatorPointerY ?? (activeRect
         ? activeRect.top + activeRect.height / 2
         : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
       const referenceY = pointerY;

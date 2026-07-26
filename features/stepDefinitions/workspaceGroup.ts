@@ -317,10 +317,11 @@ async function waitForDragIntent(
   }
 
   const deadline = Date.now() + PLAYWRIGHT_TIMEOUT;
+  const maxPointerRefreshAttempts = 120;
   let latestCoordinates = initialCoordinates;
   let attempts = 0;
 
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && attempts < maxPointerRefreshAttempts) {
     attempts++;
     try {
       latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: true });
@@ -335,11 +336,13 @@ async function waitForDragIntent(
       return latestCoordinates;
     }
 
-    // Nudge downward inside the target when another sidebar item steals hit-testing.
-    latestCoordinates = {
-      targetX: latestCoordinates.targetX,
-      targetY: latestCoordinates.targetY + 4,
-    };
+    // Moving to the same coordinate does not necessarily emit another pointer
+    // event. Jitter within the target's center zone, then return to the exact
+    // target coordinate on the next iteration so dnd-kit recomputes intent
+    // after layout changes caused by the previous drag.
+    const jitterY = latestCoordinates.targetY + (attempts % 2 === 0 ? -2 : 2);
+    await world.currentWindow.mouse.move(latestCoordinates.targetX, jitterY);
+    await waitForTwoAnimationFrames(world);
   }
 
   throw await buildDragIntentError(
