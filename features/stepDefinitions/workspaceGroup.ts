@@ -317,7 +317,8 @@ async function waitForDragIntent(
   }
 
   const deadline = Date.now() + PLAYWRIGHT_TIMEOUT;
-  const maxPointerRefreshAttempts = 120;
+  const maxPointerRefreshAttempts = 20;
+  const maxStateSettlementChecks = 8;
   let latestCoordinates = initialCoordinates;
   let attempts = 0;
 
@@ -329,11 +330,15 @@ async function waitForDragIntent(
       latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: false });
     }
     await world.currentWindow.mouse.move(latestCoordinates.targetX, latestCoordinates.targetY, { steps: 3 });
-    await waitForTwoAnimationFrames(world);
-
-    const matchingIntentCount = await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).count();
-    if (matchingIntentCount > 0) {
-      return latestCoordinates;
+    // Let the debounced drag-state update run without another pointer event
+    // cancelling its zero-delay timer. Busy full-suite runs can require more
+    // than the first two animation frames even though isolated runs do not.
+    for (let settlementCheck = 0; settlementCheck < maxStateSettlementChecks; settlementCheck++) {
+      await waitForTwoAnimationFrames(world);
+      const matchingIntentCount = await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).count();
+      if (matchingIntentCount > 0) {
+        return latestCoordinates;
+      }
     }
 
     // Moving to the same coordinate does not necessarily emit another pointer

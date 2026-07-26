@@ -45,6 +45,7 @@ Feature: Workspace Grouping
     Then workspaces "Zone Test Alpha" and "Zone Test Beta" should share a group
     When I drag workspace "Zone Test Delta" to the top zone of workspace "Zone Test Alpha"
     Then workspace "Zone Test Delta" should appear before workspace "Zone Test Alpha"
+    And workspace "Zone Test Delta" should be ungrouped
     And workspaces "Zone Test Alpha" and "Zone Test Beta" should share a group
     When I hover workspace "Zone Test Delta" over workspace "Zone Test Beta"
     Then workspace "Zone Test Beta" should show "group" drag intent
