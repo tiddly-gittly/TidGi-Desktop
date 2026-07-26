@@ -124,12 +124,12 @@
     },
     "fileSystemPathFilterEnable": {
       "type": "boolean",
-      "description": "Enable custom file system path filter",
+      "description": "Also match tiddlers with custom filter expressions, in addition to tagNames/includeTagTree",
       "default": false
     },
     "fileSystemPathFilter": {
       "type": ["string", "null"],
-      "description": "Custom TiddlyWiki filter for routing tiddlers to sub-wikis",
+      "description": "Custom TiddlyWiki filter expressions for routing tiddlers (in addition to tags; one per line)",
       "default": null
     },
     "rootTiddler": {
