@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
 import { ICreateNewAgentTab, TabState, TabType } from '../../types/tab';
+import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
 
 interface CreateNewAgentContentProps {
   tab: ICreateNewAgentTab;
@@ -64,6 +65,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   const [promptSchema, setPromptSchema] = useState<RJSFSchema | null>(null);
   const temporaryAgentDefinitionIdReference = useRef<string | null>(tab.agentDefId ?? null);
   const previewAgentIdReference = useRef<string | null>(null);
+  const [agentDefinitionSaveQueue] = useState(() => createAgentDefinitionSaveQueue(async definition => await window.service.agentDefinition.updateAgentDef(definition)));
 
   useEffect(() => {
     temporaryAgentDefinitionIdReference.current = temporaryAgentDefinition?.id ?? tab.agentDefId ?? null;
@@ -130,7 +132,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
           setIsLoading(true);
           // Save the definition from this render before creating the preview.
           // The background auto-save is only a fallback and may still be pending.
-          await window.service.agentDefinition.updateAgentDef(temporaryAgentDefinition);
+          await agentDefinitionSaveQueue.save(temporaryAgentDefinition);
           const previewAgent = await window.service.agentInstance.createAgent(
             temporaryAgentDefinition.id,
             { preview: true },
@@ -146,7 +148,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     };
 
     void createPreviewAgent();
-  }, [currentStep, temporaryAgentDefinition, previewAgentId]);
+  }, [agentDefinitionSaveQueue, currentStep, temporaryAgentDefinition, previewAgentId]);
 
   // Auto-save to the backend after edits settle. Cancelling the previous timer
   // prevents an older definition from overwriting a newer prompt configuration.
@@ -157,7 +159,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
 
     const definitionToSave = temporaryAgentDefinition;
     const saveTimer = setTimeout(() => {
-      void window.service.agentDefinition.updateAgentDef(definitionToSave).catch((error: unknown) => {
+      void agentDefinitionSaveQueue.save(definitionToSave).catch((error: unknown) => {
         console.error('Failed to auto-save agent definition:', error);
       });
     }, 1000);
@@ -165,7 +167,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     return () => {
       clearTimeout(saveTimer);
     };
-  }, [temporaryAgentDefinition]);
+  }, [agentDefinitionSaveQueue, temporaryAgentDefinition]);
 
   // Only initialize from tab on mount, don't sync back
   // The component is the source of truth for currentStep during its lifecycle
@@ -181,6 +183,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       // Cleanup temporary agent definition and preview agent when tab closes.
       // Delete preview agent instance BEFORE definition to avoid FK constraint failures.
       const cleanup = async () => {
+        await agentDefinitionSaveQueue.waitForIdle();
         const currentPreviewAgentId = previewAgentIdReference.current;
         const currentTemporaryAgentDefinitionId = temporaryAgentDefinitionIdReference.current;
 
@@ -201,14 +204,14 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       };
       void cleanup();
     };
-  }, []);
+  }, [agentDefinitionSaveQueue]);
 
   const handleNext = async () => {
     if (currentStep < STEPS.length - 1) {
       // Force save before advancing to next step (especially step 3)
       if (temporaryAgentDefinition?.id) {
         try {
-          await window.service.agentDefinition.updateAgentDef(temporaryAgentDefinition);
+          await agentDefinitionSaveQueue.save(temporaryAgentDefinition);
         } catch (error) {
           console.error('❌ Failed to force save agent definition:', error);
         }

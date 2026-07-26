@@ -108,7 +108,6 @@
     "react-window": "^2.3.0",
     "react-window-infinite-loader": "^2.0.1",
     "reflect-metadata": "0.2.2",
-    "registry-js": "1.16.1",
     "rotating-file-stream": "^3.2.9",
     "rxjs": "7.8.2",
     "semver": "7.8.5",
@@ -193,6 +192,9 @@
     "vite-plugin-electron-utility-process": "1.0.2",
     "vite-plugin-monaco-editor": "^1.1.0",
     "vitest": "^4.1.10"
+  },
+  "optionalDependencies": {
+    "registry-js": "1.16.1"
   },
   "private": false
 }

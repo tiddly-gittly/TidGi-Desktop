@@ -95,7 +95,7 @@ jobs:
         run: git config --global url."https://github.com/".insteadOf "git@github.com:"
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Rebuild native modules for Electron (non-Windows)
         if: matrix.platform != 'win'
         run: |

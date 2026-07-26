@@ -155,8 +155,13 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
     // For sub-wiki, show sync progress in main workspace
     const workspaceIDForNotification = isWikiWorkspace(workspace) && workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     void (async () => {
-      const { gitUserName, email } = configs.userInfo ?? defaultGitInfo;
-      await ensureGitIdentity(configs.dir, gitUserName, email ?? defaultGitInfo.email);
+      // commitOnly never rebases, and git-sync-js already supplies commit
+      // identity through the commit environment. Avoid persisting unnecessary
+      // repository config for local-backup-only workspaces.
+      if (configs.commitOnly !== true) {
+        const { gitUserName, email } = configs.userInfo ?? defaultGitInfo;
+        await ensureGitIdentity(configs.dir, gitUserName, email ?? defaultGitInfo.email);
+      }
       if (isHtmlWikiWorkspace(workspace)) {
         const scope = getWorkspaceGitScope(workspace);
         if (scope?.managedRelativePath) {

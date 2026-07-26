@@ -800,10 +800,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
   const deriveDragState = useCallback((event: Pick<DragMoveEvent, 'active' | 'over' | 'delta' | 'collisions' | 'activatorEvent'>): IDragState => {
     const { active, over, delta, activatorEvent } = event;
-    // Compute the live pointer Y from the initial pointerdown position plus
-    // the cumulative drag delta. This is more reliable than the global
-    // pointermove listener (pointerYReference), which can miss events on
-    // Windows CI/Electron/Playwright and cause incorrect intent zones.
+    // Keep an activator-plus-delta fallback for environments where the
+    // capture-phase pointermove listener misses an event.
     const activatorPointerY = activatorEvent instanceof PointerEvent || activatorEvent instanceof MouseEvent
       ? activatorEvent.clientY + delta.y
       : undefined;
