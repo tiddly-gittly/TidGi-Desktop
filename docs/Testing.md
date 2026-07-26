@@ -66,7 +66,7 @@ features/                # E2E tests
 └── supports/           # Test utilities
 
 out/                    # `test:prepare-e2e` Bundled production app to test
-test-artifacts/xxx-scenario-name/userData-test/           # User setting folder created during `test:e2e`
+test-artifacts/xxx-run-id-scenario-name/userData-test/    # Run- and scenario-isolated E2E settings
 userData-dev/           # User setting folder created during `start:dev`
 wiki-test/           # containing wiki folders created during `test:e2e`
 wiki-dev/           # containing wiki folders created during `start:dev`
@@ -116,9 +116,10 @@ Only use VSCode tool to read file. Don't ever use shell command to read file. Us
 
 ## User profile
 
-When running tests — especially E2E or other tests that start an Electron instance — the test runner will set Electron's `userData` to `test-artifacts/xxx-scenario-name/userData-test/`. This ensures the test process uses a separate configuration and data directory from any development or production TidGi instance, and prevents accidental triggering of Electron's single-instance lock.
+When running tests — especially E2E or other tests that start an Electron instance — the test runner prefixes each scenario with a random run ID and sets Electron's `userData` to `test-artifacts/xxx-run-id-scenario-name/userData-test/`. This keeps concurrent runs of the same scenario from sharing configuration, wiki files, or logs.
 
-- `src/constants/appPaths.ts`: in test mode we call `app.setPath('userData', path.resolve(sourcePath, '..', 'test-artifacts/xxx-scenario-name/userData-test/'))` to redirect settings and cache.
-- `src/helpers/singleInstance.ts`: the main process uses `app.requestSingleInstanceLock()` to enforce single-instance behavior; without a separate `userData` directory, a running local TidGi could conflict with test instances and cause one of them to exit.
+- `features/stepDefinitions/cleanup.ts`: creates a run-scoped scenario slug. Set `TIDGI_E2E_RUN_ID` only when a deterministic identifier is needed.
+- `src/constants/appPaths.ts`: redirects settings and cache to the run-scoped scenario directory.
+- `src/helpers/singleInstance.ts` and `src/services/deepLink/index.ts`: skip Electron's global single-instance lock in test mode. Production still enforces a single instance.
 
 For this reason, test workflows in this project (for example when running `pnpm test:e2e` or CI integration tests) need to do with `cross-env NODE_ENV=test` so it creates isolate state in `userData-test`.

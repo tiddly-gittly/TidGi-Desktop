@@ -1,18 +1,22 @@
 import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
+import { randomBytes } from 'node:crypto';
 import path from 'path';
 import { killProcessTree } from '../supports/killProcessTree';
 import type { MockAnalyticsServer } from '../supports/mockAnalytics';
-import { makeSlugPath } from '../supports/paths';
+import { makeRunScopedScenarioSlug } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
 import { clearTidgiMiniWindowSettings } from './tidgiMiniWindow';
 import { clearHibernationTestData, clearSubWikiRoutingTestData } from './wiki';
 
+const testRunIdentifier = process.env.TIDGI_E2E_RUN_ID ??
+  `${process.pid.toString(36)}-${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`;
+
 Before(async function(this: ApplicationWorld, { pickle }) {
   // Initialize scenario-specific paths
   this.scenarioName = pickle.name;
-  this.scenarioSlug = makeSlugPath(pickle.name, 60);
+  this.scenarioSlug = makeRunScopedScenarioSlug(pickle.name, testRunIdentifier);
   this.scenarioTags = pickle.tags.map((tag) => tag.name);
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);

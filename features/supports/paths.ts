@@ -81,6 +81,16 @@ export const makeSlugPath = (input: string | undefined, maxLength = 120) => {
 };
 
 /**
+ * Prefix scenario artifacts with a run identifier so two E2E processes can
+ * execute the same scenario from the same checkout without sharing userData,
+ * wiki files, logs, or Electron state.
+ */
+export function makeRunScopedScenarioSlug(scenarioName: string, runId: string): string {
+  const safeRunId = makeSlugPath(runId, 20);
+  return makeSlugPath(`${safeRunId}-${scenarioName}`, 60);
+}
+
+/**
  * Get base path for test artifacts for a specific scenario
  * This is the foundation for all scenario-specific paths
  */
