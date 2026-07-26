@@ -78,9 +78,6 @@ export default async (
         { segments: ['tiddlywiki', 'plugins', 'tiddlywiki', 'filesystem'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'plugins', 'tiddlywiki', 'tiddlyweb'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'tiddlywiki.js'], critical: 'tiddlywiki' },
-        // better-sqlite3: electron-rebuild compiles from source for Electron
-        // (prebuilds/ are deleted before rebuild in CI to force compilation)
-        { segments: ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'], critical: 'better-sqlite3' },
         { segments: ['better-sqlite3', 'package.json'], critical: 'better-sqlite3' },
         { segments: ['better-sqlite3', 'lib'], critical: 'better-sqlite3' },
         // nsfw native module
@@ -117,6 +114,28 @@ export default async (
         } else {
           copyWithTracking(source, destination, copyOptions, criticalPackage, failures);
         }
+      }
+
+      // better-sqlite3 v13 can use either an Electron source build (CI removes
+      // prebuilds before electron-rebuild) or its N-API prebuilds (local
+      // installs). Copy whichever usable representation is present.
+      const betterSqliteBuild = path.join(sourceNodeModulesFolder, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+      if (fs.existsSync(betterSqliteBuild)) {
+        copyWithTracking(
+          betterSqliteBuild,
+          path.join(cwd, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
+          { dereference: true },
+          'better-sqlite3',
+          failures,
+        );
+      } else {
+        copyWithTracking(
+          path.join(sourceNodeModulesFolder, 'better-sqlite3', 'prebuilds'),
+          path.join(cwd, 'node_modules', 'better-sqlite3', 'prebuilds'),
+          { dereference: true },
+          'better-sqlite3',
+          failures,
+        );
       }
 
       // MCP SDK — non-critical
