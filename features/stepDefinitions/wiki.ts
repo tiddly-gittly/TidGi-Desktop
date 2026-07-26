@@ -59,11 +59,12 @@ const BACKOFF_OPTIONS = {
  */
 export async function waitForLogMarker(
   world: ApplicationWorld,
-  searchString: string,
+  searchString: string | string[],
   errorMessage: string,
   maxWaitMs = CUCUMBER_GLOBAL_TIMEOUT,
   logFilePattern = '*',
 ): Promise<void> {
+  const searchStrings = Array.isArray(searchString) ? searchString : [searchString];
   const logPath = getLogPath(world);
   // Support multiple patterns separated by '|', and '*' for all log files
   const patterns = logFilePattern.split('|');
@@ -83,7 +84,7 @@ export async function waitForLogMarker(
 
           for (const file of logFiles) {
             const content = await fs.readFile(path.join(logPath, file), 'utf-8');
-            if (content.includes(searchString)) {
+            if (searchStrings.some(marker => content.includes(marker))) {
               return;
             }
           }
@@ -744,7 +745,12 @@ Then('I wait for tiddler {string} to be added by watch-fs', async function(this:
 Then('I wait for tiddler {string} to be updated by watch-fs', async function(this: ApplicationWorld, tiddlerTitle: string) {
   await waitForLogMarker(
     this,
-    `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
+    [
+      `[test-id-WATCH_FS_TIDDLER_UPDATED] ${tiddlerTitle}`,
+      // A filesystem rename that also changes the tiddler title is correctly
+      // represented by the upstream adaptor as delete(old) + add(new).
+      `[test-id-WATCH_FS_TIDDLER_ADDED] ${tiddlerTitle}`,
+    ],
     `Tiddler "${tiddlerTitle}" was not updated within timeout`,
   );
 });

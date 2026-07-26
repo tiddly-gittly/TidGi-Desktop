@@ -86,9 +86,9 @@ Feature: Filesystem Plugin
     Then I should see "Modified content from external editor" in the browser view content
     When I delete file "{tmpDir}/wiki/tiddlers/TestTiddler.tid"
     Then I wait for tiddler "TestTiddler" to be deleted by watch-fs
-    Then I should see "佚失条目" in the browser view content
+    Then I should see a "missing TestTiddler" element in browser view with selector ".tc-tiddler-frame[data-tiddler-title='TestTiddler'].tc-tiddler-missing"
 
     # --- Part 5: Deleting open tiddler (must be last since it destroys Index.tid) ---
     When I delete file "{tmpDir}/wiki/tiddlers/Index.tid"
     Then I wait for tiddler "Index" to be deleted by watch-fs
-    Then I should see "佚失条目 \"Index\"" in the browser view DOM
+    Then I should see a "missing Index tiddler" element in browser view with selector ".tc-tiddler-frame[data-tiddler-title='Index'].tc-tiddler-missing"

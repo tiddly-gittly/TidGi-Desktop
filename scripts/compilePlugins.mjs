@@ -74,9 +74,8 @@ const PLUGINS = [
     name: 'watch-filesystem-adaptor',
     sourceFolder: '../src/services/wiki/plugin/watchFileSystemAdaptor',
     entryPoints: [
-      'loader.ts',
       'in-tagtree-of.ts',
-      'WatchFileSystemAdaptor.ts',
+      'nsfwWatcher.ts',
       'routingUtilities.ts',
     ],
   },
