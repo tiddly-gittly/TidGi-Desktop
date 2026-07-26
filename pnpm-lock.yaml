@@ -264,8 +264,8 @@ importers:
         specifier: ^2.3.3
         version: 2.3.3
       tiddlywiki:
-        specifier: 5.4.1
-        version: 5.4.1
+        specifier: github:linonetwo/TiddlyWiki5#feat/watch-filesystem-adaptor-hardening
+        version: https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d
       tidgi-shared:
         specifier: 0.1.6
         version: 0.1.6(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2)
@@ -7275,8 +7275,9 @@ packages:
   throat@6.0.2:
     resolution: {integrity: sha512-WKexMoJj3vEuK0yFEapj8y64V0A6xcuPuK9Gt1d0R+dzCSJc0lHqQytAbSB4cDAK0dWh4T0E2ETkoLE2WZ41OQ==}
 
-  tiddlywiki@5.4.1:
-    resolution: {integrity: sha512-5Pnk7j8cUMoQHD0CarOWd4ixITURsN4DJxLfg8AGYSMiQoOHH6bp8JDCAgSdvZHRCQmvXtbm5FRxBFBT6WG24A==}
+  tiddlywiki@https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d:
+    resolution: {gitHosted: true, tarball: https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d}
+    version: 5.5.0-prerelease
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -15527,7 +15528,9 @@ snapshots:
 
   throat@6.0.2: {}
 
-  tiddlywiki@5.4.1: {}
+  tiddlywiki@https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d:
+    dependencies:
+      chokidar: 4.0.3
 
   tidgi-shared@0.1.6(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2):
     dependencies:
