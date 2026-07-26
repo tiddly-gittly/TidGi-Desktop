@@ -265,7 +265,7 @@ importers:
         version: 2.3.3
       tiddlywiki:
         specifier: github:linonetwo/TiddlyWiki5#feat/watch-filesystem-adaptor-hardening
-        version: https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d
+        version: https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/2f1588380eb4b3618278b39cdda81ca46b5e6588
       tidgi-shared:
         specifier: 0.1.6
         version: 0.1.6(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2)
@@ -7275,8 +7275,8 @@ packages:
   throat@6.0.2:
     resolution: {integrity: sha512-WKexMoJj3vEuK0yFEapj8y64V0A6xcuPuK9Gt1d0R+dzCSJc0lHqQytAbSB4cDAK0dWh4T0E2ETkoLE2WZ41OQ==}
 
-  tiddlywiki@https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d:
-    resolution: {gitHosted: true, tarball: https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d}
+  tiddlywiki@https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/2f1588380eb4b3618278b39cdda81ca46b5e6588:
+    resolution: {gitHosted: true, integrity: sha512-E/oZ+Q97RcLEBA1bMW+IV3hUpPRZUTM9+JS92Zoxzcs/Giv3J7YtkS74zQlligMO8t43d149wGfjkT4NYCPbAg==, tarball: https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/2f1588380eb4b3618278b39cdda81ca46b5e6588}
     version: 5.5.0-prerelease
     engines: {node: '>=20.0.0'}
     hasBin: true
@@ -15528,7 +15528,7 @@ snapshots:
 
   throat@6.0.2: {}
 
-  tiddlywiki@https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/1621e438b329d2d0dbb14c25cc4e83c0c37b295d:
+  tiddlywiki@https://codeload.github.com/linonetwo/TiddlyWiki5/tar.gz/2f1588380eb4b3618278b39cdda81ca46b5e6588:
     dependencies:
       chokidar: 4.0.3
 

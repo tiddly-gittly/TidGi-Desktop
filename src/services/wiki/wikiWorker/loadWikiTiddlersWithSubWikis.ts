@@ -69,13 +69,10 @@ export function buildWorkspaceSaveFilter(workspace: IWikiWorkspace): string {
     runs.push(
       `[title[${operand}]]`,
       `[tag[${operand}]]`,
-      `[get[draft.of]title[${operand}]]`,
-      `[get[draft.of]tag[${operand}]]`,
     );
     if (workspace.includeTagTree) {
       runs.push(
         `[in-tagtree-of:inclusive[${operand}]]`,
-        `[get[draft.of]in-tagtree-of:inclusive[${operand}]]`,
       );
     }
   }

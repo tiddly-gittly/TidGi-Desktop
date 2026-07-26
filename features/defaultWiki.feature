@@ -18,7 +18,7 @@ Feature: TidGi Default Wiki
     And the window title should contain "太记"
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     And the browser view should be loaded and visible
-    And I should see "我的 TiddlyWiki" in the browser view content
+    And I should see a "wiki site title" element in browser view with selector ".tc-site-title"
 
     # --- Part 2: Create new main workspace via UI from top sidebar ---
     And I clear log lines containing "[test-id-WORKSPACE_CREATED]"
@@ -41,13 +41,13 @@ Feature: TidGi Default Wiki
     Then I should see a "wiki2 workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     When I click on a "wiki2 workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki2')"
     And the browser view should be loaded and visible
-    Then I should see "我的 TiddlyWiki" in the browser view content
+    Then I should see a "wiki2 site title" element in browser view with selector ".tc-site-title"
 
     # --- Part 3: Configure root tiddler to use lazy-load ---
     # Switch back to default wiki workspace (exclude wiki2 match)
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki'):not(:has-text('wiki2'))"
     And the browser view should be loaded and visible
-    And I should see "我的 TiddlyWiki" in the browser view content
+    And I should see a "default wiki site title" element in browser view with selector ".tc-site-title"
     When I modify file "wiki-test/wiki/tiddlers/Index.tid" to contain "Test content for lazy-all verification after restart"
     And I should not see "Test content for lazy-all verification after restart" in the browser view content
     When I update workspace "wiki" settings:

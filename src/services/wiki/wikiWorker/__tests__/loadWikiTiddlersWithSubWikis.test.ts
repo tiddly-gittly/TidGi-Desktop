@@ -16,7 +16,7 @@ function workspace(overrides: Partial<IWikiWorkspace> & Pick<IWikiWorkspace, 'id
 }
 
 describe('dynamic store workspace configuration', () => {
-  it('compiles direct, draft, tag-tree and custom routing into save filters', () => {
+  it('compiles direct, tag-tree and custom routing into save filters', () => {
     const filter = buildWorkspaceSaveFilter(workspace({
       id: 'sub',
       wikiFolderLocation: '/wiki/sub',
@@ -28,9 +28,8 @@ describe('dynamic store workspace configuration', () => {
 
     expect(filter).toContain('[title[Root Tag]]');
     expect(filter).toContain('[tag[Root Tag]]');
-    expect(filter).toContain('[get[draft.of]tag[Root Tag]]');
     expect(filter).toContain('[in-tagtree-of:inclusive[Root Tag]]');
-    expect(filter).toContain('[get[draft.of]in-tagtree-of:inclusive[Root Tag]]');
+    expect(filter).not.toContain('draft.of');
     expect(filter).toContain('[has[public]] [prefix[$:/Deck/]]');
   });
 

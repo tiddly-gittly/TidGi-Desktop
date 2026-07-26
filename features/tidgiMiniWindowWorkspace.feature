@@ -70,7 +70,7 @@ Feature: TidGi Mini Window Workspace Switching
     # Verify sidebar is visible
     And I should see a "main sidebar" element with selector "[data-testid='main-sidebar']"
     # Verify browser view content is visible and wiki workspace is active
-    And I should see "我的 TiddlyWiki" in the browser view content
+    And I should see a "wiki site title" element in browser view with selector ".tc-site-title"
     And I should see a "wiki workspace active button" element with selector "[data-active='true']"
 
   Scenario: Enabling sync workspace automatically hides sidebar
