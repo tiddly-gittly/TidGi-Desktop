@@ -5,7 +5,6 @@ import type { RJSFSchema } from '@rjsf/utils';
 import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/scheduledTaskManager';
-import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChatTabContent } from '../../../ChatTabContent';
@@ -310,35 +309,32 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
     void loadSchema();
   }, [agentDefinition?.agentFrameworkID]);
 
-  // Auto-save to backend whenever agentDefinition changes (debounced)
-  const saveToBackendDebounced = useDebouncedCallback(
-    async () => {
-      if (!agentDefinition) return;
-
-      try {
-        setIsSaving(true);
-
-        // Auto-save agent definition changes
-
-        await window.service.agentDefinition.updateAgentDef(agentDefinition);
-
-        // Agent definition auto-saved successfully
-      } catch (error) {
-        void window.service.native.log('error', 'Failed to auto-save agent definition', { error, agentDefId: agentDefinition.id });
-        console.error('Failed to save agent definition:', error);
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    [agentDefinition],
-    1000,
-  );
-
+  // Auto-save after edits settle. Cleanup is essential: a stale save must not
+  // overwrite a newer prompt configuration after the preview has been created.
   useEffect(() => {
-    if (agentDefinition) {
-      void saveToBackendDebounced();
+    if (!agentDefinition) {
+      return;
     }
-  }, [agentDefinition, saveToBackendDebounced]);
+
+    const definitionToSave = agentDefinition;
+    const saveTimer = setTimeout(() => {
+      void (async () => {
+        try {
+          setIsSaving(true);
+          await window.service.agentDefinition.updateAgentDef(definitionToSave);
+        } catch (error) {
+          void window.service.native.log('error', 'Failed to auto-save agent definition', { error, agentDefId: definitionToSave.id });
+          console.error('Failed to save agent definition:', error);
+        } finally {
+          setIsSaving(false);
+        }
+      })();
+    }, 1000);
+
+    return () => {
+      clearTimeout(saveTimer);
+    };
+  }, [agentDefinition]);
 
   // Create preview agent for testing - ensure latest config is saved first
   useEffect(() => {
@@ -359,8 +355,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
           setPreviewAgentId(null);
         }
 
-        // Flush any pending debounced saves and force save latest config
-        await saveToBackendDebounced.flush();
+        // Persist the definition from this render before creating the preview.
         await window.service.agentDefinition.updateAgentDef(agentDefinition);
 
         // Create new preview agent
@@ -399,7 +394,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
         clearTimeout(debounceTimer);
       };
     }
-  }, [agentDefinition, saveToBackendDebounced, forceRecreatePreview]); // Recreate preview agent when the agent definition changes or when forced to recreate
+  }, [agentDefinition, forceRecreatePreview]); // Recreate preview agent when the agent definition changes or when forced to recreate
 
   // Cleanup preview agent when component unmounts
   useEffect(() => {
