@@ -27,12 +27,13 @@ const BROWSER_VIEW_RETRY_DELAY_MS = 100;
 
 type BrowserViewBackgroundMode = 'dark' | 'light';
 
-function parseRgbColor(backgroundColor: string): { red: number; green: number; blue: number } | undefined {
-  const match = backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+function parseRgbColor(backgroundColor: string): { alpha: number; red: number; green: number; blue: number } | undefined {
+  const match = backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/i);
   if (!match) {
     return undefined;
   }
   return {
+    alpha: match[4] === undefined ? 1 : Number(match[4]),
     red: Number(match[1]),
     green: Number(match[2]),
     blue: Number(match[3]),
@@ -47,19 +48,26 @@ async function assertBrowserViewBodyBackground(
     throw new Error('Application not launched');
   }
 
-  const colorInfo = await executeTiddlyWikiCode<{ backgroundColor: string; paletteTitle: string }>(
+  const colorInfo = await executeTiddlyWikiCode<{ backgrounds: string[]; darkPaletteTitle: string; lightPaletteTitle: string; paletteTitle: string }>(
     world.app,
     `(function() {
-      const backgroundColor = window.getComputedStyle(document.body).backgroundColor || '';
+      const backgrounds = ['body', 'html', '.tc-page-container', '.tc-page-container-inner', '.tc-story-river']
+        .map(selector => document.querySelector(selector))
+        .filter(Boolean)
+        .map(element => window.getComputedStyle(element).backgroundColor || '');
       let paletteTitle = '';
+      let darkPaletteTitle = '';
+      let lightPaletteTitle = '';
       try {
         if (typeof $tw !== 'undefined' && $tw.wiki) {
           paletteTitle = $tw.wiki.getTiddlerText('$:/palette', '') || '';
+          darkPaletteTitle = $tw.wiki.getTiddlerText('$:/config/palette/default-dark', '') || '';
+          lightPaletteTitle = $tw.wiki.getTiddlerText('$:/config/palette/default-light', '') || '';
         }
       } catch {
         paletteTitle = '';
       }
-      return { backgroundColor, paletteTitle };
+      return { backgrounds, darkPaletteTitle, lightPaletteTitle, paletteTitle };
     })()`,
     world.currentWindow,
   );
@@ -68,9 +76,20 @@ async function assertBrowserViewBodyBackground(
     throw new Error('Failed to read browser view background color');
   }
 
-  const rgb = parseRgbColor(colorInfo.backgroundColor);
+  const opaqueDOMBackground = colorInfo.backgrounds.find(color => {
+    const parsed = parseRgbColor(color);
+    return parsed && parsed.alpha > 0;
+  });
+  if (!opaqueDOMBackground) {
+    const expectedPaletteTitle = expectedMode === 'dark' ? colorInfo.darkPaletteTitle : colorInfo.lightPaletteTitle;
+    if (colorInfo.paletteTitle !== expectedPaletteTitle) {
+      throw new Error(`Expected ${expectedMode} palette ${expectedPaletteTitle}, got ${colorInfo.paletteTitle}`);
+    }
+    return;
+  }
+  const rgb = parseRgbColor(opaqueDOMBackground);
   if (!rgb) {
-    throw new Error(`Unexpected background color format: ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+    throw new Error(`Unexpected background color format: ${colorInfo.backgrounds.join(', ')}; palette=${colorInfo.paletteTitle}`);
   }
 
   const { red, green, blue } = rgb;
@@ -78,11 +97,11 @@ async function assertBrowserViewBodyBackground(
   const isLight = red > 200 && green > 200 && blue > 200;
 
   if (expectedMode === 'dark' && !isDark) {
-    throw new Error(`Expected dark background in browser view, got ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+    throw new Error(`Expected dark background in browser view, got ${colorInfo.backgrounds.join(', ')}; palette=${colorInfo.paletteTitle}`);
   }
 
   if (expectedMode === 'light' && !isLight) {
-    throw new Error(`Expected light background in browser view, got ${colorInfo.backgroundColor}; palette=${colorInfo.paletteTitle}`);
+    throw new Error(`Expected light background in browser view, got ${colorInfo.backgrounds.join(', ')}; palette=${colorInfo.paletteTitle}`);
   }
 }
 
