@@ -186,9 +186,10 @@ export function CommitDetailsPanel(
         return;
       }
 
+      // Resolve the actual Git repo root (may be an ancestor repo for scoped workspaces).
       for (const selectedEntry of committedSelections) {
         void window.service.native.log('debug', 'handleRevert: calling revertCommit', { workspaceID, commitHash: selectedEntry.hash });
-        await window.service.git.revertCommit(workspace.wikiFolderLocation, selectedEntry.hash, selectedEntry.message);
+        await window.service.git.revertCommit(workspace, selectedEntry.hash, selectedEntry.message);
       }
       // Notify parent to select the new revert commit
       if (onRevertSuccess) {
@@ -215,7 +216,7 @@ export function CommitDetailsPanel(
 
       // Pass hashes newest-first (committedSelections is derived from entries which are newest-first).
       await window.service.git.undoCommits(
-        workspace.wikiFolderLocation,
+        workspace,
         committedSelections.map((entry) => entry.hash),
       );
       if (onUndoSuccess) {
@@ -246,7 +247,7 @@ export function CommitDetailsPanel(
       const workspace = await window.service.workspace.get(workspaceID);
       if (!workspace || !('wikiFolderLocation' in workspace)) return;
 
-      await window.service.git.amendCommitMessage(workspace.wikiFolderLocation, trimmedMessage);
+      await window.service.git.amendCommitMessage(workspace, trimmedMessage);
       setIsEditMessageOpen(false);
       if (onCommitSuccess) {
         onCommitSuccess();

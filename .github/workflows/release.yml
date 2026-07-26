@@ -17,7 +17,10 @@ on:
       - ".vscode"
 
 concurrency:
-  group: release-ci-group
+  # Per-branch group so PRs/branches run in parallel without cancelling each other.
+  # Same-branch pushes still cancel stale same-branch runs. GitHub Actions usage is
+  # well below the limit, so we prefer isolation over aggressive cross-branch cancellation.
+  group: release-ci-group-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
