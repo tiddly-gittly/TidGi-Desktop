@@ -30,6 +30,34 @@ function getGitCommitEnvironment(username: string = defaultGitInfo.gitUserName, 
 }
 
 /**
+ * Ensure Git commands that create commits implicitly (for example `git rebase`)
+ * have a committer identity. Keep any identity Git already resolves from the
+ * repository, global, or system config and only fill missing values locally.
+ */
+export async function ensureGitIdentity(
+  repoPath: string,
+  username: string = defaultGitInfo.gitUserName,
+  email: string = defaultGitInfo.email,
+  environment?: NodeJS.ProcessEnv,
+): Promise<void> {
+  const options = environment === undefined ? undefined : { env: environment };
+  const ensureConfigValue = async (key: 'user.name' | 'user.email', value: string): Promise<void> => {
+    const currentValue = await gitExec(['config', '--get', key], repoPath, options);
+    if (currentValue.exitCode === 0 && currentValue.stdout.trim().length > 0) {
+      return;
+    }
+
+    const setValue = await gitExec(['config', '--local', key, value], repoPath, options);
+    if (setValue.exitCode !== 0) {
+      throw new Error(`Failed to configure Git ${key}: ${setValue.stderr}`);
+    }
+  };
+
+  await ensureConfigValue('user.name', username);
+  await ensureConfigValue('user.email', email);
+}
+
+/**
  * Initialize git in repoPath and create an initial commit that tracks only scopedPath.
  * Used for HTML wiki workspaces whose repo root is the parent folder of the .html file.
  */

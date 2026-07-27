@@ -191,10 +191,6 @@ export function formatE2EArgsValidationError(error: E2EArgsValidationError): str
 
 const CALIBRATION_FILE = path.resolve(process.cwd(), '.calibration.json');
 
-function prepareTestDirectories(): void {
-  fs.rmSync(path.resolve(process.cwd(), 'test-artifacts'), { recursive: true, force: true });
-}
-
 function ensureCalibrationFileExists(): void {
   if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') {
     return;
@@ -254,6 +250,5 @@ if (isDirectExecution()) {
   }
 
   ensureCalibrationFileExists();
-  prepareTestDirectories();
   process.exit(runCucumber(cucumberArguments));
 }

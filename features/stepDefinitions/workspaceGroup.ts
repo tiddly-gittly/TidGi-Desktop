@@ -317,10 +317,12 @@ async function waitForDragIntent(
   }
 
   const deadline = Date.now() + PLAYWRIGHT_TIMEOUT;
+  const maxPointerRefreshAttempts = 20;
+  const maxStateSettlementChecks = 8;
   let latestCoordinates = initialCoordinates;
   let attempts = 0;
 
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && attempts < maxPointerRefreshAttempts) {
     attempts++;
     try {
       latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: true });
@@ -328,18 +330,24 @@ async function waitForDragIntent(
       latestCoordinates = await resolveTargetCoordinates({ verifyElementAtPoint: false });
     }
     await world.currentWindow.mouse.move(latestCoordinates.targetX, latestCoordinates.targetY, { steps: 3 });
-    await waitForTwoAnimationFrames(world);
-
-    const matchingIntentCount = await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).count();
-    if (matchingIntentCount > 0) {
-      return latestCoordinates;
+    // Let the debounced drag-state update run without another pointer event
+    // cancelling its zero-delay timer. Busy full-suite runs can require more
+    // than the first two animation frames even though isolated runs do not.
+    for (let settlementCheck = 0; settlementCheck < maxStateSettlementChecks; settlementCheck++) {
+      await waitForTwoAnimationFrames(world);
+      const matchingIntentCount = await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId, expectedIntent)).count();
+      if (matchingIntentCount > 0) {
+        return latestCoordinates;
+      }
     }
 
-    // Nudge downward inside the target when another sidebar item steals hit-testing.
-    latestCoordinates = {
-      targetX: latestCoordinates.targetX,
-      targetY: latestCoordinates.targetY + 4,
-    };
+    // Moving to the same coordinate does not necessarily emit another pointer
+    // event. Jitter within the target's center zone, then return to the exact
+    // target coordinate on the next iteration so dnd-kit recomputes intent
+    // after layout changes caused by the previous drag.
+    const jitterY = latestCoordinates.targetY + (attempts % 2 === 0 ? -2 : 2);
+    await world.currentWindow.mouse.move(latestCoordinates.targetX, jitterY);
+    await waitForTwoAnimationFrames(world);
   }
 
   throw await buildDragIntentError(

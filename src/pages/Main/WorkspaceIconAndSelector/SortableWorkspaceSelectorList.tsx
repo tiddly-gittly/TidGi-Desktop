@@ -800,10 +800,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
 
   const deriveDragState = useCallback((event: Pick<DragMoveEvent, 'active' | 'over' | 'delta' | 'collisions' | 'activatorEvent'>): IDragState => {
     const { active, over, delta, activatorEvent } = event;
-    // Compute the live pointer Y from the initial pointerdown position plus
-    // the cumulative drag delta. This is more reliable than the global
-    // pointermove listener (pointerYReference), which can miss events on
-    // Windows CI/Electron/Playwright and cause incorrect intent zones.
+    // Keep an activator-plus-delta fallback for environments where the
+    // capture-phase pointermove listener misses an event.
     const activatorPointerY = activatorEvent instanceof PointerEvent || activatorEvent instanceof MouseEvent
       ? activatorEvent.clientY + delta.y
       : undefined;
@@ -835,10 +833,10 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // The over.id itself is still correct (collision detection resolves the
       // right target), but over.rect can be stale.
       const activeRect = active.rect.current.translated;
-      // Prefer the pointer Y derived from the initial pointerdown + delta,
-      // which is deterministic across platforms. Fall back to the global
-      // pointermove listener, then to rect centers for rare edge cases.
-      const pointerY = activatorPointerY ?? pointerYReference.current ?? (activeRect
+      // Prefer the live pointer captured before dnd-kit's handlers run.
+      // The cumulative drag delta is relative to the initial layout and can
+      // become inaccurate after an earlier drop rearranges sidebar items.
+      const pointerY = pointerYReference.current ?? activatorPointerY ?? (activeRect
         ? activeRect.top + activeRect.height / 2
         : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
       const referenceY = pointerY;

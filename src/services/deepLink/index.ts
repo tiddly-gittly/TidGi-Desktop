@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
@@ -194,7 +195,10 @@ export class DeepLinkService implements IDeepLinkService {
   }
 
   private setupWindowsLinuxHandler(): void {
-    const gotTheLock = app.requestSingleInstanceLock();
+    // The main test bootstrap deliberately bypasses the global Electron lock.
+    // Do the same here so deep-link initialization cannot acquire that lock
+    // later and interfere with another concurrently running E2E instance.
+    const gotTheLock = isTest ? true : app.requestSingleInstanceLock();
 
     if (gotTheLock) {
       // Handle second instance (when app is already running)

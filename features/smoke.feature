@@ -66,14 +66,19 @@ Feature: TidGi Application Launch
 
   @smoke @calibrate
   Scenario: Watcher re-index under accumulated file state
-    # This scenario runs AFTER the first one, on a system where the
-    # wiki has been restarted and the watcher must re-index files
-    # created by the previous scenario. The "wait for SSE and watch-fs"
-    # step measures worst-case watcher re-indexing under load.
+    # Scenarios use isolated wiki and user-data directories, so enable the
+    # watcher in this scenario before restarting it. The final wait measures
+    # watcher re-indexing after the initial wiki load.
     When I launch the TidGi application
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
     Then I should see a "default wiki workspace" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    When I update workspace "wiki" settings:
+      | property              | value |
+      | enableFileSystemWatch | true  |
+    When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
+    Then the browser view should be loaded and visible
+    And I wait for SSE and watch-fs to be ready
     And I restart workspace "wiki"
     When I click on a "default wiki workspace button" element with selector "div[data-testid^='workspace-']:has-text('wiki')"
     Then the browser view should be loaded and visible

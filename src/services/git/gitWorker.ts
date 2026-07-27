@@ -71,6 +71,7 @@ import {
 } from 'git-sync-js';
 import { Observable } from 'rxjs';
 import { defaultGitInfo } from './defaultGitInfo';
+import { ensureGitIdentity } from './gitOperations';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 
 function initWikiGit(
@@ -154,6 +155,13 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
     // For sub-wiki, show sync progress in main workspace
     const workspaceIDForNotification = isWikiWorkspace(workspace) && workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     void (async () => {
+      // commitOnly never rebases, and git-sync-js already supplies commit
+      // identity through the commit environment. Avoid persisting unnecessary
+      // repository config for local-backup-only workspaces.
+      if (configs.commitOnly !== true) {
+        const { gitUserName, email } = configs.userInfo ?? defaultGitInfo;
+        await ensureGitIdentity(configs.dir, gitUserName, email ?? defaultGitInfo.email);
+      }
       if (isHtmlWikiWorkspace(workspace)) {
         const scope = getWorkspaceGitScope(workspace);
         if (scope?.managedRelativePath) {
@@ -176,22 +184,22 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
           },
         },
         filesToIgnore: ['.DS_Store'],
-      }).then(
-        () => {
-          observer.complete();
-        },
-        (_error: unknown) => {
-          if (_error instanceof Error) {
-            observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
-            translateAndLogErrorMessage(_error, errorI18NDict);
-            observer.next({ level: 'error', error: _error });
-          } else {
-            observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
-          }
-          observer.complete();
-        },
-      );
-    })();
+      });
+    })().then(
+      () => {
+        observer.complete();
+      },
+      (_error: unknown) => {
+        if (_error instanceof Error) {
+          observer.next({ message: `${_error.message} ${_error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+          translateAndLogErrorMessage(_error, errorI18NDict);
+          observer.next({ level: 'error', error: _error });
+        } else {
+          observer.next({ message: String(_error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+        }
+        observer.complete();
+      },
+    );
   });
 }
 
