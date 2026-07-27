@@ -1,111 +1,224 @@
-/**
- * The filename for workspace config in wiki folder
- * Duplicated here to avoid importing from configSetting which would pull in electron dependencies
- */
-const TIDGI_CONFIG_FILE = 'tidgi.config.json';
-
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { workspaceSorter } from '@services/workspaces/utilities';
+import path from 'node:path';
 import type { TiddlyWiki } from 'tiddlywiki';
 
+interface IDynamicStoreSpecification {
+  externalAttachments: {
+    basePath: string;
+    moveOnRoute: boolean;
+    pathPrefix: string;
+  };
+  followSymlinks: boolean;
+  ignoredPathRegExp: string;
+  reselectOnSave: boolean;
+  saveFilter: string;
+  watch: boolean;
+  watcherProvider: string;
+}
+
+interface IDirectorySpecification {
+  dynamicStore: IDynamicStoreSpecification;
+  filesRegExp: string;
+  isEditableFile: boolean;
+  isTiddlerFile: boolean;
+  path: string;
+  searchSubdirectories: boolean;
+}
+
+export interface ITiddlyWikiFilesInfo {
+  directories: IDirectorySpecification[];
+}
+
+interface IWikiInfo {
+  config?: Record<string, string>;
+  plugins?: string[];
+}
+
+interface ILoadWikiTiddlersOptions {
+  filesInfo?: ITiddlyWikiFilesInfo;
+  parentPaths?: string[];
+  readOnly?: boolean;
+  wikiInfo?: IWikiInfo;
+}
+
+type WikiInstance = ReturnType<typeof TiddlyWiki>;
+type LoadWikiTiddlers = (
+  wikiPath: string,
+  options?: ILoadWikiTiddlersOptions,
+) => ReturnType<WikiInstance['loadWikiTiddlers']>;
+
+const DEFAULT_EXTERNAL_ATTACHMENTS_FOLDER = 'files';
+
+function escapeFilterOperand(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll(']', '\\]');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
- * Factory function to create a custom loadWikiTiddlers function that loads sub-wiki tiddlers.
- * This ensures sub-wiki tiddlers are loaded into the main wiki's $tw.boot.files
- * and $tw.wiki, making them available alongside main wiki tiddlers.
- *
- * TiddlyWiki's includeWikis mechanism normally requires modifying tiddlywiki.info,
- * but we dynamically inject sub-wikis based on workspace configuration instead.
- * This wraps TiddlyWiki's original loadWikiTiddlers to dynamically inject sub-wiki tiddlers
- * after the main wiki is loaded, without modifying tiddlywiki.info.
- *
- * @param wikiInstance - The TiddlyWiki instance
- * @param homePath - Main wiki home path
- * @param subWikis - Array of sub-wiki workspaces sorted by order (priority)
- * @param workspaceName - Workspace name for logging
- * @param nativeLogger - Logger function
+ * Compile TidGi workspace routing into ordinary TiddlyWiki filter runs.
+ * Store order remains the workspace priority; any matching run selects the store.
+ */
+export function buildWorkspaceSaveFilter(workspace: IWikiWorkspace): string {
+  const runs: string[] = [];
+  for (const tagName of workspace.tagNames) {
+    const operand = escapeFilterOperand(tagName);
+    runs.push(
+      `[title[${operand}]]`,
+      `[tag[${operand}]]`,
+    );
+    if (workspace.includeTagTree) {
+      runs.push(
+        `[in-tagtree-of:inclusive[${operand}]]`,
+      );
+    }
+  }
+  if (workspace.fileSystemPathFilterEnable && workspace.fileSystemPathFilter) {
+    runs.push(...workspace.fileSystemPathFilter.split('\n').map(filter => filter.trim()).filter(Boolean));
+  }
+  return runs.join(' ');
+}
+
+function buildIgnoredPathRegExp(externalAttachmentsFolder: string, isFlatMainWiki: boolean): string {
+  const ignoredPathParts = [
+    '\\.git(?:/|$)',
+    'node_modules(?:/|$)',
+    '\\.DS_Store$',
+    'tidgi\\.config\\.json$',
+    `${escapeRegExp(externalAttachmentsFolder)}(?:/|$)`,
+  ];
+  if (isFlatMainWiki) {
+    ignoredPathParts.push(
+      'plugins(?:/|$)',
+      'themes(?:/|$)',
+      'languages(?:/|$)',
+      'output(?:/|$)',
+      'tiddlywiki\\.(?:info|files)$',
+    );
+  }
+  return `^(?:${ignoredPathParts.join('|')})`;
+}
+
+function uniqueSortedWorkspaces(mainWorkspace: IWikiWorkspace, subWikis: IWikiWorkspace[]): IWikiWorkspace[] {
+  const byID = new Map<string, IWikiWorkspace>();
+  for (const workspace of [mainWorkspace, ...subWikis]) {
+    byID.set(workspace.id, workspace);
+  }
+  const uniqueWorkspaces = [...byID.values()];
+  // Dynamic stores use first-match precedence. Specific sub-wiki routes must
+  // run before the main workspace's catch-all fallback.
+  return [
+    ...uniqueWorkspaces.filter(workspace => workspace.id !== mainWorkspace.id).sort(workspaceSorter),
+    mainWorkspace,
+  ];
+}
+
+/**
+ * Build an in-memory tiddlywiki.files equivalent. The upstream filesystem
+ * adaptor owns loading, watching, indexing, retry and migration; TidGi only
+ * translates its workspace model into dynamic-store declarations.
+ */
+export function createDynamicStoreFilesInfo(options: {
+  homePath: string;
+  mainWorkspace: IWikiWorkspace;
+  readOnly: boolean;
+  subWikis: IWikiWorkspace[];
+  useWikiFolderAsTiddlersPath: boolean;
+}): ITiddlyWikiFilesInfo {
+  const {
+    homePath,
+    mainWorkspace,
+    readOnly,
+    subWikis,
+    useWikiFolderAsTiddlersPath,
+  } = options;
+  const workspaces = uniqueSortedWorkspaces(mainWorkspace, subWikis);
+
+  return {
+    directories: workspaces.map((workspace) => {
+      const isMainWiki = workspace.id === mainWorkspace.id;
+      const isFlatMainWiki = isMainWiki && useWikiFolderAsTiddlersPath;
+      return {
+        // "." is resolved by upstream against tiddlywiki.info's configured
+        // default-tiddler-location. Flat workspaces explicitly use their root.
+        path: isMainWiki
+          ? useWikiFolderAsTiddlersPath
+            ? path.resolve(homePath)
+            : '.'
+          : path.resolve(workspace.wikiFolderLocation),
+        filesRegExp: '^(?!tiddlywiki\\.(?:info|files)$).*$',
+        searchSubdirectories: true,
+        isEditableFile: true,
+        // Deserialize .tid/.json files and binary files with companion .meta
+        // through the native TiddlyWiki file readers.
+        isTiddlerFile: true,
+        dynamicStore: {
+          saveFilter: isMainWiki
+            ? [buildWorkspaceSaveFilter(workspace), '[all[tiddlers]]'].filter(Boolean).join(' ')
+            : buildWorkspaceSaveFilter(workspace),
+          reselectOnSave: true,
+          watch: !readOnly && workspace.enableFileSystemWatch,
+          watcherProvider: 'tidgi-nsfw',
+          ignoredPathRegExp: buildIgnoredPathRegExp(DEFAULT_EXTERNAL_ATTACHMENTS_FOLDER, isFlatMainWiki),
+          followSymlinks: !workspace.ignoreSymlinks,
+          externalAttachments: {
+            basePath: path.resolve(workspace.wikiFolderLocation),
+            pathPrefix: DEFAULT_EXTERNAL_ATTACHMENTS_FOLDER,
+            moveOnRoute: true,
+          },
+        },
+      };
+    }),
+  };
+}
+
+/**
+ * Inject dynamic stores only for the main wiki load. Included wikis continue
+ * through the native loader unchanged.
  */
 export function createLoadWikiTiddlersWithSubWikis(
-  wikiInstance: ReturnType<typeof TiddlyWiki>,
+  wikiInstance: WikiInstance,
   homePath: string,
+  mainWorkspace: IWikiWorkspace,
   subWikis: IWikiWorkspace[],
   options: {
-    allowLoadingWithoutWikiInfo?: boolean;
+    readOnly?: boolean;
+    useWikiFolderAsTiddlersPath?: boolean;
   } = {},
-  workspaceName: string,
-  nativeLogger: {
-    logFor: (name: string, level: 'info' | 'error', message: string) => Promise<void>;
-  },
-) {
-  const { allowLoadingWithoutWikiInfo = false } = options;
-  const originalLoadWikiTiddlers = wikiInstance.loadWikiTiddlers.bind(wikiInstance);
+): LoadWikiTiddlers {
+  const {
+    readOnly = false,
+    useWikiFolderAsTiddlersPath = false,
+  } = options;
+  const originalLoadWikiTiddlers: LoadWikiTiddlers = wikiInstance.loadWikiTiddlers.bind(wikiInstance);
+  const filesInfo = createDynamicStoreFilesInfo({
+    homePath,
+    mainWorkspace,
+    readOnly,
+    subWikis,
+    useWikiFolderAsTiddlersPath,
+  });
 
-  return function loadWikiTiddlersWithSubWikis(
-    wikiPath: string,
-    options?: { parentPaths?: string[]; readOnly?: boolean },
-  ) {
-    // Call original function first to load main wiki
-    const wikiInfo = originalLoadWikiTiddlers(wikiPath, options);
-
-    // Only inject sub-wikis when loading the main wiki (not when loading included wikis)
-    if (wikiPath !== homePath || subWikis.length === 0 || (!wikiInfo && !allowLoadingWithoutWikiInfo)) {
-      return wikiInfo;
+  return function loadWikiTiddlersWithDynamicStores(wikiPath, loadOptions = {}) {
+    if (path.resolve(wikiPath) !== path.resolve(homePath)) {
+      return originalLoadWikiTiddlers(wikiPath, loadOptions);
     }
-    for (const subWiki of subWikis) {
-      // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
-      // Only the main wiki uses /tiddlers because it has other meta files like .github
-      const subWikiTiddlersPath = subWiki.wikiFolderLocation;
-
-      try {
-        // Load tiddlers from sub-wiki directory
-        const tiddlerFiles = wikiInstance.loadTiddlersFromPath(subWikiTiddlersPath);
-
-        for (const tiddlerFile of tiddlerFiles) {
-          // Skip tidgi.config.json - it's a TidGi configuration file, not a tiddler
-          if (tiddlerFile.filepath) {
-            const fileName = tiddlerFile.filepath.split('/').pop() ?? '';
-            if (fileName === TIDGI_CONFIG_FILE) {
-              continue;
-            }
-          }
-
-          // Skip files in the external attachments folder (default: files/)
-          // These are referenced by tiddlers via _canonical_uri and should not be loaded as separate tiddlers
-          if (tiddlerFile.filepath) {
-            const relativePath = tiddlerFile.filepath.replace(subWikiTiddlersPath, '').replace(/^\//, '');
-            const externalAttachmentsFolder = wikiInstance.wiki?.getTiddlerText?.('$:/config/ExternalAttachments/WikiFolderToMove', 'files') ?? 'files';
-            if (relativePath.startsWith(`${externalAttachmentsFolder}/`)) {
-              continue; // Skip files in external attachments folder
-            }
-          }
-
-          // Register file info for filesystem adaptor (so tiddlers save back to correct location)
-          if (tiddlerFile.filepath) {
-            for (const tiddler of tiddlerFile.tiddlers) {
-              wikiInstance.boot.files[tiddler.title] = {
-                filepath: tiddlerFile.filepath,
-                type: tiddlerFile.type ?? 'application/x-tiddler',
-                hasMetaFile: tiddlerFile.hasMetaFile ?? false,
-                isEditableFile: tiddlerFile.isEditableFile ?? true,
-              };
-            }
-          }
-          // Add tiddlers to wiki
-          wikiInstance.wiki.addTiddlers(tiddlerFile.tiddlers);
-        }
-
-        void nativeLogger.logFor(
-          workspaceName,
-          'info',
-          `Loaded sub-wiki tiddlers from: ${subWikiTiddlersPath}`,
-        );
-      } catch (error) {
-        void nativeLogger.logFor(
-          workspaceName,
-          'error',
-          `Failed to load sub-wiki tiddlers from ${subWikiTiddlersPath}: ${(error as Error).message}`,
-        );
+    const wikiInfo: IWikiInfo | undefined = useWikiFolderAsTiddlersPath
+      ? {
+        plugins: ['tiddlywiki/filesystem'],
+        config: {
+          'default-tiddler-location': '.',
+        },
       }
-    }
-
-    return wikiInfo;
+      : undefined;
+    const result = originalLoadWikiTiddlers(wikiPath, {
+      ...loadOptions,
+      filesInfo,
+      wikiInfo,
+    });
+    return result;
   };
 }

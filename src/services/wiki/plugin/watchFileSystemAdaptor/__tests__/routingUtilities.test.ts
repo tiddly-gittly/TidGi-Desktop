@@ -3,7 +3,6 @@
  */
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-// @ts-expect-error TS2459: TiddlyWiki uses exports.xxx style.
 import { buildTiddlerRoutingInfo, explainTiddlerRouting, findTagTreePath, hasActiveSubWikiRouting, hasRoutingConfig, matchTiddlerToWorkspace } from '../routingUtilities';
 
 const makeWiki = (tagMap: Record<string, string[]> = {}) => ({

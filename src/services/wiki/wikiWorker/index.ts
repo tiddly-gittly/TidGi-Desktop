@@ -39,6 +39,7 @@ import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import type { ITiddlerRoutingInfo } from '../plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
+import { getFileSystemRoutingInfo } from './fileSystemRouting';
 import { getWikiInstance } from './globals';
 import { extractWikiHTML, packetHTMLFromWikiFolder } from './htmlWiki';
 import { ipcServerRoutesMethods } from './ipcServerRoutes';
@@ -129,22 +130,15 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
 
 async function beforeExit(): Promise<void> {
   uninstall?.uninstall();
-  // Cleanup watch-filesystem adaptor
   const wikiInstance = getWikiInstance();
-  // Call our custom cleanup method if it exists `src/services/wiki/plugin/watchFileSystemAdaptor/watch-filesystem-adaptor.ts`
-  const syncAdaptor = wikiInstance?.syncadaptor as { cleanup?: () => Promise<void> } | undefined;
-  if (syncAdaptor?.cleanup) {
-    await syncAdaptor.cleanup();
+  const syncAdaptor = wikiInstance?.syncadaptor as { close?: () => Promise<void> } | undefined;
+  if (syncAdaptor?.close) {
+    await syncAdaptor.close();
   }
 }
 
 async function getTiddlerRoutingInfo(tiddlerTitle: string): Promise<ITiddlerRoutingInfo> {
-  const wikiInstance = getWikiInstance();
-  const syncAdaptor = wikiInstance?.syncadaptor as { getTiddlerRoutingInfo?: (title: string) => Promise<ITiddlerRoutingInfo> } | undefined;
-  if (syncAdaptor?.getTiddlerRoutingInfo) {
-    return await syncAdaptor.getTiddlerRoutingInfo(tiddlerTitle);
-  }
-  return { featureAvailable: false };
+  return getFileSystemRoutingInfo(tiddlerTitle);
 }
 
 // All exposed methods should be async.

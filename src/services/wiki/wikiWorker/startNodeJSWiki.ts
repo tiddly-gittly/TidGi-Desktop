@@ -1,6 +1,6 @@
 // Initialize worker-side service proxies before starting the wiki.
 import './services';
-import { native, service } from './services';
+import { git, native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
@@ -14,6 +14,8 @@ import { Observable } from 'rxjs';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import type { IStartNodeJSWikiConfigs } from '../wikiWorker';
+import { installFileSystemIntegrationHooks } from './fileSystemIntegrationHooks';
+import { configureFileSystemRouting } from './fileSystemRouting';
 import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided, loadTiddlyWikiModule } from './loadTiddlyWikiModule';
@@ -83,18 +85,19 @@ async function bootWiki(
   process.env.TIDDLYWIKI_PLUGIN_PATH = pluginPaths.join(pathSeparator);
   process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
 
-  if (subWikis.length > 0) {
-    wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
-      wikiInstance,
-      homePath,
-      subWikis,
-      { allowLoadingWithoutWikiInfo: useWikiFolderAsTiddlersPath },
-      workspace.name,
-      native,
-    );
-  }
+  wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
+    wikiInstance,
+    homePath,
+    workspace,
+    subWikis,
+    {
+      readOnly: readOnlyMode,
+      useWikiFolderAsTiddlersPath,
+    },
+  );
 
   wikiInstance.boot.extraPlugins = [
+    readOnlyMode === true ? undefined : 'plugins/tiddlywiki/filesystem',
     readOnlyMode === true ? undefined : 'plugins/linonetwo/watch-filesystem-adaptor',
     'plugins/linonetwo/tidgi-ipc-syncadaptor',
     'plugins/linonetwo/tidgi-ipc-syncadaptor-ui',
@@ -179,7 +182,19 @@ async function bootWiki(
       });
     });
   });
+  installFileSystemIntegrationHooks({
+    gitNotifyFileChange: git.notifyFileChange.bind(git),
+    mainWorkspace: workspace,
+    nativeLog: (level, message) => native.logFor(workspace.name, level, message),
+    subWikis,
+    wikiInstance,
+  });
   wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
+  configureFileSystemRouting({
+    mainWorkspace: workspace,
+    subWikis,
+    wikiInstance,
+  });
 
   ipcServerRoutes.setConfig({ readOnlyMode, shouldUseDarkColors });
   ipcServerRoutes.setHomePath(homePath);

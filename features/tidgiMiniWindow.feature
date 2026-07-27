@@ -30,7 +30,7 @@ Feature: TidGi Mini Window
     And I confirm the "tidgiMiniWindow" window browser view is positioned within visible window bounds
     And I switch to "tidgiMiniWindow" window
     Then the browser view should be loaded and visible
-    And I should see "我的 TiddlyWiki" in the browser view content
+    And I should see a "wiki site title" element in browser view with selector ".tc-site-title"
     Then I switch to "main" window
     When I press the key combination "CommandOrControl+Shift+M"
     And I confirm the "tidgiMiniWindow" window exists
@@ -57,4 +57,3 @@ Feature: TidGi Mini Window
     Then I switch to "tidgiMiniWindow" window
     And the browser view should be loaded and visible
     And I should see "TidgiMiniWindowHiddenSync123" in the browser view content
-

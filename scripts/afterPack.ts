@@ -78,6 +78,9 @@ export default async (
         { segments: ['tiddlywiki', 'plugins', 'tiddlywiki', 'filesystem'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'plugins', 'tiddlywiki', 'tiddlyweb'], critical: 'tiddlywiki' },
         { segments: ['tiddlywiki', 'tiddlywiki.js'], critical: 'tiddlywiki' },
+        // Runtime dependencies of the upstream filesystem watcher provider.
+        { segments: ['chokidar'], critical: 'tiddlywiki' },
+        { segments: ['readdirp'], critical: 'tiddlywiki' },
         { segments: ['better-sqlite3', 'package.json'], critical: 'better-sqlite3' },
         { segments: ['better-sqlite3', 'lib'], critical: 'better-sqlite3' },
         // nsfw native module
