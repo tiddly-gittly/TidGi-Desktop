@@ -101,6 +101,7 @@ describe('default agent tools → prompt integration', () => {
     // Tool descriptions injected via onProcessPrompts → injectToolList
     // The tool content is generated from zod LLM schemas; verify injection happened
     expect(allContent).toContain('Available Wiki Workspaces');
+    expect(allContent).toContain('wiki-search');
     expect(allContent).toContain('## ask-question');
     expect(allContent).toContain('**Description**');
   }, 30000);

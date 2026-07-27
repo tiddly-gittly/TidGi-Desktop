@@ -246,12 +246,12 @@ Then('the last AI request should contain system prompt {string}', async function
         throw new Error('No AI request has been made yet');
       }
 
-      const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-      if (!systemMessage) {
+      const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+      if (systemMessages.length === 0) {
         throw new Error('No system message found in the AI request');
       }
 
-      lastSystemPrompt = systemMessage.content ?? '';
+      lastSystemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
       if (!lastSystemPrompt.includes(expectedPrompt)) {
         throw new Error(`System prompt does not contain expected text yet`);
       }
@@ -259,7 +259,10 @@ Then('the last AI request should contain system prompt {string}', async function
     { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
   ).catch(() => {
     const requestPrompts = this.mockOpenAIServer!.getAllRequests().map((request, index) => {
-      const content = request.messages.find(message => message.role === 'system')?.content ?? '';
+      const content = request.messages
+        .filter(message => message.role === 'system')
+        .map(message => message.content ?? '')
+        .join('\n');
       return `${index + 1}: ${content.slice(0, 300)}`;
     }).join('\n');
     throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${lastSystemPrompt}"\nAll request system prompts:\n${requestPrompts}`);
@@ -276,14 +279,15 @@ Then('the last AI request system prompt should not contain {string}', async func
     throw new Error('No AI request has been made yet');
   }
 
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
+  const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+  if (systemMessages.length === 0) {
     // No system message means it definitely doesn't contain the text
     return;
   }
 
-  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
-    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
+  const systemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+  if (systemPrompt.includes(unexpectedText)) {
+    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemPrompt.substring(0, 300)}..."`);
   }
 });
 

@@ -34,8 +34,8 @@ Feature: Create New Agent Workflow
     When I click on a "search input" element with selector ".aa-Input"
     # Wait for autocomplete panel to load with templates (async operation in CI)
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    # Using description text to select specific agent, more precise than just name
-    When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("General-purpose TiddlyWiki AI assistant")'
+    # Scope the selection to the template source and use the canonical builtin profile name.
+    When I click on a "General assistant template" element with selector '[data-autocomplete-source-id="templateAgentsSource"] .aa-ItemWrapper:has-text("通用助手")'
     # Fill in agent name while still in step 1
     When I clear text in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"
@@ -54,12 +54,10 @@ Feature: Create New Agent Workflow
     And I should see a "visible tab panel" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
     When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
-    # The editable system prompt is the first child of the main prompt group
-    When I click on a "expand main prompt child button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
-    # Click the system prompt text field to focus it for editing
-    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id*='_prompts_0_children_0_text']:not([readonly])"
-    When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id*='_prompts_0_children_0_text']:not([readonly])"
-    When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id*='_prompts_0_children_0_text']:not([readonly])"
+    # The canonical builtin profile stores its editable system prompt directly on prompts[0].
+    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
+    When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
+    When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
     # Step 5: Advance to step 3 (Immediate Use)
     When I click on a "next button" element with selector "[data-testid='next-button']"
     # Step 6: Verify third step content (Immediate Use with chat interface)
