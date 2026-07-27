@@ -24,7 +24,7 @@ export interface IAgentDefinitionService {
   deleteAgentDef(id: string): Promise<void>;
 }
 
-export type { TiddlerFieldsForAgent };
+export type { AgentDefinition, TiddlerFieldsForAgent };
 
 export const AgentDefinitionServiceIPCDescriptor = {
   channel: AgentChannel.definition,

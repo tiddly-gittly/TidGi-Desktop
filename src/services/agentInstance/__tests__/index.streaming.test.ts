@@ -157,6 +157,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       const aiMessage = latestUpdate!.messages.find(msg => msg.role === 'assistant');
       expect(aiMessage).toBeDefined();
       expect(aiMessage!.content).toBe(expectedAIResponseFinal);
+      expect(agentUpdates.some(update => update?.messages.some(message => message.role === 'assistant' && message.content === expectedAIResponsePart1))).toBe(true);
     } finally {
       agentSubscription.unsubscribe();
     }

@@ -133,6 +133,18 @@ export class MemeLoopDesktopRuntime {
       normalizeMessage: message => {
         return { ...message, originNodeId: message.originNodeId || 'tidgi-desktop' };
       },
+      onTransientMessage: async (message) => {
+        const agent = await this.options.agentInstanceService.getAgent(agentId).catch(() => undefined);
+        if (!agent) return;
+
+        // Streaming partials are deliberately UI-only. The MemeLoop core
+        // persists one immutable message with the same ID after completion.
+        const messages = agent.messages.filter(item => item.messageId !== message.messageId);
+        this.options.notifyAgentChanged(agentId, {
+          ...agent,
+          messages: [...messages, message],
+        });
+      },
       resolveAgentRuntimeView: async (agentId: string, messages: ChatMessage[]) => {
         const agent = await this.options.agentInstanceService.getAgent(agentId);
         const definition = agent ? await this.options.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
