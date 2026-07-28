@@ -374,8 +374,11 @@ export const agentActions = (
       return;
     }
 
-    // Set cancelling flag to block late streaming updates, and clear streaming state immediately
-    set({ isCancelling: true, streamingMessageIds: new Set() });
+    // Release the controlled chat runtime immediately as well as clearing the
+    // message-level streaming state. The backend send promise can take a while
+    // to settle after cancellation; leaving `loading` true keeps
+    // @assistant-ui in its running state and the composer stuck on Cancel.
+    set({ isCancelling: true, loading: false, streamingMessageIds: new Set() });
 
     try {
       await window.service.agentInstance.cancelAgent(storeAgent.id);
