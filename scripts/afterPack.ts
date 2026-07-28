@@ -4,6 +4,7 @@
  * Adapted for electron forge https://github.com/electron-userland/electron-forge/issues/2248
  */
 import fs from 'fs-extra';
+import { createRequire } from 'node:module';
 import path from 'path';
 
 // Packages whose absence makes the app non-functional at runtime.
@@ -13,6 +14,27 @@ const CRITICAL_PACKAGES = ['tiddlywiki', 'better-sqlite3', 'nsfw', 'dugite', 'ty
 
 interface PackageJsonWithDependencies {
   dependencies?: Record<string, string>;
+  name?: string;
+}
+
+export function resolvePackageDirectory(packageName: string, fromFolder: string): string {
+  const resolver = createRequire(path.join(fromFolder, 'package.json'));
+  try {
+    return path.dirname(resolver.resolve(`${packageName}/package.json`));
+  } catch {
+    let current = path.dirname(resolver.resolve(packageName));
+    while (true) {
+      const packageJsonPath = path.join(current, 'package.json');
+      if (fs.existsSync(packageJsonPath)) {
+        const packageJson = fs.readJsonSync(packageJsonPath) as PackageJsonWithDependencies;
+        if (packageJson.name === packageName) return current;
+      }
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+    throw new Error(`Could not resolve package directory for ${packageName} from ${fromFolder}`);
+  }
 }
 
 function copyWithTracking(
@@ -33,7 +55,7 @@ function copyWithTracking(
 
 function copyPackageDependencyClosure(
   packageName: string,
-  sourceNodeModulesFolder: string,
+  resolutionBaseFolder: string,
   destinationNodeModulesFolder: string,
   criticalPackage: string,
   failures: Set<string>,
@@ -43,7 +65,15 @@ function copyPackageDependencyClosure(
   copiedPackages.add(packageName);
 
   const packageSegments = packageName.split('/');
-  const source = path.resolve(sourceNodeModulesFolder, ...packageSegments);
+  let source: string;
+  try {
+    source = resolvePackageDirectory(packageName, resolutionBaseFolder);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error resolving ${packageName}: ${errorMessage}`);
+    failures.add(criticalPackage);
+    return;
+  }
   const destination = path.resolve(destinationNodeModulesFolder, ...packageSegments);
   copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
 
@@ -60,7 +90,7 @@ function copyPackageDependencyClosure(
   for (const dependencyName of Object.keys(packageJson.dependencies ?? {})) {
     copyPackageDependencyClosure(
       dependencyName,
-      sourceNodeModulesFolder,
+      source,
       destinationNodeModulesFolder,
       criticalPackage,
       failures,
