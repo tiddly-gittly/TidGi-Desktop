@@ -3,6 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { requiresVirtualXDisplay } from './xDisplay';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // X Display auto-detection — re-exec under xvfb-run when no DISPLAY is set.
@@ -285,7 +286,7 @@ if (isDirectExecution()) {
   process.env.NODE_ENV = 'test';
 
   // Auto-wrap under xvfb-run when no X display is available (headless/SSH/CI).
-  if (process.env[XVFB_WRAPPED_ENV] !== '1' && !hasXDisplay()) {
+  if (process.env[XVFB_WRAPPED_ENV] !== '1' && requiresVirtualXDisplay(process.platform, hasXDisplay())) {
     if (xvfbRunAvailable()) {
       console.warn('[run-e2e] No X display detected — re-executing under xvfb-run');
       reExecUnderXvfb();
