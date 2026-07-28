@@ -2,6 +2,7 @@ import { execFileSync, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
+import { requiresVirtualXDisplay } from './xDisplay';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // X Display auto-detection — re-exec under xvfb-run when no DISPLAY is set.
@@ -20,7 +21,7 @@ function hasXDisplay(): boolean {
 }
 
 function ensureXvfbWrapper(scriptLabel: string): void {
-  if (process.env[XVFB_WRAPPED_ENV] === '1' || hasXDisplay()) return;
+  if (process.env[XVFB_WRAPPED_ENV] === '1' || !requiresVirtualXDisplay(process.platform, hasXDisplay())) return;
 
   try {
     if (spawnSync('which', ['xvfb-run'], { stdio: 'pipe', timeout: 3000 }).status !== 0) {
