@@ -31,6 +31,7 @@ import { PreferenceSections } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspaceGroupsListObservable } from '@services/workspaces/hooks';
 import { isWikiWorkspace, IWorkspace, IWorkspaceGroup, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { getPointerYForIntent } from './getPointerYForIntent';
 import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
@@ -833,14 +834,6 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // The over.id itself is still correct (collision detection resolves the
       // right target), but over.rect can be stale.
       const activeRect = active.rect.current.translated;
-      // Prefer the live pointer captured before dnd-kit's handlers run.
-      // The cumulative drag delta is relative to the initial layout and can
-      // become inaccurate after an earlier drop rearranges sidebar items.
-      const pointerY = pointerYReference.current ?? activatorPointerY ?? (activeRect
-        ? activeRect.top + activeRect.height / 2
-        : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
-      const referenceY = pointerY;
-
       const overRect = over?.rect ?? null;
       const resolvedOverId = overId;
 
@@ -873,6 +866,13 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // Use a single rect source for zone math — mixing dnd-kit's cached top with a
       // live height skews center/top/bottom boundaries after layout shifts.
       const intentRect = liveRect ?? { top: overRect.top, height: overRect.height };
+      const referenceY = getPointerYForIntent({
+        activatorPointerY: activatorPointerY ?? (activeRect
+          ? activeRect.top + activeRect.height / 2
+          : undefined),
+        capturedPointerY: pointerYReference.current,
+        rect: intentRect,
+      });
       const reorderIntent = getReorderIntentFromPointer({
         pointerY: referenceY,
         rect: intentRect,
