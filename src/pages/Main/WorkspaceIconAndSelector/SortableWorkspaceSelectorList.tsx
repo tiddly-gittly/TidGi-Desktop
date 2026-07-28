@@ -511,12 +511,18 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   // deriveDragState always reads the current pointer position.
   const pointerYReference = useRef<number | undefined>(undefined);
   useEffect(() => {
-    const handler = (event: PointerEvent) => {
+    const handler = (event: MouseEvent | PointerEvent) => {
       pointerYReference.current = event.clientY;
     };
+    // Electron on Windows can occasionally omit pointermove events emitted by
+    // Playwright's synthetic mouse while still dispatching the corresponding
+    // mousemove. Listen to both; native pointer input normally emits both with
+    // the same coordinates, so the duplicate assignment is harmless.
     window.addEventListener('pointermove', handler, { capture: true });
+    window.addEventListener('mousemove', handler, { capture: true });
     return () => {
       window.removeEventListener('pointermove', handler, { capture: true });
+      window.removeEventListener('mousemove', handler, { capture: true });
     };
   }, []);
 
