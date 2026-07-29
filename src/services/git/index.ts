@@ -401,7 +401,7 @@ export class Git implements IGitService {
 
   public async initScopedWikiGit(repoPath: string, scopedPath: string): Promise<void> {
     const { worker } = await this.getWorkerForRepoPath(repoPath);
-    await worker.runGitOperation('initScopedWikiGit', [repoPath, scopedPath]);
+    await worker.runGitOperation('initScopedWikiGit', [repoPath, scopedPath, i18n.t('LOG.CommitBackupMessage')]);
     logger.info(`[test-id-git-init-complete]`, { wikiFolderPath: repoPath, scopedPath });
   }
 
@@ -682,7 +682,8 @@ export class Git implements IGitService {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
     try {
-      await this.callGitOp('revertCommit', repoPath, commitHash, commitMessage);
+      const localizedRevertMessage = i18n.t('ContextMenu.RevertCommit', { message: commitMessage || commitHash });
+      await this.callGitOp('revertCommit', repoPath, commitHash, localizedRevertMessage);
       // Notify git state change BEFORE logging test marker
       // This ensures the notification is sent before tests start waiting for UI refresh
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'revert');
