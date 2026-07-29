@@ -15,6 +15,8 @@ export enum WindowNames {
    * Git history viewer window
    */
   gitHistory = 'gitHistory',
+  /** Structured application and workspace log viewer. */
+  logViewer = 'logViewer',
   /**
    * Window with workspace list and new wiki button on left side bar
    * We only have a single instance of main window, that is the app window.
@@ -79,6 +81,10 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     width: 1600,
     height: 800,
   },
+  [WindowNames.logViewer]: {
+    width: 1400,
+    height: 850,
+  },
   [WindowNames.preferences]: {
     width: 960,
     height: 800,
@@ -109,6 +115,7 @@ export interface WindowMeta {
   [WindowNames.auth]: undefined;
   [WindowNames.editWorkspace]: { workspaceID?: string; preferenceGotoTab?: string };
   [WindowNames.gitHistory]: { workspaceID?: string };
+  [WindowNames.logViewer]: { workspaceID?: string; initialProcess?: 'wiki-worker' | 'renderer' };
   [WindowNames.main]: { forceClose?: boolean };
   [WindowNames.tidgiMiniWindow]: undefined;
   [WindowNames.notifications]: undefined;

@@ -1,4 +1,5 @@
 import { findAvailablePort } from '@services/libs/port';
+import { format } from 'date-fns';
 import { app, dialog, shell, type UtilityProcess } from 'electron';
 import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
 import { attachUtilityProcess } from 'electron-ipc-cat/server';
@@ -1096,11 +1097,9 @@ export class Wiki implements IWikiService {
     return { featureAvailable: false };
   }
 
-  public async getWikiErrorLogs(_workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }> {
-    // All logs (including errors) are now in the labeled logger file
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const logFileName = `${wikiName}-${today}.log`;
-    const filePath = path.join(LOG_FOLDER, logFileName);
+  public async getWikiErrorLogs(workspaceID: string, _wikiName: string): Promise<{ content: string; filePath: string }> {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const filePath = path.join(LOG_FOLDER, today, 'workspaces', workspaceID, 'wiki-worker.log');
 
     try {
       const content = await readFile(filePath, 'utf8');

@@ -26,11 +26,17 @@ declare global {
   }
 }
 
+if (browserViewMetaData.windowName !== WindowNames.view) {
+  void consoleLogToLogFile({
+    process: 'renderer',
+    scope: { kind: 'global' },
+    component: `window-${browserViewMetaData.windowName}`,
+    pid: process.pid,
+  });
+}
+
 switch (browserViewMetaData.windowName) {
   case WindowNames.main: {
-    // Enable console logging to file for main window
-    void consoleLogToLogFile('TidGi');
-
     /**
      * automatically reload page/wiki when wifi/network is re-connected to a different one, which may cause local ip changed. Or wifi status changed when wiki startup, causing wiki not loaded properly.
      * @url https://www.electronjs.org/docs/latest/tutorial/online-offline-events

@@ -72,6 +72,7 @@ import {
 import { Observable } from 'rxjs';
 import { defaultGitInfo } from './defaultGitInfo';
 import { ensureGitIdentity } from './gitOperations';
+import * as gitOperations from './gitOperations';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 
 function initWikiGit(
@@ -304,6 +305,7 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
 }
 
 const gitWorker = {
+  ...gitOperations,
   initWikiGit,
   commitAndSyncWiki,
   cloneWiki,

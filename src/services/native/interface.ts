@@ -2,6 +2,7 @@ import { MessageBoxOptions } from 'electron';
 import { Observable } from 'rxjs';
 
 import { NativeChannel } from '@/constants/channels';
+import type { LogContext, LogLevel } from '@services/libs/log/schema';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IZxFileInput } from '@services/wiki/wikiWorker';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -86,15 +87,8 @@ export interface INativeService {
    */
   getAllLocalHostUrlsWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string[]>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
-  /**
-   * Log a message for a specific label (e.g., wiki name)
-   * Each label gets its own log file in the wikis subdirectory
-   * @param label The label for the log (e.g., wiki workspace name)
-   * @param level Log level (error, warn, info, debug)
-   * @param message Log message
-   * @param meta Optional metadata
-   */
-  logFor(label: string, level: 'error' | 'warn' | 'info' | 'debug', message: string, meta?: Record<string, unknown>): Promise<void>;
+  /** Write a log record with an explicit workspace/process routing context. */
+  logFor(context: LogContext, level: LogLevel, message: string, meta?: Record<string, unknown>): Promise<void>;
   mkdir(absoulutePath: string): Promise<void>;
   /**
    * Move a file or directory. The directory can have contents.

@@ -7,6 +7,7 @@ const AboutPage = lazy(() => import('./About'));
 const DialogAddWorkspace = lazy(() => import('./AddWorkspace'));
 const EditWorkspace = lazy(() => import('./EditWorkspace'));
 const GitHistory = lazy(() => import('./GitLog'));
+const LogViewer = lazy(() => import('./LogViewer'));
 const Main = lazy(() => import('../pages/Main'));
 const DialogNotifications = lazy(() => import('./Notifications'));
 const DialogPreferences = lazy(() => import('./Preferences'));
@@ -30,6 +31,7 @@ export function Pages(): React.JSX.Element {
         <Route path={`/${WindowNames.addWorkspace}`} component={DialogAddWorkspace} />
         <Route path={`/${WindowNames.editWorkspace}`} component={EditWorkspace} />
         <Route path={`/${WindowNames.gitHistory}`} component={GitHistory} />
+        <Route path={`/${WindowNames.logViewer}`} component={LogViewer} />
         <Route path={`/${WindowNames.notifications}`} component={DialogNotifications} />
         <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
         <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />

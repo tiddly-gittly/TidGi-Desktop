@@ -366,7 +366,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         for (const ws of workspaces) {
           if (isWikiWorkspace(ws)) {
             try {
-              const hash = await gitService.callGitOp('getHeadCommitHash', ws.wikiFolderLocation);
+              const hash = await gitService.callGitOpForWorkspace(ws.id, 'getHeadCommitHash', ws.wikiFolderLocation);
               beforeCommitMap[ws.id] = { wikiFolderLocation: ws.wikiFolderLocation, commitHash: hash };
             } catch {
               // Workspace may not have git initialized — skip silently
@@ -736,9 +736,9 @@ export class AgentInstanceService implements IAgentInstanceService {
     const allChangedFiles: Array<{ path: string; status: string }> = [];
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
 
-    for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+    for (const [workspaceID, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
       try {
-        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        const changedFiles = await gitService.callGitOpForWorkspace(workspaceID, 'getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
         for (const file of changedFiles) {
           allChangedFiles.push({ path: file.path, status: file.status });
         }
@@ -770,17 +770,17 @@ export class AgentInstanceService implements IAgentInstanceService {
     const errors: string[] = [];
     const gitService = container.get<IGitService>(serviceIdentifier.Git);
 
-    for (const [_workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+    for (const [workspaceID, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
       try {
         // Get the list of files that changed since the beforeCommitHash
-        const changedFiles = await gitService.callGitOp('getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        const changedFiles = await gitService.callGitOpForWorkspace(workspaceID, 'getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
 
         if (changedFiles.length === 0) continue;
 
         // Restore each file to its state at the beforeCommitHash
         for (const file of changedFiles) {
           try {
-            await gitService.callGitOp('restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
+            await gitService.callGitOpForWorkspace(workspaceID, 'restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
             rolledBack++;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);

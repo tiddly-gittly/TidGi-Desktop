@@ -5,6 +5,7 @@ import { onWorkerServicesReady } from './servicesReady';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import type { TidgiService } from '@/types/tidgi-tw';
+import { workspaceLogContext } from '@services/libs/log/schema';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import type { Server } from 'node:http';
@@ -65,8 +66,9 @@ async function bootWiki(
 
   // Log which TiddlyWiki version is being used (local vs built-in)
   const isUsingLocalTiddlyWiki = TIDDLY_WIKI_BOOT_PATH.includes(path.join(homePath, 'node_modules'));
+  const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
   void native.logFor(
-    workspace.name,
+    logContext,
     'info',
     `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
   );
@@ -89,7 +91,7 @@ async function bootWiki(
       homePath,
       subWikis,
       { allowLoadingWithoutWikiInfo: useWikiFolderAsTiddlersPath },
-      workspace.name,
+      logContext,
       native,
     );
   }
@@ -208,19 +210,20 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     }
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
-      void native.logFor(workspace.name, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
+      const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
+      void native.logFor(logContext, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
       const textDecoder = new TextDecoder();
       intercept(
         (newStdOut: string | Uint8Array) => {
           const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
-          void native.logFor(workspace.name, 'info', message).catch((error: unknown) => {
+          void native.logFor(logContext, 'info', message).catch((error: unknown) => {
             console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
           });
           return message;
         },
         (newStdError: string | Uint8Array) => {
           const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
-          void native.logFor(workspace.name, 'error', message).catch((error: unknown) => {
+          void native.logFor(logContext, 'error', message).catch((error: unknown) => {
             console.error('[intercept] Failed to send stderr to main process:', error, message);
           });
           if (

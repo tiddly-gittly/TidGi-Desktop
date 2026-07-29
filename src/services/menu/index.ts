@@ -1,3 +1,4 @@
+import { isTest } from '@/constants/environment';
 import { getWorkspaceIdFromUrl } from '@/constants/urls';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -379,6 +380,9 @@ export class MenuService implements IMenuService {
         });
     }
 
+    if (isTest) {
+      (globalThis as typeof globalThis & { __tidgiLastContextMenu?: Menu }).__tidgiLastContextMenu = menu;
+    }
     menu.popup();
   }
 }

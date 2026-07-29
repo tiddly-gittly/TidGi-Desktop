@@ -6,7 +6,7 @@ import { sectionById } from '@services/preferences/definitions/registry';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { type ComponentType, lazy, type LazyExoticComponent, Suspense } from 'react';
 import { registerCustomComponent } from './customComponentRegistry';
-import { DeveloperDiagPanelItem, DeveloperExternalApiItem, DeveloperMcpVsCodeUrlItem } from './customItems/DeveloperToolsItems';
+import { DeveloperDiagPanelItem, DeveloperExternalApiItem, DeveloperLogViewerItem, DeveloperMcpVsCodeUrlItem } from './customItems/DeveloperToolsItems';
 import { LanguageSelectorItem } from './customItems/LanguageSelectorItem';
 import { NotificationHelpTextItem, NotificationTestItem } from './customItems/NotificationItems';
 import { NotificationScheduleItem } from './customItems/NotificationScheduleItem';
@@ -53,6 +53,7 @@ export function registerCustomSections(): void {
   registerCustomComponent('languages.selector', LanguageSelectorItem);
   registerCustomComponent('languages.spellcheckLanguages', SpellcheckLanguagesItem);
   registerCustomComponent('developers.diagPanel', DeveloperDiagPanelItem);
+  registerCustomComponent('developers.logViewer', DeveloperLogViewerItem);
   registerCustomComponent('developers.mcpVsCodeUrl', DeveloperMcpVsCodeUrlItem);
   registerCustomComponent('developers.externalApi', DeveloperExternalApiItem);
   registerCustomComponent('sync.tokenForm', SyncTokenFormItem);

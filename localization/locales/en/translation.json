@@ -490,6 +490,8 @@
   },
   "Open": "Open",
   "Preference": {
+    "OpenLogViewer": "Open Log Viewer",
+    "OpenLogViewerDetail": "Browse and search logs by date, workspace, and process",
     "AddAlarm": "Add Alarm",
     "AddHeartbeat": "Add Heartbeat",
     "AIGenerateBackupTitle": "AI Generate Backup Title",
@@ -756,6 +758,10 @@
     "HibernateWorkspace": "Hibernate Workspace",
     "OpenInBrowser": "Open in browser",
     "OpenInBrowserDisabledHint": "(Config→EnableHTTPAPI to enable)",
+    "OpenLogs": "Open Logs",
+    "BackupHistoryLog": "Backup History Log",
+    "ServerLog": "Server Log",
+    "FrontendLog": "Frontend Web Log",
     "OpenWorkspaceFolder": "Open Folder",
     "OpenHtmlWikiFile": "Open HTML File",
     "OpenHtmlWikiFolder": "Open Containing Folder",
@@ -770,6 +776,19 @@
     "RemoveWorkspaceAndDeleteHtmlFile": "Remove workspace and delete HTML file from the disk",
     "ViewGitHistory": "View Backup History (Git)",
     "WakeUpWorkspace": "WakeUp Workspace"
+  },
+  "LogViewer": {
+    "CopyJSON": "Copy JSON",
+    "CopyMessage": "Copy message",
+    "Date": "Date",
+    "Global": "Global",
+    "LoadOlder": "Load older",
+    "NoEntries": "No matching log entries.",
+    "NoSources": "No log source is available for this date.",
+    "Refresh": "Refresh",
+    "Search": "Search the selected log",
+    "Title": "Log Viewer",
+    "Workspaces": "Workspaces"
   },
   "Yes": "Yes"
 }

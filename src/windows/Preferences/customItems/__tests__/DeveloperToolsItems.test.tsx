@@ -119,8 +119,8 @@ describe('DeveloperTools custom items', () => {
       configurable: true,
     });
 
-    Object.defineProperty(window.service.git, 'getWorkerInfo', {
-      value: vi.fn().mockResolvedValue(undefined),
+    Object.defineProperty(window.service.git, 'getWorkerInfos', {
+      value: vi.fn().mockResolvedValue([]),
       writable: true,
       configurable: true,
     });
