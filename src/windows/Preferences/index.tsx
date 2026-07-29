@@ -1,5 +1,5 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useInfoSnackbar } from '@/components/InfoSnackbar';
@@ -16,55 +16,46 @@ import { registerCustomSections } from './registerCustomSections';
 import { AllSectionsRenderer } from './SchemaRenderer';
 import { SearchBar } from './SearchBar';
 import { SectionSideBar } from './SectionsSideBar';
-import { usePreferenceGotoTab } from './usePreferenceGotoTab';
+import { useSectionNavigation } from './useSectionNavigation';
 import type { ISectionRecord } from './useSections';
 
 // Register custom section components on module load
 registerCustomSections();
 
-/** Build ISectionRecord from allSections for sidebar + scroll nav */
-function useSectionRecord(): { record: ISectionRecord; refs: Map<string, React.RefObject<HTMLSpanElement | null>> } {
+/** Build ISectionRecord from allSections for sidebar navigation */
+function useSectionRecord(): ISectionRecord {
   const { t } = useTranslation(['translation', 'agent']);
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
-  const references = useMemo(() => {
-    const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
-    for (const section of allSections) {
-      map.set(section.id, React.createRef<HTMLSpanElement>());
-    }
-    return map;
-  }, []);
-
-  const record = useMemo(() => {
+  return useMemo(() => {
     const result: ISectionRecord = {};
     for (const section of allSections) {
       result[section.id] = {
         text: t(section.titleKey, section.ns ? { ns: section.ns } : undefined),
         Icon: section.Icon,
         hidden: evaluateHidden(section.hidden, { preference, platform }),
-        ref: references.get(section.id) ?? React.createRef<HTMLSpanElement>(),
       };
     }
     return result;
-  }, [t, references, preference, platform]);
-
-  return { record, refs: references };
+  }, [t, preference, platform]);
 }
 
 export default function Preferences(): React.JSX.Element {
   const { t } = useTranslation();
-  const { record: sections, refs: sectionReferences } = useSectionRecord();
+  const sections = useSectionRecord();
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   const [_showInfoSnackbar, InfoSnackbarComponent] = useInfoSnackbar();
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputReference = useRef<HTMLInputElement>(null);
+  const { completeNavigation, navigateToSection, navigationRequest } = useSectionNavigation(WindowNames.preferences);
 
   const handleSearchClick = () => {
     searchInputReference.current?.focus();
   };
 
-  // handle open preference from other window, and goto some tab
-  usePreferenceGotoTab(WindowNames.preferences, sectionReferences, { searchQuery });
+  useEffect(() => {
+    if (navigationRequest) setSearchQuery('');
+  }, [navigationRequest]);
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -77,14 +68,21 @@ export default function Preferences(): React.JSX.Element {
         <title>{t('ContextMenu.Preferences')}</title>
       </Helmet>
 
-      {!isSearching && <SectionSideBar sections={sections} onSearchClick={handleSearchClick} />}
+      {!isSearching && (
+        <SectionSideBar
+          sections={sections}
+          onSearchClick={handleSearchClick}
+          onSectionClick={navigateToSection}
+        />
+      )}
       <Inner>
         <SearchBar value={searchQuery} onChange={setSearchQuery} inputRef={searchInputReference} />
 
         <AllSectionsRenderer
           query={searchQuery}
           onNeedsRestart={requestRestartCountDown}
-          sectionRefs={sectionReferences}
+          navigationRequest={navigationRequest}
+          onNavigationComplete={completeNavigation}
         />
       </Inner>
     </Root>

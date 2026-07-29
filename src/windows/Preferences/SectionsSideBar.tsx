@@ -9,6 +9,7 @@ import type { ISectionRecord } from './useSections';
 
 interface SectionSideBarProps {
   onSearchClick: () => void;
+  onSectionClick: (sectionId: string) => void;
   sections: ISectionRecord;
 }
 
@@ -63,7 +64,7 @@ export function SectionSideBar(props: SectionSideBarProps): React.JSX.Element {
         </SideMenuListItem>
         <Divider />
         {Object.keys(props.sections).map((sectionKey, index) => {
-          const { Icon, text, ref, hidden } = props.sections[sectionKey as PreferenceSections];
+          const { Icon, text, hidden } = props.sections[sectionKey as PreferenceSections];
           if (hidden === true) return null;
           return (
             <React.Fragment key={sectionKey}>
@@ -71,11 +72,12 @@ export function SectionSideBar(props: SectionSideBarProps): React.JSX.Element {
               <SideMenuListItem
                 index={index + 1}
                 onClick={() => {
-                  ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  props.onSectionClick(sectionKey);
                   // Log for E2E test
                   void window.service.native.log('debug', 'test-id-Preferences section clicked', { section: sectionKey });
                 }}
                 data-testid={`preference-section-${sectionKey}`}
+                data-section-id={sectionKey}
               >
                 <ListItemIcon>
                   <Icon />

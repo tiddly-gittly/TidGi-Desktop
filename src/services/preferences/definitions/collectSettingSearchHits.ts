@@ -76,19 +76,19 @@ export function itemMatchesSettingSearchQuery(
   );
 }
 
-export function collectSettingSearchHits(
-  sections: ReadonlyArray<ISettingSearchSection>,
+export function collectSettingSearchHits<TSection extends ISettingSearchSection>(
+  sections: ReadonlyArray<TSection>,
   query: string,
   context: ISettingSearchContext,
   options?: {
-    shouldSkipItem?: (item: ISettingSearchItem, section: ISettingSearchSection) => boolean;
-    shouldSkipSection?: (section: ISettingSearchSection) => boolean;
+    shouldSkipItem?: (item: ISettingSearchItem, section: TSection) => boolean;
+    shouldSkipSection?: (section: TSection) => boolean;
   },
-): Array<{ item: ISettingSearchItem & { titleKey: string }; section: ISettingSearchSection }> {
+): Array<{ item: ISettingSearchItem & { titleKey: string }; section: TSection }> {
   const normalizedQuery = query.toLowerCase().trim();
   if (!normalizedQuery) return [];
 
-  const hits: Array<{ item: ISettingSearchItem & { titleKey: string }; section: ISettingSearchSection }> = [];
+  const hits: Array<{ item: ISettingSearchItem & { titleKey: string }; section: TSection }> = [];
   for (const section of sections) {
     if (options?.shouldSkipSection?.(section)) continue;
     for (const item of section.items) {

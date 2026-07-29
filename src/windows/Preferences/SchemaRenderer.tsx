@@ -29,6 +29,9 @@ import type { IPreferences } from '@services/preferences/interface';
 import { getCustomComponent } from './customComponentRegistry';
 import { HighlightText } from './HighlightText';
 import { Paper, SectionTitle } from './PreferenceComponents';
+import { ProgressiveItemList } from './ProgressiveItemList';
+import type { ISectionNavigationRequest } from './useSectionNavigation';
+import { type IVirtualizedSettingsEntry, VirtualizedSettingsList } from './VirtualizedSettingsList';
 
 // ─── Platform filter ─────────────────────────────────────────────────
 
@@ -378,11 +381,12 @@ interface ISectionRendererProps {
   onNeedsRestart: () => void;
   platform: string | undefined;
   preference: IPreferences;
+  renderAllItems?: boolean;
   sectionRef: React.RefObject<HTMLSpanElement | null>;
   section: ISectionDefinition;
 }
 
-export function SectionRenderer({ section, sectionRef, preference, platform, onNeedsRestart }: ISectionRendererProps): React.JSX.Element {
+export function SectionRenderer({ section, sectionRef, preference, platform, onNeedsRestart, renderAllItems }: ISectionRendererProps): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   return (
     <>
@@ -391,9 +395,10 @@ export function SectionRenderer({ section, sectionRef, preference, platform, onN
       </SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {preference === undefined
-            ? <ListItem>{t('Loading')}</ListItem>
-            : section.items.map((item, index) => (
+          <ProgressiveItemList
+            items={section.items}
+            renderAll={renderAllItems}
+            renderItem={(item, index) => (
               <ItemRenderer
                 key={item.type === 'divider' ? `divider-${index}` : ('key' in item ? item.key : `item-${index}`)}
                 item={item}
@@ -401,7 +406,8 @@ export function SectionRenderer({ section, sectionRef, preference, platform, onN
                 platform={platform}
                 onNeedsRestart={onNeedsRestart}
               />
-            ))}
+            )}
+          />
         </List>
       </Paper>
     </>
@@ -411,52 +417,83 @@ export function SectionRenderer({ section, sectionRef, preference, platform, onN
 // ─── All sections view ───────────────────────────────────────────────
 
 interface IAllSectionsRendererProps {
+  navigationRequest?: ISectionNavigationRequest;
+  onNavigationComplete?: (requestId: number) => void;
   onNeedsRestart: () => void;
   /** When provided, renders a flat filtered search-results view instead of the full sections layout. */
   query?: string;
-  sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
+  sectionRefs?: Map<string, React.RefObject<HTMLSpanElement | null>>;
 }
 
-const INITIAL_SECTION_COUNT = 4;
-
-/** Placeholder skeleton shown for deferred sections while waiting for idle time */
-function DeferredSectionSkeleton({ sectionRef }: { sectionRef?: React.RefObject<HTMLSpanElement | null> }): React.JSX.Element {
-  return (
-    <>
-      {/* Invisible anchor so sidebar scrollIntoView works even before the real section renders */}
-      <span ref={sectionRef} style={{ display: 'block', height: 0, overflow: 'hidden' }} />
-      <Skeleton variant='text' width={160} height={20} sx={{ mb: 1, mt: 2 }} />
-      <Skeleton variant='rounded' height={56} sx={{ mb: 0.5 }} />
-      <Skeleton variant='rounded' height={56} sx={{ mb: 0.5 }} />
-      <Skeleton variant='rounded' height={56} sx={{ mb: 2 }} />
-    </>
-  );
+interface IPreferenceSectionEntry extends IVirtualizedSettingsEntry {
+  section: ISectionDefinition;
+  sectionRef: React.RefObject<HTMLSpanElement | null>;
 }
 
-export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }: IAllSectionsRendererProps): React.JSX.Element {
+interface IPreferenceSearchEntry extends IVirtualizedSettingsEntry {
+  item: PreferenceItemDefinition;
+  section: ISectionDefinition;
+  sectionTitle: string;
+}
+
+export function AllSectionsRenderer({
+  onNeedsRestart,
+  sectionRefs,
+  navigationRequest,
+  onNavigationComplete,
+  query = '',
+}: IAllSectionsRendererProps): React.JSX.Element {
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   const isTest = usePromiseValue(async () => await window.service.context.get('isTest'));
   const { t } = useTranslation(['translation', 'agent']);
 
-  // All hooks must be called unconditionally before any conditional return.
-  const [visibleCount, setVisibleCount] = React.useState(INITIAL_SECTION_COUNT);
-  React.useEffect(() => {
-    if (isTest) {
-      setVisibleCount(allSections.length);
+  const internalSectionReferences = React.useMemo(() => {
+    const references = new Map<string, React.RefObject<HTMLSpanElement | null>>();
+    for (const section of allSections) references.set(section.id, React.createRef<HTMLSpanElement>());
+    return references;
+  }, []);
+  const references = sectionRefs ?? internalSectionReferences;
+
+  const visibleSections = React.useMemo(
+    () =>
+      preference === undefined
+        ? []
+        : allSections.filter((section) => !evaluateHidden(section.hidden, { preference, platform })),
+    [platform, preference],
+  );
+  const sectionEntries = React.useMemo<IPreferenceSectionEntry[]>(
+    () =>
+      visibleSections.map((section) => ({
+        estimatedHeight: Math.max(200, Math.min(800, 80 + section.items.length * 56)),
+        id: section.id,
+        section,
+        sectionRef: references.get(section.id) ?? React.createRef<HTMLSpanElement>(),
+      })),
+    [references, visibleSections],
+  );
+  const renderSectionEntry = React.useCallback((entry: IPreferenceSectionEntry) => {
+    const { section, sectionRef } = entry;
+    if (section.CustomSectionComponent) {
+      const CustomComponent = section.CustomSectionComponent;
+      return <CustomComponent sectionRef={sectionRef} onNeedsRestart={onNeedsRestart} />;
     }
-  }, [isTest]);
-  React.useEffect(() => {
-    if (isTest) return; // in test mode, all sections are visible immediately
-    if (query.trim()) return;
-    if (preference === undefined || visibleCount >= allSections.length) return;
-    const id = requestIdleCallback(() => {
-      setVisibleCount((c) => Math.min(c + 4, allSections.length));
-    }, { timeout: 500 });
-    return () => {
-      cancelIdleCallback(id);
-    };
-  }, [visibleCount, preference, query]);
+    if (!preference) return null;
+    return (
+      <SectionRenderer
+        section={section}
+        sectionRef={sectionRef}
+        preference={preference}
+        platform={platform}
+        onNeedsRestart={onNeedsRestart}
+        renderAllItems={isTest}
+      />
+    );
+  }, [isTest, onNeedsRestart, platform, preference]);
+
+  if (isTest === undefined) {
+    return <Skeleton variant='rounded' height={240} />;
+  }
 
   // ── Search mode ───────────────────────────────────────────────────
   if (query.trim()) {
@@ -479,69 +516,52 @@ export function AllSectionsRenderer({ onNeedsRestart, sectionRefs, query = '' }:
         </Typography>
       );
     }
+    const searchEntries: IPreferenceSearchEntry[] = hits.map(({ item, section }, index) => {
+      const preferenceItem = item as PreferenceItemDefinition;
+      const itemKey = 'key' in preferenceItem ? preferenceItem.key : ('handler' in preferenceItem ? `action-${preferenceItem.handler}` : `item-${index}`);
+      return {
+        estimatedHeight: 100,
+        id: `${section.id}:${itemKey}:${index}`,
+        item: preferenceItem,
+        section,
+        sectionTitle: t(section.titleKey, section.ns ? { ns: section.ns } : undefined),
+      };
+    });
     return (
-      <>
-        {hits.map(({ item, section }, index) => {
-          const preferenceItem = item as PreferenceItemDefinition;
-          const sectionTitle = t(section.titleKey, section.ns ? { ns: section.ns } : undefined);
-          const itemKey = 'key' in preferenceItem ? preferenceItem.key : ('handler' in preferenceItem ? `action-${preferenceItem.handler}-${index}` : `item-${index}`);
-          return (
-            <React.Fragment key={itemKey}>
-              {index > 0 && <Divider />}
-              <SearchSectionLabel>
-                <HighlightText text={sectionTitle} query={query} />
-              </SearchSectionLabel>
-              <ItemRenderer
-                item={preferenceItem}
-                preference={preference}
-                platform={platform}
-                onNeedsRestart={onNeedsRestart}
-                query={query}
-              />
-            </React.Fragment>
-          );
-        })}
-      </>
+      <VirtualizedSettingsList
+        entries={searchEntries}
+        defaultRowHeight={100}
+        renderEntry={(entry) => (
+          <>
+            <SearchSectionLabel>
+              <HighlightText text={entry.sectionTitle} query={query} />
+            </SearchSectionLabel>
+            <ItemRenderer
+              item={entry.item}
+              preference={preference}
+              platform={platform}
+              onNeedsRestart={onNeedsRestart}
+              query={query}
+            />
+            <Divider />
+          </>
+        )}
+      />
     );
   }
 
   // ── Normal (non-search) mode ──────────────────────────────────────
 
   if (preference === undefined) {
-    // Show skeletons for all sections while preferences load — with refs attached for sidebar nav
-    return (
-      <>
-        {allSections.map((s) => <DeferredSectionSkeleton key={s.id} sectionRef={sectionRefs.get(s.id)} />)}
-      </>
-    );
+    return <Skeleton variant='rounded' height={240} />;
   }
 
   return (
-    <>
-      {allSections.slice(0, visibleCount).map((section) => {
-        if (evaluateHidden(section.hidden, { preference, platform })) return null;
-        const reference = sectionRefs.get(section.id) ?? React.createRef<HTMLSpanElement>();
-        // If the section provides a custom component, use it instead of the schema renderer
-        if (section.CustomSectionComponent) {
-          const CustomComponent = section.CustomSectionComponent;
-          return <CustomComponent key={section.id} sectionRef={reference} onNeedsRestart={onNeedsRestart} />;
-        }
-        return (
-          <SectionRenderer
-            key={section.id}
-            section={section}
-            sectionRef={reference}
-            preference={preference}
-            platform={platform}
-            onNeedsRestart={onNeedsRestart}
-          />
-        );
-      })}
-      {/* Skeleton placeholders for deferred sections — refs attached so sidebar nav still works */}
-      {allSections.slice(visibleCount).map((section) => {
-        if (evaluateHidden(section.hidden, { preference, platform })) return null;
-        return <DeferredSectionSkeleton key={section.id} sectionRef={sectionRefs.get(section.id)} />;
-      })}
-    </>
+    <VirtualizedSettingsList
+      entries={sectionEntries}
+      navigationRequest={navigationRequest}
+      onNavigationComplete={onNavigationComplete}
+      renderEntry={renderSectionEntry}
+    />
   );
 }

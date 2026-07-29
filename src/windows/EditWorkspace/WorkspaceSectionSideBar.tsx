@@ -40,13 +40,13 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
 `;
 
 interface WorkspaceSectionSideBarProps {
+  onSectionClick: (sectionId: string) => void;
   sections: IGenericSectionDefinition[];
-  sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
   hiddenSections?: Set<string>;
   onSearchClick: () => void;
 }
 
-export function WorkspaceSectionSideBar({ sections, sectionRefs, hiddenSections, onSearchClick }: WorkspaceSectionSideBarProps): React.JSX.Element {
+export function WorkspaceSectionSideBar({ sections, hiddenSections, onSearchClick, onSectionClick }: WorkspaceSectionSideBarProps): React.JSX.Element {
   const { t } = useTranslation();
   const visibleSections = sections.filter((s) => !hiddenSections?.has(s.id) && !s.hidden);
 
@@ -71,9 +71,10 @@ export function WorkspaceSectionSideBar({ sections, sectionRefs, hiddenSections,
               <SideMenuListItem
                 index={index + 1}
                 onClick={() => {
-                  sectionRefs.get(section.id)?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  onSectionClick(section.id);
                 }}
                 data-testid={`preference-section-${section.id}`}
+                data-section-id={section.id}
               >
                 <ListItemIcon>
                   <Icon />

@@ -2,7 +2,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { type IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { allWorkspaceSections, getWorkspaceSectionsForType } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { isWikiWorkspace, type IWorkspace, nonConfigFields } from '@services/workspaces/interface';
@@ -14,7 +14,7 @@ import { isEqual, omit } from 'lodash';
 import { AllGenericSectionsRenderer, createRecordSchemaStore } from '../Preferences/GenericSchemaRenderer';
 import { PageInner as Inner } from '../Preferences/PreferenceComponents';
 import { SearchBar } from '../Preferences/SearchBar';
-import { usePreferenceGotoTab } from '../Preferences/usePreferenceGotoTab';
+import { useSectionNavigation } from '../Preferences/useSectionNavigation';
 import { registerWorkspaceCustomItems } from './registerWorkspaceCustomItems';
 import { Outter } from './styles';
 import { Button, SaveCancelButtonsContainer } from './styles';
@@ -56,6 +56,7 @@ export default function EditWorkspace(): React.JSX.Element {
   const isSubWiki = isWiki ? workspace.isSubWiki : false;
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputReference = useRef<HTMLInputElement>(null);
+  const { completeNavigation, navigateToSection, navigationRequest } = useSectionNavigation(WindowNames.editWorkspace);
 
   const handleSearchClick = () => {
     searchInputReference.current?.focus();
@@ -91,6 +92,20 @@ export default function EditWorkspace(): React.JSX.Element {
     };
   }, [workspaceID]);
 
+  // Reused edit-workspace windows receive fresh metadata instead of being
+  // recreated. Keep both the workspace and section navigation in sync.
+  useEffect(() => {
+    const handleWindowMetaUpdated = (_event: Electron.IpcRendererEvent, meta: IPossibleWindowMeta<WindowMeta[WindowNames.editWorkspace]>) => {
+      if (meta.windowName !== WindowNames.editWorkspace || !meta.workspaceID || meta.workspaceID === workspaceID) return;
+      setWorkspaceID(meta.workspaceID);
+      setFallbackWorkspace(undefined);
+    };
+    window.remote.registerWindowMetaUpdated(handleWindowMetaUpdated);
+    return () => {
+      window.remote.unregisterWindowMetaUpdated(handleWindowMetaUpdated);
+    };
+  }, [workspaceID]);
+
   const hiddenSections = useMemo(() => {
     const hidden = new Set<string>();
     if (isSubWiki) hidden.add('server');
@@ -105,17 +120,9 @@ export default function EditWorkspace(): React.JSX.Element {
     return getWorkspaceSectionsForType(getWorkspaceType(workspace));
   }, [isWiki, workspace]);
 
-  // Build section refs from registry
-  const sectionReferences = useMemo(() => {
-    const map = new Map<string, React.RefObject<HTMLSpanElement | null>>();
-    for (const section of workspaceSections) {
-      map.set(section.id, React.createRef<HTMLSpanElement>());
-    }
-    return map;
-  }, [workspaceSections]);
-
-  // Scroll to the section requested via deep link (tidgi://workspace/preferences/...)
-  usePreferenceGotoTab(WindowNames.editWorkspace, sectionReferences, { searchQuery });
+  useEffect(() => {
+    if (navigationRequest) setSearchQuery('');
+  }, [navigationRequest]);
 
   const wikiWorkspace = isWiki ? workspace : undefined;
   const workspaceStore = useMemo(
@@ -149,7 +156,12 @@ export default function EditWorkspace(): React.JSX.Element {
       {wikiWorkspace && workspaceStore && (
         <WorkspaceFormProvider workspace={wikiWorkspace} workspaceSetter={workspaceSetter}>
           {!isSearching && (
-            <WorkspaceSectionSideBar sections={workspaceSections} sectionRefs={sectionReferences} hiddenSections={hiddenSections} onSearchClick={handleSearchClick} />
+            <WorkspaceSectionSideBar
+              sections={workspaceSections}
+              hiddenSections={hiddenSections}
+              onSearchClick={handleSearchClick}
+              onSectionClick={navigateToSection}
+            />
           )}
           <Inner>
             <AllGenericSectionsRenderer
@@ -157,8 +169,9 @@ export default function EditWorkspace(): React.JSX.Element {
               store={workspaceStore}
               query={searchQuery}
               onNeedsRestart={requestRestartCountDown}
-              sectionRefs={sectionReferences}
               hiddenSections={hiddenSections}
+              navigationRequest={navigationRequest}
+              onNavigationComplete={completeNavigation}
             />
           </Inner>
         </WorkspaceFormProvider>

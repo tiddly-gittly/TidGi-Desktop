@@ -26,5 +26,8 @@ ipcRenderer.on(MetaDataChannel.getViewMetaData, (_event, payload?: { ipcToken: s
  * Receive update or windowMeta from server service.
  */
 ipcRenderer.on(MetaDataChannel.pushViewMetaData, (_event, payload?: IPossibleWindowMeta) => {
-  browserViewMetaData = { ...browserViewMetaData, ...payload };
+  browserViewMetaData = {
+    windowName: payload?.windowName ?? browserViewMetaData.windowName,
+    ...(payload ?? {}),
+  };
 });
