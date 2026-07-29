@@ -59,7 +59,10 @@ const workspacesListDefinition = registerToolDefinition({
 
     // Get available wikis
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspaces = await workspaceService.getWorkspacesAsList();
+    // Startup and tests can briefly observe the service before its workspace
+    // cache is populated. Treat that as an empty list instead of aborting every
+    // prompt-processing hook for the Agent.
+    const workspaces = await workspaceService.getWorkspacesAsList() ?? [];
     const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
 
     if (wikiWorkspaces.length === 0) {
