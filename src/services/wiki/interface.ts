@@ -62,6 +62,8 @@ export interface IWikiService {
    */
   getWorkersInfo(): Promise<IWorkerInfo[]>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
+  /** E2E-only network probe executed inside the Wiki backend utility process. */
+  probeNetworkProxyForTest(workspaceID: string, url: string): Promise<string>;
   removeWiki(wikiPath: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
   setAllWikiStartLockOff(): void;
@@ -132,6 +134,7 @@ export const WikiServiceIPCDescriptor = {
     getTiddlerFilePath: ProxyPropertyType.Function,
     getTiddlerRoutingInfo: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
+    probeNetworkProxyForTest: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
     setWikiLanguage: ProxyPropertyType.Function,

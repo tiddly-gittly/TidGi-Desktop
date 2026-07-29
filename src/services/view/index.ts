@@ -177,7 +177,7 @@ export class View implements IViewService {
 
   public async getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences> {
     const { spellcheck } = this.preferenceService.getPreferences();
-    const sessionOfView = setupViewSession(workspace, this.preferenceService.getPreferences(), () => this.preferenceService.getPreferences());
+    const sessionOfView = await setupViewSession(workspace, this.preferenceService.getPreferences(), () => this.preferenceService.getPreferences());
     const browserViewMetaData: IBrowserViewMetaData = { workspace };
     return {
       devTools: true,

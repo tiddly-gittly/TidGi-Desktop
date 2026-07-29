@@ -8,6 +8,7 @@ import { WindowNames } from '../../src/services/windows/WindowProperties';
 import { killProcessTree } from '../supports/killProcessTree';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
+import type { MockProxyServer } from '../supports/mockProxy';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
@@ -64,6 +65,7 @@ export class ApplicationWorld {
   currentWindow: Page | undefined; // New state-managed current window
   mockOpenAIServer: MockOpenAIServer | undefined;
   mockOAuthServer: MockOAuthServer | undefined;
+  mockProxyServer: MockProxyServer | undefined;
   savedWorkspaceId: string | undefined; // For storing workspace ID between steps
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths

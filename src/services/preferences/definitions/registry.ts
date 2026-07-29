@@ -17,6 +17,7 @@ import { tidgiMiniWindowSection } from './tidgiMiniWindow';
 import type {
   IBooleanPreferenceItem,
   IEnumPreferenceItem,
+  IKeyedValueTabsPreferenceItem,
   INumberPreferenceItem,
   ISectionDefinition,
   IStringArrayPreferenceItem,
@@ -57,7 +58,14 @@ export const sectionById = new Map<string, ISectionDefinition>(allSections.map((
 /**
  * Type guard: is this a preference-backed item (has a `key`)?
  */
-export type PreferenceItem = IBooleanPreferenceItem | IEnumPreferenceItem | INumberPreferenceItem | IStringPreferenceItem | IStringArrayPreferenceItem | ITextPreferenceItem;
+export type PreferenceItem =
+  | IBooleanPreferenceItem
+  | IEnumPreferenceItem
+  | INumberPreferenceItem
+  | IStringPreferenceItem
+  | IStringArrayPreferenceItem
+  | ITextPreferenceItem
+  | IKeyedValueTabsPreferenceItem;
 
 export function isPreferenceItem(item: PreferenceItemDefinition): item is PreferenceItem {
   return item.type.startsWith('preference-');

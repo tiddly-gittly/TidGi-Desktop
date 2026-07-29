@@ -227,6 +227,11 @@ describe('Preferences - All Sections Rendering', () => {
   it('should render Network section', async () => {
     await renderAllSections();
     expect(screen.getByText('Preference.Network')).toBeInTheDocument();
+    expect(screen.getByText('Preference.ProxyServers')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Preference.ProxyDefault' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Preference.ProxyWikiBackend' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Preference.ProxyWikiFrontend' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Preference.ProxyGit' })).toBeInTheDocument();
     expect(screen.getByText('Preference.IgnoreCertificateErrors')).toBeInTheDocument();
   });
 

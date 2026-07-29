@@ -8,6 +8,7 @@ import GitWorkerFactory from './gitWorker?utilityProcess';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
+import { isDevelopmentOrTest } from '@/constants/environment';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -15,6 +16,7 @@ import { i18n } from '@services/libs/i18n';
 import { getLogger, logger, workspaceLogContext } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import { createNetworkProxyEnvironment } from '@services/preferences/networkProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkerInfo } from '@services/wiki/interface';
@@ -157,6 +159,7 @@ export class Git implements IGitService {
     const child = GitWorkerFactory({
       stdio: 'pipe',
       serviceName: workspace === undefined ? 'git-worker-global' : `git-worker-${workspace.id}`,
+      env: createNetworkProxyEnvironment(this.preferenceService.getPreferences(), 'git'),
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
     const proxy = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
@@ -231,6 +234,13 @@ export class Git implements IGitService {
         heapTotal_MB,
       };
     }));
+  }
+
+  public async probeNetworkProxyForTest(remoteUrl: string): Promise<string> {
+    if (!isDevelopmentOrTest) {
+      throw new Error('Network proxy probe is only available in development and tests');
+    }
+    return await (await this.getWorker()).probeNetworkProxyForTest(remoteUrl);
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {

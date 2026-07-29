@@ -1,5 +1,5 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Divider, List, ListItemButton, Skeleton, Switch, TextField, Typography } from '@mui/material';
+import { Box, Divider, List, ListItemButton, Skeleton, Switch, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ import type {
   IBooleanPreferenceItem,
   IEnumPreferenceItem,
   IFragmentListItem,
+  IKeyedValueTabsPreferenceItem,
   INumberPreferenceItem,
   ISectionDefinition,
   IStringArrayPreferenceItem,
@@ -28,6 +29,7 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IPreferences } from '@services/preferences/interface';
 import { getCustomComponent } from './customComponentRegistry';
 import { HighlightText } from './HighlightText';
+import { KeyValueTabs } from './KeyValueTabs';
 import { Paper, SectionTitle } from './PreferenceComponents';
 import { ProgressiveItemList } from './ProgressiveItemList';
 import type { ISectionNavigationRequest } from './useSectionNavigation';
@@ -280,6 +282,145 @@ function StringArrayItem({
   );
 }
 
+function KeyedValueStringField({
+  testId,
+  value,
+  onCommit,
+}: {
+  onCommit: (value: string) => Promise<void>;
+  testId: string;
+  value: string;
+}): React.JSX.Element {
+  const [localValue, setLocalValue] = React.useState(value);
+  React.useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  return (
+    <TextField
+      data-testid={testId}
+      size='small'
+      value={localValue}
+      placeholder='http://127.0.0.1:8080'
+      onChange={event => {
+        setLocalValue(event.target.value);
+      }}
+      onBlur={async () => {
+        await onCommit(localValue.trim());
+      }}
+      sx={{ minWidth: 280 }}
+    />
+  );
+}
+
+function KeyedValueTabsItem({
+  item,
+  preference,
+  onNeedsRestart,
+  query = '',
+}: {
+  item: IKeyedValueTabsPreferenceItem;
+  onNeedsRestart: () => void;
+  preference: IPreferences;
+  query?: string;
+}): React.JSX.Element {
+  const { t } = useTranslation(['translation', 'agent']);
+  const record = (preference[item.key] ?? {}) as unknown as Record<string, Record<string, unknown>>;
+  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
+
+  const updateField = async (tabKey: string, fieldKey: string, value: unknown) => {
+    const nextValue = {
+      ...record,
+      [tabKey]: {
+        ...(record[tabKey] ?? {}),
+        [fieldKey]: value,
+      },
+    } as unknown as IPreferences[typeof item.key];
+    await window.service.preference.set(item.key, nextValue);
+    if (item.needsRestart) {
+      onNeedsRestart();
+    }
+  };
+
+  if (query) {
+    return (
+      <ListItem>
+        <ListItemText
+          primary={<HighlightText text={primaryText} query={query} />}
+          secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        />
+      </ListItem>
+    );
+  }
+
+  return (
+    <ListItem sx={{ alignItems: 'stretch', flexDirection: 'column' }}>
+      <ListItemText primary={primaryText} secondary={secondaryText} />
+      <KeyValueTabs
+        ariaLabel={primaryText}
+        testId={`${item.key}-tabs`}
+        tabs={item.tabs.map(tab => {
+          const tabValue = record[tab.key] ?? {};
+          return {
+            key: tab.key,
+            label: t(tab.titleKey, item.ns ? { ns: item.ns } : undefined),
+            panel: (
+              <Box>
+                {tab.descriptionKey && (
+                  <Typography color='text.secondary' variant='body2' sx={{ mb: 2 }}>
+                    {t(tab.descriptionKey, item.ns ? { ns: item.ns } : undefined)}
+                  </Typography>
+                )}
+                {tab.fields.map(field => {
+                  if (
+                    field.hiddenWhenField &&
+                    tabValue[field.hiddenWhenField.key] === field.hiddenWhenField.equals
+                  ) {
+                    return null;
+                  }
+                  const fieldTitle = t(field.titleKey, item.ns ? { ns: item.ns } : undefined);
+                  const fieldDescription = field.descriptionKey
+                    ? t(field.descriptionKey, item.ns ? { ns: item.ns } : undefined)
+                    : undefined;
+                  const testId = `${item.key}-${tab.key}-${field.key}`;
+                  const rawFieldValue = tabValue[field.key];
+                  return (
+                    <Box
+                      key={field.key}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1 }}
+                    >
+                      <ListItemText primary={fieldTitle} secondary={fieldDescription} />
+                      {field.type === 'boolean' && (
+                        <Switch
+                          data-testid={testId}
+                          checked={Boolean(tabValue[field.key])}
+                          onChange={async event => {
+                            await updateField(tab.key, field.key, event.target.checked);
+                          }}
+                        />
+                      )}
+                      {field.type === 'string' && (
+                        <KeyedValueStringField
+                          testId={testId}
+                          value={typeof rawFieldValue === 'string' ? rawFieldValue : ''}
+                          onCommit={async value => {
+                            await updateField(tab.key, field.key, value);
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            ),
+          };
+        })}
+      />
+    </ListItem>
+  );
+}
+
 function ActionItem({ item, query = '' }: { item: IActionItem; query?: string }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
@@ -343,6 +484,8 @@ function ItemRenderer({
       return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'preference-string-array':
       return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+    case 'preference-key-value-tabs':
+      return <KeyedValueTabsItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'action':
       return <ActionItem item={item} query={query} />;
     case 'custom': {
