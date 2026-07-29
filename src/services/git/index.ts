@@ -31,7 +31,7 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
 export class Git implements IGitService {
-  private readonly workers = new Map<string, { proxy: GitWorker; nativeWorker: UtilityProcess }>();
+  private readonly workers = new Map<string, { proxy: GitWorker; nativeWorker: UtilityProcess; ready: Promise<void> }>();
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
   private operationLocks = new Map<string, Promise<void>>();
@@ -146,10 +146,13 @@ export class Git implements IGitService {
     });
   }
 
-  private getWorker(workspace?: IWorkspace): GitWorker {
+  private async getWorker(workspace?: IWorkspace): Promise<GitWorker> {
     const key = workspace?.id ?? '__global__';
     const existing = this.workers.get(key);
-    if (existing !== undefined) return existing.proxy;
+    if (existing !== undefined) {
+      await existing.ready;
+      return existing.proxy;
+    }
 
     const child = GitWorkerFactory({
       stdio: 'pipe',
@@ -157,7 +160,13 @@ export class Git implements IGitService {
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
     const proxy = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
-    this.workers.set(key, { proxy, nativeWorker: child });
+    const ready = new Promise<void>((resolve, reject) => {
+      child.once('spawn', resolve);
+      child.once('exit', code => {
+        reject(new Error(`Git worker exited before becoming ready (code ${code})`));
+      });
+    });
+    this.workers.set(key, { proxy, nativeWorker: child, ready });
     const workerLogger = workspace === undefined
       ? getLogger({ process: 'git-worker', scope: { kind: 'global' }, component: 'git-worker' })
       : getLogger(workspaceLogContext(workspace.id, workspace.name, 'git-worker'));
@@ -172,12 +181,13 @@ export class Git implements IGitService {
       if (this.workers.get(key)?.nativeWorker === child) this.workers.delete(key);
       workerLogger.log(code === 0 ? 'info' : 'error', 'Git worker exited', { code, workspaceID: workspace?.id });
     });
+    await ready;
     return proxy;
   }
 
   private async getWorkerForRepoPath(repoPath: string): Promise<{ worker: GitWorker; workspace?: IWorkspace }> {
     const workspace = await this.resolveWorkspaceForRepoPath(repoPath);
-    return { worker: this.getWorker(workspace), workspace };
+    return { worker: await this.getWorker(workspace), workspace };
   }
 
   private async getWorkspaceByID(workspaceID: string): Promise<IWorkspace | undefined> {
@@ -391,7 +401,7 @@ export class Git implements IGitService {
 
   public async initScopedWikiGit(repoPath: string, scopedPath: string): Promise<void> {
     const { worker } = await this.getWorkerForRepoPath(repoPath);
-    await worker.initScopedWikiGit(repoPath, scopedPath);
+    await worker.runGitOperation('initScopedWikiGit', [repoPath, scopedPath]);
     logger.info(`[test-id-git-init-complete]`, { wikiFolderPath: repoPath, scopedPath });
   }
 
@@ -452,12 +462,12 @@ export class Git implements IGitService {
       }
 
       if (isScoped) {
-        const gitWorker = this.getWorker(workspace);
-        const hasChanges = await gitWorker.commitScopedChanges(
+        const gitWorker = await this.getWorker(workspace);
+        const hasChanges = await gitWorker.runGitOperation('commitScopedChanges', [
           scopedRepoPath,
           scopedManagedPath,
           finalConfigs.commitMessage ?? i18n.t('LOG.CommitBackupMessage'),
-        );
+        ]) as boolean;
         if (!configs.commitOnly) {
           const observable = gitWorker.commitAndSyncWiki(
             workspace,
@@ -472,7 +482,7 @@ export class Git implements IGitService {
         return hasChanges;
       }
 
-      const observable = this.getWorker(workspace).commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
+      const observable = (await this.getWorker(workspace)).commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
 
       // Notify git state change
@@ -509,7 +519,7 @@ export class Git implements IGitService {
       const gitScope = resolveWorkspaceGitScope(workspace);
       const scopedRepoPath = gitScope?.repoPath;
       const scopedConfigs = gitScope?.managedRelativePath !== undefined && scopedRepoPath !== undefined ? { ...configs, dir: scopedRepoPath } : configs;
-      const observable = this.getWorker(workspace).forcePullWiki(workspace, scopedConfigs, getErrorMessageI18NDict());
+      const observable = (await this.getWorker(workspace)).forcePullWiki(workspace, scopedConfigs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
       // Notify git state change
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
@@ -585,7 +595,7 @@ export class Git implements IGitService {
     if (!net.isOnline()) {
       return;
     }
-    const worker = this.getWorker();
+    const worker = await this.getWorker();
     await new Promise<void>((resolve, reject) => {
       worker.cloneWiki(repoFolderPath, remoteUrl, userInfo, getErrorMessageI18NDict()).subscribe(this.getWorkerMessageObserver(repoFolderPath, resolve, reject));
     });
@@ -612,20 +622,14 @@ export class Git implements IGitService {
     ...arguments_: Parameters<typeof gitOperations[K]>
   ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
     const repoPath = typeof arguments_[0] === 'string' ? arguments_[0] : undefined;
-    const { worker } = repoPath === undefined ? { worker: this.getWorker() } : await this.getWorkerForRepoPath(repoPath);
-    const operation = worker[method];
-    if (typeof operation !== 'function') {
-      throw new Error(`gitOperations.${method} is not a function`);
-    }
-    // Type assertion through unknown is necessary here because TypeScript cannot verify
-    // that the union type of all gitOperations functions matches the generic K constraint
+    const { worker } = repoPath === undefined ? { worker: await this.getWorker() } : await this.getWorkerForRepoPath(repoPath);
     const inflightKey = `${method}:${JSON.stringify(arguments_)}`;
     const inflight = this.inflightCallGitOps.get(inflightKey);
     if (inflight !== undefined) {
       return await inflight as Awaited<ReturnType<typeof gitOperations[K]>>;
     }
 
-    const promise = (operation as unknown as (...arguments__: Parameters<typeof gitOperations[K]>) => Promise<Awaited<ReturnType<typeof gitOperations[K]>>>)(...arguments_);
+    const promise = worker.runGitOperation(method, arguments_) as Promise<Awaited<ReturnType<typeof gitOperations[K]>>>;
     this.inflightCallGitOps.set(inflightKey, promise);
     try {
       return await promise;
@@ -643,9 +647,7 @@ export class Git implements IGitService {
   ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
     const workspace = await this.getWorkspaceByID(workspaceID);
     if (workspace === undefined) throw new Error(`Workspace ${workspaceID} not found for Git operation ${method}`);
-    const operation = this.getWorker(workspace)[method];
-    if (typeof operation !== 'function') throw new Error(`gitOperations.${method} is not a function`);
-    return await (operation as unknown as (...parameters: Parameters<typeof gitOperations[K]>) => Promise<Awaited<ReturnType<typeof gitOperations[K]>>>)(...arguments_);
+    return await (await this.getWorker(workspace)).runGitOperation(method, arguments_) as Awaited<ReturnType<typeof gitOperations[K]>>;
   }
 
   public async getGitLog(repoPath: string, options?: import('./interface').IGitLogOptions, workspaceID?: string): Promise<import('./interface').IGitLogResult> {

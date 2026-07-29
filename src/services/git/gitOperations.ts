@@ -62,7 +62,15 @@ export async function ensureGitIdentity(
  * Used for HTML wiki workspaces whose repo root is the parent folder of the .html file.
  */
 export async function initScopedWikiGit(repoPath: string, scopedPath: string, message?: string): Promise<void> {
-  if (!(await hasGit(repoPath, true))) {
+  let hasLocalGitMetadata = false;
+  try {
+    await fs.stat(path.join(repoPath, '.git'));
+    hasLocalGitMetadata = true;
+  } catch {
+    // The target directory is not itself a repository. An ancestor repository
+    // must not suppress initialization because scopedPath is relative to repoPath.
+  }
+  if (!hasLocalGitMetadata) {
     const initResult = await gitExec(['init'], repoPath);
     if (initResult.exitCode !== 0) {
       throw new Error(`Failed to init git: ${initResult.stderr}`);
