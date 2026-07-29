@@ -64,8 +64,10 @@ describe('network proxy resolution', () => {
       GIT_CONFIG_VALUE_0: 'inherited',
     });
 
-    expect(environment.GIT_CONFIG_COUNT).toBe('1');
-    expect(environment.GIT_CONFIG_KEY_0).toBe('http.proxy');
-    expect(environment.GIT_CONFIG_VALUE_0).toBe('');
+    expect(environment.GIT_CONFIG_COUNT).toBeUndefined();
+    expect(environment.GIT_CONFIG_KEY_0).toBeUndefined();
+    expect(environment.GIT_CONFIG_VALUE_0).toBeUndefined();
+    expect(environment.NO_PROXY).toBe('*');
+    expect(environment.no_proxy).toBe('*');
   });
 });

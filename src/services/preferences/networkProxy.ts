@@ -55,10 +55,17 @@ export function createNetworkProxyEnvironment(
     environment.no_proxy = '';
   } else {
     delete environment.NODE_USE_ENV_PROXY;
+    if (target === 'git') {
+      // Git's command-scoped config environment rejects an empty
+      // GIT_CONFIG_VALUE_0 in some process launchers. libcurl's wildcard
+      // bypass keeps direct mode explicit without relying on an empty value.
+      environment.NO_PROXY = '*';
+      environment.no_proxy = '*';
+    }
   }
-  if (target === 'git') {
+  if (target === 'git' && proxy) {
     // Command-scoped config has higher priority than a user's global Git
-    // http.proxy and also lets an explicit direct setting clear that proxy.
+    // http.proxy.
     environment.GIT_CONFIG_COUNT = '1';
     environment.GIT_CONFIG_KEY_0 = 'http.proxy';
     environment.GIT_CONFIG_VALUE_0 = proxy;
