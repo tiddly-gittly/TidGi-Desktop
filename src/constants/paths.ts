@@ -34,6 +34,12 @@ export const sourcePath = isPackaged
 export const buildResourcePath = path.resolve(sourcePath, 'build-resources');
 export const developmentImageFolderPath = path.resolve(sourcePath, 'images');
 
+// Linux window icons are not embedded in the executable. Keep the packaged path
+// in sync with packagerConfig.extraResource in forge.config.ts.
+export const TIDGI_APP_ICON_PATH = isPackaged
+  ? path.resolve(process.resourcesPath, 'icon.png')
+  : path.resolve(buildResourcePath, 'icon.png');
+
 // TidGi Mini Window icon
 const tidgiMiniWindowIconFileName = isMac ? 'tidgiMiniWindowTemplate@2x.png' : 'tidgiMiniWindow@2x.png';
 export const TIDGI_MINI_WINDOW_ICON_PATH = isPackaged

@@ -16,6 +16,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
+import { TIDGI_APP_ICON_PATH } from '@/constants/paths';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isLinux, isMac } from '@/helpers/system';
 import { container } from '@services/container';
@@ -248,6 +249,7 @@ export class Window implements IWindowService {
       minimizable: true,
       fullscreenable: true,
       autoHideMenuBar,
+      ...(isLinux ? { icon: TIDGI_APP_ICON_PATH } : {}),
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
       // Keep the window hidden during E2E tests so it won't steal focus from the developer.
       // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.

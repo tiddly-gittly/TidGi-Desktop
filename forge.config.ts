@@ -28,7 +28,9 @@ const config: ForgeConfig = {
         schemes: ['tidgi'],
       },
     ],
-    icon: 'build-resources/icon.ico',
+    // Let Electron Packager select the platform-specific file extension
+    // (.ico on Windows, .icns on macOS, and .png on Linux).
+    icon: 'build-resources/icon',
     asar: {
       // Unpack worker files, utility process files, native modules path, and ALL .node binaries (including better-sqlite3)
       // UtilityProcess files must be unpacked because utilityProcess.fork() reads from the
@@ -40,6 +42,8 @@ const config: ForgeConfig = {
       'template/wiki',
       'build-resources/tidgiMiniWindow@2x.png',
       'build-resources/tidgiMiniWindowTemplate@2x.png',
+      // Linux BrowserWindow icons are loaded at runtime rather than embedded in the executable.
+      'build-resources/icon.png',
       // Packaged for squirrelStartup to copy to %LocalAppData%\tidgi\app.ico (uninstall DisplayIcon).
       'build-resources/icon.ico',
     ],
@@ -103,6 +107,8 @@ const config: ForgeConfig = {
         options: {
           maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
           mimeType: ['x-scheme-handler/tidgi'],
+          // electron-installer-debian otherwise installs its bundled Electron icon.
+          icon: 'build-resources/icon.png',
         },
       },
     },
@@ -113,6 +119,7 @@ const config: ForgeConfig = {
         options: {
           maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
           mimeType: ['x-scheme-handler/tidgi'],
+          icon: 'build-resources/icon.png',
         },
       },
     },

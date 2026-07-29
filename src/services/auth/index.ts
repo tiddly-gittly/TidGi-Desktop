@@ -1,5 +1,7 @@
 import { isTest } from '@/constants/environment';
 import { getOAuthConfig } from '@/constants/oauthConfig';
+import { TIDGI_APP_ICON_PATH } from '@/constants/paths';
+import { isLinux } from '@/helpers/system';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IGitUserInfos } from '@services/git/interface';
@@ -191,6 +193,7 @@ export class Authentication implements IAuthenticationService {
           contextIsolation: true,
         },
         title: 'OAuth Login',
+        ...(isLinux ? { icon: TIDGI_APP_ICON_PATH } : {}),
         resizable: true,
         minimizable: false,
         fullscreenable: false,

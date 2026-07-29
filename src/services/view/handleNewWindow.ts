@@ -4,7 +4,9 @@ import windowStateKeeper from 'electron-window-state';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { MetaDataChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
+import { TIDGI_APP_ICON_PATH } from '@/constants/paths';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
+import { isLinux } from '@/helpers/system';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { container } from '@services/container';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -129,6 +131,7 @@ export function handleNewWindow(
       height: windowWithBrowserViewState.height,
       webPreferences,
       autoHideMenuBar: true,
+      ...(isLinux ? { icon: TIDGI_APP_ICON_PATH } : {}),
       // Keep the window hidden during E2E tests so it won't steal focus from the developer.
       // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
       ...(isTest && !process.env.SHOW_E2E_WINDOW ? { show: false } : {}),
