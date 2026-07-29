@@ -123,6 +123,17 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
   @Column({ type: 'simple-json', nullable: true })
   heartbeat?: AgentHeartbeatConfig;
 
+  /** Last bundled profile version applied to this row. Null identifies a legacy row. */
+  @Column({ nullable: true })
+  builtinVersion?: string;
+
+  /**
+   * Whether the user changed this definition. Null identifies a legacy row,
+   * whose timestamps are used once to infer whether it is safe to refresh.
+   */
+  @Column({ type: 'boolean', nullable: true })
+  isCustomized?: boolean;
+
   /** Creation timestamp */
   @CreateDateColumn()
   createdAt!: Date;

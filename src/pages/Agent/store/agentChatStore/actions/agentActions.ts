@@ -205,10 +205,22 @@ export const agentActions = (
             fullAgent.status.state === 'failed' ||
             fullAgent.status.state === 'canceled' ||
             fullAgent.status.state === 'input-required';
+          const activeAssistantMessageId = isAgentTerminalState
+            ? undefined
+            : fullAgent.messages.findLast(
+              message => message.role === 'agent' || message.role === 'assistant',
+            )?.messageId;
 
           // If agent just became terminal, clear all streaming for this agent's messages
           // This is a failsafe in case message-level status updates were missed
           if (isAgentTerminalState) {
+            // Message status streams are BehaviorSubjects and do not complete
+            // automatically. Keeping one subscription per historical assistant
+            // message leaks IPC listeners on the renderer WebContents.
+            messageSubscriptions.forEach(subscription => {
+              subscription.unsubscribe();
+            });
+            messageSubscriptions.clear();
             fullAgent.messages.forEach(message => {
               if (get().streamingMessageIds.has(message.messageId)) {
                 console.log('[AgentChat] Agent terminal state, clearing streaming for message', {
@@ -216,6 +228,17 @@ export const agentActions = (
                   agentState: fullAgent.status.state,
                 });
                 get().setMessageStreaming(message.messageId, false);
+              }
+            });
+          } else {
+            // Only the newest assistant message can still be changing. Replaying
+            // a non-terminal persisted agent must not create one IPC observable
+            // subscription for every historical assistant response.
+            messageSubscriptions.forEach((subscription, messageId) => {
+              if (messageId !== activeAssistantMessageId) {
+                subscription.unsubscribe();
+                messageSubscriptions.delete(messageId);
+                get().setMessageStreaming(messageId, false);
               }
             });
           }
@@ -231,12 +254,13 @@ export const agentActions = (
               newMessageIds.push(message.messageId);
 
               // Subscribe to AI message updates
-              if ((message.role === 'agent' || message.role === 'assistant') && !messageSubscriptions.has(message.messageId)) {
-                // Only mark as streaming if agent is still working
-                // This prevents marking completed messages as streaming when loading history
-                if (!isAgentTerminalState) {
-                  get().setMessageStreaming(message.messageId, true);
-                }
+              if (
+                !isAgentTerminalState &&
+                (message.role === 'agent' || message.role === 'assistant') &&
+                message.messageId === activeAssistantMessageId &&
+                !messageSubscriptions.has(message.messageId)
+              ) {
+                get().setMessageStreaming(message.messageId, true);
                 // Create message-specific subscription
                 messageSubscriptions.set(
                   message.messageId,
@@ -257,6 +281,8 @@ export const agentActions = (
                             state: status.state,
                           });
                           get().setMessageStreaming(statusMessage.messageId, false);
+                          messageSubscriptions.get(statusMessage.messageId)?.unsubscribe();
+                          messageSubscriptions.delete(statusMessage.messageId);
                         }
                       }
                     },

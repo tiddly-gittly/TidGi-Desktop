@@ -443,7 +443,11 @@ export class ExternalAPIService implements IExternalAPIService {
     this.activeRequests.delete(requestId);
   }
 
-  streamFromAI(messages: Array<ModelMessage>, config: AiAPIConfig, options?: { agentInstanceId?: string }): Observable<AIStreamResponse> {
+  streamFromAI(
+    messages: Array<ModelMessage>,
+    config: AiAPIConfig,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
+  ): Observable<AIStreamResponse> {
     // Use defer to create a new observable stream for each subscription
     return defer(() => {
       // Prepare request context
@@ -471,10 +475,18 @@ export class ExternalAPIService implements IExternalAPIService {
   async *generateFromAI(
     messages: Array<ModelMessage>,
     config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): AsyncGenerator<AIStreamResponse, void, unknown> {
     // Prepare request with minimal context
     const { requestId, controller } = this.prepareAIRequest();
+    const requestTimeoutMs = options?.requestTimeoutMs;
+    let didTimeout = false;
+    const requestTimeout = requestTimeoutMs && requestTimeoutMs > 0
+      ? setTimeout(() => {
+        didTimeout = true;
+        controller.abort(new Error(`AI request timed out after ${requestTimeoutMs}ms`));
+      }, requestTimeoutMs)
+      : undefined;
 
     // Get the default model configuration
     const modelConfig = config.default;
@@ -490,6 +502,9 @@ export class ExternalAPIService implements IExternalAPIService {
           message: 'Chat.ConfigError.NoDefaultModel',
         },
       };
+      if (requestTimeout) clearTimeout(requestTimeout);
+      controller.abort();
+      this.cleanupAIRequest(requestId);
       return;
     }
 
@@ -692,7 +707,14 @@ export class ExternalAPIService implements IExternalAPIService {
       yield { requestId, content: fullResponse, status: 'done' };
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.provider);
+      const errorDetail = didTimeout
+        ? {
+          name: 'TimeoutError',
+          code: 'AI_REQUEST_TIMEOUT',
+          provider: modelConfig.provider,
+          message: `AI request timed out after ${requestTimeoutMs}ms`,
+        }
+        : extractErrorDetails(error, modelConfig.provider);
 
       if (options?.awaitLogs) {
         await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
@@ -708,6 +730,8 @@ export class ExternalAPIService implements IExternalAPIService {
         errorDetail,
       };
     } finally {
+      if (requestTimeout) clearTimeout(requestTimeout);
+      if (!controller.signal.aborted) controller.abort();
       this.cleanupAIRequest(requestId);
     }
   }

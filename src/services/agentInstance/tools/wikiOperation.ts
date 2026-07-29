@@ -81,11 +81,12 @@ const WikiOperationToolSchema = z.object({
   }),
 }).meta({
   title: 'wiki-operation',
-  description: 'Perform operations on wiki workspaces (create, update, delete tiddlers, or invoke action tiddlers)',
+  description:
+    'Perform operations on wiki workspaces (create, update, delete tiddlers, or invoke action tiddlers). Omit optional extraMeta, options, and variables unless they are needed.',
   examples: [
-    { workspaceName: 'My Wiki', operation: WikiChannel.addTiddler, title: 'Example Note', text: 'Example content', extraMeta: '{}', options: '{}' },
-    { workspaceName: 'My Wiki', operation: WikiChannel.setTiddlerText, title: 'Existing Note', text: 'Updated content', extraMeta: '{}', options: '{}' },
-    { workspaceName: 'My Wiki', operation: WikiChannel.deleteTiddler, title: 'Note to Delete', extraMeta: '{}', options: '{}' },
+    { workspaceName: 'My Wiki', operation: WikiChannel.addTiddler, title: 'Example Note', text: 'Example content' },
+    { workspaceName: 'My Wiki', operation: WikiChannel.setTiddlerText, title: 'Existing Note', text: 'Updated content' },
+    { workspaceName: 'My Wiki', operation: WikiChannel.deleteTiddler, title: 'Note to Delete' },
     { workspaceName: 'My Wiki', operation: 'invokeActionString', title: 'SomeActionTiddler', variables: '{"result": "value", "status": "success"}' },
   ],
 });

@@ -47,6 +47,17 @@ function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
   };
 }
 
+export function shouldRefreshBuiltinDefinition(entity: Pick<AgentDefinitionEntity, 'builtinVersion' | 'isCustomized' | 'createdAt' | 'updatedAt'>): boolean {
+  if (entity.isCustomized !== null && entity.isCustomized !== undefined) {
+    return !entity.isCustomized;
+  }
+
+  // Before builtinVersion/isCustomized existed, Desktop inserted complete
+  // bundled definitions. An unchanged row has identical creation/update
+  // timestamps; edited legacy rows must be preserved.
+  return entity.createdAt.getTime() === entity.updatedAt.getTime();
+}
+
 @injectable()
 export class AgentDefinitionService implements IAgentDefinitionService {
   @inject(serviceIdentifier.Database)
@@ -68,7 +79,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       await this.databaseService.initializeDatabase('agent');
       this.dataSource = await this.databaseService.getDatabase('agent');
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
-      await this.initializeDefaultAgentsIfEmpty();
+      await this.initializeDefaultAgents();
       if (this.agentBrowserService) await this.agentBrowserService.initialize();
     } catch (error) {
       logger.error(`Failed to initialize agent service: ${String(error)}`);
@@ -76,25 +87,45 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     }
   }
 
-  private async initializeDefaultAgentsIfEmpty(): Promise<void> {
+  private async initializeDefaultAgents(): Promise<void> {
     if (!this.agentDefRepository) throw new Error('Agent repositories not initialized');
     try {
-      const existingCount = await this.agentDefRepository.count();
-      if (existingCount === 0) {
-        const entities = defaultAgentsList.map(d =>
-          this.agentDefRepository!.create({
-            id: d.id,
-            name: d.name,
-            description: d.description,
-            avatarUrl: d.avatarUrl,
-            agentFrameworkID: d.agentFrameworkID || AGENT_TOOL_LOOP_ID,
-            agentFrameworkConfig: d.agentFrameworkConfig,
-            aiApiConfig: d.aiApiConfig,
-            agentTools: d.agentTools,
-            heartbeat: d.heartbeat,
-          })
-        );
-        await this.agentDefRepository.save(entities);
+      const existingById = new Map(
+        (await this.agentDefRepository.find()).map(entity => [entity.id, entity]),
+      );
+      const entitiesToSave: AgentDefinitionEntity[] = [];
+
+      for (const definition of defaultAgentsList) {
+        const existing = existingById.get(definition.id);
+        if (existing && !shouldRefreshBuiltinDefinition(existing)) {
+          continue;
+        }
+
+        const entity = existing ?? this.agentDefRepository.create({ id: definition.id });
+        Object.assign(entity, {
+          id: definition.id,
+          name: definition.name,
+          description: definition.description,
+          avatarUrl: definition.avatarUrl,
+          agentFrameworkID: definition.agentFrameworkID || AGENT_TOOL_LOOP_ID,
+          agentFrameworkConfig: definition.agentFrameworkConfig,
+          aiApiConfig: definition.aiApiConfig,
+          agentTools: definition.agentTools,
+          heartbeat: definition.heartbeat,
+          builtinVersion: definition.version,
+          isCustomized: false,
+        });
+        entitiesToSave.push(entity);
+      }
+
+      if (entitiesToSave.length > 0) {
+        await this.agentDefRepository.save(entitiesToSave);
+        logger.info('Refreshed bundled agent definitions', {
+          definitions: entitiesToSave.map(entity => ({
+            id: entity.id,
+            version: entity.builtinVersion,
+          })),
+        });
       }
     } catch (error) {
       logger.error(`Failed to initialize default agents: ${String(error)}`);
@@ -109,7 +140,10 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   public async createAgentDef(agent: AgentDefinition): Promise<AgentDefinition> {
     this.ensureRepositories();
     if (!agent.id) agent.id = nanoid();
-    await this.agentDefRepository!.save(this.agentDefRepository!.create({ ...agent }));
+    await this.agentDefRepository!.save(this.agentDefRepository!.create({
+      ...agent,
+      isCustomized: true,
+    }));
     return agent;
   }
 
@@ -124,6 +158,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           .filter(([, v]) => v !== undefined),
       ),
     );
+    existing.isCustomized = true;
     await this.agentDefRepository!.save(existing);
     return existing as unknown as AgentDefinition;
   }

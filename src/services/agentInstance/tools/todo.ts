@@ -27,7 +27,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { registerToolDefinition } from 'memeloop';
-import type { ToolExecutionResult } from 'memeloop';
+import type { ChatMessage, ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 
 /* ------------------------------------------------------------------ */
@@ -95,6 +95,26 @@ type TodoToolParameters = z.infer<typeof TodoToolSchema>;
 /** Derive the tiddler title from the agent instance ID */
 function todoTiddlerTitle(agentId: string): string {
   return `$:/ai/todo/${agentId}`;
+}
+
+export function extractLatestTodoText(messages: ChatMessage[]): string | undefined {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message.role !== 'tool' || !message.content.includes('"type":"todo-update"')) continue;
+    try {
+      const match = /Result(?: from [^:]+)?:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(
+        message.content,
+      );
+      if (!match) continue;
+      const parsed = JSON.parse(match[1]) as { type: string; text?: string };
+      if (parsed.type === 'todo-update' && parsed.text) {
+        return parsed.text;
+      }
+    } catch {
+      // Ignore malformed or unrelated legacy tool result messages.
+    }
+  }
+  return undefined;
 }
 
 async function resolveWorkspace(workspaceName: string) {
@@ -176,25 +196,7 @@ const todoDefinition = registerToolDefinition({
 
     // Read the todo tiddler synchronously from the last-known messages (avoid async in processPrompts)
     // We look for the most recent tool result that contains a todo-update JSON
-    const messages = agentFrameworkContext.agent.messages;
-    let latestTodoText: string | undefined;
-    for (let index = messages.length - 1; index >= 0; index--) {
-      const message = messages[index];
-      if (message.role === 'tool' && message.content.includes('"type":"todo-update"')) {
-        try {
-          const match = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(message.content);
-          if (match) {
-            const parsed = JSON.parse(match[1]) as { type: string; text?: string };
-            if (parsed.type === 'todo-update' && parsed.text) {
-              latestTodoText = parsed.text;
-              break;
-            }
-          }
-        } catch {
-          // ignore parse errors
-        }
-      }
-    }
+    const latestTodoText = extractLatestTodoText(agentFrameworkContext.agent.messages);
 
     if (latestTodoText) {
       injectContent({

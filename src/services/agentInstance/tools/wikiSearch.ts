@@ -92,6 +92,12 @@ const WikiSearchToolSchema = z.object({
 
 type WikiSearchToolParameters = z.infer<typeof WikiSearchToolSchema>;
 
+const WIKI_FILTER_ERROR_TITLE = /^(?:Filter error|筛选器错误)\s*:/iu;
+
+export function isWikiFilterErrorTitle(title: string): boolean {
+  return WIKI_FILTER_ERROR_TITLE.test(title.trim());
+}
+
 /**
  * LLM-callable tool schema for updating embeddings
  */
@@ -205,6 +211,15 @@ export async function executeWikiSearch(
       }
 
       const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
+      const filterErrorTitle = tiddlerTitles.find(isWikiFilterErrorTitle);
+      if (filterErrorTitle) {
+        return {
+          success: false,
+          error: `Invalid TiddlyWiki filter: ${filterErrorTitle}. ` +
+            'Use [title[Exact Title]] or [[Exact Title]] for an exact title, and [tag[Tag]] for a tag.',
+          metadata: { ...searchMetadata, filter, resultCount: 0 },
+        };
+      }
 
       if (tiddlerTitles.length === 0) {
         return {
