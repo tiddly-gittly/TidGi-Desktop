@@ -50,7 +50,11 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
     let chunkCount = 0;
 
     for await (
-      const response of this.options.externalAPIService.generateFromAI(messages, aiApiConfig, { agentInstanceId: conversationId, awaitLogs: true })
+      const response of this.options.externalAPIService.generateFromAI(messages, aiApiConfig, {
+        agentInstanceId: conversationId,
+        awaitLogs: true,
+        requestTimeoutMs: 120_000,
+      })
     ) {
       if (!currentRequestId && response.requestId) {
         currentRequestId = response.requestId;

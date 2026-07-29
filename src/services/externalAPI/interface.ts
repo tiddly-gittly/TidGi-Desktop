@@ -205,7 +205,7 @@ export interface IExternalAPIService {
   streamFromAI(
     messages: Array<ModelMessage>,
     config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): Observable<AIStreamResponse>;
 
   /**
@@ -216,7 +216,7 @@ export interface IExternalAPIService {
   generateFromAI(
     messages: Array<ModelMessage>,
     config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): AsyncGenerator<AIStreamResponse, void, unknown>;
 
   /**

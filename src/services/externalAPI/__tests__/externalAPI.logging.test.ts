@@ -96,4 +96,58 @@ describe('ExternalAPIService logging', () => {
     const externalAPILogs = await svc.getAPILogs('agent-instance-1');
     expect(externalAPILogs.length).toBeGreaterThan(0);
   });
+
+  it('aborts and reports an Agent request that exceeds its timeout', async () => {
+    const externalAPI = container.get<import('../interface').IExternalAPIService>(
+      serviceIdentifier.ExternalAPI,
+    );
+    const callProvider = await import('../callProviderAPI');
+    const spy = vi.spyOn(callProvider, 'streamFromProvider').mockImplementation(
+      async (_config, _messages, signal) =>
+        (async function*() {
+          await new Promise<void>((_resolve, reject) => {
+            signal.addEventListener(
+              'abort',
+              () => {
+                reject(
+                  signal.reason instanceof Error
+                    ? signal.reason
+                    : new Error(String(signal.reason ?? 'aborted')),
+                );
+              },
+              { once: true },
+            );
+          });
+          yield 'unreachable';
+        })(),
+    );
+
+    await externalAPI.initialize();
+    await externalAPI.updateProvider('timeout-provider', {
+      apiKey: 'fake',
+      models: [{ name: 'timeout-model' }],
+    });
+    const events: AIStreamResponse[] = [];
+    for await (
+      const event of externalAPI.generateFromAI(
+        [{ role: 'user', content: 'timeout' }],
+        {
+          default: { provider: 'timeout-provider', model: 'timeout-model' },
+          modelParameters: {},
+        },
+        { requestTimeoutMs: 10 },
+      )
+    ) {
+      events.push(event);
+    }
+
+    expect(events.at(-1)).toMatchObject({
+      status: 'error',
+      errorDetail: {
+        name: 'TimeoutError',
+        code: 'AI_REQUEST_TIMEOUT',
+      },
+    });
+    spy.mockRestore();
+  });
 });

@@ -102,6 +102,25 @@ describe('all tools integration', () => {
     expect(assistant[assistant.length - 1].content).toBe('搜索完成：找到了 2 条笔记。');
   }, 30000);
 
+  it('wiki-search: reports filter parse errors instead of treating them as notes', async () => {
+    mockExternalAPIService.generateFromAI = vi.fn()
+      .mockReturnValueOnce(
+        mockChunk('<tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"filter","filter":"[title=Broken]"}</tool_use>'),
+      )
+      .mockReturnValueOnce(mockChunk('搜索条件无效，尚未完成验证。'));
+
+    mockWikiService.wikiOperationInServer = vi.fn()
+      .mockResolvedValueOnce(['筛选器错误: Missing [ in filter expression']);
+    mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
+
+    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '精确查找 Broken' });
+
+    const toolMessage = (await agentInstanceService.getAgent(testAgentInstance.id))!.messages
+      .find(message => message.role === 'tool');
+    expect(toolMessage?.content).toContain('Invalid TiddlyWiki filter');
+    expect(toolMessage?.content).toContain('[title[Exact Title]]');
+  }, 30000);
+
   // ── wiki-operation add ─────────────────────────────────────
 
   it('wiki-operation: agent adds a tiddler (mock verified)', async () => {
@@ -127,6 +146,36 @@ describe('all tools integration', () => {
 
     const assistant = (await agentInstanceService.getAgent(testAgentInstance.id))!.messages.filter(m => m.role === 'assistant');
     expect(assistant[assistant.length - 1].content).toBe('已创建笔记。');
+  }, 30000);
+
+  // ── persistent goal / todo ─────────────────────────────────
+
+  it('manage-todo: persists a session goal as a Wiki tiddler', async () => {
+    const todoText = '- [ ] 列出工作区\n- [ ] 创建笔记\n- [ ] 核对正文';
+    mockExternalAPIService.generateFromAI = vi.fn()
+      .mockReturnValueOnce(
+        mockChunk(
+          `<tool_use name="manage-todo">{"workspaceName":"wiki","operation":"write","text":"${todoText.replaceAll('\n', '\\n')}"}</tool_use>`,
+        ),
+      )
+      .mockReturnValueOnce(mockChunk('计划已保存。'));
+
+    mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
+
+    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
+      text: '为这个三步目标建立计划',
+    });
+
+    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
+      WikiChannel.addTiddler,
+      'CJXwbR91GJmElyURHiGA1',
+      [
+        `$:/ai/todo/${testAgentInstance.id}`,
+        todoText,
+        JSON.stringify({ type: 'text/vnd.tiddlywiki', tags: '$:/tags/AI/Todo' }),
+        JSON.stringify({ withDate: true }),
+      ],
+    );
   }, 30000);
 
   // ── wiki-operation set ─────────────────────────────────────
