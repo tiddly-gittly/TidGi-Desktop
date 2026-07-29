@@ -48,13 +48,16 @@ When('I click menu {string}', async function(this: ApplicationWorld, menuPath: s
             errors.push((error as Error).message);
           }
         }
+        if (testContextMenu === undefined) {
+          throw new Error(`Context menu is not available yet | ${errors.join(' | ')}`);
+        }
         throw new Error(errors.join(' | '));
       }, menuItems);
       return;
     } catch (error) {
       lastError = error as Error;
-      // Only retry on execution-context destruction; rethrow immediately for missing menus etc.
-      if (!lastError.message.includes('Execution context was destroyed') && attempt === 2) {
+      const isTransient = lastError.message.includes('Execution context was destroyed') || lastError.message.includes('Context menu is not available yet');
+      if (!isTransient || attempt === 2) {
         throw lastError;
       }
 

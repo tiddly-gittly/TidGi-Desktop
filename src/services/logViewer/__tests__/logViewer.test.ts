@@ -71,4 +71,12 @@ describe('LogViewerService', () => {
     const service = new LogViewerService();
     await expect(service.readEntry({ relativePath: '..\\settings.json', start: 0, length: 1 })).rejects.toThrow('Invalid log path');
   });
+
+  it('rejects invalid or out-of-range entry references before allocating', async () => {
+    const service = new LogViewerService();
+    const relativePath = path.relative(LOG_FOLDER, filePath);
+    await expect(service.readEntry({ relativePath, start: -1, length: 1 })).rejects.toThrow('Invalid log entry range');
+    await expect(service.readEntry({ relativePath, start: 0, length: 65 * 1024 * 1024 })).rejects.toThrow('Invalid log entry range');
+    await expect(service.readEntry({ relativePath, start: 1_000_000, length: 1 })).rejects.toThrow('outside the file');
+  });
 });

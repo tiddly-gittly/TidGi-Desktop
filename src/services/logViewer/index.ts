@@ -8,6 +8,21 @@ import type { ILogEntryReference, ILogEntrySummary, ILogPage, ILogPageCursor, IL
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const FILE_PATTERN = /^(.*?)(?:\.(\d+))?\.log$/;
 const READ_BLOCK_SIZE = 64 * 1024;
+const MAX_ENTRY_SIZE = 64 * 1024 * 1024;
+const SEARCH_READ_CONCURRENCY = 8;
+
+async function mapWithConcurrency<T, R>(values: T[], concurrency: number, operation: (value: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(values.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(concurrency, values.length) }, async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex++;
+      results[index] = await operation(values[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
 
 function processFromComponent(component: string): LogProcess {
   if (component === 'git-worker') return 'git-worker';
@@ -183,10 +198,24 @@ export class LogViewerService implements ILogViewerService {
   }
 
   public async readEntry(reference: ILogEntryReference): Promise<LogRecord> {
+    if (
+      !Number.isSafeInteger(reference.start) ||
+      !Number.isSafeInteger(reference.length) ||
+      reference.start < 0 ||
+      reference.length <= 0 ||
+      reference.length > MAX_ENTRY_SIZE
+    ) {
+      throw new Error('Invalid log entry range');
+    }
     const handle = await fs.open(this.resolveRelative(reference.relativePath), 'r');
     try {
+      const stat = await handle.stat();
+      if (reference.start > stat.size || reference.length > stat.size - reference.start) {
+        throw new Error('Log entry range is outside the file');
+      }
       const buffer = Buffer.allocUnsafe(reference.length);
-      await handle.read(buffer, 0, reference.length, reference.start);
+      const { bytesRead } = await handle.read(buffer, 0, reference.length, reference.start);
+      if (bytesRead !== reference.length) throw new Error('Log entry changed while it was being read');
       return logRecordSchema.parse(JSON.parse(buffer.toString('utf8').replace(/\r$/, '')) as unknown);
     } finally {
       await handle.close();
@@ -200,10 +229,14 @@ export class LogViewerService implements ILogViewerService {
     let cursor: ILogPageCursor | undefined;
     do {
       const page = await this.readPage(source, cursor, 1000);
-      for (const entry of page.entries) {
-        if (levels !== undefined && !levels.includes(entry.level)) continue;
+      const candidates = levels === undefined ? page.entries : page.entries.filter(entry => levels.includes(entry.level));
+      const pageMatches = await mapWithConcurrency(candidates, SEARCH_READ_CONCURRENCY, async entry => {
         const full = await this.readEntry(entry.ref);
-        if (`${full.message}\n${JSON.stringify(full.meta)}`.toLocaleLowerCase().includes(normalized)) results.push(entry);
+        return `${full.message}\n${JSON.stringify(full.meta)}`.toLocaleLowerCase().includes(normalized) ? entry : undefined;
+      });
+      for (const entry of pageMatches) {
+        if (entry === undefined) continue;
+        results.push(entry);
         if (results.length >= 1000) return results;
       }
       cursor = page.nextCursor;

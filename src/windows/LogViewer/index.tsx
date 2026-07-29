@@ -1,4 +1,5 @@
 import { Helmet } from '@dr.pogodin/react-helmet';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   Alert,
@@ -24,7 +25,7 @@ import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import type { LogRecord } from '@services/libs/log/schema';
 import type { ILogEntrySummary, ILogPageCursor, ILogSource } from '@services/logViewer/interface';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { List, type RowComponentProps, useListRef } from 'react-window';
 
@@ -44,6 +45,13 @@ function formatTimestamp(timestamp: string): string {
   return Number.isNaN(date.valueOf()) ? timestamp : date.toLocaleString();
 }
 
+const borderColorByLevel: Record<LogRecord['level'], string> = {
+  error: 'error.main',
+  warn: 'warning.main',
+  info: 'info.main',
+  debug: 'grey.600',
+};
+
 function LogRow({ index, style, entries, expandedID, details, onToggle, copyMessageLabel, copyJSONLabel }: RowComponentProps<IRowData>): React.JSX.Element {
   const entry = entries[index];
   const expanded = expandedID === entry.id;
@@ -55,7 +63,7 @@ function LogRow({ index, style, entries, expandedID, details, onToggle, copyMess
         onClick={() => {
           onToggle(entry);
         }}
-        sx={{ p: 1, cursor: 'pointer', height: '100%', overflow: 'hidden', borderLeft: 4, borderLeftColor: `${entry.level}.main` }}
+        sx={{ p: 1, cursor: 'pointer', height: '100%', overflow: 'hidden', borderLeft: 4, borderLeftColor: borderColorByLevel[entry.level] }}
       >
         <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
           <Chip size='small' label={entry.level.toUpperCase()} color={entry.level === 'error' ? 'error' : entry.level === 'warn' ? 'warning' : 'default'} />
@@ -157,6 +165,7 @@ export default function LogViewer(): React.JSX.Element {
   const [following, setFollowing] = useState(true);
   const [workspaceNames, setWorkspaceNames] = useState<Record<string, string>>({});
   const listReference = useListRef(null);
+  const detailRequestID = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     void window.service.logViewer.listDates().then(result => {
@@ -170,17 +179,31 @@ export default function LogViewer(): React.JSX.Element {
 
   useEffect(() => {
     if (!date) return;
+    let cancelled = false;
     setLoading(true);
-    void window.service.logViewer.listSources(date).then(result => {
-      setSources(result);
-      const preferred = result.find(source =>
-        source.scope.kind === 'workspace' &&
-        source.scope.workspaceID === meta.workspaceID &&
-        source.process === meta.initialProcess
-      );
-      setSelectedSourceID(previous => preferred?.id ?? (result.some(source => source.id === previous) ? previous : result[0]?.id ?? ''));
-      setLoading(false);
-    });
+    void (async () => {
+      try {
+        const result = await window.service.logViewer.listSources(date);
+        if (cancelled) return;
+        setSources(result);
+        const preferred = result.find(source =>
+          source.scope.kind === 'workspace' &&
+          source.scope.workspaceID === meta.workspaceID &&
+          source.process === meta.initialProcess
+        );
+        setSelectedSourceID(previous => preferred?.id ?? (result.some(source => source.id === previous) ? previous : result[0]?.id ?? ''));
+      } catch {
+        if (!cancelled) {
+          setSources([]);
+          setSelectedSourceID('');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [date, meta.initialProcess, meta.workspaceID]);
 
   const selectedSource = useMemo(() => sources.find(source => source.id === selectedSourceID), [selectedSourceID, sources]);
@@ -201,6 +224,9 @@ export default function LogViewer(): React.JSX.Element {
         setEntries(result.entries);
         setOlderCursor(result.nextCursor);
       }
+    } catch {
+      setEntries([]);
+      setOlderCursor(undefined);
     } finally {
       setLoading(false);
     }
@@ -214,6 +240,8 @@ export default function LogViewer(): React.JSX.Element {
       const page = await window.service.logViewer.readPage(selectedSource, olderCursor);
       setEntries(current => [...page.entries, ...current]);
       setOlderCursor(page.nextCursor);
+    } catch {
+      // Keep the entries already loaded and allow a later retry.
     } finally {
       setLoading(false);
     }
@@ -241,16 +269,22 @@ export default function LogViewer(): React.JSX.Element {
 
   const toggleEntry = useCallback((entry: ILogEntrySummary) => {
     if (expandedID === entry.id) {
+      detailRequestID.current = undefined;
       setExpandedID(undefined);
       setDetails(undefined);
       return;
     }
+    detailRequestID.current = entry.id;
     setExpandedID(entry.id);
     setFollowing(false);
     setDetails(undefined);
-    void window.service.logViewer.readEntry(entry.ref).then(value => {
-      setDetails(value);
-    });
+    void window.service.logViewer.readEntry(entry.ref)
+      .then(value => {
+        if (detailRequestID.current === entry.id) setDetails(value);
+      })
+      .catch(() => {
+        if (detailRequestID.current === entry.id) setDetails(undefined);
+      });
   }, [expandedID]);
 
   const globalSources = sources.filter(source => source.scope.kind === 'global');
@@ -321,11 +355,12 @@ export default function LogViewer(): React.JSX.Element {
         </Button>
         <Tooltip title={t('LogViewer.Refresh')}>
           <IconButton
+            aria-label={t('LogViewer.Refresh')}
             onClick={() => {
               void loadEntries();
             }}
           >
-            <SearchIcon />
+            <RefreshIcon />
           </IconButton>
         </Tooltip>
       </Stack>
