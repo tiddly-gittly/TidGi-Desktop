@@ -330,10 +330,12 @@ function KeyedValueTabsItem({
   const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
   const updateField = async (tabKey: string, fieldKey: string, value: unknown) => {
+    const latestPreferenceValue = await window.service.preference.get(item.key);
+    const latestRecord = (latestPreferenceValue ?? {}) as unknown as Record<string, Record<string, unknown>>;
     const nextValue = {
-      ...record,
+      ...latestRecord,
       [tabKey]: {
-        ...(record[tabKey] ?? {}),
+        ...(latestRecord[tabKey] ?? {}),
         [fieldKey]: value,
       },
     } as unknown as IPreferences[typeof item.key];

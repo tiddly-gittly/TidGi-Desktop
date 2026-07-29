@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import { Alert, Button, Snackbar } from '@mui/material';
+import { Alert, Box, Button, Snackbar } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { debounce } from 'lodash';
 import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -674,7 +674,17 @@ export function ProviderConfig({
           const formState = providerForms[provider.provider];
           return {
             key: provider.provider,
-            label: provider.provider,
+            label: (
+              <Box
+                component='span'
+                sx={{
+                  opacity: provider.enabled === false ? 0.6 : 1,
+                  fontStyle: provider.enabled === false ? 'italic' : 'normal',
+                }}
+              >
+                {provider.provider}
+              </Box>
+            ),
             disabled: false,
             panel: formState
               ? (

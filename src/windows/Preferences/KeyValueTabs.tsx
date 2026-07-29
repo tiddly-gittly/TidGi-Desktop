@@ -8,6 +8,10 @@ export interface IKeyValueTab {
   panel: React.ReactNode;
 }
 
+function getTabDomKey(key: string): string {
+  return encodeURIComponent(key);
+}
+
 interface IKeyValueTabsProps {
   ariaLabel: string;
   onSelectedKeyChange?: (key: string) => void;
@@ -58,29 +62,35 @@ export function KeyValueTabs({ ariaLabel, onSelectedKeyChange, selectedKey: cont
           '& .MuiTab-root': { alignItems: 'flex-start', textAlign: 'left', paddingLeft: 2 },
         }}
       >
-        {tabs.map(tab => (
-          <Tab
-            key={tab.key}
-            value={tab.key}
-            label={tab.label}
-            disabled={tab.disabled}
-            id={`key-value-tab-${tab.key}`}
-            aria-controls={`key-value-tabpanel-${tab.key}`}
-          />
-        ))}
+        {tabs.map(tab => {
+          const domKey = getTabDomKey(tab.key);
+          return (
+            <Tab
+              key={tab.key}
+              value={tab.key}
+              label={tab.label}
+              disabled={tab.disabled}
+              id={`key-value-tab-${domKey}`}
+              aria-controls={`key-value-tabpanel-${domKey}`}
+            />
+          );
+        })}
       </Tabs>
-      {tabs.map(tab => (
-        <div
-          key={tab.key}
-          role='tabpanel'
-          hidden={selectedKey !== tab.key}
-          id={`key-value-tabpanel-${tab.key}`}
-          aria-labelledby={`key-value-tab-${tab.key}`}
-          style={{ width: '100%', padding: '16px' }}
-        >
-          {selectedKey === tab.key && <Box>{tab.panel}</Box>}
-        </div>
-      ))}
+      {tabs.map(tab => {
+        const domKey = getTabDomKey(tab.key);
+        return (
+          <div
+            key={tab.key}
+            role='tabpanel'
+            hidden={selectedKey !== tab.key}
+            id={`key-value-tabpanel-${domKey}`}
+            aria-labelledby={`key-value-tab-${domKey}`}
+            style={{ width: '100%', padding: '16px' }}
+          >
+            {selectedKey === tab.key && <Box>{tab.panel}</Box>}
+          </div>
+        );
+      })}
     </Box>
   );
 }
