@@ -97,7 +97,7 @@
     "lodash": "4.18.1",
     "material-ui-popup-state": "^5.3.7",
     "menubar": "9.5.2",
-    "memeloop": "^0.1.0",
+    "memeloop": "^0.1.1",
     "@memeloop/react-ui": "^0.1.0",
     "monaco-editor": "^0.56.0",
     "nanoid": "^6.0.0",
