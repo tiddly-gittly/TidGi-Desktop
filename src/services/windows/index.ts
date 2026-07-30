@@ -18,7 +18,7 @@ import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { TIDGI_APP_ICON_PATH } from '@/constants/paths';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { isMac } from '@/helpers/system';
+import { isLinux, isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { logger } from '@services/libs/log';
