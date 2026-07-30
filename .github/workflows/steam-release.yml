@@ -1,0 +1,117 @@
+name: Publish Steam Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_workflow_run_id:
+        description: Release App workflow run ID containing the Steam depot artifacts
+        required: true
+        type: string
+      build_description:
+        description: Build label shown in Steamworks, for example v0.15.0
+        required: true
+        type: string
+      release_branch:
+        description: Existing non-default Steam beta branch to receive the build
+        required: true
+        default: prerelease
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: steam-release-${{ inputs.release_branch }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate source release run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: ${{ inputs.release_branch }}
+          RELEASE_WORKFLOW_RUN_ID: ${{ inputs.release_workflow_run_id }}
+        run: |
+          if [ "$RELEASE_BRANCH" = "default" ]; then
+            echo "Automatic uploads to Steam's default branch are not allowed" >&2
+            exit 1
+          fi
+          run_json=$(gh api "repos/${{ github.repository }}/actions/runs/$RELEASE_WORKFLOW_RUN_ID")
+          if [ "$(jq -r '.conclusion' <<<"$run_json")" != "success" ]; then
+            echo "The selected Release App workflow has not completed successfully" >&2
+            exit 1
+          fi
+          if [ "$(jq -r '.event' <<<"$run_json")" != "push" ]; then
+            echo "Steam depots must come from a pushed release tag, not a pull request" >&2
+            exit 1
+          fi
+          case "$(jq -r '.head_branch' <<<"$run_json")" in
+            v*.*.*) ;;
+            *)
+              echo "The selected workflow run was not created from a version tag" >&2
+              exit 1
+              ;;
+          esac
+          case "$(jq -r '.path' <<<"$run_json")" in
+            .github/workflows/release.yml) ;;
+            *)
+              echo "The selected run is not a Release App workflow run" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Validate Steam configuration
+        env:
+          STEAM_APP_ID: ${{ vars.STEAM_APP_ID }}
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+          STEAM_CONFIG_VDF: ${{ secrets.STEAM_CONFIG_VDF }}
+        run: |
+          missing=()
+          for name in STEAM_APP_ID STEAM_USERNAME STEAM_CONFIG_VDF; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "Missing required Steam configuration: ${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Download Windows depot
+        uses: actions/download-artifact@v7
+        with:
+          name: steam-depot-windows
+          path: steam-archives/windows
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.release_workflow_run_id }}
+
+      - name: Download Linux depot
+        uses: actions/download-artifact@v7
+        with:
+          name: steam-depot-linux
+          path: steam-archives/linux
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.release_workflow_run_id }}
+
+      - name: Extract depots
+        run: |
+          mkdir -p steam-build/windows steam-build/linux
+          unzip -q steam-archives/windows/steam-depot-windows-x64.zip -d steam-build/windows
+          tar -xzf steam-archives/linux/steam-depot-linux-x64.tar.gz -C steam-build/linux
+          test -n "$(find steam-build/windows -mindepth 1 -maxdepth 1 -print -quit)"
+          test -n "$(find steam-build/linux -mindepth 1 -maxdepth 1 -print -quit)"
+
+      - name: Upload build to Steam beta branch
+        uses: game-ci/steam-deploy@8bd9baca6407f9abd210bd1eef3c45f56e12d8d9 # v3
+        with:
+          username: ${{ secrets.STEAM_USERNAME }}
+          configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
+          appId: ${{ vars.STEAM_APP_ID }}
+          buildDescription: ${{ inputs.build_description }}
+          rootPath: steam-build
+          depot1Path: windows
+          depot2Path: linux
+          releaseBranch: ${{ inputs.release_branch }}

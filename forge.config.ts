@@ -12,15 +12,6 @@ const supportedLanguages = readJsonSync(path.join(__dirname, 'localization', 'su
 const { description } = packageJson;
 // Get list of supported language codes from centralized config
 const supportedLanguageCodes = Object.keys(supportedLanguages);
-const shouldSignAndNotarizeMacRelease = process.platform === 'darwin' && process.env.MACOS_SIGNING_ENABLED === 'true';
-
-function getRequiredEnvironmentVariable(name: string): string {
-  const value = process.env[name];
-  if (value === undefined || value.length === 0) {
-    throw new Error(`${name} is required when macOS release signing is enabled`);
-  }
-  return value;
-}
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -64,16 +55,6 @@ const config: ForgeConfig = {
       electronLanguages: supportedLanguageCodes,
     },
     appBundleId: 'com.tidgi',
-    ...(shouldSignAndNotarizeMacRelease
-      ? {
-        osxSign: {},
-        osxNotarize: {
-          appleId: getRequiredEnvironmentVariable('APPLE_ID'),
-          appleIdPassword: getRequiredEnvironmentVariable('APPLE_ID_PASSWORD'),
-          teamId: getRequiredEnvironmentVariable('APPLE_TEAM_ID'),
-        },
-      }
-      : {}),
   },
   hooks: {
     packageAfterPrune: afterPack,

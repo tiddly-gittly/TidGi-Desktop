@@ -2,21 +2,15 @@
 
 GitHub Releases are the source of truth for official TidGi binaries. The release workflow builds and tests each supported platform and architecture before creating a draft release.
 
-## macOS signing and notarization
+## macOS distribution
 
-Homebrew requires downloadable apps to pass macOS Gatekeeper checks. A public macOS release therefore needs both a Developer ID signature and Apple notarization.
+TidGi does not currently maintain a paid Apple Developer membership or a Developer ID certificate. GitHub therefore publishes the macOS ZIP without Apple notarization, and users must approve the application themselves.
 
-The tag release workflow requires these repository secrets:
+Homebrew Cask cannot sign an upstream application. It downloads the ZIP published by this repository and checks its SHA-256 hash. Because Homebrew policy does not allow a cask to require bypassing Gatekeeper, its TidGi cask cannot return to supported status unless this project later obtains a Developer ID certificate and notarizes the application.
 
-- `MAC_CERT_BASE64`: base64-encoded Developer ID Application `.p12` certificate and private key
-- `MAC_CERT_PASSWORD`: password used when exporting the `.p12`
-- `APPLE_ID`: Apple Developer account email
-- `APPLE_ID_PASSWORD`: app-specific password for the Apple ID, not the normal account password
-- `APPLE_TEAM_ID`: Apple Developer team identifier
+SteamPipe also does not replace Apple code signing. Valve requires new macOS applications distributed through Steam to be notarized by Apple. Until TidGi has Apple signing capability, Steam publishing is limited to Windows and Linux.
 
-Pull request builds do not use signing credentials. On a tag build, missing credentials fail the release preflight instead of publishing an unsigned macOS archive.
-
-After the first signed and notarized stable release, the Homebrew cask's `disable!` declaration still needs to be removed in Homebrew's repository. Homebrew's livecheck/BrewTestBot can then continue updating later stable releases automatically.
+If signing becomes available later, configure Electron Forge's `osxSign` and `osxNotarize`, import the Developer ID Application certificate in the macOS runner, and only then add a macOS Steam depot. After the first signed and notarized stable release, Homebrew's separate `disable!` declaration will still need to be removed from the Homebrew repository.
 
 ## Release checksums
 
@@ -36,6 +30,12 @@ Homebrew Cask and AUR are maintained outside this repository.
 - AUR packages are maintained by their listed AUR maintainers. AUR itself does not automatically mirror GitHub Releases.
 
 Publishing a GitHub Release cannot push an AUR update without write access to the AUR package repository and a dedicated SSH key. If TidGi takes ownership of an AUR package later, add a separate release-published workflow that updates its `PKGBUILD` and `.SRCINFO`, runs `makepkg --verifysource` and `makepkg` in an Arch Linux environment, and only then pushes to AUR.
+
+## Steam
+
+The release workflow creates Steam-ready x64 depot archives for Windows and Linux and keeps them as workflow artifacts for 30 days. Steam upload is intentionally a separate, manually dispatched workflow so creating a Git tag cannot accidentally make a Steam build live.
+
+See `docs/Publish.md` for the one-time Steamworks depot, launch-option, builder-account, repository-variable, and secret configuration. The Steam workflow uploads to an existing private beta branch for testing; promotion to Steam's default branch remains a deliberate action in Steamworks.
 
 ## macOS runner architecture mismatch
 

@@ -24,34 +24,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  release-preflight:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate macOS release signing secrets
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          MAC_CERT_BASE64: ${{ secrets.MAC_CERT_BASE64 }}
-          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          missing=()
-          for name in MAC_CERT_BASE64 MAC_CERT_PASSWORD APPLE_ID APPLE_ID_PASSWORD APPLE_TEAM_ID; do
-            if [ -z "${!name}" ]; then
-              missing+=("$name")
-            fi
-          done
-          if [ "${#missing[@]}" -ne 0 ]; then
-            echo "Missing required macOS release signing secrets: ${missing[*]}" >&2
-            exit 1
-          fi
-
   test:
     uses: ./.github/workflows/test.yml
 
   build:
-    needs: [release-preflight, test]
+    needs: test
     strategy:
       fail-fast: false
       matrix:
@@ -134,24 +111,6 @@ jobs:
       - name: Build plugins
         run: pnpm run build:plugin
 
-      - name: Import macOS Developer ID certificate
-        if: matrix.platform == 'mac' && startsWith(github.ref, 'refs/tags/')
-        env:
-          MAC_CERT_BASE64: ${{ secrets.MAC_CERT_BASE64 }}
-          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
-        run: |
-          CERTIFICATE_PATH="$RUNNER_TEMP/tidgi-developer-id.p12"
-          KEYCHAIN_PATH="$RUNNER_TEMP/tidgi-signing.keychain-db"
-          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
-          echo -n "$MAC_CERT_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security import "$CERTIFICATE_PATH" -P "$MAC_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
-
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
           pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}
@@ -159,11 +118,6 @@ jobs:
           NODE_ENV: production
           # Increase Node.js heap size to prevent OOM during build
           NODE_OPTIONS: --max-old-space-size=8192
-          # macOS specific environment variables
-          APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
-          APPLE_ID_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_ID_PASSWORD || '' }}
-          APPLE_TEAM_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_TEAM_ID || '' }}
-          MACOS_SIGNING_ENABLED: ${{ matrix.platform == 'mac' && startsWith(github.ref, 'refs/tags/') && 'true' || 'false' }}
           # Windows specific environment variables
           CSC_LINK: ${{ matrix.platform == 'win' && secrets.WIN_CERT || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.platform == 'win' && secrets.WIN_CERT_PASS || '' }}
@@ -193,6 +147,44 @@ jobs:
 
       - name: Generate and validate release checksums
         run: pnpm exec tsx scripts/generateReleaseChecksums.ts out/make ${{ matrix.platform }} ${{ matrix.arch }} out/make/SHA256SUMS-${{ matrix.platform }}-${{ matrix.arch }}.txt
+
+      - name: Prepare Linux Steam depot
+        if: matrix.platform == 'linux' && matrix.arch == 'x64'
+        run: |
+          PACKAGE_DIRECTORY=$(find out -mindepth 1 -maxdepth 1 -type d -name '*-linux-x64' -print -quit)
+          if [ -z "$PACKAGE_DIRECTORY" ]; then
+            echo "Electron Forge Linux package directory was not found" >&2
+            exit 1
+          fi
+          tar -czf out/steam-depot-linux-x64.tar.gz -C "$PACKAGE_DIRECTORY" .
+
+      - name: Prepare Windows Steam depot
+        if: matrix.platform == 'win' && matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $packageDirectory = Get-ChildItem out -Directory | Where-Object Name -Like '*-win32-x64' | Select-Object -First 1
+          if ($null -eq $packageDirectory) {
+            throw "Electron Forge Windows package directory was not found"
+          }
+          Compress-Archive -Path "$($packageDirectory.FullName)\*" -DestinationPath out/steam-depot-windows-x64.zip
+
+      - name: Upload Linux Steam depot
+        if: matrix.platform == 'linux' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: steam-depot-linux
+          path: out/steam-depot-linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows Steam depot
+        if: matrix.platform == 'win' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: steam-depot-windows
+          path: out/steam-depot-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
 
       # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
       - name: Upload analyzer reports
