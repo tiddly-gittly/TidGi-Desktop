@@ -1,0 +1,53 @@
+diff --git a/dist/agent/index.js b/dist/agent/index.js
+index e57a1c7a9ef36bcacbf900081b92f84f42ceca16..93eedd22fa433af86b650bbe99281dec62bc13ce 100644
+--- a/dist/agent/index.js
++++ b/dist/agent/index.js
+@@ -540,23 +540,35 @@ function AgentChatView({
+     },
+     [adapter, customRenderTurnActions, showTurnActions]
+   );
+-  const composerProps = {
+-    selectedFile,
+-    selectedWikiTiddlers,
+-    onFileSelect,
+-    onWikiTiddlerSelect,
++  const resolvedComposerComponent = useCallback3(() => {
++    const Composer = CustomComposer ?? MemeLoopComposer;
++    return /* @__PURE__ */ jsx5(Composer, {
++      selectedFile,
++      selectedWikiTiddlers,
++      onFileSelect,
++      onWikiTiddlerSelect,
++      onClearFile,
++      onRemoveWikiTiddler,
++      renderAttachmentActions,
++      renderAttachmentPicker,
++      renderComposerToolbar: composerToolbar,
++      disabled,
++      placeholder
++    });
++  }, [
++    CustomComposer,
++    composerToolbar,
++    disabled,
+     onClearFile,
++    onFileSelect,
+     onRemoveWikiTiddler,
++    onWikiTiddlerSelect,
++    placeholder,
+     renderAttachmentActions,
+     renderAttachmentPicker,
+-    renderComposerToolbar: composerToolbar,
+-    disabled,
+-    placeholder
+-  };
+-  const resolvedComposerComponent = () => {
+-    const Composer = CustomComposer ?? MemeLoopComposer;
+-    return /* @__PURE__ */ jsx5(Composer, { ...composerProps });
+-  };
++    selectedFile,
++    selectedWikiTiddlers
++  ]);
+   return /* @__PURE__ */ jsx5(Box4, { sx: { display: "flex", flexDirection: "column", flex: 1, minHeight: 0, "& > *": { flex: 1, minHeight: 0 } }, children: /* @__PURE__ */ jsx5(MemeLoopRuntimeProvider, { adapter, children: /* @__PURE__ */ jsxs4(Box4, { sx: { display: "flex", flexDirection: "column", flex: 1, minHeight: 0, "& > *": { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } }, children: [
+     /* @__PURE__ */ jsx5(
+       MemeLoopThread,

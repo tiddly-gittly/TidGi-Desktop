@@ -45,6 +45,11 @@ export class Workspace implements IWorkspaceService {
    */
   private workspaces: Record<string, IWorkspace> | undefined;
   public workspaces$ = new BehaviorSubject<IWorkspacesWithMetadata | undefined>(undefined);
+  /**
+   * Serialize mutations of the same workspace. Persistence is asynchronous, so
+   * two partial updates must not both merge against the same stale snapshot.
+   */
+  private readonly workspaceMutationQueues = new Map<string, Promise<void>>();
 
   /**
    * Initialize workspace menu after database is ready
@@ -219,7 +224,23 @@ export class Workspace implements IWorkspaceService {
     return this.workspaces$.pipe(map((workspaces) => workspaces?.[id]));
   }
 
-  public async set(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
+  private async runWorkspaceMutation(id: string, mutation: () => Promise<void>): Promise<void> {
+    const previousMutation = this.workspaceMutationQueues.get(id) ?? Promise.resolve();
+    const queuedMutation = previousMutation
+      .catch(() => undefined)
+      .then(mutation);
+    this.workspaceMutationQueues.set(id, queuedMutation);
+
+    try {
+      await queuedMutation;
+    } finally {
+      if (this.workspaceMutationQueues.get(id) === queuedMutation) {
+        this.workspaceMutationQueues.delete(id);
+      }
+    }
+  }
+
+  private async setWithinMutation(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     const workspaceToSave = this.sanitizeWorkspace(workspace);
 
@@ -265,13 +286,21 @@ export class Workspace implements IWorkspaceService {
     }
   }
 
+  public async set(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
+    await this.runWorkspaceMutation(id, async () => {
+      await this.setWithinMutation(id, workspace, immediate, skipUiUpdate);
+    });
+  }
+
   public async update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void> {
-    const workspace = this.getSync(id);
-    if (workspace === undefined) {
-      logger.error(`Could not update workspace ${id} because it does not exist`);
-      return;
-    }
-    await this.set(id, { ...workspace, ...workspaceSetting }, immediate);
+    await this.runWorkspaceMutation(id, async () => {
+      const workspace = this.getSync(id);
+      if (workspace === undefined) {
+        logger.error(`Could not update workspace ${id} because it does not exist`);
+        return;
+      }
+      await this.setWithinMutation(id, { ...workspace, ...workspaceSetting }, immediate);
+    });
   }
 
   public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {
