@@ -86,7 +86,9 @@ describe('all tools integration', () => {
       .mockReturnValueOnce(mockChunk('搜索完成：找到了 2 条笔记。'));
 
     mockWikiService.wikiOperationInServer = vi.fn()
-      .mockResolvedValueOnce(['TestNote1', 'TestNote2']);
+      .mockResolvedValueOnce(['TestNote1', 'TestNote2'])
+      .mockResolvedValueOnce('First note body')
+      .mockResolvedValueOnce('Second note body');
 
     mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
 
@@ -96,6 +98,16 @@ describe('all tools integration', () => {
       WikiChannel.runFilter,
       'CJXwbR91GJmElyURHiGA1',
       ['[tag[test]]'],
+    );
+    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
+      WikiChannel.getTiddlerText,
+      'CJXwbR91GJmElyURHiGA1',
+      ['TestNote1'],
+    );
+    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
+      WikiChannel.getTiddlerText,
+      'CJXwbR91GJmElyURHiGA1',
+      ['TestNote2'],
     );
 
     const assistant = (await agentInstanceService.getAgent(testAgentInstance.id))!.messages.filter(m => m.role === 'assistant');

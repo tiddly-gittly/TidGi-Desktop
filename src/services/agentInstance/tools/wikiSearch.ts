@@ -183,11 +183,10 @@ export async function executeWikiSearch(
         // Get full content for results
         for (const vr of vectorResults) {
           try {
-            const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [vr.record.tiddlerTitle]);
+            const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [vr.record.tiddlerTitle]);
             results.push({
               title: vr.record.tiddlerTitle,
-              text: tiddlerFields[0]?.text,
-              fields: tiddlerFields[0],
+              text,
               similarity: vr.similarity,
             });
           } catch {
@@ -231,8 +230,8 @@ export async function executeWikiSearch(
 
       for (const title of tiddlerTitles) {
         try {
-          const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-          results.push({ title, text: tiddlerFields[0]?.text, fields: tiddlerFields[0] });
+          const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [title]);
+          results.push({ title, text });
         } catch {
           results.push({ title });
         }
@@ -252,7 +251,7 @@ export async function executeWikiSearch(
         content += ` (Similarity: ${(result.similarity * 100).toFixed(1)}%)`;
       }
       content += '\n\n';
-      content += result.text ? `\`\`\`tiddlywiki\n${result.text}\n\`\`\`\n\n` : '(Content not available)\n\n';
+      content += result.text !== undefined ? `\`\`\`tiddlywiki\n${result.text}\n\`\`\`\n\n` : '(Content not available)\n\n';
     }
 
     return { success: true, data: content, metadata: searchMetadata };
