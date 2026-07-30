@@ -26,7 +26,7 @@ function createOptions() {
 }
 
 describe('initializeAgentServicesSafely', () => {
-  it('keeps app startup available when a stale Agent database cannot synchronize', async () => {
+  it('keeps app startup available when a damaged Meme Loop database cannot synchronize', async () => {
     const options = createOptions();
     vi.mocked(options.agentDefinitionService.initialize).mockRejectedValue(
       new Error('NOT NULL constraint failed: temporary_agent_instance_messages.messageId'),

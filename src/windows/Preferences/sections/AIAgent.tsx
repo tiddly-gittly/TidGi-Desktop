@@ -33,6 +33,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
+import { LEGACY_AGENT_DATABASE_KEY, MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/tools/scheduledTaskManager';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
@@ -46,7 +47,8 @@ export async function clearAgentDatabase(
   databaseService: AgentDatabaseRecoveryService,
   onNeedsRestart: () => void,
 ): Promise<void> {
-  await databaseService.deleteDatabase('agent');
+  await databaseService.deleteDatabase(MEME_LOOP_DATABASE_KEY);
+  await databaseService.deleteDatabase(LEGACY_AGENT_DATABASE_KEY);
   onNeedsRestart();
 }
 
@@ -202,8 +204,8 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   useEffect(() => {
     const fetchInfo = async () => {
       try {
-        const info = await window.service.database.getDatabaseInfo('agent');
-        const path = await window.service.database.getDatabasePath('agent');
+        const info = await window.service.database.getDatabaseInfo(MEME_LOOP_DATABASE_KEY);
+        const path = await window.service.database.getDatabasePath(MEME_LOOP_DATABASE_KEY);
         setAgentInfo({ ...info, path });
       } catch (error) {
         void window.service.native.log(
@@ -630,8 +632,8 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
                 await clearAgentDatabase(window.service.database, props.onNeedsRestart);
                 setDeleteDialogOpen(false);
                 // Refresh info after deletion
-                const info = await window.service.database.getDatabaseInfo('agent');
-                const path = await window.service.database.getDatabasePath('agent');
+                const info = await window.service.database.getDatabaseInfo(MEME_LOOP_DATABASE_KEY);
+                const path = await window.service.database.getDatabasePath(MEME_LOOP_DATABASE_KEY);
                 setAgentInfo({ ...info, path });
               } catch (error) {
                 void window.service.native.log(

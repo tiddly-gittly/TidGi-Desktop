@@ -2,6 +2,7 @@ import { inject, injectable } from 'inversify';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
@@ -96,7 +97,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private async initializeDatabase(): Promise<void> {
     try {
       // Database is already initialized in the agent definition service
-      this.dataSource = await this.databaseService.getDatabase('agent');
+      this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
 

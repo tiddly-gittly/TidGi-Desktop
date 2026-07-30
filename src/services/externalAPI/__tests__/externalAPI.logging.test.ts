@@ -1,3 +1,4 @@
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity } from '@services/database/schema/agent';
@@ -20,7 +21,7 @@ describe('ExternalAPIService logging', () => {
     await container.get<IPreferenceService>(serviceIdentifier.Preference).set('externalAPIDebug', true);
 
     // Use the real agent database
-    const dataSource = await databaseService.getDatabase('agent');
+    const dataSource = await databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
     const agentDefRepo = dataSource.getRepository(AgentDefinitionEntity);
 
     // Clear existing data and add test data

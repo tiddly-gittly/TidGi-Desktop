@@ -10,6 +10,7 @@ import { AGENT_TOOL_LOOP_ID, getBuiltinLoopProfiles, type TiddlerFieldsForAgent,
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
@@ -76,8 +77,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
 
   public async initialize(): Promise<void> {
     try {
-      await this.databaseService.initializeDatabase('agent');
-      this.dataSource = await this.databaseService.getDatabase('agent');
+      await this.databaseService.initializeDatabase(MEME_LOOP_DATABASE_KEY);
+      this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
       await this.initializeDefaultAgents();
       if (this.agentBrowserService) await this.agentBrowserService.initialize();
