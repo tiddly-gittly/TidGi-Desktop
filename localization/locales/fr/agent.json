@@ -196,6 +196,7 @@
     "FailedToAddProvider": "Échec de l'ajout du fournisseur",
     "FailedToDeleteProvider": "Échec de la suppression du fournisseur {{providerName}}",
     "FailedToRemoveModel": "Échec de la suppression du modèle",
+    "FailedToRefreshOfficialModels": "Échec de l’actualisation des modèles",
     "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
     "FailedToUpdateModel": "Impossible de mettre à jour le modèle",
     "FailedToUpdateProviderStatus": "Échec de la mise à jour du statut du fournisseur",
@@ -216,6 +217,7 @@
     "Models": "Modèles disponibles",
     "NoPresetSelected": "Aucun modèle prédéfini sélectionné",
     "NoProvidersAvailable": "Aucun fournisseur disponible",
+    "OfficialModelsRefreshed": "{{count}} modèles actualisés",
     "OpenDatabaseFolder": "Ouvrir le dossier de la base de données",
     "PresetModels": "Modèles prédéfinis",
     "PresetProvider": "Fournisseur prédéfini",
@@ -229,6 +231,7 @@
     "ProviderEnabled": "Fournisseur activé",
     "ProviderName": "Nom du fournisseur",
     "ProviderNameRequired": "Le nom du fournisseur est requis",
+    "RefreshOfficialModels": "Actualiser les modèles",
     "Search": "recherche et intégration",
     "SearchEmbeddingDelete": "supprimer",
     "SearchEmbeddingDeleteConfirm": "Êtes-vous sûr de vouloir supprimer tous les vecteurs d'incorporation de l'espace de travail \"{{workspaceName}}\" ? Cette action est irréversible.",
@@ -402,14 +405,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -444,8 +443,7 @@
       "ProviderTitle": "fournisseur",
       "Title": "sélection de modèle"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "configuration des paramètres de position",
       "TargetId": "ID de l'élément cible",
@@ -479,8 +477,7 @@
       "TextTitle": "texte",
       "Title": "mot-clé"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "En-tête de réponse, utilisé pour identifier cette entrée de réponse",
       "CaptionTitle": "titre",
