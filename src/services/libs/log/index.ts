@@ -45,7 +45,7 @@ void cleanupExpiredLogFolders();
 /**
  * Prevent MacOS error `Unhandled Error Error: write EIO at afterWriteDispatched`
  */
-export function destroyLogger(): void {
+export async function destroyLogger(): Promise<void> {
   logger.transports.forEach((t) => {
     if (t) {
       try {
@@ -57,7 +57,7 @@ export function destroyLogger(): void {
     }
   });
 
-  void closeStructuredLogStreams();
+  await closeStructuredLogStreams();
 
   // Prevent `Error: write EIO at afterWriteDispatched (node:internal/stream_base_commons:159:15)`
   console.error = () => {};

@@ -8,7 +8,8 @@ import type { ILogEntryReference, ILogEntrySummary, ILogPage, ILogPageCursor, IL
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const FILE_PATTERN = /^(.*?)(?:\.(\d+))?\.log$/;
 const READ_BLOCK_SIZE = 64 * 1024;
-const MAX_ENTRY_SIZE = 64 * 1024 * 1024;
+const MAX_ENTRY_SIZE = 1024 * 1024;
+const MAX_PAGE_SCAN_BYTES = 16 * 1024 * 1024;
 const SEARCH_READ_CONCURRENCY = 8;
 
 async function mapWithConcurrency<T, R>(values: T[], concurrency: number, operation: (value: T) => Promise<R>): Promise<R[]> {
@@ -116,8 +117,8 @@ export class LogViewerService implements ILogViewerService {
       return match?.[1] === source.component;
     });
     return files.sort((left, right) => {
-      const leftIndex = Number(FILE_PATTERN.exec(left)?.[2] ?? Number.MAX_SAFE_INTEGER);
-      const rightIndex = Number(FILE_PATTERN.exec(right)?.[2] ?? Number.MAX_SAFE_INTEGER);
+      const leftIndex = Number(FILE_PATTERN.exec(left)?.[2] ?? 0);
+      const rightIndex = Number(FILE_PATTERN.exec(right)?.[2] ?? 0);
       return rightIndex - leftIndex;
     }).map(file => path.join(base, file));
   }
@@ -127,32 +128,46 @@ export class LogViewerService implements ILogViewerService {
     const handle = await fs.open(absolutePath, 'r');
     try {
       const stat = await handle.stat();
-      let position = Math.min(offset ?? stat.size, stat.size);
-      const chunks: Buffer[] = [];
-      let newlineCount = 0;
-      while (position > 0 && newlineCount <= limit) {
-        const length = Math.min(READ_BLOCK_SIZE, position);
-        position -= length;
-        const buffer = Buffer.allocUnsafe(length);
-        await handle.read(buffer, 0, length, position);
-        chunks.unshift(buffer);
-        for (const byte of buffer) if (byte === 10) newlineCount++;
-      }
-      const combined = Buffer.concat(chunks);
+      let scanPosition = Math.min(offset ?? stat.size, stat.size);
+      const initialPosition = scanPosition;
+      let lineEnd = scanPosition;
+      let scannedBytes = 0;
       const lineRanges: Array<{ start: number; end: number }> = [];
-      let lineStart = 0;
-      for (let index = 0; index <= combined.length; index++) {
-        if (index === combined.length || combined[index] === 10) {
-          if (index > lineStart && (position === 0 || lineStart > 0)) {
-            lineRanges.push({ start: lineStart, end: index });
+      while (scanPosition > 0 && lineRanges.length < limit && scannedBytes < MAX_PAGE_SCAN_BYTES) {
+        const length = Math.min(READ_BLOCK_SIZE, scanPosition, MAX_PAGE_SCAN_BYTES - scannedBytes);
+        scanPosition -= length;
+        scannedBytes += length;
+        const buffer = Buffer.allocUnsafe(length);
+        await handle.read(buffer, 0, length, scanPosition);
+        for (let index = buffer.length - 1; index >= 0; index--) {
+          if (buffer[index] !== 10) continue;
+          const newlinePosition = scanPosition + index;
+          if (newlinePosition === lineEnd - 1) {
+            lineEnd = newlinePosition;
+            continue;
           }
-          lineStart = index + 1;
+          const lineStart = newlinePosition + 1;
+          const lineLength = lineEnd - lineStart;
+          if (lineLength > 0 && lineLength <= MAX_ENTRY_SIZE) {
+            lineRanges.push({ start: lineStart, end: lineEnd });
+          }
+          // Oversized records are deliberately skipped without allocating them.
+          lineEnd = newlinePosition;
+          if (lineRanges.length >= limit) break;
         }
       }
-      const selected = lineRanges.slice(-limit);
+      if (scanPosition === 0 && lineRanges.length < limit) {
+        if (lineEnd > 0 && lineEnd <= MAX_ENTRY_SIZE) {
+          lineRanges.push({ start: 0, end: lineEnd });
+        }
+        lineEnd = 0;
+      }
       const entries: ILogEntrySummary[] = [];
-      for (const range of selected) {
-        const line = combined.subarray(range.start, range.end).toString('utf8').replace(/\r$/, '');
+      for (const range of lineRanges.reverse()) {
+        const buffer = Buffer.allocUnsafe(range.end - range.start);
+        const { bytesRead } = await handle.read(buffer, 0, buffer.length, range.start);
+        if (bytesRead !== buffer.length) continue;
+        const line = buffer.toString('utf8').replace(/\r$/, '');
         let json: unknown;
         try {
           json = JSON.parse(line) as unknown;
@@ -164,15 +179,16 @@ export class LogViewerService implements ILogViewerService {
         const parsed = logRecordSchema.safeParse(json);
         if (!parsed.success) continue;
         const reference = {
+          expectedID: parsed.data.id,
           relativePath,
-          start: position + range.start,
+          start: range.start,
           length: range.end - range.start,
         };
         entries.push(summary(parsed.data, reference));
       }
       return {
         entries,
-        nextOffset: selected.length === 0 ? 0 : position + selected[0].start,
+        nextOffset: lineEnd === initialPosition ? scanPosition : lineEnd,
       };
     } finally {
       await handle.close();
@@ -216,7 +232,11 @@ export class LogViewerService implements ILogViewerService {
       const buffer = Buffer.allocUnsafe(reference.length);
       const { bytesRead } = await handle.read(buffer, 0, reference.length, reference.start);
       if (bytesRead !== reference.length) throw new Error('Log entry changed while it was being read');
-      return logRecordSchema.parse(JSON.parse(buffer.toString('utf8').replace(/\r$/, '')) as unknown);
+      const record = logRecordSchema.parse(JSON.parse(buffer.toString('utf8').replace(/\r$/, '')) as unknown);
+      if (reference.expectedID !== undefined && record.id !== reference.expectedID) {
+        throw new Error('Log entry changed after it was listed');
+      }
+      return record;
     } finally {
       await handle.close();
     }

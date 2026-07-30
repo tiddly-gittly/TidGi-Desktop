@@ -161,11 +161,13 @@ export default function LogViewer(): React.JSX.Element {
   const [expandedID, setExpandedID] = useState<string>();
   const [details, setDetails] = useState<LogRecord>();
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(true);
   const [workspaceNames, setWorkspaceNames] = useState<Record<string, string>>({});
   const listReference = useListRef(null);
   const detailRequestID = useRef<string | undefined>(undefined);
+  const entriesRequestID = useRef(0);
 
   useEffect(() => {
     void window.service.logViewer.listDates().then(result => {
@@ -191,7 +193,10 @@ export default function LogViewer(): React.JSX.Element {
           source.scope.workspaceID === meta.workspaceID &&
           source.process === meta.initialProcess
         );
-        setSelectedSourceID(previous => preferred?.id ?? (result.some(source => source.id === previous) ? previous : result[0]?.id ?? ''));
+        setSelectedSourceID(previous =>
+          preferred?.id ??
+            (result.some(source => source.id === previous) ? previous : meta.workspaceID === undefined ? result[0]?.id ?? '' : '')
+        );
       } catch {
         if (!cancelled) {
           setSources([]);
@@ -207,16 +212,29 @@ export default function LogViewer(): React.JSX.Element {
   }, [date, meta.initialProcess, meta.workspaceID]);
 
   const selectedSource = useMemo(() => sources.find(source => source.id === selectedSourceID), [selectedSourceID, sources]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 350);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [query]);
+
   const loadEntries = useCallback(async () => {
+    const requestID = ++entriesRequestID.current;
     if (selectedSource === undefined) {
       setEntries([]);
+      setOlderCursor(undefined);
+      setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const result = query.trim()
-        ? await window.service.logViewer.search(selectedSource, query)
+      const result = debouncedQuery.trim()
+        ? await window.service.logViewer.search(selectedSource, debouncedQuery)
         : await window.service.logViewer.readPage(selectedSource);
+      if (requestID !== entriesRequestID.current) return;
       if (Array.isArray(result)) {
         setEntries(result);
         setOlderCursor(undefined);
@@ -225,27 +243,30 @@ export default function LogViewer(): React.JSX.Element {
         setOlderCursor(result.nextCursor);
       }
     } catch {
+      if (requestID !== entriesRequestID.current) return;
       setEntries([]);
       setOlderCursor(undefined);
     } finally {
-      setLoading(false);
+      if (requestID === entriesRequestID.current) setLoading(false);
     }
-  }, [query, selectedSource]);
+  }, [debouncedQuery, selectedSource]);
 
   const loadOlder = useCallback(async () => {
-    if (selectedSource === undefined || olderCursor === undefined || query.trim()) return;
+    if (selectedSource === undefined || olderCursor === undefined || debouncedQuery.trim()) return;
+    const requestID = ++entriesRequestID.current;
     setLoading(true);
     setFollowing(false);
     try {
       const page = await window.service.logViewer.readPage(selectedSource, olderCursor);
+      if (requestID !== entriesRequestID.current) return;
       setEntries(current => [...page.entries, ...current]);
       setOlderCursor(page.nextCursor);
     } catch {
       // Keep the entries already loaded and allow a later retry.
     } finally {
-      setLoading(false);
+      if (requestID === entriesRequestID.current) setLoading(false);
     }
-  }, [olderCursor, query, selectedSource]);
+  }, [debouncedQuery, olderCursor, selectedSource]);
 
   useEffect(() => {
     void loadEntries();
@@ -258,14 +279,14 @@ export default function LogViewer(): React.JSX.Element {
   }, [entries, following, listReference]);
 
   useEffect(() => {
-    if (selectedSource === undefined || date !== dates[0] || query.trim()) return;
+    if (!following || selectedSource === undefined || date !== dates[0] || debouncedQuery.trim()) return;
     const timer = setInterval(() => {
       void loadEntries();
     }, 2000);
     return () => {
       clearInterval(timer);
     };
-  }, [date, dates, loadEntries, query, selectedSource]);
+  }, [date, dates, debouncedQuery, following, loadEntries, selectedSource]);
 
   const toggleEntry = useCallback((entry: ILogEntrySummary) => {
     if (expandedID === entry.id) {
@@ -345,7 +366,7 @@ export default function LogViewer(): React.JSX.Element {
         />
         <Button
           variant='outlined'
-          disabled={loading || olderCursor === undefined || query.trim().length > 0}
+          disabled={loading || olderCursor === undefined || debouncedQuery.trim().length > 0}
           onClick={() => {
             void loadOlder();
           }}

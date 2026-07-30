@@ -58,6 +58,32 @@ describe('LogViewerService', () => {
     expect(page.entries[0].preview).toHaveLength(300);
     expect(page.entries[0].messageLength).toBe(315);
     await expect(service.readEntry(page.entries[1].ref)).resolves.toMatchObject({ id: 'second', message: 'error message' });
+    await expect(service.readEntry({ ...page.entries[1].ref, expectedID: 'different-entry' })).rejects.toThrow('changed after it was listed');
+  });
+
+  it('reads immutable rotated files in chronological order', async () => {
+    const rotated1 = path.join(directory, 'wiki-worker.1.log');
+    const rotated2 = path.join(directory, 'wiki-worker.2.log');
+    await fs.writeFile(rotated1, `${JSON.stringify(record('third', 'third'))}\n`);
+    await fs.writeFile(rotated2, `${JSON.stringify(record('fourth', 'fourth'))}\n`);
+    try {
+      const page = await new LogViewerService().readPage(source, undefined, 10);
+      expect(page.entries.map(entry => entry.id)).toEqual(['first', 'second', 'third', 'fourth']);
+    } finally {
+      await fs.remove(rotated1);
+      await fs.remove(rotated2);
+    }
+  });
+
+  it('skips an oversized record without allocating or hiding older files', async () => {
+    const oversized = path.join(directory, 'wiki-worker.1.log');
+    await fs.writeFile(oversized, `${'x'.repeat(1024 * 1024 + 1)}\n`);
+    try {
+      const page = await new LogViewerService().readPage(source, undefined, 10);
+      expect(page.entries.map(entry => entry.id)).toEqual(['first', 'second']);
+    } finally {
+      await fs.remove(oversized);
+    }
   });
 
   it('searches full messages and metadata rather than summaries only', async () => {

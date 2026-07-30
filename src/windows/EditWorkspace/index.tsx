@@ -2,7 +2,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { type IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { allWorkspaceSections, getWorkspaceSectionsForType } from '@services/workspaces/definitions/registry';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { isWikiWorkspace, type IWorkspace, nonConfigFields } from '@services/workspaces/interface';
@@ -92,20 +92,6 @@ export default function EditWorkspace(): React.JSX.Element {
     };
   }, [workspaceID]);
 
-  // Reused edit-workspace windows receive fresh metadata instead of being
-  // recreated. Keep both the workspace and section navigation in sync.
-  useEffect(() => {
-    const handleWindowMetaUpdated = (_event: Electron.IpcRendererEvent, meta: IPossibleWindowMeta<WindowMeta[WindowNames.editWorkspace]>) => {
-      if (meta.windowName !== WindowNames.editWorkspace || !meta.workspaceID || meta.workspaceID === workspaceID) return;
-      setWorkspaceID(meta.workspaceID);
-      setFallbackWorkspace(undefined);
-    };
-    window.remote.registerWindowMetaUpdated(handleWindowMetaUpdated);
-    return () => {
-      window.remote.unregisterWindowMetaUpdated(handleWindowMetaUpdated);
-    };
-  }, [workspaceID]);
-
   const hiddenSections = useMemo(() => {
     const hidden = new Set<string>();
     if (isSubWiki) hidden.add('server');
@@ -141,7 +127,8 @@ export default function EditWorkspace(): React.JSX.Element {
     return <Outter>{workspace === undefined ? t('Loading') : `Error ${workspaceID ?? '-'} not exists`}</Outter>;
   }
 
-  const isSearching = searchQuery.trim().length > 0;
+  const effectiveSearchQuery = navigationRequest ? '' : searchQuery;
+  const isSearching = effectiveSearchQuery.trim().length > 0;
   const hasUnsavedChanges = currentWorkspace !== undefined && !isEqual(omit(workspace, nonConfigFields), omit(currentWorkspace, nonConfigFields));
 
   return (
@@ -167,7 +154,7 @@ export default function EditWorkspace(): React.JSX.Element {
             <AllGenericSectionsRenderer
               sections={workspaceSections}
               store={workspaceStore}
-              query={searchQuery}
+              query={effectiveSearchQuery}
               onNeedsRestart={requestRestartCountDown}
               hiddenSections={hiddenSections}
               navigationRequest={navigationRequest}

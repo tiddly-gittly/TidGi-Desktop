@@ -253,7 +253,7 @@ export async function getWorkspaceMenuTemplate(
           click: async () => {
             await service.window.open(
               WindowNames.logViewer,
-              { workspaceID: id, initialProcess: 'renderer' },
+              { workspaceID: isSubWiki ? workspace.mainWikiID ?? id : id, initialProcess: 'renderer' },
               { recreate: true },
             );
           },

@@ -54,6 +54,11 @@ const SearchSectionLabel = styled(Typography)`
   margin-top: 4px;
 `;
 
+// Variable-height virtualization unmounts sections outside the viewport.
+// Keep uncommitted blur-based drafts above the virtual rows so scrolling
+// cannot silently discard user input.
+const PreferenceDraftContext = React.createContext<Map<string, string> | undefined>(undefined);
+
 // ─── Item renderers ──────────────────────────────────────────────────
 
 function BooleanItem({
@@ -248,10 +253,12 @@ function StringArrayItem({
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = (preference[item.key] as string[]) ?? [];
-  const [localValue, setLocalValue] = React.useState(value.join('\n'));
+  const draftStore = React.useContext(PreferenceDraftContext);
+  const draftKey = `preference:${item.key}`;
+  const [localValue, setLocalValue] = React.useState(() => draftStore?.get(draftKey) ?? value.join('\n'));
   React.useEffect(() => {
-    setLocalValue(value.join('\n'));
-  }, [value.join('\n')]);
+    if (!draftStore?.has(draftKey)) setLocalValue(value.join('\n'));
+  }, [draftKey, draftStore, value]);
   const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
   const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
@@ -268,10 +275,12 @@ function StringArrayItem({
         minRows={2}
         onChange={(event) => {
           setLocalValue(event.target.value);
+          draftStore?.set(draftKey, event.target.value);
         }}
         onBlur={async () => {
           const newArray = localValue.split('\n').map((s) => s.trim()).filter(Boolean);
           await window.service.preference.set(item.key, newArray);
+          draftStore?.delete(draftKey);
           if (item.needsRestart) {
             onNeedsRestart();
           }
@@ -283,18 +292,21 @@ function StringArrayItem({
 }
 
 function KeyedValueStringField({
+  draftKey,
   testId,
   value,
   onCommit,
 }: {
+  draftKey: string;
   onCommit: (value: string) => Promise<void>;
   testId: string;
   value: string;
 }): React.JSX.Element {
-  const [localValue, setLocalValue] = React.useState(value);
+  const draftStore = React.useContext(PreferenceDraftContext);
+  const [localValue, setLocalValue] = React.useState(() => draftStore?.get(draftKey) ?? value);
   React.useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+    if (!draftStore?.has(draftKey)) setLocalValue(value);
+  }, [draftKey, draftStore, value]);
 
   return (
     <TextField
@@ -304,9 +316,11 @@ function KeyedValueStringField({
       placeholder='http://127.0.0.1:8080'
       onChange={event => {
         setLocalValue(event.target.value);
+        draftStore?.set(draftKey, event.target.value);
       }}
       onBlur={async () => {
         await onCommit(localValue.trim());
+        draftStore?.delete(draftKey);
       }}
       sx={{ minWidth: 280 }}
     />
@@ -404,6 +418,7 @@ function KeyedValueTabsItem({
                       )}
                       {field.type === 'string' && (
                         <KeyedValueStringField
+                          draftKey={`${item.key}:${tab.key}:${field.key}`}
                           testId={testId}
                           value={typeof rawFieldValue === 'string' ? rawFieldValue : ''}
                           onCommit={async value => {
@@ -588,6 +603,7 @@ export function AllSectionsRenderer({
   onNavigationComplete,
   query = '',
 }: IAllSectionsRendererProps): React.JSX.Element {
+  const draftStore = React.useRef(new Map<string, string>());
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   const isTest = usePromiseValue(async () => await window.service.context.get('isTest'));
@@ -673,25 +689,27 @@ export function AllSectionsRenderer({
       };
     });
     return (
-      <VirtualizedSettingsList
-        entries={searchEntries}
-        defaultRowHeight={100}
-        renderEntry={(entry) => (
-          <>
-            <SearchSectionLabel>
-              <HighlightText text={entry.sectionTitle} query={query} />
-            </SearchSectionLabel>
-            <ItemRenderer
-              item={entry.item}
-              preference={preference}
-              platform={platform}
-              onNeedsRestart={onNeedsRestart}
-              query={query}
-            />
-            <Divider />
-          </>
-        )}
-      />
+      <PreferenceDraftContext.Provider value={draftStore.current}>
+        <VirtualizedSettingsList
+          entries={searchEntries}
+          defaultRowHeight={100}
+          renderEntry={(entry) => (
+            <>
+              <SearchSectionLabel>
+                <HighlightText text={entry.sectionTitle} query={query} />
+              </SearchSectionLabel>
+              <ItemRenderer
+                item={entry.item}
+                preference={preference}
+                platform={platform}
+                onNeedsRestart={onNeedsRestart}
+                query={query}
+              />
+              <Divider />
+            </>
+          )}
+        />
+      </PreferenceDraftContext.Provider>
     );
   }
 
@@ -702,11 +720,13 @@ export function AllSectionsRenderer({
   }
 
   return (
-    <VirtualizedSettingsList
-      entries={sectionEntries}
-      navigationRequest={navigationRequest}
-      onNavigationComplete={onNavigationComplete}
-      renderEntry={renderSectionEntry}
-    />
+    <PreferenceDraftContext.Provider value={draftStore.current}>
+      <VirtualizedSettingsList
+        entries={sectionEntries}
+        navigationRequest={navigationRequest}
+        onNavigationComplete={onNavigationComplete}
+        renderEntry={renderSectionEntry}
+      />
+    </PreferenceDraftContext.Provider>
   );
 }
