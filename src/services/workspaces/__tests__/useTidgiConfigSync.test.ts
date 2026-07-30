@@ -113,6 +113,7 @@ describe('Workspace useTidgiConfigSync', () => {
       id: workspace.id,
       name: workspace.name,
       readOnlyMode: workspace.readOnlyMode,
+      enableFileSystemWatch: workspace.enableFileSystemWatch,
     }));
     mockRemoveSyncableFields.mockImplementation((workspace: IWikiWorkspace) => {
       const { name, readOnlyMode, ...rest } = workspace as unknown as Record<string, unknown>;
@@ -211,6 +212,47 @@ describe('Workspace useTidgiConfigSync', () => {
       await service.set(workspace.id, updatedWorkspace);
 
       expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
+    });
+
+    it('serializes concurrent partial updates so neither update is lost', async () => {
+      const workspace = createWorkspace({
+        useTidgiConfigSync: true,
+        readOnlyMode: false,
+        enableFileSystemWatch: false,
+      });
+      const service = createWorkspaceService(workspace);
+      mockReadTidgiConfigSync.mockReturnValue({ version: 1, name: 'Workspace 1' });
+
+      let finishFirstWrite: (() => void) | undefined;
+      mockWriteTidgiConfig
+        .mockImplementationOnce(() =>
+          new Promise<void>((resolve) => {
+            finishFirstWrite = resolve;
+          })
+        )
+        .mockResolvedValue(undefined);
+
+      const firstUpdate = service.update(workspace.id, { enableFileSystemWatch: true });
+      const secondUpdate = service.update(workspace.id, { readOnlyMode: true });
+
+      await vi.waitFor(() => {
+        expect(mockWriteTidgiConfig).toHaveBeenCalledTimes(1);
+      });
+      expect(finishFirstWrite).toBeDefined();
+      finishFirstWrite?.();
+      await Promise.all([firstUpdate, secondUpdate]);
+
+      await expect(service.get(workspace.id)).resolves.toMatchObject({
+        enableFileSystemWatch: true,
+        readOnlyMode: true,
+      });
+      expect(mockWriteTidgiConfig).toHaveBeenLastCalledWith(
+        workspace.wikiFolderLocation,
+        expect.objectContaining({
+          enableFileSystemWatch: true,
+          readOnlyMode: true,
+        }),
+      );
     });
   });
 

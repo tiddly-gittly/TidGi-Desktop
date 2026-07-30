@@ -84,3 +84,6 @@ minimumReleaseAgeExclude:
   - '@memeloop/react-ui@0.1.0'
   - memeloop@0.1.0 || 0.1.1 || 0.1.2 || 0.1.3
   - multiformats@14.0.5
+
+patchedDependencies:
+  '@memeloop/react-ui@0.1.0': patches/@memeloop__react-ui@0.1.0.patch
