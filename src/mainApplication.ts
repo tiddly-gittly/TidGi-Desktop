@@ -343,4 +343,6 @@ void (async () => {
       reportErrorToGithubWithTemplates(error);
     },
   });
-})();
+})().catch((error: unknown) => {
+  logger.error('Failed to initialize global error handler', { error });
+});
