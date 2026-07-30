@@ -113,13 +113,22 @@ Then('the {string} element with selector {string} should be aligned near the top
   await element.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
   await backOff(async () => {
-    const offsetFromViewportTop = await element.evaluate((node) => {
-      const scrollViewport = node.closest('[role="list"]');
+    const alignment = await element.evaluate((node) => {
+      const scrollViewport = node.closest('[data-settings-scroll-viewport], [role="list"]');
       if (!scrollViewport) throw new Error('Settings scroll viewport was not found');
-      return node.getBoundingClientRect().top - scrollViewport.getBoundingClientRect().top;
+      const nodeRectangle = node.getBoundingClientRect();
+      const viewportRectangle = scrollViewport.getBoundingClientRect();
+      return {
+        offsetFromViewportTop: nodeRectangle.top - viewportRectangle.top,
+        scrollTop: scrollViewport.scrollTop,
+        viewportHeight: viewportRectangle.height,
+      };
     });
-    if (Math.abs(offsetFromViewportTop) > 32) {
-      throw new Error(`${elementComment} is ${offsetFromViewportTop}px from the viewport top`);
+    if (Math.abs(alignment.offsetFromViewportTop) > 32) {
+      throw new Error(
+        `${elementComment} is ${alignment.offsetFromViewportTop}px from the viewport top ` +
+          `(viewport height ${alignment.viewportHeight}px, scrollTop ${alignment.scrollTop}px)`,
+      );
     }
   }, {
     delayFirstAttempt: true,
