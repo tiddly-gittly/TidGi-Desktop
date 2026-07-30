@@ -7,22 +7,29 @@ import { styled } from '@mui/material/styles';
 import type { AgentDefinition } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-const SwitcherButton = styled(Box)<{ disabled?: boolean }>(({ theme, disabled }) => ({
+const SwitcherButton = styled('button')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: 4,
   padding: '2px 10px 2px 6px',
+  border: 0,
   borderRadius: 12,
-  cursor: disabled ? 'default' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
+  color: 'inherit',
+  font: 'inherit',
+  cursor: 'pointer',
   backgroundColor: theme.palette.action.hover,
   transition: 'background-color 0.15s',
   whiteSpace: 'nowrap',
-  '&:hover': disabled
-    ? {}
-    : {
-      backgroundColor: theme.palette.action.selected,
-    },
+  '&:hover': {
+    backgroundColor: theme.palette.action.selected,
+  },
+  '&:disabled': {
+    cursor: 'default',
+    opacity: 0.5,
+  },
+  '&:disabled:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
 }));
 
 const DropdownPaper = styled(Paper)(({ theme }) => ({
@@ -100,6 +107,7 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
       <SwitcherButton
         onClick={handleClick}
         disabled={disabled}
+        type='button'
         data-testid='agent-switcher-button'
       >
         <SmartToyIcon sx={{ fontSize: 16 }} />
