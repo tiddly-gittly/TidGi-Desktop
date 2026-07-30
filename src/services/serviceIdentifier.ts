@@ -11,6 +11,7 @@ export default {
   Git: Symbol.for('Git'),
   GitServer: Symbol.for('GitServer'),
   HtmlWiki: Symbol.for('HtmlWiki'),
+  LogViewer: Symbol.for('LogViewer'),
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
   NotificationService: Symbol.for('NotificationService'),

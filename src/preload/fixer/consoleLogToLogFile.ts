@@ -1,9 +1,10 @@
+import type { LogContext } from '@services/libs/log/schema';
 import { webFrame } from 'electron';
 
-export async function consoleLogToLogFile(workspaceName = 'error-no-workspace-name'): Promise<void> {
+export async function consoleLogToLogFile(context: LogContext): Promise<void> {
   await webFrame.executeJavaScript(`
     (function() {
-      const workspaceName = ${JSON.stringify(workspaceName)};
+      const logContext = ${JSON.stringify(context)};
       
       // Save original console methods - need to bind them to console object
       const originalConsole = {
@@ -28,7 +29,7 @@ export async function consoleLogToLogFile(workspaceName = 'error-no-workspace-na
             return String(arg);
           }).join(' ');
           
-          void window.service.native.logFor(workspaceName, level, message);
+          void window.service.native.logFor(logContext, level, message);
         } catch (error) {
           originalConsole.error('Failed to send log to backend:', error);
         }
@@ -91,7 +92,8 @@ export async function consoleLogToLogFile(workspaceName = 'error-no-workspace-na
         setTimeout(() => clearInterval(checkInterval), 10000);
       }
       
-      originalConsole.log('[CONSOLE_HOOK] Console logging to backend file enabled for workspace:', workspaceName);
+      void window.service.native.logFor(logContext, 'info', '[test-id-WIKI_RENDERER_LOGGING_READY] Console logging to backend enabled');
+      originalConsole.log('[CONSOLE_HOOK] Console logging to backend file enabled:', logContext);
     })();
   `);
 }

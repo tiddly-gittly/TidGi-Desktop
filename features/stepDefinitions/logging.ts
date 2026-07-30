@@ -4,6 +4,14 @@ import path from 'path';
 import { MockOAuthServer } from '../supports/mockOAuthServer';
 import { ApplicationWorld } from './application';
 
+function findLogFiles(directory: string): string[] {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const entryPath = path.join(directory, entry.name);
+    return entry.isDirectory() ? findLogFiles(entryPath) : entry.name.endsWith('.log') ? [entryPath] : [];
+  });
+}
+
 Then('I should find log entries containing', async function(this: ApplicationWorld, dataTable: DataTable | undefined) {
   const expectedRows = dataTable?.raw().map((r: string[]) => r[0]);
 
@@ -20,13 +28,13 @@ Then('I should find log entries containing', async function(this: ApplicationWor
   let lastFileCount = 0;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const files = fs.readdirSync(logsDirectory).filter((f) => f.endsWith('.log'));
+    const files = findLogFiles(logsDirectory);
     lastFileCount = files.length;
 
     lastMissing = expectedRows?.filter((expectedRow: string) => {
       return !files.some((file) => {
         try {
-          const content = fs.readFileSync(path.join(logsDirectory, file), 'utf8');
+          const content = fs.readFileSync(file, 'utf8');
           return content.includes(expectedRow);
         } catch {
           return false;

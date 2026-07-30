@@ -487,6 +487,8 @@
   },
   "Open": "打开",
   "Preference": {
+    "OpenLogViewer": "打开日志查看器",
+    "OpenLogViewerDetail": "按日期、工作区和进程查看、搜索应用日志",
     "AddAlarm": "添加闹钟",
     "AddHeartbeat": "添加心跳任务",
     "AIGenerateBackupTitle": "AI 生成备份标题",
@@ -780,6 +782,10 @@
     "HibernateWorkspace": "休眠工作区",
     "OpenInBrowser": "用浏览器打开",
     "OpenInBrowserDisabledHint": "（启用 HTTP API 才能使用）",
+    "OpenLogs": "打开日志",
+    "BackupHistoryLog": "历史备份日志",
+    "ServerLog": "服务端日志",
+    "FrontendLog": "前端网页日志",
     "OpenWorkspaceFolder": "打开文件夹",
     "OpenHtmlWikiFile": "打开 HTML 文件",
     "OpenHtmlWikiFolder": "打开所在文件夹",
@@ -794,6 +800,19 @@
     "RemoveWorkspaceAndDeleteHtmlFile": "移除工作区并删除 HTML 文件",
     "ViewGitHistory": "查看历史备份（Git）",
     "WakeUpWorkspace": "唤醒工作区"
+  },
+  "LogViewer": {
+    "CopyJSON": "复制 JSON",
+    "CopyMessage": "复制正文",
+    "Date": "日期",
+    "Global": "全局",
+    "LoadOlder": "加载更早日志",
+    "NoEntries": "没有匹配的日志。",
+    "NoSources": "该日期没有可用的日志来源。",
+    "Refresh": "刷新",
+    "Search": "搜索当前日志",
+    "Title": "日志查看器",
+    "Workspaces": "工作区"
   },
   "Yes": "是的"
 }

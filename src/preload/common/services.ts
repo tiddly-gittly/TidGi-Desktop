@@ -17,6 +17,7 @@ import { DeepLinkServiceIPCDescriptor, type IDeepLinkService } from '@services/d
 import { ExternalAPIServiceIPCDescriptor, type IExternalAPIService } from '@services/externalAPI/interface';
 import { GitServiceIPCDescriptor, type IGitService } from '@services/git/interface';
 import { HtmlWikiServiceIPCDescriptor, type IHtmlWikiService } from '@services/htmlWiki/interface';
+import { type ILogViewerService, LogViewerServiceIPCDescriptor } from '@services/logViewer/interface';
 import { type IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { type INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { type INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
@@ -44,6 +45,7 @@ export const externalAPI = createProxy<IExternalAPIService>(ExternalAPIServiceIP
 export const database = createProxy<IDatabaseService>(DatabaseServiceIPCDescriptor);
 export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
 export const htmlWiki = createProxy<IHtmlWikiService>(HtmlWikiServiceIPCDescriptor);
+export const logViewer = createProxy<ILogViewerService>(LogViewerServiceIPCDescriptor);
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
 export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
 export const notification = createProxy<INotificationService>(NotificationServiceIPCDescriptor);
@@ -70,6 +72,7 @@ export const descriptors = {
   deepLink: DeepLinkServiceIPCDescriptor,
   git: GitServiceIPCDescriptor,
   htmlWiki: HtmlWikiServiceIPCDescriptor,
+  logViewer: LogViewerServiceIPCDescriptor,
   menu: MenuServiceIPCDescriptor,
   native: NativeServiceIPCDescriptor,
   notification: NotificationServiceIPCDescriptor,

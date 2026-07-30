@@ -30,6 +30,17 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IPreferences } from '@services/preferences/interface';
 import type { IViewInfo } from '@services/view/interface';
 import type { IWorkerInfo } from '@services/wiki/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+
+export function DeveloperLogViewerItem(): React.JSX.Element {
+  const { t } = useTranslation();
+  return (
+    <ListItemButton onClick={() => void window.service.window.open(WindowNames.logViewer)}>
+      <ListItemText primary={t('Preference.OpenLogViewer')} secondary={t('Preference.OpenLogViewerDetail')} />
+      <ChevronRightIcon color='action' />
+    </ListItemButton>
+  );
+}
 
 export function buildVsCodeMcpUrl(preference: Pick<IPreferences, 'mcpServerPort' | 'mcpServerRequireToken' | 'mcpServerToken'>): string {
   const token = preference.mcpServerToken.trim();
@@ -90,13 +101,11 @@ export function DeveloperDiagPanelItem(): React.JSX.Element {
       window.service.native.getProcessInfo(),
       window.service.wiki.getWorkersInfo(),
       window.service.view.getViewsInfo(),
-      window.service.git.getWorkerInfo(),
+      window.service.git.getWorkerInfos(),
     ]);
     // Merge wiki workers and git worker into a single list for the diagnostic panel
     const allWorkers = [...workersInfoResult];
-    if (gitWorkerInfoResult !== undefined) {
-      allWorkers.push(gitWorkerInfoResult);
-    }
+    allWorkers.push(...gitWorkerInfoResult);
     setDiagData({ processInfo: processInfoResult, workersInfo: allWorkers, viewsInfo: viewsInfoResult });
   };
 

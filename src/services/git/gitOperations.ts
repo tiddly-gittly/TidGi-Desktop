@@ -62,7 +62,15 @@ export async function ensureGitIdentity(
  * Used for HTML wiki workspaces whose repo root is the parent folder of the .html file.
  */
 export async function initScopedWikiGit(repoPath: string, scopedPath: string, message?: string): Promise<void> {
-  if (!(await hasGit(repoPath, true))) {
+  let hasLocalGitMetadata = false;
+  try {
+    await fs.stat(path.join(repoPath, '.git'));
+    hasLocalGitMetadata = true;
+  } catch {
+    // The target directory is not itself a repository. An ancestor repository
+    // must not suppress initialization because scopedPath is relative to repoPath.
+  }
+  if (!hasLocalGitMetadata) {
     const initResult = await gitExec(['init'], repoPath);
     if (initResult.exitCode !== 0) {
       throw new Error(`Failed to init git: ${initResult.stderr}`);
@@ -804,19 +812,14 @@ export async function checkoutCommit(repoPath: string, commitHash: string): Prom
 
 /**
  * Revert a specific commit
- * @param commitMessage - The original commit message to include in the revert message
+ * @param revertMessage - Fully localized revert commit message prepared by the main process
  */
-export async function revertCommit(repoPath: string, commitHash: string, commitMessage?: string): Promise<void> {
+export async function revertCommit(repoPath: string, commitHash: string, revertMessage: string): Promise<void> {
   const result = await gitExec(['revert', '--no-commit', commitHash], repoPath);
 
   if (result.exitCode !== 0) {
     throw new Error(`Failed to revert commit: ${result.stderr}`);
   }
-
-  // Create revert commit message with the original commit message
-  const revertMessage = commitMessage
-    ? i18n.t('ContextMenu.RevertCommit', { message: commitMessage })
-    : `Revert commit ${commitHash}`;
 
   // Commit the revert with author/committer identity
   const commitResult = await gitExec(

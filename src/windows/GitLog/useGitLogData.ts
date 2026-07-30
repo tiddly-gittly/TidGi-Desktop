@@ -188,7 +188,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         }
 
         // Get git log from service
-        const result = await window.service.git.getGitLog(repoPath, options);
+        const result = await window.service.git.getGitLog(repoPath, options, workspaceID);
         void window.service.native.log('debug', '[DEBUG] getGitLog completed', { entryCount: result.entries.length });
 
         // Get unpushed commit hashes in parallel with loading files
@@ -196,7 +196,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         const isLocalWorkspace = workspaceInfo.storageService === SupportedStorageServices.local;
         const unpushedHashesPromise = isLocalWorkspace
           ? Promise.resolve(new Set<string>())
-          : window.service.git.getUnpushedCommitHashes(repoPath, workspaceInfo.gitUrl);
+          : window.service.git.getUnpushedCommitHashes(repoPath, workspaceInfo.gitUrl, workspaceID);
 
         // Load files for each commit
         const entriesWithFiles = await Promise.all(
@@ -206,6 +206,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
                 repoPath,
                 entry.hash,
                 gitScope?.managedRelativePath,
+                workspaceID,
               );
               return { ...entry, files };
             } catch (error) {
@@ -327,14 +328,14 @@ export function useGitLogData(workspaceID: string): IGitLogData {
         options.scopedPath = gitScope.managedRelativePath;
       }
 
-      const result = await window.service.git.getGitLog(repoPath, options);
+      const result = await window.service.git.getGitLog(repoPath, options, workspaceID);
 
       // Get unpushed commit hashes in parallel with loading files
       // For local workspaces, skip this — users should convert to cloud workspace if they want remote sync.
       const isLocalWorkspace = workspaceInfo.storageService === SupportedStorageServices.local;
       const unpushedHashesPromise = isLocalWorkspace
         ? Promise.resolve(new Set<string>())
-        : window.service.git.getUnpushedCommitHashes(repoPath, workspaceInfo.gitUrl);
+        : window.service.git.getUnpushedCommitHashes(repoPath, workspaceInfo.gitUrl, workspaceID);
 
       // Load files for each commit
       const entriesWithFiles = await Promise.all(
@@ -344,6 +345,7 @@ export function useGitLogData(workspaceID: string): IGitLogData {
               repoPath,
               entry.hash,
               gitScope?.managedRelativePath,
+              workspaceID,
             );
             return { ...entry, files };
           } catch (error) {

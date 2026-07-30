@@ -174,9 +174,14 @@ export interface IGitService {
     method: K,
     ...arguments_: Parameters<typeof import('./gitOperations')[K]>
   ): Promise<Awaited<ReturnType<typeof import('./gitOperations')[K]>>>;
-  getGitLog(repoPath: string, options?: IGitLogOptions): Promise<IGitLogResult>;
-  getCommitFiles(repoPath: string, commitHash: string, scopedPath?: string): Promise<IFileWithStatus[]>;
-  getUnpushedCommitHashes(repoPath: string, remoteUrl?: string | null): Promise<Set<string>>;
+  callGitOpForWorkspace<K extends keyof typeof import('./gitOperations')>(
+    workspaceID: string,
+    method: K,
+    ...arguments_: Parameters<typeof import('./gitOperations')[K]>
+  ): Promise<Awaited<ReturnType<typeof import('./gitOperations')[K]>>>;
+  getGitLog(repoPath: string, options?: IGitLogOptions, workspaceID?: string): Promise<IGitLogResult>;
+  getCommitFiles(repoPath: string, commitHash: string, scopedPath?: string, workspaceID?: string): Promise<IFileWithStatus[]>;
+  getUnpushedCommitHashes(repoPath: string, remoteUrl?: string | null, workspaceID?: string): Promise<Set<string>>;
   /**
    * Checkout a specific commit
    */
@@ -224,12 +229,14 @@ export interface IGitService {
    * Returns undefined if the git worker is not running.
    */
   getWorkerInfo(): Promise<IWorkerInfo | undefined>;
+  getWorkerInfos(): Promise<IWorkerInfo[]>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
   properties: {
     addToGitignore: ProxyPropertyType.Function,
     callGitOp: ProxyPropertyType.Function,
+    callGitOpForWorkspace: ProxyPropertyType.Function,
     getGitLog: ProxyPropertyType.Function,
     getCommitFiles: ProxyPropertyType.Function,
     getUnpushedCommitHashes: ProxyPropertyType.Function,
@@ -250,6 +257,7 @@ export const GitServiceIPCDescriptor = {
     initScopedWikiGit: ProxyPropertyType.Function,
     notifyFileChange: ProxyPropertyType.Function,
     getWorkerInfo: ProxyPropertyType.Function,
+    getWorkerInfos: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     amendCommitMessage: ProxyPropertyType.Function,
     undoCommit: ProxyPropertyType.Function,

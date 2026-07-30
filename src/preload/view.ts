@@ -21,7 +21,16 @@ const handleLoaded = (event: string): void => {
 async function executeJavaScriptInBrowserView(): Promise<void> {
   const viewMetaData = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
   const workspaceName = viewMetaData.workspace?.name ?? 'unknown';
-  await consoleLogToLogFile(workspaceName);
+  await consoleLogToLogFile({
+    process: 'renderer',
+    scope: {
+      kind: 'workspace',
+      workspaceID: viewMetaData.workspace?.id ?? 'unknown-workspace',
+      workspaceName,
+    },
+    component: 'wiki-renderer',
+    pid: process.pid,
+  });
   const workspaceID = viewMetaData.workspace?.id;
 
   // Note: VIEW_LOADED is now logged in main process via did-finish-load event

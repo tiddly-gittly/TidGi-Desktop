@@ -23,6 +23,9 @@ export enum DatabaseChannel {
 export enum GitChannel {
   name = 'GitChannel',
 }
+export enum LogViewerChannel {
+  name = 'LogViewerChannel',
+}
 export enum GitServerChannel {
   name = 'GitServerChannel',
 }

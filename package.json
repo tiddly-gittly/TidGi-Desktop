@@ -56,6 +56,7 @@
     "@mui/system": "^9.2.0",
     "@mui/types": "^9.1.1",
     "@mui/x-date-pickers": "^9.10.1",
+    "@mui/x-tree-view": "9.10.1",
     "@rjsf/core": "6.7.0",
     "@rjsf/mui": "6.7.0",
     "@rjsf/utils": "6.7.0",

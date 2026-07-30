@@ -230,6 +230,7 @@ export class Window implements IWindowService {
       [WindowNames.editWorkspace]: 'TidGi [Edit Workspace]',
       [WindowNames.about]: 'TidGi [About]',
       [WindowNames.gitHistory]: 'TidGi [Git History]',
+      [WindowNames.logViewer]: 'TidGi [Log Viewer]',
       [WindowNames.notifications]: 'TidGi [Notifications]',
       [WindowNames.spellcheck]: 'TidGi [Spellcheck]',
       [WindowNames.auth]: 'TidGi [Auth]',

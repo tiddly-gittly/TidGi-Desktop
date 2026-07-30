@@ -72,6 +72,7 @@ import {
 import { Observable } from 'rxjs';
 import { defaultGitInfo } from './defaultGitInfo';
 import { ensureGitIdentity } from './gitOperations';
+import * as gitOperations from './gitOperations';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 
 function initWikiGit(
@@ -303,7 +304,15 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
   }
 }
 
+async function runGitOperation(method: keyof typeof gitOperations, arguments_: unknown[]): Promise<unknown> {
+  const operation = gitOperations[method] as unknown as (...parameters: unknown[]) => unknown;
+  return await operation(...arguments_);
+}
+
 const gitWorker = {
+  // Promise-returning operations go through one method whose name is not
+  // classified as an Observable by electron-ipc-cat's legacy name heuristic.
+  runGitOperation,
   initWikiGit,
   commitAndSyncWiki,
   cloneWiki,

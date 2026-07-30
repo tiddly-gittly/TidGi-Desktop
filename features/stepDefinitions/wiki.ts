@@ -73,16 +73,16 @@ export async function waitForLogMarker(
     await backOff(
       async () => {
         try {
-          const files = await fs.readdir(logPath);
+          const files = await listLogFiles(logPath);
           // Case-insensitive matching for log file patterns, or match all .log files if '*' is specified
           const logFiles = files.filter(f => {
             if (!f.endsWith('.log')) return false;
             if (matchAll) return true;
-            return patterns.some(p => f.toLowerCase().startsWith(p.toLowerCase()));
+            return patterns.some(p => path.basename(f).toLowerCase().startsWith(p.toLowerCase()));
           });
 
           for (const file of logFiles) {
-            const content = await fs.readFile(path.join(logPath, file), 'utf-8');
+            const content = await fs.readFile(file, 'utf-8');
             if (content.includes(searchString)) {
               return;
             }
@@ -134,10 +134,7 @@ When('I cleanup test wiki so it could create a new one on start', async function
    */
   const logDirectory = getLogPath(this);
   if (fs.existsSync(logDirectory)) {
-    const logFiles = fs.readdirSync(logDirectory).filter(f => (f.startsWith('wiki-') || f.startsWith('TidGi-')) && f.endsWith('.log'));
-    for (const logFile of logFiles) {
-      fs.removeSync(path.join(logDirectory, logFile));
-    }
+    fs.removeSync(logDirectory);
   }
 
   type SettingsFile = { workspaces?: Record<string, IWorkspace> } & Record<string, unknown>;
@@ -1582,6 +1579,15 @@ Given('I setup a sub-wiki {string} with tag {string} and filter {string} and tid
 
 export { clearHibernationTestData, clearSubWikiRoutingTestData, clearTestIdLogs };
 
+async function listLogFiles(directory: string): Promise<string[]> {
+  if (!await fs.pathExists(directory)) return [];
+  const entries = await fs.readdir(directory, { withFileTypes: true });
+  return (await Promise.all(entries.map(async entry => {
+    const entryPath = path.join(directory, entry.name);
+    return entry.isDirectory() ? await listLogFiles(entryPath) : entry.name.endsWith('.log') ? [entryPath] : [];
+  }))).flat();
+}
+
 /**
  * Clear all test-id markers from log files to ensure fresh logs for next test phase
  */
@@ -1592,20 +1598,17 @@ async function clearTestIdLogs(world: ApplicationWorld) {
     return;
   }
 
-  const logFiles = await fs.readdir(logPath);
+  const logFiles = await listLogFiles(logPath);
 
-  for (const file of logFiles) {
-    if (file.endsWith('.log')) {
-      const filePath = path.join(logPath, file);
-      try {
-        const content = await fs.readFile(filePath, 'utf-8');
-        // Remove all lines containing [test-id-
-        const lines = content.split('\n');
-        const filteredLines = lines.filter(line => !line.includes('[test-id-'));
-        await fs.writeFile(filePath, filteredLines.join('\n'), 'utf-8');
-      } catch (error) {
-        console.warn(`Failed to clear test-id markers from ${file}:`, error);
-      }
+  for (const filePath of logFiles) {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      // Remove all lines containing [test-id-
+      const lines = content.split('\n');
+      const filteredLines = lines.filter(line => !line.includes('[test-id-'));
+      await fs.writeFile(filePath, filteredLines.join('\n'), 'utf-8');
+    } catch (error) {
+      console.warn(`Failed to clear test-id markers from ${filePath}:`, error);
     }
   }
 }
@@ -1623,16 +1626,15 @@ async function clearLogLinesContaining(world: ApplicationWorld, marker: string) 
   const logDirectory = getLogPath(world);
   if (!await fs.pathExists(logDirectory)) return;
 
-  const logFiles = (await fs.readdir(logDirectory)).filter(f => f.endsWith('.log'));
+  const logFiles = await listLogFiles(logDirectory);
 
-  for (const logFile of logFiles) {
-    const logFilePath = path.join(logDirectory, logFile);
+  for (const logFilePath of logFiles) {
     try {
       const content = await fs.readFile(logFilePath, 'utf-8');
       const filteredLines = content.split('\n').filter(line => !line.includes(marker));
       await fs.writeFile(logFilePath, filteredLines.join('\n'), 'utf-8');
     } catch (error) {
-      console.warn(`Failed to clear log lines from ${logFile}:`, error);
+      console.warn(`Failed to clear log lines from ${logFilePath}:`, error);
     }
   }
 }

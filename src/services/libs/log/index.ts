@@ -1,9 +1,10 @@
-import { LOG_FOLDER } from '@/constants/appPaths';
+import type { TransformableInfo } from 'logform';
 import { serializeError } from 'serialize-error';
 import winston, { format } from 'winston';
-import 'winston-daily-rotate-file';
-import type { TransformableInfo } from 'logform';
 import RendererTransport from './rendererTransport';
+import type { LogContext } from './schema';
+import StructuredFileTransport, { cleanupExpiredLogFolders, closeStructuredLogStreams } from './structuredFileTransport';
+export * from './schema';
 
 /**
  * Custom formatter to serialize Error objects using serialize-error package.
@@ -28,64 +29,18 @@ const errorSerializer = format((info: TransformableInfo) => {
 const logger = winston.createLogger({
   transports: [
     new winston.transports.Console(),
-    new winston.transports.DailyRotateFile({
-      filename: 'TidGi-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: false,
-      maxSize: '20mb',
-      maxFiles: '14d',
-      dirname: LOG_FOLDER,
-      level: 'debug',
-    }),
+    new StructuredFileTransport({ level: 'debug' }),
     new RendererTransport(),
   ],
   format: format.combine(errorSerializer(), format.timestamp(), format.json()),
 });
 export { logger };
 
-/**
- * Store for labeled loggers (e.g., per-wiki loggers)
- */
-const labeledLoggers = new Map<string, winston.Logger>();
-
-/**
- * Get or create a logger for a specific label (e.g., wiki name)
- * Each labeled logger writes to its own log file
- * @param label The label for the logger (e.g., wiki workspace name)
- * @returns A winston logger instance for the specified label
- */
-export function getLoggerForLabel(label: string): winston.Logger {
-  // Special case: if label is 'TidGi', return the main logger to avoid file write conflicts
-  // This allows main window console logs to merge into the same TidGi-*.log file
-  if (label === 'TidGi') {
-    return logger;
-  }
-
-  const existingLogger = labeledLoggers.get(label);
-  if (existingLogger) {
-    return existingLogger;
-  }
-
-  // Create new logger for this label
-  const labeledLogger = winston.createLogger({
-    transports: [
-      new winston.transports.Console(),
-      new winston.transports.DailyRotateFile({
-        filename: `${label}-%DATE%.log`,
-        datePattern: 'YYYY-MM-DD',
-        zippedArchive: false,
-        maxSize: '20mb',
-        maxFiles: '14d',
-        dirname: LOG_FOLDER,
-        level: 'debug',
-      }),
-    ],
-    format: format.combine(errorSerializer(), format.label({ label }), format.timestamp(), format.json()),
-  });
-
-  labeledLoggers.set(label, labeledLogger);
-  return labeledLogger;
+export function getLogger(context: LogContext): winston.Logger {
+  return logger.child({ logContext: context });
 }
+
+void cleanupExpiredLogFolders();
 
 /**
  * Prevent MacOS error `Unhandled Error Error: write EIO at afterWriteDispatched`
@@ -102,19 +57,7 @@ export function destroyLogger(): void {
     }
   });
 
-  // Destroy all labeled loggers
-  for (const [label, labeledLogger] of labeledLoggers.entries()) {
-    labeledLogger.transports.forEach((t) => {
-      if (t) {
-        try {
-          labeledLogger.remove(t);
-        } catch {
-          // Ignore because without logger we can't even log the error
-        }
-      }
-    });
-    labeledLoggers.delete(label);
-  }
+  void closeStructuredLogStreams();
 
   // Prevent `Error: write EIO at afterWriteDispatched (node:internal/stream_base_commons:159:15)`
   console.error = () => {};

@@ -1,8 +1,8 @@
 import { app, dialog, net, type UtilityProcess } from 'electron';
 import { createWorkerMethodProxy, type WorkerPeer } from 'electron-ipc-cat/host';
-import { backOff } from 'exponential-backoff';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
+import path from 'node:path';
 import { BehaviorSubject, Observer } from 'rxjs';
 import GitWorkerFactory from './gitWorker?utilityProcess';
 
@@ -12,7 +12,7 @@ import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/
 import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
-import { logger } from '@services/libs/log';
+import { getLogger, logger, workspaceLogContext } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -21,6 +21,7 @@ import type { IWorkerInfo } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspace, type IWorkspaceGitScope } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { computeGitScopePaths, getWorkspaceGitScope as resolveWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import * as gitOperations from './gitOperations';
 import type { GitWorker } from './gitWorker';
@@ -30,10 +31,7 @@ import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
 export class Git implements IGitService {
-  private gitWorker?: GitWorker;
-  private nativeWorker?: UtilityProcess;
-  /** Set to true when the worker is being intentionally stopped, to suppress auto-restart. */
-  private stopping = false;
+  private readonly workers = new Map<string, { proxy: GitWorker; nativeWorker: UtilityProcess; ready: Promise<void> }>();
   public gitStateChange$ = new BehaviorSubject<IGitStateChange | undefined>(undefined);
   public gitSyncProgress$ = new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined);
   private operationLocks = new Map<string, Promise<void>>();
@@ -129,133 +127,115 @@ export class Git implements IGitService {
   }
 
   public async initialize(): Promise<void> {
-    await this.initWorker();
+    process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
     // Register menu items after initialization
     void registerMenu();
   }
 
-  private async initWorker(): Promise<void> {
-    process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
-
-    logger.debug(`Initializing gitWorker as utility process`, {
-      function: 'Git.initWorker',
-      LOCAL_GIT_DIRECTORY,
-    });
-
-    // Use backOff for crash auto-restart with exponential delay and attempt limiting.
-    // The function spawns the worker and returns a promise that rejects on crash,
-    // resolves on clean exit. backOff handles retry timing so we don't maintain
-    // manual crash counters and timers.
-    void backOff(
-      () => this.spawnGitWorkerAndWaitForExit(),
-      {
-        numOfAttempts: 6, // 1 initial spawn + 5 restart attempts
-        startingDelay: 1_000,
-        maxDelay: 30_000,
-        timeMultiple: 2,
-        retry: (error: unknown) => {
-          // Don't retry if we're intentionally stopping
-          if (this.stopping) return false;
-          logger.warn('gitWorker will be restarted by backOff', { error });
-          return true;
-        },
-      },
-    ).then(() => {
-      logger.info('gitWorker utility process exited cleanly', { function: 'Git.initWorker.cleanExit' });
-    }).catch((error: unknown) => {
-      logger.error('gitWorker exhausted all restart attempts, giving up', {
-        function: 'Git.initWorker.exhausted',
-        error,
-      });
+  private async resolveWorkspaceForRepoPath(repoPath: string): Promise<IWorkspace | undefined> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    const normalizedRepoPath = path.resolve(repoPath);
+    return workspaces.find(workspace => {
+      if (!isWikiWorkspace(workspace)) return false;
+      const scope = resolveWorkspaceGitScope(workspace);
+      const workspaceRepoPath = path.resolve(scope?.repoPath ?? workspace.wikiFolderLocation);
+      return process.platform === 'win32'
+        ? workspaceRepoPath.toLocaleLowerCase() === normalizedRepoPath.toLocaleLowerCase()
+        : workspaceRepoPath === normalizedRepoPath;
     });
   }
 
-  /**
-   * Spawn the Git worker as an Electron UtilityProcess and return a promise
-   * that resolves on clean exit (code 0) or rejects on crash (non-zero exit).
-   *
-   * UtilityProcess provides true process-level crash isolation — if dugite's
-   * native libgit2 segfaults, only the utility process dies, not the main
-   * Electron process.
-   */
-  private spawnGitWorkerAndWaitForExit(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      const child = GitWorkerFactory({
-        stdio: 'pipe',
-        serviceName: 'git-worker',
-        // dugite loads native libgit2; on macOS this needs unsigned library loading
-        allowLoadingUnsignedLibraries: process.platform === 'darwin',
-      });
+  private async getWorker(workspace?: IWorkspace): Promise<GitWorker> {
+    const key = workspace?.id ?? '__global__';
+    const existing = this.workers.get(key);
+    if (existing !== undefined) {
+      await existing.ready;
+      return existing.proxy;
+    }
 
-      this.nativeWorker = child;
-      this.gitWorker = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
-
-      // Pipe stdout/stderr to our logger for debugging
-      child.stdout?.on('data', (data: Buffer) => {
-        logger.debug(`gitWorker stdout: ${data.toString().trim()}`, { function: 'Git.spawnGitWorkerAndWaitForExit.stdout' });
-      });
-      child.stderr?.on('data', (data: Buffer) => {
-        logger.warn(`gitWorker stderr: ${data.toString().trim()}`, { function: 'Git.spawnGitWorkerAndWaitForExit.stderr' });
-      });
-
-      child.on('exit', (code: number) => {
-        this.nativeWorker = undefined;
-        this.gitWorker = undefined;
-
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`gitWorker utility process crashed with exit code ${code}`));
-        }
+    const child = GitWorkerFactory({
+      stdio: 'pipe',
+      serviceName: workspace === undefined ? 'git-worker-global' : `git-worker-${workspace.id}`,
+      allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+    const proxy = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
+    const ready = new Promise<void>((resolve, reject) => {
+      child.once('spawn', resolve);
+      child.once('exit', code => {
+        reject(new Error(`Git worker exited before becoming ready (code ${code})`));
       });
     });
+    this.workers.set(key, { proxy, nativeWorker: child, ready });
+    const workerLogger = workspace === undefined
+      ? getLogger({ process: 'git-worker', scope: { kind: 'global' }, component: 'git-worker' })
+      : getLogger(workspaceLogContext(workspace.id, workspace.name, 'git-worker'));
+    workerLogger.info('Git worker started', { workspaceID: workspace?.id, pid: child.pid });
+    child.stdout?.on('data', (data: Buffer) => {
+      workerLogger.debug(data.toString().trim(), { stream: 'stdout' });
+    });
+    child.stderr?.on('data', (data: Buffer) => {
+      workerLogger.warn(data.toString().trim(), { stream: 'stderr' });
+    });
+    child.on('exit', (code: number) => {
+      if (this.workers.get(key)?.nativeWorker === child) this.workers.delete(key);
+      workerLogger.log(code === 0 ? 'info' : 'error', 'Git worker exited', { code, workspaceID: workspace?.id });
+    });
+    await ready;
+    return proxy;
+  }
+
+  private async getWorkerForRepoPath(repoPath: string): Promise<{ worker: GitWorker; workspace?: IWorkspace }> {
+    const workspace = await this.resolveWorkspaceForRepoPath(repoPath);
+    return { worker: await this.getWorker(workspace), workspace };
+  }
+
+  private async getWorkspaceByID(workspaceID: string): Promise<IWorkspace | undefined> {
+    return await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
   }
 
   public async getWorkerInfo(): Promise<IWorkerInfo | undefined> {
-    if (!this.nativeWorker) return undefined;
-    const pid = this.nativeWorker.pid ?? null;
+    return (await this.getWorkerInfos())[0];
+  }
 
-    // Get CPU and RSS from Electron's app metrics
+  public async getWorkerInfos(): Promise<IWorkerInfo[]> {
     const metricsMap = new Map<number, Electron.ProcessMetric>();
     for (const metric of app.getAppMetrics()) {
       metricsMap.set(metric.pid, metric);
     }
-    const metric = pid !== null ? metricsMap.get(pid) : undefined;
-
-    // Get heap usage from the worker itself via RPC
-    let heapUsed_MB: number | null = null;
-    let heapTotal_MB: number | null = null;
-    let rss_MB: number | null = null;
-    if (this.gitWorker) {
+    return await Promise.all([...this.workers.entries()].map(async ([workspaceID, workerEntry]) => {
+      const pid = workerEntry.nativeWorker.pid ?? null;
+      const metric = pid === null ? undefined : metricsMap.get(pid);
+      let heapUsed_MB: number | null = null;
+      let heapTotal_MB: number | null = null;
+      let rss_MB: number | null = null;
       try {
-        const mem = await this.gitWorker.getMemoryUsage();
+        const mem = await workerEntry.proxy.getMemoryUsage();
         heapUsed_MB = mem.heapUsed_MB;
         heapTotal_MB = mem.heapTotal_MB;
         rss_MB = mem.rss_MB;
       } catch {
-        // worker may be busy or not yet ready
+        // Worker may be busy or exiting.
       }
-    }
-    // Fall back to app metrics RSS if worker RPC failed
-    if (rss_MB === null && metric) {
-      rss_MB = Math.round(metric.memory.workingSetSize / 1024);
-    }
-
-    return {
-      workspaceID: 'git-worker',
-      workspaceName: 'Git Worker',
-      port: null,
-      isRunning: this.nativeWorker !== undefined,
-      pid,
-      cpu_percent: metric ? Math.round(metric.cpu.percentCPUUsage * 100) / 100 : null,
-      rss_MB,
-      heapUsed_MB,
-      heapTotal_MB,
-    };
+      if (rss_MB === null && metric) rss_MB = Math.round(metric.memory.workingSetSize / 1024);
+      const workspace = workspaceID === '__global__' ? undefined : await this.getWorkspaceByID(workspaceID);
+      return {
+        workspaceID,
+        workspaceName: workspace === undefined ? 'Git Worker (global)' : `Git: ${workspace.name}`,
+        port: null,
+        isRunning: true,
+        pid,
+        cpu_percent: metric ? Math.round(metric.cpu.percentCPUUsage * 100) / 100 : null,
+        rss_MB,
+        heapUsed_MB,
+        heapTotal_MB,
+      };
+    }));
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
-    const list = await this.gitWorker?.getModifiedFileList(wikiFolderPath);
+    const { worker } = await this.getWorkerForRepoPath(wikiFolderPath);
+    const list = await worker.getModifiedFileList(wikiFolderPath);
     return list ?? [];
   }
 
@@ -365,7 +345,10 @@ export class Git implements IGitService {
       if (typeof meta === 'object' && meta !== null && 'step' in meta) {
         this.popGitErrorNotificationToUser((meta as { step: GitStep }).step, message);
       }
-      logger.log(level, translateMessage(message), meta);
+      const operationLogger = workspaceID === undefined
+        ? getLogger({ process: 'git-worker', scope: { kind: 'global' }, component: 'git-worker' })
+        : getLogger(workspaceLogContext(workspaceID, undefined, 'git-worker'));
+      operationLogger.log(level, translateMessage(message), meta);
     },
     error: (error) => {
       // this normally won't happen. And will become unhandled error. Because Observable error can't be catch, don't know why.
@@ -406,17 +389,19 @@ export class Git implements IGitService {
 
   public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, isMainWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
+    const { worker, workspace } = await this.getWorkerForRepoPath(wikiFolderPath);
     await new Promise<void>((resolve, reject) => {
-      this.gitWorker
-        ?.initWikiGit(wikiFolderPath, getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
-        .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
+      worker
+        .initWikiGit(wikiFolderPath, getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
+        .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject, workspace?.id));
     });
     // Log for e2e test detection - indicates initial git setup and commits are complete
     logger.info(`[test-id-git-init-complete]`, { wikiFolderPath });
   }
 
   public async initScopedWikiGit(repoPath: string, scopedPath: string): Promise<void> {
-    await gitOperations.initScopedWikiGit(repoPath, scopedPath);
+    const { worker } = await this.getWorkerForRepoPath(repoPath);
+    await worker.runGitOperation('initScopedWikiGit', [repoPath, scopedPath, i18n.t('LOG.CommitBackupMessage')]);
     logger.info(`[test-id-git-init-complete]`, { wikiFolderPath: repoPath, scopedPath });
   }
 
@@ -477,13 +462,14 @@ export class Git implements IGitService {
       }
 
       if (isScoped) {
-        const hasChanges = await gitOperations.commitScopedChanges(
+        const gitWorker = await this.getWorker(workspace);
+        const hasChanges = await gitWorker.runGitOperation('commitScopedChanges', [
           scopedRepoPath,
           scopedManagedPath,
           finalConfigs.commitMessage ?? i18n.t('LOG.CommitBackupMessage'),
-        );
+        ]) as boolean;
         if (!configs.commitOnly) {
-          const observable = this.gitWorker?.commitAndSyncWiki(
+          const observable = gitWorker.commitAndSyncWiki(
             workspace,
             { ...finalConfigs, dir: scopedRepoPath, commitOnly: false },
             getErrorMessageI18NDict(),
@@ -496,7 +482,7 @@ export class Git implements IGitService {
         return hasChanges;
       }
 
-      const observable = this.gitWorker?.commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
+      const observable = (await this.getWorker(workspace)).commitAndSyncWiki(workspace, finalConfigs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
 
       // Notify git state change
@@ -533,7 +519,7 @@ export class Git implements IGitService {
       const gitScope = resolveWorkspaceGitScope(workspace);
       const scopedRepoPath = gitScope?.repoPath;
       const scopedConfigs = gitScope?.managedRelativePath !== undefined && scopedRepoPath !== undefined ? { ...configs, dir: scopedRepoPath } : configs;
-      const observable = this.gitWorker?.forcePullWiki(workspace, scopedConfigs, getErrorMessageI18NDict());
+      const observable = (await this.getWorker(workspace)).forcePullWiki(workspace, scopedConfigs, getErrorMessageI18NDict());
       const hasChanges = await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
       // Notify git state change
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'pull');
@@ -589,7 +575,10 @@ export class Git implements IGitService {
               hasChanges = true;
             }
           }
-          logger.log(level, translateMessage(message), meta);
+          const operationLogger = workspaceID === undefined
+            ? getLogger({ process: 'git-worker', scope: { kind: 'global' }, component: 'git-worker' })
+            : getLogger(workspaceLogContext(workspaceID, undefined, 'git-worker'));
+          operationLogger.log(level, translateMessage(message), meta);
         },
         error: (error) => {
           // this normally won't happen. And will become unhandled error. Because Observable error can't be catch, don't know why.
@@ -606,8 +595,9 @@ export class Git implements IGitService {
     if (!net.isOnline()) {
       return;
     }
+    const worker = await this.getWorker();
     await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo, getErrorMessageI18NDict()).subscribe(this.getWorkerMessageObserver(repoFolderPath, resolve, reject));
+      worker.cloneWiki(repoFolderPath, remoteUrl, userInfo, getErrorMessageI18NDict()).subscribe(this.getWorkerMessageObserver(repoFolderPath, resolve, reject));
     });
   }
 
@@ -631,19 +621,15 @@ export class Git implements IGitService {
     method: K,
     ...arguments_: Parameters<typeof gitOperations[K]>
   ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
-    const operation = gitOperations[method];
-    if (typeof operation !== 'function') {
-      throw new Error(`gitOperations.${method} is not a function`);
-    }
-    // Type assertion through unknown is necessary here because TypeScript cannot verify
-    // that the union type of all gitOperations functions matches the generic K constraint
+    const repoPath = typeof arguments_[0] === 'string' ? arguments_[0] : undefined;
+    const { worker } = repoPath === undefined ? { worker: await this.getWorker() } : await this.getWorkerForRepoPath(repoPath);
     const inflightKey = `${method}:${JSON.stringify(arguments_)}`;
     const inflight = this.inflightCallGitOps.get(inflightKey);
     if (inflight !== undefined) {
       return await inflight as Awaited<ReturnType<typeof gitOperations[K]>>;
     }
 
-    const promise = (operation as unknown as (...arguments__: Parameters<typeof gitOperations[K]>) => ReturnType<typeof gitOperations[K]>)(...arguments_);
+    const promise = worker.runGitOperation(method, arguments_) as Promise<Awaited<ReturnType<typeof gitOperations[K]>>>;
     this.inflightCallGitOps.set(inflightKey, promise);
     try {
       return await promise;
@@ -654,16 +640,32 @@ export class Git implements IGitService {
     }
   }
 
-  public async getGitLog(repoPath: string, options?: import('./interface').IGitLogOptions): Promise<import('./interface').IGitLogResult> {
-    return this.callGitOp('getGitLog', repoPath, options ?? {});
+  public async callGitOpForWorkspace<K extends keyof typeof gitOperations>(
+    workspaceID: string,
+    method: K,
+    ...arguments_: Parameters<typeof gitOperations[K]>
+  ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
+    const workspace = await this.getWorkspaceByID(workspaceID);
+    if (workspace === undefined) throw new Error(`Workspace ${workspaceID} not found for Git operation ${method}`);
+    return await (await this.getWorker(workspace)).runGitOperation(method, arguments_) as Awaited<ReturnType<typeof gitOperations[K]>>;
   }
 
-  public async getCommitFiles(repoPath: string, commitHash: string, scopedPath?: string): Promise<import('./interface').IFileWithStatus[]> {
-    return this.callGitOp('getCommitFiles', repoPath, commitHash, scopedPath);
+  public async getGitLog(repoPath: string, options?: import('./interface').IGitLogOptions, workspaceID?: string): Promise<import('./interface').IGitLogResult> {
+    return workspaceID === undefined
+      ? this.callGitOp('getGitLog', repoPath, options ?? {})
+      : this.callGitOpForWorkspace(workspaceID, 'getGitLog', repoPath, options ?? {});
   }
 
-  public async getUnpushedCommitHashes(repoPath: string, remoteUrl?: string | null): Promise<Set<string>> {
-    return this.callGitOp('getUnpushedCommitHashes', repoPath, remoteUrl ?? undefined);
+  public async getCommitFiles(repoPath: string, commitHash: string, scopedPath?: string, workspaceID?: string): Promise<import('./interface').IFileWithStatus[]> {
+    return workspaceID === undefined
+      ? this.callGitOp('getCommitFiles', repoPath, commitHash, scopedPath)
+      : this.callGitOpForWorkspace(workspaceID, 'getCommitFiles', repoPath, commitHash, scopedPath);
+  }
+
+  public async getUnpushedCommitHashes(repoPath: string, remoteUrl?: string | null, workspaceID?: string): Promise<Set<string>> {
+    return workspaceID === undefined
+      ? this.callGitOp('getUnpushedCommitHashes', repoPath, remoteUrl ?? undefined)
+      : this.callGitOpForWorkspace(workspaceID, 'getUnpushedCommitHashes', repoPath, remoteUrl ?? undefined);
   }
 
   public async checkoutCommit(workspace: IWorkspace, commitHash: string): Promise<void> {
@@ -680,7 +682,8 @@ export class Git implements IGitService {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
     try {
-      await this.callGitOp('revertCommit', repoPath, commitHash, commitMessage);
+      const localizedRevertMessage = i18n.t('ContextMenu.RevertCommit', { message: commitMessage || commitHash });
+      await this.callGitOp('revertCommit', repoPath, commitHash, localizedRevertMessage);
       // Notify git state change BEFORE logging test marker
       // This ensures the notification is sent before tests start waiting for UI refresh
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'revert');

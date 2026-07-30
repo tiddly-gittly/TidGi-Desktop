@@ -4,6 +4,7 @@
  */
 const TIDGI_CONFIG_FILE = 'tidgi.config.json';
 
+import type { LogContext, LogLevel } from '@services/libs/log/schema';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import type { TiddlyWiki } from 'tiddlywiki';
 
@@ -30,9 +31,9 @@ export function createLoadWikiTiddlersWithSubWikis(
   options: {
     allowLoadingWithoutWikiInfo?: boolean;
   } = {},
-  workspaceName: string,
+  logContext: LogContext,
   nativeLogger: {
-    logFor: (name: string, level: 'info' | 'error', message: string) => Promise<void>;
+    logFor: (context: LogContext, level: LogLevel, message: string) => Promise<void>;
   },
 ) {
   const { allowLoadingWithoutWikiInfo = false } = options;
@@ -93,13 +94,13 @@ export function createLoadWikiTiddlersWithSubWikis(
         }
 
         void nativeLogger.logFor(
-          workspaceName,
+          logContext,
           'info',
           `Loaded sub-wiki tiddlers from: ${subWikiTiddlersPath}`,
         );
       } catch (error) {
         void nativeLogger.logFor(
-          workspaceName,
+          logContext,
           'error',
           `Failed to load sub-wiki tiddlers from ${subWikiTiddlersPath}: ${(error as Error).message}`,
         );

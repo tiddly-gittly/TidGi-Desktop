@@ -9,7 +9,8 @@ import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
 import { container } from '@services/container';
-import { getLoggerForLabel, logger } from '@services/libs/log';
+import { getLogger, logger } from '@services/libs/log';
+import type { LogContext, LogLevel } from '@services/libs/log/schema';
 import { getAllLocalHostUrlsWithActualIP, getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -513,9 +514,8 @@ ${message.message}
     return urlWithFileProtocol;
   }
 
-  public async logFor(label: string, level: 'error' | 'warn' | 'info' | 'debug', message: string, meta?: Record<string, unknown>): Promise<void> {
-    const labeledLogger = getLoggerForLabel(label);
-    labeledLogger.log(level, message, meta);
+  public async logFor(context: LogContext, level: LogLevel, message: string, meta?: Record<string, unknown>): Promise<void> {
+    getLogger(context).log(level, message, meta);
   }
 
   public async getProcessInfo(): Promise<IProcessInfo> {

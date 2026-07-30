@@ -9,6 +9,13 @@ export const developersSection: ISectionDefinition = {
   Icon: CodeIcon,
   items: [
     {
+      type: 'custom',
+      componentId: 'developers.logViewer',
+      titleKey: 'Preference.OpenLogViewer',
+      descriptionKey: 'Preference.OpenLogViewerDetail',
+    },
+    { type: 'divider' },
+    {
       type: 'action',
       titleKey: 'Preference.OpenLogFolder',
       descriptionKey: 'Preference.OpenLogFolderDetail',

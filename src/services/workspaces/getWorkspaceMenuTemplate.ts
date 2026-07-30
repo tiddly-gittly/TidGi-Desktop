@@ -229,10 +229,36 @@ export async function getWorkspaceMenuTemplate(
     },
     { type: 'separator' },
     {
-      label: t('WorkspaceSelector.ViewGitHistory'),
-      click: async () => {
-        await service.window.open(WindowNames.gitHistory, { workspaceID: id }, { recreate: true });
-      },
+      label: t('WorkspaceSelector.OpenLogs'),
+      submenu: [
+        {
+          label: t('WorkspaceSelector.BackupHistoryLog'),
+          click: async () => {
+            await service.window.open(WindowNames.gitHistory, { workspaceID: id }, { recreate: true });
+          },
+        },
+        {
+          label: t('WorkspaceSelector.ServerLog'),
+          click: async () => {
+            const serverWorkspaceID = isSubWiki ? workspace.mainWikiID ?? id : id;
+            await service.window.open(
+              WindowNames.logViewer,
+              { workspaceID: serverWorkspaceID, initialProcess: 'wiki-worker' },
+              { recreate: true },
+            );
+          },
+        },
+        {
+          label: t('WorkspaceSelector.FrontendLog'),
+          click: async () => {
+            await service.window.open(
+              WindowNames.logViewer,
+              { workspaceID: id, initialProcess: 'renderer' },
+              { recreate: true },
+            );
+          },
+        },
+      ],
     },
     {
       label: isHtmlWikiWorkspace(workspace) ? t('WorkspaceSelector.OpenHtmlWikiFile') : t('WorkspaceSelector.OpenWorkspaceFolder'),
