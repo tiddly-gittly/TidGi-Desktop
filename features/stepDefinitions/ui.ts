@@ -67,6 +67,35 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 });
 
+Then('the {string} element with selector {string} should be aligned near the top of its scroll viewport', async function(
+  this: ApplicationWorld,
+  elementComment: string,
+  selector: string,
+) {
+  const currentWindow = this.currentWindow;
+  if (!currentWindow) throw new Error('No current window is available');
+  const element = currentWindow.locator(selector).first();
+  await element.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+
+  await backOff(async () => {
+    const offsetFromViewportTop = await element.evaluate((node) => {
+      const scrollViewport = node.closest('[role="list"]');
+      if (!scrollViewport) throw new Error('Settings scroll viewport was not found');
+      return node.getBoundingClientRect().top - scrollViewport.getBoundingClientRect().top;
+    });
+    if (Math.abs(offsetFromViewportTop) > 32) {
+      throw new Error(`${elementComment} is ${offsetFromViewportTop}px from the viewport top`);
+    }
+  }, {
+    delayFirstAttempt: true,
+    jitter: 'none',
+    maxDelay: 500,
+    numOfAttempts: 10,
+    startingDelay: 100,
+    timeMultiple: 1.3,
+  });
+});
+
 Then('I should see {string} elements with selectors:', async function(this: ApplicationWorld, _elementDescriptions: string, dataTable: DataTable) {
   const currentWindow = this.currentWindow;
   if (!currentWindow) {

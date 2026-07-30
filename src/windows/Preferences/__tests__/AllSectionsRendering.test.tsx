@@ -421,8 +421,10 @@ describe('Preferences - Search Mode', () => {
       expect(screen.getByText('Preference.System')).toBeInTheDocument();
     });
 
-    const openAtLoginText = screen.getAllByText(/Preference\.OpenAtLogin/i);
-    expect(openAtLoginText.length).toBeGreaterThan(0);
+    await waitFor(() => {
+      const openAtLoginText = screen.getAllByText(/Preference\.OpenAtLogin/i);
+      expect(openAtLoginText.length).toBeGreaterThan(0);
+    });
   });
 
   it('should show no-results message when query matches nothing', async () => {

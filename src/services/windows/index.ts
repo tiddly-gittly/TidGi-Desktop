@@ -189,6 +189,10 @@ export class Window implements IWindowService {
           // between two removeChildView+addChildView sequences on the same view.
           existedWindow.show();
         }
+        // Existing renderer processes do not receive the new additionalArguments used
+        // when creating a window. Push updated metadata so repeated deep links can
+        // navigate an already-open settings window.
+        await this.pushWindowMetaToWindow(existedWindow, { windowName, ...meta });
         if (returnWindow === true) {
           return existedWindow;
         }

@@ -16,12 +16,16 @@ Feature: Deep Link
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
     When I click on "search section and generate embeddings button and open AI settings button" elements with selectors:
-      | element description        | selector                                    |
-      | search section             | [data-testid='preference-section-search']   |
+      | element description        | selector                                     |
+      | search and embedding section | [data-section-id='search']                  |
       | generate embeddings button | [data-testid^='generate-embeddings-button-'] |
       | open AI settings button    | button:has-text('打开 AI API 设置')          |
     And I switch to "preferences" window
-    Then I should see an "external API section" element with selector "[data-testid='preference-section-externalAPI']"
+    Then I should see an "external API content section" element with selector "[data-settings-entry-id='externalAPI']"
+    And the "external API content section" element with selector "[data-settings-entry-id='externalAPI']" should be aligned near the top of its scroll viewport
+    When I trigger deep link "tidgi-test://preferences/notifications" as second instance would
+    Then I should see a "notifications content section" element with selector "[data-settings-entry-id='notifications']"
+    And the "notifications content section" element with selector "[data-settings-entry-id='notifications']" should be aligned near the top of its scroll viewport
 
   @deep-link
   Scenario: Direct deep links open preferences and agent workspace

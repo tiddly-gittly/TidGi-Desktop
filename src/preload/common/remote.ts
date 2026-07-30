@@ -1,6 +1,7 @@
-import { IAskAIWithSelectionData, NativeChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import { IAskAIWithSelectionData, MetaDataChannel, NativeChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { rendererMenuItemProxy } from '@services/menu/contextMenu/rendererMenuItemProxy';
 import type { IOnContextMenuInfo } from '@services/menu/interface';
+import type { IPossibleWindowMeta } from '@services/windows/WindowProperties';
 import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame, webUtils } from 'electron';
 
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -38,6 +39,10 @@ export const remoteMethods = {
     void ipcRenderer.on(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
   unregisterUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void): void =>
     void ipcRenderer.removeListener(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
+  registerWindowMetaUpdated: (handleWindowMetaUpdated: (event: Electron.IpcRendererEvent, meta: IPossibleWindowMeta) => void): void =>
+    void ipcRenderer.on(MetaDataChannel.pushViewMetaData, handleWindowMetaUpdated),
+  unregisterWindowMetaUpdated: (handleWindowMetaUpdated: (event: Electron.IpcRendererEvent, meta: IPossibleWindowMeta) => void): void =>
+    void ipcRenderer.removeListener(MetaDataChannel.pushViewMetaData, handleWindowMetaUpdated),
   /**
    * @returns — the index of the clicked button. -1 means unknown or errored. 0 if canceled (this can be configured by `cancelId` in the options).
    */

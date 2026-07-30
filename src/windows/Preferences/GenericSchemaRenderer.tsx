@@ -2,7 +2,7 @@
  * Schema-driven renderer for record-backed settings (e.g. workspace config).
  * Preferences uses SchemaRenderer.tsx with IPreferences; this covers generic keyed records.
  */
-import { Divider, List, Switch, TextField, Typography } from '@mui/material';
+import { Divider, List, Skeleton, Switch, TextField, Typography } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,9 +19,12 @@ import type {
   IGenericStringItem,
 } from '@services/preferences/definitions/types';
 import { getCustomComponent } from './customComponentRegistry';
-import { DeferredSectionSkeleton, INITIAL_GENERIC_SECTION_COUNT, matchesPlatform, SearchSectionLabel, toKebabCase } from './genericSchemaRendererShared';
+import { matchesPlatform, SearchSectionLabel, toKebabCase } from './genericSchemaRendererShared';
 import { HighlightText } from './HighlightText';
 import { Paper, SectionTitle } from './PreferenceComponents';
+import { ProgressiveItemList } from './ProgressiveItemList';
+import type { ISectionNavigationRequest } from './useSectionNavigation';
+import { type IVirtualizedSettingsEntry, VirtualizedSettingsList } from './VirtualizedSettingsList';
 
 export interface IRecordSchemaStore<TRecord extends Record<string, unknown>> {
   record: TRecord;
@@ -246,6 +249,7 @@ function GenericItemRenderer<TRecord extends Record<string, unknown>>({
 interface IGenericSectionRendererProps<TRecord extends Record<string, unknown>> {
   onNeedsRestart: () => void;
   platform: string | undefined;
+  renderAllItems?: boolean;
   section: IGenericSectionDefinition;
   sectionRef: React.RefObject<HTMLSpanElement | null>;
   store: IRecordSchemaStore<TRecord>;
@@ -257,6 +261,7 @@ export function GenericSectionRenderer<TRecord extends Record<string, unknown>>(
   store,
   platform,
   onNeedsRestart,
+  renderAllItems,
 }: IGenericSectionRendererProps<TRecord>): React.JSX.Element {
   const { t } = useTranslation();
   return (
@@ -266,15 +271,19 @@ export function GenericSectionRenderer<TRecord extends Record<string, unknown>>(
       </SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {section.items.map((item, index) => (
-            <GenericItemRenderer
-              key={item.type === 'divider' ? `divider-${index}` : ('key' in item ? item.key : `item-${index}`)}
-              item={item}
-              store={store}
-              platform={platform}
-              onNeedsRestart={onNeedsRestart}
-            />
-          ))}
+          <ProgressiveItemList
+            items={section.items}
+            renderAll={renderAllItems}
+            renderItem={(item, index) => (
+              <GenericItemRenderer
+                key={item.type === 'divider' ? `divider-${index}` : ('key' in item ? item.key : `item-${index}`)}
+                item={item}
+                store={store}
+                platform={platform}
+                onNeedsRestart={onNeedsRestart}
+              />
+            )}
+          />
         </List>
       </Paper>
     </>
@@ -282,10 +291,11 @@ export function GenericSectionRenderer<TRecord extends Record<string, unknown>>(
 }
 
 export interface IAllGenericSectionsRendererProps<TRecord extends Record<string, unknown>> {
-  initialSectionCount?: number;
+  navigationRequest?: ISectionNavigationRequest;
+  onNavigationComplete?: (requestId: number) => void;
   onNeedsRestart: () => void;
   query?: string;
-  sectionRefs: Map<string, React.RefObject<HTMLSpanElement | null>>;
+  sectionRefs?: Map<string, React.RefObject<HTMLSpanElement | null>>;
   sections: IGenericSectionDefinition[];
   store: IRecordSchemaStore<TRecord>;
   hiddenSections?: Set<string>;
@@ -298,7 +308,8 @@ export function AllGenericSectionsRenderer<TRecord extends Record<string, unknow
   store,
   hiddenSections,
   query = '',
-  initialSectionCount = INITIAL_GENERIC_SECTION_COUNT,
+  navigationRequest,
+  onNavigationComplete,
 }: IAllGenericSectionsRendererProps<TRecord>): React.JSX.Element {
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   const isTest = usePromiseValue(async () => await window.service.context.get('isTest'));
@@ -309,23 +320,41 @@ export function AllGenericSectionsRenderer<TRecord extends Record<string, unknow
     [hiddenSections, sections],
   );
 
-  const [visibleCount, setVisibleCount] = React.useState(initialSectionCount);
-  React.useEffect(() => {
-    if (isTest) {
-      setVisibleCount(visibleSections.length);
-    }
-  }, [isTest, visibleSections.length]);
-  React.useEffect(() => {
-    if (isTest) return; // in test mode, all sections are visible immediately
-    if (query.trim()) return;
-    if (visibleCount >= visibleSections.length) return;
-    const id = requestIdleCallback(() => {
-      setVisibleCount((count) => Math.min(count + initialSectionCount, visibleSections.length));
-    }, { timeout: 500 });
-    return () => {
-      cancelIdleCallback(id);
-    };
-  }, [visibleCount, visibleSections.length, query, initialSectionCount]);
+  const internalSectionReferences = React.useMemo(() => {
+    const references = new Map<string, React.RefObject<HTMLSpanElement | null>>();
+    for (const section of sections) references.set(section.id, React.createRef<HTMLSpanElement>());
+    return references;
+  }, [sections]);
+  const references = sectionRefs ?? internalSectionReferences;
+
+  interface IGenericSectionEntry extends IVirtualizedSettingsEntry {
+    section: IGenericSectionDefinition;
+    sectionRef: React.RefObject<HTMLSpanElement | null>;
+  }
+  const sectionEntries = React.useMemo<IGenericSectionEntry[]>(
+    () =>
+      visibleSections.map((section) => ({
+        estimatedHeight: Math.max(200, Math.min(800, 80 + section.items.length * 56)),
+        id: section.id,
+        section,
+        sectionRef: references.get(section.id) ?? React.createRef<HTMLSpanElement>(),
+      })),
+    [references, visibleSections],
+  );
+  const renderSectionEntry = React.useCallback((entry: IGenericSectionEntry) => (
+    <GenericSectionRenderer
+      section={entry.section}
+      sectionRef={entry.sectionRef}
+      store={store}
+      platform={platform}
+      onNeedsRestart={onNeedsRestart}
+      renderAllItems={isTest}
+    />
+  ), [isTest, onNeedsRestart, platform, store]);
+
+  if (isTest === undefined) {
+    return <Skeleton variant='rounded' height={240} />;
+  }
 
   if (query.trim()) {
     const hits = collectSettingSearchHits(visibleSections, query, { platform, t });
@@ -336,48 +365,45 @@ export function AllGenericSectionsRenderer<TRecord extends Record<string, unknow
         </Typography>
       );
     }
+    const searchEntries = hits.map(({ item, section }, index) => {
+      const schemaItem = item as GenericSettingItemDefinition;
+      const itemKey = 'key' in schemaItem ? schemaItem.key : ('handler' in schemaItem ? `action-${schemaItem.handler}` : `item-${index}`);
+      return {
+        estimatedHeight: 100,
+        id: `${section.id}:${itemKey}:${index}`,
+        item: schemaItem,
+        sectionTitle: t(section.titleKey, section.ns ? { ns: section.ns } : undefined),
+      };
+    });
     return (
-      <>
-        {hits.map(({ item, section }, index) => {
-          const schemaItem = item as GenericSettingItemDefinition;
-          const sectionTitle = t(section.titleKey, section.ns ? { ns: section.ns } : undefined);
-          const itemKey = 'key' in schemaItem ? schemaItem.key : ('handler' in schemaItem ? `action-${schemaItem.handler}-${index}` : `item-${index}`);
-          return (
-            <React.Fragment key={itemKey}>
-              {index > 0 && <Divider />}
-              <SearchSectionLabel>
-                <HighlightText text={sectionTitle} query={query} />
-              </SearchSectionLabel>
-              <GenericItemRenderer
-                item={schemaItem}
-                store={store}
-                platform={platform}
-                onNeedsRestart={onNeedsRestart}
-                query={query}
-              />
-            </React.Fragment>
-          );
-        })}
-      </>
+      <VirtualizedSettingsList
+        entries={searchEntries}
+        defaultRowHeight={100}
+        renderEntry={(entry) => (
+          <>
+            <SearchSectionLabel>
+              <HighlightText text={entry.sectionTitle} query={query} />
+            </SearchSectionLabel>
+            <GenericItemRenderer
+              item={entry.item}
+              store={store}
+              platform={platform}
+              onNeedsRestart={onNeedsRestart}
+              query={query}
+            />
+            <Divider />
+          </>
+        )}
+      />
     );
   }
 
   return (
-    <>
-      {visibleSections.slice(0, visibleCount).map((section) => {
-        const reference = sectionRefs.get(section.id) ?? React.createRef<HTMLSpanElement>();
-        return (
-          <GenericSectionRenderer
-            key={section.id}
-            section={section}
-            sectionRef={reference}
-            store={store}
-            platform={platform}
-            onNeedsRestart={onNeedsRestart}
-          />
-        );
-      })}
-      {visibleSections.slice(visibleCount).map((section) => <DeferredSectionSkeleton key={section.id} sectionRef={sectionRefs.get(section.id)} />)}
-    </>
+    <VirtualizedSettingsList
+      entries={sectionEntries}
+      navigationRequest={navigationRequest}
+      onNavigationComplete={onNavigationComplete}
+      renderEntry={renderSectionEntry}
+    />
   );
 }
