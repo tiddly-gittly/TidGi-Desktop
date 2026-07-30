@@ -2,9 +2,10 @@ import { session } from 'electron';
 
 import { isMac } from '@/helpers/system';
 import type { IPreferences } from '@services/preferences/interface';
+import { applyNetworkProxyToSession } from '@services/preferences/networkProxyElectron';
 import type { IWorkspace } from '@services/workspaces/interface';
 
-export function setupViewSession(workspace: IWorkspace, preferences: IPreferences, getPreferences: () => IPreferences) {
+export async function setupViewSession(workspace: IWorkspace, preferences: IPreferences, getPreferences: () => IPreferences) {
   const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = preferences;
 
   // configure session, proxy & ad blocker
@@ -12,6 +13,7 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
   // prepare configs for start a WebContentsView that loads wiki's web content
   // session
   const sessionOfView = session.fromPartition(partitionId);
+  await applyNetworkProxyToSession(sessionOfView, preferences, 'wikiFrontend');
   // spellchecker
   if (spellcheck && !isMac) {
     sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);

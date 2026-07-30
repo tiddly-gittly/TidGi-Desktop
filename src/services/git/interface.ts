@@ -230,6 +230,10 @@ export interface IGitService {
    */
   getWorkerInfo(): Promise<IWorkerInfo | undefined>;
   getWorkerInfos(): Promise<IWorkerInfo[]>;
+  /** E2E-only probe that runs `git ls-remote` inside the Git utility process. */
+  probeNetworkProxyForTest(remoteUrl: string): Promise<string>;
+  /** Stop every Git utility process during application shutdown. */
+  stopAllWorkers(): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
@@ -258,6 +262,7 @@ export const GitServiceIPCDescriptor = {
     notifyFileChange: ProxyPropertyType.Function,
     getWorkerInfo: ProxyPropertyType.Function,
     getWorkerInfos: ProxyPropertyType.Function,
+    probeNetworkProxyForTest: ProxyPropertyType.Function,
     revertCommit: ProxyPropertyType.Function,
     amendCommitMessage: ProxyPropertyType.Function,
     undoCommit: ProxyPropertyType.Function,

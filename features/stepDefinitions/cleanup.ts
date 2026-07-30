@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import path from 'path';
 import { killProcessTree } from '../supports/killProcessTree';
 import type { MockAnalyticsServer } from '../supports/mockAnalytics';
+import type { MockProxyServer } from '../supports/mockProxy';
 import { makeRunScopedScenarioSlug } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
@@ -171,6 +172,15 @@ After(async function(this: ApplicationWorld, { pickle }) {
       // Server may already be stopped — ignore
     }
     (this as unknown as Record<string, unknown>).mockAnalyticsServer = undefined;
+  }
+
+  const mockProxyServer: MockProxyServer | undefined = this.mockProxyServer;
+  if (mockProxyServer) {
+    try {
+      await mockProxyServer.stop();
+    } finally {
+      this.mockProxyServer = undefined;
+    }
   }
 
   const scenarioRoot = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug);

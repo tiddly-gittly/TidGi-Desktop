@@ -12,6 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { defaultPreferences } from './defaultPreferences';
+import { networkProxiesSchema } from './definitions/preferenceSchemas';
 import type { IPreferences, IPreferenceService } from './interface';
 import { getPreferenceDifferencesFromDefaults } from './utilities';
 
@@ -68,6 +69,19 @@ export class Preference implements IPreferenceService {
       !Number.isInteger(syncDebounceInterval)
     ) {
       preferenceToSanitize.syncDebounceInterval = defaultPreferences.syncDebounceInterval;
+    }
+
+    if (preferenceToSanitize.networkProxies !== undefined) {
+      const input = preferenceToSanitize.networkProxies as Partial<IPreferences['networkProxies']>;
+      const merged = {
+        default: { ...defaultPreferences.networkProxies.default, ...input.default },
+        wikiBackend: { ...defaultPreferences.networkProxies.wikiBackend, ...input.wikiBackend },
+        wikiFrontend: { ...defaultPreferences.networkProxies.wikiFrontend, ...input.wikiFrontend },
+        git: { ...defaultPreferences.networkProxies.git, ...input.git },
+      };
+      preferenceToSanitize.networkProxies = networkProxiesSchema.safeParse(merged).success
+        ? merged
+        : defaultPreferences.networkProxies;
     }
     return preferenceToSanitize;
   }

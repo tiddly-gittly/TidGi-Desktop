@@ -10,7 +10,15 @@ import { GLOBAL_MAIN_LOG_CONTEXT, type LogContext, logContextSchema, logLevelSch
 
 const RETENTION_DAYS = 14;
 const LOG_SIZE = '20M';
+const MAX_MESSAGE_BYTES = 512 * 1024;
+export const MAX_LOG_RECORD_BYTES = 1024 * 1024;
 const streams = new Map<string, RotatingFileStream>();
+
+function truncateUTF8(value: string, maximumBytes: number): string {
+  const buffer = Buffer.from(value);
+  if (buffer.length <= maximumBytes) return value;
+  return `${buffer.subarray(0, maximumBytes).toString('utf8')}…`;
+}
 
 function safeSegment(value: string): string {
   const normalized = value.trim().replaceAll(/[^a-zA-Z0-9._-]/g, '-').replaceAll(/-+/g, '-');
@@ -47,6 +55,9 @@ function getStream(context: LogContext): RotatingFileStream {
       size: LOG_SIZE,
       interval: '1d',
       intervalBoundary: true,
+      // Stable names keep LogViewer path/offset references valid after rotation,
+      // and let the generator choose a fresh date directory at midnight.
+      immutable: true,
     },
   );
   streams.set(key, stream);
@@ -112,19 +123,30 @@ export default class StructuredFileTransport extends Transport {
         meta[key] = normalizeMeta(value);
       }
     }
+    const originalMessage = typeof info.message === 'string' ? info.message : String(info.message);
     const record: LogRecord = {
       version: 1,
       id: nanoid(),
       timestamp: typeof info.timestamp === 'string' ? info.timestamp : new Date().toISOString(),
       level,
-      message: typeof info.message === 'string' ? info.message : String(info.message),
+      message: truncateUTF8(originalMessage, MAX_MESSAGE_BYTES),
       process: context.process,
       scope: context.scope,
       component: context.component,
       pid: context.pid ?? process.pid,
       meta,
     };
-    getStream(context).write(`${JSON.stringify(record)}\n`, callback);
+    let serialized = JSON.stringify(record);
+    if (Buffer.byteLength(serialized) > MAX_LOG_RECORD_BYTES) {
+      record.meta = {
+        truncated: true,
+        originalMessageBytes: Buffer.byteLength(originalMessage),
+        originalMetaBytes: Buffer.byteLength(JSON.stringify(meta)),
+        originalMetaKeys: Object.keys(meta).slice(0, 100),
+      };
+      serialized = JSON.stringify(record);
+    }
+    getStream(context).write(`${serialized}\n`, callback);
   }
 }
 

@@ -4,6 +4,26 @@ import { PreferenceChannel } from '@/constants/channels';
 import type { HunspellLanguages } from '@/constants/hunspellLanguages';
 import type { BehaviorSubject } from 'rxjs';
 
+export type NetworkProxyTarget = 'default' | 'wikiBackend' | 'wikiFrontend' | 'git';
+
+export interface INetworkProxyPreferences {
+  default: {
+    url: string;
+  };
+  git: {
+    url: string;
+    useDefault: boolean;
+  };
+  wikiBackend: {
+    url: string;
+    useDefault: boolean;
+  };
+  wikiFrontend: {
+    url: string;
+    useDefault: boolean;
+  };
+}
+
 /**
  * All user-configurable preferences.
  * This is the single source of truth for the TypeScript type.
@@ -32,6 +52,7 @@ export interface IPreferences {
   mcpServerPort: number;
   mcpServerRequireToken: boolean;
   mcpServerToken: string;
+  networkProxies: INetworkProxyPreferences;
   pauseNotifications?: string;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;

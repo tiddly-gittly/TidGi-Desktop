@@ -1,5 +1,5 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Divider, List, ListItemButton, Skeleton, Switch, TextField, Typography } from '@mui/material';
+import { Box, Divider, List, ListItemButton, Skeleton, Switch, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ import type {
   IBooleanPreferenceItem,
   IEnumPreferenceItem,
   IFragmentListItem,
+  IKeyedValueTabsPreferenceItem,
   INumberPreferenceItem,
   ISectionDefinition,
   IStringArrayPreferenceItem,
@@ -28,6 +29,7 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { IPreferences } from '@services/preferences/interface';
 import { getCustomComponent } from './customComponentRegistry';
 import { HighlightText } from './HighlightText';
+import { KeyValueTabs } from './KeyValueTabs';
 import { Paper, SectionTitle } from './PreferenceComponents';
 import { ProgressiveItemList } from './ProgressiveItemList';
 import type { ISectionNavigationRequest } from './useSectionNavigation';
@@ -51,6 +53,11 @@ const SearchSectionLabel = styled(Typography)`
   letter-spacing: 0.08em;
   margin-top: 4px;
 `;
+
+// Variable-height virtualization unmounts sections outside the viewport.
+// Keep uncommitted blur-based drafts above the virtual rows so scrolling
+// cannot silently discard user input.
+const PreferenceDraftContext = React.createContext<Map<string, string> | undefined>(undefined);
 
 // ─── Item renderers ──────────────────────────────────────────────────
 
@@ -246,10 +253,12 @@ function StringArrayItem({
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
   const value = (preference[item.key] as string[]) ?? [];
-  const [localValue, setLocalValue] = React.useState(value.join('\n'));
+  const draftStore = React.useContext(PreferenceDraftContext);
+  const draftKey = `preference:${item.key}`;
+  const [localValue, setLocalValue] = React.useState(() => draftStore?.get(draftKey) ?? value.join('\n'));
   React.useEffect(() => {
-    setLocalValue(value.join('\n'));
-  }, [value.join('\n')]);
+    if (!draftStore?.has(draftKey)) setLocalValue(value.join('\n'));
+  }, [draftKey, draftStore, value]);
   const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
   const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
@@ -266,15 +275,164 @@ function StringArrayItem({
         minRows={2}
         onChange={(event) => {
           setLocalValue(event.target.value);
+          draftStore?.set(draftKey, event.target.value);
         }}
         onBlur={async () => {
           const newArray = localValue.split('\n').map((s) => s.trim()).filter(Boolean);
           await window.service.preference.set(item.key, newArray);
+          draftStore?.delete(draftKey);
           if (item.needsRestart) {
             onNeedsRestart();
           }
         }}
         sx={{ minWidth: 200 }}
+      />
+    </ListItem>
+  );
+}
+
+function KeyedValueStringField({
+  draftKey,
+  testId,
+  value,
+  onCommit,
+}: {
+  draftKey: string;
+  onCommit: (value: string) => Promise<void>;
+  testId: string;
+  value: string;
+}): React.JSX.Element {
+  const draftStore = React.useContext(PreferenceDraftContext);
+  const [localValue, setLocalValue] = React.useState(() => draftStore?.get(draftKey) ?? value);
+  React.useEffect(() => {
+    if (!draftStore?.has(draftKey)) setLocalValue(value);
+  }, [draftKey, draftStore, value]);
+
+  return (
+    <TextField
+      data-testid={testId}
+      size='small'
+      value={localValue}
+      placeholder='http://127.0.0.1:8080'
+      onChange={event => {
+        setLocalValue(event.target.value);
+        draftStore?.set(draftKey, event.target.value);
+      }}
+      onBlur={async () => {
+        await onCommit(localValue.trim());
+        draftStore?.delete(draftKey);
+      }}
+      sx={{ minWidth: 280 }}
+    />
+  );
+}
+
+function KeyedValueTabsItem({
+  item,
+  preference,
+  onNeedsRestart,
+  query = '',
+}: {
+  item: IKeyedValueTabsPreferenceItem;
+  onNeedsRestart: () => void;
+  preference: IPreferences;
+  query?: string;
+}): React.JSX.Element {
+  const { t } = useTranslation(['translation', 'agent']);
+  const record = (preference[item.key] ?? {}) as unknown as Record<string, Record<string, unknown>>;
+  const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
+  const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
+
+  const updateField = async (tabKey: string, fieldKey: string, value: unknown) => {
+    const latestPreferenceValue = await window.service.preference.get(item.key);
+    const latestRecord = (latestPreferenceValue ?? {}) as unknown as Record<string, Record<string, unknown>>;
+    const nextValue = {
+      ...latestRecord,
+      [tabKey]: {
+        ...(latestRecord[tabKey] ?? {}),
+        [fieldKey]: value,
+      },
+    } as unknown as IPreferences[typeof item.key];
+    await window.service.preference.set(item.key, nextValue);
+    if (item.needsRestart) {
+      onNeedsRestart();
+    }
+  };
+
+  if (query) {
+    return (
+      <ListItem>
+        <ListItemText
+          primary={<HighlightText text={primaryText} query={query} />}
+          secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
+        />
+      </ListItem>
+    );
+  }
+
+  return (
+    <ListItem sx={{ alignItems: 'stretch', flexDirection: 'column' }}>
+      <ListItemText primary={primaryText} secondary={secondaryText} />
+      <KeyValueTabs
+        ariaLabel={primaryText}
+        testId={`${item.key}-tabs`}
+        tabs={item.tabs.map(tab => {
+          const tabValue = record[tab.key] ?? {};
+          return {
+            key: tab.key,
+            label: t(tab.titleKey, item.ns ? { ns: item.ns } : undefined),
+            panel: (
+              <Box>
+                {tab.descriptionKey && (
+                  <Typography color='text.secondary' variant='body2' sx={{ mb: 2 }}>
+                    {t(tab.descriptionKey, item.ns ? { ns: item.ns } : undefined)}
+                  </Typography>
+                )}
+                {tab.fields.map(field => {
+                  if (
+                    field.hiddenWhenField &&
+                    tabValue[field.hiddenWhenField.key] === field.hiddenWhenField.equals
+                  ) {
+                    return null;
+                  }
+                  const fieldTitle = t(field.titleKey, item.ns ? { ns: item.ns } : undefined);
+                  const fieldDescription = field.descriptionKey
+                    ? t(field.descriptionKey, item.ns ? { ns: item.ns } : undefined)
+                    : undefined;
+                  const testId = `${item.key}-${tab.key}-${field.key}`;
+                  const rawFieldValue = tabValue[field.key];
+                  return (
+                    <Box
+                      key={field.key}
+                      sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1 }}
+                    >
+                      <ListItemText primary={fieldTitle} secondary={fieldDescription} />
+                      {field.type === 'boolean' && (
+                        <Switch
+                          data-testid={testId}
+                          checked={Boolean(tabValue[field.key])}
+                          onChange={async event => {
+                            await updateField(tab.key, field.key, event.target.checked);
+                          }}
+                        />
+                      )}
+                      {field.type === 'string' && (
+                        <KeyedValueStringField
+                          draftKey={`${item.key}:${tab.key}:${field.key}`}
+                          testId={testId}
+                          value={typeof rawFieldValue === 'string' ? rawFieldValue : ''}
+                          onCommit={async value => {
+                            await updateField(tab.key, field.key, value);
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            ),
+          };
+        })}
       />
     </ListItem>
   );
@@ -343,6 +501,8 @@ function ItemRenderer({
       return <StringItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'preference-string-array':
       return <StringArrayItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
+    case 'preference-key-value-tabs':
+      return <KeyedValueTabsItem item={item} preference={preference} onNeedsRestart={onNeedsRestart} query={query} />;
     case 'action':
       return <ActionItem item={item} query={query} />;
     case 'custom': {
@@ -443,6 +603,7 @@ export function AllSectionsRenderer({
   onNavigationComplete,
   query = '',
 }: IAllSectionsRendererProps): React.JSX.Element {
+  const draftStore = React.useRef(new Map<string, string>());
   const preference = usePreferenceObservable();
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   const isTest = usePromiseValue(async () => await window.service.context.get('isTest'));
@@ -528,25 +689,27 @@ export function AllSectionsRenderer({
       };
     });
     return (
-      <VirtualizedSettingsList
-        entries={searchEntries}
-        defaultRowHeight={100}
-        renderEntry={(entry) => (
-          <>
-            <SearchSectionLabel>
-              <HighlightText text={entry.sectionTitle} query={query} />
-            </SearchSectionLabel>
-            <ItemRenderer
-              item={entry.item}
-              preference={preference}
-              platform={platform}
-              onNeedsRestart={onNeedsRestart}
-              query={query}
-            />
-            <Divider />
-          </>
-        )}
-      />
+      <PreferenceDraftContext.Provider value={draftStore.current}>
+        <VirtualizedSettingsList
+          entries={searchEntries}
+          defaultRowHeight={100}
+          renderEntry={(entry) => (
+            <>
+              <SearchSectionLabel>
+                <HighlightText text={entry.sectionTitle} query={query} />
+              </SearchSectionLabel>
+              <ItemRenderer
+                item={entry.item}
+                preference={preference}
+                platform={platform}
+                onNeedsRestart={onNeedsRestart}
+                query={query}
+              />
+              <Divider />
+            </>
+          )}
+        />
+      </PreferenceDraftContext.Provider>
     );
   }
 
@@ -557,11 +720,13 @@ export function AllSectionsRenderer({
   }
 
   return (
-    <VirtualizedSettingsList
-      entries={sectionEntries}
-      navigationRequest={navigationRequest}
-      onNavigationComplete={onNavigationComplete}
-      renderEntry={renderSectionEntry}
-    />
+    <PreferenceDraftContext.Provider value={draftStore.current}>
+      <VirtualizedSettingsList
+        entries={sectionEntries}
+        navigationRequest={navigationRequest}
+        onNavigationComplete={onNavigationComplete}
+        renderEntry={renderSectionEntry}
+      />
+    </PreferenceDraftContext.Provider>
   );
 }

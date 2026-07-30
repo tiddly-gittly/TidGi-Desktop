@@ -1,5 +1,5 @@
 import { app, dialog, net, type UtilityProcess } from 'electron';
-import { createWorkerMethodProxy, type WorkerPeer } from 'electron-ipc-cat/host';
+import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import path from 'node:path';
@@ -8,6 +8,7 @@ import GitWorkerFactory from './gitWorker?utilityProcess';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
+import { isDevelopmentOrTest } from '@/constants/environment';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -15,6 +16,7 @@ import { i18n } from '@services/libs/i18n';
 import { getLogger, logger, workspaceLogContext } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import { createNetworkProxyEnvironment } from '@services/preferences/networkProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkerInfo } from '@services/wiki/interface';
@@ -28,6 +30,18 @@ import type { GitWorker } from './gitWorker';
 import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitStateChange, IGitSyncProgressEvent, IGitUserInfos } from './interface';
 import { registerMenu } from './registerMenu';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
+
+const MUTATING_GIT_OPERATIONS = new Set<keyof typeof gitOperations>([
+  'addToGitignore',
+  'amendCommitMessage',
+  'checkoutCommit',
+  'commitScopedChanges',
+  'discardFileChanges',
+  'initScopedWikiGit',
+  'restoreFileFromCommit',
+  'revertCommit',
+  'undoCommit',
+]);
 
 @injectable()
 export class Git implements IGitService {
@@ -45,44 +59,33 @@ export class Git implements IGitService {
   ) {}
 
   /**
-   * Acquire a per-workspace lock to serialize git operations.
+   * Acquire a per-repository lock to serialize git operations.
    * Returns a release function that must be called in a finally block.
-   * Includes a timeout so that if a previous operation is stuck (e.g. due to a hibernated workspace or a hung git process),
-   * the current operation fails fast instead of blocking indefinitely.
+   * The new tail is installed before waiting so multiple callers queue in arrival order rather
+   * than all starting together when the currently-running operation completes.
    */
-  private async acquireOperationLock(workspaceID: string): Promise<() => void> {
-    const previousLock = this.operationLocks.get(workspaceID);
-
-    if (previousLock !== undefined) {
-      const LOCK_TIMEOUT_MS = 30_000;
-      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-      const timeoutPromise = new Promise<void>((_, reject) => {
-        timeoutHandle = setTimeout(() => {
-          reject(new Error(`Previous git operation is still running for workspace ${workspaceID} after ${LOCK_TIMEOUT_MS}ms`));
-        }, LOCK_TIMEOUT_MS);
-      });
-      try {
-        await Promise.race([previousLock, timeoutPromise]);
-      } finally {
-        clearTimeout(timeoutHandle);
-      }
-    }
-
-    // Only set the new lock after the previous one has been successfully released.
-    // This prevents a dead lock if the timeout above rejects — the new promise
-    // would never be resolved if it were set before the await.
+  private async acquireOperationLock(repoPath: string): Promise<() => void> {
+    const lockKey = this.getRepoLockKey(repoPath);
+    const previousLock = this.operationLocks.get(lockKey);
     let release: () => void;
-    const promise = new Promise<void>((resolve) => {
+    const currentLock = new Promise<void>((resolve) => {
       release = resolve;
     });
-    this.operationLocks.set(workspaceID, promise);
+    const queueTail = previousLock === undefined ? currentLock : previousLock.then(() => currentLock);
+    this.operationLocks.set(lockKey, queueTail);
+    await previousLock;
 
     return () => {
       release!();
-      if (this.operationLocks.get(workspaceID) === promise) {
-        this.operationLocks.delete(workspaceID);
+      if (this.operationLocks.get(lockKey) === queueTail) {
+        this.operationLocks.delete(lockKey);
       }
     };
+  }
+
+  private getRepoLockKey(repoPath: string): string {
+    const normalized = path.resolve(repoPath);
+    return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
   }
 
   private notifyGitStateChange(wikiFolderLocation: string, type: IGitStateChange['type']): void {
@@ -132,6 +135,14 @@ export class Git implements IGitService {
     void registerMenu();
   }
 
+  public async stopAllWorkers(): Promise<void> {
+    const workerEntries = [...this.workers.values()];
+    this.workers.clear();
+    await Promise.allSettled(workerEntries.map(async ({ nativeWorker }) => {
+      await terminateWorker(nativeWorker);
+    }));
+  }
+
   private async resolveWorkspaceForRepoPath(repoPath: string): Promise<IWorkspace | undefined> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspaces = await workspaceService.getWorkspacesAsList();
@@ -157,6 +168,7 @@ export class Git implements IGitService {
     const child = GitWorkerFactory({
       stdio: 'pipe',
       serviceName: workspace === undefined ? 'git-worker-global' : `git-worker-${workspace.id}`,
+      env: createNetworkProxyEnvironment(this.preferenceService.getPreferences(), 'git'),
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
     const proxy = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
@@ -231,6 +243,13 @@ export class Git implements IGitService {
         heapTotal_MB,
       };
     }));
+  }
+
+  public async probeNetworkProxyForTest(remoteUrl: string): Promise<string> {
+    if (!isDevelopmentOrTest) {
+      throw new Error('Network proxy probe is only available in development and tests');
+    }
+    return await (await this.getWorker()).probeNetworkProxyForTest(remoteUrl);
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
@@ -421,7 +440,7 @@ export class Git implements IGitService {
     }
     let releaseLock: (() => void) | undefined;
     try {
-      releaseLock = await this.acquireOperationLock(workspaceID);
+      releaseLock = await this.acquireOperationLock(this.resolveRepoPath(workspace));
       // Sub-wikis don't have their own wiki worker, so wikiOperationInServer would hang forever.
       // HTML wikis have no Node wiki worker either.
       if (!workspace.isSubWiki && !isHtmlWikiWorkspace(workspace)) {
@@ -515,7 +534,7 @@ export class Git implements IGitService {
     }
     let releaseLock: (() => void) | undefined;
     try {
-      releaseLock = await this.acquireOperationLock(workspaceID);
+      releaseLock = await this.acquireOperationLock(this.resolveRepoPath(workspace));
       const gitScope = resolveWorkspaceGitScope(workspace);
       const scopedRepoPath = gitScope?.repoPath;
       const scopedConfigs = gitScope?.managedRelativePath !== undefined && scopedRepoPath !== undefined ? { ...configs, dir: scopedRepoPath } : configs;
@@ -623,6 +642,14 @@ export class Git implements IGitService {
   ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
     const repoPath = typeof arguments_[0] === 'string' ? arguments_[0] : undefined;
     const { worker } = repoPath === undefined ? { worker: await this.getWorker() } : await this.getWorkerForRepoPath(repoPath);
+    if (repoPath !== undefined && MUTATING_GIT_OPERATIONS.has(method)) {
+      const releaseLock = await this.acquireOperationLock(repoPath);
+      try {
+        return await worker.runGitOperation(method, arguments_) as Awaited<ReturnType<typeof gitOperations[K]>>;
+      } finally {
+        releaseLock();
+      }
+    }
     const inflightKey = `${method}:${JSON.stringify(arguments_)}`;
     const inflight = this.inflightCallGitOps.get(inflightKey);
     if (inflight !== undefined) {
@@ -647,7 +674,17 @@ export class Git implements IGitService {
   ): Promise<Awaited<ReturnType<typeof gitOperations[K]>>> {
     const workspace = await this.getWorkspaceByID(workspaceID);
     if (workspace === undefined) throw new Error(`Workspace ${workspaceID} not found for Git operation ${method}`);
-    return await (await this.getWorker(workspace)).runGitOperation(method, arguments_) as Awaited<ReturnType<typeof gitOperations[K]>>;
+    const worker = await this.getWorker(workspace);
+    const repoPath = typeof arguments_[0] === 'string' ? arguments_[0] : this.resolveRepoPath(workspace);
+    if (MUTATING_GIT_OPERATIONS.has(method)) {
+      const releaseLock = await this.acquireOperationLock(repoPath);
+      try {
+        return await worker.runGitOperation(method, arguments_) as Awaited<ReturnType<typeof gitOperations[K]>>;
+      } finally {
+        releaseLock();
+      }
+    }
+    return await worker.runGitOperation(method, arguments_) as Awaited<ReturnType<typeof gitOperations[K]>>;
   }
 
   public async getGitLog(repoPath: string, options?: import('./interface').IGitLogOptions, workspaceID?: string): Promise<import('./interface').IGitLogResult> {
@@ -671,7 +708,7 @@ export class Git implements IGitService {
   public async checkoutCommit(workspace: IWorkspace, commitHash: string): Promise<void> {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
-    await this.callGitOp('checkoutCommit', repoPath, commitHash);
+    await this.callGitOpForWorkspace(workspace.id, 'checkoutCommit', repoPath, commitHash);
     // Notify git state change
     this.notifyGitStateChange(workspace.wikiFolderLocation, 'checkout');
     // Log for e2e test detection
@@ -683,7 +720,7 @@ export class Git implements IGitService {
     const repoPath = this.resolveRepoPath(workspace);
     try {
       const localizedRevertMessage = i18n.t('ContextMenu.RevertCommit', { message: commitMessage || commitHash });
-      await this.callGitOp('revertCommit', repoPath, commitHash, localizedRevertMessage);
+      await this.callGitOpForWorkspace(workspace.id, 'revertCommit', repoPath, commitHash, localizedRevertMessage);
       // Notify git state change BEFORE logging test marker
       // This ensures the notification is sent before tests start waiting for UI refresh
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'revert');
@@ -699,7 +736,7 @@ export class Git implements IGitService {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
     try {
-      await this.callGitOp('amendCommitMessage', repoPath, newMessage);
+      await this.callGitOpForWorkspace(workspace.id, 'amendCommitMessage', repoPath, newMessage);
       // Notify git state change (commit list and hashes may change)
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'commit');
     } catch (error) {
@@ -712,7 +749,7 @@ export class Git implements IGitService {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
     try {
-      await this.callGitOp('undoCommit', repoPath, commitHash);
+      await this.callGitOpForWorkspace(workspace.id, 'undoCommit', repoPath, commitHash);
       // Notify git state change
       this.notifyGitStateChange(workspace.wikiFolderLocation, 'undo');
     } catch (error) {
@@ -725,9 +762,12 @@ export class Git implements IGitService {
   public async undoCommits(workspace: IWorkspace, commitHashes: string[]): Promise<void> {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
+    let releaseLock: (() => void) | undefined;
     try {
+      releaseLock = await this.acquireOperationLock(repoPath);
+      const worker = await this.getWorker(workspace);
       for (const hash of commitHashes) {
-        await this.callGitOp('undoCommit', repoPath, hash);
+        await worker.runGitOperation('undoCommit', [repoPath, hash]);
         logger.info(`[test-id-git-undo-complete]`, { wikiFolderPath: workspace.wikiFolderLocation, commitHash: hash });
       }
       // One notification after all undos complete so git log refreshes only once.
@@ -735,19 +775,26 @@ export class Git implements IGitService {
     } catch (error) {
       logger.error('undoCommits failed', { error, wikiFolderPath: workspace.wikiFolderLocation, commitHashes });
       throw error;
+    } finally {
+      releaseLock?.();
     }
   }
 
   public async discardFileChanges(workspace: IWorkspace, filePath: string): Promise<void> {
     if (!isWikiWorkspace(workspace)) return;
     const repoPath = this.resolveRepoPath(workspace);
-    await this.callGitOp('discardFileChanges', repoPath, filePath);
+    await this.callGitOpForWorkspace(workspace.id, 'discardFileChanges', repoPath, filePath);
     // Notify git state change
     this.notifyGitStateChange(workspace.wikiFolderLocation, 'discard');
   }
 
   public async addToGitignore(wikiFolderPath: string, pattern: string): Promise<void> {
-    await this.callGitOp('addToGitignore', wikiFolderPath, pattern);
+    const workspace = await this.resolveWorkspaceForRepoPath(wikiFolderPath);
+    if (workspace === undefined) {
+      await this.callGitOp('addToGitignore', wikiFolderPath, pattern);
+    } else {
+      await this.callGitOpForWorkspace(workspace.id, 'addToGitignore', wikiFolderPath, pattern);
+    }
     // Notify git state change to refresh git log
     this.notifyGitStateChange(wikiFolderPath, 'file-change');
   }

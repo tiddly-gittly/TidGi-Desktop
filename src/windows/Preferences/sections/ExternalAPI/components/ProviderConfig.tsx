@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import { Alert, Box, Button, Snackbar, Tab, Tabs } from '@mui/material';
+import { Alert, Box, Button, Snackbar } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { debounce } from 'lodash';
 import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -8,11 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { ListItemText } from '@/components/ListItem';
 import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { KeyValueTabs } from '../../../KeyValueTabs';
 import { ListItemVertical } from '../../../PreferenceComponents';
 import { NewModelDialog } from './NewModelDialog';
 import { NewProviderForm } from './NewProviderForm';
 import { ProviderPanel } from './ProviderPanel';
-import { a11yProps, TabPanel } from './TabPanel';
 
 interface ProviderConfigProps {
   providers: AIProviderConfig[];
@@ -132,10 +132,6 @@ export function ProviderConfig({
     });
     return Array.from(classes);
   }, []);
-
-  const handleTabChange = (_event: SyntheticEvent, newValue: number) => {
-    setSelectedTabIndex(newValue);
-  };
 
   // Debounced save function
 
@@ -667,63 +663,52 @@ export function ProviderConfig({
         secondary={t('Preference.ProviderConfigurationDescription')}
       />
       {addProviderSection}
-      <Box sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', width: '100%', marginTop: 2 }}>
-        <Tabs
-          orientation='vertical'
-          variant='scrollable'
-          value={selectedTabIndex}
-          onChange={handleTabChange}
-          aria-label='Provider configuration tabs'
-          sx={{
-            borderRight: 1,
-            borderColor: 'divider',
-            minWidth: 120,
-            '& .MuiTab-root': { alignItems: 'flex-start', textAlign: 'left', paddingLeft: 2 },
-          }}
-        >
-          {providers.map((provider, index) => (
-            <Tab
-              key={provider.provider}
-              label={provider.provider}
-              {...a11yProps(index)}
-              sx={{
-                opacity: provider.enabled === false ? 0.6 : 1,
-                fontStyle: provider.enabled === false ? 'italic' : 'normal',
-              }}
-            />
-          ))}
-        </Tabs>
-        {providers.map((provider, index) => {
+      <KeyValueTabs
+        ariaLabel='Provider configuration tabs'
+        selectedKey={providers[selectedTabIndex]?.provider}
+        onSelectedKeyChange={key => {
+          const index = providers.findIndex(provider => provider.provider === key);
+          if (index >= 0) setSelectedTabIndex(index);
+        }}
+        tabs={providers.map(provider => {
           const formState = providerForms[provider.provider];
-          if (!formState) {
-            return (
-              <TabPanel key={provider.provider} value={selectedTabIndex} index={index}>
-                Loading...
-              </TabPanel>
-            );
-          }
-          return (
-            <TabPanel key={provider.provider} value={selectedTabIndex} index={index}>
-              <ProviderPanel
-                provider={provider}
-                formState={formState}
-                onFormChange={(field, value) => handleFormChange(provider.provider, field as keyof AIProviderConfig, value)}
-                onEnabledChange={enabled => handleProviderEnabledChange(provider.provider, enabled)}
-                onRemoveModel={modelName => removeModel(provider.provider, modelName)}
-                onEditModel={modelName => {
-                  handleEditModel(provider.provider, modelName);
+          return {
+            key: provider.provider,
+            label: (
+              <Box
+                component='span'
+                sx={{
+                  opacity: provider.enabled === false ? 0.6 : 1,
+                  fontStyle: provider.enabled === false ? 'italic' : 'normal',
                 }}
-                onOpenAddModelDialog={() => {
-                  openAddModelDialog(provider.provider);
-                }}
-                onDeleteProvider={() => {
-                  void handleDeleteProvider(provider.provider);
-                }}
-              />
-            </TabPanel>
-          );
+              >
+                {provider.provider}
+              </Box>
+            ),
+            disabled: false,
+            panel: formState
+              ? (
+                <ProviderPanel
+                  provider={provider}
+                  formState={formState}
+                  onFormChange={(field, value) => handleFormChange(provider.provider, field as keyof AIProviderConfig, value)}
+                  onEnabledChange={enabled => handleProviderEnabledChange(provider.provider, enabled)}
+                  onRemoveModel={modelName => removeModel(provider.provider, modelName)}
+                  onEditModel={modelName => {
+                    handleEditModel(provider.provider, modelName);
+                  }}
+                  onOpenAddModelDialog={() => {
+                    openAddModelDialog(provider.provider);
+                  }}
+                  onDeleteProvider={() => {
+                    void handleDeleteProvider(provider.provider);
+                  }}
+                />
+              )
+              : 'Loading...',
+          };
         })}
-      </Box>
+      />
       <NewModelDialog
         open={modelDialogOpen}
         onClose={closeModelDialog}

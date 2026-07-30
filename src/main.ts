@@ -110,6 +110,8 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();
     logger.info('App before-quit - all wiki workers stopped');
+    await gitService.stopAllWorkers();
+    logger.info('App before-quit - all git workers stopped');
     // Then do remaining cleanup in parallel
     await Promise.all([
       databaseService.closeAllDatabases(),
@@ -123,7 +125,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
     logger.error('Error during before-quit cleanup', { error });
   } finally {
     // Always destroy logger and uninstall at the end
-    destroyLogger();
+    await destroyLogger();
     uninstall?.uninstall();
   }
 };

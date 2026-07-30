@@ -19,7 +19,7 @@ export function ProgressiveItemList<TItem>({
   renderAll = false,
 }: IProgressiveItemListProps<TItem>): React.JSX.Element {
   const [visibleCount, setVisibleCount] = useState(() => renderAll ? items.length : Math.min(batchSize, items.length));
-  const sentinelReference = useRef<HTMLDivElement>(null);
+  const sentinelReference = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
     setVisibleCount((current) => renderAll ? items.length : Math.min(Math.max(current, batchSize), items.length));
@@ -53,7 +53,7 @@ export function ProgressiveItemList<TItem>({
   return (
     <>
       {items.slice(0, visibleCount).map(renderItem)}
-      {visibleCount < items.length && <div ref={sentinelReference} aria-hidden style={{ height: 1 }} />}
+      {visibleCount < items.length && <li ref={sentinelReference} aria-hidden style={{ height: 1, listStyle: 'none' }} />}
     </>
   );
 }

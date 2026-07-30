@@ -48,6 +48,12 @@ export const defaultPreferences: IPreferences = {
   mcpServerPort: 38385,
   mcpServerRequireToken: false,
   mcpServerToken: '',
+  networkProxies: {
+    default: { url: '' },
+    wikiBackend: { useDefault: true, url: '' },
+    wikiFrontend: { useDefault: true, url: '' },
+    git: { useDefault: true, url: '' },
+  },
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),

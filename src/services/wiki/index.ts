@@ -1,6 +1,6 @@
 import { findAvailablePort } from '@services/libs/port';
 import { format } from 'date-fns';
-import { app, dialog, shell, type UtilityProcess } from 'electron';
+import { app, dialog, session, shell, type UtilityProcess } from 'electron';
 import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
 import { attachUtilityProcess } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
@@ -40,6 +40,8 @@ import { isHtmlWiki } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import { createNetworkProxyEnvironment } from '@services/preferences/networkProxy';
+import { applyNetworkProxyToSession } from '@services/preferences/networkProxyElectron';
 import type { ISyncService } from '@services/sync/interface';
 import type { IThemeService } from '@services/theme/interface';
 import { serializeError } from 'serialize-error';
@@ -285,10 +287,16 @@ export class Wiki implements IWikiService {
       function: 'Wiki.startWiki',
     });
 
+    const proxyPreferences = this.preferenceService.getPreferences();
+    const wikiBackendSession = session.fromPartition('persist:wiki-backend');
+    await applyNetworkProxyToSession(wikiBackendSession, proxyPreferences, 'wikiBackend');
+
     // Create utility process using Vite's ?utilityProcess import
     const wikiWorker = WikiWorkerFactory({
       stdio: 'pipe',
       serviceName: `wiki-worker-${workspaceID}`,
+      env: createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+      session: wikiBackendSession,
       // tiddlywiki/dugite may load native modules; on macOS this needs unsigned library loading
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
@@ -538,6 +546,14 @@ export class Wiki implements IWikiService {
     return response;
   }
 
+  public async probeNetworkProxyForTest(workspaceID: string, url: string): Promise<string> {
+    if (!isDevelopmentOrTest) {
+      throw new Error('Network proxy probe is only available in development and tests');
+    }
+    const worker = await this.getWorkerEnsure(workspaceID);
+    return await worker.probeNetworkProxyForTest(url);
+  }
+
   public getWikiChangeObserver$(workspaceID: string): Observable<ITidGiChangedTiddlers> {
     return new Observable((observer) => {
       const getWikiChangeObserverIIFE = async () => {
@@ -550,11 +566,16 @@ export class Wiki implements IWikiService {
   }
 
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {
+    const proxyPreferences = this.preferenceService.getPreferences();
+    const wikiBackendSession = session.fromPartition('persist:wiki-backend');
+    await applyNetworkProxyToSession(wikiBackendSession, proxyPreferences, 'wikiBackend');
     // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
     const nativeWorker = WikiWorkerFactory({
       stdio: 'pipe',
       serviceName: 'wiki-worker-extract-html',
+      env: createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+      session: wikiBackendSession,
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
     const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
@@ -578,9 +599,14 @@ export class Wiki implements IWikiService {
   }
 
   public async packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void> {
+    const proxyPreferences = this.preferenceService.getPreferences();
+    const wikiBackendSession = session.fromPartition('persist:wiki-backend');
+    await applyNetworkProxyToSession(wikiBackendSession, proxyPreferences, 'wikiBackend');
     const nativeWorker = WikiWorkerFactory({
       stdio: 'pipe',
       serviceName: 'wiki-worker-packet-html',
+      env: createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+      session: wikiBackendSession,
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
     const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);

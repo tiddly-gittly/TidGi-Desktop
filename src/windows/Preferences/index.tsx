@@ -57,7 +57,11 @@ export default function Preferences(): React.JSX.Element {
     if (navigationRequest) setSearchQuery('');
   }, [navigationRequest]);
 
-  const isSearching = searchQuery.trim().length > 0;
+  // Render normal section entries in the same commit as a navigation request.
+  // Otherwise the search list can report the section as missing and consume
+  // the request before the effect above clears the input.
+  const effectiveSearchQuery = navigationRequest ? '' : searchQuery;
+  const isSearching = effectiveSearchQuery.trim().length > 0;
 
   return (
     <Root>
@@ -79,7 +83,7 @@ export default function Preferences(): React.JSX.Element {
         <SearchBar value={searchQuery} onChange={setSearchQuery} inputRef={searchInputReference} />
 
         <AllSectionsRenderer
-          query={searchQuery}
+          query={effectiveSearchQuery}
           onNeedsRestart={requestRestartCountDown}
           navigationRequest={navigationRequest}
           onNavigationComplete={completeNavigation}

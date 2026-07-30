@@ -172,7 +172,14 @@ export class Window implements IWindowService {
 
     if (existedWindow !== undefined && !multiple) {
       const existedWorkspaceID = (existedWindowMeta as { workspaceID?: string } | undefined)?.workspaceID;
+      const requestedWorkspaceID = (meta as { workspaceID?: string } | undefined)?.workspaceID;
+      // An Edit Workspace form owns unsaved state for exactly one workspace.
+      // Reusing it for another workspace can mix or silently discard drafts.
+      const isDifferentEditWorkspace = windowName === WindowNames.editWorkspace &&
+        requestedWorkspaceID !== undefined &&
+        existedWorkspaceID !== requestedWorkspaceID;
       const isRecreateNeeded = recreate === true ||
+        isDifferentEditWorkspace ||
         (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta)) ||
         (recreateUnlessWorkspaceID !== undefined && existedWorkspaceID !== recreateUnlessWorkspaceID);
       if (isRecreateNeeded) {

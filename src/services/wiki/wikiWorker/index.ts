@@ -7,6 +7,7 @@ import './preload';
 import 'source-map-support/register';
 import { uninstall } from '@/helpers/installV8Cache';
 
+import { net } from 'electron';
 import { handleUtilityProcessMessages } from 'electron-ipc-cat/host';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
@@ -33,6 +34,13 @@ process.on('unhandledRejection', (reason: unknown) => {
 // keep-alive interval that runs for the lifetime of the worker.
 process.stdin?.resume();
 setInterval(() => {}, 60000);
+
+// Use the Electron network context assigned when this utility process is
+// forked. Its session carries the Wiki-backend proxy configuration.
+globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+  const electronInput = input instanceof URL ? input.toString() : input;
+  return net.fetch(electronInput, init);
+};
 
 import type { IWikiWorkspace } from '@services/workspaces/interface';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
@@ -157,6 +165,10 @@ const wikiWorker = {
   packetHTMLFromWikiFolder,
   beforeExit,
   notifyServicesReady,
+  probeNetworkProxyForTest: async (url: string) => {
+    const response = await fetch(url);
+    return await response.text();
+  },
   wikiOperation: wikiOperationsInWikiWorker.wikiOperation.bind(wikiOperationsInWikiWorker),
   getMemoryUsage: async () => {
     const mem = process.memoryUsage();

@@ -211,7 +211,17 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
       const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
-      void native.logFor(logContext, 'info', 'test-id-WorkerServicesReady', configs as unknown as Record<string, unknown>);
+      void native.logFor(logContext, 'info', 'test-id-WorkerServicesReady', {
+        enableHTTPAPI: configs.enableHTTPAPI,
+        homePath: configs.homePath,
+        httpsEnabled: configs.https !== undefined,
+        readOnlyMode: configs.readOnlyMode,
+        tiddlyWikiHost: configs.tiddlyWikiHost,
+        tiddlyWikiPort: configs.tiddlyWikiPort,
+        tokenAuth: configs.tokenAuth,
+        workspaceID: workspace.id,
+        workspaceName: workspace.name,
+      });
       const textDecoder = new TextDecoder();
       intercept(
         (newStdOut: string | Uint8Array) => {

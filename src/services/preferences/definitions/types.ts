@@ -77,6 +77,35 @@ export const stringArrayPreferenceItemSchema = definitionBaseSchema.extend({
 });
 export type IStringArrayPreferenceItem = z.infer<typeof stringArrayPreferenceItemSchema>;
 
+export const keyedValueFieldSchema = z.object({
+  key: z.string(),
+  type: z.enum(['boolean', 'string']),
+  titleKey: z.string(),
+  descriptionKey: z.string().optional(),
+  hiddenWhenField: z.object({
+    key: z.string(),
+    equals: z.union([z.string(), z.boolean()]),
+  }).optional(),
+});
+export type IKeyedValueField = z.infer<typeof keyedValueFieldSchema>;
+
+export const keyedValueTabSchema = z.object({
+  key: z.string(),
+  titleKey: z.string(),
+  descriptionKey: z.string().optional(),
+  fields: z.array(keyedValueFieldSchema),
+});
+export type IKeyedValueTab = z.infer<typeof keyedValueTabSchema>;
+
+export const keyedValueTabsPreferenceItemSchema = definitionBaseSchema.extend({
+  type: z.literal('preference-key-value-tabs'),
+  key: z.string() as z.ZodType<keyof IPreferences>,
+  tabs: z.array(keyedValueTabSchema),
+  needsRestart: z.boolean().optional(),
+  zod: z.custom<z.ZodType>(),
+});
+export type IKeyedValueTabsPreferenceItem = z.infer<typeof keyedValueTabsPreferenceItemSchema>;
+
 export const actionItemSchema = definitionBaseSchema.extend({
   type: z.literal('action'),
   handler: z.string(),
@@ -108,6 +137,7 @@ export const preferenceItemDefinitionSchema = z.discriminatedUnion('type', [
   stringPreferenceItemSchema,
   textPreferenceItemSchema,
   stringArrayPreferenceItemSchema,
+  keyedValueTabsPreferenceItemSchema,
   fragmentListItemSchema,
   actionItemSchema,
   customItemSchema,

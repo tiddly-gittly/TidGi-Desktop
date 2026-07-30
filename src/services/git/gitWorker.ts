@@ -319,6 +319,13 @@ const gitWorker = {
   forcePullWiki,
   getModifiedFileList,
   getRemoteUrl,
+  probeNetworkProxyForTest: async (remoteUrl: string) => {
+    const result = await gitExec(['ls-remote', remoteUrl], process.cwd());
+    if (result.exitCode !== 0) {
+      throw new Error(result.stderr);
+    }
+    return result.stdout;
+  },
   getMemoryUsage: async () => {
     const mem = process.memoryUsage();
     const toMB = (bytes: number): number => Math.round(bytes / 1024 / 1024);

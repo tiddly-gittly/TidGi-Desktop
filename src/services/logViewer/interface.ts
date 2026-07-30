@@ -12,6 +12,7 @@ export interface ILogSource {
 }
 
 export interface ILogEntryReference {
+  expectedID?: string;
   relativePath: string;
   start: number;
   length: number;
