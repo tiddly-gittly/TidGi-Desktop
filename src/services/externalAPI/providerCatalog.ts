@@ -5,6 +5,38 @@ import { EMBEDDED_MODEL_CATALOG, fetchModelCatalog, type ModelCatalog, type Mode
 
 import type { AIProviderConfig, ModelFeature, ModelInfo, ProviderCatalogResult } from './interface';
 
+/**
+ * Local protocol adapters implemented by TidGi itself are not hosted model
+ * vendors and therefore do not belong in models.dev. Keep them as an explicit
+ * Desktop extension to the remotely refreshed vendor catalog.
+ */
+const DESKTOP_LOCAL_PROVIDER_PRESETS: AIProviderConfig[] = [
+  {
+    provider: 'ollama',
+    providerClass: 'ollama',
+    isPreset: true,
+    enabled: false,
+    showBaseURLField: true,
+    baseURL: 'http://localhost:11434',
+    models: [],
+  },
+  {
+    provider: 'comfyui',
+    providerClass: 'comfyui',
+    isPreset: true,
+    enabled: false,
+    showBaseURLField: true,
+    baseURL: 'http://localhost:8188',
+    models: [
+      {
+        name: 'flux',
+        caption: 'Flux',
+        features: ['imageGeneration'],
+      },
+    ],
+  },
+];
+
 function modelFeatures(model: ModelCatalogModel): ModelFeature[] {
   const features = new Set<ModelFeature>();
   const inputs = new Set(model.modalities?.input ?? []);
@@ -30,7 +62,7 @@ function providerClass(npmPackage: string | undefined): string {
 }
 
 export function modelCatalogToDesktopProviders(catalog: ModelCatalog): AIProviderConfig[] {
-  return catalog.providers.map(provider => ({
+  const providers = catalog.providers.map(provider => ({
     provider: provider.id,
     providerClass: providerClass(provider.npm),
     isPreset: true,
@@ -53,6 +85,13 @@ export function modelCatalogToDesktopProviders(catalog: ModelCatalog): AIProvide
         },
       })),
   }));
+  const catalogProviderIds = new Set(providers.map(provider => provider.provider));
+  return [
+    ...providers,
+    ...DESKTOP_LOCAL_PROVIDER_PRESETS
+      .filter(provider => !catalogProviderIds.has(provider.provider))
+      .map(provider => ({ ...provider, models: provider.models.map(model => ({ ...model })) })),
+  ];
 }
 
 function loadCache(cachePath: string): ModelCatalog | undefined {
