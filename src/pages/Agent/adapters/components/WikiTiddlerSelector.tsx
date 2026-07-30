@@ -7,7 +7,7 @@ import type { WikiTiddlerAttachment } from '@memeloop/react-ui/chat';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import { Autocomplete, type AutocompleteRenderInputParams, Box, IconButton, ListItemIcon, ListItemText, Popper, TextField, Tooltip } from '@mui/material';
+import { Autocomplete, type AutocompleteRenderInputParams, Box, ClickAwayListener, IconButton, ListItemIcon, ListItemText, Popper, TextField, Tooltip } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -109,7 +109,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
   }, []);
 
   const handleButtonClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElement(event.currentTarget);
+    setAnchorElement((current) => current === null ? event.currentTarget : null);
     setSearchText('');
   };
 
@@ -140,6 +140,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
             onClick={handleButtonClick}
             disabled={disabled}
             data-testid='agent-attach-button'
+            aria-expanded={open}
           >
             <AttachFileIcon data-testid='attach-icon' />
           </IconButton>
@@ -151,87 +152,94 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
         placement='bottom-start'
         style={{ zIndex: 1300 }}
       >
-        <Box
-          sx={{
-            width: 360,
-            maxHeight: 400,
-            bgcolor: 'background.paper',
-            borderRadius: 1,
-            boxShadow: 4,
-            p: 1.5,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-          }}
-        >
-          <Autocomplete<AttachmentOption>
-            size='small'
-            autoFocus
-            loading={loading && !loaded}
-            options={attachmentOptions}
-            inputValue={searchText}
-            onInputChange={(_event, value) => {
-              setSearchText(value);
+        <ClickAwayListener onClickAway={handleClose}>
+          <Box
+            sx={{
+              width: 360,
+              maxHeight: 400,
+              bgcolor: 'background.paper',
+              borderRadius: 1,
+              boxShadow: 4,
+              p: 1.5,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
             }}
-            filterOptions={(availableOptions, state) => {
-              const query = state.inputValue.trim().toLowerCase();
-              if (!query) return availableOptions;
-              return availableOptions.filter((option) =>
-                option.kind === 'image'
-                  ? option.label.toLowerCase().includes(query)
-                  : option.tiddlerTitle.toLowerCase().includes(query) || option.workspaceName.toLowerCase().includes(query)
-              );
-            }}
-            getOptionLabel={(option) => option.kind === 'image' ? option.label : option.tiddlerTitle}
-            renderInput={(parameters: AutocompleteRenderInputParams) => {
-              const { slotProps: parameterSlotProps, ...otherParameters } = parameters;
-              const htmlInput = (parameterSlotProps?.htmlInput ?? {}) as React.InputHTMLAttributes<HTMLInputElement>;
-              return (
-                <TextField
-                  {...otherParameters}
-                  placeholder={t('Agent.Attachment.Search', 'Search attachments...')}
-                  slotProps={{
-                    ...parameterSlotProps,
-                    htmlInput: {
-                      ...htmlInput,
-                      'data-testid': 'attachment-autocomplete-input',
-                    },
-                  }}
-                />
-              );
-            }}
-            onChange={handleSelect}
-            noOptionsText={t('Agent.Attachment.NoResults', 'No attachments found')}
-            isOptionEqualToValue={(option, value) =>
-              option.kind === value.kind && (option.kind === 'image'
-                ? option.id === (value as ImageOption).id
-                : option.workspaceId === (value as TiddlerOption).workspaceId && option.tiddlerTitle === (value as TiddlerOption).tiddlerTitle)}
-            slotProps={{
-              popper: { disablePortal: true },
-              listbox: { 'data-testid': 'attachment-listbox' } as React.HTMLAttributes<HTMLUListElement> & { 'data-testid': string },
-            }}
-            renderOption={(properties, option) => {
-              const { key, ...optionProperties } = properties;
-              const testId = option.kind === 'image'
-                ? `attachment-option-image-${option.id}`
-                : `attachment-option-tiddler-${option.tiddlerTitle}`;
-              return (
-                <Box component='li' key={key} {...optionProperties} data-testid={testId}>
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    {option.kind === 'image' ? <AddPhotoAlternateIcon fontSize='small' /> : <LibraryBooksIcon fontSize='small' />}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={option.kind === 'image' ? option.label : option.tiddlerTitle}
-                    secondary={option.kind === 'tiddler' ? option.workspaceName : undefined}
+          >
+            <Autocomplete<AttachmentOption>
+              size='small'
+              autoFocus
+              loading={loading && !loaded}
+              options={attachmentOptions}
+              inputValue={searchText}
+              onInputChange={(_event, value) => {
+                setSearchText(value);
+              }}
+              filterOptions={(availableOptions, state) => {
+                const query = state.inputValue.trim().toLowerCase();
+                if (!query) return availableOptions;
+                return availableOptions.filter((option) =>
+                  option.kind === 'image'
+                    ? option.label.toLowerCase().includes(query)
+                    : option.tiddlerTitle.toLowerCase().includes(query) || option.workspaceName.toLowerCase().includes(query)
+                );
+              }}
+              getOptionLabel={(option) => option.kind === 'image' ? option.label : option.tiddlerTitle}
+              renderInput={(parameters: AutocompleteRenderInputParams) => {
+                const { slotProps: parameterSlotProps, ...otherParameters } = parameters;
+                const htmlInput = (parameterSlotProps?.htmlInput ?? {}) as React.InputHTMLAttributes<HTMLInputElement>;
+                return (
+                  <TextField
+                    {...otherParameters}
+                    placeholder={t('Agent.Attachment.Search', 'Search attachments...')}
+                    slotProps={{
+                      ...parameterSlotProps,
+                      htmlInput: {
+                        ...htmlInput,
+                        'data-testid': 'attachment-autocomplete-input',
+                      },
+                    }}
                   />
-                </Box>
-              );
-            }}
-            open={open}
-            onClose={handleClose}
-            disablePortal
-          />
-        </Box>
+                );
+              }}
+              onChange={handleSelect}
+              noOptionsText={t('Agent.Attachment.NoResults', 'No attachments found')}
+              isOptionEqualToValue={(option, value) =>
+                option.kind === value.kind && (option.kind === 'image'
+                  ? option.id === (value as ImageOption).id
+                  : option.workspaceId === (value as TiddlerOption).workspaceId && option.tiddlerTitle === (value as TiddlerOption).tiddlerTitle)}
+              slotProps={{
+                popper: { disablePortal: true },
+                listbox: { 'data-testid': 'attachment-listbox' } as React.HTMLAttributes<HTMLUListElement> & { 'data-testid': string },
+              }}
+              renderOption={(properties, option) => {
+                const { key, ...optionProperties } = properties;
+                const testId = option.kind === 'image'
+                  ? `attachment-option-image-${option.id}`
+                  : `attachment-option-tiddler-${option.tiddlerTitle}`;
+                return (
+                  <Box component='li' key={key} {...optionProperties} data-testid={testId}>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      {option.kind === 'image' ? <AddPhotoAlternateIcon fontSize='small' /> : <LibraryBooksIcon fontSize='small' />}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={option.kind === 'image' ? option.label : option.tiddlerTitle}
+                      secondary={option.kind === 'tiddler' ? option.workspaceName : undefined}
+                    />
+                  </Box>
+                );
+              }}
+              open={open}
+              onClose={(_event, reason) => {
+                // Autocomplete may emit a transient blur while its input is
+                // mounting. Let the surrounding ClickAwayListener own outside
+                // clicks so opening the attachment picker is deterministic.
+                if (reason === 'escape') handleClose();
+              }}
+              disablePortal
+            />
+          </Box>
+        </ClickAwayListener>
       </Popper>
     </>
   );
