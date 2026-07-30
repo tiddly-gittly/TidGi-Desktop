@@ -10,7 +10,7 @@ import { initJsonRepairLogger, initTidgiConfigLogger } from './services/database
 import { MainChannel } from '@/constants/channels';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
-import { initializeAgentServices } from '@services/bootstrap/agentRuntime';
+import { initializeAgentServicesSafely } from '@services/bootstrap/agentRuntime';
 import { initializePreferenceReactions, initializeThemeReactions } from '@services/bootstrap/preferenceReactions';
 import { container } from '@services/container';
 import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
@@ -185,7 +185,7 @@ const commonInit = async (): Promise<void> => {
   }
 
   // Initialize agent-related services after database is ready
-  await initializeAgentServices({ agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService });
+  await initializeAgentServicesSafely({ agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService });
   await Promise.all([
     wikiEmbeddingService.initialize(),
     externalAPIService.initialize(),

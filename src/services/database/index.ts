@@ -30,6 +30,14 @@ interface SchemaConfig {
   migrationsRun: boolean;
 }
 
+export async function deleteSQLiteDatabaseFiles(databasePath: string): Promise<void> {
+  for (const filePath of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
+    if (await fs.pathExists(filePath)) {
+      await fs.unlink(filePath);
+    }
+  }
+}
+
 @injectable()
 export class DatabaseService implements IDatabaseService {
   // Database connection pool
@@ -300,9 +308,9 @@ export class DatabaseService implements IDatabaseService {
       }
 
       const databasePath = this.getDatabasePathSync(key);
-      if (databasePath !== ':memory:' && (await fs.pathExists(databasePath))) {
-        await fs.unlink(databasePath);
-        logger.info(`Database file deleted for key: ${key}`);
+      if (databasePath !== ':memory:') {
+        await deleteSQLiteDatabaseFiles(databasePath);
+        logger.info(`Database file and SQLite sidecars deleted for key: ${key}`);
       }
     } catch (error) {
       logger.error(`deleteDatabase failed for key: ${key}`, { error });
