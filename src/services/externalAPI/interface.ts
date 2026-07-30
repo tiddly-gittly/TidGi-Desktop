@@ -179,6 +179,24 @@ export interface AIProviderConfig {
   showBaseURLField?: boolean;
 }
 
+export interface ProviderCatalogStatus {
+  source: 'remote' | 'cache' | 'embedded';
+  catalogVersion: string;
+  fetchedAt: string;
+  refreshError?: string;
+}
+
+export interface ProviderCatalogResult {
+  providers: AIProviderConfig[];
+  status: ProviderCatalogStatus;
+}
+
+export interface OfficialModelDiscoveryResult {
+  provider: string;
+  discoveredCount: number;
+  models: ModelInfo[];
+}
+
 /**
  * AI settings store in user's JSON config file. As global AI related config that can edit in preferences.
  */
@@ -302,6 +320,18 @@ export interface IExternalAPIService {
   getAIProviders(): Promise<AIProviderConfig[]>;
 
   /**
+   * Get recommended providers/models without mutating user configuration.
+   * Pass refresh=true for a bounded network refresh of the fixed catalog source.
+   */
+  getProviderCatalog(refresh?: boolean): Promise<ProviderCatalogResult>;
+
+  /**
+   * Refresh the models visible to the configured provider account.
+   * User-created model entries are retained; earlier discovered entries are replaced.
+   */
+  refreshOfficialModels(provider: string): Promise<OfficialModelDiscoveryResult>;
+
+  /**
    * Get readonly AI configuration default values
    */
   getAIConfig(): Promise<AiAPIConfig>;
@@ -363,6 +393,8 @@ export const ExternalAPIServiceIPCDescriptor = {
     generateImage: ProxyPropertyType.Function,
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
+    getProviderCatalog: ProxyPropertyType.Function,
+    refreshOfficialModels: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
     isAIAvailable: ProxyPropertyType.Function,
     defaultConfig$: ProxyPropertyType.Value$,

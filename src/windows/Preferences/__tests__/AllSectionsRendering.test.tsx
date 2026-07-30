@@ -60,9 +60,9 @@ describe('Preferences - All Sections Rendering', () => {
 
     Object.defineProperty(window.service.context, 'get', {
       value: vi.fn().mockImplementation(async (key: string) => {
-        const contextValues: Record<string, string> = {
+        const contextValues: Record<string, string | boolean> = {
           platform: 'win32',
-          isTest: 'true',
+          isTest: true,
           LOG_FOLDER: 'C:\\logs',
           SETTINGS_FOLDER: 'C:\\settings',
           V8_CACHE_FOLDER: 'C:\\v8cache',
@@ -125,6 +125,18 @@ describe('Preferences - All Sections Rendering', () => {
 
     Object.defineProperty(window.service.auth, 'set', {
       value: vi.fn().mockResolvedValue(undefined),
+      writable: true,
+    });
+
+    Object.defineProperty(window.service.externalAPI, 'getProviderCatalog', {
+      value: vi.fn().mockResolvedValue({
+        providers: [],
+        status: {
+          source: 'embedded',
+          catalogVersion: 'test',
+          fetchedAt: '2026-07-30T00:00:00.000Z',
+        },
+      }),
       writable: true,
     });
 

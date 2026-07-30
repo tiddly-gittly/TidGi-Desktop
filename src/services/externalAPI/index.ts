@@ -1,6 +1,8 @@
+import { app } from 'electron';
 import { inject, injectable } from 'inversify';
 import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';
+import path from 'node:path';
 import { BehaviorSubject, defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
@@ -29,7 +31,11 @@ import type {
   AITranscriptionResponse,
   IExternalAPIService,
   ModelInfo,
+  OfficialModelDiscoveryResult,
+  ProviderCatalogResult,
 } from './interface';
+import { discoverOfficialModelIds, mergeOfficialModels } from './officialModels';
+import { resolveDesktopProviderCatalog } from './providerCatalog';
 import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 
 /**
@@ -301,6 +307,30 @@ export class ExternalAPIService implements IExternalAPIService {
   async getAIProviders(): Promise<AIProviderConfig[]> {
     this.ensureSettingsLoaded();
     return cloneDeep(this.userSettings.providers);
+  }
+
+  async getProviderCatalog(refresh = false): Promise<ProviderCatalogResult> {
+    return resolveDesktopProviderCatalog({
+      cachePath: path.join(app.getPath('userData'), 'model-catalog.v1.json'),
+      refresh,
+    });
+  }
+
+  async refreshOfficialModels(providerName: string): Promise<OfficialModelDiscoveryResult> {
+    this.ensureSettingsLoaded();
+    const provider = this.userSettings.providers.find(candidate => candidate.provider === providerName);
+    if (!provider) throw new Error(`Provider not found: ${providerName}`);
+    const discoveredIds = await discoverOfficialModelIds(provider);
+    const catalog = await this.getProviderCatalog(false);
+    const catalogModels = catalog.providers.find(candidate => candidate.provider === providerName)?.models ?? [];
+    provider.models = mergeOfficialModels(provider.models, discoveredIds, catalogModels);
+    this.saveSettingsToDatabase();
+    this.reactToConfigChange();
+    return {
+      provider: providerName,
+      discoveredCount: discoveredIds.length,
+      models: cloneDeep(provider.models),
+    };
   }
 
   async getAIConfig(): Promise<AiAPIConfig> {

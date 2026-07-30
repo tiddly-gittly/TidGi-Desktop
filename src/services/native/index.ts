@@ -8,7 +8,6 @@ import { Observable } from 'rxjs';
 import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
-import { container } from '@services/container';
 import { getLogger, logger } from '@services/libs/log';
 import type { LogContext, LogLevel } from '@services/libs/log/schema';
 import { getAllLocalHostUrlsWithActualIP, getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
