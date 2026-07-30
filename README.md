@@ -102,23 +102,31 @@ It used to named TiddlyGit, means TiddlyWiki with easy Git backup, short for Tid
   <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
 </a>
 
-> For Windows MacOS normal user
+The packaging-status badge is an external [Repology](https://repology.org/) index. It reports versions found in independent package repositories; it does not publish or automatically update those packages.
+
+> Official packages for Windows, macOS, Debian/Ubuntu, and RPM-based Linux distributions
 
 |                                                                          [Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                          |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
-> For arch user
+Official release assets are built by this repository. Future stable releases built by the updated workflow include per-platform SHA-256 checksum files.
+
+> Arch Linux community package
 
 ```bash
-yay tidgi
+yay -S tidgi-desktop-bin
 ```
 
-> For MacOS CLI user
+The AUR package is maintained outside this repository. Its version may follow GitHub Releases, but updates and package modifications are controlled by the listed AUR maintainer.
+
+> Homebrew Cask
 
 ```bash
-brew install TidGi # Not tested
+brew install --cask tidgi
 ```
+
+Homebrew's livecheck/BrewTestBot follows stable GitHub Releases automatically. The cask is currently deprecated because existing macOS archives fail Gatekeeper checks and is scheduled to be disabled on September 1, 2026. Homebrew installation will remain deprecated until a signed and notarized release is available.
 
 ## Mobile App
 

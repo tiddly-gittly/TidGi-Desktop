@@ -24,11 +24,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate macOS release signing secrets
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          MAC_CERT_BASE64: ${{ secrets.MAC_CERT_BASE64 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=()
+          for name in MAC_CERT_BASE64 MAC_CERT_PASSWORD APPLE_ID APPLE_ID_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "Missing required macOS release signing secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+
   test:
     uses: ./.github/workflows/test.yml
 
   build:
-    needs: test
+    needs: [release-preflight, test]
     strategy:
       fail-fast: false
       matrix:
@@ -110,6 +133,25 @@ jobs:
           pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Build plugins
         run: pnpm run build:plugin
+
+      - name: Import macOS Developer ID certificate
+        if: matrix.platform == 'mac' && startsWith(github.ref, 'refs/tags/')
+        env:
+          MAC_CERT_BASE64: ${{ secrets.MAC_CERT_BASE64 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/tidgi-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/tidgi-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          echo -n "$MAC_CERT_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$MAC_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
           pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}
@@ -120,6 +162,8 @@ jobs:
           # macOS specific environment variables
           APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
           APPLE_ID_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_ID_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_TEAM_ID || '' }}
+          MACOS_SIGNING_ENABLED: ${{ matrix.platform == 'mac' && startsWith(github.ref, 'refs/tags/') && 'true' || 'false' }}
           # Windows specific environment variables
           CSC_LINK: ${{ matrix.platform == 'win' && secrets.WIN_CERT || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.platform == 'win' && secrets.WIN_CERT_PASS || '' }}
@@ -146,6 +190,9 @@ jobs:
           # Cleanup
           rm -rf temp_extract
           echo "Repackaged $ZIP_FILE with ditto to preserve symlinks"
+
+      - name: Generate and validate release checksums
+        run: pnpm exec tsx scripts/generateReleaseChecksums.ts out/make ${{ matrix.platform }} ${{ matrix.arch }} out/make/SHA256SUMS-${{ matrix.platform }}-${{ matrix.arch }}.txt
 
       # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
       - name: Upload analyzer reports
@@ -176,7 +223,8 @@ jobs:
           files: |
             ${{ matrix.platform == 'win' && 'out/make/**/*.exe
             out/make/**/*.msix
-            out/make/**/*.appx' || 'out/make/**/*' }}
+            out/make/**/*.appx
+            out/make/SHA256SUMS-*.txt' || 'out/make/**/*' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

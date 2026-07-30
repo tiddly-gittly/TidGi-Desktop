@@ -1,27 +1,52 @@
-# Release App
+# Release packaging
 
-See [.github/workflows/release.yml](.github/workflows/release.yml)
+GitHub Releases are the source of truth for official TidGi binaries. The release workflow builds and tests each supported platform and architecture before creating a draft release.
 
-## macOS Runner Architecture Mismatch Issue
+## macOS signing and notarization
 
-If you build x64 version on an ARM64 runner, dugite will download ARM64 git binaries. When users run the x64 app on Intel Mac, it fails with error: `spawn Unknown system error -86 (EBADEXEC)`.
+Homebrew requires downloadable apps to pass macOS Gatekeeper checks. A public macOS release therefore needs both a Developer ID signature and Apple notarization.
 
-Solution: Use architecture-specific runners:
+The tag release workflow requires these repository secrets:
 
-- Use `macos-13` for x64 builds (free)
-- Use `macos-latest` for arm64 builds (free)
+- `MAC_CERT_BASE64`: base64-encoded Developer ID Application `.p12` certificate and private key
+- `MAC_CERT_PASSWORD`: password used when exporting the `.p12`
+- `APPLE_ID`: Apple Developer account email
+- `APPLE_ID_PASSWORD`: app-specific password for the Apple ID, not the normal account password
+- `APPLE_TEAM_ID`: Apple Developer team identifier
 
-See `.github/workflows/release.yml` matrix configuration.
+Pull request builds do not use signing credentials. On a tag build, missing credentials fail the release preflight instead of publishing an unsigned macOS archive.
 
-### Future: When macos-13 is Deprecated
+After the first signed and notarized stable release, the Homebrew cask's `disable!` declaration still needs to be removed in Homebrew's repository. Homebrew's livecheck/BrewTestBot can then continue updating later stable releases automatically.
 
-When GitHub fully deprecates `macos-13`, you have two options:
+## Release checksums
 
-Option A (Simple, Costs Money):
-Replace `macos-13` with `macos-15-large` in release.yml. Note that `-large` runners require GitHub Team or Enterprise plan and incur charges even for public repos.
+Each build writes a `SHA256SUMS-<platform>-<architecture>.txt` file next to its release artifacts. The checksum generator also verifies that every expected package type exists:
 
-Option B (Complex, Free):
-Use npm_config_arch environment variable to force dugite download correct architecture on ARM64 runner:
+- Linux: DEB and RPM
+- macOS: ZIP
+- Windows: EXE and MSIX
+
+These files are uploaded to the draft GitHub Release and can be consumed by downstream package maintainers.
+
+## Community package repositories
+
+Homebrew Cask and AUR are maintained outside this repository.
+
+- Homebrew uses a GitHub livecheck and BrewTestBot to follow published stable GitHub Releases.
+- AUR packages are maintained by their listed AUR maintainers. AUR itself does not automatically mirror GitHub Releases.
+
+Publishing a GitHub Release cannot push an AUR update without write access to the AUR package repository and a dedicated SSH key. If TidGi takes ownership of an AUR package later, add a separate release-published workflow that updates its `PKGBUILD` and `.SRCINFO`, runs `makepkg --verifysource` and `makepkg` in an Arch Linux environment, and only then pushes to AUR.
+
+## macOS runner architecture mismatch
+
+If an x64 version is built on an ARM64 runner, dugite can download ARM64 Git binaries. When users run the resulting app on an Intel Mac, it fails with `spawn Unknown system error -86 (EBADEXEC)`.
+
+Use architecture-specific runners:
+
+- `macos-15-intel` for x64 builds
+- `macos-latest` for arm64 builds
+
+When the Intel runner is no longer available, either use another Intel runner or set `npm_config_arch` while installing dependencies so dugite downloads binaries for the target architecture:
 
 ```yaml
 - name: Install dependencies
@@ -30,14 +55,6 @@ Use npm_config_arch environment variable to force dugite download correct archit
     npm_config_arch: ${{ matrix.arch }}
 ```
 
-This tells dugite's postinstall script which architecture to download, regardless of host machine. See `node_modules/dugite/script/config.js` for details.
+## App size reduction
 
-## App Size Reduction
-
-dugite bundles a full git distribution. The package contains unnecessary components for TidGi:
-
-- 141 git command symlinks (all point to main git binary, only needed if directly invoking `git-add` instead of `git add`)
-- Git LFS (13MB, TiddlyWiki wikis don't use LFS)
-- Git Credential Manager + .NET runtime (26MB on macOS, TidGi embeds credentials directly in URLs)
-
-afterPack script automatically removes these, saving approximately 40-60MB per platform. See `scripts/trimDugite.ts` for implementation details.
+dugite bundles a full Git distribution. The `packageAfterPrune` hook removes components TidGi does not use, including command symlinks, Git LFS, and Git Credential Manager. See `scripts/trimDugite.ts`; this saves approximately 40–60 MB per platform.
