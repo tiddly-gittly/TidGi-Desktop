@@ -612,7 +612,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           setDeleteDialogOpen(false);
         }}
       >
-        <DialogTitle>{t('Preference.ConfirmDelete')}</DialogTitle>
+        <DialogTitle>{t('Preference.ConfirmDelete', { ns: 'translation' })}</DialogTitle>
         <DialogContent>
           <DialogContentText>
             {t('Preference.ConfirmDeleteAgentDatabase')}
@@ -624,7 +624,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
               setDeleteDialogOpen(false);
             }}
           >
-            {t('Cancel')}
+            {t('Cancel', { ns: 'translation' })}
           </Button>
           <Button
             onClick={async () => {
@@ -648,7 +648,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             }}
             color='error'
           >
-            {t('Delete')}
+            {t('Delete', { ns: 'translation' })}
           </Button>
         </DialogActions>
       </Dialog>
