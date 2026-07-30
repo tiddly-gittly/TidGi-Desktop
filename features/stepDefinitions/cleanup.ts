@@ -5,6 +5,7 @@ import path from 'path';
 import { killProcessTree } from '../supports/killProcessTree';
 import type { MockAnalyticsServer } from '../supports/mockAnalytics';
 import type { MockProxyServer } from '../supports/mockProxy';
+import { setupNetworkProxyFixture, verifyNetworkProxyFixtureRequests } from '../supports/networkProxyFixture';
 import { makeRunScopedScenarioSlug } from '../supports/paths';
 import { clearAISettings } from './agent';
 import { ApplicationWorld } from './application';
@@ -82,6 +83,9 @@ Before(async function(this: ApplicationWorld, { pickle }) {
   }
   if (pickle.tags.some((tag) => tag.name === '@tidgi-mini-window')) {
     await clearTidgiMiniWindowSettings(scenarioRoot);
+  }
+  if (pickle.tags.some((tag) => tag.name === '@network-proxy')) {
+    await setupNetworkProxyFixture(this);
   }
 });
 
@@ -177,9 +181,15 @@ After(async function(this: ApplicationWorld, { pickle }) {
   const mockProxyServer: MockProxyServer | undefined = this.mockProxyServer;
   if (mockProxyServer) {
     try {
-      await mockProxyServer.stop();
+      if (this.scenarioTags.includes('@network-proxy')) {
+        verifyNetworkProxyFixtureRequests(this);
+      }
     } finally {
-      this.mockProxyServer = undefined;
+      try {
+        await mockProxyServer.stop();
+      } finally {
+        this.mockProxyServer = undefined;
+      }
     }
   }
 
