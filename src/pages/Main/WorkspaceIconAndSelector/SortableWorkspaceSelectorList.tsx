@@ -482,12 +482,12 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       return;
     }
 
-    if (isDragStateEqual(dragStateReference.current, nextState)) {
-      return;
-    }
-
     dragStateReference.current = nextState;
-    setDragState(nextState);
+    // The ref is updated synchronously by drag events while the React update
+    // can be debounced or cancelled. Comparing only with the ref can therefore
+    // leave the rendered state stale forever. Always reconcile the explicit
+    // state with React, while retaining the render-level equality fast path.
+    setDragState(previousState => isDragStateEqual(previousState, nextState) ? previousState : nextState);
   }, [isDragStateEqual]);
 
   /**
@@ -1046,7 +1046,11 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     allDraggableIdsReference.current = buildDraggableIds(interleavedSidebarItems, {
       includeGroupHeaders: activeId.startsWith('group-'),
     });
-    applyDragState(previous => ({ ...previous, activeId }));
+    // A new drag must not inherit a target/intent still rendered from the
+    // previous drag. Using a functional state update here raced with the
+    // synchronous dragStateReference updates from onDragMove and could restore
+    // stale overId/intent fields after the ref had already advanced.
+    applyDragState({ ...initialDragState, activeId });
   }, [applyDragState, clearDragStateTimeout, interleavedSidebarItems]);
 
   const handleDragCancel = useCallback(async (_event: DragCancelEvent) => {
