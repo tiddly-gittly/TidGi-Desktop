@@ -31,12 +31,20 @@ async function sha256(filePath: string): Promise<string> {
   return hash.digest('hex');
 }
 
+function compareArtifactPaths(left: string, right: string): number {
+  const leftBasename = path.basename(left);
+  const rightBasename = path.basename(right);
+  if (leftBasename < rightBasename) return -1;
+  if (leftBasename > rightBasename) return 1;
+  return 0;
+}
+
 export async function generateReleaseChecksums(rootDirectory: string, platform: ReleasePlatform, architecture: string, outputPath: string): Promise<string[]> {
   const extensions = requiredExtensions[platform];
   const allFiles = await findFiles(rootDirectory);
   const releaseFiles = allFiles
     .filter((filePath) => extensions.includes(path.extname(filePath).toLowerCase()))
-    .sort((left, right) => path.basename(left).localeCompare(path.basename(right)));
+    .sort(compareArtifactPaths);
 
   for (const extension of extensions) {
     if (!releaseFiles.some((filePath) => path.extname(filePath).toLowerCase() === extension)) {
