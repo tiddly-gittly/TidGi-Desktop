@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIAgent, clearAgentDatabase } from '../AIAgent';
@@ -19,7 +19,7 @@ describe('AIAgent database recovery', () => {
       configurable: true,
     });
     Object.defineProperty(window.service.database, 'getDatabasePath', {
-      value: vi.fn().mockResolvedValue('C:\\userData\\cache-database\\agent-cache.db'),
+      value: vi.fn().mockResolvedValue('C:\\userData\\cache-database\\meme-loop-cache.db'),
       configurable: true,
     });
     Object.defineProperty(window.service.database, 'deleteDatabase', {
@@ -52,7 +52,8 @@ describe('AIAgent database recovery', () => {
 
     await clearAgentDatabase({ deleteDatabase }, onNeedsRestart);
 
-    expect(deleteDatabase).toHaveBeenCalledWith('agent');
+    expect(deleteDatabase).toHaveBeenNthCalledWith(1, 'meme-loop');
+    expect(deleteDatabase).toHaveBeenNthCalledWith(2, 'agent');
     expect(onNeedsRestart).toHaveBeenCalledOnce();
   });
 });

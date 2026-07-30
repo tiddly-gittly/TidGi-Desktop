@@ -9,6 +9,7 @@ import * as sqliteVec from 'sqlite-vec';
 import { DataSource } from 'typeorm';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { isTest } from '@/constants/environment';
 import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { SQLITE_BINARY_PATH } from '@/constants/paths';
@@ -94,7 +95,7 @@ export class DatabaseService implements IDatabaseService {
       synchronize: true,
       migrationsRun: false,
     });
-    this.registerSchema('agent', {
+    this.registerSchema(MEME_LOOP_DATABASE_KEY, {
       entities: [
         AgentDefinitionEntity,
         AgentInstanceEntity,
