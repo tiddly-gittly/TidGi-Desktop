@@ -38,6 +38,18 @@ import type { ICustomSectionProps } from '@services/preferences/definitions/type
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 
+interface AgentDatabaseRecoveryService {
+  deleteDatabase: (key: string) => Promise<void>;
+}
+
+export async function clearAgentDatabase(
+  databaseService: AgentDatabaseRecoveryService,
+  onNeedsRestart: () => void,
+): Promise<void> {
+  await databaseService.deleteDatabase('agent');
+  onNeedsRestart();
+}
+
 export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation('agent');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -615,7 +627,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           <Button
             onClick={async () => {
               try {
-                await window.service.database.deleteDatabase('agent');
+                await clearAgentDatabase(window.service.database, props.onNeedsRestart);
                 setDeleteDialogOpen(false);
                 // Refresh info after deletion
                 const info = await window.service.database.getDatabaseInfo('agent');

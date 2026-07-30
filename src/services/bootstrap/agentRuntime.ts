@@ -3,6 +3,7 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { MemeLoopDesktopStorage } from '@services/agentInstance/runtime/storage';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
+import { logger } from '@services/libs/log';
 import type { IWikiService } from '@services/wiki/interface';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { createAgentRuntimeDeviceRpcHandler, type DeviceCapabilities } from 'memeloop';
@@ -16,13 +17,15 @@ const emptyCapabilities: DeviceCapabilities = {
   wikis: [],
 };
 
-export async function initializeAgentServices(options: {
+export interface InitializeAgentServicesOptions {
   agentDefinitionService: IAgentDefinitionService;
   agentInstanceService: IAgentInstanceService;
   deviceNetworkService: IDeviceNetworkService;
   wikiService: IWikiService;
   workspaceService: IWorkspaceService;
-}): Promise<void> {
+}
+
+export async function initializeAgentServices(options: InitializeAgentServicesOptions): Promise<void> {
   const { agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService } = options;
 
   await agentDefinitionService.initialize();
@@ -59,6 +62,24 @@ export async function initializeAgentServices(options: {
   });
 
   await initializeTemplateBackends(agentDefinitionService, wikiService, workspaceService);
+}
+
+/**
+ * Agent conversations are a disposable cache boundary. A stale or damaged
+ * agent database must not prevent Wiki, Preferences, or the database cleanup
+ * control from starting. The user can delete the cache in Preferences and
+ * restart the app to re-enable Agent services.
+ */
+export async function initializeAgentServicesSafely(options: InitializeAgentServicesOptions): Promise<boolean> {
+  try {
+    await initializeAgentServices(options);
+    return true;
+  } catch (error) {
+    logger.error('Agent services unavailable; continuing without Agent runtime so the cache can be cleared in Preferences', {
+      error,
+    });
+    return false;
+  }
 }
 
 async function buildDeviceNetworkCapabilities(workspaceService: IWorkspaceService): Promise<DeviceCapabilities> {
