@@ -27,6 +27,19 @@ describe('provider catalog', () => {
 
     expect(result.status.source).toBe('embedded');
     expect(result.providers.length).toBeGreaterThan(100);
+    expect(result.providers).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        provider: 'ollama',
+        providerClass: 'ollama',
+        baseURL: 'http://localhost:11434',
+      }),
+      expect.objectContaining({
+        provider: 'comfyui',
+        providerClass: 'comfyui',
+        baseURL: 'http://localhost:8188',
+        models: [expect.objectContaining({ name: 'flux', features: ['imageGeneration'] })],
+      }),
+    ]));
     expect(fetched).toBe(false);
   });
 
