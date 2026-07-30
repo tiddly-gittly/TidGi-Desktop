@@ -25,6 +25,8 @@ interface ProviderPanelProps {
   onEditModel?: (modelName: string) => void;
   onOpenAddModelDialog: () => void;
   onDeleteProvider?: () => void;
+  onRefreshModels: () => void;
+  refreshingModels?: boolean;
 }
 
 export function ProviderPanel({
@@ -36,6 +38,8 @@ export function ProviderPanel({
   onEditModel,
   onOpenAddModelDialog,
   onDeleteProvider,
+  onRefreshModels,
+  refreshingModels = false,
 }: ProviderPanelProps) {
   const { t } = useTranslation('agent');
   const isEnabled = provider.enabled !== false;
@@ -151,7 +155,20 @@ export function ProviderPanel({
 
       {/* Models section */}
       <Box sx={{ mt: 3 }}>
-        <Typography variant='subtitle1' gutterBottom>{t('Preference.Models')}</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant='subtitle1'>{t('Preference.Models')}</Typography>
+          <Button
+            variant='outlined'
+            size='small'
+            onClick={onRefreshModels}
+            disabled={refreshingModels}
+            data-testid='refresh-official-models-button'
+          >
+            {refreshingModels
+              ? t('Preference.RefreshingOfficialModels', { defaultValue: 'Refreshing…' })
+              : t('Preference.RefreshOfficialModels', { defaultValue: 'Refresh models' })}
+          </Button>
+        </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
           {formState.models.map((model) => (

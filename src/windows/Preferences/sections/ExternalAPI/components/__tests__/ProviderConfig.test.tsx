@@ -31,6 +31,15 @@ const mockProvider: AIProviderConfig = {
   enabled: true,
 };
 
+const mockCompatibleProvider: AIProviderConfig = {
+  provider: 'compatible',
+  baseURL: 'https://api.example.com/v1',
+  models: [mockLanguageModel],
+  providerClass: 'openAICompatible',
+  isPreset: true,
+  enabled: false,
+};
+
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={lightTheme}>
@@ -90,6 +99,7 @@ describe('ProviderConfig Component', () => {
       <TestWrapper>
         <ProviderConfig
           providers={providers}
+          catalogProviders={[mockProvider, mockCompatibleProvider]}
           setProviders={mockSetProviders}
           changeDefaultModel={mockChangeDefaultModel}
           changeDefaultEmbeddingModel={mockChangeDefaultEmbeddingModel}

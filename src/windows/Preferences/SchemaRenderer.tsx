@@ -694,6 +694,7 @@ export function AllSectionsRenderer({
         <VirtualizedSettingsList
           entries={searchEntries}
           defaultRowHeight={100}
+          virtualize={!isTest}
           renderEntry={(entry) => (
             <>
               <SearchSectionLabel>
@@ -727,6 +728,7 @@ export function AllSectionsRenderer({
         navigationRequest={navigationRequest}
         onNavigationComplete={onNavigationComplete}
         renderEntry={renderSectionEntry}
+        virtualize={!isTest}
       />
     </PreferenceDraftContext.Provider>
   );

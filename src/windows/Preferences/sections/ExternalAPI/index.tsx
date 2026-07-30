@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import TuneIcon from '@mui/icons-material/Tune';
@@ -29,6 +29,25 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
     handleConfigChange,
   } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
+  const [catalogProviders, setCatalogProviders] = useState<AIProviderConfig[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const loadCatalog = async () => {
+      try {
+        const local = await window.service.externalAPI.getProviderCatalog(false);
+        if (active) setCatalogProviders(local.providers);
+        const refreshed = await window.service.externalAPI.getProviderCatalog(true);
+        if (active) setCatalogProviders(refreshed.providers);
+      } catch (error: unknown) {
+        console.error('Failed to refresh provider catalog:', error);
+      }
+    };
+    void loadCatalog();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const openParametersDialog = () => {
     setParametersDialogOpen(true);
@@ -259,6 +278,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
 
               <ProviderConfig
                 providers={providers}
+                catalogProviders={catalogProviders}
                 changeDefaultModel={handleModelChange}
                 changeDefaultEmbeddingModel={handleEmbeddingModelChange}
                 changeDefaultSpeechModel={handleSpeechModelChange}

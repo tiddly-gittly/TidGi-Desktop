@@ -66,6 +66,18 @@ describe('ExternalAPI Add Provider with Embedding Model', () => {
       writable: true,
     });
 
+    Object.defineProperty(window.service.externalAPI, 'getProviderCatalog', {
+      value: vi.fn().mockResolvedValue({
+        providers: [mockProvider],
+        status: {
+          source: 'embedded',
+          catalogVersion: 'test',
+          fetchedAt: '2026-07-30T00:00:00.000Z',
+        },
+      }),
+      writable: true,
+    });
+
     Object.defineProperty(window.service.externalAPI, 'updateDefaultAIConfig', {
       value: vi.fn().mockResolvedValue(undefined),
       writable: true,
