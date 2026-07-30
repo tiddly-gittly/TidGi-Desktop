@@ -255,6 +255,11 @@ async function dragLocatorToCoordinates(
   }
 
   await world.currentWindow.mouse.up();
+  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({
+    state: 'hidden',
+    timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+  });
+  await waitForTwoAnimationFrames(world);
 }
 
 async function dragLocatorAndHoldAtCoordinates(
