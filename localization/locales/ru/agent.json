@@ -197,6 +197,7 @@
     "FailedToAddProvider": "Не удалось добавить поставщика",
     "FailedToDeleteProvider": "Не удалось удалить поставщика {{providerName}}",
     "FailedToRemoveModel": "Не удалось удалить модель",
+    "FailedToRefreshOfficialModels": "Не удалось обновить список моделей",
     "FailedToSaveSettings": "Не удалось сохранить настройки",
     "FailedToUpdateModel": "Не удалось обновить модель",
     "FailedToUpdateProviderStatus": "Не удалось обновить статус поставщика",
@@ -217,6 +218,7 @@
     "Models": "Доступные модели",
     "NoPresetSelected": "Нет выбранной предустановленной модели",
     "NoProvidersAvailable": "Нет доступных поставщиков",
+    "OfficialModelsRefreshed": "Обновлено моделей: {{count}}",
     "OpenDatabaseFolder": "Открыть папку базы данных",
     "PresetModels": "Предустановленные модели",
     "PresetProvider": "Предустановленный поставщик",
@@ -230,6 +232,7 @@
     "ProviderEnabled": "Поставщик включен",
     "ProviderName": "Имя поставщика",
     "ProviderNameRequired": "Имя поставщика обязательно",
+    "RefreshOfficialModels": "Обновить модели",
     "Search": "поиск и внедрение",
     "SearchEmbeddingDelete": "удалить",
     "SearchEmbeddingDeleteConfirm": "Вы уверены, что хотите удалить все векторные вложения рабочей области \"{{workspaceName}}\"? Это действие нельзя отменить.",
@@ -403,14 +406,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -445,8 +444,7 @@
       "ProviderTitle": "провайдер",
       "Title": "выбор модели"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "настройка позиционных параметров",
       "TargetId": "ID целевого элемента",
@@ -480,8 +478,7 @@
       "TextTitle": "текст",
       "Title": "подсказка"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "Заголовок ответа, используемый для идентификации записи ответа.",
       "CaptionTitle": "заголовок",

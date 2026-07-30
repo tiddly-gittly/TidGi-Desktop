@@ -196,6 +196,7 @@
     "FailedToAddProvider": "Failed to add provider",
     "FailedToDeleteProvider": "Failed to delete provider {{providerName}}",
     "FailedToRemoveModel": "Failed to remove model",
+    "FailedToRefreshOfficialModels": "Failed to refresh models",
     "FailedToSaveSettings": "Failed to save settings",
     "FailedToUpdateModel": "Failed to update model",
     "FailedToUpdateProviderStatus": "Failed to update provider status",
@@ -217,6 +218,7 @@
     "Models": "Available Models",
     "NoPresetSelected": "No preset model selected",
     "NoProvidersAvailable": "No providers available",
+    "OfficialModelsRefreshed": "Refreshed {{count}} models",
     "OpenDatabaseFolder": "Open Database Folder",
     "BackgroundTasks": "Background Tasks",
     "BackgroundTasksDescription": "Active scheduled agent tasks (heartbeats and alarms). These wake agents automatically on a timer.",
@@ -236,6 +238,7 @@
     "ProviderEnabled": "Provider enabled",
     "ProviderName": "Provider Name",
     "ProviderNameRequired": "Provider name is required",
+    "RefreshOfficialModels": "Refresh models",
     "SearchEmbeddingNoEmbeddingModelError": "Please configure the default embedding model settings in the external API section first.",
     "SelectDefaultProvider": "Select default provider",
     "SelectFromPresets": "Select from Preset Models",
@@ -395,14 +398,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -437,8 +436,7 @@
       "ProviderTitle": "provider",
       "Title": "model selection"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "Position Parameter Configuration",
       "TargetId": "target element ID",
@@ -472,8 +470,7 @@
       "TextTitle": "text",
       "Title": "prompt"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "Response header, used to identify the response entry",
       "CaptionTitle": "Title",
