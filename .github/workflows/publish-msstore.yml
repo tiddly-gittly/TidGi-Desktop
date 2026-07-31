@@ -45,7 +45,7 @@ jobs:
             'MSSTORE_CLIENT_ID',
             'MSSTORE_CLIENT_SECRET'
           )
-          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace((Get-Item "Env:$_").Value) }
+          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
           if ($missing.Count -gt 0) {
             throw "Missing Microsoft Store configuration: $($missing -join ', ')"
           }
@@ -88,7 +88,7 @@ jobs:
         run: pnpm run build:plugin
 
       - name: Build Store MSIX
-        run: pnpm exec electron-forge make --platform=win32 --arch=x64
+        run: pnpm exec electron-forge make --platform=win32 --arch=x64 --targets=@electron-forge/maker-msix
         env:
           NODE_ENV: production
           NODE_OPTIONS: --max-old-space-size=8192
