@@ -12,6 +12,9 @@ const supportedLanguages = readJsonSync(path.join(__dirname, 'localization', 'su
 const { description } = packageJson;
 // Get list of supported language codes from centralized config
 const supportedLanguageCodes = Object.keys(supportedLanguages);
+const msixPackageIdentity = process.env.MSIX_PACKAGE_IDENTITY ?? 'TidGi';
+const msixPublisher = process.env.MSIX_PUBLISHER ?? 'CN=TiddlyWiki Community';
+const msixPublisherDisplayName = process.env.MSIX_PUBLISHER_DISPLAY_NAME ?? 'TiddlyWiki Community';
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -91,7 +94,9 @@ const config: ForgeConfig = {
         packageAssets: 'build-resources/icon.ico',
         sign: false,
         manifestVariables: {
-          publisher: 'CN=TiddlyWiki Community',
+          packageIdentity: msixPackageIdentity,
+          publisher: msixPublisher,
+          publisherDisplayName: msixPublisherDisplayName,
         },
       },
     },
