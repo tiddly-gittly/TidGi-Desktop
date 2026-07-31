@@ -1,0 +1,126 @@
+name: Publish Microsoft Store MSIX
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Published stable version tag to build, for example v0.15.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-msstore
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-2022
+    steps:
+      - name: Validate Store configuration
+        shell: pwsh
+        env:
+          GIT_REF: ${{ inputs.git_ref }}
+          MSIX_PACKAGE_IDENTITY: ${{ vars.MSIX_PACKAGE_IDENTITY }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+          MSSTORE_PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+          MSSTORE_TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+          MSSTORE_SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+          MSSTORE_CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+          MSSTORE_CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+        run: |
+          if ($env:GIT_REF -notmatch '^v\d+\.\d+\.\d+(?:\.\d+)?$') {
+            throw "A stable numeric version tag is required, received: $env:GIT_REF"
+          }
+          $required = @(
+            'MSIX_PACKAGE_IDENTITY',
+            'MSIX_PUBLISHER',
+            'MSIX_PUBLISHER_DISPLAY_NAME',
+            'MSSTORE_PRODUCT_ID',
+            'MSSTORE_TENANT_ID',
+            'MSSTORE_SELLER_ID',
+            'MSSTORE_CLIENT_ID',
+            'MSSTORE_CLIENT_SECRET'
+          )
+          $missing = $required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) }
+          if ($missing.Count -gt 0) {
+            throw "Missing Microsoft Store configuration: $($missing -join ', ')"
+          }
+
+      - name: Checkout published tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.git_ref }}
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+
+      - name: Set up MSVC compiler
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Use HTTPS for GitHub git dependencies
+        run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild native modules for Electron
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          rmdir /s /q node_modules\better-sqlite3\prebuilds 2>nul
+          pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=x64
+
+      - name: Build plugins
+        run: pnpm run build:plugin
+
+      - name: Build Store MSIX
+        run: pnpm exec electron-forge make --platform=win32 --arch=x64 --targets=@electron-forge/maker-msix
+        env:
+          NODE_ENV: production
+          NODE_OPTIONS: --max-old-space-size=8192
+          CI: true
+          MSIX_PACKAGE_IDENTITY: ${{ vars.MSIX_PACKAGE_IDENTITY }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+
+      - name: Set up Microsoft Store CLI
+        uses: microsoft/setup-msstore-cli@v1
+
+      - name: Authenticate Microsoft Store CLI
+        shell: pwsh
+        env:
+          MSSTORE_TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+          MSSTORE_SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+          MSSTORE_CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+          MSSTORE_CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+        run: |
+          msstore reconfigure `
+            --tenantId $env:MSSTORE_TENANT_ID `
+            --sellerId $env:MSSTORE_SELLER_ID `
+            --clientId $env:MSSTORE_CLIENT_ID `
+            --clientSecret $env:MSSTORE_CLIENT_SECRET
+
+      - name: Submit MSIX to Microsoft Store
+        shell: pwsh
+        env:
+          MSSTORE_PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+        run: |
+          $package = Get-ChildItem out/make -Recurse -Filter *.msix | Select-Object -First 1
+          if ($null -eq $package) {
+            throw 'The MSIX package was not generated'
+          }
+          msstore publish -id $env:MSSTORE_PRODUCT_ID -i $package.FullName

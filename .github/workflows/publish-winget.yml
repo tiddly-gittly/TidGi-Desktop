@@ -1,0 +1,89 @@
+name: Publish WinGet Update
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version without the leading v, for example 0.15.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-winget
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: vars.WINGET_PUBLISH_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false)
+    runs-on: windows-2022
+    steps:
+      - name: Resolve release metadata
+        id: release
+        shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          WINGET_PACKAGE_ID: ${{ vars.WINGET_PACKAGE_ID }}
+        run: |
+          $version = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') { $env:INPUT_VERSION } else { $env:RELEASE_TAG.TrimStart('v') }
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:\.\d+)?$') {
+            throw "WinGet requires a numeric release version, received: $version"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:WINGET_PACKAGE_ID)) {
+            throw 'Repository variable WINGET_PACKAGE_ID is required'
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "x64_url=https://github.com/${env:GITHUB_REPOSITORY}/releases/download/v${version}/Install-TidGi-Windows-x64.exe" >> $env:GITHUB_OUTPUT
+          "arm64_url=https://github.com/${env:GITHUB_REPOSITORY}/releases/download/v${version}/Install-TidGi-Windows-arm64.exe" >> $env:GITHUB_OUTPUT
+
+      - name: Validate release installers
+        shell: pwsh
+        env:
+          X64_URL: ${{ steps.release.outputs.x64_url }}
+          ARM64_URL: ${{ steps.release.outputs.arm64_url }}
+        run: |
+          foreach ($url in @($env:X64_URL, $env:ARM64_URL)) {
+            $response = Invoke-WebRequest -Uri $url -Method Head -MaximumRedirection 5
+            if ($response.StatusCode -ne 200) {
+              throw "Release installer is unavailable: $url"
+            }
+          }
+
+      - name: Install WinGet Manifest Creator
+        id: wingetcreate
+        shell: pwsh
+        run: |
+          $tool = Join-Path $env:RUNNER_TEMP 'wingetcreate.exe'
+          $checksumFile = Join-Path $env:RUNNER_TEMP 'wingetcreate.exe.txt'
+          Invoke-WebRequest -Uri 'https://github.com/microsoft/winget-create/releases/latest/download/wingetcreate.exe' -OutFile $tool
+          Invoke-WebRequest -Uri 'https://github.com/microsoft/winget-create/releases/latest/download/wingetcreate.exe.txt' -OutFile $checksumFile
+          $checksumMatch = Select-String -Path $checksumFile -Pattern '[A-Fa-f0-9]{64}' | Select-Object -First 1
+          if ($null -eq $checksumMatch) {
+            throw 'The WinGetCreate checksum could not be read'
+          }
+          $expectedChecksum = $checksumMatch.Matches[0].Value
+          $actualChecksum = (Get-FileHash -Path $tool -Algorithm SHA256).Hash
+          if ($actualChecksum -ne $expectedChecksum) {
+            throw 'The downloaded WinGetCreate checksum does not match the official release'
+          }
+          "path=$tool" >> $env:GITHUB_OUTPUT
+
+      - name: Submit WinGet update pull request
+        shell: pwsh
+        env:
+          WINGET_GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
+          WINGET_PACKAGE_ID: ${{ vars.WINGET_PACKAGE_ID }}
+          VERSION: ${{ steps.release.outputs.version }}
+          X64_URL: ${{ steps.release.outputs.x64_url }}
+          ARM64_URL: ${{ steps.release.outputs.arm64_url }}
+          WINGETCREATE_PATH: ${{ steps.wingetcreate.outputs.path }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINGET_GITHUB_TOKEN)) {
+            throw 'Repository secret WINGET_GITHUB_TOKEN is required'
+          }
+          & $env:WINGETCREATE_PATH update $env:WINGET_PACKAGE_ID --version $env:VERSION --urls $env:X64_URL $env:ARM64_URL --submit --token $env:WINGET_GITHUB_TOKEN
