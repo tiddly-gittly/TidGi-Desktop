@@ -166,6 +166,22 @@
   },
   "DeviceNetwork": {
     "AcceptPairing": "Accept",
+    "CloudAccessToken": "Cloud access token",
+    "CloudConfigured": "Configured for {{cloudUrl}}. The saved token is encrypted by the operating system.",
+    "CloudConnect": "Connect",
+    "CloudConnection": "MemeLoop Cloud",
+    "CloudDisconnect": "Disconnect",
+    "CloudNotConfigured": "Configure MemeLoop Cloud to discover this account's devices and maintain private relay connectivity.",
+    "CloudStatus": {
+      "connecting": "Connecting",
+      "error": "Connection error",
+      "idle": "Configured",
+      "not-configured": "Not configured",
+      "online": "Online"
+    },
+    "CloudTokenUnchanged": "Enter a new access token to update the connection.",
+    "CloudUpdate": "Update connection",
+    "CloudUrl": "Cloud URL",
     "Devices": "Devices",
     "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
     "Direction": {

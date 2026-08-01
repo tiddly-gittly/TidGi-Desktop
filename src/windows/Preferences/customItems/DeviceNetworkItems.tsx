@@ -4,12 +4,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import LinkIcon from '@mui/icons-material/Link';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SyncIcon from '@mui/icons-material/Sync';
-import { Alert, Box, Button, Chip, Divider, IconButton, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, Divider, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
-import type { Device, PairingSession } from '@services/deviceNetwork/interface';
+import type { Device, DeviceCloudConnectionStatus, PairingSession } from '@services/deviceNetwork/interface';
 import useObservable from 'beautiful-react-hooks/useObservable';
 
 function shortPeerId(peerId: string): string {
@@ -33,20 +33,27 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
   const [pairingSessions, setPairingSessions] = useState<PairingSession[]>([]);
   const [busyAction, setBusyAction] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [cloudUrl, setCloudUrl] = useState('');
+  const [cloudAccessToken, setCloudAccessToken] = useState('');
+  const [cloudStatus, setCloudStatus] = useState<DeviceCloudConnectionStatus>({ configured: false, state: 'not-configured' });
+  const cloudConfigured = cloudStatus.configured;
 
   const pendingSessions = useMemo(() => pairingSessions.filter(session => session.status === 'pending'), [pairingSessions]);
   const pendingPeerIds = useMemo(() => new Set(pendingSessions.map(session => session.remotePeerId)), [pendingSessions]);
 
   const refreshSnapshot = async () => {
     await window.service.deviceNetwork.start();
-    const [nextLocalDevice, nextDevices, nextPairingSessions] = await Promise.all([
+    const [nextLocalDevice, nextDevices, nextPairingSessions, cloudStatus] = await Promise.all([
       window.service.deviceNetwork.getLocalDevice(),
       window.service.deviceNetwork.listDevices(),
       window.service.deviceNetwork.listPairingSessions(),
+      window.service.deviceNetwork.getCloudConnectionStatus(),
     ]);
     setLocalDevice(nextLocalDevice);
     setDevices(nextDevices);
     setPairingSessions(nextPairingSessions);
+    setCloudStatus(cloudStatus);
+    if (cloudStatus.cloudUrl) setCloudUrl(cloudStatus.cloudUrl);
   };
 
   useObservable(window.observables.deviceNetwork.devices$, setDevices);
@@ -73,6 +80,78 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
 
   return (
     <>
+      <ListItem alignItems='flex-start'>
+        <ListItemText
+          primary={t('DeviceNetwork.CloudConnection')}
+          secondary={cloudConfigured
+            ? t('DeviceNetwork.CloudConfigured', { cloudUrl })
+            : t('DeviceNetwork.CloudNotConfigured')}
+        />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 320 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              size='small'
+              color={cloudStatus.state === 'online' ? 'success' : cloudStatus.state === 'error' ? 'error' : 'default'}
+              label={t(`DeviceNetwork.CloudStatus.${cloudStatus.state}`)}
+            />
+            {cloudStatus.error && <Typography variant='caption' color='error'>{cloudStatus.error}</Typography>}
+          </Box>
+          <TextField
+            size='small'
+            label={t('DeviceNetwork.CloudUrl')}
+            value={cloudUrl}
+            onChange={(event) => {
+              setCloudUrl(event.target.value);
+            }}
+            disabled={busyAction !== undefined}
+            slotProps={{ htmlInput: { 'data-testid': 'device-network-cloud-url' } }}
+          />
+          <TextField
+            size='small'
+            type='password'
+            label={t('DeviceNetwork.CloudAccessToken')}
+            value={cloudAccessToken}
+            onChange={(event) => {
+              setCloudAccessToken(event.target.value);
+            }}
+            disabled={busyAction !== undefined}
+            helperText={cloudConfigured ? t('DeviceNetwork.CloudTokenUnchanged') : undefined}
+            slotProps={{ htmlInput: { 'data-testid': 'device-network-cloud-token' } }}
+          />
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            {cloudConfigured && (
+              <Button
+                size='small'
+                color='warning'
+                onClick={() => {
+                  void runAction('cloud-clear', async () => {
+                    await window.service.deviceNetwork.clearCloudConfiguration();
+                    setCloudStatus({ configured: false, state: 'not-configured' });
+                    setCloudAccessToken('');
+                  });
+                }}
+                disabled={busyAction !== undefined}
+              >
+                {t('DeviceNetwork.CloudDisconnect')}
+              </Button>
+            )}
+            <Button
+              size='small'
+              variant='contained'
+              onClick={() => {
+                void runAction('cloud-configure', async () => {
+                  await window.service.deviceNetwork.configureCloud({ cloudUrl, accessToken: cloudAccessToken });
+                  setCloudAccessToken('');
+                });
+              }}
+              disabled={busyAction !== undefined || cloudUrl.trim().length === 0 || cloudAccessToken.trim().length === 0}
+            >
+              {cloudConfigured ? t('DeviceNetwork.CloudUpdate') : t('DeviceNetwork.CloudConnect')}
+            </Button>
+          </Box>
+        </Box>
+      </ListItem>
+      <Divider />
       <ListItem>
         <ListItemText
           primary={t('DeviceNetwork.LocalDevice')}
