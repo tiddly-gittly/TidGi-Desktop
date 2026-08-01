@@ -1,14 +1,18 @@
 import type { DeviceRelayReservationToken } from 'memeloop';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import type { IDatabaseService } from '@services/database/interface';
 
 import {
   classifyCloudConnectionError,
+  DeviceNetworkSettingsStore,
   hasValidDirectDeviceAddress,
   locallyPairedRecord,
   pairingInviteMultiaddrs,
   shouldRenewRelayReservation,
   validateCloudConfiguration,
 } from '../index';
+import type { DeviceNetworkPersistedSettings } from '../interface';
 
 function reservation(expiresAt: number): DeviceRelayReservationToken {
   return {
@@ -115,5 +119,74 @@ describe('DeviceNetwork Cloud configuration', () => {
   it('classifies account errors separately from offline transport failures', () => {
     expect(classifyCloudConnectionError(new Error('401 unauthorized'))).toBe('error');
     expect(classifyCloudConnectionError(new TypeError('fetch failed'))).toBe('offline');
+  });
+});
+
+describe('DeviceNetwork settings persistence', () => {
+  function createSettingsStore(initial?: DeviceNetworkPersistedSettings) {
+    let persisted = initial;
+    const immediatelyStoreSettingsToFile = vi.fn(async () => undefined);
+    const databaseService = {
+      getSetting: vi.fn(() => persisted),
+      setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings | undefined) => {
+        persisted = value;
+      }),
+      immediatelyStoreSettingsToFile,
+    } as unknown as IDatabaseService;
+    return {
+      immediatelyStoreSettingsToFile,
+      readPersisted: () => persisted,
+      store: new DeviceNetworkSettingsStore(databaseService),
+    };
+  }
+
+  it('serializes independent updates without losing fields', async () => {
+    const { readPersisted, store } = createSettingsStore();
+
+    const identityWrite = store.update(settings => {
+      settings.identityV1 = {
+        peerId: 'peer-1',
+        publicKeyMultibase: 'zPublicKey',
+        encryptedPrivateKey: 'encrypted',
+        deviceName: 'Desktop',
+        platform: 'desktop',
+        createdAt: 1,
+      };
+    });
+    const syncWrite = store.update(settings => {
+      settings.syncVersionVectorV2 = { 'peer-1': 7 };
+    });
+
+    await Promise.all([identityWrite, syncWrite]);
+
+    expect(readPersisted()).toMatchObject({
+      identityV1: { peerId: 'peer-1' },
+      syncVersionVectorV2: { 'peer-1': 7 },
+    });
+  });
+
+  it('flushes durable identity and Cloud changes on request', async () => {
+    const { immediatelyStoreSettingsToFile, store } = createSettingsStore();
+
+    await store.update(settings => {
+      settings.identityV1 = {
+        peerId: 'peer-1',
+        publicKeyMultibase: 'zPublicKey',
+        encryptedPrivateKey: 'encrypted',
+        deviceName: 'Desktop',
+        platform: 'desktop',
+        createdAt: 1,
+      };
+      settings.cloudConfigurationV1 = {
+        cloudUrl: 'https://cloud.example.test',
+        encryptedAccessToken: 'encrypted-token',
+      };
+    }, true);
+
+    expect(immediatelyStoreSettingsToFile).toHaveBeenCalledOnce();
+    await expect(store.read()).resolves.toMatchObject({
+      cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
+      identityV1: { peerId: 'peer-1' },
+    });
   });
 });
