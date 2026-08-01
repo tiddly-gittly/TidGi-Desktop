@@ -1,5 +1,4 @@
 import { app, safeStorage } from 'electron';
-import settings from 'electron-settings';
 import { inject, injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 
@@ -38,41 +37,29 @@ import {
 } from 'memeloop';
 
 import type { IAuthenticationService } from '@services/auth/interface';
+import type { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-import type { DeviceCloudConnectionStatus, DeviceNetworkRuntimeOptions, IDeviceNetworkService } from './interface';
+import type {
+  DeviceCloudConnectionStatus,
+  DeviceNetworkPersistedCloudConfiguration,
+  DeviceNetworkPersistedIdentity,
+  DeviceNetworkPersistedSettings,
+  DeviceNetworkRuntimeOptions,
+  IDeviceNetworkService,
+} from './interface';
 
-const DEVICE_IDENTITY_KEY = 'deviceNetwork.identity.v1';
-const TRUSTED_DEVICES_KEY = 'deviceNetwork.trustedDevices.v1';
-const SYNC_VERSION_VECTOR_KEY = 'deviceNetwork.syncVersionVector.v2';
-const CLOUD_CONFIGURATION_KEY = 'deviceNetwork.cloudConfiguration.v1';
 const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
 const RELAY_RENEWAL_WINDOW_MS = 2 * 60_000;
 const CLOUD_REQUEST_TIMEOUT_MS = 10_000;
 const CLOUD_RESPONSE_MAX_BYTES = 2 * 1024 * 1024;
-
-interface EncryptedIdentityRecord {
-  peerId: string;
-  publicKeyMultibase: string;
-  encryptedPrivateKey: string;
-  deviceName: string;
-  platform: 'desktop';
-  createdAt: number;
-}
-
-interface EncryptedCloudConfigurationRecord {
-  cloudUrl: string;
-  encryptedAccessToken: string;
-}
 
 interface DesktopCloudConfiguration {
   cloudUrl: string;
   accessToken: string;
   client: ElectronCloudClient;
 }
-
-type StoredTrustedDevices = unknown;
 
 function isTrustedDeviceRecord(value: unknown): value is TrustedDeviceRecord {
   const record = value as Record<string, unknown> | undefined;
@@ -87,29 +74,73 @@ function isTrustedDeviceRecord(value: unknown): value is TrustedDeviceRecord {
   );
 }
 
-class ElectronSettingsDeviceTrustStore implements DeviceTrustStore {
+function clonePersistedSettings(settings: DeviceNetworkPersistedSettings | undefined): DeviceNetworkPersistedSettings {
+  return {
+    ...settings,
+    cloudConfigurationV1: settings?.cloudConfigurationV1 && { ...settings.cloudConfigurationV1 },
+    identityV1: settings?.identityV1 && { ...settings.identityV1 },
+    syncVersionVectorV2: settings?.syncVersionVectorV2 && { ...settings.syncVersionVectorV2 },
+    trustedDevicesV1: settings?.trustedDevicesV1?.map(record => ({ ...record })),
+  };
+}
+
+/** Serializes changes to the shared settings snapshot so independent sync/trust/cloud writes cannot clobber each other. */
+export class DeviceNetworkSettingsStore {
+  private pending: Promise<void> = Promise.resolve();
+
+  constructor(private readonly databaseService: IDatabaseService) {}
+
+  public async read(): Promise<DeviceNetworkPersistedSettings> {
+    await this.pending;
+    return clonePersistedSettings(this.databaseService.getSetting('deviceNetwork'));
+  }
+
+  public async update(
+    mutate: (settings: DeviceNetworkPersistedSettings) => void,
+    flushImmediately = false,
+  ): Promise<void> {
+    const operation = this.pending.then(async () => {
+      const next = clonePersistedSettings(this.databaseService.getSetting('deviceNetwork'));
+      mutate(next);
+      this.databaseService.setSetting('deviceNetwork', next);
+      if (flushImmediately) await this.databaseService.immediatelyStoreSettingsToFile();
+    });
+    this.pending = operation.catch(() => undefined);
+    await operation;
+  }
+}
+
+class DatabaseSettingsDeviceTrustStore implements DeviceTrustStore {
+  constructor(private readonly settingsStore: DeviceNetworkSettingsStore) {}
+
   public async loadTrustedDevices(): Promise<TrustedDeviceRecord[]> {
-    const stored = settings.getSync(TRUSTED_DEVICES_KEY) as StoredTrustedDevices;
+    const stored: unknown = (await this.settingsStore.read()).trustedDevicesV1;
     return Array.isArray(stored) ? stored.filter(isTrustedDeviceRecord) : [];
   }
 
   public async saveTrustedDevice(record: TrustedDeviceRecord): Promise<void> {
-    const records = await this.loadTrustedDevices();
-    const next = records.filter((current) => current.peerId !== record.peerId);
-    next.push(record);
-    settings.setSync(TRUSTED_DEVICES_KEY, next as unknown as Parameters<typeof settings.setSync>[1]);
+    await this.settingsStore.update(settings => {
+      const records = (settings.trustedDevicesV1 ?? []).filter(isTrustedDeviceRecord);
+      const next = records.filter((current) => current.peerId !== record.peerId);
+      next.push(record);
+      settings.trustedDevicesV1 = next;
+    });
   }
 
   public async removeTrustedDevice(peerId: string): Promise<void> {
-    const records = await this.loadTrustedDevices();
-    const next = records.filter((record) => record.peerId !== peerId);
-    settings.setSync(TRUSTED_DEVICES_KEY, next as unknown as Parameters<typeof settings.setSync>[1]);
+    await this.settingsStore.update(settings => {
+      settings.trustedDevicesV1 = (settings.trustedDevicesV1 ?? [])
+        .filter(isTrustedDeviceRecord)
+        .filter(record => record.peerId !== peerId);
+    });
   }
 }
 
-class ElectronSettingsDeviceSyncStateStore implements DeviceSyncStateStore {
+class DatabaseSettingsDeviceSyncStateStore implements DeviceSyncStateStore {
+  constructor(private readonly settingsStore: DeviceNetworkSettingsStore) {}
+
   public async loadVersionVector(): Promise<VersionVector> {
-    const stored = settings.getSync(SYNC_VERSION_VECTOR_KEY);
+    const stored = (await this.settingsStore.read()).syncVersionVectorV2;
     if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
     const versionVector: VersionVector = {};
     for (const [originNodeId, clock] of Object.entries(stored as Record<string, unknown>)) {
@@ -121,13 +152,15 @@ class ElectronSettingsDeviceSyncStateStore implements DeviceSyncStateStore {
   }
 
   public async saveVersionVector(versionVector: VersionVector): Promise<void> {
-    const current = await this.loadVersionVector();
-    for (const [originNodeId, clock] of Object.entries(versionVector)) {
-      if (originNodeId.length > 0 && Number.isSafeInteger(clock) && clock >= 0) {
-        current[originNodeId] = Math.max(current[originNodeId] ?? 0, clock);
+    await this.settingsStore.update(settings => {
+      const current = settings.syncVersionVectorV2 ?? {};
+      for (const [originNodeId, clock] of Object.entries(versionVector)) {
+        if (originNodeId.length > 0 && Number.isSafeInteger(clock) && clock >= 0) {
+          current[originNodeId] = Math.max(current[originNodeId] ?? 0, clock);
+        }
       }
-    }
-    settings.setSync(SYNC_VERSION_VECTOR_KEY, current as unknown as Parameters<typeof settings.setSync>[1]);
+      settings.syncVersionVectorV2 = current;
+    });
   }
 }
 
@@ -273,8 +306,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private core?: Libp2pDeviceNetworkService;
   private identity?: RawSeedDeviceIdentity;
   private started = false;
-  private readonly trustStore = new ElectronSettingsDeviceTrustStore();
-  private readonly syncStateStore = new ElectronSettingsDeviceSyncStateStore();
+  private readonly settingsStore: DeviceNetworkSettingsStore;
+  private readonly trustStore: DatabaseSettingsDeviceTrustStore;
+  private readonly syncStateStore: DatabaseSettingsDeviceSyncStateStore;
   private cloudConfig?: DesktopCloudConfiguration;
   private cloudClient?: ElectronCloudClient;
   private cloudCoordinator?: DeviceCloudConnectionCoordinator<DesktopCloudConfiguration>;
@@ -292,7 +326,12 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
-  ) {}
+    @inject(serviceIdentifier.Database) databaseService: IDatabaseService,
+  ) {
+    this.settingsStore = new DeviceNetworkSettingsStore(databaseService);
+    this.trustStore = new DatabaseSettingsDeviceTrustStore(this.settingsStore);
+    this.syncStateStore = new DatabaseSettingsDeviceSyncStateStore(this.settingsStore);
+  }
 
   public configureRuntime(options: DeviceNetworkRuntimeOptions): void {
     this.runtimeOptions = options;
@@ -305,7 +344,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
   public async start(): Promise<void> {
     if (this.started) return;
-    this.loadPersistedCloudConfiguration();
+    await this.loadPersistedCloudConfiguration();
     await this.ensureIdentity();
 
     this.mutableAuthorizer = new MutableDeviceAuthorizer(this.createLocalPairingAuthorizer());
@@ -391,11 +430,13 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       throw error;
     }
     this.assertCloudConfigurationGeneration(generation, signal);
-    const record: EncryptedCloudConfigurationRecord = {
+    const record: DeviceNetworkPersistedCloudConfiguration = {
       cloudUrl: normalized.cloudUrl,
       encryptedAccessToken: safeStorage.encryptString(normalized.accessToken).toString('base64'),
     };
-    settings.setSync(CLOUD_CONFIGURATION_KEY, record as unknown as Parameters<typeof settings.setSync>[1]);
+    await this.settingsStore.update(settings => {
+      settings.cloudConfigurationV1 = record;
+    }, true);
     this.assertCloudConfigurationGeneration(generation, signal);
     await this.applyCloudConfiguration({ ...normalized, client });
   }
@@ -404,7 +445,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     this.beginCloudConfigurationChange();
     const shouldResumeCoordinator = this.started && this.cloudCoordinator !== undefined;
     if (shouldResumeCoordinator) await this.cloudCoordinator!.stop();
-    settings.unsetSync(CLOUD_CONFIGURATION_KEY);
+    await this.settingsStore.update(settings => {
+      delete settings.cloudConfigurationV1;
+    }, true);
     this.cloudConfig = undefined;
     this.cloudClient = undefined;
     this.cloudGrantCache.clear();
@@ -416,7 +459,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   }
 
   public async getCloudConnectionStatus(): Promise<DeviceCloudConnectionStatus> {
-    this.loadPersistedCloudConfiguration();
+    await this.loadPersistedCloudConfiguration();
     return { ...this.cloudStatus };
   }
 
@@ -706,7 +749,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
   private async ensureIdentity(): Promise<void> {
     if (this.identity) return;
-    const stored = settings.getSync(DEVICE_IDENTITY_KEY) as unknown as EncryptedIdentityRecord | undefined;
+    const stored = (await this.settingsStore.read()).identityV1;
     if (stored?.peerId && stored?.publicKeyMultibase && stored?.encryptedPrivateKey) {
       const identity = this.tryLoadStoredIdentity(stored);
       if (identity) {
@@ -719,9 +762,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     this.identity = identity;
   }
 
-  private loadPersistedCloudConfiguration(): void {
+  private async loadPersistedCloudConfiguration(): Promise<void> {
     if (this.cloudClient || this.cloudConfig) return;
-    const stored = settings.getSync(CLOUD_CONFIGURATION_KEY) as unknown as EncryptedCloudConfigurationRecord | undefined;
+    const stored = (await this.settingsStore.read()).cloudConfigurationV1;
     if (
       !stored ||
       typeof stored.cloudUrl !== 'string' ||
@@ -787,7 +830,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     });
   }
 
-  private tryLoadStoredIdentity(stored: EncryptedIdentityRecord): RawSeedDeviceIdentity | undefined {
+  private tryLoadStoredIdentity(stored: DeviceNetworkPersistedIdentity): RawSeedDeviceIdentity | undefined {
     if (!safeStorage.isEncryptionAvailable()) {
       logger.warn('DeviceNetworkService safeStorage encryption unavailable; using an ephemeral device identity for this session');
       return undefined;
@@ -820,7 +863,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       return;
     }
     const encrypted = safeStorage.encryptString(identity.privateKeyRawSeedBase64Url);
-    const record: EncryptedIdentityRecord = {
+    const record: DeviceNetworkPersistedIdentity = {
       peerId: identity.peerId,
       publicKeyMultibase: identity.publicKeyMultibase,
       encryptedPrivateKey: encrypted.toString('base64'),
@@ -828,7 +871,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       platform: 'desktop',
       createdAt: identity.createdAt,
     };
-    settings.setSync(DEVICE_IDENTITY_KEY, record as unknown as Parameters<typeof settings.setSync>[1]);
+    await this.settingsStore.update(settings => {
+      settings.identityV1 = record;
+    }, true);
   }
 
   private async buildCapabilities(): Promise<DeviceCapabilities> {

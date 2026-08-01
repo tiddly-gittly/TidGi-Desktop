@@ -1,5 +1,6 @@
 import { DatabaseChannel } from '@/constants/channels';
 import type { IUserInfos } from '@services/auth/interface';
+import type { DeviceNetworkPersistedSettings } from '@services/deviceNetwork/interface';
 import type { AIGlobalSettings } from '@services/externalAPI/interface';
 import type { IPreferences } from '@services/preferences/interface';
 import type { ISyncableWikiConfig, IWorkspace, IWorkspaceGroup } from '@services/workspaces/interface';
@@ -24,6 +25,7 @@ export interface ISettingFile {
   workspaces: Record<string, IWorkspace>;
   workspaceGroups?: Record<string, IWorkspaceGroup>;
   aiSettings?: AIGlobalSettings;
+  deviceNetwork?: DeviceNetworkPersistedSettings;
 }
 
 /**

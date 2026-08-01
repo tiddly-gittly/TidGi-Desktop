@@ -11,8 +11,36 @@ import type {
   LocalDeviceIdentity,
   PairingSession,
   SyncResult,
+  TrustedDeviceRecord,
+  VersionVector,
 } from 'memeloop';
 import type { BehaviorSubject } from 'rxjs';
+
+export interface DeviceNetworkPersistedIdentity {
+  peerId: string;
+  publicKeyMultibase: string;
+  encryptedPrivateKey: string;
+  deviceName: string;
+  platform: 'desktop';
+  createdAt: number;
+}
+
+export interface DeviceNetworkPersistedCloudConfiguration {
+  cloudUrl: string;
+  encryptedAccessToken: string;
+}
+
+/**
+ * Device-network state shares the application's authoritative settings snapshot.
+ * Keeping it under one top-level key prevents electron-settings writes from being
+ * overwritten when DatabaseService flushes its in-memory settings object.
+ */
+export interface DeviceNetworkPersistedSettings {
+  cloudConfigurationV1?: DeviceNetworkPersistedCloudConfiguration;
+  identityV1?: DeviceNetworkPersistedIdentity;
+  syncVersionVectorV2?: VersionVector;
+  trustedDevicesV1?: TrustedDeviceRecord[];
+}
 
 export interface DeviceNetworkRuntimeOptions {
   buildCapabilities?: () => Promise<DeviceCapabilities>;
