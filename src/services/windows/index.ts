@@ -278,8 +278,10 @@ export class Window implements IWindowService {
       webPreferences: {
         devTools: true, // Always enable devTools, even in test mode for debugging
         nodeIntegration: false,
-        webSecurity: false,
-        allowRunningInsecureContent: true,
+        // BrowserWindows host trusted application UI. User wiki content is isolated in
+        // WebContentsViews, which retain their separate compatibility policy.
+        webSecurity: true,
+        allowRunningInsecureContent: false,
         contextIsolation: true,
         // Keep callbacks active only for windows that host wiki BrowserViews.
         ...([WindowNames.main, WindowNames.secondary, WindowNames.tidgiMiniWindow].includes(windowName)

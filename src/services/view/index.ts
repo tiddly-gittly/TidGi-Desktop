@@ -184,6 +184,8 @@ export class View implements IViewService {
       spellcheck,
       nodeIntegration: false,
       contextIsolation: true,
+      // Wiki plugins may call local or third-party services without CORS headers.
+      // Keep this exception scoped to wiki views until those requests use an explicit proxy or opt-in permission.
       webSecurity: false,
       allowRunningInsecureContent: true,
       // Intentional: this service only creates wiki WebContentsView instances.

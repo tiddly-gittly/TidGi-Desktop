@@ -13,6 +13,7 @@ const LOG_SIZE = '20M';
 const MAX_MESSAGE_BYTES = 512 * 1024;
 export const MAX_LOG_RECORD_BYTES = 1024 * 1024;
 const streams = new Map<string, RotatingFileStream>();
+let acceptingWrites = true;
 
 function truncateUTF8(value: string, maximumBytes: number): string {
   const buffer = Buffer.from(value);
@@ -37,7 +38,9 @@ function streamKey(context: LogContext): string {
   return routeSegments(context).join('/');
 }
 
-function getStream(context: LogContext): RotatingFileStream {
+function getStream(context: LogContext): RotatingFileStream | undefined {
+  if (!acceptingWrites) return undefined;
+
   const key = streamKey(context);
   const existing = streams.get(key);
   if (existing !== undefined) return existing;
@@ -146,11 +149,27 @@ export default class StructuredFileTransport extends Transport {
       };
       serialized = JSON.stringify(record);
     }
-    getStream(context).write(`${serialized}\n`, callback);
+    const stream = getStream(context);
+    if (stream === undefined) {
+      callback();
+      return;
+    }
+    stream.write(`${serialized}\n`, callback);
   }
 }
 
 export async function closeStructuredLogStreams(): Promise<void> {
-  await Promise.all([...streams.values()].map(stream => new Promise<void>(resolve => stream.end(resolve))));
+  acceptingWrites = false;
+  const streamsToClose = [...streams.values()];
   streams.clear();
+  await Promise.all(streamsToClose.map(stream =>
+    new Promise<void>(resolve => {
+      const settle = (): void => {
+        stream.removeListener('error', settle);
+        resolve();
+      };
+      stream.once('error', settle);
+      stream.end(settle);
+    })
+  ));
 }
