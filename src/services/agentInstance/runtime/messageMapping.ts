@@ -6,6 +6,7 @@ export function toConversationMeta(agent: AgentInstance, _definition?: AgentDefi
   const messages = agent.messages ?? [];
   const last = messages[messages.length - 1];
   const ts = last?.timestamp ?? Date.now();
+  const originClock = messages.reduce((max, message) => Math.max(max, message.lamportClock), 1);
   return {
     conversationId: agent.id,
     title: agent.name ?? agent.agentDefId,
@@ -13,6 +14,7 @@ export function toConversationMeta(agent: AgentInstance, _definition?: AgentDefi
     lastMessageTimestamp: ts,
     messageCount: messages.length,
     originNodeId: 'tidgi-desktop',
+    originClock,
     definitionId: agent.agentDefId,
     instanceDelta: agent.agentFrameworkConfig ? { agentFrameworkConfig: agent.agentFrameworkConfig } : undefined,
     isUserInitiated: true,

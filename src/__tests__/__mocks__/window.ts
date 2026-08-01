@@ -85,6 +85,7 @@ Object.defineProperty(window, 'observables', {
       }),
     },
     deviceNetwork: {
+      cloudStatus$: serviceInstances.deviceNetwork.cloudStatus$!.asObservable(),
       devices$: serviceInstances.deviceNetwork.devices$!.asObservable(),
       pairingSessions$: serviceInstances.deviceNetwork.pairingSessions$!.asObservable(),
     },

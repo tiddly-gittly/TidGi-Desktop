@@ -54,6 +54,9 @@ const config: ForgeConfig = {
       icon: 'build-resources/icon.icns',
       electronLanguages: supportedLanguageCodes,
     },
+    extendInfo: {
+      NSCameraUsageDescription: 'TidGi uses the camera only when you scan a signed MemeLoop device pairing QR code.',
+    },
     appBundleId: 'com.tidgi',
   },
   hooks: {

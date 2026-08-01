@@ -4,6 +4,7 @@ import type {
   CloudDeviceRecord,
   Device,
   DeviceCapabilities,
+  DeviceCloudConnectionSnapshot,
   DeviceNetworkService as CoreDeviceNetworkService,
   DeviceRpcHandler,
   IAgentStorage,
@@ -22,18 +23,24 @@ export interface DeviceNetworkRuntimeOptions {
 export interface DeviceCloudConnectionStatus {
   configured: boolean;
   cloudUrl?: string;
+  components?: DeviceCloudConnectionSnapshot['components'];
   error?: string;
+  generation?: number;
   lastConnectedAt?: number;
+  nextRetryAt?: number;
   relayExpiresAt?: number;
-  state: 'not-configured' | 'idle' | 'connecting' | 'online' | 'error';
+  state: DeviceCloudConnectionSnapshot['status'];
 }
 
 export interface IDeviceNetworkService extends CoreDeviceNetworkService {
   getLocalIdentity(): Promise<LocalDeviceIdentity>;
   getCloudConnectionStatus(): Promise<DeviceCloudConnectionStatus>;
+  createPairingInvite(): Promise<string>;
+  requestPairingFromInvite(serialized: string): Promise<PairingSession>;
   clearCloudConfiguration(): Promise<void>;
   configureCloud(config: { cloudUrl: string; accessToken: string }): Promise<void>;
   configureRuntime(options: DeviceNetworkRuntimeOptions): void;
+  cloudStatus$: BehaviorSubject<DeviceCloudConnectionStatus>;
   devices$: BehaviorSubject<Device[]>;
   pairingSessions$: BehaviorSubject<PairingSession[]>;
 }
@@ -46,6 +53,8 @@ export const DeviceNetworkServiceIPCDescriptor = {
     getLocalDevice: ProxyPropertyType.Function,
     getLocalIdentity: ProxyPropertyType.Function,
     getCloudConnectionStatus: ProxyPropertyType.Function,
+    createPairingInvite: ProxyPropertyType.Function,
+    requestPairingFromInvite: ProxyPropertyType.Function,
     clearCloudConfiguration: ProxyPropertyType.Function,
     listDevices: ProxyPropertyType.Function,
     listPairingSessions: ProxyPropertyType.Function,
@@ -57,6 +66,7 @@ export const DeviceNetworkServiceIPCDescriptor = {
     syncCloudDevices: ProxyPropertyType.Function,
     sendRpc: ProxyPropertyType.Function,
     syncWithDevice: ProxyPropertyType.Function,
+    cloudStatus$: ProxyPropertyType.Value$,
     devices$: ProxyPropertyType.Value$,
     pairingSessions$: ProxyPropertyType.Value$,
   },

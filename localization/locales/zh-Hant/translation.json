@@ -169,6 +169,8 @@
     "CloudTokenUnchanged": "若要更新連線，請輸入新的存取權杖。",
     "CloudUpdate": "更新連線",
     "CloudUrl": "雲端網址",
+    "CopyInvite": "複製邀請",
+    "CreateInvite": "顯示配對 QR Code",
     "Devices": "設備",
     "DevicesDescription": "附近設備可本地配對；雲端同帳號設備會在同步設備目錄後顯示。",
     "Direction": {
@@ -176,6 +178,10 @@
       "outbound": "已發起請求"
     },
     "LocalDevice": "本機設備",
+    "InviteDescription": "請在另一台裝置上掃描這個由本機身分簽署的短期 QR Code。邀請將在五分鐘後失效。",
+    "InvitePayload": "簽署邀請內容",
+    "InviteQrAlt": "MemeLoop 裝置簽署配對 QR Code",
+    "InviteTitle": "配對另一台裝置",
     "NoDevices": "還沒有附近設備或已信任設備。",
     "NoPendingPairing": "暫無等待確認的配對請求。",
     "Pair": "配對",
@@ -188,10 +194,17 @@
     },
     "Refresh": "刷新設備",
     "RejectPairing": "拒絕",
+    "RequestPairing": "發起配對",
+    "RestartCamera": "重新啟動相機",
     "RemoveTrustedDevice": "移除信任設備",
     "RemoveTrustedDeviceConfirm": "移除對 {{deviceName}} 的本地信任？",
     "Sync": "同步",
     "SyncCloudDevices": "同步雲端設備",
+    "ScanImage": "掃描圖片",
+    "ScanInvite": "掃描配對 QR Code",
+    "ScanInviteDescription": "使用相機掃描簽署邀請、選擇 QR Code 圖片，或在下方貼上邀請內容。",
+    "ScanInviteTitle": "掃描裝置邀請",
+    "StartCamera": "啟動相機",
     "TrustMode": {
       "cloud-account": "雲端同帳號",
       "local-pairing": "本地配對"

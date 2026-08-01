@@ -6,6 +6,7 @@ import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
+import type { DeviceCloudConnectionStatus } from '@services/deviceNetwork/interface';
 import { ExternalAPIService } from '@services/externalAPI';
 import type { IGitService, IGitStateChange, IGitSyncProgressEvent } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
@@ -124,6 +125,8 @@ export const serviceInstances: {
     }),
     listDevices: vi.fn().mockResolvedValue([]),
     listPairingSessions: vi.fn().mockResolvedValue([]),
+    createPairingInvite: vi.fn().mockResolvedValue('{}'),
+    requestPairingFromInvite: vi.fn().mockResolvedValue(undefined),
     requestLocalPairing: vi.fn().mockResolvedValue(undefined),
     acceptPairing: vi.fn().mockResolvedValue(undefined),
     rejectPairing: vi.fn().mockResolvedValue(undefined),
@@ -134,6 +137,7 @@ export const serviceInstances: {
     syncCloudDevices: vi.fn().mockResolvedValue([]),
     sendRpc: vi.fn().mockResolvedValue(undefined),
     syncWithDevice: vi.fn().mockResolvedValue(undefined),
+    cloudStatus$: new BehaviorSubject<DeviceCloudConnectionStatus>({ configured: false, state: 'not-configured' }),
     devices$: new BehaviorSubject<Device[]>([]),
     pairingSessions$: new BehaviorSubject<PairingSession[]>([]),
   },
