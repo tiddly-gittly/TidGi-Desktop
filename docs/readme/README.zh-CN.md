@@ -95,23 +95,31 @@ xattr -dr com.apple.quarantine "tidgi.app"
   <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
 </a>
 
-> Win 和 Mac 的普通用户直接下载 App
+Packaging status 是第三方 [Repology](https://repology.org/) 聚合信息，只展示各个独立软件仓库收录的版本，不负责发布或自动更新这些软件包。
+
+> Windows、macOS、Debian/Ubuntu 和 RPM 系 Linux 用户使用官方安装包
 
 |                                                                       [最新版下载按钮](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                       |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
-> For arch user
+官方安装包由本仓库构建；更新后的发布流程会为之后的正式版提供各平台 SHA-256 校验文件。
+
+> Arch Linux 社区软件包
 
 ```bash
-yay tidgi
+yay -S tidgi-desktop-bin
 ```
 
-> Mac 命令行用户
+AUR 软件包由本仓库之外的维护者管理。它的版本可能会跟随 GitHub Release，但更新时间和对软件包的修改均由 AUR 页面列出的维护者决定。
+
+> Homebrew Cask
 
 ```bash
-brew install TidGi # Not tested
+brew install --cask tidgi
 ```
+
+Homebrew 的 livecheck/BrewTestBot 会自动跟踪稳定版 GitHub Release。目前 TidGi cask 因已有 macOS 压缩包无法通过 Gatekeeper 检查而被标记为弃用，并计划于 2026 年 9 月 1 日禁用；在签名并公证的新版本发布前，Homebrew 安装会继续处于弃用状态。
 
 ## 移动端应用
 

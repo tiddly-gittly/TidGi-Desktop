@@ -110,6 +110,7 @@ jobs:
           pnpm exec electron-rebuild -f -w better-sqlite3,nsfw --arch=${{ matrix.arch }}
       - name: Build plugins
         run: pnpm run build:plugin
+
       - name: Make ${{ matrix.platform }} (${{ matrix.arch }})
         run: |
           pnpm exec electron-forge make --platform=${{ matrix.platform == 'mac' && 'darwin' || matrix.platform == 'win' && 'win32' || 'linux' }} --arch=${{ matrix.arch }}
@@ -117,9 +118,6 @@ jobs:
           NODE_ENV: production
           # Increase Node.js heap size to prevent OOM during build
           NODE_OPTIONS: --max-old-space-size=8192
-          # macOS specific environment variables
-          APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
-          APPLE_ID_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_ID_PASSWORD || '' }}
           # Windows specific environment variables
           CSC_LINK: ${{ matrix.platform == 'win' && secrets.WIN_CERT || '' }}
           CSC_KEY_PASSWORD: ${{ matrix.platform == 'win' && secrets.WIN_CERT_PASS || '' }}
@@ -146,6 +144,47 @@ jobs:
           # Cleanup
           rm -rf temp_extract
           echo "Repackaged $ZIP_FILE with ditto to preserve symlinks"
+
+      - name: Generate and validate release checksums
+        run: pnpm exec tsx scripts/generateReleaseChecksums.ts out/make ${{ matrix.platform }} ${{ matrix.arch }} out/make/SHA256SUMS-${{ matrix.platform }}-${{ matrix.arch }}.txt
+
+      - name: Prepare Linux Steam depot
+        if: matrix.platform == 'linux' && matrix.arch == 'x64'
+        run: |
+          PACKAGE_DIRECTORY=$(find out -mindepth 1 -maxdepth 1 -type d -name '*-linux-x64' -print -quit)
+          if [ -z "$PACKAGE_DIRECTORY" ]; then
+            echo "Electron Forge Linux package directory was not found" >&2
+            exit 1
+          fi
+          tar -czf out/steam-depot-linux-x64.tar.gz -C "$PACKAGE_DIRECTORY" .
+
+      - name: Prepare Windows Steam depot
+        if: matrix.platform == 'win' && matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $packageDirectory = Get-ChildItem out -Directory | Where-Object Name -Like '*-win32-x64' | Select-Object -First 1
+          if ($null -eq $packageDirectory) {
+            throw "Electron Forge Windows package directory was not found"
+          }
+          Compress-Archive -Path "$($packageDirectory.FullName)\*" -DestinationPath out/steam-depot-windows-x64.zip
+
+      - name: Upload Linux Steam depot
+        if: matrix.platform == 'linux' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: steam-depot-linux
+          path: out/steam-depot-linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows Steam depot
+        if: matrix.platform == 'win' && matrix.arch == 'x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: steam-depot-windows
+          path: out/steam-depot-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
 
       # Upload analyzer reports and packaged apps as workflow artifacts (only linux x64)
       - name: Upload analyzer reports
@@ -176,7 +215,8 @@ jobs:
           files: |
             ${{ matrix.platform == 'win' && 'out/make/**/*.exe
             out/make/**/*.msix
-            out/make/**/*.appx' || 'out/make/**/*' }}
+            out/make/**/*.appx
+            out/make/SHA256SUMS-*.txt' || 'out/make/**/*' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
