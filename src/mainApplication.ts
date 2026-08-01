@@ -62,7 +62,7 @@ if (process.env.DEBUG_MAIN === 'true') {
 
 // fix (node:9024) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 destroyed listeners added to [WebContents]. Use emitter.setMaxListeners() to increase limit (node:9024) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 devtools-reload-page listeners added to [WebContents]. Use emitter.setMaxListeners() to increase limit
 EventEmitter.defaultMaxListeners = 150;
-app.commandLine.appendSwitch('--unsafely-disable-devtools-self-xss-warnings');
+app.commandLine.appendSwitch('unsafely-disable-devtools-self-xss-warnings');
 // Development and test renderers use HTTP. Keep their CSP bypass out of production.
 protocol.registerSchemesAsPrivileged([
   ...(isDevelopmentOrTest
