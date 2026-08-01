@@ -163,6 +163,15 @@
   },
   "DeviceNetwork": {
     "AcceptPairing": "接受",
+    "CloudAccessToken": "云端访问令牌",
+    "CloudConfigured": "已连接到 {{cloudUrl}}，保存的令牌由操作系统加密保护。",
+    "CloudConnect": "连接",
+    "CloudConnection": "MemeLoop 云端",
+    "CloudDisconnect": "断开连接",
+    "CloudNotConfigured": "配置 MemeLoop 云端后，可发现同账号设备并维持私有中继连接。",
+    "CloudTokenUnchanged": "若要更新连接，请输入新的访问令牌。",
+    "CloudUpdate": "更新连接",
+    "CloudUrl": "云端地址",
     "Devices": "设备",
     "DevicesDescription": "附近设备可本地配对；云端同账号设备会在同步设备目录后显示。",
     "Direction": {

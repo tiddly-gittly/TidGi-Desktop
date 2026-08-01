@@ -151,6 +151,15 @@
   },
   "DeviceNetwork": {
     "AcceptPairing": "接受",
+    "CloudAccessToken": "雲端存取權杖",
+    "CloudConfigured": "已連線到 {{cloudUrl}}，儲存的權杖由作業系統加密保護。",
+    "CloudConnect": "連線",
+    "CloudConnection": "MemeLoop 雲端",
+    "CloudDisconnect": "中斷連線",
+    "CloudNotConfigured": "設定 MemeLoop 雲端後，可探索同帳號裝置並維持私有中繼連線。",
+    "CloudTokenUnchanged": "若要更新連線，請輸入新的存取權杖。",
+    "CloudUpdate": "更新連線",
+    "CloudUrl": "雲端網址",
     "Devices": "設備",
     "DevicesDescription": "附近設備可本地配對；雲端同帳號設備會在同步設備目錄後顯示。",
     "Direction": {
