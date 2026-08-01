@@ -1,16 +1,20 @@
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LinkIcon from '@mui/icons-material/Link';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SyncIcon from '@mui/icons-material/Sync';
 import { Alert, Box, Button, Chip, Divider, IconButton, TextField, Tooltip, Typography } from '@mui/material';
+import { BrowserQRCodeSvgWriter } from '@zxing/browser';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import type { Device, DeviceCloudConnectionStatus, PairingSession } from '@services/deviceNetwork/interface';
 import useObservable from 'beautiful-react-hooks/useObservable';
+import { DevicePairingInviteDialog, DevicePairingScannerDialog } from './DevicePairingDialogs';
 
 function shortPeerId(peerId: string): string {
   if (peerId.length <= 18) return peerId;
@@ -36,6 +40,10 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
   const [cloudUrl, setCloudUrl] = useState('');
   const [cloudAccessToken, setCloudAccessToken] = useState('');
   const [cloudStatus, setCloudStatus] = useState<DeviceCloudConnectionStatus>({ configured: false, state: 'not-configured' });
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [invitePayload, setInvitePayload] = useState<string>();
+  const [inviteQrDataUrl, setInviteQrDataUrl] = useState<string>();
+  const [scannerDialogOpen, setScannerDialogOpen] = useState(false);
   const cloudConfigured = cloudStatus.configured;
 
   const pendingSessions = useMemo(() => pairingSessions.filter(session => session.status === 'pending'), [pairingSessions]);
@@ -58,6 +66,7 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
 
   useObservable(window.observables.deviceNetwork.devices$, setDevices);
   useObservable(window.observables.deviceNetwork.pairingSessions$, setPairingSessions);
+  useObservable(window.observables.deviceNetwork.cloudStatus$, setCloudStatus);
 
   useEffect(() => {
     void refreshSnapshot().catch((refreshError: unknown) => {
@@ -169,6 +178,35 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
               disabled={busyAction !== undefined}
             >
               <RefreshIcon fontSize='small' />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t('DeviceNetwork.CreateInvite')}>
+            <IconButton
+              size='small'
+              onClick={() => {
+                void runAction('create-invite', async () => {
+                  const payload = await window.service.deviceNetwork.createPairingInvite();
+                  const qrCode = new BrowserQRCodeSvgWriter().write(payload, 320, 320);
+                  const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrCode.outerHTML)}`;
+                  setInvitePayload(payload);
+                  setInviteQrDataUrl(dataUrl);
+                  setInviteDialogOpen(true);
+                });
+              }}
+              disabled={busyAction !== undefined}
+            >
+              <QrCode2Icon fontSize='small' />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t('DeviceNetwork.ScanInvite')}>
+            <IconButton
+              size='small'
+              onClick={() => {
+                setScannerDialogOpen(true);
+              }}
+              disabled={busyAction !== undefined}
+            >
+              <CameraAltIcon fontSize='small' />
             </IconButton>
           </Tooltip>
           <Tooltip title={t('DeviceNetwork.SyncCloudDevices')}>
@@ -324,6 +362,27 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
             </ListItem>
           );
         })}
+      <DevicePairingInviteDialog
+        open={inviteDialogOpen}
+        payload={invitePayload}
+        qrDataUrl={inviteQrDataUrl}
+        onClose={() => {
+          setInviteDialogOpen(false);
+        }}
+      />
+      <DevicePairingScannerDialog
+        busy={busyAction !== undefined}
+        open={scannerDialogOpen}
+        onClose={() => {
+          setScannerDialogOpen(false);
+        }}
+        onSubmit={async payload => {
+          await runAction('scan-invite', async () => {
+            await window.service.deviceNetwork.requestPairingFromInvite(payload);
+            setScannerDialogOpen(false);
+          });
+        }}
+      />
     </>
   );
 }

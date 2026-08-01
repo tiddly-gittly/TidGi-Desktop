@@ -169,6 +169,8 @@
     "CloudTokenUnchanged": "Saisissez un nouveau jeton d’accès pour mettre à jour la connexion.",
     "CloudUpdate": "Mettre à jour la connexion",
     "CloudUrl": "URL du cloud",
+    "CopyInvite": "Copier l’invitation",
+    "CreateInvite": "Afficher le code QR de jumelage",
     "Devices": "Appareils",
     "DevicesDescription": "Les appareils à proximité peuvent être jumelés localement. Les appareils du compte cloud apparaissent après la synchronisation de l’annuaire.",
     "Direction": {
@@ -176,6 +178,10 @@
       "outbound": "Demande sortante"
     },
     "LocalDevice": "Cet appareil",
+    "InviteDescription": "Scannez ce code QR temporaire signé par l’identité sur l’autre appareil. L’invitation expire après cinq minutes.",
+    "InvitePayload": "Contenu de l’invitation signée",
+    "InviteQrAlt": "Code QR signé pour le jumelage d’un appareil MemeLoop",
+    "InviteTitle": "Jumeler un autre appareil",
     "NoDevices": "Aucun appareil à proximité ou approuvé pour le moment.",
     "NoPendingPairing": "Aucune demande de jumelage en attente de confirmation.",
     "Pair": "Jumeler",
@@ -188,10 +194,17 @@
     },
     "Refresh": "Actualiser les appareils",
     "RejectPairing": "Refuser",
+    "RequestPairing": "Demander le jumelage",
+    "RestartCamera": "Redémarrer la caméra",
     "RemoveTrustedDevice": "Retirer l’appareil approuvé",
     "RemoveTrustedDeviceConfirm": "Retirer l’approbation locale de {{deviceName}} ?",
     "Sync": "Synchroniser",
     "SyncCloudDevices": "Synchroniser les appareils du cloud",
+    "ScanImage": "Scanner une image",
+    "ScanInvite": "Scanner le code QR de jumelage",
+    "ScanInviteDescription": "Scannez une invitation signée avec la caméra, sélectionnez une image QR ou collez son contenu ci-dessous.",
+    "ScanInviteTitle": "Scanner une invitation d’appareil",
+    "StartCamera": "Démarrer la caméra",
     "TrustMode": {
       "cloud-account": "Compte cloud",
       "local-pairing": "Jumelage local"

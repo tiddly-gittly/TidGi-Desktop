@@ -184,6 +184,8 @@
     "CloudTokenUnchanged": "Enter a new access token to update the connection.",
     "CloudUpdate": "Update connection",
     "CloudUrl": "Cloud URL",
+    "CopyInvite": "Copy invitation",
+    "CreateInvite": "Show pairing QR code",
     "Devices": "Devices",
     "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
     "Direction": {
@@ -191,6 +193,10 @@
       "outbound": "Outgoing request"
     },
     "LocalDevice": "This device",
+    "InviteDescription": "Scan this short-lived, identity-signed QR code on the other device. The invitation expires after five minutes.",
+    "InvitePayload": "Signed invitation payload",
+    "InviteQrAlt": "Signed MemeLoop device pairing QR code",
+    "InviteTitle": "Pair another device",
     "NoDevices": "No nearby or trusted devices yet.",
     "NoPendingPairing": "No pairing requests waiting for confirmation.",
     "Pair": "Pair",
@@ -203,10 +209,17 @@
     },
     "Refresh": "Refresh devices",
     "RejectPairing": "Reject",
+    "RequestPairing": "Request pairing",
+    "RestartCamera": "Restart camera",
     "RemoveTrustedDevice": "Remove trusted device",
     "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
     "Sync": "Sync",
     "SyncCloudDevices": "Sync cloud devices",
+    "ScanImage": "Scan image",
+    "ScanInvite": "Scan pairing QR code",
+    "ScanInviteDescription": "Scan a signed invitation with the camera, select a QR image, or paste its payload below.",
+    "ScanInviteTitle": "Scan device invitation",
+    "StartCamera": "Start camera",
     "TrustMode": {
       "cloud-account": "Cloud account",
       "local-pairing": "Local pairing"
