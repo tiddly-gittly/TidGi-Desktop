@@ -49,6 +49,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/__tests__/**/*',
         'src/main.ts',
+        'src/mainApplication.ts',
         'src/preload/**/*',
       ],
     },

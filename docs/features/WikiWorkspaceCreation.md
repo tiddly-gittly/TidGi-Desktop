@@ -45,7 +45,7 @@ sequenceDiagram
 
 The initialization process involves several key steps:
 
-1. Entry Point - The `commonInit()` function in [src/main.ts](../../src/main.ts) coordinates the startup sequence. It initializes the database, then calls `wikiGitWorkspaceService.initialize()` to handle automatic workspace creation.
+1. Entry Point - The `commonInit()` function in [src/mainApplication.ts](../../src/mainApplication.ts) coordinates the startup sequence. It initializes the database, then calls `wikiGitWorkspaceService.initialize()` to handle automatic workspace creation.
 
 2. Workspace Creation - The `initialize()` method in [src/services/wikiGitWorkspace/index.ts](../../src/services/wikiGitWorkspace/index.ts) checks if any wiki workspaces exist. If not, it creates a default workspace with basic configuration (name: 'wiki', port: 5212, local storage).
 
@@ -111,7 +111,7 @@ The error "无法找到之前还在该处的工作区知识库文件夹！该目
 
 ### Backend Services
 
-- [main.ts](../../src/main.ts): Application initialization entry point
+- [mainApplication.ts](../../src/mainApplication.ts): Application initialization entry point
 - [wikiGitWorkspace/index.ts](../../src/services/wikiGitWorkspace/index.ts): `initialize()`, `initWikiGitTransaction()`
 - [workspacesView/index.ts](../../src/services/workspacesView/index.ts): `initializeAllWorkspaceView()`, `initializeWorkspaceView()`
 - [wiki/index.ts](../../src/services/wiki/index.ts): `copyWikiTemplate()`, `checkWikiExist()`
