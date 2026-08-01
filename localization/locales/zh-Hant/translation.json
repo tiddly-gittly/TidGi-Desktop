@@ -157,6 +157,15 @@
     "CloudConnection": "MemeLoop 雲端",
     "CloudDisconnect": "中斷連線",
     "CloudNotConfigured": "設定 MemeLoop 雲端後，可探索同帳號裝置並維持私有中繼連線。",
+    "CloudStatus": {
+      "connecting": "連線中",
+      "degraded": "連線受限",
+      "error": "連線錯誤",
+      "idle": "已設定",
+      "not-configured": "未設定",
+      "offline": "離線",
+      "online": "線上"
+    },
     "CloudTokenUnchanged": "若要更新連線，請輸入新的存取權杖。",
     "CloudUpdate": "更新連線",
     "CloudUrl": "雲端網址",

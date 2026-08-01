@@ -150,51 +150,53 @@
     "WorkspaceFolderRemoved": "ワークスペースフォルダが移動されたか、このフォルダはWikiフォルダではありません"
   },
   "DeviceNetwork": {
-    "AcceptPairing": "Accept",
-    "CloudAccessToken": "Cloud access token",
-    "CloudConfigured": "Configured for {{cloudUrl}}. The saved token is encrypted by the operating system.",
-    "CloudConnect": "Connect",
-    "CloudConnection": "MemeLoop Cloud",
-    "CloudDisconnect": "Disconnect",
-    "CloudNotConfigured": "Configure MemeLoop Cloud to discover this account's devices and maintain private relay connectivity.",
+    "AcceptPairing": "承認",
+    "CloudAccessToken": "クラウドアクセストークン",
+    "CloudConfigured": "{{cloudUrl}} に接続しました。保存されたトークンはオペレーティングシステムによって暗号化されています。",
+    "CloudConnect": "接続",
+    "CloudConnection": "MemeLoop クラウド",
+    "CloudDisconnect": "切断",
+    "CloudNotConfigured": "MemeLoop クラウドを設定すると、同じアカウントのデバイスを検出し、プライベートリレー接続を維持できます。",
     "CloudStatus": {
-      "connecting": "Connecting",
-      "error": "Connection error",
-      "idle": "Configured",
-      "not-configured": "Not configured",
-      "online": "Online"
+      "connecting": "接続中",
+      "degraded": "接続が制限されています",
+      "error": "接続エラー",
+      "idle": "設定済み",
+      "not-configured": "未設定",
+      "offline": "オフライン",
+      "online": "オンライン"
     },
-    "CloudTokenUnchanged": "Enter a new access token to update the connection.",
-    "CloudUpdate": "Update connection",
-    "CloudUrl": "Cloud URL",
-    "Devices": "Devices",
-    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "CloudTokenUnchanged": "接続を更新するには新しいアクセストークンを入力してください。",
+    "CloudUpdate": "接続を更新",
+    "CloudUrl": "クラウド URL",
+    "Devices": "デバイス",
+    "DevicesDescription": "近くのデバイスはローカルでペアリングできます。クラウドアカウントのデバイスはディレクトリ同期後に表示されます。",
     "Direction": {
-      "inbound": "Incoming request",
-      "outbound": "Outgoing request"
+      "inbound": "受信リクエスト",
+      "outbound": "送信リクエスト"
     },
-    "LocalDevice": "This device",
-    "NoDevices": "No nearby or trusted devices yet.",
-    "NoPendingPairing": "No pairing requests waiting for confirmation.",
-    "Pair": "Pair",
-    "PairingRequests": "Pairing requests",
+    "LocalDevice": "このデバイス",
+    "NoDevices": "近くのデバイスまたは信頼済みデバイスはまだありません。",
+    "NoPendingPairing": "確認待ちのペアリングリクエストはありません。",
+    "Pair": "ペアリング",
+    "PairingRequests": "ペアリングリクエスト",
     "Reachability": {
-      "connecting": "Connecting",
-      "nearby": "Nearby",
-      "offline": "Offline",
-      "online": "Online"
+      "connecting": "接続中",
+      "nearby": "近く",
+      "offline": "オフライン",
+      "online": "オンライン"
     },
-    "Refresh": "Refresh devices",
-    "RejectPairing": "Reject",
-    "RemoveTrustedDevice": "Remove trusted device",
-    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
-    "Sync": "Sync",
-    "SyncCloudDevices": "Sync cloud devices",
+    "Refresh": "デバイスを更新",
+    "RejectPairing": "拒否",
+    "RemoveTrustedDevice": "信頼済みデバイスを削除",
+    "RemoveTrustedDeviceConfirm": "{{deviceName}} のローカルな信頼を削除しますか？",
+    "Sync": "同期",
+    "SyncCloudDevices": "クラウドデバイスを同期",
     "TrustMode": {
-      "cloud-account": "Cloud account",
-      "local-pairing": "Local pairing"
+      "cloud-account": "クラウドアカウント",
+      "local-pairing": "ローカルペアリング"
     },
-    "Trusted": "Trusted"
+    "Trusted": "信頼済み"
   },
   "EditWorkspace": {
     "AddExcludedPlugins": "無視するプラグイン名を入力",

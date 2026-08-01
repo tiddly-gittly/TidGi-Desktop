@@ -150,51 +150,53 @@
     "WorkspaceFolderRemoved": "Рабочая папка перемещена или эта папка не является Wiki"
   },
   "DeviceNetwork": {
-    "AcceptPairing": "Accept",
-    "CloudAccessToken": "Cloud access token",
-    "CloudConfigured": "Configured for {{cloudUrl}}. The saved token is encrypted by the operating system.",
-    "CloudConnect": "Connect",
-    "CloudConnection": "MemeLoop Cloud",
-    "CloudDisconnect": "Disconnect",
-    "CloudNotConfigured": "Configure MemeLoop Cloud to discover this account's devices and maintain private relay connectivity.",
+    "AcceptPairing": "Принять",
+    "CloudAccessToken": "Токен доступа к облаку",
+    "CloudConfigured": "Подключено к {{cloudUrl}}. Сохранённый токен зашифрован операционной системой.",
+    "CloudConnect": "Подключить",
+    "CloudConnection": "Облако MemeLoop",
+    "CloudDisconnect": "Отключить",
+    "CloudNotConfigured": "Настройте облако MemeLoop, чтобы обнаруживать устройства этой учётной записи и поддерживать подключение к частному ретранслятору.",
     "CloudStatus": {
-      "connecting": "Connecting",
-      "error": "Connection error",
-      "idle": "Configured",
-      "not-configured": "Not configured",
-      "online": "Online"
+      "connecting": "Подключение",
+      "degraded": "Ограниченное подключение",
+      "error": "Ошибка подключения",
+      "idle": "Настроено",
+      "not-configured": "Не настроено",
+      "offline": "Не в сети",
+      "online": "В сети"
     },
-    "CloudTokenUnchanged": "Enter a new access token to update the connection.",
-    "CloudUpdate": "Update connection",
-    "CloudUrl": "Cloud URL",
-    "Devices": "Devices",
-    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "CloudTokenUnchanged": "Введите новый токен доступа, чтобы обновить подключение.",
+    "CloudUpdate": "Обновить подключение",
+    "CloudUrl": "URL облака",
+    "Devices": "Устройства",
+    "DevicesDescription": "Устройства поблизости можно связать локально. Устройства облачной учётной записи появятся после синхронизации каталога.",
     "Direction": {
-      "inbound": "Incoming request",
-      "outbound": "Outgoing request"
+      "inbound": "Входящий запрос",
+      "outbound": "Исходящий запрос"
     },
-    "LocalDevice": "This device",
-    "NoDevices": "No nearby or trusted devices yet.",
-    "NoPendingPairing": "No pairing requests waiting for confirmation.",
-    "Pair": "Pair",
-    "PairingRequests": "Pairing requests",
+    "LocalDevice": "Это устройство",
+    "NoDevices": "Поблизости пока нет устройств или доверенных устройств.",
+    "NoPendingPairing": "Нет запросов на связывание, ожидающих подтверждения.",
+    "Pair": "Связать",
+    "PairingRequests": "Запросы на связывание",
     "Reachability": {
-      "connecting": "Connecting",
-      "nearby": "Nearby",
-      "offline": "Offline",
-      "online": "Online"
+      "connecting": "Подключение",
+      "nearby": "Поблизости",
+      "offline": "Не в сети",
+      "online": "В сети"
     },
-    "Refresh": "Refresh devices",
-    "RejectPairing": "Reject",
-    "RemoveTrustedDevice": "Remove trusted device",
-    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
-    "Sync": "Sync",
-    "SyncCloudDevices": "Sync cloud devices",
+    "Refresh": "Обновить устройства",
+    "RejectPairing": "Отклонить",
+    "RemoveTrustedDevice": "Удалить доверенное устройство",
+    "RemoveTrustedDeviceConfirm": "Удалить локальное доверие к {{deviceName}}?",
+    "Sync": "Синхронизировать",
+    "SyncCloudDevices": "Синхронизировать облачные устройства",
     "TrustMode": {
-      "cloud-account": "Cloud account",
-      "local-pairing": "Local pairing"
+      "cloud-account": "Облачная учётная запись",
+      "local-pairing": "Локальное связывание"
     },
-    "Trusted": "Trusted"
+    "Trusted": "Доверенное"
   },
   "EditWorkspace": {
     "AddExcludedPlugins": "Введите имя плагина, который нужно игнорировать",
