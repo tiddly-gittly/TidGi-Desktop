@@ -150,51 +150,53 @@
     "WorkspaceFolderRemoved": "Le dossier de l'espace de travail est déplacé ou n'est pas un dossier wiki"
   },
   "DeviceNetwork": {
-    "AcceptPairing": "Accept",
-    "CloudAccessToken": "Cloud access token",
-    "CloudConfigured": "Configured for {{cloudUrl}}. The saved token is encrypted by the operating system.",
-    "CloudConnect": "Connect",
-    "CloudConnection": "MemeLoop Cloud",
-    "CloudDisconnect": "Disconnect",
-    "CloudNotConfigured": "Configure MemeLoop Cloud to discover this account's devices and maintain private relay connectivity.",
+    "AcceptPairing": "Accepter",
+    "CloudAccessToken": "Jeton d’accès au cloud",
+    "CloudConfigured": "Connecté à {{cloudUrl}}. Le jeton enregistré est chiffré par le système d’exploitation.",
+    "CloudConnect": "Connecter",
+    "CloudConnection": "Cloud MemeLoop",
+    "CloudDisconnect": "Déconnecter",
+    "CloudNotConfigured": "Configurez le cloud MemeLoop pour découvrir les appareils de ce compte et maintenir la connexion au relais privé.",
     "CloudStatus": {
-      "connecting": "Connecting",
-      "error": "Connection error",
-      "idle": "Configured",
-      "not-configured": "Not configured",
-      "online": "Online"
+      "connecting": "Connexion en cours",
+      "degraded": "Connectivité limitée",
+      "error": "Erreur de connexion",
+      "idle": "Configuré",
+      "not-configured": "Non configuré",
+      "offline": "Hors ligne",
+      "online": "En ligne"
     },
-    "CloudTokenUnchanged": "Enter a new access token to update the connection.",
-    "CloudUpdate": "Update connection",
-    "CloudUrl": "Cloud URL",
-    "Devices": "Devices",
-    "DevicesDescription": "Nearby devices can be paired locally. Cloud account devices appear here after directory sync.",
+    "CloudTokenUnchanged": "Saisissez un nouveau jeton d’accès pour mettre à jour la connexion.",
+    "CloudUpdate": "Mettre à jour la connexion",
+    "CloudUrl": "URL du cloud",
+    "Devices": "Appareils",
+    "DevicesDescription": "Les appareils à proximité peuvent être jumelés localement. Les appareils du compte cloud apparaissent après la synchronisation de l’annuaire.",
     "Direction": {
-      "inbound": "Incoming request",
-      "outbound": "Outgoing request"
+      "inbound": "Demande entrante",
+      "outbound": "Demande sortante"
     },
-    "LocalDevice": "This device",
-    "NoDevices": "No nearby or trusted devices yet.",
-    "NoPendingPairing": "No pairing requests waiting for confirmation.",
-    "Pair": "Pair",
-    "PairingRequests": "Pairing requests",
+    "LocalDevice": "Cet appareil",
+    "NoDevices": "Aucun appareil à proximité ou approuvé pour le moment.",
+    "NoPendingPairing": "Aucune demande de jumelage en attente de confirmation.",
+    "Pair": "Jumeler",
+    "PairingRequests": "Demandes de jumelage",
     "Reachability": {
-      "connecting": "Connecting",
-      "nearby": "Nearby",
-      "offline": "Offline",
-      "online": "Online"
+      "connecting": "Connexion en cours",
+      "nearby": "À proximité",
+      "offline": "Hors ligne",
+      "online": "En ligne"
     },
-    "Refresh": "Refresh devices",
-    "RejectPairing": "Reject",
-    "RemoveTrustedDevice": "Remove trusted device",
-    "RemoveTrustedDeviceConfirm": "Remove local trust for {{deviceName}}?",
-    "Sync": "Sync",
-    "SyncCloudDevices": "Sync cloud devices",
+    "Refresh": "Actualiser les appareils",
+    "RejectPairing": "Refuser",
+    "RemoveTrustedDevice": "Retirer l’appareil approuvé",
+    "RemoveTrustedDeviceConfirm": "Retirer l’approbation locale de {{deviceName}} ?",
+    "Sync": "Synchroniser",
+    "SyncCloudDevices": "Synchroniser les appareils du cloud",
     "TrustMode": {
-      "cloud-account": "Cloud account",
-      "local-pairing": "Local pairing"
+      "cloud-account": "Compte cloud",
+      "local-pairing": "Jumelage local"
     },
-    "Trusted": "Trusted"
+    "Trusted": "Approuvé"
   },
   "EditWorkspace": {
     "AddExcludedPlugins": "Entrez le nom du plugin que vous souhaitez ignorer",
