@@ -5,6 +5,7 @@
  * and ordinary wiki targets without pulling renderer-only assumptions into the main process.
  */
 import { PageType } from '@/constants/pageTypes';
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
 import { PreferenceSections } from '@services/preferences/interface';
@@ -14,7 +15,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DeepLinkService } from '../index';
+import { DeepLinkService, findTidGiProtocolUrl } from '../index';
 
 // ---------- helpers ----------
 
@@ -181,5 +182,23 @@ describe('DeepLinkService – preferences URL routing', () => {
 
     expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
     expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('\uFF1Cscript\uFF1Cscript\uFF1Ealert(1)\uFF1C/script\uFF1E');
+  });
+});
+
+describe('findTidGiProtocolUrl', () => {
+  it('ignores Squirrel metadata appended after the protocol URL', () => {
+    const protocolUrl = `${TIDGI_PROTOCOL_SCHEME}://preferences/externalAPI`;
+    expect(findTidGiProtocolUrl([
+      'C:\\Users\\test\\AppData\\Local\\tidgi\\TidGi.exe',
+      protocolUrl,
+      '--source-app-id',
+    ])).toBe(protocolUrl);
+  });
+
+  it('does not treat an arbitrary last argument as a URL', () => {
+    expect(findTidGiProtocolUrl([
+      'C:\\Users\\test\\AppData\\Local\\tidgi\\TidGi.exe',
+      '--source-app-id',
+    ])).toBeUndefined();
   });
 });

@@ -19,6 +19,7 @@ import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided, loadTiddlyWikiModule } from './loadTiddlyWikiModule';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
+import { getNodeWikiExtraPlugins } from './nodeWikiExtraPlugins';
 
 type BootContext = Pick<
   IStartNodeJSWikiConfigs,
@@ -96,12 +97,10 @@ async function bootWiki(
     );
   }
 
-  wikiInstance.boot.extraPlugins = [
-    readOnlyMode === true ? undefined : 'plugins/linonetwo/watch-filesystem-adaptor',
-    'plugins/linonetwo/tidgi-ipc-syncadaptor',
-    'plugins/linonetwo/tidgi-ipc-syncadaptor-ui',
-    enableHTTPAPI ? 'plugins/tiddlywiki/tiddlyweb' : undefined,
-  ].filter(Boolean) as string[];
+  // TiddlyWiki's HTTP server requires both official plugins. Do not rely on a
+  // workspace's tiddlywiki.info to load filesystem implicitly: folders created
+  // by older TidGi versions and folders without wiki.info may omit it.
+  wikiInstance.boot.extraPlugins = getNodeWikiExtraPlugins(enableHTTPAPI, readOnlyMode);
 
   const readonlyArguments = readOnlyMode === true
     ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`]
