@@ -38,7 +38,7 @@ import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
-import type { IMenuService } from '@services/menu/interface';
+import type { IMainMenuService } from '@services/menu/interface';
 
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
@@ -104,7 +104,7 @@ const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentif
 const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
 const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
-const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+const menuService = container.get<IMainMenuService>(serviceIdentifier.MenuService);
 const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
@@ -167,6 +167,10 @@ const commonInit = async (): Promise<void> => {
 
   // Initialize workspace menu after database is ready to avoid race condition
   await workspaceService.initializeMenu();
+  // Service constructors can register menu items before the database is ready.
+  // Build them only now, so deferred checked/enabled/visible callbacks cannot
+  // read settings or workspaces during startup initialization.
+  await menuService.initializeForApp();
 
   initializePreferenceReactions({ analyticsService, notificationService, preferenceService, windowService });
   initializeThemeReactions({ themeService, viewService, wikiService, workspaceService });
