@@ -27,12 +27,12 @@ import { compact, debounce, drop, remove, reverse, take } from 'lodash';
 import ContextMenuBuilder from './contextMenu/contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuItemProxy';
 import { InsertMenuAfterSubMenuIndexError } from './error';
-import type { IMenuService, IOnContextMenuInfo } from './interface';
+import type { IMainMenuService, IOnContextMenuInfo } from './interface';
 import { DeferredMenuItemConstructorOptions } from './interface';
 import { loadDefaultMenuTemplate } from './loadDefaultMenuTemplate';
 
 @injectable()
-export class MenuService implements IMenuService {
+export class MenuService implements IMainMenuService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
@@ -41,8 +41,13 @@ export class MenuService implements IMenuService {
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
     // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
-    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
+    this.scheduleMenuBuild = debounce(async () => {
+      await this.buildMenuNow();
+    }, 50);
   }
+
+  private initializedForApp = false;
+  private readonly scheduleMenuBuild: ReturnType<typeof debounce>;
 
   #menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -84,6 +89,28 @@ export class MenuService implements IMenuService {
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
   public async buildMenu(): Promise<void> {
+    if (!this.initializedForApp) {
+      return;
+    }
+
+    await this.scheduleMenuBuild();
+  }
+
+  /**
+   * Enable application-menu builds once the database-backed settings used by
+   * deferred menu properties are safe to read.
+   */
+  public async initializeForApp(): Promise<void> {
+    if (this.initializedForApp) {
+      return;
+    }
+
+    this.initializedForApp = true;
+    this.scheduleMenuBuild.cancel();
+    await this.buildMenuNow();
+  }
+
+  private async buildMenuNow(): Promise<void> {
     const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
     try {
       const menu = Menu.buildFromTemplate(latestTemplate);
