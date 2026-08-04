@@ -138,7 +138,7 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
           { name: 'preventOverflow', enabled: true },
         ]}
       >
-        <ClickAwayListener onClickAway={handleClose}>
+        <ClickAwayListener mouseEvent='onMouseDown' touchEvent='onTouchStart' onClickAway={handleClose}>
           <DropdownPaper data-testid='agent-switcher-dropdown'>
             <Autocomplete<AgentDefinition, false, true>
               open

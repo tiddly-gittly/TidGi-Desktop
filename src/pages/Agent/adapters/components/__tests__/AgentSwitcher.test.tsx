@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AgentSwitcher } from '../AgentSwitcher';
@@ -19,6 +20,7 @@ describe('AgentSwitcher', () => {
   });
 
   it('keeps bundled profiles available while the persisted definitions are loading', async () => {
+    const user = userEvent.setup();
     render(
       <AgentSwitcher
         currentAgentDefId='memeloop:general-assistant'
@@ -26,8 +28,9 @@ describe('AgentSwitcher', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('agent-switcher-button'));
+    await user.click(screen.getByTestId('agent-switcher-button'));
 
+    expect(await screen.findByTestId('agent-switcher-dropdown')).toBeVisible();
     expect(await screen.findByTestId('agent-switcher-option-memeloop:code-assistant')).toBeVisible();
   });
 });
