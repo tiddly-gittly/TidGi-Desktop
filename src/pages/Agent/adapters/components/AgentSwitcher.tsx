@@ -4,7 +4,8 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Autocomplete, Box, ClickAwayListener, Paper, Popper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { type AgentDefinition, getBuiltinLoopProfiles } from 'memeloop';
+import type { AgentDefinition } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop/loop-api';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 const builtinAgentDefinitions = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
