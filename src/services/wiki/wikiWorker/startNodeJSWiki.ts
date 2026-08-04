@@ -20,6 +20,7 @@ import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided, loadTiddlyWikiModule } from './loadTiddlyWikiModule';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
 import { getNodeWikiExtraPlugins } from './nodeWikiExtraPlugins';
+import { logForBestEffort } from './workerLogging';
 
 type BootContext = Pick<
   IStartNodeJSWikiConfigs,
@@ -68,7 +69,8 @@ async function bootWiki(
   // Log which TiddlyWiki version is being used (local vs built-in)
   const isUsingLocalTiddlyWiki = TIDDLY_WIKI_BOOT_PATH.includes(path.join(homePath, 'node_modules'));
   const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
-  void native.logFor(
+  void logForBestEffort(
+    native,
     logContext,
     'info',
     `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
@@ -210,7 +212,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
       const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
-      void native.logFor(logContext, 'info', 'test-id-WorkerServicesReady', {
+      void logForBestEffort(native, logContext, 'info', 'test-id-WorkerServicesReady', {
         enableHTTPAPI: configs.enableHTTPAPI,
         homePath: configs.homePath,
         httpsEnabled: configs.https !== undefined,
@@ -225,16 +227,12 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       intercept(
         (newStdOut: string | Uint8Array) => {
           const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
-          void native.logFor(logContext, 'info', message).catch((error: unknown) => {
-            console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
-          });
+          void logForBestEffort(native, logContext, 'info', message);
           return message;
         },
         (newStdError: string | Uint8Array) => {
           const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
-          void native.logFor(logContext, 'error', message).catch((error: unknown) => {
-            console.error('[intercept] Failed to send stderr to main process:', error, message);
-          });
+          void logForBestEffort(native, logContext, 'error', message);
           if (
             message.includes('Error executing boot module') ||
             message.includes('Cannot find module')
