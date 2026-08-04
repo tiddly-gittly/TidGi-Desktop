@@ -4,8 +4,15 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { Autocomplete, Box, ClickAwayListener, Paper, Popper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AgentDefinition } from 'memeloop';
+import { type AgentDefinition, getBuiltinLoopProfiles } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+const builtinAgentDefinitions = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
+  systemPrompt: '',
+  tools: [],
+  version: '1',
+  ...profile,
+}));
 
 const SwitcherButton = styled('button')(({ theme }) => ({
   display: 'flex',
@@ -48,7 +55,7 @@ interface AgentSwitcherProps {
 
 export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId, onSwitch, disabled }) => {
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
-  const [agentDefs, setAgentDefs] = useState<AgentDefinition[]>([]);
+  const [agentDefs, setAgentDefs] = useState<AgentDefinition[]>(builtinAgentDefinitions);
   const open = Boolean(anchorElement);
   const searchInputReference = useRef<HTMLInputElement>(null);
 
@@ -75,16 +82,19 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
   );
 
   useEffect(() => {
-    if (!open) return;
+    let active = true;
     void (async () => {
       try {
         const defs = await window.service.agentDefinition.getAgentDefs();
-        setAgentDefs(defs);
+        if (active) setAgentDefs(defs);
       } catch {
-        // Silently fail — dropdown will just be empty
+        // Keep bundled profiles available if persistence is temporarily unavailable.
       }
     })();
-  }, [open]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Auto-focus search input when dropdown opens
   useEffect(() => {
