@@ -32,6 +32,7 @@ interface ModelDialogProps {
     caption: string;
     features: ModelFeature[];
     parameters?: Record<string, unknown>;
+    apiMode?: ModelInfo['apiMode'];
   };
   availableDefaultModels: ModelInfo[];
   selectedDefaultModel: string;
@@ -81,6 +82,7 @@ export function NewModelDialog({
           onModelFormChange('name', selectedModel.name);
           onModelFormChange('caption', selectedModel.caption || '');
           onModelFormChange('features', selectedModel.features || ['language']);
+          onModelFormChange('apiMode', selectedModel.apiMode || 'chat-completions');
         }
       }
     }
@@ -148,6 +150,22 @@ export function NewModelDialog({
                 margin='normal'
                 slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
               />
+
+              {(providerClass === 'openAICompatible' || providerClass === 'openai') && (
+                <FormControl fullWidth margin='normal'>
+                  <InputLabel>OpenAI API mode</InputLabel>
+                  <Select
+                    value={newModelForm.apiMode ?? 'chat-completions'}
+                    label='OpenAI API mode'
+                    onChange={(event) => {
+                      onModelFormChange('apiMode', event.target.value);
+                    }}
+                  >
+                    <MenuItem value='chat-completions'>Chat Completions</MenuItem>
+                    <MenuItem value='responses'>Responses</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
 
               <TextField
                 label={t('Preference.ModelCaption', { ns: 'agent' })}

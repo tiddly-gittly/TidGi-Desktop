@@ -98,6 +98,33 @@ describe('ExternalAPIService logging', () => {
     expect(externalAPILogs.length).toBeGreaterThan(0);
   });
 
+  it('persists only OS-encrypted provider credentials and exposes only their presence', async () => {
+    const svc = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const db = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const plaintext = 'unit-test-provider-secret';
+
+    await svc.updateProvider('secure-provider', {
+      apiKey: plaintext,
+      baseURL: 'https://models.example.test',
+      models: [{ name: 'secure-model', apiMode: 'responses' }],
+      providerClass: 'openAICompatible',
+    });
+
+    const serialized = JSON.stringify(db.getSetting('aiSettings'));
+    expect(serialized).not.toContain(plaintext);
+    expect(serialized).toContain('encryptedApiKey');
+
+    const exposed = (await svc.getAIProviders()).find(provider => provider.provider === 'secure-provider');
+    expect(exposed).toMatchObject({
+      hasApiKey: true,
+      baseURL: 'https://models.example.test/v1',
+    });
+    expect(exposed).not.toHaveProperty('apiKey');
+    expect(exposed).not.toHaveProperty('encryptedApiKey');
+    await svc.initialize();
+    expect(JSON.stringify(await svc.getAPILogs())).not.toContain(plaintext);
+  });
+
   it('aborts and reports an Agent request that exceeds its timeout', async () => {
     const externalAPI = container.get<import('../interface').IExternalAPIService>(
       serviceIdentifier.ExternalAPI,
