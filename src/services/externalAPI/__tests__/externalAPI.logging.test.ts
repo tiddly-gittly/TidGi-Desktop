@@ -125,6 +125,26 @@ describe('ExternalAPIService logging', () => {
     expect(JSON.stringify(await svc.getAPILogs())).not.toContain(plaintext);
   });
 
+  it('allows a loopback OpenAI-compatible provider without a key but rejects a remote one', async () => {
+    const svc = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
+
+    await svc.updateProvider('loopback-provider', {
+      baseURL: 'http://127.0.0.1:15121/v1',
+      models: [{ name: 'local-model', features: ['language'] }],
+      providerClass: 'openAICompatible',
+    });
+    await svc.updateDefaultAIConfig({ free: { provider: 'loopback-provider', model: 'local-model' } });
+    expect(await svc.isAIAvailable()).toBe(true);
+
+    await svc.updateProvider('remote-provider', {
+      baseURL: 'https://models.example.test/v1',
+      models: [{ name: 'remote-model', features: ['language'] }],
+      providerClass: 'openAICompatible',
+    });
+    await svc.updateDefaultAIConfig({ free: { provider: 'remote-provider', model: 'remote-model' } });
+    expect(await svc.isAIAvailable()).toBe(false);
+  });
+
   it('aborts and reports an Agent request that exceeds its timeout', async () => {
     const externalAPI = container.get<import('../interface').IExternalAPIService>(
       serviceIdentifier.ExternalAPI,

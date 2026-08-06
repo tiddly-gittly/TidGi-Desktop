@@ -6,7 +6,7 @@ import type { ModelMessage } from './interface';
 
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig, ModelInfo } from './interface';
-import { normalizeOpenAIBaseURL } from './openAIBaseURL';
+import { isLoopbackOpenAIBaseURL, normalizeOpenAIBaseURL } from './openAIBaseURL';
 
 /**
  * Map Desktop's AIProviderConfig to a memeloop core ILLMProvider.
@@ -17,9 +17,7 @@ import { normalizeOpenAIBaseURL } from './openAIBaseURL';
 export function toCoreProviderConfig(providerConfig: AIProviderConfig, model?: ModelInfo) {
   const providerClass = providerConfig.providerClass || providerConfig.provider;
   const isOllama = providerClass === 'ollama';
-  const isLocalOpenAICompatible = providerClass === 'openAICompatible' &&
-    providerConfig.baseURL &&
-    (providerConfig.baseURL.includes('localhost') || providerConfig.baseURL.includes('127.0.0.1'));
+  const isLocalOpenAICompatible = providerClass === 'openAICompatible' && isLoopbackOpenAIBaseURL(providerConfig.baseURL);
 
   if (!providerConfig.apiKey && !isOllama && !isLocalOpenAICompatible) {
     throw new MissingAPIKeyError(providerConfig.provider);

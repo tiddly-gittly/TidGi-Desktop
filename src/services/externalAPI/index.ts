@@ -35,7 +35,7 @@ import type {
   ProviderCatalogResult,
 } from './interface';
 import { discoverOfficialModelIds, mergeOfficialModels } from './officialModels';
-import { normalizeOpenAIBaseURL } from './openAIBaseURL';
+import { isLoopbackOpenAIBaseURL, normalizeOpenAIBaseURL } from './openAIBaseURL';
 import { resolveDesktopProviderCatalog } from './providerCatalog';
 import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 
@@ -386,7 +386,8 @@ export class ExternalAPIService implements IExternalAPIService {
 
       // Some providers like Ollama don't require API keys, check if it's enabled
       // For providers that require API keys (most cloud providers), verify it's not empty
-      const requiresApiKey = providerConfig.providerClass !== 'ollama' && providerConfig.providerClass !== 'comfyui';
+      const isLocalOpenAICompatible = providerConfig.providerClass === 'openAICompatible' && isLoopbackOpenAIBaseURL(providerConfig.baseURL);
+      const requiresApiKey = providerConfig.providerClass !== 'ollama' && providerConfig.providerClass !== 'comfyui' && !isLocalOpenAICompatible;
       if (requiresApiKey && !providerConfig.apiKey?.trim()) {
         return false;
       }
