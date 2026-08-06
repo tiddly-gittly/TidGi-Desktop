@@ -5,7 +5,7 @@ import { createLLMProvider, type LLMProviderId } from 'memeloop/llm-providers';
 import type { ModelMessage } from './interface';
 
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
-import type { AIProviderConfig, ModelInfo } from './interface';
+import type { AIProviderConfig, ModelInfo, ReasoningEffort } from './interface';
 import { isLoopbackOpenAIBaseURL, normalizeOpenAIBaseURL } from './openAIBaseURL';
 
 /**
@@ -53,6 +53,33 @@ export async function createProviderFromConfig(providerConfig: AIProviderConfig,
   return createLLMProvider(toCoreProviderConfig(providerConfig, model));
 }
 
+interface ModelRequestParameters {
+  maxOutputTokens?: number;
+  maxTokens?: number;
+  reasoningEffort?: ReasoningEffort;
+  temperature?: number;
+  topP?: number;
+  [key: string]: unknown;
+}
+
+export function resolveModelRequestSettings(model: ModelInfo | undefined, parameters: ModelRequestParameters): {
+  maxOutputTokens: number | undefined;
+  providerOptions: { openai: { reasoningEffort: ReasoningEffort } } | undefined;
+  temperature: number;
+  topP: number | undefined;
+} {
+  const reasoningEffort = parameters.reasoningEffort;
+  const supportsEffort = reasoningEffort !== undefined && model?.supportsReasoningEffort?.includes(reasoningEffort);
+  return {
+    maxOutputTokens: parameters.maxOutputTokens ?? parameters.maxTokens ?? model?.maxOutputTokens,
+    providerOptions: supportsEffort && model?.reasoningEffortFormat === 'chat-completions'
+      ? { openai: { reasoningEffort } }
+      : undefined,
+    temperature: parameters.temperature ?? 0.7,
+    topP: parameters.topP ?? model?.modelOptions?.top_p,
+  };
+}
+
 export async function streamFromProvider(
   config: AiAPIConfig,
   messages: Array<ModelMessage>,
@@ -68,7 +95,6 @@ export async function streamFromProvider(
   const provider = modelConfig.provider;
   const model = modelConfig.model;
   const modelParameters = config.modelParameters || {};
-  const { temperature = 0.7 } = modelParameters;
 
   logger.info(`Using AI provider: ${provider}, model: ${model}`);
 
@@ -79,6 +105,7 @@ export async function streamFromProvider(
 
     const selectedModel = providerConfig.models.find(candidate => candidate.name === model);
     const llmProvider = await createProviderFromConfig(providerConfig, selectedModel);
+    const { maxOutputTokens, providerOptions, temperature, topP } = resolveModelRequestSettings(selectedModel, modelParameters);
 
     // Pass memeloop's messages directly. The core has already built the correct
     // prompt structure (including agent-specific system prompts and tool
@@ -89,7 +116,10 @@ export async function streamFromProvider(
       model,
       messages,
       stream: true,
+      maxOutputTokens,
       temperature,
+      topP,
+      providerOptions,
       abortSignal: signal,
     });
 

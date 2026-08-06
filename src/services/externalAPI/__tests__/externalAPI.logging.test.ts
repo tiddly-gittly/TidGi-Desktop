@@ -105,8 +105,17 @@ describe('ExternalAPIService logging', () => {
 
     await svc.updateProvider('secure-provider', {
       apiKey: plaintext,
-      baseURL: 'https://models.example.test',
-      models: [{ name: 'secure-model', apiMode: 'responses' }],
+      baseURL: 'https://models.example.test/v1',
+      models: [{
+        name: 'secure-model',
+        apiMode: 'responses',
+        contextWindowSize: 1_050_000,
+        maxInputTokens: 1_050_000,
+        maxOutputTokens: 128_000,
+        modelOptions: { top_p: 0.95 },
+        supportsReasoningEffort: ['minimal', 'low', 'medium', 'high'],
+        reasoningEffortFormat: 'chat-completions',
+      }],
       providerClass: 'openAICompatible',
     });
 
@@ -118,6 +127,14 @@ describe('ExternalAPIService logging', () => {
     expect(exposed).toMatchObject({
       hasApiKey: true,
       baseURL: 'https://models.example.test/v1',
+      models: [expect.objectContaining({
+        contextWindowSize: 1_050_000,
+        maxInputTokens: 1_050_000,
+        maxOutputTokens: 128_000,
+        modelOptions: { top_p: 0.95 },
+        supportsReasoningEffort: ['minimal', 'low', 'medium', 'high'],
+        reasoningEffortFormat: 'chat-completions',
+      })],
     });
     expect(exposed).not.toHaveProperty('apiKey');
     expect(exposed).not.toHaveProperty('encryptedApiKey');

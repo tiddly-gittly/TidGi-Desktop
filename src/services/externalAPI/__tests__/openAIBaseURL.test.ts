@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { isLoopbackOpenAIBaseURL, normalizeOpenAIBaseURL } from '../openAIBaseURL';
 
 describe('OpenAI base URL handling', () => {
-  it('normalizes only an empty path to /v1', () => {
-    expect(normalizeOpenAIBaseURL('https://models.example.test')).toBe('https://models.example.test/v1');
+  it('preserves the configured path and only removes trailing slashes', () => {
+    expect(normalizeOpenAIBaseURL('https://models.example.test')).toBe('https://models.example.test');
     expect(normalizeOpenAIBaseURL('https://models.example.test/v1/')).toBe('https://models.example.test/v1');
     expect(normalizeOpenAIBaseURL('https://models.example.test/custom/')).toBe('https://models.example.test/custom');
   });
