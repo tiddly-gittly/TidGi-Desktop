@@ -150,6 +150,9 @@ export function ProviderPanel({
           placeholder={provider.providerClass === 'ollama'
             ? 'http://localhost:11434'
             : 'https://api.example.com/v1'}
+          helperText={provider.providerClass === 'openAICompatible'
+            ? 'Enter the complete API base URL, including /v1 when required. It is not appended automatically.'
+            : undefined}
           slotProps={{ htmlInput: { 'data-testid': 'provider-base-url-input' } }}
         />
       )}

@@ -144,6 +144,13 @@ export type AIProvider = string;
  */
 export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding' | 'speech' | 'transcriptions' | 'free';
 
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+
+export interface ModelOptions {
+  /** Default nucleus sampling value. Request-level topP takes precedence. */
+  top_p?: number;
+}
+
 /**
  * Extended model information
  */
@@ -158,8 +165,16 @@ export interface ModelInfo {
   parameters?: Record<string, unknown>;
   /** Input context window size in tokens (e.g. 128000 for GPT-4o, 200000 for Claude) */
   contextWindowSize?: number;
+  /** Alias used by OpenAI-compatible model manifests for the input token limit. */
+  maxInputTokens?: number;
   /** Max output tokens (e.g. 4096, 16384) */
   maxOutputTokens?: number;
+  /** Safe per-model generation defaults. */
+  modelOptions?: ModelOptions;
+  /** Reasoning effort values accepted by the model. */
+  supportsReasoningEffort?: ReasoningEffort[];
+  /** Provider wire format for reasoning effort. */
+  reasoningEffortFormat?: 'chat-completions';
   /** Additional metadata */
   metadata?: Record<string, unknown>;
   /** OpenAI-compatible wire API used by this model. */

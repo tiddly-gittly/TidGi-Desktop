@@ -6,7 +6,7 @@ import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMe
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '@/components/ListItem';
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelFeature, ModelInfo, ReasoningEffort } from '@services/externalAPI/interface';
 import { KeyValueTabs } from '../../../KeyValueTabs';
 import { ListItemVertical } from '../../../PreferenceComponents';
 import { NewModelDialog } from './NewModelDialog';
@@ -27,6 +27,10 @@ interface ProviderConfigProps {
 
 const EMPTY_CATALOG_PROVIDERS: AIProviderConfig[] = [];
 
+export async function persistProviderModels(providerName: string, models: ModelInfo[]): Promise<void> {
+  await window.service.externalAPI.updateProvider(providerName, { models });
+}
+
 // Add provider button styling
 const AddProviderButton = styled(Button)`
   margin-top: 16px;
@@ -44,6 +48,11 @@ interface ProviderFormState {
     features: ModelFeature[];
     parameters?: Record<string, unknown>;
     apiMode?: ModelInfo['apiMode'];
+    contextWindowSize?: number;
+    maxOutputTokens?: number;
+    modelOptions?: ModelInfo['modelOptions'];
+    supportsReasoningEffort?: ReasoningEffort[];
+    reasoningEffortFormat?: ModelInfo['reasoningEffortFormat'];
   };
 }
 
@@ -261,7 +270,7 @@ export function ProviderConfig({
     setSelectedDefaultModel('');
   };
 
-  const handleModelFormChange = (providerName: string, field: string, value: string | ModelFeature[] | Record<string, unknown>) => {
+  const handleModelFormChange = (providerName: string, field: string, value: unknown) => {
     setProviderForms(previous => {
       const currentForm = previous[providerName];
       if (!currentForm) return previous;
@@ -333,6 +342,11 @@ export function ProviderConfig({
             features: model.features || ['language'],
             parameters: model.parameters || {},
             apiMode: model.apiMode ?? 'chat-completions',
+            contextWindowSize: model.contextWindowSize ?? model.maxInputTokens,
+            maxOutputTokens: model.maxOutputTokens,
+            modelOptions: model.modelOptions,
+            supportsReasoningEffort: model.supportsReasoningEffort || [],
+            reasoningEffortFormat: model.reasoningEffortFormat,
           },
         },
       };
@@ -361,6 +375,11 @@ export function ProviderConfig({
         features: form.newModel.features,
         parameters: form.newModel.parameters,
         apiMode: form.newModel.apiMode,
+        contextWindowSize: form.newModel.contextWindowSize,
+        maxOutputTokens: form.newModel.maxOutputTokens,
+        modelOptions: form.newModel.modelOptions,
+        supportsReasoningEffort: form.newModel.supportsReasoningEffort,
+        reasoningEffortFormat: form.newModel.reasoningEffortFormat,
       } satisfies ModelInfo;
 
       if (!newModel.name) {
@@ -401,6 +420,7 @@ export function ProviderConfig({
               features: ['language'],
               parameters: {},
               apiMode: 'chat-completions',
+              supportsReasoningEffort: [],
             },
           },
         };
@@ -408,9 +428,7 @@ export function ProviderConfig({
 
       const provider = providers.find(p => p.provider === currentProvider);
       if (provider) {
-        await window.service.externalAPI.updateProvider(currentProvider, {
-          models: updatedModels,
-        });
+        await persistProviderModels(currentProvider, updatedModels);
 
         setProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
