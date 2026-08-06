@@ -5,7 +5,8 @@ import { createLLMProvider, type LLMProviderId } from 'memeloop/llm-providers';
 import type { ModelMessage } from './interface';
 
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
-import type { AIProviderConfig } from './interface';
+import type { AIProviderConfig, ModelInfo } from './interface';
+import { normalizeOpenAIBaseURL } from './openAIBaseURL';
 
 /**
  * Map Desktop's AIProviderConfig to a memeloop core ILLMProvider.
@@ -13,7 +14,7 @@ import type { AIProviderConfig } from './interface';
  * Core owns the provider dispatch; Desktop only translates its own config
  * schema (providerClass, models array, apiKey, baseURL) into the core shape.
  */
-export async function createProviderFromConfig(providerConfig: AIProviderConfig): Promise<ILLMProvider> {
+export function toCoreProviderConfig(providerConfig: AIProviderConfig, model?: ModelInfo) {
   const providerClass = providerConfig.providerClass || providerConfig.provider;
   const isOllama = providerClass === 'ollama';
   const isLocalOpenAICompatible = providerClass === 'openAICompatible' &&
@@ -29,16 +30,26 @@ export async function createProviderFromConfig(providerConfig: AIProviderConfig)
   }
 
   // Pick the first model as the default model id for core provider creation.
-  const firstModel = providerConfig.models?.[0];
+  const selectedModel = model ?? providerConfig.models?.[0];
 
-  return createLLMProvider({
+  const coreConfig: Parameters<typeof createLLMProvider>[0] & {
+    openAIApiMode?: ModelInfo['apiMode'];
+  } = {
     provider: (providerClass === 'openAICompatible' ? 'openai' : providerClass) as LLMProviderId,
     name: providerConfig.provider,
     apiKey: providerConfig.apiKey,
-    baseUrl: providerConfig.baseURL,
-    model: firstModel?.name,
-    options: firstModel?.parameters,
-  });
+    baseUrl: providerConfig.baseURL && (providerClass === 'openAICompatible' || providerClass === 'openai')
+      ? normalizeOpenAIBaseURL(providerConfig.baseURL)
+      : providerConfig.baseURL,
+    model: selectedModel?.name,
+    options: selectedModel?.parameters,
+    openAIApiMode: selectedModel?.apiMode,
+  };
+  return coreConfig;
+}
+
+export async function createProviderFromConfig(providerConfig: AIProviderConfig, model?: ModelInfo): Promise<ILLMProvider> {
+  return createLLMProvider(toCoreProviderConfig(providerConfig, model));
 }
 
 export async function streamFromProvider(
@@ -65,7 +76,8 @@ export async function streamFromProvider(
       throw new Error(`Provider configuration not found: ${provider}`);
     }
 
-    const llmProvider = await createProviderFromConfig(providerConfig);
+    const selectedModel = providerConfig.models.find(candidate => candidate.name === model);
+    const llmProvider = await createProviderFromConfig(providerConfig, selectedModel);
 
     // Pass memeloop's messages directly. The core has already built the correct
     // prompt structure (including agent-specific system prompts and tool

@@ -110,6 +110,7 @@ export function ProviderPanel({
         label={t('Preference.APIKey')}
         type={showApiKey ? 'text' : 'password'}
         value={formState.apiKey}
+        placeholder={provider.hasApiKey ? 'Configured securely; type to replace' : undefined}
         onChange={(event) => {
           onFormChange('apiKey', event.target.value);
         }}

@@ -43,6 +43,7 @@ interface ProviderFormState {
     caption: string;
     features: ModelFeature[];
     parameters?: Record<string, unknown>;
+    apiMode?: ModelInfo['apiMode'];
   };
 }
 
@@ -100,7 +101,7 @@ export function ProviderConfig({
           apiKey: provider.apiKey || '',
           baseURL: provider.baseURL || '',
           models: [...provider.models],
-          newModel: { name: '', caption: '', features: ['language'] },
+          newModel: { name: '', caption: '', features: ['language'], apiMode: 'chat-completions' },
         };
       }
     });
@@ -331,6 +332,7 @@ export function ProviderConfig({
             caption: model.caption || '',
             features: model.features || ['language'],
             parameters: model.parameters || {},
+            apiMode: model.apiMode ?? 'chat-completions',
           },
         },
       };
@@ -358,6 +360,7 @@ export function ProviderConfig({
         caption: form.newModel.caption || undefined,
         features: form.newModel.features,
         parameters: form.newModel.parameters,
+        apiMode: form.newModel.apiMode,
       } satisfies ModelInfo;
 
       if (!newModel.name) {
@@ -397,6 +400,7 @@ export function ProviderConfig({
               caption: '',
               features: ['language'],
               parameters: {},
+              apiMode: 'chat-completions',
             },
           },
         };
@@ -587,6 +591,7 @@ export function ProviderConfig({
             name: '',
             caption: '',
             features: ['language'],
+            apiMode: 'chat-completions',
           },
         },
       }));

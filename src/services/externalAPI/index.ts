@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, safeStorage } from 'electron';
 import { inject, injectable } from 'inversify';
 import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';
@@ -35,6 +35,7 @@ import type {
   ProviderCatalogResult,
 } from './interface';
 import { discoverOfficialModelIds, mergeOfficialModels } from './officialModels';
+import { normalizeOpenAIBaseURL } from './openAIBaseURL';
 import { resolveDesktopProviderCatalog } from './providerCatalog';
 import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
 
@@ -101,11 +102,19 @@ export class ExternalAPIService implements IExternalAPIService {
   private loadSettingsFromDatabase(): void {
     const savedSettings = this.databaseService.getSetting('aiSettings');
     this.userSettings = savedSettings ?? this.userSettings;
+    // Plaintext provider credentials are deliberately not migrated. New
+    // installs persist only OS-backed ciphertext.
+    let removedPlaintextCredential = false;
+    for (const provider of this.userSettings.providers) {
+      if (provider.apiKey !== undefined) removedPlaintextCredential = true;
+      delete provider.apiKey;
+    }
+    if (removedPlaintextCredential) this.databaseService.setSetting('aiSettings', this.userSettings);
     this.settingsLoaded = true;
 
     // Update Observables with loaded settings
     this.defaultConfig$.next(this.userSettings.defaultConfig);
-    this.providers$.next(this.userSettings.providers);
+    this.providers$.next(this.getPublicProviders());
   }
 
   private ensureSettingsLoaded(): void {
@@ -118,7 +127,30 @@ export class ExternalAPIService implements IExternalAPIService {
     this.databaseService.setSetting('aiSettings', this.userSettings);
     // Emit updated config and providers to subscribers
     this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
-    this.providers$.next(cloneDeep(this.userSettings.providers));
+    this.providers$.next(this.getPublicProviders());
+  }
+
+  private getPublicProviders(): AIProviderConfig[] {
+    return this.userSettings.providers.map(provider => {
+      const result = cloneDeep(provider);
+      result.hasApiKey = Boolean(result.encryptedApiKey);
+      delete result.apiKey;
+      delete result.encryptedApiKey;
+      return result;
+    });
+  }
+
+  private getRuntimeProvider(providerName: string): AIProviderConfig | undefined {
+    const stored = this.userSettings.providers.find(provider => provider.provider === providerName);
+    if (!stored) return undefined;
+    const result = cloneDeep(stored);
+    if (stored.encryptedApiKey) {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
+      result.apiKey = safeStorage.decryptString(Buffer.from(stored.encryptedApiKey, 'base64'));
+    }
+    delete result.encryptedApiKey;
+    delete result.hasApiKey;
+    return result;
   }
 
   /**
@@ -214,7 +246,7 @@ export class ExternalAPIService implements IExternalAPIService {
       // Save without triggering reactToConfigChange again (use internal save)
       this.databaseService.setSetting('aiSettings', this.userSettings);
       this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
-      this.providers$.next(cloneDeep(this.userSettings.providers));
+      this.providers$.next(this.getPublicProviders());
     }
   }
 
@@ -306,7 +338,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async getAIProviders(): Promise<AIProviderConfig[]> {
     this.ensureSettingsLoaded();
-    return cloneDeep(this.userSettings.providers);
+    return this.getPublicProviders();
   }
 
   async getProviderCatalog(refresh = false): Promise<ProviderCatalogResult> {
@@ -370,21 +402,42 @@ export class ExternalAPIService implements IExternalAPIService {
    */
   private async getProviderConfig(providerName: string): Promise<AIProviderConfig | undefined> {
     this.ensureSettingsLoaded();
-    const providers = await this.getAIProviders();
-    return providers.find(p => p.provider === providerName);
+    return this.getRuntimeProvider(providerName);
   }
 
   async updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void> {
     this.ensureSettingsLoaded();
     const existingProvider = this.userSettings.providers.find(p => p.provider === provider);
 
+    const persistedConfig = cloneDeep(config);
+    if (Object.hasOwn(persistedConfig, 'apiKey')) {
+      const apiKey = persistedConfig.apiKey?.trim() ?? '';
+      delete persistedConfig.apiKey;
+      if (apiKey) {
+        if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
+        persistedConfig.encryptedApiKey = safeStorage.encryptString(apiKey).toString('base64');
+      } else {
+        persistedConfig.encryptedApiKey = undefined;
+      }
+    }
+    delete persistedConfig.hasApiKey;
+    if (typeof persistedConfig.baseURL === 'string') {
+      const providerClass = persistedConfig.providerClass ?? existingProvider?.providerClass ?? existingProvider?.provider;
+      persistedConfig.baseURL = providerClass === 'openAICompatible' || providerClass === 'openai'
+        ? normalizeOpenAIBaseURL(persistedConfig.baseURL)
+        : persistedConfig.baseURL.replace(/\/+$/, '');
+    }
+
     if (existingProvider) {
-      Object.assign(existingProvider, config);
+      Object.assign(existingProvider, persistedConfig);
+      if (persistedConfig.encryptedApiKey === undefined && Object.hasOwn(config, 'apiKey')) {
+        delete existingProvider.encryptedApiKey;
+      }
     } else {
       this.userSettings.providers.push({
         provider,
         models: [],
-        ...config,
+        ...persistedConfig,
       });
     }
 
