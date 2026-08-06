@@ -368,9 +368,9 @@ function createProviderConfig(): AIProviderConfig {
     provider: 'TestProvider',
     baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
     models: [
-      { name: 'test-model', features: ['language'] },
-      { name: 'test-embedding-model', features: ['language', 'embedding'] },
-      { name: 'test-speech-model', features: ['speech'] },
+      { name: 'test-model', features: ['language'], apiMode: 'chat-completions' },
+      { name: 'test-embedding-model', features: ['language', 'embedding'], apiMode: 'chat-completions' },
+      { name: 'test-speech-model', features: ['speech'], apiMode: 'chat-completions' },
     ],
     providerClass: 'openAICompatible',
     isPreset: false,

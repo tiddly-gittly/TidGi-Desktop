@@ -27,4 +27,15 @@ describe('OpenAI-compatible model API mode', () => {
       }));
     },
   );
+
+  it('supplies an SDK-only placeholder for an unauthenticated loopback server', () => {
+    const coreConfig = toCoreProviderConfig({
+      provider: 'local-test',
+      providerClass: 'openAICompatible',
+      baseURL: 'http://127.0.0.1:15121/v1',
+      models: [{ name: 'local-model', apiMode: 'chat-completions' }],
+    });
+
+    expect(coreConfig.apiKey).toBe('local-no-auth');
+  });
 });

@@ -35,7 +35,10 @@ export function toCoreProviderConfig(providerConfig: AIProviderConfig, model?: M
   } = {
     provider: (providerClass === 'openAICompatible' ? 'openai' : providerClass) as LLMProviderId,
     name: providerConfig.provider,
-    apiKey: providerConfig.apiKey,
+    // The OpenAI SDK requires a non-empty value even when the loopback server
+    // intentionally has no authentication. Keep this runtime-only; it is not
+    // persisted or exposed as a configured credential.
+    apiKey: providerConfig.apiKey ?? (isLocalOpenAICompatible ? 'local-no-auth' : undefined),
     baseUrl: providerConfig.baseURL && (providerClass === 'openAICompatible' || providerClass === 'openai')
       ? normalizeOpenAIBaseURL(providerConfig.baseURL)
       : providerConfig.baseURL,
