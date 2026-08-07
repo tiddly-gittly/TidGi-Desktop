@@ -252,7 +252,10 @@ export class Wiki implements IWikiService {
 
     // Get sub-wikis for this main wiki to load their tiddlers
     const configuredSubWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
-    const subWikis = useWikiFolderAsTiddlersPath ? [workspace, ...configuredSubWikis] : configuredSubWikis;
+    // The worker loads the main folder through its dedicated folder-storage
+    // path. Keep this list to actual sub-wikis so the main root is never loaded
+    // a second time as its own child.
+    const subWikis = configuredSubWikis;
 
     const lifecycleGeneration = randomUUID();
     const workerData: IStartNodeJSWikiConfigs = {
