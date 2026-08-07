@@ -47,13 +47,14 @@ export function authTokenIsProvided(providedToken: string | undefined): provided
  * entry, so resolve that entry from its installed manifest and load it through
  * the UtilityProcess CJS host instead.
  */
-export async function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string) {
+export async function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string, onPhase?: (phase: string) => void) {
   const bootPath = path.resolve(TIDDLY_WIKI_BOOT_PATH);
   const packagePath = path.dirname(bootPath);
   const manifestPath = path.join(packagePath, 'package.json');
   const manifest = readTiddlyWikiManifest(packagePath);
   const packageRequire = createRequire(manifestPath);
   const entryPath = packageRequire.resolve(manifest.main);
+  onPhase?.('entry-resolved');
   // require.resolve canonicalizes symlinks (notably /var -> /private/var on
   // macOS), so compare canonical paths on both sides of the package boundary.
   const canonicalPackagePath = realpathSync(packagePath);
@@ -66,7 +67,9 @@ export async function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string) {
   if (canonicalEntryPath !== realpathSync(expectedBootEntryPath)) {
     throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: main entry must resolve to ${expectedBootEntryPath}`);
   }
+  onPhase?.('require-begin');
   const loadedModule = packageRequire(entryPath) as unknown;
+  onPhase?.('require-end');
   if (typeof loadedModule !== 'object' || loadedModule === null || typeof (loadedModule as { TiddlyWiki?: unknown }).TiddlyWiki !== 'function') {
     throw new Error(`Invalid TiddlyWiki module at ${entryPath}: expected a TiddlyWiki function export`);
   }

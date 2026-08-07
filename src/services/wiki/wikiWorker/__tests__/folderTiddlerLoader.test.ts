@@ -31,7 +31,7 @@ function createFakeWiki() {
     type: 'application/x-tiddler',
   }));
   const addTiddlers = vi.fn();
-  const loadWikiTiddlers = vi.fn(() => ({ plugins: [] }));
+  const loadWikiTiddlers = vi.fn<(_wikiPath: string) => { plugins: never[] } | null>(() => ({ plugins: [] }));
   const wiki = {
     boot: {
       excludeRegExp: /^\.DS_Store$|^.*\.meta$|^\.git$/,
@@ -145,5 +145,52 @@ describe('folder-as-tiddlers loading', () => {
 
     expect(loadWikiTiddlers).toHaveBeenCalledOnce();
     expect(loadTiddlersFromFile).not.toHaveBeenCalled();
+  });
+
+  it('does not bounded-scan a stock includeWiki that is also a configured sub-wiki', () => {
+    const root = createTemporaryDirectory();
+    const included = createTemporaryDirectory();
+    writeFixtureFile(root, 'tiddlers/main.tid');
+    writeFixtureFile(included, 'tiddlers/included.tid');
+    const { loadTiddlersFromFile, loadWikiTiddlers, wiki } = createFakeWiki();
+    const loaderReference: { current?: ReturnType<typeof createLoadWikiTiddlersWithSubWikis> } = {};
+    loadWikiTiddlers.mockImplementation((wikiPath: string) => {
+      if (wikiPath === root) loaderReference.current?.(included);
+      return { plugins: [] };
+    });
+    const loader = createLoadWikiTiddlersWithSubWikis(
+      wiki,
+      root,
+      [{ wikiFolderLocation: included }] as IWikiWorkspace[],
+      { folderAsTiddlerStorage: false },
+      { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
+      { logFor: vi.fn(async () => undefined) },
+    );
+    loaderReference.current = loader;
+
+    loader(root);
+
+    expect(loadWikiTiddlers).toHaveBeenCalledTimes(2);
+    expect(loadTiddlersFromFile).not.toHaveBeenCalled();
+  });
+
+  it('bounded-scans a configured sub-wiki once when stock loading returns null', () => {
+    const root = createTemporaryDirectory();
+    const subWiki = createTemporaryDirectory();
+    writeFixtureFile(subWiki, 'sub.tid');
+    const { loadTiddlersFromFile, loadWikiTiddlers, wiki } = createFakeWiki();
+    loadWikiTiddlers.mockImplementation((wikiPath: string) => wikiPath === root ? { plugins: [] } : null);
+    const loader = createLoadWikiTiddlersWithSubWikis(
+      wiki,
+      root,
+      [{ wikiFolderLocation: subWiki }, { wikiFolderLocation: subWiki }] as IWikiWorkspace[],
+      { folderAsTiddlerStorage: false },
+      { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
+      { logFor: vi.fn(async () => undefined) },
+    );
+
+    loader(root);
+
+    expect(loadTiddlersFromFile).toHaveBeenCalledOnce();
   });
 });

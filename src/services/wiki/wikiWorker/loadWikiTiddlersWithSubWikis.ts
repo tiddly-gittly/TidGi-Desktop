@@ -21,12 +21,13 @@ export function createLoadWikiTiddlersWithSubWikis(
 ) {
   const { folderAsTiddlerStorage = false } = options;
   const originalLoadWikiTiddlers = wikiInstance.loadWikiTiddlers.bind(wikiInstance);
-  const loadedFolderRoots = new Set<string>();
+  const loadedStorageRoots = new Set<string>();
 
   const loadFolderRoot = (folderPath: string): void => {
     const canonicalFolderPath = realpathSync(folderPath);
-    if (loadedFolderRoots.has(canonicalFolderPath)) return;
-    loadedFolderRoots.add(canonicalFolderPath);
+    const storagePath = resolveFolderTiddlerStoragePath(canonicalFolderPath);
+    if (loadedStorageRoots.has(storagePath)) return;
+    loadedStorageRoots.add(storagePath);
 
     const scan = scanFolderTiddlers(wikiInstance, canonicalFolderPath, {
       onProgress: ({ scannedFileCount, storagePath }) => {
@@ -67,8 +68,11 @@ export function createLoadWikiTiddlersWithSubWikis(
       loadFolderRoot(homePath);
       wikiInfo = null;
     } else {
-      if (wikiPath === homePath) loadedFolderRoots.add(realpathSync(homePath));
       wikiInfo = originalLoadWikiTiddlers(wikiPath, loadOptions);
+      // Stock includeWikis recursion also enters this wrapper. Register every
+      // successfully loaded physical wiki root so the same directory cannot be
+      // scanned again through TidGi's configured sub-wiki list.
+      if (wikiInfo !== null) loadedStorageRoots.add(resolveFolderTiddlerStoragePath(wikiPath));
     }
 
     // Included standard wikis recurse through this wrapper. Only the physical
