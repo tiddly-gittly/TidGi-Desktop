@@ -309,7 +309,13 @@ export class Workspace implements IWorkspaceService {
     }
   }
 
-  private async setWithinMutation(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
+  private async setWithinMutation(
+    id: string,
+    workspace: IWorkspace,
+    immediate?: boolean,
+    skipUiUpdate = false,
+    persistedPatch?: Partial<IWorkspace>,
+  ): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     const workspaceToSave = this.sanitizeWorkspace(workspace);
 
@@ -338,7 +344,13 @@ export class Workspace implements IWorkspaceService {
     // tidgi.config.json remains the portable copy imported explicitly by create().
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
-    currentSettingsWorkspaces[id] = workspaceToSave;
+    // update() is also used for runtime-only startup fields such as hibernated,
+    // lastUrl and lastNodeJSArgv. Merge only that explicit patch into the raw
+    // persisted shape so defaults added by in-memory sanitation do not rewrite
+    // legacy settings or discard unknown forward-compatible fields.
+    currentSettingsWorkspaces[id] = persistedPatch === undefined
+      ? workspaceToSave
+      : { ...(currentSettingsWorkspaces[id] ?? {}), ...persistedPatch };
     databaseService.setSetting('workspaces', currentSettingsWorkspaces);
     if (immediate === true) {
       await databaseService.immediatelyStoreSettingsToFile();
@@ -367,7 +379,7 @@ export class Workspace implements IWorkspaceService {
         logger.error(`Could not update workspace ${id} because it does not exist`);
         return;
       }
-      await this.setWithinMutation(id, { ...workspace, ...workspaceSetting }, immediate);
+      await this.setWithinMutation(id, { ...workspace, ...workspaceSetting }, immediate, false, workspaceSetting);
     });
   }
 

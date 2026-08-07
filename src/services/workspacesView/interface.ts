@@ -23,6 +23,8 @@ export interface IInitializeWorkspaceOptions {
  */
 export interface IWorkspaceViewService {
   addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
+  /** Cancel queued startup work before application shutdown. */
+  cancelWorkspaceStartup(): void;
   /**
    * Hide WebContentsView, so page below it will show up.
    */

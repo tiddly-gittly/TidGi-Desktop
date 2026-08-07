@@ -116,6 +116,8 @@ let shouldSkipBeforeQuitInterception = false;
 const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
+    workspaceViewService.cancelWorkspaceStartup();
+    logger.info('App before-quit - pending workspace startup cancelled');
     logger.info('App before-quit - tidgi mini window closed');
     // MCP server may not be loaded if MCP is not configured
     try {
