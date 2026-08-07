@@ -1,5 +1,5 @@
 import type { IWikiWorkspace } from '@services/workspaces/interface';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { TiddlyWiki } from 'tiddlywiki';
@@ -53,7 +53,7 @@ describe('folder-as-tiddlers loading', () => {
     const root = createTemporaryDirectory();
     mkdirSync(path.join(root, 'tiddlers'));
 
-    expect(resolveFolderTiddlerStoragePath(root)).toBe(path.join(root, 'tiddlers'));
+    expect(resolveFolderTiddlerStoragePath(root)).toBe(realpathSync(path.join(root, 'tiddlers')));
   });
 
   it('skips infrastructure, metadata, and symlink cycles while loading nested tiddlers', () => {
@@ -69,7 +69,7 @@ describe('folder-as-tiddlers loading', () => {
 
     const result = scanFolderTiddlers(wiki, root);
 
-    expect(loadTiddlersFromFile.mock.calls.map(([filePath]) => filePath)).toEqual([two, one]);
+    expect(loadTiddlersFromFile.mock.calls.map(([filePath]) => filePath)).toEqual([realpathSync(two), realpathSync(one)]);
     expect(result.scannedFileCount).toBe(2);
   });
 
