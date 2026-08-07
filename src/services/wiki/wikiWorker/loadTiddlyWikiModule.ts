@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'path';
 import semver from 'semver';
@@ -54,12 +54,16 @@ export async function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string) {
   const manifest = readTiddlyWikiManifest(packagePath);
   const packageRequire = createRequire(manifestPath);
   const entryPath = packageRequire.resolve(manifest.main);
-  const relativeEntryPath = path.relative(packagePath, entryPath);
+  // require.resolve canonicalizes symlinks (notably /var -> /private/var on
+  // macOS), so compare canonical paths on both sides of the package boundary.
+  const canonicalPackagePath = realpathSync(packagePath);
+  const canonicalEntryPath = realpathSync(entryPath);
+  const relativeEntryPath = path.relative(canonicalPackagePath, canonicalEntryPath);
   if (relativeEntryPath.startsWith(`..${path.sep}`) || path.isAbsolute(relativeEntryPath)) {
     throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: main entry is outside the package directory`);
   }
   const expectedBootEntryPath = path.join(bootPath, 'boot.js');
-  if (path.normalize(entryPath) !== path.normalize(expectedBootEntryPath)) {
+  if (canonicalEntryPath !== realpathSync(expectedBootEntryPath)) {
     throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: main entry must resolve to ${expectedBootEntryPath}`);
   }
   const loadedModule = packageRequire(entryPath) as unknown;
