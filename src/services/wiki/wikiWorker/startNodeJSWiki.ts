@@ -92,12 +92,12 @@ async function bootWiki(
   process.env.TIDDLYWIKI_PLUGIN_PATH = pluginPaths.join(pathSeparator);
   process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
 
-  if (subWikis.length > 0) {
+  if (useWikiFolderAsTiddlersPath || subWikis.length > 0) {
     wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
       wikiInstance,
       homePath,
       subWikis,
-      { allowLoadingWithoutWikiInfo: useWikiFolderAsTiddlersPath },
+      { folderAsTiddlerStorage: useWikiFolderAsTiddlersPath },
       logContext,
       native,
     );
