@@ -4,6 +4,7 @@ import { createWikiWorkerLifecycleMessage } from '../workerLifecycle';
 import { native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';
 import { waitForTiddlyWikiStartup } from './tiddlyWikiStartup';
+import { installTiddlyWikiStartupObserver } from './tiddlyWikiStartupObserver';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import type { TidgiService } from '@/types/tidgi-tw';
@@ -80,7 +81,12 @@ async function bootWiki(
     `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
   );
 
-  const { TiddlyWiki } = await loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH);
+  const traceStartup = (level: 'debug' | 'warn', message: string): void => {
+    void logForBestEffort(native, logContext, level, message);
+  };
+  const { TiddlyWiki } = await loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH, phase => {
+    traceStartup('debug', `TiddlyWiki module phase: ${phase}`);
+  });
   void logForBestEffort(native, logContext, 'debug', `Loaded TiddlyWiki CommonJS boot module`);
   const wikiInstance = TiddlyWiki();
   void logForBestEffort(native, logContext, 'debug', `Created TiddlyWiki boot instance`);
@@ -171,6 +177,11 @@ async function bootWiki(
   const wikiInstanceWithTidgi = wikiInstance as unknown as (typeof wikiInstance & TidgiContainer);
   wikiInstanceWithTidgi.tidgi = wikiInstanceWithTidgi.tidgi ?? {};
   wikiInstanceWithTidgi.tidgi.service = service as unknown as TidgiService;
+
+  installTiddlyWikiStartupObserver(wikiInstance, traceStartup, (error) => {
+    const message = `TiddlyWiki startup task failed: ${error.message} ${error.stack ?? ''}`;
+    process.parentPort?.postMessage(createWikiWorkerLifecycleMessage('boot-error', lifecycleGeneration, workspace.id, message));
+  });
 
   wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
     nodeServer.on('error', function(error: Error) {
