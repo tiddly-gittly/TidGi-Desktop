@@ -65,6 +65,7 @@ export interface IStartNodeJSWikiConfigs {
     tlsKey?: string | undefined;
   };
   isDev: boolean;
+  lifecycleGeneration: string;
   openDebugger?: boolean;
   readOnlyMode?: boolean;
   rootTiddler?: string;

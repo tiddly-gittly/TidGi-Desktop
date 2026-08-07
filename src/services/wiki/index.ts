@@ -6,6 +6,7 @@ import { attachUtilityProcess } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
 import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-extra';
 import { inject, injectable } from 'inversify';
+import { randomUUID } from 'node:crypto';
 import path from 'path';
 import { Observable } from 'rxjs';
 import { AlreadyExistError, CopyWikiTemplateError, HTMLCanNotLoadError, WikiRuntimeError } from './error';
@@ -33,6 +34,7 @@ import { WikiControlActions } from './interface';
 import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers } from './wikiWorker/ipcServerRoutes';
+import { createWikiWorkerLifecycleMessage, releaseWorkerServicesAfterSubscriberReady, WikiWorkerLifecycleTracker } from './workerLifecycle';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
@@ -252,6 +254,7 @@ export class Wiki implements IWikiService {
     const configuredSubWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
     const subWikis = useWikiFolderAsTiddlersPath ? [workspace, ...configuredSubWikis] : configuredSubWikis;
 
+    const lifecycleGeneration = randomUUID();
     const workerData: IStartNodeJSWikiConfigs = {
       authToken,
       constants: { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation), TIDDLYWIKI_BUILT_IN_PLUGINS_PATH },
@@ -260,6 +263,7 @@ export class Wiki implements IWikiService {
       homePath: wikiFolderLocation,
       https,
       isDev: isDevelopmentOrTest,
+      lifecycleGeneration,
       openDebugger: process.env.DEBUG_WORKER === 'true',
       readOnlyMode,
       rootTiddler,
@@ -305,6 +309,22 @@ export class Wiki implements IWikiService {
       session: wikiBackendSession,
       // tiddlywiki/dugite may load native modules; on macOS this needs unsigned library loading
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
+    });
+    const lifecycleTracker = new WikiWorkerLifecycleTracker(workspaceID, lifecycleGeneration);
+    // The boot promise can reject before the main flow reaches it (for example,
+    // a worker crash while subscriber ACK is pending). Observe it immediately.
+    void lifecycleTracker.booted.then(() => {
+      const workerEntry = this.wikiWorkers[workspaceID];
+      if (workerEntry?.nativeWorker === wikiWorker) workerEntry.booted = true;
+    }).catch(() => undefined);
+    wikiWorker.on('message', (message: unknown) => {
+      if (lifecycleTracker.accept(message)) {
+        logger.debug('Wiki worker lifecycle signal', {
+          function: 'Wiki.startWiki',
+          generation: lifecycleGeneration,
+          workspaceID,
+        });
+      }
     });
 
     // Attach utility process to all registered services (from bindServiceAndProxy)
@@ -410,14 +430,21 @@ export class Wiki implements IWikiService {
 
       // Handle worker exit
       wikiWorker.on('exit', (code) => {
+        const workerWasBooted = this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker && this.wikiWorkers[workspaceID]?.booted;
         if (this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker) {
           delete this.wikiWorkers[workspaceID];
         }
         detachWikiWorker();
         const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped with code ${code}`;
         logger.info(warningMessage, loggerMeta);
-        if (code !== 0) {
-          reject(new Error(`Worker stopped with exit code ${code}`));
+        if (code !== 0 || !workerWasBooted) {
+          const error = new Error(
+            code === 0
+              ? `Worker stopped before wiki boot completed`
+              : `Worker stopped with exit code ${code}`,
+          );
+          lifecycleTracker.fail(error);
+          reject(error);
         } else {
           resolve();
         }
@@ -436,6 +463,7 @@ export class Wiki implements IWikiService {
       worker.startNodeJSWiki(workerData).subscribe({
         next: (message) => {
           if (message.type === 'control' && message.actions === WikiControlActions.booted) {
+            lifecycleTracker.accept(createWikiWorkerLifecycleMessage('booted', lifecycleGeneration, workspaceID));
             const workerEntry = this.wikiWorkers[workspaceID];
             if (workerEntry?.nativeWorker === wikiWorker) workerEntry.booted = true;
             logger.info('resolved with control booted', {
@@ -456,6 +484,7 @@ export class Wiki implements IWikiService {
               await workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
               switch (message.actions) {
                 case WikiControlActions.start: {
+                  lifecycleTracker.accept(createWikiWorkerLifecycleMessage('subscriber-ready', lifecycleGeneration, workspaceID));
                   if (message.message !== undefined) {
                     logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta, workspaceID });
                   }
@@ -521,18 +550,17 @@ export class Wiki implements IWikiService {
         },
         error: (error: unknown) => {
           const normalizedError = error instanceof Error ? error : new Error(String(error));
+          lifecycleTracker.fail(normalizedError);
           logger.error('startNodeJSWiki Observable error', { error: normalizedError, workspaceID, function: 'startWiki' });
           reject(new WikiRuntimeError(normalizedError, name, false));
         },
       });
     });
     try {
-      // The Observable subscription is established by the bootPromise executor
-      // above. Only now release the worker's services-ready gate, so no
-      // synchronous start/booted control frame can be emitted before a host
-      // subscriber exists.
-      await worker.notifyServicesReady();
-      await bootPromise;
+      // A host-side RxJS subscribe only queues the utility-process RPC call.
+      // Wait for an explicit worker-side ACK before releasing the services gate.
+      await releaseWorkerServicesAfterSubscriberReady(lifecycleTracker, () => worker.notifyServicesReady());
+      await Promise.race([bootPromise, lifecycleTracker.booted]);
       resolveStartWikiDeferred();
     } catch (error) {
       throw await handleWorkerStartFailure(error);
