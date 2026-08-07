@@ -22,6 +22,7 @@ import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
 import { WikiTiddler } from './schema/wiki';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from './schema/wikiEmbedding';
+import { SettingsWriteQueue, writeSettingsFile } from './settingsFileIO';
 
 // Schema config interface
 interface SchemaConfig {
@@ -49,7 +50,7 @@ export class DatabaseService implements IDatabaseService {
   // Settings related fields
   private settingFileContent: ISettingFile | undefined;
   private settingBackupStream: rotateFs.RotatingFileStream | undefined;
-  private storeSettingsToFileLock = false;
+  private readonly settingsWriteQueue = new SettingsWriteQueue();
 
   async initializeForApp(): Promise<void> {
     logger.debug('starting', {
@@ -522,22 +523,21 @@ export class DatabaseService implements IDatabaseService {
   }
 
   public async immediatelyStoreSettingsToFile() {
-    /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
     if (!this.settingFileContent) {
       logger.error('immediatelyStoreSettingsToFile called before initializeForApp()');
       return;
     }
-    try {
-      if (this.storeSettingsToFileLock) return;
-      this.storeSettingsToFileLock = true;
-      await settings.set(this.settingFileContent as any);
-    } catch (error) {
-      logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
-      ensureSettingFolderExist();
-      fixSettingFileWhenError(error as Error);
-      fs.writeJSONSync(settings.file(), this.settingFileContent);
-    } finally {
-      this.storeSettingsToFileLock = false;
-    }
+    await this.settingsWriteQueue.enqueue(async () => {
+      try {
+        // Serialize the full in-memory object at write time. This preserves
+        // fields introduced by newer versions that this process does not know.
+        await writeSettingsFile(settings.file(), this.settingFileContent, process.platform);
+      } catch (error) {
+        logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error });
+        ensureSettingFolderExist();
+        fixSettingFileWhenError(error as Error);
+        await writeSettingsFile(settings.file(), this.settingFileContent, process.platform);
+      }
+    });
   }
 }

@@ -18,6 +18,7 @@ import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
 import { initializeMcpServer, stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
+import { installApplicationQuitLifecycle } from './applicationQuitLifecycle';
 
 // Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
 initJsonRepairLogger(logger);
@@ -59,7 +60,9 @@ import type { IWorkspaceViewService } from './services/workspacesView/interface'
 
 logger.info('App booting', { pid: process.pid });
 // Label the Node.js main process so it stands out in the OS process list
-process.title = 'TidGi [Node-Main]';
+// On macOS, changing the native application process title can prevent bundle-ID
+// AppleEvents (including a normal Quit command) from reaching Electron.
+if (process.platform !== 'darwin') process.title = 'TidGi [Node-Main]';
 if (process.env.DEBUG_MAIN === 'true') {
   inspector.open();
   inspector.waitForDebugger();
@@ -109,16 +112,17 @@ const notificationService = container.get<INotificationService>(serviceIdentifie
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+const applicationStartupAbortController = new AbortController();
 
-let beforeQuitCleanupPromise: Promise<void> | undefined;
-let shouldSkipBeforeQuitInterception = false;
+class ApplicationStartupCancelledError extends Error {}
+
+const assertApplicationStartupActive = (): void => {
+  if (applicationStartupAbortController.signal.aborted) throw new ApplicationStartupCancelledError('Application startup cancelled because the app is quitting');
+};
 
 const runBeforeQuitCleanup = async (): Promise<void> => {
   logger.info('App before-quit - starting cleanup');
   try {
-    workspaceViewService.cancelWorkspaceStartup();
-    logger.info('App before-quit - pending workspace startup cancelled');
-    logger.info('App before-quit - tidgi mini window closed');
     // MCP server may not be loaded if MCP is not configured
     try {
       void stopMcpServer();
@@ -137,6 +141,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
       windowService.closeTidgiMiniWindow(true),
       windowService.clearWindowsReference(),
     ]);
+    logger.info('App before-quit - tidgi mini window closed');
     logger.info('App before-quit - all cleanup completed');
   } catch (error) {
     logger.error('Error during before-quit cleanup', { error });
@@ -146,6 +151,19 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
     uninstall?.uninstall();
   }
 };
+
+// Install the lifecycle interception before app readiness starts any asynchronous
+// initialization. This is also the path used by a macOS bundle-ID Quit AppleEvent.
+installApplicationQuitLifecycle({
+  abortStartup: () => {
+    applicationStartupAbortController.abort(new ApplicationStartupCancelledError('Application startup cancelled because the app is quitting'));
+    workspaceViewService.cancelWorkspaceStartup();
+    logger.info('App before-quit - pending workspace startup cancelled');
+  },
+  app,
+  cleanup: runBeforeQuitCleanup,
+  logger,
+});
 
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
@@ -158,17 +176,23 @@ app.on('activate', async () => {
 
 const commonInit = async (): Promise<void> => {
   await app.whenReady();
+  assertApplicationStartupActive();
   await initDevelopmentExtension();
+  assertApplicationStartupActive();
 
   // Initialize context service - loads language maps after app is ready. This ensures LOCALIZATION_FOLDER path is correct (process.resourcesPath is stable)
   await contextService.initialize();
+  assertApplicationStartupActive();
   // Initialize database - all other services depend on it
   await databaseService.initializeForApp();
+  assertApplicationStartupActive();
   // Initialize i18n early so error messages can be translated
   await initRendererI18NHandler();
+  assertApplicationStartupActive();
 
   // Initialize workspace menu after database is ready to avoid race condition
   await workspaceService.initializeMenu();
+  assertApplicationStartupActive();
   // Service constructors can register menu items before the database is ready.
   // Build them only now, so deferred checked/enabled/visible callbacks cannot
   // read settings or workspaces during startup initialization.
@@ -203,6 +227,7 @@ const commonInit = async (): Promise<void> => {
     wikiEmbeddingService.initialize(),
     externalAPIService.initialize(),
   ]);
+  assertApplicationStartupActive();
 
   // if user want a tidgi mini window, we create a new window for that
   // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
@@ -210,6 +235,7 @@ const commonInit = async (): Promise<void> => {
   deepLinkService.initializeDeepLink(TIDGI_PROTOCOL_SCHEME);
 
   await windowService.open(WindowNames.main);
+  assertApplicationStartupActive();
 
   // Initialize services that depend on windows being created
   await Promise.all([
@@ -218,20 +244,24 @@ const commonInit = async (): Promise<void> => {
     viewService.initialize(),
     nativeService.initialize(),
   ]);
+  assertApplicationStartupActive();
 
   initializeObservables();
   // Auto-create default wiki workspace if none exists. Create wiki workspace first, so it is on first one
   await wikiGitWorkspaceService.initialize();
   // Create default page workspaces before initializing all workspace views
   await workspaceService.initializeDefaultPageWorkspaces();
+  assertApplicationStartupActive();
 
   // Initialize tidgi mini window if enabled (must be done BEFORE initializeAllWorkspaceView)
   // This only creates the window, views will be created by initializeAllWorkspaceView
   await windowService.initializeTidgiMiniWindow();
+  assertApplicationStartupActive();
 
   // perform wiki startup and git sync for each workspace
   // This will also create views for tidgi mini window (in addViewForAllBrowserViews)
   await workspaceViewService.initializeAllWorkspaceView();
+  assertApplicationStartupActive();
   logger.info('[test-id-ALL_WORKSPACE_VIEW_INITIALIZED] All workspace views initialized');
 
   // Process any pending deep link after workspaces are initialized
@@ -295,8 +325,9 @@ app.on('ready', async () => {
   powerMonitor.on('shutdown', () => {
     app.quit();
   });
-  await commonInit();
   try {
+    await commonInit();
+    assertApplicationStartupActive();
     // buildLanguageMenu needs menuService which is initialized in commonInit
     await buildLanguageMenu();
     if (await preferenceService.get('syncBeforeShutdown')) {
@@ -304,6 +335,10 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
+    if (error instanceof ApplicationStartupCancelledError) {
+      logger.info('Application startup stopped because quit was requested');
+      return;
+    }
     const error_ = error as Error;
     logger.error('Error during app ready handler', { function: "app.on('ready')", error: error_ });
     analyticsService.trackError(error_, 'app_ready');
@@ -315,35 +350,6 @@ app.on(MainChannel.windowAllClosed, async () => {
     app.quit();
   }
 });
-app.on('before-quit', (event): void => {
-  if (shouldSkipBeforeQuitInterception) {
-    return;
-  }
-
-  event.preventDefault();
-
-  if (beforeQuitCleanupPromise === undefined) {
-    // Safety net: if cleanup hangs (e.g. a wiki worker never terminates), force-exit after 15 s.
-    const forceExitTimer = setTimeout(() => {
-      logger.warn('before-quit cleanup timed out after 15 s, forcing exit');
-      shouldSkipBeforeQuitInterception = true;
-      app.exit(0);
-    }, 15_000);
-    // Allow the process to exit even if this timer is still pending.
-    forceExitTimer.unref();
-
-    beforeQuitCleanupPromise = runBeforeQuitCleanup()
-      .catch((error: unknown) => {
-        logger.error('before-quit cleanup failed unexpectedly', { error });
-      })
-      .finally(() => {
-        clearTimeout(forceExitTimer);
-        shouldSkipBeforeQuitInterception = true;
-        app.exit(0);
-      });
-  }
-});
-
 void (async () => {
   const unhandledLogger = (error: Error) => {
     logger.error('unhandled', { error });
