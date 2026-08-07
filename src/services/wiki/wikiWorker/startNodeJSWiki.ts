@@ -81,7 +81,9 @@ async function bootWiki(
   );
 
   const { TiddlyWiki } = await loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH);
+  void logForBestEffort(native, logContext, 'debug', `Loaded TiddlyWiki CommonJS boot module`);
   const wikiInstance = TiddlyWiki();
+  void logForBestEffort(native, logContext, 'debug', `Created TiddlyWiki boot instance`);
   setWikiInstance(wikiInstance);
 
   const pathSeparator = process.platform === 'win32' ? ';' : ':';
@@ -186,7 +188,9 @@ async function bootWiki(
       });
     });
   });
+  void logForBestEffort(native, logContext, 'debug', `Starting TiddlyWiki boot lifecycle`);
   await waitForTiddlyWikiStartup(wikiInstance.boot, TIDDLY_WIKI_BOOT_PATH);
+  void logForBestEffort(native, logContext, 'debug', `Completed TiddlyWiki boot lifecycle`);
 
   ipcServerRoutes.setConfig({ readOnlyMode, shouldUseDarkColors });
   ipcServerRoutes.setHomePath(homePath);

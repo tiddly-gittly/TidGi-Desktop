@@ -24,6 +24,12 @@ export class FolderTiddlerScanError extends Error {
 export interface FolderTiddlerScanOptions {
   maxDepth?: number;
   maxFiles?: number;
+  onProgress?: (progress: FolderTiddlerScanProgress) => void;
+}
+
+export interface FolderTiddlerScanProgress {
+  scannedFileCount: number;
+  storagePath: string;
 }
 
 export interface FolderTiddlerScanResult {
@@ -98,6 +104,9 @@ export function scanFolderTiddlers(
         throw new FolderTiddlerScanError(`Folder tiddler scan exceeded maximum file count ${maxFiles} under ${storagePath}`);
       }
       files.push(wikiInstance.loadTiddlersFromFile(entryPath));
+      if (scannedFileCount === 1 || scannedFileCount % 500 === 0) {
+        options.onProgress?.({ scannedFileCount, storagePath });
+      }
     }
   };
 
