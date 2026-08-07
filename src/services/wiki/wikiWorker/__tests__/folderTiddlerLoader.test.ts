@@ -91,6 +91,17 @@ describe('folder-as-tiddlers loading', () => {
     expect(() => scanFolderTiddlers(wiki, root, { maxDepth: 0 })).toThrow(/maximum depth 0/i);
   });
 
+  it('reports bounded progress without exposing file contents', () => {
+    const root = createTemporaryDirectory();
+    writeFixtureFile(root, 'one.tid');
+    const { wiki } = createFakeWiki();
+    const onProgress = vi.fn();
+
+    scanFolderTiddlers(wiki, root, { onProgress });
+
+    expect(onProgress).toHaveBeenCalledExactlyOnceWith({ scannedFileCount: 1, storagePath: realpathSync(root) });
+  });
+
   it('keeps standard and folder loading mutually exclusive and deduplicates physical roots', () => {
     const root = createTemporaryDirectory();
     const subWiki = createTemporaryDirectory();

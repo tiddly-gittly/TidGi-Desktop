@@ -28,7 +28,11 @@ export function createLoadWikiTiddlersWithSubWikis(
     if (loadedFolderRoots.has(canonicalFolderPath)) return;
     loadedFolderRoots.add(canonicalFolderPath);
 
-    const scan = scanFolderTiddlers(wikiInstance, canonicalFolderPath);
+    const scan = scanFolderTiddlers(wikiInstance, canonicalFolderPath, {
+      onProgress: ({ scannedFileCount, storagePath }) => {
+        void logForBestEffort(nativeLogger, logContext, 'debug', `Folder tiddler scan progress: ${scannedFileCount} files from ${storagePath}`);
+      },
+    });
     for (const tiddlerFile of scan.files) {
       if (tiddlerFile.filepath) {
         for (const tiddler of tiddlerFile.tiddlers) {
