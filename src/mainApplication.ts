@@ -170,7 +170,14 @@ const commonInit = async (): Promise<void> => {
   // Service constructors can register menu items before the database is ready.
   // Build them only now, so deferred checked/enabled/visible callbacks cannot
   // read settings or workspaces during startup initialization.
-  await menuService.initializeForApp();
+  try {
+    await menuService.initializeForApp();
+  } catch (error) {
+    // A broken application-menu item must not prevent the main window from
+    // opening. MenuService isolates deferred providers, while this boundary
+    // also protects startup from Electron template construction failures.
+    logger.error('Application menu initialization failed; continuing startup', { error });
+  }
 
   initializePreferenceReactions({ analyticsService, notificationService, preferenceService, windowService });
   initializeThemeReactions({ themeService, viewService, wikiService, workspaceService });

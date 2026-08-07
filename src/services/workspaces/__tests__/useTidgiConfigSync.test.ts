@@ -14,15 +14,14 @@ const mockWriteTidgiConfig = vi.fn();
 const mockReadTidgiConfig = vi.fn();
 const mockReadTidgiConfigSync = vi.fn();
 const mockExtractSyncableConfig = vi.fn();
-const mockRemoveSyncableFields = vi.fn();
 
 vi.mock('../../database/configSetting', () => ({
   writeTidgiConfig: (...args: unknown[]) => mockWriteTidgiConfig(...args) as Promise<void>,
   readTidgiConfig: (...args: unknown[]) => mockReadTidgiConfig(...args) as Promise<Record<string, unknown> | undefined>,
+  // Kept as a sentinel: cache initialization must not call the legacy
+  // synchronous external-path reader even when old settings enable sync.
   readTidgiConfigSync: (...args: unknown[]) => mockReadTidgiConfigSync(...args) as Record<string, unknown> | undefined,
   extractSyncableConfig: (...args: unknown[]) => mockExtractSyncableConfig(...args) as Record<string, unknown>,
-  removeSyncableFields: (...args: unknown[]) => mockRemoveSyncableFields(...args) as Record<string, unknown>,
-  mergeWithSyncedConfig: (local: unknown, synced: unknown) => ({ ...(local as object), ...(synced as object) }),
   getTidgiConfigPath: (wikiFolderLocation: string) => `${wikiFolderLocation}/tidgi.config.json`,
   hasTidgiConfig: vi.fn(),
   initTidgiConfigLogger: vi.fn(),
@@ -115,12 +114,6 @@ describe('Workspace useTidgiConfigSync', () => {
       readOnlyMode: workspace.readOnlyMode,
       enableFileSystemWatch: workspace.enableFileSystemWatch,
     }));
-    mockRemoveSyncableFields.mockImplementation((workspace: IWikiWorkspace) => {
-      const { name, readOnlyMode, ...rest } = workspace as unknown as Record<string, unknown>;
-      void name;
-      void readOnlyMode;
-      return rest;
-    });
   });
 
   describe('create', () => {
@@ -171,17 +164,20 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('set', () => {
-    it('should write tidgi.config.json and strip syncable fields from settings.json when useTidgiConfigSync is true and tidgi.config.json exists', async () => {
+    it('writes the portable config and keeps settings.json self-contained when sync is enabled', async () => {
       const workspace = createWorkspace({ useTidgiConfigSync: true });
       const service = createWorkspaceService(workspace);
-
-      mockReadTidgiConfigSync.mockReturnValue({ version: 1, name: 'Workspace 1' });
 
       await service.set(workspace.id, { ...workspace, name: 'Updated Name' });
 
       expect(mockWriteTidgiConfig).toHaveBeenCalledWith(workspace.wikiFolderLocation, expect.any(Object));
-      expect(mockRemoveSyncableFields).toHaveBeenCalled();
-      expect(mockSetSetting).toHaveBeenCalledWith('workspaces', expect.any(Object));
+      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      const savedWorkspace = mockSetSetting.mock.calls[0][1][workspace.id] as IWikiWorkspace;
+      expect(savedWorkspace).toMatchObject({
+        name: 'Updated Name',
+        readOnlyMode: workspace.readOnlyMode,
+        useTidgiConfigSync: true,
+      });
     });
 
     it('should NOT write tidgi.config.json and should keep syncable fields in settings.json when useTidgiConfigSync is false', async () => {
@@ -193,7 +189,6 @@ describe('Workspace useTidgiConfigSync', () => {
       await service.set(workspace.id, { ...workspace, name: 'Updated Name' });
 
       expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
-      expect(mockRemoveSyncableFields).not.toHaveBeenCalled();
       // Verify settings.json receives the full workspace including syncable fields
       const setSettingCall = mockSetSetting.mock.calls[0];
       expect(setSettingCall[0]).toBe('workspaces');
@@ -257,40 +252,16 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('sanitizeWorkspace', () => {
-    it('should read tidgi.config.json during initial load when useTidgiConfigSync is true', async () => {
+    it('never reads tidgi.config.json while sanitizing startup settings', async () => {
       const workspace = createWorkspace({ useTidgiConfigSync: true });
-      const service = createWorkspaceService(workspace);
+      const service = new Workspace();
+      mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
 
-      mockReadTidgiConfigSync.mockReturnValue({ version: 1, name: 'Synced Name' });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = (service as any).sanitizeWorkspace(workspace, true);
-
-      expect(mockReadTidgiConfigSync).toHaveBeenCalledWith(workspace.wikiFolderLocation);
-      expect(result.name).toBe('Synced Name');
-    });
-
-    it('should NOT read tidgi.config.json during initial load when useTidgiConfigSync is false', async () => {
-      const workspace = createWorkspace({ useTidgiConfigSync: false, name: 'Local Name' });
-      const service = createWorkspaceService(workspace);
-
-      mockReadTidgiConfigSync.mockReturnValue({ version: 1, name: 'Synced Name' });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = (service as any).sanitizeWorkspace(workspace, true);
+      const result = await service.getWorkspaces();
 
       expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
-      expect(result.name).toBe('Local Name');
-    });
-
-    it('should not read tidgi.config.json during runtime updates regardless of useTidgiConfigSync', async () => {
-      const workspace = createWorkspace({ useTidgiConfigSync: true });
-      const service = createWorkspaceService(workspace);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (service as any).sanitizeWorkspace(workspace, false);
-
-      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockReadTidgiConfig).not.toHaveBeenCalled();
+      expect(result[workspace.id].name).toBe('Workspace 1');
     });
 
     it('should migrate html workspaces without reading tidgi.config.json', async () => {
@@ -303,11 +274,77 @@ describe('Workspace useTidgiConfigSync', () => {
       const service = createWorkspaceService(workspace);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = (service as any).sanitizeWorkspace(workspace, true);
+      const result = (service as any).sanitizeWorkspace(workspace);
 
       expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
       expect(result.workspaceType).toBe(WorkspaceType.html);
       expect(result.useTidgiConfigSync).toBe(false);
+    });
+
+    it('initializes 26 legacy entries without recursion and resolves hierarchy in a second pass', async () => {
+      const root = createWorkspace({ id: 'root-new', wikiFolderLocation: '/wikis/root' });
+      const missingMainID = createWorkspace({
+        id: 'sub-missing-id',
+        isSubWiki: true,
+        mainWikiID: null,
+        mainWikiToLink: '/wikis/root',
+        wikiFolderLocation: '/wikis/root/sub',
+      });
+      const remapped = createWorkspace({
+        id: 'sub-remapped',
+        isSubWiki: true,
+        mainWikiID: 'root-stored-key',
+        mainWikiToLink: '/wikis/root',
+        wikiFolderLocation: '/wikis/root/remapped',
+      });
+      const cycleA = createWorkspace({ id: 'cycle-a', isSubWiki: true, mainWikiID: 'cycle-b', mainWikiToLink: null });
+      const cycleB = createWorkspace({ id: 'cycle-b', isSubWiki: true, mainWikiID: 'cycle-a', mainWikiToLink: null });
+      const ambiguousRootA = createWorkspace({ id: 'ambiguous-a', wikiFolderLocation: '/wikis/duplicate' });
+      const ambiguousRootB = createWorkspace({ id: 'ambiguous-b', wikiFolderLocation: '/wikis/duplicate' });
+      const ambiguousSub = createWorkspace({
+        id: 'ambiguous-sub',
+        isSubWiki: true,
+        mainWikiID: null,
+        mainWikiToLink: '/wikis/duplicate',
+      });
+      const settings: Record<string, IWikiWorkspace> = {
+        'root-stored-key': root,
+        [missingMainID.id]: missingMainID,
+        [remapped.id]: remapped,
+        [cycleA.id]: cycleA,
+        [cycleB.id]: cycleB,
+        [ambiguousRootA.id]: ambiguousRootA,
+        [ambiguousRootB.id]: ambiguousRootB,
+        [ambiguousSub.id]: ambiguousSub,
+      };
+      for (let index = Object.keys(settings).length; index < 26; index++) {
+        const workspace = createWorkspace({ id: `regular-${index}`, wikiFolderLocation: `/wikis/regular-${index}` });
+        settings[workspace.id] = workspace;
+      }
+      mockGetSetting.mockReturnValue(settings);
+
+      const result = await new Workspace().getWorkspaces();
+
+      expect(Object.keys(result)).toHaveLength(26);
+      expect((result[missingMainID.id] as IWikiWorkspace).mainWikiID).toBe(root.id);
+      expect((result[remapped.id] as IWikiWorkspace).mainWikiID).toBe(root.id);
+      expect((result[cycleA.id] as IWikiWorkspace).mainWikiID).toBeNull();
+      expect((result[cycleB.id] as IWikiWorkspace).mainWikiID).toBeNull();
+      expect((result[ambiguousSub.id] as IWikiWorkspace).mainWikiID).toBeNull();
+      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockSetSetting).not.toHaveBeenCalled();
+    });
+
+    it('isolates malformed and duplicate-id settings entries without writing old data back', async () => {
+      const first = createWorkspace({ id: 'same-id', wikiFolderLocation: '/wikis/first' });
+      const duplicate = createWorkspace({ id: 'same-id', wikiFolderLocation: '/wikis/second' });
+      mockGetSetting.mockReturnValue({ first, duplicate, invalid: null });
+
+      const result = await new Workspace().getWorkspaces();
+
+      expect(Object.keys(result)).toEqual(['same-id']);
+      expect((result['same-id'] as IWikiWorkspace).wikiFolderLocation).toBe('/wikis/first');
+      expect(mockSetSetting).not.toHaveBeenCalled();
     });
   });
 });
