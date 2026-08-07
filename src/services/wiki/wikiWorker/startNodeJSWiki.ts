@@ -248,20 +248,23 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
           return message;
         },
       );
+
+      // Start only after the main process has attached every service proxy and
+      // subscribed to this Observable. This prevents synchronous control
+      // messages from racing ahead of the host-side subscription.
+      try {
+        bootWiki(bootContext, observer, fullBootArgv).catch((error: unknown) => {
+          const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+          observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
+        });
+      } catch (error: unknown) {
+        const message = `Tiddlywiki booted failed synchronously with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+        observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
+      }
     });
 
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
-
-    try {
-      bootWiki(bootContext, observer, fullBootArgv).catch((error: unknown) => {
-        const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-        observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
-      });
-    } catch (error: unknown) {
-      const message = `Tiddlywiki booted failed synchronously with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
-    }
   });
 }

@@ -249,6 +249,24 @@ describe('Workspace useTidgiConfigSync', () => {
         }),
       );
     });
+
+    it('merges runtime updates into the raw persisted shape without writing sanitized defaults', async () => {
+      const workspace = createWorkspace({ hibernated: false, useTidgiConfigSync: true });
+      const service = createWorkspaceService(workspace);
+      const rawWorkspace = {
+        id: workspace.id,
+        wikiFolderLocation: workspace.wikiFolderLocation,
+        futureField: 'preserve-me',
+      };
+      mockGetSetting.mockReturnValue({ [workspace.id]: rawWorkspace });
+
+      await service.update(workspace.id, { hibernated: true });
+
+      const persisted = mockSetSetting.mock.calls[0][1][workspace.id] as Record<string, unknown>;
+      expect(persisted).toEqual({ ...rawWorkspace, hibernated: true });
+      expect(persisted).not.toHaveProperty('name');
+      expect(persisted).not.toHaveProperty('useTidgiConfigSync');
+    });
   });
 
   describe('sanitizeWorkspace', () => {

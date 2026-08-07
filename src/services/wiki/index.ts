@@ -88,12 +88,21 @@ export class Wiki implements IWikiService {
   }
 
   // key is same to workspace id, so we can get this worker by workspace id
-  private wikiWorkers: Partial<Record<string, { detachWorker: () => void; nativeWorker: UtilityProcess; proxy: WikiWorker; rejectStartWiki?: (error: Error) => void }>> = {};
+  private wikiWorkers: Partial<
+    Record<string, {
+      booted: boolean;
+      detachWorker: () => void;
+      nativeWorker: UtilityProcess;
+      proxy: WikiWorker;
+      rejectStartWiki?: (error: Error) => void;
+    }>
+  > = {};
 
   // Tracks in-flight startWiki promises so restartWiki can wait for an ongoing
   // startWiki to settle before calling stopWiki, avoiding a race where stopWiki
   // terminates a worker that is still booting.
   private startWikiPromises: Partial<Record<string, Promise<void>>> = {};
+  private stoppingAllWiki = false;
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -155,6 +164,10 @@ export class Wiki implements IWikiService {
 
   public async startWiki(workspaceID: string, userName: string): Promise<void> {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+
+    if (this.stoppingAllWiki) {
+      throw new Error(`Wiki ${workspaceID} startup cancelled because the application is shutting down`);
+    }
 
     if (workspaceID === undefined) {
       logger.error('Try to start wiki, but workspace ID not provided', { workspaceID });
@@ -280,6 +293,10 @@ export class Wiki implements IWikiService {
     const wikiBackendSession = session.fromPartition('persist:wiki-backend');
     await applyNetworkProxyToSession(wikiBackendSession, proxyPreferences, 'wikiBackend');
 
+    if (this.stoppingAllWiki) {
+      throw new Error(`Wiki ${workspaceID} startup cancelled because the application is shutting down`);
+    }
+
     // Create utility process using Vite's ?utilityProcess import
     const wikiWorker = WikiWorkerFactory({
       stdio: 'pipe',
@@ -318,35 +335,31 @@ export class Wiki implements IWikiService {
     const worker = createWorkerMethodProxy<WikiWorker>(wikiWorker as unknown as WorkerPeer);
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
-    this.wikiWorkers[workspaceID] = { proxy: worker, nativeWorker: wikiWorker, detachWorker };
+    this.wikiWorkers[workspaceID] = { booted: false, proxy: worker, nativeWorker: wikiWorker, detachWorker };
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
 
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
     const handleWorkerStartFailure = async (error: unknown): Promise<Error> => {
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       rejectStartWikiDeferred(normalizedError);
+      if (this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker) {
+        try {
+          await this.terminateWikiWorkerBounded(wikiWorker, workspaceID, 3000);
+        } catch (terminationError) {
+          logger.error('Failed to terminate wiki worker after startup failure', {
+            error: terminationError,
+            workspaceID,
+          });
+        }
+        delete this.wikiWorkers[workspaceID];
+      }
+      detachWikiWorker();
       await workspaceService.updateMetaData(workspaceID, {
         isLoading: false,
         didFailLoadErrorMessage: normalizedError.message,
       });
-      if (this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker) {
-        delete this.wikiWorkers[workspaceID];
-      }
-      detachWikiWorker();
       return normalizedError;
     };
-
-    // Notify worker that services are ready before subscribing to startNodeJSWiki.
-    // This ensures the worker doesn't start sending messages before we're subscribed.
-    try {
-      await worker.notifyServicesReady();
-    } catch (error) {
-      const normalizedError = await handleWorkerStartFailure(error);
-      if (this.startWikiPromises[workspaceID] === startWikiDeferred) {
-        delete this.startWikiPromises[workspaceID];
-      }
-      throw normalizedError;
-    }
 
     const bootPromise = new Promise<void>((resolve, reject) => {
       // Add a safety timeout to prevent startWiki from hanging indefinitely.
@@ -359,6 +372,7 @@ export class Wiki implements IWikiService {
         });
         reject(new Error(`startWiki timed out for workspace ${workspaceID} (worker may have booted but message was lost)`));
       }, 60_000);
+      startWikiTimeout.unref();
 
       const originalResolve = resolve;
       const originalReject = reject;
@@ -421,22 +435,26 @@ export class Wiki implements IWikiService {
 
       worker.startNodeJSWiki(workerData).subscribe({
         next: (message) => {
+          if (message.type === 'control' && message.actions === WikiControlActions.booted) {
+            const workerEntry = this.wikiWorkers[workspaceID];
+            if (workerEntry?.nativeWorker === wikiWorker) workerEntry.booted = true;
+            logger.info('resolved with control booted', {
+              ...loggerMeta,
+              message: message.message,
+              workspaceID,
+              function: 'startWiki',
+            });
+            resolve();
+            // Persisting diagnostic argv must not gate worker readiness.
+            void workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true).catch((error: unknown) => {
+              logger.warn('Failed to persist lastNodeJSArgv after wiki boot', { error, workspaceID });
+            });
+            return;
+          }
           void (async () => {
             if (message.type === 'control') {
               await workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
               switch (message.actions) {
-                case WikiControlActions.booted: {
-                  setTimeout(async () => {
-                    logger.info('resolved with control booted', {
-                      ...loggerMeta,
-                      message: message.message,
-                      workspaceID,
-                      function: 'startWiki',
-                    });
-                    resolve();
-                  }, 100);
-                  break;
-                }
                 case WikiControlActions.start: {
                   if (message.message !== undefined) {
                     logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta, workspaceID });
@@ -509,6 +527,11 @@ export class Wiki implements IWikiService {
       });
     });
     try {
+      // The Observable subscription is established by the bootPromise executor
+      // above. Only now release the worker's services-ready gate, so no
+      // synchronous start/booted control frame can be emitted before a host
+      // subscriber exists.
+      await worker.notifyServicesReady();
       await bootPromise;
       resolveStartWikiDeferred();
     } catch (error) {
@@ -672,7 +695,7 @@ export class Wiki implements IWikiService {
     const nativeWorker = workerData?.nativeWorker;
     const detachWorker = workerData?.detachWorker;
 
-    if (worker === undefined || nativeWorker === undefined) {
+    if (workerData === undefined || worker === undefined || nativeWorker === undefined) {
       logger.warn(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
         stack: new Error('stack').stack?.replace('Error:', '') ?? 'no stack',
@@ -683,32 +706,43 @@ export class Wiki implements IWikiService {
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
 
+    // Reject boot waiters before any graceful cleanup. A not-yet-booted worker
+    // cannot perform meaningful beforeExit work, and shutdown must not wait for
+    // its 60-second startup timer.
+    if (workerData.rejectStartWiki) {
+      const rejectPendingStart = workerData.rejectStartWiki;
+      workerData.rejectStartWiki = undefined;
+      rejectPendingStart(
+        new Error(
+          this.stoppingAllWiki
+            ? `Wiki ${id} startup cancelled because the application is shutting down`
+            : `Wiki ${id} stopped during workspace restart`,
+        ),
+      );
+    }
+
     // beforeExit cleanup (V8 cache + file watchers) — nsfw.stop() may deadlock
     // on rare occasions, so we guard with a timeout. On timeout we proceed to
     // terminate anyway; the OS will reclaim watcher handles on process exit.
-    try {
-      logger.info(`worker.beforeExit for ${id}`);
-      await Promise.race([
-        worker.beforeExit(),
-        new Promise((_, reject) => {
-          setTimeout(() => {
-            reject(new Error('beforeExit timeout'));
-          }, 5000);
-        }),
-      ]);
-    } catch (error) {
-      logger.error('wiki worker beforeExit failed or timed out', { function: 'stopWiki', error });
+    if (workerData.booted) {
+      try {
+        logger.info(`worker.beforeExit for ${id}`);
+        await Promise.race([
+          worker.beforeExit(),
+          new Promise((_, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('beforeExit timeout'));
+            }, 5000);
+            timeout.unref();
+          }),
+        ]);
+      } catch (error) {
+        logger.error('wiki worker beforeExit failed or timed out', { function: 'stopWiki', error });
+      }
     }
     try {
       logger.info(`terminateWorker for ${id}`);
-      await Promise.race([
-        terminateWorker(nativeWorker),
-        new Promise((_, reject) => {
-          setTimeout(() => {
-            reject(new Error('terminateWorker timeout'));
-          }, 3000);
-        }),
-      ]);
+      await this.terminateWikiWorkerBounded(nativeWorker, id, 3000);
     } catch (error) {
       logger.error('terminateWorker failed or timed out', { function: 'stopWiki', error });
     }
@@ -718,18 +752,6 @@ export class Wiki implements IWikiService {
         detachWorker();
       } catch {
         /* ignore */
-      }
-    }
-    // Cancel any pending startWiki promise before removing listeners.
-    // When the worker is terminated before the 'booted' message arrives,
-    // the exit handler may not fire (removeAllListeners removes it first),
-    // so we must explicitly reject the promise to prevent a 60s timeout
-    // from firing later and causing an unhandled rejection.
-    if (workerData?.rejectStartWiki) {
-      try {
-        workerData.rejectStartWiki(new Error(`Wiki ${id} stopped during workspace restart`));
-      } catch {
-        /* Promise may already be settled */
       }
     }
     // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
@@ -753,26 +775,68 @@ export class Wiki implements IWikiService {
     logger.debug('stopAllWiki', {
       function: 'stopAllWiki',
     });
-    const tasks = [];
+    this.stoppingAllWiki = true;
     const wikiIds = Object.keys(this.wikiWorkers);
     logger.info(`Stopping ${wikiIds.length} wiki workers`, { wikiIds });
 
+    // Cancel all boot waits as one atomic phase before awaiting any worker.
+    // This releases bounded-concurrency startup queues immediately.
     for (const id of wikiIds) {
-      // Wrap each stopWiki call to ensure one failure doesn't block others
-      tasks.push(
-        (async () => {
-          try {
-            await this.stopWiki(id);
-            logger.info(`Wiki worker ${id} stopped successfully`);
-          } catch (error) {
-            logger.error(`Failed to stop wiki worker ${id}`, { error });
-          }
-        })(),
-      );
+      const workerData = this.wikiWorkers[id];
+      if (!workerData?.rejectStartWiki) continue;
+      const rejectPendingStart = workerData.rejectStartWiki;
+      workerData.rejectStartWiki = undefined;
+      rejectPendingStart(new Error(`Wiki ${id} startup cancelled because the application is shutting down`));
     }
 
-    await Promise.allSettled(tasks);
+    const tasks = wikiIds.map(async (id) => {
+      try {
+        await this.stopWiki(id);
+        logger.info(`Wiki worker ${id} stopped successfully`);
+      } catch (error) {
+        logger.error(`Failed to stop wiki worker ${id}`, { error });
+      }
+    });
+
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.allSettled(tasks),
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(() => {
+          logger.error('stopAllWiki exceeded its global 10-second deadline; force-killing remaining workers');
+          for (const id of Object.keys(this.wikiWorkers)) {
+            try {
+              this.wikiWorkers[id]?.nativeWorker.kill();
+              this.wikiWorkers[id]?.detachWorker();
+            } catch (error) {
+              logger.error('Force-killing wiki worker failed', { error, workspaceID: id });
+            }
+            delete this.wikiWorkers[id];
+          }
+          resolve();
+        }, 10_000);
+        timeout.unref();
+      }),
+    ]).finally(() => {
+      if (timeout) clearTimeout(timeout);
+    });
     logger.info('All wiki workers stop attempted', { function: 'stopAllWiki' });
+  }
+
+  private async terminateWikiWorkerBounded(nativeWorker: UtilityProcess, workspaceID: string, timeoutMs: number): Promise<void> {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      terminateWorker(nativeWorker),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => {
+          nativeWorker.kill();
+          reject(new Error(`terminateWorker timeout for ${workspaceID}`));
+        }, timeoutMs);
+        timeout.unref();
+      }),
+    ]).finally(() => {
+      if (timeout) clearTimeout(timeout);
+    });
   }
 
   /**
