@@ -49,6 +49,7 @@ import type {
   DeviceNetworkRuntimeOptions,
   IDeviceNetworkService,
 } from './interface';
+import { TrustedRpcGate } from './trustedRpcGate';
 
 const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
 const RELAY_RENEWAL_WINDOW_MS = 2 * 60_000;
@@ -323,6 +324,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   public devices$ = new BehaviorSubject<Device[]>([]);
   public pairingSessions$ = new BehaviorSubject<PairingSession[]>([]);
   private deviceNetworkUnsubscribers: Array<() => void> = [];
+  private readonly trustedRpcGate = new TrustedRpcGate();
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
@@ -363,11 +365,15 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     await this.core.start();
 
     this.started = true;
+    const initialDevices = await this.core.listDevices();
+    this.trustedRpcGate.updateDevices(initialDevices);
+    this.devices$.next(initialDevices);
     // Wire core observables to IPC-serializable BehaviorSubjects.
     // The core's observe methods return unsubscribe functions that cannot cross IPC,
     // so we mirror their values into Value$ observables exposed to the renderer.
     this.deviceNetworkUnsubscribers.push(
       this.core.observeDevices((devices) => {
+        this.trustedRpcGate.updateDevices(devices);
         this.devices$.next(devices);
       }),
       this.core.observePairingSessions((sessions) => {
@@ -392,6 +398,8 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     }
     this.deviceNetworkUnsubscribers = [];
     await this.core?.stop();
+    this.trustedRpcGate.updateDevices([]);
+    this.devices$.next([]);
     this.core = undefined;
     this.started = false;
     this.cloudGrantCache.clear();
@@ -604,8 +612,17 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     parameters: unknown,
     presentedGrant?: DeviceConnectionGrant,
   ): Promise<T> {
-    const grant = presentedGrant ?? await this.resolveOutboundGrant(peerId);
-    return this.core!.sendRpc(peerId, method, parameters, grant);
+    const core = this.core;
+    if (!core || !this.started) throw new Error('device_network_not_started');
+    const isTrusted = () => {
+      const record = core.getTrustedDevice(peerId);
+      return record !== undefined && record.revokedAt === undefined;
+    };
+    return this.trustedRpcGate.run(peerId, isTrusted, async () => {
+      const grant = presentedGrant ?? await this.resolveOutboundGrant(peerId);
+      if (!isTrusted()) throw new Error(`device_rpc_trust_changed:${peerId}`);
+      return core.sendRpc<T>(peerId, method, parameters, grant);
+    });
   }
 
   public async syncWithDevice(peerId: string, presentedGrant?: DeviceConnectionGrant): Promise<SyncResult> {

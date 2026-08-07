@@ -1,4 +1,4 @@
-import type { AgentFrameworkContext, AgentInstanceState, AgentLoopGenerator, AgentLoopInput, AgentLoopRuntime, ChatMessage } from 'memeloop';
+import type { AgentFrameworkContext, AgentInstanceState, AgentLoopGenerator, AgentLoopInput, AgentLoopRuntime, BuiltinToolContext, ChatMessage, Device } from 'memeloop';
 import {
   createAgentLoopRunner,
   mergeAgentToolsIntoFrameworkConfig,
@@ -54,7 +54,7 @@ export class MemeLoopDesktopRuntime {
       content: input.content,
       beforeCommitMap: input.beforeCommitMap,
     });
-    const context = this.createContext(input.agentId);
+    const context = await this.createContext(input.agentId);
     const runner = await this.createProfileRunner(input.agentId, context);
 
     const result = await runAgentToolLoopTurn(
@@ -97,7 +97,7 @@ export class MemeLoopDesktopRuntime {
       name: `Sub-task: ${input.prompt.slice(0, 50)}`,
     });
 
-    const childContext = this.createContext(childAgent.id, parentAgentId);
+    const childContext = await this.createContext(childAgent.id, parentAgentId);
     const childRunner = await this.createProfileRunner(childAgent.id, childContext);
     if (!childRunner) {
       yield { type: 'message', data: `Child agent profile not found: ${input.profileId}` };
@@ -110,11 +110,12 @@ export class MemeLoopDesktopRuntime {
     });
   }
 
-  private createContext(agentId: string, parentAgentId?: string): AgentFrameworkContext {
+  private async createContext(agentId: string, parentAgentId?: string): Promise<AgentFrameworkContext & DesktopRemoteAgentNetworkContext> {
     const isCancelled = (targetAgentId: string): boolean => {
       return this.options.isCancelled(targetAgentId) || (parentAgentId ? this.options.isCancelled(parentAgentId) : false);
     };
 
+    const remoteNetworkContext = await createDesktopRemoteAgentNetworkContext(this.options.deviceNetworkService);
     return {
       storage: this.storage,
       llmProvider: new MemeLoopDesktopLLMProvider({
@@ -126,6 +127,10 @@ export class MemeLoopDesktopRuntime {
       tools: this.toolRegistry,
       syncAdapters: [],
       network: this.options.deviceNetworkService,
+      ...remoteNetworkContext,
+      // A portable orchestration client is fixed to one peer. Until Desktop
+      // owns a fleet-aware target selector, direct trusted RPC is the explicit
+      // fallback and orchestration remains unsupported rather than misrouted.
       logger,
       loopScriptPolicy: this.options.loopScriptPolicy,
       isCancelled: () => isCancelled(agentId),
@@ -199,4 +204,21 @@ export class MemeLoopDesktopRuntime {
       },
     };
   }
+}
+
+export type DesktopRemoteAgentNetworkContext = Pick<BuiltinToolContext, 'getPeers' | 'sendRpcToNode' | 'localNodeId'>;
+
+/** Host bridge used by remoteAgent and MCP proxy tools. */
+export async function createDesktopRemoteAgentNetworkContext(
+  deviceNetworkService: IDeviceNetworkService,
+): Promise<DesktopRemoteAgentNetworkContext> {
+  const identity = await deviceNetworkService.getLocalIdentity();
+  return {
+    localNodeId: identity.peerId,
+    getPeers: async (): Promise<Device[]> => {
+      const devices = await deviceNetworkService.listDevices();
+      return devices.filter(device => device.trusted === true);
+    },
+    sendRpcToNode: (nodeId, method, parameters) => deviceNetworkService.sendRpc(nodeId, method, parameters),
+  };
 }
