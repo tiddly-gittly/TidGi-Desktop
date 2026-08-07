@@ -45,7 +45,7 @@ vi.mock('../contextMenu/rendererMenuItemProxy', () => ({
   mainMenuItemProxy: vi.fn((items: unknown) => items),
 }));
 
-import { MenuService } from '..';
+import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS, MenuService } from '..';
 
 const createMenuService = (): MenuService =>
   new MenuService(
@@ -60,6 +60,7 @@ describe('MenuService application lifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    mocks.deferredChecked.mockResolvedValue(true);
   });
 
   it('does not evaluate database-backed menu state before application initialization', async () => {
@@ -92,5 +93,32 @@ describe('MenuService application lifecycle', () => {
 
     expect(mocks.deferredChecked).toHaveBeenCalledTimes(1);
     expect(mocks.buildFromTemplate).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles startup menu initialization when a deferred provider never settles', async () => {
+    mocks.deferredChecked.mockImplementation(() => new Promise<boolean>(() => undefined));
+    const menuService = createMenuService();
+
+    const initialization = menuService.initializeForApp();
+    await vi.advanceTimersByTimeAsync(DEFERRED_MENU_PROPERTY_TIMEOUT_MS);
+    await expect(initialization).resolves.toBeUndefined();
+
+    const template = mocks.buildFromTemplate.mock.calls[0][0] as Array<{ submenu: Array<{ checked: boolean }> }>;
+    expect(template[0].submenu[0].checked).toBe(false);
+    expect(mocks.setApplicationMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it('isolates a rejected deferred provider and can rebuild successfully later', async () => {
+    mocks.deferredChecked.mockRejectedValueOnce(new Error('old settings unavailable'));
+    const menuService = createMenuService();
+
+    await expect(menuService.initializeForApp()).resolves.toBeUndefined();
+    let template = mocks.buildFromTemplate.mock.calls[0][0] as Array<{ submenu: Array<{ checked: boolean }> }>;
+    expect(template[0].submenu[0].checked).toBe(false);
+
+    await menuService.buildMenu();
+    await vi.runAllTimersAsync();
+    template = mocks.buildFromTemplate.mock.calls[1][0] as Array<{ submenu: Array<{ checked: boolean }> }>;
+    expect(template[0].submenu[0].checked).toBe(true);
   });
 });
