@@ -30,8 +30,13 @@ export function createLoadWikiTiddlersWithSubWikis(
     loadedStorageRoots.add(storagePath);
 
     const scan = scanFolderTiddlers(wikiInstance, canonicalFolderPath, {
-      onProgress: ({ scannedFileCount, storagePath }) => {
-        void logForBestEffort(nativeLogger, logContext, 'debug', `Folder tiddler scan progress: ${scannedFileCount} files from ${storagePath}`);
+      onProgress: ({ durationBucket, scannedFileCount, stage }) => {
+        void logForBestEffort(
+          nativeLogger,
+          logContext,
+          'debug',
+          `Folder tiddler scan ${stage}: #${scannedFileCount}${durationBucket === undefined ? '' : ` (${durationBucket})`}`,
+        );
       },
     });
     for (const tiddlerFile of scan.files) {
@@ -51,7 +56,7 @@ export function createLoadWikiTiddlersWithSubWikis(
       nativeLogger,
       logContext,
       'info',
-      `Loaded ${scan.files.length} tiddler files from bounded folder storage: ${scan.storagePath}`,
+      `Loaded ${scan.files.length} tiddler files from bounded folder storage`,
     );
   };
 

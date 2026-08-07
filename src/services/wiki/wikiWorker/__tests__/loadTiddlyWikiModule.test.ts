@@ -53,10 +53,19 @@ describe('loadTiddlyWikiModule', () => {
       actualRequire,
       { resolve },
     ) as NodeJS.Require;
+    const requireAnchors: Array<string | URL> = [];
 
-    const { TiddlyWiki } = await loadTiddlyWikiModule(bootPath, undefined, { createRequire: () => packageRequire });
+    const { TiddlyWiki } = await loadTiddlyWikiModule(bootPath, undefined, {
+      createRequire: (anchor) => {
+        requireAnchors.push(anchor);
+        return packageRequire;
+      },
+    });
 
     expect(TiddlyWiki()).toEqual({ fixture: true });
+    expect(requireAnchors).toHaveLength(1);
+    expect(String(requireAnchors[0])).toMatch(/loadTiddlyWikiModule\.ts$/);
+    expect(String(requireAnchors[0])).not.toContain(bootPath);
   });
 
   it('rejects a package whose manifest identity is not TiddlyWiki', async () => {

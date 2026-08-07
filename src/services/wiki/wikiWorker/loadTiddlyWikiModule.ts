@@ -59,8 +59,9 @@ export async function loadTiddlyWikiModule(
   const bootPath = path.resolve(TIDDLY_WIKI_BOOT_PATH);
   const packagePath = path.dirname(bootPath);
   const manifestPath = path.join(packagePath, 'package.json');
+  onPhase?.('manifest-begin');
   const manifest = readTiddlyWikiManifest(packagePath);
-  const packageRequire = (dependencies.createRequire ?? createRequire)(manifestPath);
+  onPhase?.('manifest-end');
   // The manifest is validated below to resolve to this package's exact
   // boot/boot.js entry. Avoid Node's package resolver here: Electron utility
   // processes can block indefinitely while resolving a wiki-local package on
@@ -79,6 +80,12 @@ export async function loadTiddlyWikiModule(
   if (canonicalEntryPath !== realpathSync(expectedBootEntryPath)) {
     throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: main entry must resolve to ${expectedBootEntryPath}`);
   }
+  // The entry is absolute and already contained/validated, so its require host
+  // must not be anchored inside a wiki-local node_modules tree. That anchor can
+  // block in Electron utility processes on macOS before require is even called.
+  onPhase?.('require-host-begin');
+  const packageRequire = (dependencies.createRequire ?? createRequire)(import.meta.url);
+  onPhase?.('require-host-end');
   onPhase?.('require-begin');
   const loadedModule = packageRequire(entryPath) as unknown;
   onPhase?.('require-end');

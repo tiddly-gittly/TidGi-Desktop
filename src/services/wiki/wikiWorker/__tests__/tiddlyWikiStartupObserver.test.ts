@@ -92,18 +92,17 @@ describe('installTiddlyWikiStartupObserver', () => {
 
   it('traces plugin loads with a sequence and basename but no full path', () => {
     const { wiki } = createFakeWiki();
+    const originalLoadTiddlersFromFile = wiki.loadTiddlersFromFile;
     const trace = vi.fn();
     installTiddlyWikiStartupObserver(wiki, trace);
     (wiki.boot.initStartup as unknown as () => void)();
 
     (wiki.loadPluginFolder as unknown as (folder: string) => void)('/Users/fixture/secret/plugins/plugin-one');
     (wiki.loadPlugin as unknown as (name: string) => void)('@scope/plugin-two');
-    (wiki.loadTiddlersFromFile as unknown as (file: string) => void)('/Users/fixture/secret/tiddlers/one.tid');
 
     expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki phase begin: loadPluginFolder #1 (plugins/plugin-one)');
     expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki phase begin: loadPlugin #1 (@scope/plugin-two)');
-    expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki tiddler file begin: #1');
-    expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki tiddler file end: #1 (<10 ms)');
+    expect(wiki.loadTiddlersFromFile).toBe(originalLoadTiddlersFromFile);
     expect(trace.mock.calls.flat().join(' ')).not.toContain('/Users/fixture/secret');
   });
 

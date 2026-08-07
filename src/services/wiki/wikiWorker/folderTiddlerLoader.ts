@@ -28,7 +28,9 @@ export interface FolderTiddlerScanOptions {
 }
 
 export interface FolderTiddlerScanProgress {
+  durationBucket?: string;
   scannedFileCount: number;
+  stage: 'after' | 'before';
   storagePath: string;
 }
 
@@ -43,6 +45,13 @@ type TiddlyWikiInstance = ReturnType<typeof TiddlyWiki>;
 function matchesExcludePattern(pattern: RegExp, fileName: string): boolean {
   pattern.lastIndex = 0;
   return pattern.test(fileName);
+}
+
+function durationBucket(durationMilliseconds: number): string {
+  if (durationMilliseconds < 10) return '<10 ms';
+  if (durationMilliseconds < 100) return '<100 ms';
+  if (durationMilliseconds < 1000) return '<1 s';
+  return '>=1 s';
 }
 
 /**
@@ -103,9 +112,19 @@ export function scanFolderTiddlers(
       if (scannedFileCount > maxFiles) {
         throw new FolderTiddlerScanError(`Folder tiddler scan exceeded maximum file count ${maxFiles} under ${storagePath}`);
       }
+      const shouldReportProgress = scannedFileCount === 1 || scannedFileCount % 100 === 0;
+      const startedAt = performance.now();
+      if (shouldReportProgress) {
+        options.onProgress?.({ scannedFileCount, stage: 'before', storagePath });
+      }
       files.push(wikiInstance.loadTiddlersFromFile(entryPath));
-      if (scannedFileCount === 1 || scannedFileCount % 500 === 0) {
-        options.onProgress?.({ scannedFileCount, storagePath });
+      if (shouldReportProgress) {
+        options.onProgress?.({
+          durationBucket: durationBucket(performance.now() - startedAt),
+          scannedFileCount,
+          stage: 'after',
+          storagePath,
+        });
       }
     }
   };
