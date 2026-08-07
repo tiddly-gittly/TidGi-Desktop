@@ -31,6 +31,7 @@ function createFakeWiki() {
     boot,
     loadPlugin: vi.fn(),
     loadPluginFolder: vi.fn(),
+    loadTiddlersFromFile: vi.fn(),
     loadTiddlersNode: vi.fn(),
     loadWikiTiddlers: vi.fn(),
   } as unknown as ReturnType<typeof TiddlyWiki>;
@@ -97,9 +98,12 @@ describe('installTiddlyWikiStartupObserver', () => {
 
     (wiki.loadPluginFolder as unknown as (folder: string) => void)('/Users/fixture/secret/plugins/plugin-one');
     (wiki.loadPlugin as unknown as (name: string) => void)('@scope/plugin-two');
+    (wiki.loadTiddlersFromFile as unknown as (file: string) => void)('/Users/fixture/secret/tiddlers/one.tid');
 
     expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki phase begin: loadPluginFolder #1 (plugins/plugin-one)');
     expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki phase begin: loadPlugin #1 (@scope/plugin-two)');
+    expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki tiddler file begin: #1');
+    expect(trace).toHaveBeenCalledWith('debug', 'TiddlyWiki tiddler file end: #1 (<10 ms)');
     expect(trace.mock.calls.flat().join(' ')).not.toContain('/Users/fixture/secret');
   });
 
