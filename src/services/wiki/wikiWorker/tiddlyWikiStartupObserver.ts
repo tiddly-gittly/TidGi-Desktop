@@ -70,33 +70,6 @@ function sanitizedPluginName(value: unknown): string {
   return (safeName ?? '<unknown>').slice(0, 100);
 }
 
-function durationBucket(durationMilliseconds: number): string {
-  if (durationMilliseconds < 10) return '<10 ms';
-  if (durationMilliseconds < 100) return '<100 ms';
-  if (durationMilliseconds < 1000) return '<1 s';
-  return '>=1 s';
-}
-
-function observeTiddlerFileLoader(wikiInstance: TiddlyWikiInstance, trace: Trace): void {
-  const methods = wikiInstance as unknown as Record<string, unknown>;
-  const original = methods.loadTiddlersFromFile;
-  if (typeof original !== 'function') return;
-  let invocation = 0;
-  methods.loadTiddlersFromFile = function observedTiddlerFileLoader(this: unknown, ...arguments_: unknown[]) {
-    const currentInvocation = ++invocation;
-    const startedAt = performance.now();
-    trace('debug', `TiddlyWiki tiddler file begin: #${currentInvocation}`);
-    try {
-      const result = (original as (...parameters: unknown[]) => unknown).apply(this, arguments_);
-      trace('debug', `TiddlyWiki tiddler file end: #${currentInvocation} (${durationBucket(performance.now() - startedAt)})`);
-      return result;
-    } catch (error) {
-      trace('warn', `TiddlyWiki tiddler file rejected: #${currentInvocation} (${durationBucket(performance.now() - startedAt)}): ${asError(error).message}`);
-      throw error;
-    }
-  };
-}
-
 /** Install low-volume phase tracing without changing TiddlyWiki completion semantics. */
 export function installTiddlyWikiStartupObserver(
   wikiInstance: TiddlyWikiInstance,
@@ -123,7 +96,6 @@ export function installTiddlyWikiStartupObserver(
     }
     wikiObserversInstalled = true;
     observeMethod(wikiInstance, 'loadTiddlersNode', 'loadTiddlersNode', trace);
-    observeTiddlerFileLoader(wikiInstance, trace);
     observeMethod(wikiInstance, 'loadWikiTiddlers', 'loadWikiTiddlers', trace);
     observeMethod(wikiInstance, 'loadPluginFolder', (arguments_, invocation) => `loadPluginFolder #${invocation} (${sanitizedFolderIdentifier(arguments_[0])})`, trace);
     observeMethod(wikiInstance, 'loadPlugin', (arguments_, invocation) => `loadPlugin #${invocation} (${sanitizedPluginName(arguments_[0])})`, trace);

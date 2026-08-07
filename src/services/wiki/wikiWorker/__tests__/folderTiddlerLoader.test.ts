@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { TiddlyWiki } from 'tiddlywiki';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FolderTiddlerScanError, resolveFolderTiddlerStoragePath, scanFolderTiddlers } from '../folderTiddlerLoader';
+import { FolderTiddlerScanError, type FolderTiddlerScanProgress, resolveFolderTiddlerStoragePath, scanFolderTiddlers } from '../folderTiddlerLoader';
 import { createLoadWikiTiddlersWithSubWikis } from '../loadWikiTiddlersWithSubWikis';
 
 const temporaryDirectories: string[] = [];
@@ -99,7 +99,35 @@ describe('folder-as-tiddlers loading', () => {
 
     scanFolderTiddlers(wiki, root, { onProgress });
 
-    expect(onProgress).toHaveBeenCalledExactlyOnceWith({ scannedFileCount: 1, storagePath: realpathSync(root) });
+    expect(onProgress).toHaveBeenNthCalledWith(1, { scannedFileCount: 1, stage: 'before', storagePath: realpathSync(root) });
+    expect(onProgress).toHaveBeenNthCalledWith(2, {
+      durationBucket: expect.any(String),
+      scannedFileCount: 1,
+      stage: 'after',
+      storagePath: realpathSync(root),
+    });
+    expect(onProgress).toHaveBeenCalledTimes(2);
+  });
+
+  it('samples folder parsing progress at the first and every hundredth file', () => {
+    const root = createTemporaryDirectory();
+    for (let index = 1; index <= 101; index += 1) {
+      writeFixtureFile(root, `${String(index).padStart(3, '0')}.tid`);
+    }
+    const { wiki } = createFakeWiki();
+    const progressEvents: FolderTiddlerScanProgress[] = [];
+    const onProgress = vi.fn((progress: FolderTiddlerScanProgress) => {
+      progressEvents.push(progress);
+    });
+
+    scanFolderTiddlers(wiki, root, { onProgress });
+
+    expect(progressEvents.map(progress => [progress.scannedFileCount, progress.stage])).toEqual([
+      [1, 'before'],
+      [1, 'after'],
+      [100, 'before'],
+      [100, 'after'],
+    ]);
   });
 
   it('keeps standard and folder loading mutually exclusive and deduplicates physical roots', () => {
