@@ -37,6 +37,10 @@ export function authTokenIsProvided(providedToken: string | undefined): provided
   return typeof providedToken === 'string' && providedToken.length > 0;
 }
 
+interface TiddlyWikiModuleLoaderDependencies {
+  createRequire?: typeof createRequire;
+}
+
 /**
  * Load the exact TiddlyWiki CommonJS entry selected by the host. A package may
  * be wiki-local or copied to Resources/node_modules in a packaged application.
@@ -47,16 +51,24 @@ export function authTokenIsProvided(providedToken: string | undefined): provided
  * entry, so resolve that entry from its installed manifest and load it through
  * the UtilityProcess CJS host instead.
  */
-export async function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string, onPhase?: (phase: string) => void) {
+export async function loadTiddlyWikiModule(
+  TIDDLY_WIKI_BOOT_PATH: string,
+  onPhase?: (phase: string) => void,
+  dependencies: TiddlyWikiModuleLoaderDependencies = {},
+) {
   const bootPath = path.resolve(TIDDLY_WIKI_BOOT_PATH);
   const packagePath = path.dirname(bootPath);
   const manifestPath = path.join(packagePath, 'package.json');
   const manifest = readTiddlyWikiManifest(packagePath);
-  const packageRequire = createRequire(manifestPath);
-  const entryPath = packageRequire.resolve(manifest.main);
+  const packageRequire = (dependencies.createRequire ?? createRequire)(manifestPath);
+  // The manifest is validated below to resolve to this package's exact
+  // boot/boot.js entry. Avoid Node's package resolver here: Electron utility
+  // processes can block indefinitely while resolving a wiki-local package on
+  // macOS, even though loading the already validated absolute CJS file works.
+  const entryPath = path.resolve(packagePath, manifest.main);
   onPhase?.('entry-resolved');
-  // require.resolve canonicalizes symlinks (notably /var -> /private/var on
-  // macOS), so compare canonical paths on both sides of the package boundary.
+  // realpath canonicalizes symlinks (notably /var -> /private/var on macOS),
+  // so compare canonical paths on both sides of the package boundary.
   const canonicalPackagePath = realpathSync(packagePath);
   const canonicalEntryPath = realpathSync(entryPath);
   const relativeEntryPath = path.relative(canonicalPackagePath, canonicalEntryPath);
