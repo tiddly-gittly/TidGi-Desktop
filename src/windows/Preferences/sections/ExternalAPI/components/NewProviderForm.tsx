@@ -106,6 +106,9 @@ export function NewProviderForm({
           placeholder={formState.providerClass === 'ollama'
             ? 'http://localhost:11434'
             : 'https://api.example.com/v1'}
+          helperText={formState.providerClass === 'openAICompatible'
+            ? 'Enter the complete API base URL, including /v1 when required. It is not appended automatically.'
+            : undefined}
           slotProps={{ htmlInput: { 'data-testid': 'new-provider-base-url-input' } }}
         />
       )}

@@ -4,8 +4,8 @@
  */
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
+import { registerToolDefinition } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
 
 export const SummaryParameterSchema = z.object({
   toolListPosition: z.object({
@@ -41,7 +41,7 @@ const summaryDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult }) {
-    if (!toolCall || toolCall.toolId !== 'summary') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'summary') return;
 
     const parameters = toolCall.parameters as z.infer<typeof SummaryToolSchema>;
     logger.debug('Summary tool called — agent loop will terminate', { textLength: parameters.text.length });

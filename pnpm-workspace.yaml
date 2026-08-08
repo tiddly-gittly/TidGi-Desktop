@@ -7,12 +7,16 @@ overrides:
   # file-stream-rotator 1.0.0 removes the moment dependency.
   # winston-daily-rotate-file hasn't updated its range yet, so override it here.
   file-stream-rotator: 1.0.0
+  # Pin react-transition-group to 4.4.5 and patch its exports via .npmrc packageExtensions.
+  react-transition-group: 4.4.5
   # Security fixes for transitive deps via prebuild-install -> rc / tar-stream
   # Scoped to parent to avoid cross-major overrides for other consumers
   "rc>ini": "^1.3.8"
   "tar-stream>bl": "^4.1.0"
 
 peerDependencyRules:
+  allowedVersions:
+    memeloop: ">=0.1.0 <0.3.0"
   ignoreMissing:
     - moment
     - moment-hijri
@@ -33,8 +37,10 @@ onlyBuiltDependencies:
 nodeLinker: hoisted
 
 allowBuilds:
+  '@ipshipyard/node-datachannel': true
   '@swc/core': true
   better-sqlite3: true
+  core-js-pure: set this to true or false
   dprint: true
   dugite: true
   electron: true
@@ -76,3 +82,7 @@ minimumReleaseAgeExclude:
   - ai@7.0.37
   - fs-extra@11.4.0
   - inversify@8.2.3
+  - '@memeloop/libp2p@0.2.2'
+  - '@memeloop/react-ui@0.1.0 || 0.1.1 || 0.1.2'
+  - memeloop@0.2.2 || 0.2.3
+  - multiformats@14.0.5

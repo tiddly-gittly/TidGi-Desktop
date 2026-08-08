@@ -226,7 +226,8 @@ Then('I should see {int} messages in chat history', async function(this: Applica
     try {
       const finalCount = await currentWindow.locator(messageSelector).count();
       throw new Error(`Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`);
-    } catch {
+    } catch (rethrow) {
+      if (rethrow instanceof Error && rethrow.message.startsWith('Could not find')) throw rethrow;
       throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
     }
   });
@@ -237,20 +238,35 @@ Then('the last AI request should contain system prompt {string}', async function
     throw new Error('Mock OpenAI server is not running');
   }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+  let lastSystemPrompt = '';
+  await backOff(
+    async () => {
+      const lastRequest = this.mockOpenAIServer!.getLastRequest();
+      if (!lastRequest) {
+        throw new Error('No AI request has been made yet');
+      }
 
-  // Find system message in the request
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
-    throw new Error('No system message found in the AI request');
-  }
+      const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+      if (systemMessages.length === 0) {
+        throw new Error('No system message found in the AI request');
+      }
 
-  if (!systemMessage.content || !systemMessage.content.includes(expectedPrompt)) {
-    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`);
-  }
+      lastSystemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+      if (!lastSystemPrompt.includes(expectedPrompt)) {
+        throw new Error(`System prompt does not contain expected text yet`);
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  ).catch(() => {
+    const requestPrompts = this.mockOpenAIServer!.getAllRequests().map((request, index) => {
+      const content = request.messages
+        .filter(message => message.role === 'system')
+        .map(message => message.content ?? '')
+        .join('\n');
+      return `${index + 1}: ${content.slice(0, 300)}`;
+    }).join('\n');
+    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${lastSystemPrompt}"\nAll request system prompts:\n${requestPrompts}`);
+  });
 });
 
 Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
@@ -263,14 +279,15 @@ Then('the last AI request system prompt should not contain {string}', async func
     throw new Error('No AI request has been made yet');
   }
 
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
+  const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+  if (systemMessages.length === 0) {
     // No system message means it definitely doesn't contain the text
     return;
   }
 
-  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
-    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
+  const systemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+  if (systemPrompt.includes(unexpectedText)) {
+    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemPrompt.substring(0, 300)}..."`);
   }
 });
 
@@ -350,11 +367,10 @@ function createProviderConfig(): AIProviderConfig {
   return {
     provider: 'TestProvider',
     baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
-    apiKey: 'test-api-key', // Required by isAIAvailable() for non-Ollama providers
     models: [
-      { name: 'test-model', features: ['language'] },
-      { name: 'test-embedding-model', features: ['language', 'embedding'] },
-      { name: 'test-speech-model', features: ['speech'] },
+      { name: 'test-model', features: ['language'], apiMode: 'chat-completions' },
+      { name: 'test-embedding-model', features: ['language', 'embedding'], apiMode: 'chat-completions' },
+      { name: 'test-speech-model', features: ['speech'], apiMode: 'chat-completions' },
     ],
     providerClass: 'openAICompatible',
     isPreset: false,
@@ -399,10 +415,6 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
     // For UI-configured scenarios: build expected config using actual baseURL
     providerConfig = createProviderConfig();
     providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
-    // UI-created providers won't have an apiKey — align expected with actual
-    if (!existingProvider.apiKey) {
-      delete (providerConfig as unknown as Record<string, unknown>).apiKey;
-    }
   } else {
     providerConfig = createProviderConfig();
   }

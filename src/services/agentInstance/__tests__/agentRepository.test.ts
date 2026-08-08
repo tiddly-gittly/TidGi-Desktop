@@ -1,18 +1,23 @@
 import { Repository } from 'typeorm';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstanceEntity } from '@services/database/schema/agent';
+import type { AgentDefinition } from 'memeloop';
 import { createAgent } from '../agentRepository';
 
 describe('agentRepository.createAgent', () => {
   const mockDefinition: AgentDefinition = {
     id: 'agent-def-1',
     name: 'Test Agent',
+    description: '',
+    systemPrompt: '',
+    tools: [],
+    version: '1',
     avatarUrl: 'avatar.png',
-    aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' } },
-    agentFrameworkID: 'basicPromptConcatHandler',
-    agentFrameworkConfig: {},
+    aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' }, modelParameters: {} },
+    agentFrameworkID: 'agent-tool-loop',
+    agentFrameworkConfig: { prompts: [], plugins: [] },
   };
 
   const createMockRepo = () => {

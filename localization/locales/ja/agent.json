@@ -197,6 +197,7 @@
     "FailedToAddProvider": "プロバイダーの追加に失敗しました",
     "FailedToDeleteProvider": "プロバイダー {{providerName}} の削除に失敗しました",
     "FailedToRemoveModel": "モデルの削除に失敗しました",
+    "FailedToRefreshOfficialModels": "モデルの更新に失敗しました",
     "FailedToSaveSettings": "設定の保存に失敗しました",
     "FailedToUpdateModel": "モデルを更新できません",
     "FailedToUpdateProviderStatus": "プロバイダーのステータス更新に失敗しました",
@@ -217,6 +218,7 @@
     "Models": "利用可能なモデル",
     "NoPresetSelected": "プリセットモデルが選択されていません",
     "NoProvidersAvailable": "利用可能なプロバイダーがありません",
+    "OfficialModelsRefreshed": "{{count}} 件のモデルを更新しました",
     "OpenDatabaseFolder": "データベースフォルダを開く",
     "PresetModels": "プリセットモデル",
     "PresetProvider": "プリセットプロバイダー",
@@ -230,6 +232,7 @@
     "ProviderEnabled": "プロバイダーが有効になりました",
     "ProviderName": "プロバイダー名",
     "ProviderNameRequired": "プロバイダー名は必須です",
+    "RefreshOfficialModels": "モデルを更新",
     "Search": "検索と埋め込み",
     "SearchEmbeddingDelete": "削除",
     "SearchEmbeddingDeleteConfirm": "ワークスペース「{{workspaceName}}」のすべてのベクトル埋め込みを削除してもよろしいですか？この操作は取り消せません。",
@@ -403,14 +406,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -445,8 +444,7 @@
       "ProviderTitle": "プロバイダー",
       "Title": "モデル選択"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "位置パラメータ設定",
       "TargetId": "ターゲット要素ID",
@@ -480,8 +478,7 @@
       "TextTitle": "テキスト",
       "Title": "プロンプト"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "レスポンスヘッダー、このレスポンスエントリを識別するために使用されます",
       "CaptionTitle": "タイトル",

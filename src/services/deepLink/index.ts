@@ -14,6 +14,10 @@ import { inject, injectable } from 'inversify';
 import path from 'node:path';
 import type { IDeepLinkService } from './interface';
 
+export function findTidGiProtocolUrl(commandLine: readonly string[]): string | undefined {
+  return commandLine.find(argument => argument.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`));
+}
+
 @injectable()
 export class DeepLinkService implements IDeepLinkService {
   private pendingDeepLink: string | undefined;
@@ -203,8 +207,8 @@ export class DeepLinkService implements IDeepLinkService {
     if (gotTheLock) {
       // Handle second instance (when app is already running)
       app.on('second-instance', (_event, commandLine) => {
-        const url = commandLine.pop();
-        if (url !== undefined && url !== '') {
+        const url = findTidGiProtocolUrl(commandLine);
+        if (url !== undefined) {
           void this.openDeepLink(url);
         }
       });
@@ -213,7 +217,7 @@ export class DeepLinkService implements IDeepLinkService {
       // On Windows/Linux, protocol URLs are passed as command line arguments
       if (process.argv.length >= 2) {
         // Find the protocol URL in command line arguments
-        const protocolUrl = process.argv.find(argument => argument.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`));
+        const protocolUrl = findTidGiProtocolUrl(process.argv);
         if (protocolUrl) {
           logger.info(`Processing initial deep link from command line`, { protocolUrl, function: 'setupWindowsLinuxHandler' });
           // Process after app is ready

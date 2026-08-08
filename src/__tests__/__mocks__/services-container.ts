@@ -5,7 +5,10 @@ import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
+import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
+import type { DeviceCloudConnectionStatus } from '@services/deviceNetwork/interface';
 import { ExternalAPIService } from '@services/externalAPI';
+import type { IGitService, IGitStateChange, IGitSyncProgressEvent } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -16,7 +19,8 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { Observable } from 'rxjs';
+import type { Device, PairingSession } from 'memeloop';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
 
 // Mock bindServiceAndProxy to be an empty function
@@ -31,10 +35,12 @@ export const serviceInstances: {
   window: Partial<IWindowService>;
   native: Partial<INativeService>;
   wiki: Partial<IWikiService>;
+  git: Partial<IGitService>;
   auth: Record<string, unknown>;
   context: Partial<IContextService>;
   preference: Partial<IPreferenceService>;
   externalAPI: Partial<IExternalAPIService>;
+  deviceNetwork: Partial<IDeviceNetworkService>;
 } = {
   workspace: {
     countWorkspaces: vi.fn().mockResolvedValue(5),
@@ -60,6 +66,32 @@ export const serviceInstances: {
     // generic wikiOperationInServer mock: keep simple, allow test-specific overrides
     wikiOperationInServer: vi.fn().mockResolvedValue([]) as IWikiService['wikiOperationInServer'],
   },
+  git: {
+    gitStateChange$: new BehaviorSubject<IGitStateChange | undefined>(undefined),
+    gitSyncProgress$: new BehaviorSubject<IGitSyncProgressEvent | undefined>(undefined),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    clone: vi.fn().mockResolvedValue(undefined),
+    commitAndSync: vi.fn().mockResolvedValue(false),
+    forcePull: vi.fn().mockResolvedValue(false),
+    getModifiedFileList: vi.fn().mockResolvedValue([]),
+    getWorkspacesRemote: vi.fn().mockResolvedValue(undefined),
+    initWikiGit: vi.fn().mockResolvedValue(undefined),
+    initScopedWikiGit: vi.fn().mockResolvedValue(undefined),
+    syncOrForcePull: vi.fn().mockResolvedValue(false),
+    callGitOp: vi.fn().mockResolvedValue(undefined),
+    getGitLog: vi.fn().mockResolvedValue({ entries: [], currentBranch: 'main', totalCount: 0 }),
+    getCommitFiles: vi.fn().mockResolvedValue([]),
+    getUnpushedCommitHashes: vi.fn().mockResolvedValue(new Set()),
+    checkoutCommit: vi.fn().mockResolvedValue(undefined),
+    revertCommit: vi.fn().mockResolvedValue(undefined),
+    amendCommitMessage: vi.fn().mockResolvedValue(undefined),
+    undoCommit: vi.fn().mockResolvedValue(undefined),
+    undoCommits: vi.fn().mockResolvedValue(undefined),
+    discardFileChanges: vi.fn().mockResolvedValue(undefined),
+    addToGitignore: vi.fn().mockResolvedValue(undefined),
+    isAIGenerateBackupTitleEnabled: vi.fn().mockResolvedValue(false),
+    notifyFileChange: vi.fn(),
+  },
   auth: {
     get: vi.fn().mockResolvedValue(undefined),
     set: vi.fn().mockResolvedValue(undefined),
@@ -80,6 +112,35 @@ export const serviceInstances: {
       resetWithConfirm: vi.fn(async () => undefined),
     } as Partial<IPreferenceService>;
   })(),
+  deviceNetwork: {
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
+    getLocalDevice: vi.fn().mockResolvedValue(undefined),
+    getLocalIdentity: vi.fn().mockResolvedValue({
+      peerId: 'test-peer-id',
+      publicKeyMultibase: 'test-public-key',
+      deviceName: 'Test Device',
+      platform: 'desktop',
+      createdAt: Date.now(),
+    }),
+    listDevices: vi.fn().mockResolvedValue([]),
+    listPairingSessions: vi.fn().mockResolvedValue([]),
+    createPairingInvite: vi.fn().mockResolvedValue('{}'),
+    requestPairingFromInvite: vi.fn().mockResolvedValue(undefined),
+    requestLocalPairing: vi.fn().mockResolvedValue(undefined),
+    acceptPairing: vi.fn().mockResolvedValue(undefined),
+    rejectPairing: vi.fn().mockResolvedValue(undefined),
+    removeTrustedDevice: vi.fn().mockResolvedValue(undefined),
+    configureCloud: vi.fn().mockResolvedValue(undefined),
+    clearCloudConfiguration: vi.fn().mockResolvedValue(undefined),
+    getCloudConnectionStatus: vi.fn().mockResolvedValue({ configured: false, state: 'not-configured' }),
+    syncCloudDevices: vi.fn().mockResolvedValue([]),
+    sendRpc: vi.fn().mockResolvedValue(undefined),
+    syncWithDevice: vi.fn().mockResolvedValue(undefined),
+    cloudStatus$: new BehaviorSubject<DeviceCloudConnectionStatus>({ configured: false, state: 'not-configured' }),
+    devices$: new BehaviorSubject<Device[]>([]),
+    pairingSessions$: new BehaviorSubject<PairingSession[]>([]),
+  },
   externalAPI: {
     getAIConfig: vi.fn(async () => ({ default: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
     getAIProviders: vi.fn(async () => []),
@@ -122,6 +183,7 @@ container.bind(serviceIdentifier.WorkspaceView).toConstantValue(serviceInstances
 container.bind(serviceIdentifier.Window).toConstantValue(serviceInstances.window);
 container.bind(serviceIdentifier.NativeService).toConstantValue(serviceInstances.native);
 container.bind(serviceIdentifier.Wiki).toConstantValue(serviceInstances.wiki);
+container.bind(serviceIdentifier.Git).toConstantValue(serviceInstances.git);
 container.bind(serviceIdentifier.ExternalAPI).to(ExternalAPIService).inSingletonScope();
 container.bind(serviceIdentifier.Preference).toConstantValue(serviceInstances.preference);
 container.bind(serviceIdentifier.Context).toConstantValue(serviceInstances.context);
@@ -130,6 +192,7 @@ container.bind(serviceIdentifier.AgentDefinition).to(AgentDefinitionService).inS
 container.bind(serviceIdentifier.AgentBrowser).to(AgentBrowserService).inSingletonScope();
 // Bind real DatabaseService instead of mock
 container.bind(serviceIdentifier.Database).to(DatabaseService).inSingletonScope();
+container.bind(serviceIdentifier.DeviceNetwork).toConstantValue(serviceInstances.deviceNetwork);
 container.bind(serviceIdentifier.AgentInstance).to(AgentInstanceService).inSingletonScope();
 container.bind(serviceIdentifier.WikiEmbedding).to(WikiEmbeddingService).inSingletonScope();
 

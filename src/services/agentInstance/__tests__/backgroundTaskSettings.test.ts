@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as heartbeatManager from '../heartbeatManager';
 import { AgentInstanceService } from '../index';
 import * as alarmClock from '../tools/alarmClock';
+import * as heartbeatManager from '../tools/scheduledTaskManager';
 
 describe('AgentInstanceService background task settings APIs', () => {
   const findOneMock = vi.fn();
@@ -45,9 +45,7 @@ describe('AgentInstanceService background task settings APIs', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    scheduleAlarmTimerSpy = vi.spyOn(alarmClock, 'scheduleAlarmTimer').mockImplementation(() => {
-      // Avoid creating real timers in unit tests.
-    });
+    scheduleAlarmTimerSpy = vi.spyOn(alarmClock, 'scheduleAlarmTimer').mockResolvedValue();
     startHeartbeatSpy = vi.spyOn(heartbeatManager, 'startHeartbeat').mockImplementation(() => {
       // Avoid creating real timers in unit tests.
     });

@@ -27,12 +27,14 @@ import { compact, debounce, drop, remove, reverse, take } from 'lodash';
 import ContextMenuBuilder from './contextMenu/contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuItemProxy';
 import { InsertMenuAfterSubMenuIndexError } from './error';
-import type { IMenuService, IOnContextMenuInfo } from './interface';
+import type { IMainMenuService, IOnContextMenuInfo } from './interface';
 import { DeferredMenuItemConstructorOptions } from './interface';
 import { loadDefaultMenuTemplate } from './loadDefaultMenuTemplate';
 
+export const DEFERRED_MENU_PROPERTY_TIMEOUT_MS = 2000;
+
 @injectable()
-export class MenuService implements IMenuService {
+export class MenuService implements IMainMenuService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Context) private readonly contextService: IContextService,
@@ -41,8 +43,13 @@ export class MenuService implements IMenuService {
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
     // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
-    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
+    this.scheduleMenuBuild = debounce(async () => {
+      await this.buildMenuNow();
+    }, 50);
   }
+
+  private initializedForApp = false;
+  private readonly scheduleMenuBuild: ReturnType<typeof debounce>;
 
   #menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -84,6 +91,28 @@ export class MenuService implements IMenuService {
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
   public async buildMenu(): Promise<void> {
+    if (!this.initializedForApp) {
+      return;
+    }
+
+    await this.scheduleMenuBuild();
+  }
+
+  /**
+   * Enable application-menu builds once the database-backed settings used by
+   * deferred menu properties are safe to read.
+   */
+  public async initializeForApp(): Promise<void> {
+    if (this.initializedForApp) {
+      return;
+    }
+
+    this.initializedForApp = true;
+    this.scheduleMenuBuild.cancel();
+    await this.buildMenuNow();
+  }
+
+  private async buildMenuNow(): Promise<void> {
     const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
     try {
       const menu = Menu.buildFromTemplate(latestTemplate);
@@ -124,18 +153,78 @@ export class MenuService implements IMenuService {
         .map(async (item) => {
           // For separator and role-based items, don't process label
           const shouldProcessLabel = item.type !== 'separator' && !item.role;
-          const processedLabel = shouldProcessLabel && typeof item.label === 'function' ? item.label() ?? undefined : item.label;
+          let processedLabel: string | undefined;
+          try {
+            processedLabel = typeof item.label === 'function'
+              ? (shouldProcessLabel ? item.label() ?? undefined : undefined)
+              : item.label;
+          } catch (error) {
+            logger.warn('Deferred menu label failed; omitting it from this build', {
+              error,
+              itemID: item.id,
+            });
+          }
+          const [checked, enabled, visible, currentSubmenu] = await Promise.all([
+            this.resolveDeferredBoolean(item.checked, item.id, 'checked'),
+            this.resolveDeferredBoolean(item.enabled, item.id, 'enabled'),
+            this.resolveDeferredBoolean(item.visible, item.id, 'visible'),
+            Array.isArray(item.submenu) ? this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
+          ]);
           return {
             ...item,
             /** label sometimes is null, causing error. Skip processing for separators and role-based items. Normalize null to undefined. */
             label: typeof processedLabel === 'function' ? undefined : (processedLabel ?? undefined),
-            checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
-            enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-            visible: typeof item.visible === 'function' ? await item.visible() : item.visible,
-            submenu: Array.isArray(item.submenu) ? await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
+            checked,
+            enabled,
+            visible,
+            submenu: currentSubmenu,
           };
         }),
     );
+  }
+
+  /**
+   * A menu is startup decoration, not a reason to withhold the main window.
+   * Isolate rejected or stalled async providers and use a fail-closed value for
+   * the current build. Later scheduled builds may recover normally.
+   */
+  private async resolveDeferredBoolean(
+    value: (() => boolean) | (() => Promise<boolean>) | boolean | undefined,
+    itemID: string | undefined,
+    property: 'checked' | 'enabled' | 'visible',
+  ): Promise<boolean | undefined> {
+    if (typeof value !== 'function') return value;
+
+    return await new Promise<boolean>((resolve) => {
+      let settled = false;
+      const settle = (result: boolean): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        resolve(result);
+      };
+      const timeout = setTimeout(() => {
+        logger.warn('Deferred menu property timed out; using fail-closed value', {
+          itemID,
+          property,
+          timeoutMs: DEFERRED_MENU_PROPERTY_TIMEOUT_MS,
+        });
+        settle(false);
+      }, DEFERRED_MENU_PROPERTY_TIMEOUT_MS);
+      timeout.unref();
+
+      Promise.resolve()
+        .then(value)
+        .then(settle)
+        .catch((error: unknown) => {
+          logger.warn('Deferred menu property failed; using fail-closed value', {
+            error,
+            itemID,
+            property,
+          });
+          settle(false);
+        });
+    });
   }
 
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */

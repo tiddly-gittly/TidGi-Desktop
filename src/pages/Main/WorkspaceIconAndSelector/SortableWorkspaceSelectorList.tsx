@@ -31,6 +31,7 @@ import { PreferenceSections } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspaceGroupsListObservable } from '@services/workspaces/hooks';
 import { isWikiWorkspace, IWorkspace, IWorkspaceGroup, IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { getPointerYForIntent } from './getPointerYForIntent';
 import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
@@ -481,12 +482,12 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       return;
     }
 
-    if (isDragStateEqual(dragStateReference.current, nextState)) {
-      return;
-    }
-
     dragStateReference.current = nextState;
-    setDragState(nextState);
+    // The ref is updated synchronously by drag events while the React update
+    // can be debounced or cancelled. Comparing only with the ref can therefore
+    // leave the rendered state stale forever. Always reconcile the explicit
+    // state with React, while retaining the render-level equality fast path.
+    setDragState(previousState => isDragStateEqual(previousState, nextState) ? previousState : nextState);
   }, [isDragStateEqual]);
 
   /**
@@ -510,12 +511,18 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
   // deriveDragState always reads the current pointer position.
   const pointerYReference = useRef<number | undefined>(undefined);
   useEffect(() => {
-    const handler = (event: PointerEvent) => {
+    const handler = (event: MouseEvent | PointerEvent) => {
       pointerYReference.current = event.clientY;
     };
+    // Electron on Windows can occasionally omit pointermove events emitted by
+    // Playwright's synthetic mouse while still dispatching the corresponding
+    // mousemove. Listen to both; native pointer input normally emits both with
+    // the same coordinates, so the duplicate assignment is harmless.
     window.addEventListener('pointermove', handler, { capture: true });
+    window.addEventListener('mousemove', handler, { capture: true });
     return () => {
       window.removeEventListener('pointermove', handler, { capture: true });
+      window.removeEventListener('mousemove', handler, { capture: true });
     };
   }, []);
 
@@ -833,14 +840,6 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // The over.id itself is still correct (collision detection resolves the
       // right target), but over.rect can be stale.
       const activeRect = active.rect.current.translated;
-      // Prefer the live pointer captured before dnd-kit's handlers run.
-      // The cumulative drag delta is relative to the initial layout and can
-      // become inaccurate after an earlier drop rearranges sidebar items.
-      const pointerY = pointerYReference.current ?? activatorPointerY ?? (activeRect
-        ? activeRect.top + activeRect.height / 2
-        : (over?.rect ? over.rect.top + over.rect.height / 2 : 0));
-      const referenceY = pointerY;
-
       const overRect = over?.rect ?? null;
       const resolvedOverId = overId;
 
@@ -873,6 +872,13 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       // Use a single rect source for zone math — mixing dnd-kit's cached top with a
       // live height skews center/top/bottom boundaries after layout shifts.
       const intentRect = liveRect ?? { top: overRect.top, height: overRect.height };
+      const referenceY = getPointerYForIntent({
+        activatorPointerY: activatorPointerY ?? (activeRect
+          ? activeRect.top + activeRect.height / 2
+          : undefined),
+        capturedPointerY: pointerYReference.current,
+        rect: intentRect,
+      });
       const reorderIntent = getReorderIntentFromPointer({
         pointerY: referenceY,
         rect: intentRect,
@@ -1040,7 +1046,11 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     allDraggableIdsReference.current = buildDraggableIds(interleavedSidebarItems, {
       includeGroupHeaders: activeId.startsWith('group-'),
     });
-    applyDragState(previous => ({ ...previous, activeId }));
+    // A new drag must not inherit a target/intent still rendered from the
+    // previous drag. Using a functional state update here raced with the
+    // synchronous dragStateReference updates from onDragMove and could restore
+    // stale overId/intent fields after the ref had already advanced.
+    applyDragState({ ...initialDragState, activeId });
   }, [applyDragState, clearDragStateTimeout, interleavedSidebarItems]);
 
   const handleDragCancel = useCallback(async (_event: DragCancelEvent) => {

@@ -53,6 +53,7 @@
       "ModelNoVisionSupport": "模型 {{model}} 不支持视觉/图片输入。请选择具有“视觉”功能标签的模型。",
       "NoDefaultModel": "未配置默认模型。请在设置中配置默认模型。",
       "ProviderNotFound": "未找到提供商 {{provider}}。请在设置中进行配置。",
+      "StreamRetryExhausted": "流式响应失败，已重试多次，请稍后再试。",
       "Title": "配置问题"
     },
     "FileValidation": {
@@ -195,6 +196,7 @@
     "FailedToAddModel": "无法添加模型",
     "FailedToAddProvider": "添加提供商失败",
     "FailedToRemoveModel": "无法删除模型",
+    "FailedToRefreshOfficialModels": "刷新模型列表失败",
     "FailedToSaveSettings": "无法保存设置",
     "FailedToUpdateModel": "无法更新模型",
     "FailedToUpdateProviderStatus": "无法更新提供商状态",
@@ -215,6 +217,7 @@
     "Models": "可用模型",
     "NoPresetSelected": "不使用预设模型",
     "NoProvidersAvailable": "没有可用的提供商",
+    "OfficialModelsRefreshed": "已刷新 {{count}} 个模型",
     "OpenDatabaseFolder": "打开数据库文件夹",
     "BackgroundTasks": "后台任务",
     "BackgroundTasksDescription": "活跃的智能体自动唤醒定时任务（心跳和闹钟）。这些任务会按计划自动唤醒智能体。",
@@ -233,6 +236,7 @@
     "ProviderEnabled": "提供方已启用",
     "ProviderName": "提供商名称",
     "ProviderNameRequired": "提供商名称为必填项",
+    "RefreshOfficialModels": "刷新模型列表",
     "SearchEmbeddingNoEmbeddingModelError": "请先在外部API部分配置默认嵌入模型设置。",
     "SelectDefaultProvider": "选择默认提供商",
     "SelectFromPresets": "从预设模型中选择",

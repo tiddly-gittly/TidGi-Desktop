@@ -3,8 +3,8 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { lightTheme } from '@services/theme/defaultTheme';
+import type { AiAPIConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
@@ -61,6 +61,18 @@ describe('ExternalAPI Add Provider with Embedding Model', () => {
           temperature: 0.7,
           systemPrompt: 'You are a helpful assistant.',
           topP: 0.95,
+        },
+      }),
+      writable: true,
+    });
+
+    Object.defineProperty(window.service.externalAPI, 'getProviderCatalog', {
+      value: vi.fn().mockResolvedValue({
+        providers: [mockProvider],
+        status: {
+          source: 'embedded',
+          catalogVersion: 'test',
+          fetchedAt: '2026-07-30T00:00:00.000Z',
         },
       }),
       writable: true,

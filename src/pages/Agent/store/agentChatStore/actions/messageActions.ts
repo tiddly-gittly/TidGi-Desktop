@@ -1,4 +1,4 @@
-import type { AgentInstanceMessage } from '@services/agentInstance/interface';
+import type { ChatMessage } from 'memeloop';
 import type { StoreApi } from 'zustand';
 import type { AgentChatStoreType } from '../types';
 
@@ -6,7 +6,7 @@ import type { AgentChatStoreType } from '../types';
 function getTurnMessageIds(
   userMessageId: string,
   orderedMessageIds: string[],
-  messages: Map<string, AgentInstanceMessage>,
+  messages: Map<string, ChatMessage>,
 ): string[] {
   const startIndex = orderedMessageIds.indexOf(userMessageId);
   if (startIndex === -1) return [];
@@ -23,29 +23,29 @@ export const messageActions = (
   set: StoreApi<AgentChatStoreType>['setState'],
   get: StoreApi<AgentChatStoreType>['getState'],
 ) => ({
-  setMessages: (messages: AgentInstanceMessage[]) => {
-    const messagesMap = new Map<string, AgentInstanceMessage>();
+  setMessages: (messages: ChatMessage[]) => {
+    const messagesMap = new Map<string, ChatMessage>();
     const orderedIds = messages.map(message => {
-      messagesMap.set(message.id, message);
-      return message.id;
+      messagesMap.set(message.messageId, message);
+      return message.messageId;
     });
     set({ messages: messagesMap, orderedMessageIds: orderedIds });
   },
 
-  addMessage: (message: AgentInstanceMessage) => {
+  addMessage: (message: ChatMessage) => {
     set(state => {
       const newMessages = new Map(state.messages);
-      newMessages.set(message.id, message);
-      const newOrderedIds = [...state.orderedMessageIds, message.id];
+      newMessages.set(message.messageId, message);
+      const newOrderedIds = [...state.orderedMessageIds, message.messageId];
       return { messages: newMessages, orderedMessageIds: newOrderedIds };
     });
   },
 
-  updateMessage: (message: AgentInstanceMessage) => {
+  updateMessage: (message: ChatMessage) => {
     set(state => {
-      if (!state.messages.has(message.id)) return state;
+      if (!state.messages.has(message.messageId)) return state;
       const newMessages = new Map(state.messages);
-      newMessages.set(message.id, message);
+      newMessages.set(message.messageId, message);
       return { messages: newMessages };
     });
   },
@@ -97,13 +97,19 @@ export const messageActions = (
         }
         : undefined;
 
+      // sendMsgToAgent throws on hard errors (including configuration errors
+      // emitted by the LLM provider). The service persists a role='error'
+      // message before re-throwing, so the chat history still contains the
+      // failure record.
       await window.service.agentInstance.sendMsgToAgent(storeAgent.id, {
         text: content,
         file: fileData as unknown as File,
         wikiTiddlers,
       });
+
+      // Refresh UI state after a successful turn.
+      await get().fetchAgent(storeAgent.id);
     } catch (error) {
-      set({ error: error as Error });
       void window.service.native.log(
         'error',
         'Failed to send message',

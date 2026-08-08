@@ -1,20 +1,29 @@
+/**
+ * Desktop AgentDefinition service implementation: DB-backed definition persistence.
+ * memeloop core manages the model, Desktop provides the storage layer.
+ */
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
+import type { AgentDefinition } from 'memeloop';
+import { AGENT_TOOL_LOOP_ID, getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
+
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
 
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { IAgentBrowserService } from '@services/agentBrowser/interface';
-import defaultAgents from '@services/agentInstance/agentFrameworks/taskAgents.json';
-import type { IAgentInstanceService } from '@services/agentInstance/interface';
-import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { getWikiAgentTemplates } from './getAgentDefinitionTemplatesFromWikis';
-import type { AgentDefinition, IAgentDefinitionService } from './interface';
+import type { AgentTemplateSource, IAgentDefinitionService } from './interface';
 
-const defaultAgentsList = defaultAgents as AgentDefinition[];
+const defaultAgentsList = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
+  systemPrompt: '',
+  tools: [],
+  version: '1',
+  ...profile,
+}));
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;
@@ -22,18 +31,32 @@ function mergeTextOverride(value: string | null | undefined, fallback: string | 
 
 function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
   const defaultAgent = defaultAgentsList.find(agent => agent.id === entity.id);
-
   return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...defaultAgent,
     id: entity.id,
-    name: mergeTextOverride(entity.name, defaultAgent?.name),
-    description: mergeTextOverride(entity.description, defaultAgent?.description),
+    name: mergeTextOverride(entity.name, defaultAgent?.name) ?? '',
+    description: mergeTextOverride(entity.description, defaultAgent?.description) ?? '',
     avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
-    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID),
-    agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? {},
+    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || AGENT_TOOL_LOOP_ID,
+    agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? { prompts: [], plugins: [] },
     aiApiConfig: entity.aiApiConfig ?? defaultAgent?.aiApiConfig,
     agentTools: entity.agentTools ?? defaultAgent?.agentTools,
     heartbeat: entity.heartbeat ?? defaultAgent?.heartbeat,
   };
+}
+
+export function shouldRefreshBuiltinDefinition(entity: Pick<AgentDefinitionEntity, 'builtinVersion' | 'isCustomized' | 'createdAt' | 'updatedAt'>): boolean {
+  if (entity.isCustomized !== null && entity.isCustomized !== undefined) {
+    return !entity.isCustomized;
+  }
+
+  // Before builtinVersion/isCustomized existed, Desktop inserted complete
+  // bundled definitions. An unchanged row has identical creation/update
+  // timestamps; edited legacy rows must be preserved.
+  return entity.createdAt.getTime() === entity.updatedAt.getTime();
 }
 
 @injectable()
@@ -43,254 +66,145 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   @inject(serviceIdentifier.AgentBrowser)
   private readonly agentBrowserService!: IAgentBrowserService;
 
+  private templateSource: AgentTemplateSource | undefined;
+
   private dataSource: DataSource | null = null;
   private agentDefRepository: Repository<AgentDefinitionEntity> | null = null;
 
+  public configureTemplateSource(source: AgentTemplateSource): void {
+    this.templateSource = source;
+  }
+
   public async initialize(): Promise<void> {
     try {
-      // Initialize the database
-      await this.databaseService.initializeDatabase('agent');
-      logger.debug('Agent database initialized');
-      this.dataSource = await this.databaseService.getDatabase('agent');
+      await this.databaseService.initializeDatabase(MEME_LOOP_DATABASE_KEY);
+      this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
-      logger.debug('Agent repositories initialized');
-
-      // Check if database is empty and initialize with default agents if needed
-      await this.initializeDefaultAgentsIfEmpty();
-      logger.debug('Agent handlers registered');
-
-      // Initialize dependent services (using container.get to avoid circular dependency)
-      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-      if (agentInstanceService) {
-        await agentInstanceService.initialize();
-      } else {
-        logger.warn('agentInstanceService not ready yet during AgentDefinitionService initialization');
-      }
-
-      if (this.agentBrowserService) {
-        await this.agentBrowserService.initialize();
-      } else {
-        logger.warn('agentBrowserService not ready yet during AgentDefinitionService initialization');
-      }
+      await this.initializeDefaultAgents();
+      if (this.agentBrowserService) await this.agentBrowserService.initialize();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to initialize agent service: ${errorMessage}`);
+      logger.error(`Failed to initialize agent service: ${String(error)}`);
       throw error;
     }
   }
 
-  /**
-   * Initialize default agents if database is empty (for first-time users)
-   */
-  private async initializeDefaultAgentsIfEmpty(): Promise<void> {
-    if (!this.agentDefRepository) {
-      throw new Error('Agent repositories not initialized');
-    }
-
+  private async initializeDefaultAgents(): Promise<void> {
+    if (!this.agentDefRepository) throw new Error('Agent repositories not initialized');
     try {
-      // Check if database is empty
-      const existingCount = await this.agentDefRepository.count();
-      if (existingCount === 0) {
-        logger.info('Agent database is empty, initializing with default agents');
-        // Create agent definition entities with complete data from taskAgents.json
-        const agentDefinitionEntities = defaultAgentsList.map(defaultAgent =>
-          this.agentDefRepository!.create({
-            id: defaultAgent.id,
-            name: defaultAgent.name,
-            description: defaultAgent.description,
-            avatarUrl: defaultAgent.avatarUrl,
-            agentFrameworkID: defaultAgent.agentFrameworkID,
-            agentFrameworkConfig: defaultAgent.agentFrameworkConfig,
-            aiApiConfig: defaultAgent.aiApiConfig,
-            agentTools: defaultAgent.agentTools,
-            heartbeat: defaultAgent.heartbeat,
-          })
-        );
-        // Save all default agents to database
-        await this.agentDefRepository.save(agentDefinitionEntities);
-        logger.info(`Initialized ${defaultAgentsList.length} default agents in database`);
-      } else {
-        logger.debug(`Agent database already contains ${existingCount} agents, skipping default initialization`);
+      const existingById = new Map(
+        (await this.agentDefRepository.find()).map(entity => [entity.id, entity]),
+      );
+      const entitiesToSave: AgentDefinitionEntity[] = [];
+
+      for (const definition of defaultAgentsList) {
+        const existing = existingById.get(definition.id);
+        if (existing && !shouldRefreshBuiltinDefinition(existing)) {
+          continue;
+        }
+
+        const entity = existing ?? this.agentDefRepository.create({ id: definition.id });
+        Object.assign(entity, {
+          id: definition.id,
+          name: definition.name,
+          description: definition.description,
+          avatarUrl: definition.avatarUrl,
+          agentFrameworkID: definition.agentFrameworkID || AGENT_TOOL_LOOP_ID,
+          agentFrameworkConfig: definition.agentFrameworkConfig,
+          aiApiConfig: definition.aiApiConfig,
+          agentTools: definition.agentTools,
+          heartbeat: definition.heartbeat,
+          builtinVersion: definition.version,
+          isCustomized: false,
+        });
+        entitiesToSave.push(entity);
+      }
+
+      if (entitiesToSave.length > 0) {
+        await this.agentDefRepository.save(entitiesToSave);
+        logger.info('Refreshed bundled agent definitions', {
+          definitions: entitiesToSave.map(entity => ({
+            id: entity.id,
+            version: entity.builtinVersion,
+          })),
+        });
       }
     } catch (error) {
-      logger.error(`Failed to initialize default agents: ${error as Error}`);
+      logger.error(`Failed to initialize default agents: ${String(error)}`);
       throw error;
     }
   }
 
-  /**
-   * Ensure repositories are initialized
-   */
   private ensureRepositories(): void {
-    if (!this.agentDefRepository) {
-      throw new Error('Agent repositories not initialized');
-    }
+    if (!this.agentDefRepository) throw new Error('Agent repositories not initialized');
   }
 
-  // Create a new agent definition
   public async createAgentDef(agent: AgentDefinition): Promise<AgentDefinition> {
     this.ensureRepositories();
-
-    try {
-      // Generate ID if not provided
-      if (!agent.id) {
-        agent.id = nanoid();
-      }
-
-      const agentDefinitionEntity = this.agentDefRepository!.create({
-        ...agent,
-      });
-
-      await this.agentDefRepository!.save(agentDefinitionEntity);
-      logger.info(`Created agent definition: ${agent.id}`);
-
-      return agent;
-    } catch (error) {
-      logger.error(`Failed to create agent definition: ${error as Error}`);
-      throw error;
-    }
+    if (!agent.id) agent.id = nanoid();
+    await this.agentDefRepository!.save(this.agentDefRepository!.create({
+      ...agent,
+      isCustomized: true,
+    }));
+    return agent;
   }
 
-  // Update existing agent definition
   public async updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition> {
     this.ensureRepositories();
-
-    try {
-      // Check if agent exists
-      const existingAgent = await this.agentDefRepository!.findOne({
-        where: { id: agent.id },
-      });
-
-      if (!existingAgent) {
-        throw new Error(`Agent definition not found: ${agent.id}`);
-      }
-
-      const pickedProperties = Object.fromEntries(
-        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'heartbeat']))
-          .filter(([, value]) => value !== undefined),
-      );
-      Object.assign(existingAgent, pickedProperties);
-
-      await this.agentDefRepository!.save(existingAgent);
-      logger.info(`Updated agent definition: ${agent.id}`);
-
-      return existingAgent as AgentDefinition;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to update agent definition: ${errorMessage}`);
-      throw error;
-    }
+    const existing = await this.agentDefRepository!.findOne({ where: { id: agent.id } });
+    if (!existing) throw new Error(`Agent definition not found: ${agent.id}`);
+    Object.assign(
+      existing,
+      Object.fromEntries(
+        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'agentTools', 'heartbeat']))
+          .filter(([, v]) => v !== undefined),
+      ),
+    );
+    existing.isCustomized = true;
+    await this.agentDefRepository!.save(existing);
+    return existing as unknown as AgentDefinition;
   }
 
-  // Get all available agent definitions
   public async getAgentDefs(): Promise<AgentDefinition[]> {
     this.ensureRepositories();
-
-    try {
-      // Get agent definitions from database (no server-side search; client should filter)
-      const agentDefsFromDB = await this.agentDefRepository!.find();
-
-      // Convert entities to agent definitions
-      const agentDefs: AgentDefinition[] = agentDefsFromDB.map(mergeWithDefaultAgent);
-
-      return agentDefs;
-    } catch (error) {
-      logger.error(`Failed to get agent definitions: ${error as Error}`);
-      throw error;
-    }
+    return (await this.agentDefRepository!.find()).map(mergeWithDefaultAgent);
   }
 
-  // Get specific agent definition by ID or default agent if ID not provided
   public async getAgentDef(definitionId?: string): Promise<AgentDefinition | undefined> {
     this.ensureRepositories();
-
-    try {
-      // Get default agent definition if ID not provided
-      // TODO: Get default agent from preferences
-      if (!definitionId) {
-        // Temporary solution: get the first agent definition
-        const agents = await this.getAgentDefs();
-        return agents.length > 0 ? agents[0] : undefined;
-      }
-
-      // Find agent in database
-      const entity = await this.agentDefRepository!.findOne({
-        where: { id: definitionId },
-      });
-
-      if (!entity) {
-        return undefined;
-      }
-
-      // Convert entity to agent definition
-      return mergeWithDefaultAgent(entity);
-    } catch (error) {
-      logger.error(`Failed to get agent definition: ${error as Error}`);
-      throw error;
+    if (!definitionId) {
+      const all = await this.getAgentDefs();
+      return all.length > 0 ? all[0] : undefined;
     }
+    const entity = await this.agentDefRepository!.findOne({ where: { id: definitionId } });
+    return entity ? mergeWithDefaultAgent(entity) : undefined;
   }
 
-  // Delete agent definition and all associated instances.
-  // Deletes dependent agent instances first to avoid FK constraint failures.
   public async deleteAgentDef(id: string): Promise<void> {
     this.ensureRepositories();
-
-    if (!id.startsWith('temp-')) {
-      throw new Error(`Refusing to delete non-temporary agent definition via cleanup path: ${id}`);
-    }
-
-    try {
-      // Delete dependent agent instances before the definition. Use AgentInstanceService
-      // so runtime resources (heartbeats, alarms, scheduled tasks, MCP clients, and
-      // subscriptions) are cleaned up together with database rows.
-      const instanceRepo = this.dataSource!.getRepository(AgentInstanceEntity);
-      const scheduledTaskRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
-      const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-
-      const dependentInstances = await instanceRepo.find({
-        where: { agentDefId: id },
-      });
-
-      for (const instance of dependentInstances) {
-        await agentInstanceService.deleteAgent(instance.id);
-      }
-
-      await scheduledTaskRepo.delete({ agentDefinitionId: id });
-
-      if (dependentInstances.length > 0) {
-        logger.info(`Cleaned up ${dependentInstances.length} dependent agent instances before deleting definition: ${id}`);
-      }
-
-      // Now safe to delete the agent definition
-      await this.agentDefRepository!.delete(id);
-      logger.info(`Deleted agent definition: ${id}`);
-    } catch (error) {
-      logger.error(`Failed to delete agent definition: ${error as Error}`);
-      throw error;
-    }
+    if (!id.startsWith('temp-')) throw new Error(`Refusing to delete non-temporary agent definition: ${id}`);
+    const instanceRepo = this.dataSource!.getRepository(AgentInstanceEntity);
+    const stRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
+    for (const inst of await instanceRepo.find({ where: { agentDefId: id } })) await instanceRepo.delete(inst.id);
+    await stRepo.delete({ agentDefinitionId: id });
+    await this.agentDefRepository!.delete(id);
   }
 
   public async getAgentTemplates(): Promise<AgentDefinition[]> {
+    const templates: AgentDefinition[] = [...defaultAgentsList];
+
+    // Query active wiki workspaces for agent template tiddlers
     try {
-      const templates: AgentDefinition[] = [];
-
-      // Add default agents from JSON
-      templates.push(...defaultAgentsList);
-
-      // Get templates from active main workspaces
-      const wikiTemplates = await getWikiAgentTemplates();
-      templates.push(...wikiTemplates);
-
-      logger.debug(`Found ${templates.length} agent templates`, {
-        total: templates.length,
-        defaultAgents: defaultAgentsList.length,
-        wikiTemplates: wikiTemplates.length,
-      });
-
-      return templates;
-    } catch (error) {
-      logger.error(`Failed to get agent templates: ${error as Error}`);
-      throw error;
+      const templateSources = await this.templateSource?.() ?? [];
+      for (const { tiddler, workspaceName } of templateSources) {
+        const agentDefinition = tiddlerToAgentDefinition(tiddler as TiddlerFieldsForAgent, workspaceName);
+        if (agentDefinition) {
+          templates.push(agentDefinition);
+        }
+      }
+    } catch {
+      // Workspace service not available
     }
+
+    return templates;
   }
 }

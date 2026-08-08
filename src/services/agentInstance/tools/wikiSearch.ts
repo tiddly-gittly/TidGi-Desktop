@@ -11,10 +11,11 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { AiAPIConfig } from 'memeloop';
+import { registerToolDefinition } from 'memeloop';
+import type { ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-import type { AiAPIConfig } from '../promptConcat/promptConcatSchema';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 
 /**
  * Wiki Search Config Schema (user-configurable in UI)
@@ -91,6 +92,12 @@ const WikiSearchToolSchema = z.object({
 
 type WikiSearchToolParameters = z.infer<typeof WikiSearchToolSchema>;
 
+const WIKI_FILTER_ERROR_TITLE = /^(?:Filter error|筛选器错误)\s*:/iu;
+
+export function isWikiFilterErrorTitle(title: string): boolean {
+  return WIKI_FILTER_ERROR_TITLE.test(title.trim());
+}
+
 /**
  * LLM-callable tool schema for updating embeddings
  */
@@ -117,7 +124,7 @@ type WikiUpdateEmbeddingsToolParameters = z.infer<typeof WikiUpdateEmbeddingsToo
 /**
  * Execute wiki search
  */
-async function executeWikiSearch(
+export async function executeWikiSearch(
   parameters: WikiSearchToolParameters,
   aiConfig?: AiAPIConfig,
 ): Promise<ToolExecutionResult> {
@@ -176,11 +183,10 @@ async function executeWikiSearch(
         // Get full content for results
         for (const vr of vectorResults) {
           try {
-            const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [vr.record.tiddlerTitle]);
+            const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [vr.record.tiddlerTitle]);
             results.push({
               title: vr.record.tiddlerTitle,
-              text: tiddlerFields[0]?.text,
-              fields: tiddlerFields[0],
+              text,
               similarity: vr.similarity,
             });
           } catch {
@@ -204,6 +210,15 @@ async function executeWikiSearch(
       }
 
       const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
+      const filterErrorTitle = tiddlerTitles.find(isWikiFilterErrorTitle);
+      if (filterErrorTitle) {
+        return {
+          success: false,
+          error: `Invalid TiddlyWiki filter: ${filterErrorTitle}. ` +
+            'Use [title[Exact Title]] or [[Exact Title]] for an exact title, and [tag[Tag]] for a tag.',
+          metadata: { ...searchMetadata, filter, resultCount: 0 },
+        };
+      }
 
       if (tiddlerTitles.length === 0) {
         return {
@@ -215,8 +230,8 @@ async function executeWikiSearch(
 
       for (const title of tiddlerTitles) {
         try {
-          const tiddlerFields = await wikiService.wikiOperationInServer(WikiChannel.getTiddlersAsJson, workspaceID, [title]);
-          results.push({ title, text: tiddlerFields[0]?.text, fields: tiddlerFields[0] });
+          const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [title]);
+          results.push({ title, text });
         } catch {
           results.push({ title });
         }
@@ -236,7 +251,7 @@ async function executeWikiSearch(
         content += ` (Similarity: ${(result.similarity * 100).toFixed(1)}%)`;
       }
       content += '\n\n';
-      content += result.text ? `\`\`\`tiddlywiki\n${result.text}\n\`\`\`\n\n` : '(Content not available)\n\n';
+      content += result.text !== undefined ? `\`\`\`tiddlywiki\n${result.text}\n\`\`\`\n\n` : '(Content not available)\n\n';
     }
 
     return { success: true, data: content, metadata: searchMetadata };
@@ -254,7 +269,7 @@ async function executeWikiSearch(
 /**
  * Execute wiki update embeddings
  */
-async function executeWikiUpdateEmbeddings(
+export async function executeWikiUpdateEmbeddings(
   parameters: WikiUpdateEmbeddingsToolParameters,
   aiConfig?: AiAPIConfig,
 ): Promise<ToolExecutionResult> {
@@ -344,14 +359,15 @@ const wikiSearchDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
+    if (!toolCall.found) return;
 
     // Check cancellation
-    if (agentFrameworkContext.isCancelled()) {
+    if (agentFrameworkContext.isCancelled?.()) {
       logger.debug('Wiki search cancelled', { agentId: agentFrameworkContext.agent.id });
       return;
     }
 
-    const aiConfig = agentFrameworkContext.agent.aiApiConfig as AiAPIConfig | undefined;
+    const aiConfig = (agentFrameworkContext.agent as { aiApiConfig?: AiAPIConfig }).aiApiConfig;
 
     if (toolCall.toolId === 'wiki-search') {
       await executeToolCall('wiki-search', (parameters) => executeWikiSearch(parameters, aiConfig));

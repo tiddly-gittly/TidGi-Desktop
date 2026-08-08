@@ -6,8 +6,7 @@ import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMe
 import { useTranslation } from 'react-i18next';
 
 import { ListItemText } from '@/components/ListItem';
-import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelFeature, ModelInfo, ReasoningEffort } from '@services/externalAPI/interface';
 import { KeyValueTabs } from '../../../KeyValueTabs';
 import { ListItemVertical } from '../../../PreferenceComponents';
 import { NewModelDialog } from './NewModelDialog';
@@ -16,6 +15,7 @@ import { ProviderPanel } from './ProviderPanel';
 
 interface ProviderConfigProps {
   providers: AIProviderConfig[];
+  catalogProviders?: AIProviderConfig[];
   setProviders: Dispatch<SetStateAction<AIProviderConfig[]>>;
   changeDefaultModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultEmbeddingModel?: (provider: string, model: string) => Promise<void>;
@@ -23,6 +23,12 @@ interface ProviderConfigProps {
   changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultFreeModel?: (provider: string, model: string) => Promise<void>;
+}
+
+const EMPTY_CATALOG_PROVIDERS: AIProviderConfig[] = [];
+
+export async function persistProviderModels(providerName: string, models: ModelInfo[]): Promise<void> {
+  await window.service.externalAPI.updateProvider(providerName, { models });
 }
 
 // Add provider button styling
@@ -41,6 +47,12 @@ interface ProviderFormState {
     caption: string;
     features: ModelFeature[];
     parameters?: Record<string, unknown>;
+    apiMode?: ModelInfo['apiMode'];
+    contextWindowSize?: number;
+    maxOutputTokens?: number;
+    modelOptions?: ModelInfo['modelOptions'];
+    supportsReasoningEffort?: ReasoningEffort[];
+    reasoningEffortFormat?: ModelInfo['reasoningEffortFormat'];
   };
 }
 
@@ -52,6 +64,7 @@ interface ProviderFormState {
 
 export function ProviderConfig({
   providers,
+  catalogProviders = EMPTY_CATALOG_PROVIDERS,
   setProviders,
   changeDefaultModel: _changeDefaultModel,
   changeDefaultEmbeddingModel: _changeDefaultEmbeddingModel,
@@ -82,6 +95,7 @@ export function ProviderConfig({
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
   const [selectedDefaultModel, setSelectedDefaultModel] = useState('');
   const [availableDefaultModels, setAvailableDefaultModels] = useState<ModelInfo[]>([]);
+  const [refreshingProvider, setRefreshingProvider] = useState<string | null>(null);
 
   // Track if we're currently updating from user input to prevent Observable overwrite
   const isUserInputting = useRef<Record<string, boolean>>({});
@@ -96,7 +110,7 @@ export function ProviderConfig({
           apiKey: provider.apiKey || '',
           baseURL: provider.baseURL || '',
           models: [...provider.models],
-          newModel: { name: '', caption: '', features: ['language'] },
+          newModel: { name: '', caption: '', features: ['language'], apiMode: 'chat-completions' },
         };
       }
     });
@@ -108,11 +122,11 @@ export function ProviderConfig({
   // Update available default providers
   useEffect(() => {
     const currentProviderNames = new Set(providers.map(p => p.provider));
-    const filteredDefaultProviders = defaultProvidersConfig.providers.filter(
+    const filteredDefaultProviders = catalogProviders.filter(
       p => !currentProviderNames.has(p.provider),
-    ) as AIProviderConfig[];
+    );
     setAvailableDefaultProviders(filteredDefaultProviders);
-  }, [providers]);
+  }, [catalogProviders, providers]);
 
   const showMessage = (message: string, severity: 'success' | 'error' | 'info') => {
     setSnackbarMessage(message);
@@ -127,11 +141,11 @@ export function ProviderConfig({
 
   const providerClasses = useMemo(() => {
     const classes = new Set<string>();
-    defaultProvidersConfig.providers.forEach(p => {
+    catalogProviders.forEach(p => {
       if (p.providerClass) classes.add(p.providerClass);
     });
     return Array.from(classes);
-  }, []);
+  }, [catalogProviders]);
 
   // Debounced save function
 
@@ -187,9 +201,41 @@ export function ProviderConfig({
     }
   };
 
+  const handleRefreshModels = async (providerName: string) => {
+    setRefreshingProvider(providerName);
+    try {
+      const result = await window.service.externalAPI.refreshOfficialModels(providerName);
+      setProviders(previous => previous.map(provider => provider.provider === providerName ? { ...provider, models: result.models } : provider));
+      setProviderForms(previous => {
+        const form = previous[providerName];
+        return form
+          ? { ...previous, [providerName]: { ...form, models: result.models } }
+          : previous;
+      });
+      showMessage(
+        t('Preference.OfficialModelsRefreshed', {
+          count: result.discoveredCount,
+          defaultValue: `Refreshed ${result.discoveredCount} models`,
+        }),
+        'success',
+      );
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to refresh official models', {
+        function: 'ProviderConfig.handleRefreshModels',
+        error,
+      });
+      showMessage(
+        t('Preference.FailedToRefreshOfficialModels', { defaultValue: 'Failed to refresh models' }),
+        'error',
+      );
+    } finally {
+      setRefreshingProvider(null);
+    }
+  };
+
   const openAddModelDialog = (providerName: string) => {
     setCurrentProvider(providerName);
-    const provider = defaultProvidersConfig.providers.find(p => p.provider === providerName) as AIProviderConfig | undefined;
+    const provider = catalogProviders.find(p => p.provider === providerName);
     const currentModels = providerForms[providerName]?.models;
     const currentModelNames = new Set(currentModels?.map(m => m.name));
 
@@ -198,13 +244,13 @@ export function ProviderConfig({
     } else {
       const localProvider = providers.find(p => p.provider === providerName);
       if (localProvider) {
-        const similarProviders = defaultProvidersConfig.providers.filter(
+        const similarProviders = catalogProviders.filter(
           p => p.providerClass === localProvider.providerClass,
         );
         const allModels: ModelInfo[] = [];
         similarProviders.forEach(p => {
           p.models.forEach(m => {
-            if (!currentModelNames.has(m.name)) allModels.push(m as ModelInfo);
+            if (!currentModelNames.has(m.name)) allModels.push(m);
           });
         });
         setAvailableDefaultModels(allModels);
@@ -224,7 +270,7 @@ export function ProviderConfig({
     setSelectedDefaultModel('');
   };
 
-  const handleModelFormChange = (providerName: string, field: string, value: string | ModelFeature[] | Record<string, unknown>) => {
+  const handleModelFormChange = (providerName: string, field: string, value: unknown) => {
     setProviderForms(previous => {
       const currentForm = previous[providerName];
       if (!currentForm) return previous;
@@ -295,6 +341,12 @@ export function ProviderConfig({
             caption: model.caption || '',
             features: model.features || ['language'],
             parameters: model.parameters || {},
+            apiMode: model.apiMode ?? 'chat-completions',
+            contextWindowSize: model.contextWindowSize ?? model.maxInputTokens,
+            maxOutputTokens: model.maxOutputTokens,
+            modelOptions: model.modelOptions,
+            supportsReasoningEffort: model.supportsReasoningEffort || [],
+            reasoningEffortFormat: model.reasoningEffortFormat,
           },
         },
       };
@@ -322,6 +374,12 @@ export function ProviderConfig({
         caption: form.newModel.caption || undefined,
         features: form.newModel.features,
         parameters: form.newModel.parameters,
+        apiMode: form.newModel.apiMode,
+        contextWindowSize: form.newModel.contextWindowSize,
+        maxOutputTokens: form.newModel.maxOutputTokens,
+        modelOptions: form.newModel.modelOptions,
+        supportsReasoningEffort: form.newModel.supportsReasoningEffort,
+        reasoningEffortFormat: form.newModel.reasoningEffortFormat,
       } satisfies ModelInfo;
 
       if (!newModel.name) {
@@ -361,6 +419,8 @@ export function ProviderConfig({
               caption: '',
               features: ['language'],
               parameters: {},
+              apiMode: 'chat-completions',
+              supportsReasoningEffort: [],
             },
           },
         };
@@ -368,9 +428,7 @@ export function ProviderConfig({
 
       const provider = providers.find(p => p.provider === currentProvider);
       if (provider) {
-        await window.service.externalAPI.updateProvider(currentProvider, {
-          models: updatedModels,
-        });
+        await persistProviderModels(currentProvider, updatedModels);
 
         setProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
@@ -551,6 +609,7 @@ export function ProviderConfig({
             name: '',
             caption: '',
             features: ['language'],
+            apiMode: 'chat-completions',
           },
         },
       }));
@@ -703,6 +762,10 @@ export function ProviderConfig({
                   onDeleteProvider={() => {
                     void handleDeleteProvider(provider.provider);
                   }}
+                  onRefreshModels={() => {
+                    void handleRefreshModels(provider.provider);
+                  }}
+                  refreshingModels={refreshingProvider === provider.provider}
                 />
               )
               : 'Loading...',

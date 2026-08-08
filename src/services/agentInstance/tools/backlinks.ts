@@ -9,8 +9,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { registerToolDefinition } from 'memeloop';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 
 export const BacklinksParameterSchema = z.object({
   toolListPosition: z.object({
@@ -72,8 +73,8 @@ const backlinksDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-backlinks') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-backlinks') return;
+    if (agentFrameworkContext.isCancelled?.()) return;
     await executeToolCall('wiki-backlinks', executeBacklinks);
   },
 });

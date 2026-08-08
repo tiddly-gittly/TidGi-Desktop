@@ -1,10 +1,10 @@
-import type { AgentDefinition, AgentHeartbeatConfig, AgentToolConfig } from '@services/agentDefinition/interface';
-import type { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
-import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
+import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
+import type { AgentDefinition, AgentHeartbeatConfig, AiAPIConfig, HostAgentToolConfig } from 'memeloop';
+import type { AgentInstanceLatestStatus } from 'memeloop';
+import type { AgentFrameworkConfig, AttachmentReference, ChatMessage, ChatMessagePart, ChatRole, DetailReference, ToolCall } from 'memeloop';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
-export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/scheduledTaskTypes';
+export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
 
 @Entity('scheduled_tasks')
 export class ScheduledTaskEntity {
@@ -109,19 +109,30 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
 
   /** Agent handler configuration parameters, stored as JSON */
   @Column({ type: 'simple-json', nullable: true })
-  agentFrameworkConfig?: Record<string, unknown>;
+  agentFrameworkConfig?: AgentFrameworkConfig;
 
   /** Agent's AI API configuration, can override global default config */
   @Column({ type: 'simple-json', nullable: true })
-  aiApiConfig?: Partial<AiAPIConfig>;
+  aiApiConfig?: AiAPIConfig;
 
   /** Tools available to this agent */
   @Column({ type: 'simple-json', nullable: true })
-  agentTools?: AgentToolConfig[];
+  agentTools?: HostAgentToolConfig[];
 
   /** Heartbeat configuration for periodic auto-wake */
   @Column({ type: 'simple-json', nullable: true })
   heartbeat?: AgentHeartbeatConfig;
+
+  /** Last bundled profile version applied to this row. Null identifies a legacy row. */
+  @Column({ nullable: true })
+  builtinVersion?: string;
+
+  /**
+   * Whether the user changed this definition. Null identifies a legacy row,
+   * whose timestamps are used once to infer whether it is safe to refresh.
+   */
+  @Column({ type: 'boolean', nullable: true })
+  isCustomized?: boolean;
 
   /** Creation timestamp */
   @CreateDateColumn()
@@ -140,7 +151,7 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
  * Stores user chat sessions with Agents
  */
 @Entity('agent_instances')
-export class AgentInstanceEntity implements Partial<AgentInstance> {
+export class AgentInstanceEntity {
   @PrimaryColumn()
   id!: string;
 
@@ -161,14 +172,14 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
   modified?: Date;
 
   @Column({ type: 'simple-json', nullable: true })
-  aiApiConfig?: Partial<AiAPIConfig>;
+  aiApiConfig?: AiAPIConfig;
 
   @Column({ nullable: true })
   avatarUrl?: string;
 
   /** Agent handler configuration parameters, inherited from AgentDefinition */
   @Column({ type: 'simple-json', nullable: true })
-  agentFrameworkConfig?: Record<string, unknown>;
+  agentFrameworkConfig?: AgentFrameworkConfig;
 
   @Column({ default: false })
   closed: boolean = false;
@@ -202,25 +213,51 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
 
 /**
  * Stores conversation messages between users and Agents
+ * Database entity — implements ChatMessage directly so the runtime uses canonical fields.
+ * Saved/queried through AgentInstanceService which handles the runtime ↔ DB mapping.
  */
 @Entity('agent_instance_messages')
-export class AgentInstanceMessageEntity implements AgentInstanceMessage {
+export class AgentInstanceMessageEntity implements ChatMessage {
   @PrimaryColumn()
-  id!: string;
+  messageId!: string;
 
   @Column()
   @Index()
-  agentId!: string;
+  conversationId!: string;
+
+  @Column({ default: 'tidgi-desktop' })
+  originNodeId!: string;
+
+  @Column({ type: 'integer' })
+  timestamp!: number;
+
+  @Column({ type: 'integer' })
+  lamportClock!: number;
 
   @Column({
     type: 'varchar',
     enum: ['user', 'assistant', 'agent', 'tool', 'error'],
     default: 'user',
   })
-  role!: 'user' | 'assistant' | 'agent' | 'tool' | 'error';
+  role!: ChatRole;
 
   @Column({ type: 'text' })
   content!: string;
+
+  @Column({ type: 'simple-json', nullable: true })
+  parts?: ChatMessagePart[];
+
+  @Column({ type: 'simple-json', nullable: true })
+  toolCalls?: ToolCall[];
+
+  @Column({ type: 'simple-json', nullable: true })
+  attachments?: AttachmentReference[];
+
+  @Column({ type: 'simple-json', nullable: true })
+  detailRef?: DetailReference;
+
+  @Column({ type: 'text', nullable: true })
+  reasoning_content?: string;
 
   @Column({
     type: 'varchar',
@@ -229,11 +266,8 @@ export class AgentInstanceMessageEntity implements AgentInstanceMessage {
   })
   contentType?: string;
 
-  @CreateDateColumn({ type: 'datetime' })
-  created!: Date;
-
-  @UpdateDateColumn()
-  modified?: Date;
+  @Column({ default: false })
+  hidden?: boolean;
 
   @Column({ type: 'simple-json', nullable: true, name: 'meta_data' })
   metadata?: Record<string, unknown>;
@@ -243,6 +277,6 @@ export class AgentInstanceMessageEntity implements AgentInstanceMessage {
 
   // Relation to AgentInstance
   @ManyToOne(() => AgentInstanceEntity, instance => instance.messages)
-  @JoinColumn({ name: 'agentId' })
+  @JoinColumn({ name: 'conversationId' })
   agentInstance?: AgentInstanceEntity;
 }

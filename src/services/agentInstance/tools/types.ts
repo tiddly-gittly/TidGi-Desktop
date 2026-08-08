@@ -1,9 +1,17 @@
-import { ToolCallingMatch } from '@services/agentDefinition/interface';
-import { AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
-import { AgentInstanceMessage } from '@services/agentInstance/interface';
 import { AIStreamResponse } from '@services/externalAPI/interface';
+import type { AgentInstance, ChatMessage } from 'memeloop';
+import type { AgentDefinition, FrameworkPluginToolConfig, IPrompt } from 'memeloop';
+import { ToolCallingMatch } from 'memeloop';
 import { AsyncSeriesHook, AsyncSeriesWaterfallHook } from 'tapable';
-import type { IPrompt, IPromptConcatTool } from '../promptConcat/promptConcatSchema';
+
+/**
+ * Desktop AgentFrameworkContext — survives memeloop migration; used by defineTool plugin hooks.
+ */
+export interface DesktopAgentFrameworkContext {
+  agent: AgentInstance;
+  agentDef: AgentDefinition;
+  isCancelled(): boolean;
+}
 
 /**
  * Tool approval mode: 'auto' executes immediately, 'confirm' pauses for user approval
@@ -83,7 +91,7 @@ export interface ToolActions {
  */
 export interface BaseToolContext {
   /** Framework context */
-  agentFrameworkContext: AgentFrameworkContext;
+  agentFrameworkContext: DesktopAgentFrameworkContext;
   /** Additional context data */
   metadata?: Record<string, unknown>;
   /** Actions set by tools during processing */
@@ -95,11 +103,11 @@ export interface BaseToolContext {
  */
 export interface PromptConcatHookContext extends BaseToolContext {
   /** Array of agent instance messages for context */
-  messages: AgentInstanceMessage[];
+  messages: ChatMessage[];
   /** Current prompt tree */
   prompts: IPrompt[];
   /** Tool configuration */
-  toolConfig: IPromptConcatTool;
+  toolConfig: FrameworkPluginToolConfig;
   /** Index of the current plugin in the plugins array (for source tracking) */
   pluginIndex?: number;
 }
@@ -119,9 +127,9 @@ export interface PostProcessContext extends PromptConcatHookContext {
  */
 export interface AIResponseContext extends BaseToolContext {
   /** Tool configuration - for backward compatibility */
-  toolConfig: IPromptConcatTool;
+  toolConfig: FrameworkPluginToolConfig;
   /** Complete framework configuration - allows tools to access all configs */
-  agentFrameworkConfig?: { plugins?: IPromptConcatTool[] };
+  agentFrameworkConfig?: { plugins?: FrameworkPluginToolConfig[] };
   /** AI streaming response */
   response: AIStreamResponse;
   /** Current request ID */

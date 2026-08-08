@@ -1,7 +1,10 @@
 // Initialize worker-side service proxies before starting the wiki.
 import './services';
+import { createWikiWorkerLifecycleMessage } from '../workerLifecycle';
 import { native, service } from './services';
 import { onWorkerServicesReady } from './servicesReady';
+import { waitForTiddlyWikiStartup } from './tiddlyWikiStartup';
+import { installTiddlyWikiStartupObserver } from './tiddlyWikiStartupObserver';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import type { TidgiService } from '@/types/tidgi-tw';
@@ -19,6 +22,8 @@ import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided, loadTiddlyWikiModule } from './loadTiddlyWikiModule';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
+import { getNodeWikiExtraPlugins } from './nodeWikiExtraPlugins';
+import { logForBestEffort } from './workerLogging';
 
 type BootContext = Pick<
   IStartNodeJSWikiConfigs,
@@ -28,6 +33,7 @@ type BootContext = Pick<
   | 'excludedPlugins'
   | 'homePath'
   | 'https'
+  | 'lifecycleGeneration'
   | 'readOnlyMode'
   | 'rootTiddler'
   | 'useWikiFolderAsTiddlersPath'
@@ -52,6 +58,7 @@ async function bootWiki(
     excludedPlugins,
     homePath,
     https,
+    lifecycleGeneration,
     readOnlyMode,
     rootTiddler = '$:/core/save/all',
     shouldUseDarkColors,
@@ -67,14 +74,22 @@ async function bootWiki(
   // Log which TiddlyWiki version is being used (local vs built-in)
   const isUsingLocalTiddlyWiki = TIDDLY_WIKI_BOOT_PATH.includes(path.join(homePath, 'node_modules'));
   const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
-  void native.logFor(
+  void logForBestEffort(
+    native,
     logContext,
     'info',
     `Starting TiddlyWiki from ${isUsingLocalTiddlyWiki ? 'wiki-local installation' : 'built-in installation'}: ${TIDDLY_WIKI_BOOT_PATH}`,
   );
 
-  const { TiddlyWiki } = await loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH);
+  const traceStartup = (level: 'debug' | 'warn', message: string): void => {
+    void logForBestEffort(native, logContext, level, message);
+  };
+  const { TiddlyWiki } = await loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH, phase => {
+    traceStartup('debug', `TiddlyWiki module phase: ${phase}`);
+  });
+  void logForBestEffort(native, logContext, 'debug', `Loaded TiddlyWiki CommonJS boot module`);
   const wikiInstance = TiddlyWiki();
+  void logForBestEffort(native, logContext, 'debug', `Created TiddlyWiki boot instance`);
   setWikiInstance(wikiInstance);
 
   const pathSeparator = process.platform === 'win32' ? ';' : ':';
@@ -85,23 +100,21 @@ async function bootWiki(
   process.env.TIDDLYWIKI_PLUGIN_PATH = pluginPaths.join(pathSeparator);
   process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
 
-  if (subWikis.length > 0) {
+  if (useWikiFolderAsTiddlersPath || subWikis.length > 0) {
     wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
       wikiInstance,
       homePath,
       subWikis,
-      { allowLoadingWithoutWikiInfo: useWikiFolderAsTiddlersPath },
+      { folderAsTiddlerStorage: useWikiFolderAsTiddlersPath },
       logContext,
       native,
     );
   }
 
-  wikiInstance.boot.extraPlugins = [
-    readOnlyMode === true ? undefined : 'plugins/linonetwo/watch-filesystem-adaptor',
-    'plugins/linonetwo/tidgi-ipc-syncadaptor',
-    'plugins/linonetwo/tidgi-ipc-syncadaptor-ui',
-    enableHTTPAPI ? 'plugins/tiddlywiki/tiddlyweb' : undefined,
-  ].filter(Boolean) as string[];
+  // TiddlyWiki's HTTP server requires both official plugins. Do not rely on a
+  // workspace's tiddlywiki.info to load filesystem implicitly: folders created
+  // by older TidGi versions and folders without wiki.info may omit it.
+  wikiInstance.boot.extraPlugins = getNodeWikiExtraPlugins(enableHTTPAPI, readOnlyMode);
 
   const readonlyArguments = readOnlyMode === true
     ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`]
@@ -165,6 +178,11 @@ async function bootWiki(
   wikiInstanceWithTidgi.tidgi = wikiInstanceWithTidgi.tidgi ?? {};
   wikiInstanceWithTidgi.tidgi.service = service as unknown as TidgiService;
 
+  installTiddlyWikiStartupObserver(wikiInstance, traceStartup, (error) => {
+    const message = `TiddlyWiki startup task failed: ${error.message} ${error.stack ?? ''}`;
+    process.parentPort?.postMessage(createWikiWorkerLifecycleMessage('boot-error', lifecycleGeneration, workspace.id, message));
+  });
+
   wikiInstance.hooks.addHook('th-server-command-post-start', function(_server: unknown, nodeServer: Server) {
     nodeServer.on('error', function(error: Error) {
       observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
@@ -181,7 +199,9 @@ async function bootWiki(
       });
     });
   });
-  wikiInstance.boot.startup({ bootPath: TIDDLY_WIKI_BOOT_PATH });
+  void logForBestEffort(native, logContext, 'debug', `Starting TiddlyWiki boot lifecycle`);
+  await waitForTiddlyWikiStartup(wikiInstance.boot, TIDDLY_WIKI_BOOT_PATH);
+  void logForBestEffort(native, logContext, 'debug', `Completed TiddlyWiki boot lifecycle`);
 
   ipcServerRoutes.setConfig({ readOnlyMode, shouldUseDarkColors });
   ipcServerRoutes.setHomePath(homePath);
@@ -194,6 +214,7 @@ async function bootWiki(
     message: `Tiddlywiki booted with args ${fullBootArgv.join(' ')}`,
     argv: fullBootArgv,
   });
+  process.parentPort?.postMessage(createWikiWorkerLifecycleMessage('booted', lifecycleGeneration, workspace.id));
 }
 
 export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
@@ -202,6 +223,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
   const fullBootArgv: string[] = [];
 
   return new Observable<IWikiMessage>((observer) => {
+    process.parentPort?.postMessage(createWikiWorkerLifecycleMessage('subscriber-ready', configs.lifecycleGeneration, workspace.id));
     if (openDebugger === true) {
       inspector.open();
       inspector.waitForDebugger();
@@ -211,7 +233,7 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
     // Wait for services to be ready before using intercept with logFor
     onWorkerServicesReady(() => {
       const logContext = workspaceLogContext(workspace.id, workspace.name, 'wiki-worker');
-      void native.logFor(logContext, 'info', 'test-id-WorkerServicesReady', {
+      void logForBestEffort(native, logContext, 'info', 'test-id-WorkerServicesReady', {
         enableHTTPAPI: configs.enableHTTPAPI,
         homePath: configs.homePath,
         httpsEnabled: configs.https !== undefined,
@@ -226,16 +248,12 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
       intercept(
         (newStdOut: string | Uint8Array) => {
           const message = typeof newStdOut === 'string' ? newStdOut : textDecoder.decode(newStdOut);
-          void native.logFor(logContext, 'info', message).catch((error: unknown) => {
-            console.error('[intercept] Failed to send stdout to main process:', error, message, JSON.stringify(workspace));
-          });
+          void logForBestEffort(native, logContext, 'info', message);
           return message;
         },
         (newStdError: string | Uint8Array) => {
           const message = typeof newStdError === 'string' ? newStdError : textDecoder.decode(newStdError);
-          void native.logFor(logContext, 'error', message).catch((error: unknown) => {
-            console.error('[intercept] Failed to send stderr to main process:', error, message);
-          });
+          void logForBestEffort(native, logContext, 'error', message);
           if (
             message.includes('Error executing boot module') ||
             message.includes('Cannot find module')
@@ -251,20 +269,25 @@ export function startNodeJSWiki(configs: IStartNodeJSWikiConfigs): Observable<IW
           return message;
         },
       );
+
+      // Start only after the main process has attached every service proxy and
+      // subscribed to this Observable. This prevents synchronous control
+      // messages from racing ahead of the host-side subscription.
+      try {
+        bootWiki(bootContext, observer, fullBootArgv).catch((error: unknown) => {
+          const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+          process.parentPort?.postMessage(createWikiWorkerLifecycleMessage('boot-error', configs.lifecycleGeneration, workspace.id, message));
+          observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
+        });
+      } catch (error: unknown) {
+        const message = `Tiddlywiki booted failed synchronously with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+        process.parentPort?.postMessage(createWikiWorkerLifecycleMessage('boot-error', configs.lifecycleGeneration, workspace.id, message));
+        observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
+      }
     });
 
     // mark isDev as used to satisfy lint when not needed directly
     void isDev;
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
-
-    try {
-      bootWiki(bootContext, observer, fullBootArgv).catch((error: unknown) => {
-        const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-        observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
-      });
-    } catch (error: unknown) {
-      const message = `Tiddlywiki booted failed synchronously with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
-    }
   });
 }

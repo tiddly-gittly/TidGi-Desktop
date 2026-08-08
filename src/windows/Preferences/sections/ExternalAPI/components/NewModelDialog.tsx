@@ -16,7 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
-import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
+import { ModelFeature, ModelInfo, ReasoningEffort } from '@services/externalAPI/interface';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ModelFeatureChip } from './ModelFeatureChip';
@@ -32,11 +32,17 @@ interface ModelDialogProps {
     caption: string;
     features: ModelFeature[];
     parameters?: Record<string, unknown>;
+    apiMode?: ModelInfo['apiMode'];
+    contextWindowSize?: number;
+    maxOutputTokens?: number;
+    modelOptions?: ModelInfo['modelOptions'];
+    supportsReasoningEffort?: ReasoningEffort[];
+    reasoningEffortFormat?: ModelInfo['reasoningEffortFormat'];
   };
   availableDefaultModels: ModelInfo[];
   selectedDefaultModel: string;
   onSelectDefaultModel: (model: string) => void;
-  onModelFormChange: (field: string, value: string | ModelFeature[] | Record<string, unknown>) => void;
+  onModelFormChange: (field: string, value: unknown) => void;
   onFeatureChange: (feature: ModelFeature, checked: boolean) => void;
   editMode?: boolean;
 }
@@ -81,6 +87,12 @@ export function NewModelDialog({
           onModelFormChange('name', selectedModel.name);
           onModelFormChange('caption', selectedModel.caption || '');
           onModelFormChange('features', selectedModel.features || ['language']);
+          onModelFormChange('apiMode', selectedModel.apiMode || 'chat-completions');
+          onModelFormChange('contextWindowSize', selectedModel.contextWindowSize ?? selectedModel.maxInputTokens);
+          onModelFormChange('maxOutputTokens', selectedModel.maxOutputTokens);
+          onModelFormChange('modelOptions', selectedModel.modelOptions);
+          onModelFormChange('supportsReasoningEffort', selectedModel.supportsReasoningEffort || []);
+          onModelFormChange('reasoningEffortFormat', selectedModel.reasoningEffortFormat);
         }
       }
     }
@@ -149,6 +161,22 @@ export function NewModelDialog({
                 slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
               />
 
+              {(providerClass === 'openAICompatible' || providerClass === 'openai') && (
+                <FormControl fullWidth margin='normal'>
+                  <InputLabel>OpenAI API mode</InputLabel>
+                  <Select
+                    value={newModelForm.apiMode ?? 'chat-completions'}
+                    label='OpenAI API mode'
+                    onChange={(event) => {
+                      onModelFormChange('apiMode', event.target.value);
+                    }}
+                  >
+                    <MenuItem value='chat-completions'>Chat Completions</MenuItem>
+                    <MenuItem value='responses'>Responses</MenuItem>
+                  </Select>
+                </FormControl>
+              )}
+
               <TextField
                 label={t('Preference.ModelCaption', { ns: 'agent' })}
                 value={newModelForm.caption}
@@ -159,6 +187,93 @@ export function NewModelDialog({
                 margin='normal'
                 helperText={t('Preference.ModelCaptionHelp', { ns: 'agent' })}
               />
+
+              <TextField
+                label='Context window / max input tokens'
+                type='number'
+                value={newModelForm.contextWindowSize ?? ''}
+                onChange={(event) => {
+                  onModelFormChange('contextWindowSize', event.target.value === '' ? undefined : Number(event.target.value));
+                }}
+                error={newModelForm.contextWindowSize !== undefined && (!Number.isInteger(newModelForm.contextWindowSize) || newModelForm.contextWindowSize <= 0)}
+                helperText='Positive integer token limit for model input context.'
+                fullWidth
+                margin='normal'
+                slotProps={{ htmlInput: { min: 1, step: 1, 'data-testid': 'model-context-window-input' } }}
+              />
+
+              <TextField
+                label='Max output tokens'
+                type='number'
+                value={newModelForm.maxOutputTokens ?? ''}
+                onChange={(event) => {
+                  onModelFormChange('maxOutputTokens', event.target.value === '' ? undefined : Number(event.target.value));
+                }}
+                error={newModelForm.maxOutputTokens !== undefined && (!Number.isInteger(newModelForm.maxOutputTokens) || newModelForm.maxOutputTokens <= 0)}
+                helperText='Positive integer default; an explicit request limit takes precedence.'
+                fullWidth
+                margin='normal'
+                slotProps={{ htmlInput: { min: 1, step: 1, 'data-testid': 'model-max-output-input' } }}
+              />
+
+              <TextField
+                label='Default top_p'
+                type='number'
+                value={newModelForm.modelOptions?.top_p ?? ''}
+                onChange={(event) => {
+                  onModelFormChange('modelOptions', {
+                    ...(newModelForm.modelOptions || {}),
+                    top_p: event.target.value === '' ? undefined : Number(event.target.value),
+                  });
+                }}
+                error={newModelForm.modelOptions?.top_p !== undefined &&
+                  (!Number.isFinite(newModelForm.modelOptions.top_p) || newModelForm.modelOptions.top_p < 0 || newModelForm.modelOptions.top_p > 1)}
+                helperText='Number from 0 to 1; request-level topP takes precedence.'
+                fullWidth
+                margin='normal'
+                slotProps={{ htmlInput: { min: 0, max: 1, step: 0.01, 'data-testid': 'model-top-p-input' } }}
+              />
+
+              <Typography variant='subtitle2' sx={{ mt: 2, mb: 1 }}>
+                Supported reasoning effort
+              </Typography>
+              <FormGroup row>
+                {(['minimal', 'low', 'medium', 'high'] as ReasoningEffort[]).map(effort => (
+                  <FormControlLabel
+                    key={effort}
+                    control={
+                      <Checkbox
+                        checked={newModelForm.supportsReasoningEffort?.includes(effort) ?? false}
+                        onChange={(event) => {
+                          const current = newModelForm.supportsReasoningEffort || [];
+                          onModelFormChange(
+                            'supportsReasoningEffort',
+                            event.target.checked ? [...current, effort] : current.filter(value => value !== effort),
+                          );
+                        }}
+                      />
+                    }
+                    label={effort}
+                  />
+                ))}
+              </FormGroup>
+
+              <FormControl fullWidth margin='normal'>
+                <InputLabel>Reasoning effort format</InputLabel>
+                <Select
+                  value={newModelForm.reasoningEffortFormat ?? ''}
+                  label='Reasoning effort format'
+                  onChange={(event) => {
+                    onModelFormChange('reasoningEffortFormat', event.target.value || undefined);
+                  }}
+                  inputProps={{ 'data-testid': 'reasoning-effort-format-select' }}
+                >
+                  <MenuItem value=''>
+                    <em>None</em>
+                  </MenuItem>
+                  <MenuItem value='chat-completions'>Chat Completions (reasoning_effort)</MenuItem>
+                </Select>
+              </FormControl>
 
               <Typography variant='subtitle2' sx={{ mt: 2, mb: 1 }}>
                 {t('Preference.ModelFeatures', { ns: 'agent' })}
@@ -218,7 +333,16 @@ export function NewModelDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>
-        <Button onClick={onAddModel} variant='contained' color='primary' data-testid='save-model-button'>
+        <Button
+          onClick={onAddModel}
+          variant='contained'
+          color='primary'
+          data-testid='save-model-button'
+          disabled={(newModelForm.contextWindowSize !== undefined && (!Number.isInteger(newModelForm.contextWindowSize) || newModelForm.contextWindowSize <= 0)) ||
+            (newModelForm.maxOutputTokens !== undefined && (!Number.isInteger(newModelForm.maxOutputTokens) || newModelForm.maxOutputTokens <= 0)) ||
+            (newModelForm.modelOptions?.top_p !== undefined &&
+              (!Number.isFinite(newModelForm.modelOptions.top_p) || newModelForm.modelOptions.top_p < 0 || newModelForm.modelOptions.top_p > 1))}
+        >
           {editMode ? t('Update') : t('Save')}
         </Button>
       </DialogActions>

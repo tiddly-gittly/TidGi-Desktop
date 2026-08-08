@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Electron: start on real desktop",
+      "type": "shell",
+      "command": "desktop_pid=$(pgrep -u \"$USER\" -n plasmashell || pgrep -u \"$USER\" -n gnome-shell || pgrep -u \"$USER\" -n xfce4-session || pgrep -u \"$USER\" -n cinnamon-session) && if [[ -z \"$desktop_pid\" ]]; then echo \"No local desktop session process found for $USER\"; exit 1; fi && while IFS='=' read -r key value; do case \"$key\" in DISPLAY|WAYLAND_DISPLAY|XAUTHORITY|XDG_RUNTIME_DIR|DBUS_SESSION_BUS_ADDRESS|XDG_SESSION_TYPE|DESKTOP_SESSION) export \"$key=$value\" ;; esac; done < <(tr '\\0' '\\n' < \"/proc/$desktop_pid/environ\") && ./node_modules/.bin/cross-env NODE_ENV=development ./node_modules/.bin/electron-forge start",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "/bin/bash",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false,
+        "clear": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

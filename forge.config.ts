@@ -13,6 +13,28 @@ const { description } = packageJson;
 // Get list of supported language codes from centralized config
 const supportedLanguageCodes = Object.keys(supportedLanguages);
 
+type MacSigningPackagerConfig = Pick<NonNullable<ForgeConfig['packagerConfig']>, 'osxSign'>;
+
+/**
+ * Give local macOS test packages a code identity so TCC can attribute access
+ * performed by Electron UtilityProcess helpers. This is deliberately opt-in:
+ * release builds must continue to use an explicit distribution-signing setup.
+ */
+export function getLocalAdHocMacSigningPackagerConfig(environment: NodeJS.ProcessEnv): MacSigningPackagerConfig {
+  if (environment.TIDGI_LOCAL_ADHOC_SIGN !== '1') return {};
+  return {
+    osxSign: {
+      identity: '-',
+      identityValidation: false,
+      preAutoEntitlements: false,
+      optionsForFile: () => ({
+        hardenedRuntime: false,
+        timestamp: 'none',
+      }),
+    },
+  };
+}
+
 const config: ForgeConfig = {
   packagerConfig: {
     name: 'TidGi',
@@ -54,7 +76,11 @@ const config: ForgeConfig = {
       icon: 'build-resources/icon.icns',
       electronLanguages: supportedLanguageCodes,
     },
+    extendInfo: {
+      NSCameraUsageDescription: 'TidGi uses the camera only when you scan a signed MemeLoop device pairing QR code.',
+    },
     appBundleId: 'com.tidgi',
+    ...getLocalAdHocMacSigningPackagerConfig(process.env),
   },
   hooks: {
     packageAfterPrune: afterPack,

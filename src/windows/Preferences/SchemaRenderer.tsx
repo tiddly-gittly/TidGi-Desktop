@@ -235,6 +235,7 @@ function StringItem({
           }
         }}
         sx={{ minWidth: 150 }}
+        slotProps={{ htmlInput: { 'data-testid': `preference-${item.key}` } }}
       />
     </ListItem>
   );
@@ -693,6 +694,7 @@ export function AllSectionsRenderer({
         <VirtualizedSettingsList
           entries={searchEntries}
           defaultRowHeight={100}
+          virtualize={!isTest}
           renderEntry={(entry) => (
             <>
               <SearchSectionLabel>
@@ -726,6 +728,7 @@ export function AllSectionsRenderer({
         navigationRequest={navigationRequest}
         onNavigationComplete={onNavigationComplete}
         renderEntry={renderSectionEntry}
+        virtualize={!isTest}
       />
     </PreferenceDraftContext.Provider>
   );

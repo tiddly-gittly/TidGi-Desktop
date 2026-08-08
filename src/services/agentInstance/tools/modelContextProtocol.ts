@@ -6,10 +6,15 @@
  * Each agent instance creates its own MCP client connection(s).
  * Connections are managed per-instance and cleaned up when the agent closes.
  */
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
+import { registerToolDefinition } from 'memeloop';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
 
 /**
  * Model Context Protocol Parameter Schema
@@ -26,10 +31,10 @@ export const ModelContextProtocolParameterSchema = z.object({
     title: 'Command arguments',
     description: 'Arguments to pass to the MCP server command',
   }),
-  /** URL for SSE transport */
+  /** URL for Streamable HTTP (preferred) or legacy SSE transport */
   serverUrl: z.string().optional().meta({
-    title: 'Server URL (SSE)',
-    description: 'URL for SSE-based MCP server. e.g. "http://localhost:3001/sse"',
+    title: 'Server URL (HTTP)',
+    description: 'URL for an MCP Streamable HTTP endpoint (for example http://localhost:3001/mcp) or legacy SSE endpoint ending in /sse',
   }),
   /** Timeout for MCP operations in seconds */
   timeoutSecond: z.number().optional().default(30).meta({
@@ -61,57 +66,92 @@ interface MCPClientState {
   /** Available tools from the MCP server */
   tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
   /** Client connection (lazy-loaded to avoid import issues if SDK not installed) */
-  client: unknown;
+  client: {
+    callTool: (parameters: {
+      name: string;
+      arguments: Record<string, unknown>;
+    }) => Promise<{ content: unknown[] }>;
+    close: () => Promise<void>;
+  };
   /** Transport */
   transport: unknown;
   /** Whether the client is connected */
   connected: boolean;
+  timeoutMs: number;
 }
 
 const clientStates = new Map<string, MCPClientState>();
+
+export function getMCPURLTransportKind(serverUrl: string): 'sse' | 'streamable-http' {
+  const pathname = new URL(serverUrl).pathname.replace(/\/+$/, '');
+  return pathname.endsWith('/sse') ? 'sse' : 'streamable-http';
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(
+          () => {
+            reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
+          },
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 /**
  * Try to connect to MCP server and list available tools.
  * Returns tool list on success, empty array on failure.
  */
 async function connectAndListTools(config: ModelContextProtocolParameter, agentId: string): Promise<MCPClientState['tools']> {
+  const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
   try {
-    // Dynamic import to handle cases where SDK isn't installed.
-    // Use /* @vite-ignore */ so Vite/Vitest don't try to resolve the path at build time.
-    const { Client } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/index.js');
-
-    const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
-
     let transport: unknown;
 
     if (config.command) {
-      // Stdio transport
-      const { StdioClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/stdio.js');
       transport = new StdioClientTransport({ command: config.command, args: config.args ?? [] });
     } else if (config.serverUrl) {
-      // SSE transport
-      const { SSEClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/sse.js');
-      transport = new SSEClientTransport(new URL(config.serverUrl));
+      const serverURL = new URL(config.serverUrl);
+      if (getMCPURLTransportKind(config.serverUrl) === 'sse') {
+        transport = new SSEClientTransport(serverURL);
+      } else {
+        transport = new StreamableHTTPClientTransport(serverURL);
+      }
     } else {
       logger.warn('MCP: No command or serverUrl configured', { agentId });
       return [];
     }
 
-    await client.connect(transport);
+    const timeoutMs = Math.max(1, config.timeoutSecond ?? 30) * 1000;
+    await withTimeout(client.connect(transport), timeoutMs, 'MCP connection');
 
     // List available tools
-    const toolsResult = await client.listTools();
+    const toolsResult = await withTimeout(client.listTools(), timeoutMs, 'MCP tool discovery');
     const tools = (toolsResult.tools ?? []).map((t: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
     }));
 
-    clientStates.set(agentId, { tools, client, transport, connected: true });
+    clientStates.set(agentId, {
+      tools,
+      client: client as MCPClientState['client'],
+      transport,
+      connected: true,
+      timeoutMs,
+    });
 
     logger.info('MCP connected', { agentId, toolCount: tools.length, tools: tools.map((t: { name: string }) => t.name) });
     return tools;
   } catch (error) {
+    if (client.close) await client.close().catch(() => undefined);
     logger.error('MCP connection failed', { error, agentId });
     return [];
   }
@@ -127,8 +167,11 @@ async function callMCPTool(agentId: string, toolName: string, arguments_: Record
   }
 
   try {
-    const client = state.client as { callTool: (parameters: { name: string; arguments: Record<string, unknown> }) => Promise<{ content: unknown[] }> };
-    const result = await client.callTool({ name: toolName, arguments: arguments_ });
+    const result = await withTimeout(
+      state.client.callTool({ name: toolName, arguments: arguments_ }),
+      state.timeoutMs,
+      `MCP tool "${toolName}"`,
+    );
     const contentParts = (result.content ?? []) as Array<{ type: string; text?: string }>;
     const textContent = contentParts
       .filter((c) => c.type === 'text' && c.text)
@@ -137,6 +180,9 @@ async function callMCPTool(agentId: string, toolName: string, arguments_: Record
 
     return { success: true, data: textContent || JSON.stringify(result.content), metadata: { toolName } };
   } catch (error) {
+    state.connected = false;
+    clientStates.delete(agentId);
+    await state.client.close().catch(() => undefined);
     return { success: false, error: `MCP tool "${toolName}" failed: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
@@ -169,7 +215,8 @@ const mcpDefinition = registerToolDefinition({
   // No static llmToolSchemas — MCP tools are dynamic
 
   async onProcessPrompts({ config, agentFrameworkContext, injectContent }) {
-    const agentId = agentFrameworkContext.agent.id;
+    const agentId = agentFrameworkContext?.agent?.id;
+    if (!agentId) return;
 
     // Connect if not already connected
     let state = clientStates.get(agentId);
@@ -201,10 +248,7 @@ const mcpDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext, hooks, requestId }) {
-    if (!toolCall) return;
-
-    // MCP tools are prefixed with "mcp-"
-    if (!toolCall.toolId?.startsWith('mcp-')) return;
+    if (!toolCall || !toolCall.found || !toolCall.toolId.startsWith('mcp-')) return;
 
     const agentId = agentFrameworkContext.agent.id;
     const mcpToolName = toolCall.toolId.replace(/^mcp-/, '');

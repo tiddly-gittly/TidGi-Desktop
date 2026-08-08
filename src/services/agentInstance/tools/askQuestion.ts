@@ -4,8 +4,8 @@
  */
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
+import { registerToolDefinition } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
 
 export const AskQuestionParameterSchema = z.object({
   toolListPosition: z.object({
@@ -61,7 +61,7 @@ const askQuestionDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult, yieldToHuman }) {
-    if (!toolCall || toolCall.toolId !== 'ask-question') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'ask-question') return;
 
     const parameters = toolCall.parameters as z.infer<typeof AskQuestionToolSchema>;
     const questionId = `ask-q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

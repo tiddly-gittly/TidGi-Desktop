@@ -3,6 +3,7 @@ import { pick } from 'lodash';
 
 import { DataSource, Equal, Not, Repository } from 'typeorm';
 
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { getTiddlerTitleFromUrl } from '@/constants/urls';
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
@@ -50,7 +51,7 @@ export class AgentBrowserService implements IAgentBrowserService {
   public async initialize(): Promise<void> {
     try {
       // Get repositories
-      this.dataSource = await this.databaseService.getDatabase('agent');
+      this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
       logger.debug('Agent browser repository initialized');
     } catch (error) {

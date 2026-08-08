@@ -1,7 +1,7 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField } from '@mui/material';
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { ModelParameters } from '@services/agentInstance/promptConcat/promptConcatSchema/modelParameters';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField, Typography } from '@mui/material';
 import { cloneDeep } from 'lodash';
+import type { AiAPIConfig } from 'memeloop';
+import type { ModelParameters } from 'memeloop';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -84,6 +84,11 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>{t('Preference.ModelParameters', { ns: 'agent' })}</DialogTitle>
       <DialogContent>
+        {config?.default && (
+          <Typography variant='subtitle2' color='text.secondary' sx={{ mb: 2 }}>
+            {config.default.provider} - {config.default.model}
+          </Typography>
+        )}
         <FormControl fullWidth sx={{ mt: 2 }}>
           <FormHelperText>
             {t('Preference.Temperature', { ns: 'agent' })}: {parameters.temperature?.toFixed(2)}

@@ -193,6 +193,7 @@
     "FailedToAddProvider": "添加提供商失敗",
     "FailedToDeleteProvider": "刪除提供商 {{providerName}} 失敗",
     "FailedToRemoveModel": "無法刪除模型",
+    "FailedToRefreshOfficialModels": "重新整理模型列表失敗",
     "FailedToSaveSettings": "無法保存設置",
     "FailedToUpdateModel": "無法更新模型",
     "FailedToUpdateProviderStatus": "無法更新提供商狀態",
@@ -213,6 +214,7 @@
     "Models": "可用模型",
     "NoPresetSelected": "不使用預設模型",
     "NoProvidersAvailable": "沒有可用的提供商",
+    "OfficialModelsRefreshed": "已重新整理 {{count}} 個模型",
     "OpenDatabaseFolder": "打開資料庫文件夾",
     "PresetModels": "預設模型",
     "PresetProvider": "預置提供商",
@@ -226,6 +228,7 @@
     "ProviderEnabled": "提供方已啟用",
     "ProviderName": "提供商名稱",
     "ProviderNameRequired": "提供商名稱為必填項",
+    "RefreshOfficialModels": "重新整理模型列表",
     "SearchEmbeddingNoEmbeddingModelError": "請先在外部API部分配置默認嵌入模型設置。",
     "SelectDefaultProvider": "選擇默認提供商",
     "SelectFromPresets": "從預設模型中選擇",
@@ -385,14 +388,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -427,8 +426,7 @@
       "ProviderTitle": "供應商",
       "Title": "模型選擇"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "位置參數配置，用於確定內容插入的精確位置。支持相對位置、絕對位置、前置和後置四種定位方式",
       "TargetId": "目標元素ID",
@@ -462,8 +460,7 @@
       "TextTitle": "文本",
       "Title": "提示詞"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "回應標題，用於識別該回應條目",
       "CaptionTitle": "標題",

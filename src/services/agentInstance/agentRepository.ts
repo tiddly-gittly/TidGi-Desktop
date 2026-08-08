@@ -12,8 +12,9 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 
-import type { AgentInstance, AgentInstanceMessage } from './interface';
-import { AGENT_INSTANCE_FIELDS, createAgentInstanceData, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
+import type { AgentInstance, ChatMessage } from 'memeloop';
+import { createAgentInstanceFromDefinition } from 'memeloop';
+import { AGENT_INSTANCE_FIELDS, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
 
 export async function createAgent(
   agentInstanceRepo: Repository<AgentInstanceEntity>,
@@ -41,13 +42,15 @@ export async function createAgent(
     throw new Error(`Agent definition missing required field 'name': ${agentDefinitionID}`);
   }
 
-  const { instanceData, instanceId, now } = createAgentInstanceData(agentDefinition as Required<Pick<typeof agentDefinition, 'name'>> & typeof agentDefinition);
+  const now = new Date();
+  const instanceId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  const instanceData = createAgentInstanceFromDefinition(agentDefinition, {
+    id: instanceId,
+    volatile: options?.preview || options?.volatile || false,
+  });
 
-  if (options?.preview || options?.volatile) {
-    instanceData.volatile = true;
-  }
-
-  const instanceEntity = agentInstanceRepo.create(toDatabaseCompatibleInstance(instanceData));
+  const { created: _created, modified: _modified, ...instanceForPersistence } = instanceData;
+  const instanceEntity = agentInstanceRepo.create(toDatabaseCompatibleInstance(instanceForPersistence));
 
   // Add timeout to database save operation
   const savePromise = agentInstanceRepo.save(instanceEntity);
@@ -75,16 +78,22 @@ export async function getAgent(
   const instanceEntity = await agentInstanceRepo.findOne({
     where: { id: agentId },
     relations: { messages: true },
-    order: { messages: { modified: 'ASC' } },
+    order: { messages: { timestamp: 'ASC' } },
   });
   if (!instanceEntity) return undefined;
 
   const messages = (instanceEntity.messages || []).slice().sort((a, b) => {
-    const aTime = a.created ? new Date(a.created).getTime() : (a.modified ? new Date(a.modified).getTime() : 0);
-    const bTime = b.created ? new Date(b.created).getTime() : (b.modified ? new Date(b.modified).getTime() : 0);
-    return aTime - bTime;
+    return a.timestamp - b.timestamp;
   });
-  return { ...pick(instanceEntity, AGENT_INSTANCE_FIELDS), messages };
+  return {
+    ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
+    aiApiConfig: instanceEntity.aiApiConfig,
+    systemPrompt: '',
+    tools: [] as string[],
+    description: '',
+    version: '1',
+    messages: messages,
+  };
 }
 
 export async function updateAgent(
@@ -96,7 +105,7 @@ export async function updateAgent(
   const instanceEntity = await agentInstanceRepo.findOne({
     where: { id: agentId },
     relations: { messages: true },
-    order: { messages: { modified: 'ASC' } },
+    order: { messages: { timestamp: 'ASC' } },
   });
 
   if (!instanceEntity) {
@@ -110,15 +119,24 @@ export async function updateAgent(
   // Handle message updates if provided
   if (data.messages && data.messages.length > 0) {
     for (const message of data.messages) {
-      const existingMessage = instanceEntity.messages?.find(m => m.id === message.id);
+      const messageId = message.messageId;
+      const existingMessage = instanceEntity.messages?.find(m => m.messageId === messageId);
       if (existingMessage) {
         existingMessage.content = message.content;
-        existingMessage.modified = message.modified || new Date();
+        existingMessage.timestamp = message.timestamp;
+        existingMessage.lamportClock = message.lamportClock;
+        if (message.parts) existingMessage.parts = message.parts;
+        if (message.toolCalls) existingMessage.toolCalls = message.toolCalls;
+        if (message.attachments) existingMessage.attachments = message.attachments;
+        if (message.detailRef) existingMessage.detailRef = message.detailRef;
+        if (message.reasoning_content) existingMessage.reasoning_content = message.reasoning_content;
         if (message.metadata) existingMessage.metadata = message.metadata;
         if (message.contentType) existingMessage.contentType = message.contentType;
+        if (message.hidden !== undefined) existingMessage.hidden = message.hidden;
+        if (message.duration !== undefined) existingMessage.duration = message.duration ?? undefined;
         await agentMessageRepo.save(existingMessage);
       } else {
-        const messageData = pick(message, MESSAGE_FIELDS) as AgentInstanceMessage;
+        const messageData = pick(message, MESSAGE_FIELDS) as ChatMessage;
         const messageEntity = agentMessageRepo.create(toDatabaseCompatibleMessage(messageData));
         await agentMessageRepo.save(messageEntity);
         if (!instanceEntity.messages) instanceEntity.messages = [];
@@ -127,7 +145,15 @@ export async function updateAgent(
     }
   }
 
-  return { ...pick(instanceEntity, AGENT_INSTANCE_FIELDS), messages: instanceEntity.messages || [] };
+  return {
+    ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
+    aiApiConfig: instanceEntity.aiApiConfig,
+    systemPrompt: '',
+    tools: [] as string[],
+    description: '',
+    version: '1',
+    messages: instanceEntity.messages || [],
+  };
 }
 
 export async function deleteAgent(
@@ -135,7 +161,7 @@ export async function deleteAgent(
   agentMessageRepo: Repository<AgentInstanceMessageEntity>,
   agentId: string,
 ): Promise<void> {
-  await agentMessageRepo.delete({ agentId });
+  await agentMessageRepo.delete({ conversationId: agentId });
   await agentInstanceRepo.delete(agentId);
   logger.info(`Deleted agent instance: ${agentId}`);
 }
@@ -166,5 +192,5 @@ export async function getAgents(
     order: { created: 'DESC' },
   });
 
-  return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS));
+  return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS)) as unknown as Array<Omit<AgentInstance, 'messages'>>;
 }

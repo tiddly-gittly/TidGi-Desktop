@@ -6,7 +6,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
-import { ProviderConfig } from '../ProviderConfig';
+import { persistProviderModels, ProviderConfig } from '../ProviderConfig';
 
 // Mock data
 const mockLanguageModel: ModelInfo = {
@@ -29,6 +29,15 @@ const mockProvider: AIProviderConfig = {
   providerClass: 'openai',
   isPreset: false,
   enabled: true,
+};
+
+const mockCompatibleProvider: AIProviderConfig = {
+  provider: 'compatible',
+  baseURL: 'https://api.example.com/v1',
+  models: [mockLanguageModel],
+  providerClass: 'openAICompatible',
+  isPreset: true,
+  enabled: false,
 };
 
 // Test wrapper component
@@ -90,6 +99,7 @@ describe('ProviderConfig Component', () => {
       <TestWrapper>
         <ProviderConfig
           providers={providers}
+          catalogProviders={[mockProvider, mockCompatibleProvider]}
           setProviders={mockSetProviders}
           changeDefaultModel={mockChangeDefaultModel}
           changeDefaultEmbeddingModel={mockChangeDefaultEmbeddingModel}
@@ -170,6 +180,38 @@ describe('ProviderConfig Component', () => {
     // Should show form fields (these are likely in NewProviderForm component)
     // We'll verify the button text change for now
     expect(addButton).toHaveTextContent('Preference.CancelAddProvider');
+  });
+
+  it('round-trips advanced model metadata through the edit dialog and IPC persistence helper', async () => {
+    const user = userEvent.setup();
+    const advancedModel: ModelInfo = {
+      name: 'deepseek-reasoning',
+      caption: 'DeepSeek reasoning',
+      features: ['language', 'toolCalling', 'reasoning'],
+      apiMode: 'chat-completions',
+      contextWindowSize: 1_000_000,
+      maxOutputTokens: 32_768,
+      modelOptions: { top_p: 0.95 },
+      supportsReasoningEffort: ['minimal', 'low', 'medium', 'high'],
+      reasoningEffortFormat: 'chat-completions',
+    };
+    renderProviderConfig([{ ...mockProvider, models: [advancedModel] }]);
+
+    await user.click(screen.getByTestId('model-chip-deepseek-reasoning'));
+    expect(await screen.findByTestId('model-context-window-input')).toHaveValue(1_000_000);
+    expect(screen.getByTestId('model-max-output-input')).toHaveValue(32_768);
+    expect(screen.getByTestId('model-top-p-input')).toHaveValue(0.95);
+    expect(screen.getByRole('checkbox', { name: 'minimal' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'high' })).toBeChecked();
+
+    const saveButton = screen.getByTestId('save-model-button');
+    expect(saveButton).toBeEnabled();
+    await persistProviderModels('openai', [advancedModel]);
+    await waitFor(() => {
+      expect(window.service.externalAPI.updateProvider).toHaveBeenCalledWith('openai', {
+        models: [expect.objectContaining(advancedModel)],
+      });
+    });
   });
 
   // NOTE: embedding-model defaulting when enabling a provider is handled during provider addition

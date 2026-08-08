@@ -1,10 +1,19 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { BehaviorSubject, Observable } from 'rxjs';
+import type { BehaviorSubject, Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import { ModelMessage } from 'ai';
+import type { AiAPIConfig } from 'memeloop';
+
+/**
+ * Vercel AI SDK message shape used by the External API service.
+ * Kept locally so the package does not depend on a specific `ai` major version
+ * for this type.
+ */
+export type ModelMessage =
+  | { role: 'system' | 'user' | 'assistant'; content: string }
+  | { role: 'system' | 'user' | 'assistant'; content: Array<{ type: string; text?: string; content?: string }> }
+  | { role: 'tool'; content: string; toolCallId?: string };
 
 /**
  * Shared error detail structure used across all AI responses
@@ -135,6 +144,13 @@ export type AIProvider = string;
  */
 export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding' | 'speech' | 'transcriptions' | 'free';
 
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+
+export interface ModelOptions {
+  /** Default nucleus sampling value. Request-level topP takes precedence. */
+  top_p?: number;
+}
+
 /**
  * Extended model information
  */
@@ -149,10 +165,20 @@ export interface ModelInfo {
   parameters?: Record<string, unknown>;
   /** Input context window size in tokens (e.g. 128000 for GPT-4o, 200000 for Claude) */
   contextWindowSize?: number;
+  /** Alias used by OpenAI-compatible model manifests for the input token limit. */
+  maxInputTokens?: number;
   /** Max output tokens (e.g. 4096, 16384) */
   maxOutputTokens?: number;
+  /** Safe per-model generation defaults. */
+  modelOptions?: ModelOptions;
+  /** Reasoning effort values accepted by the model. */
+  supportsReasoningEffort?: ReasoningEffort[];
+  /** Provider wire format for reasoning effort. */
+  reasoningEffortFormat?: 'chat-completions';
   /** Additional metadata */
   metadata?: Record<string, unknown>;
+  /** OpenAI-compatible wire API used by this model. */
+  apiMode?: 'chat-completions' | 'responses';
 }
 
 /**
@@ -161,6 +187,10 @@ export interface ModelInfo {
 export interface AIProviderConfig {
   provider: string;
   apiKey?: string;
+  /** OS-backed encrypted credential; main-process persistence only. */
+  encryptedApiKey?: string;
+  /** Renderer-safe indication that a credential is configured. */
+  hasApiKey?: boolean;
   baseURL?: string;
   models: ModelInfo[];
   /** Type of provider API interface */
@@ -168,6 +198,24 @@ export interface AIProviderConfig {
   isPreset?: boolean;
   enabled?: boolean;
   showBaseURLField?: boolean;
+}
+
+export interface ProviderCatalogStatus {
+  source: 'remote' | 'cache' | 'embedded';
+  catalogVersion: string;
+  fetchedAt: string;
+  refreshError?: string;
+}
+
+export interface ProviderCatalogResult {
+  providers: AIProviderConfig[];
+  status: ProviderCatalogStatus;
+}
+
+export interface OfficialModelDiscoveryResult {
+  provider: string;
+  discoveredCount: number;
+  models: ModelInfo[];
 }
 
 /**
@@ -196,7 +244,7 @@ export interface IExternalAPIService {
   streamFromAI(
     messages: Array<ModelMessage>,
     config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): Observable<AIStreamResponse>;
 
   /**
@@ -207,7 +255,7 @@ export interface IExternalAPIService {
   generateFromAI(
     messages: Array<ModelMessage>,
     config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): AsyncGenerator<AIStreamResponse, void, unknown>;
 
   /**
@@ -293,6 +341,18 @@ export interface IExternalAPIService {
   getAIProviders(): Promise<AIProviderConfig[]>;
 
   /**
+   * Get recommended providers/models without mutating user configuration.
+   * Pass refresh=true for a bounded network refresh of the fixed catalog source.
+   */
+  getProviderCatalog(refresh?: boolean): Promise<ProviderCatalogResult>;
+
+  /**
+   * Refresh the models visible to the configured provider account.
+   * User-created model entries are retained; earlier discovered entries are replaced.
+   */
+  refreshOfficialModels(provider: string): Promise<OfficialModelDiscoveryResult>;
+
+  /**
    * Get readonly AI configuration default values
    */
   getAIConfig(): Promise<AiAPIConfig>;
@@ -354,6 +414,8 @@ export const ExternalAPIServiceIPCDescriptor = {
     generateImage: ProxyPropertyType.Function,
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
+    getProviderCatalog: ProxyPropertyType.Function,
+    refreshOfficialModels: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
     isAIAvailable: ProxyPropertyType.Function,
     defaultConfig$: ProxyPropertyType.Value$,

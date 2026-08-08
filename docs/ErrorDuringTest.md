@@ -1,5 +1,32 @@
 # Errors
 
+## `net::ERR_CONNECTION_RESET` from CPL and other network-enabled Wiki plugins
+
+E2E runs may print renderer errors similar to:
+
+```text
+[RENDERER CONSOLE ERROR @ tidgi://<workspace-id>] Failed to load resource: net::ERR_CONNECTION_RESET
+```
+
+This does not necessarily mean that the test Wiki or the `tidgi://` protocol failed. The bundled Wiki template contains plugins that perform background network requests. For example, CPL Repo may request endpoints such as:
+
+```text
+https://cpl.tidgi.fun/cpl/auth/config
+https://cpl.tidgi.fun/cpl/auth/status
+https://cpl.tidgi.fun/cpl/stats/.../__probe__
+```
+
+These requests can be reset when the test or CI environment has restricted, unstable, or unavailable external network access. Chromium reports the failure against the Wiki renderer that initiated the XHR, so the console prefix shows `tidgi://<workspace-id>` even though the failed URL is external.
+
+Treat this as known test noise when all of the following are true:
+
+- The Cucumber scenario passes.
+- The application log shows `setupIpcServerRoutesHandlers.handlerCallback success` with `name: "getIndex"` and `status: 200`.
+- The Wiki view reaches its expected page and remains usable.
+- The failures are limited to known external plugin hosts such as `cpl.tidgi.fun`.
+
+Investigate it as a real application failure if the main `tidgi://` document fails, the Wiki never becomes ready, IPC route handling returns an error, or the scenario cannot interact with the Wiki. Do not increase E2E timeouts to hide either case.
+
 ## close timed out after 10000ms / FILEHANDLE (unknown stack trace)
 
 This happens because Electron/Vitest child processes do not inherit the ELECTRON_RUN_AS_NODE environment variable, so resources cannot be cleaned up and handles leak.
@@ -90,3 +117,26 @@ describe('Component', () => {
   });
 });
 ```
+
+## ReferenceError: process is not defined
+
+Electron renderer runs with `contextIsolation: true` and `nodeIntegration: false`. Node.js globals (`process`, `Buffer`, `require`) do not exist there.
+
+This error means a Node.js dependency leaked into the renderer bundle. Common causes:
+
+- A renderer file imports a value (not just a type) from a package that depends on Node.js APIs.
+- An upstream UI package bundles Node.js-only code into its browser build.
+- A file under `src/services/` is imported by renderer code through the `@services` alias. Service files often import from Node.js packages, and Vite's dependency scanner follows those transitive imports into the renderer bundle.
+
+### Rules
+
+- Renderer code (under `src/pages/`, `src/windows/`, `src/components/`) must only use `import type` from packages that have Node.js dependencies. Value imports from those packages will pull their entire dependency tree into the browser bundle.
+- Do not import values from `src/services/` in renderer code, use our existing [IPC proxy](docs/internal/ServiceIPC.md) instead. If you need data from the backend, go through the `window.service.*` IPC bridge. The `@services` alias exists for the main process; renderer files using it for value imports will drag service-level dependencies into the frontend.
+- If you need `process.env` or platform detection in the renderer, use the context service:
+
+```typescript
+const platform = await window.service.context.get('platform');
+const isTest = await window.service.context.get('isTest');
+```
+
+Never reference node-only API like `process` directly in renderer code.

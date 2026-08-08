@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ICreateNewAgentTab, TabState, TabType } from '@/pages/Agent/types/tab';
 import { ThemeProvider } from '@mui/material/styles';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { lightTheme } from '@services/theme/defaultTheme';
+import type { AgentDefinition } from 'memeloop';
 import { CreateNewAgentContent } from '../CreateNewAgentContent';
 
 // Mock agent definition service
@@ -82,8 +82,8 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
@@ -157,6 +157,9 @@ describe('CreateNewAgentContent', () => {
       id: 'template-1',
       name: 'Test Template',
       description: 'Test Description',
+      systemPrompt: '',
+      tools: [] as string[],
+      version: '1',
       agentFrameworkConfig: { systemPrompt: 'Test prompt' },
     };
 
@@ -378,8 +381,12 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'template-1',
       name: 'Test Template',
+      description: '',
+      systemPrompt: '',
+      tools: [] as string[],
+      version: '1',
       agentFrameworkID: 'test-handler',
-      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }] },
+      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }], plugins: [] },
     };
 
     const mockCreatedDefinition = {
@@ -407,7 +414,7 @@ describe('CreateNewAgentContent', () => {
               name: 'My Agent',
             };
 
-            const createdDefinition = await window.service.agentDefinition.createAgentDef(newAgentDefinition);
+            const createdDefinition = await window.service.agentDefinition.createAgentDef(newAgentDefinition as unknown as AgentDefinition);
             setDefinition(createdDefinition);
 
             // Simulate auto-save after 50ms (shorter than real 500ms)
@@ -470,7 +477,11 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'task-agent',
       name: 'Example Agent',
-      agentFrameworkID: 'basicPromptConcatHandler',
+      description: '',
+      systemPrompt: '',
+      tools: [] as string[],
+      version: '1',
+      agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {
         prompts: [
           {
@@ -501,9 +512,9 @@ describe('CreateNewAgentContent', () => {
     mockCreateAgentDef.mockResolvedValue(mockCreatedDefinition);
 
     // Step 1: Create agent definition (simulates template selection)
-    const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition);
+    const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition as unknown as AgentDefinition);
     expect(createdDef).toBeDefined();
-    const prompts = createdDef.agentFrameworkConfig.prompts as Array<{
+    const prompts = createdDef.agentFrameworkConfig?.prompts as Array<{
       children?: Array<{ text?: string }>;
     }>;
     expect((prompts as Array<{ children?: Array<{ text?: string }> }>)[0]?.children?.[0]?.text).toBe('You are a helpful assistant for Tiddlywiki user.');
@@ -527,7 +538,7 @@ describe('CreateNewAgentContent', () => {
       },
     };
 
-    await window.service.agentDefinition.updateAgentDef(updatedDefinition);
+    await window.service.agentDefinition.updateAgentDef(updatedDefinition as unknown as AgentDefinition);
 
     // Verify the correct nested structure is updated
     expect(mockUpdateAgentDef).toHaveBeenCalledWith(

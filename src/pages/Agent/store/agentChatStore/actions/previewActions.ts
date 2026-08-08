@@ -1,5 +1,5 @@
-import type { AgentPromptDescription, IPrompt } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { ModelMessage } from 'ai';
+import type { ModelMessage } from '@services/externalAPI/interface';
+import type { AgentPromptDescription, PromptNode as IPrompt } from 'memeloop';
 import { StateCreator } from 'zustand';
 import { AgentChatStoreType, PreviewActions } from '../types';
 
@@ -58,12 +58,15 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       }
 
       if (inputText.trim()) {
+        const now = new Date();
         messages.push({
-          id: 'preview-input',
-          agentId: 'preview-id',
+          messageId: 'preview-input',
+          conversationId: 'preview-id',
+          originNodeId: 'tidgi-desktop',
+          timestamp: now.getTime(),
+          lamportClock: now.getTime(),
           role: 'user',
           content: inputText,
-          modified: new Date(),
         });
       }
 
@@ -101,7 +104,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewCurrentPlugin: state.currentPlugin?.toolId || null,
               // Update intermediate results
               previewResult: {
-                flatPrompts: state.flatPrompts,
+                flatPrompts: state.flatPrompts as ModelMessage[],
                 processedPrompts: state.processedPrompts,
               },
             });
@@ -109,7 +112,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
             // Store final result
             if (state.isComplete) {
               finalResult = {
-                flatPrompts: state.flatPrompts,
+                flatPrompts: state.flatPrompts as ModelMessage[],
                 processedPrompts: state.processedPrompts,
               };
             }

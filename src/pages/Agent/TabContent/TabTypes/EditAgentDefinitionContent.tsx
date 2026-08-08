@@ -1,16 +1,16 @@
+import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { Alert, Box, Button, CircularProgress, Container, Divider, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/scheduledTaskManager';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { CreateScheduledTaskInput, ScheduledTask } from '@services/agentInstance/tools/scheduledTaskManager';
+import { type AgentDefinition, type AgentFrameworkConfig } from 'memeloop';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChatTabContent } from '../../../ChatTabContent';
-import { PromptConfigForm } from '../../../ChatTabContent/components/PromptPreviewDialog/PromptConfigForm';
+import { DesktopAgentChatTab } from '../../adapters';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
+import { mergeAgentToolsIntoFrameworkConfig } from '../../utils/mergeAgentTools';
 import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
 
 type ScheduleMode = 'none' | 'interval' | 'daily' | 'cron';
@@ -101,6 +101,11 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       }
     }
   }, [agentDefinitionSaveQueue]);
+
+  const editableAgentFrameworkConfig = useMemo(
+    () => agentDefinition ? mergeAgentToolsIntoFrameworkConfig(agentDefinition.agentFrameworkConfig, agentDefinition.agentTools) : undefined,
+    [agentDefinition],
+  );
 
   // ── Schedule editor state ─────────────────────────────────────────────────
   const [scheduleEditor, setScheduleEditor] = useState<ScheduleEditorState>({
@@ -433,7 +438,8 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
         return {
           ...previous,
-          agentFrameworkConfig: formData as Record<string, unknown>,
+          agentFrameworkConfig: formData as AgentFrameworkConfig,
+          agentTools: [],
         };
       },
     );
@@ -580,7 +586,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
               <Box sx={{ mt: 2 }} data-testid='edit-agent-prompt-form'>
                 <PromptConfigForm
                   schema={promptSchema}
-                  formData={agentDefinition.agentFrameworkConfig as AgentFrameworkConfig}
+                  formData={editableAgentFrameworkConfig}
                   onChange={handlePromptConfigChange}
                 />
               </Box>
@@ -813,7 +819,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
           {previewAgentId && (
             <Box sx={{ height: '400px', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              <ChatTabContent
+              <DesktopAgentChatTab
                 tab={{
                   id: previewTabId,
                   type: TabType.CHAT,

@@ -9,6 +9,7 @@ import * as sqliteVec from 'sqlite-vec';
 import { DataSource } from 'typeorm';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { isTest } from '@/constants/environment';
 import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { SQLITE_BINARY_PATH } from '@/constants/paths';
@@ -21,6 +22,7 @@ import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
 import { WikiTiddler } from './schema/wiki';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from './schema/wikiEmbedding';
+import { SettingsWriteQueue, writeSettingsFile } from './settingsFileIO';
 
 // Schema config interface
 interface SchemaConfig {
@@ -28,6 +30,14 @@ interface SchemaConfig {
   migrations?: BaseDataSourceOptions['migrations'];
   synchronize: boolean;
   migrationsRun: boolean;
+}
+
+export async function deleteSQLiteDatabaseFiles(databasePath: string): Promise<void> {
+  for (const filePath of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
+    if (await fs.pathExists(filePath)) {
+      await fs.unlink(filePath);
+    }
+  }
 }
 
 @injectable()
@@ -40,7 +50,7 @@ export class DatabaseService implements IDatabaseService {
   // Settings related fields
   private settingFileContent: ISettingFile | undefined;
   private settingBackupStream: rotateFs.RotatingFileStream | undefined;
-  private storeSettingsToFileLock = false;
+  private readonly settingsWriteQueue = new SettingsWriteQueue();
 
   async initializeForApp(): Promise<void> {
     logger.debug('starting', {
@@ -86,7 +96,7 @@ export class DatabaseService implements IDatabaseService {
       synchronize: true,
       migrationsRun: false,
     });
-    this.registerSchema('agent', {
+    this.registerSchema(MEME_LOOP_DATABASE_KEY, {
       entities: [
         AgentDefinitionEntity,
         AgentInstanceEntity,
@@ -300,9 +310,9 @@ export class DatabaseService implements IDatabaseService {
       }
 
       const databasePath = this.getDatabasePathSync(key);
-      if (databasePath !== ':memory:' && (await fs.pathExists(databasePath))) {
-        await fs.unlink(databasePath);
-        logger.info(`Database file deleted for key: ${key}`);
+      if (databasePath !== ':memory:') {
+        await deleteSQLiteDatabaseFiles(databasePath);
+        logger.info(`Database file and SQLite sidecars deleted for key: ${key}`);
       }
     } catch (error) {
       logger.error(`deleteDatabase failed for key: ${key}`, { error });
@@ -513,22 +523,21 @@ export class DatabaseService implements IDatabaseService {
   }
 
   public async immediatelyStoreSettingsToFile() {
-    /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
     if (!this.settingFileContent) {
       logger.error('immediatelyStoreSettingsToFile called before initializeForApp()');
       return;
     }
-    try {
-      if (this.storeSettingsToFileLock) return;
-      this.storeSettingsToFileLock = true;
-      await settings.set(this.settingFileContent as any);
-    } catch (error) {
-      logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
-      ensureSettingFolderExist();
-      fixSettingFileWhenError(error as Error);
-      fs.writeJSONSync(settings.file(), this.settingFileContent);
-    } finally {
-      this.storeSettingsToFileLock = false;
-    }
+    await this.settingsWriteQueue.enqueue(async () => {
+      try {
+        // Serialize the full in-memory object at write time. This preserves
+        // fields introduced by newer versions that this process does not know.
+        await writeSettingsFile(settings.file(), this.settingFileContent, process.platform);
+      } catch (error) {
+        logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error });
+        ensureSettingFolderExist();
+        fixSettingFileWhenError(error as Error);
+        await writeSettingsFile(settings.file(), this.settingFileContent, process.platform);
+      }
+    });
   }
 }

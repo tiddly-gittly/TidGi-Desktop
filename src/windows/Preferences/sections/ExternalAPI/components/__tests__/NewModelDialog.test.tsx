@@ -98,4 +98,33 @@ describe('NewModelDialog - ComfyUI workflow support', () => {
 
     expect(await screen.findByText('Save')).toBeInTheDocument();
   });
+
+  it('renders advanced model metadata and disables save for invalid ranges', async () => {
+    render(
+      <NewModelDialog
+        {...defaultProps}
+        currentProvider='cpa'
+        providerClass='openAICompatible'
+        newModelForm={{
+          name: 'reasoning-model',
+          caption: 'Reasoning model',
+          features: ['language', 'reasoning'],
+          apiMode: 'chat-completions',
+          contextWindowSize: 1_000_000,
+          maxOutputTokens: 32_768,
+          modelOptions: { top_p: 1.5 },
+          supportsReasoningEffort: ['minimal', 'high'],
+          reasoningEffortFormat: 'chat-completions',
+        }}
+      />,
+    );
+
+    expect(await screen.findByTestId('model-context-window-input')).toHaveValue(1_000_000);
+    expect(screen.getByTestId('model-max-output-input')).toHaveValue(32_768);
+    expect(screen.getByTestId('model-top-p-input')).toHaveValue(1.5);
+    expect(screen.getByRole('checkbox', { name: 'minimal' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'low' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'high' })).toBeChecked();
+    expect(screen.getByTestId('save-model-button')).toBeDisabled();
+  });
 });

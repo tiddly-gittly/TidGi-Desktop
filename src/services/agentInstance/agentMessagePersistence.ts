@@ -10,21 +10,22 @@ import { DataSource, Repository } from 'typeorm';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 
-import type { AgentInstance, AgentInstanceMessage } from './interface';
-import { AGENT_INSTANCE_FIELDS, createAgentMessage, toDatabaseCompatibleMessage } from './utilities';
+import type { AgentInstance, ChatMessage } from 'memeloop';
+import { createChatMessage } from 'memeloop';
+import { AGENT_INSTANCE_FIELDS, toDatabaseCompatibleMessage } from './utilities';
 
 /**
  * Persist a message (user, tool, or error) to the database.
  */
 export async function saveUserMessage(
   agentMessageRepo: Repository<AgentInstanceMessageEntity>,
-  userMessage: AgentInstanceMessage,
+  userMessage: ChatMessage,
 ): Promise<void> {
   const now = new Date();
   const summary = {
-    id: userMessage.id,
+    messageId: userMessage.messageId,
     role: userMessage.role,
-    agentId: userMessage.agentId,
+    conversationId: userMessage.conversationId,
     isToolResult: !!userMessage.metadata?.isToolResult,
     isPersisted: !!userMessage.metadata?.isPersisted,
   };
@@ -59,25 +60,28 @@ export function createDebouncedMessageUpdater(
   debounceMs: number,
   /** Callback to notify agent subscribers after a new message is created */
   onNewMessage?: (agentId: string, updatedAgent: AgentInstance) => void,
-): (messageData: AgentInstanceMessage, agentId?: string) => void {
+): (messageData: ChatMessage, agentId?: string) => void {
   return debounce(
-    async (messageData_: AgentInstanceMessage, aid?: string) => {
+    async (messageData_: ChatMessage, aid?: string) => {
       try {
         await dataSource.transaction(async transaction => {
           const messageRepo = transaction.getRepository(AgentInstanceMessageEntity);
-          const messageEntity = await messageRepo.findOne({ where: { id: messageId } });
+          const messageEntity = await messageRepo.findOne({ where: { messageId } });
 
           if (messageEntity) {
             // Update existing message
             messageEntity.content = messageData_.content;
+            if (messageData_.parts) messageEntity.parts = messageData_.parts;
+            if (messageData_.toolCalls) messageEntity.toolCalls = messageData_.toolCalls;
+            if (messageData_.attachments) messageEntity.attachments = messageData_.attachments;
+            if (messageData_.detailRef) messageEntity.detailRef = messageData_.detailRef;
+            if (messageData_.reasoning_content) messageEntity.reasoning_content = messageData_.reasoning_content;
             if (messageData_.contentType) messageEntity.contentType = messageData_.contentType;
             if (messageData_.metadata) messageEntity.metadata = messageData_.metadata;
+            if (messageData_.hidden !== undefined) messageEntity.hidden = messageData_.hidden;
             if (messageData_.duration !== undefined) messageEntity.duration = messageData_.duration ?? undefined;
-            if (messageData_.modified instanceof Date) {
-              if (!messageEntity.modified || messageData_.modified.getTime() < new Date(messageEntity.modified).getTime()) {
-                messageEntity.modified = messageData_.modified;
-              }
-            }
+            messageEntity.timestamp = messageData_.timestamp;
+            messageEntity.lamportClock = messageData_.lamportClock;
 
             const startSave = new Date();
             logger.debug('Updating existing message (start save)', {
@@ -96,11 +100,20 @@ export function createDebouncedMessageUpdater(
             });
           } else if (aid) {
             // Create new message
-            const messageData = createAgentMessage(messageId, aid, {
+            const messageData = createChatMessage({
+              messageId,
+              conversationId: aid,
               role: messageData_.role,
               content: messageData_.content,
+              originNodeId: 'tidgi-desktop',
+              parts: messageData_.parts,
+              toolCalls: messageData_.toolCalls,
+              attachments: messageData_.attachments,
+              detailRef: messageData_.detailRef,
+              reasoning_content: messageData_.reasoning_content,
               contentType: messageData_.contentType,
               metadata: messageData_.metadata,
+              hidden: messageData_.hidden,
               duration: messageData_.duration,
             });
             const newMessage = messageRepo.create(toDatabaseCompatibleMessage(messageData));
@@ -131,6 +144,11 @@ export function createDebouncedMessageUpdater(
 
               const updatedAgent: AgentInstance = {
                 ...pick(agentEntity, AGENT_INSTANCE_FIELDS),
+                aiApiConfig: agentEntity.aiApiConfig,
+                systemPrompt: '',
+                tools: [],
+                description: '',
+                version: '1',
                 messages: agentEntity.messages,
               };
               onNewMessage?.(aid, updatedAgent);
