@@ -14,14 +14,14 @@ const mockWriteTidgiConfig = vi.fn();
 const mockReadTidgiConfig = vi.fn();
 const mockReadTidgiConfigSync = vi.fn();
 const mockExtractSyncableConfig = vi.fn();
+const mockMergeWithSyncedConfig = vi.fn();
 
 vi.mock('../../database/configSetting', () => ({
   writeTidgiConfig: (...args: unknown[]) => mockWriteTidgiConfig(...args) as Promise<void>,
   readTidgiConfig: (...args: unknown[]) => mockReadTidgiConfig(...args) as Promise<Record<string, unknown> | undefined>,
-  // Kept as a sentinel: cache initialization must not call the legacy
-  // synchronous external-path reader even when old settings enable sync.
   readTidgiConfigSync: (...args: unknown[]) => mockReadTidgiConfigSync(...args) as Record<string, unknown> | undefined,
   extractSyncableConfig: (...args: unknown[]) => mockExtractSyncableConfig(...args) as Record<string, unknown>,
+  mergeWithSyncedConfig: (...args: unknown[]) => mockMergeWithSyncedConfig(...args) as Record<string, unknown>,
   getTidgiConfigPath: (wikiFolderLocation: string) => `${wikiFolderLocation}/tidgi.config.json`,
   hasTidgiConfig: vi.fn(),
   initTidgiConfigLogger: vi.fn(),
@@ -107,6 +107,8 @@ describe('Workspace useTidgiConfigSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSetting.mockReturnValue({});
+    mockReadTidgiConfig.mockResolvedValue(undefined);
+    mockReadTidgiConfigSync.mockReturnValue(undefined);
     mockWriteTidgiConfig.mockResolvedValue(undefined);
     mockExtractSyncableConfig.mockImplementation((workspace: IWikiWorkspace) => ({
       id: workspace.id,
@@ -114,6 +116,7 @@ describe('Workspace useTidgiConfigSync', () => {
       readOnlyMode: workspace.readOnlyMode,
       enableFileSystemWatch: workspace.enableFileSystemWatch,
     }));
+    mockMergeWithSyncedConfig.mockImplementation((local: IWikiWorkspace, synced: Partial<IWikiWorkspace> | undefined) => ({ ...local, ...synced }));
   });
 
   describe('create', () => {
@@ -270,16 +273,74 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('sanitizeWorkspace', () => {
-    it('never reads tidgi.config.json while sanitizing startup settings', async () => {
-      const workspace = createWorkspace({ useTidgiConfigSync: true });
+    it('hydrates portable workspace fields from tidgi.config.json during startup', async () => {
+      const workspace = createWorkspace({
+        useTidgiConfigSync: true,
+        name: '',
+        isSubWiki: false,
+        mainWikiID: null,
+        mainWikiToLink: null,
+      });
       const service = new Workspace();
       mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
+      mockReadTidgiConfigSync.mockReturnValue({
+        id: 'portable-workspace-id',
+        name: 'Portable Name',
+        isSubWiki: true,
+        mainWikiID: 'root',
+        mainWikiToLink: '/tmp/root',
+      });
 
       const result = await service.getWorkspaces();
 
-      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockReadTidgiConfigSync).toHaveBeenCalledWith(workspace.wikiFolderLocation);
       expect(mockReadTidgiConfig).not.toHaveBeenCalled();
-      expect(result[workspace.id].name).toBe('Workspace 1');
+      expect(result['portable-workspace-id']).toMatchObject({
+        id: 'portable-workspace-id',
+        homeUrl: 'tidgi://portable-workspace-id',
+        lastUrl: null,
+        name: 'Portable Name',
+        isSubWiki: true,
+        mainWikiID: null,
+        mainWikiToLink: '/tmp/root',
+      });
+      expect(result).not.toHaveProperty(workspace.id);
+    });
+
+    it('uses portable subwiki metadata to resolve the hierarchy after every workspace is hydrated', async () => {
+      const root = createWorkspace({
+        id: 'root',
+        name: '',
+        wikiFolderLocation: '/wikis/root',
+        useTidgiConfigSync: true,
+      });
+      const sub = createWorkspace({
+        id: 'sub',
+        name: '',
+        wikiFolderLocation: '/wikis/sub',
+        useTidgiConfigSync: true,
+      });
+      mockGetSetting.mockReturnValue({ root, sub });
+      mockReadTidgiConfigSync.mockImplementation((workspacePath: string) =>
+        workspacePath === root.wikiFolderLocation
+          ? { name: 'Root Wiki' }
+          : {
+            name: 'Sub Wiki',
+            isSubWiki: true,
+            mainWikiID: null,
+            mainWikiToLink: root.wikiFolderLocation,
+          }
+      );
+
+      const result = await new Workspace().getWorkspaces();
+
+      expect(result.root).toMatchObject({ name: 'Root Wiki', isSubWiki: false });
+      expect(result.sub).toMatchObject({
+        name: 'Sub Wiki',
+        isSubWiki: true,
+        mainWikiID: root.id,
+        mainWikiToLink: root.wikiFolderLocation,
+      });
     });
 
     it('should migrate html workspaces without reading tidgi.config.json', async () => {
@@ -349,7 +410,7 @@ describe('Workspace useTidgiConfigSync', () => {
       expect((result[cycleA.id] as IWikiWorkspace).mainWikiID).toBeNull();
       expect((result[cycleB.id] as IWikiWorkspace).mainWikiID).toBeNull();
       expect((result[ambiguousSub.id] as IWikiWorkspace).mainWikiID).toBeNull();
-      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockReadTidgiConfigSync).toHaveBeenCalledTimes(26);
       expect(mockSetSetting).not.toHaveBeenCalled();
     });
 
