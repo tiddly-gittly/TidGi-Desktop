@@ -20,7 +20,7 @@ import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { extractSyncableConfig, readTidgiConfig, writeTidgiConfig } from '../database/configSetting';
+import { extractSyncableConfig, mergeWithSyncedConfig, readTidgiConfig, readTidgiConfigSync, writeTidgiConfig } from '../database/configSetting';
 import type {
   IDedicatedWorkspace,
   INewHtmlWikiWorkspaceConfig,
@@ -136,7 +136,7 @@ export class Workspace implements IWorkspaceService {
               ? workspace.id
               : storedID,
           };
-          const sanitized = this.sanitizeWorkspace(workspaceWithStableID);
+          const sanitized = this.sanitizeWorkspace(workspaceWithStableID, true);
           const normalizedID = sanitized.id;
           oldToNewIdMap.set(storedID, normalizedID);
           if (Object.hasOwn(sanitizedWorkspaces, normalizedID)) {
@@ -406,12 +406,13 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   * Pure function that makes sure workspace settings are internally consistent.
-   * It intentionally performs no filesystem I/O and never reads the workspace
-   * cache, so it is safe while that cache is being initialized.
+   * Make sure workspace settings are internally consistent. Startup hydration
+   * may read the portable tidgi.config.json, but hierarchy resolution remains a
+   * separate second pass and therefore never recursively enters the cache.
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
+   * @param hydratePortableConfig Apply tidgi.config.json fields during initial cache construction only
    */
-  private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
+  private sanitizeWorkspace(workspaceToSanitize: IWorkspace, hydratePortableConfig = false): IWorkspace {
     // For dedicated workspaces (help, guide, agent), no sanitization needed
     if (!isWikiWorkspace(workspaceToSanitize)) {
       return workspaceToSanitize;
@@ -430,41 +431,63 @@ export class Workspace implements IWorkspaceService {
     const isHtmlWorkspace = workspaceToSanitize.workspaceType === WorkspaceType.html ||
       (typeof workspaceToSanitize.htmlFileLocation === 'string' && workspaceToSanitize.htmlFileLocation.length > 0);
 
-    const fixingValues: Partial<typeof workspaceToSanitize> = {};
+    let effectiveWorkspace = workspaceToSanitize;
+    // Master stores portable fields such as name and sub-wiki relationships in
+    // tidgi.config.json. Omitting this startup hydration silently replaces names
+    // with folder basenames and erases the hierarchy from the in-memory cache.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
+    if (hydratePortableConfig && !isHtmlWorkspace && workspaceToSanitize.useTidgiConfigSync !== false) {
+      const portableConfig = readTidgiConfigSync(workspaceToSanitize.wikiFolderLocation);
+      if (portableConfig !== undefined) {
+        effectiveWorkspace = mergeWithSyncedConfig(workspaceToSanitize, portableConfig);
+        logger.debug('sanitizeWorkspace: Hydrated portable config', {
+          fields: Object.keys(portableConfig),
+          workspaceId: workspaceToSanitize.id,
+        });
+      }
+    }
+
+    const fixingValues: Partial<typeof effectiveWorkspace> = {};
     // Migrate old tagName (string) to tagNames (string[])
-    const legacyTagName = (workspaceToSanitize as { tagName?: string | null }).tagName;
-    if (legacyTagName && (!workspaceToSanitize.tagNames || workspaceToSanitize.tagNames.length === 0)) {
+    const legacyTagName = (effectiveWorkspace as { tagName?: string | null }).tagName;
+    if (legacyTagName && (!effectiveWorkspace.tagNames || effectiveWorkspace.tagNames.length === 0)) {
       fixingValues.tagNames = [legacyTagName.replaceAll('\n', '')];
     }
     // Migrate old workspaces without name: use folder name as default
     // This ensures backward compatibility when loading workspaces created before tidgi.config.json was used
-    if (!workspaceToSanitize.name || workspaceToSanitize.name.trim() === '') {
-      const folderName = path.basename(workspaceToSanitize.wikiFolderLocation);
+    if (!effectiveWorkspace.name || effectiveWorkspace.name.trim() === '') {
+      const folderName = path.basename(effectiveWorkspace.wikiFolderLocation);
       fixingValues.name = folderName;
       logger.info('sanitizeWorkspace: Migrating old workspace name from folder', {
-        workspaceId: workspaceToSanitize.id,
-        wikiFolderLocation: workspaceToSanitize.wikiFolderLocation,
+        workspaceId: effectiveWorkspace.id,
+        wikiFolderLocation: effectiveWorkspace.wikiFolderLocation,
         migratedName: folderName,
       });
     }
     // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
-    if (workspaceToSanitize.lastUrl && !workspaceToSanitize.lastUrl.startsWith('tidgi')) {
+    if (effectiveWorkspace.lastUrl && !effectiveWorkspace.lastUrl.startsWith('tidgi')) {
       fixingValues.lastUrl = null;
     }
-    if (!workspaceToSanitize.homeUrl || !workspaceToSanitize.homeUrl.startsWith('tidgi')) {
-      fixingValues.homeUrl = getDefaultTidGiUrl(workspaceToSanitize.id);
+    if (effectiveWorkspace.id !== workspaceToSanitize.id) {
+      // A portable ID changes the cache key and the custom-protocol host as one
+      // atomic migration. Keeping the old host makes BrowserView route requests
+      // to a workspace ID that no longer exists in the hydrated cache.
+      fixingValues.homeUrl = getDefaultTidGiUrl(effectiveWorkspace.id);
+      fixingValues.lastUrl = null;
+    } else if (!effectiveWorkspace.homeUrl || !effectiveWorkspace.homeUrl.startsWith('tidgi')) {
+      fixingValues.homeUrl = getDefaultTidGiUrl(effectiveWorkspace.id);
     }
-    if (workspaceToSanitize.tokenAuth && !workspaceToSanitize.authToken) {
+    if (effectiveWorkspace.tokenAuth && !effectiveWorkspace.authToken) {
       const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
-      fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
+      fixingValues.authToken = authService.generateOneTimeAdminAuthTokenForWorkspaceSync(effectiveWorkspace.id);
     }
     // Migrate legacy workspaces without workspaceType to folder wiki
-    if (!workspaceToSanitize.workspaceType) {
+    if (!effectiveWorkspace.workspaceType) {
       fixingValues.workspaceType = isHtmlWorkspace ? WorkspaceType.html : WorkspaceType.folder;
     }
-    if (isHtmlWorkspace && workspaceToSanitize.htmlFileLocation) {
+    if (isHtmlWorkspace && effectiveWorkspace.htmlFileLocation) {
       try {
-        const normalizedPaths = normalizeHtmlWorkspacePaths(workspaceToSanitize.htmlFileLocation);
+        const normalizedPaths = normalizeHtmlWorkspacePaths(effectiveWorkspace.htmlFileLocation);
         fixingValues.htmlFileLocation = normalizedPaths.htmlFileLocation;
         fixingValues.wikiFolderLocation = normalizedPaths.wikiFolderLocation;
         fixingValues.useTidgiConfigSync = false;
@@ -472,19 +495,19 @@ export class Workspace implements IWorkspaceService {
         fixingValues.mainWikiID = null;
       } catch (error) {
         logger.warn('sanitizeWorkspace: Failed to normalize HTML workspace paths', {
-          workspaceId: workspaceToSanitize.id,
+          workspaceId: effectiveWorkspace.id,
           error: (error as Error).message,
         });
       }
     }
-    if (isHtmlWorkspace && (!workspaceToSanitize.name || workspaceToSanitize.name.trim() === '')) {
-      if (workspaceToSanitize.htmlFileLocation) {
-        fixingValues.name = path.basename(workspaceToSanitize.htmlFileLocation, path.extname(workspaceToSanitize.htmlFileLocation));
+    if (isHtmlWorkspace && (!effectiveWorkspace.name || effectiveWorkspace.name.trim() === '')) {
+      if (effectiveWorkspace.htmlFileLocation) {
+        fixingValues.name = path.basename(effectiveWorkspace.htmlFileLocation, path.extname(effectiveWorkspace.htmlFileLocation));
       }
     }
     // Apply defaults, then workspace data, then fixing values
     // This ensures all required fields exist even if missing from settings.json/tidgi.config.json
-    const result = { ...wikiWorkspaceDefaultValues, ...workspaceToSanitize, ...fixingValues };
+    const result = { ...wikiWorkspaceDefaultValues, ...effectiveWorkspace, ...fixingValues };
     logger.debug('sanitizeWorkspace: Complete', {
       workspaceId: result.id,
       finalName: result.name,
