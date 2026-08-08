@@ -42,6 +42,22 @@ interface TiddlyWikiModuleLoaderDependencies {
 }
 
 /**
+ * Return a real absolute filename for Node's CommonJS resolver.
+ *
+ * Utility-process bundles are CommonJS. Rolldown cannot preserve
+ * `import.meta.url` there and currently compiles it to `{}.url`, while
+ * `__filename` is likewise a bundler-provided implementation detail. The
+ * executable directory is absolute in both Electron and plain Node, and is
+ * deliberately outside any wiki-local node_modules tree.
+ */
+export function getTiddlyWikiRequireAnchor(executablePath: string = process.execPath): string {
+  if (!path.isAbsolute(executablePath)) {
+    throw new Error(`Unable to create the TiddlyWiki require host: executable path must be absolute, received ${executablePath}`);
+  }
+  return path.join(path.dirname(executablePath), 'tidgi-wiki-worker-require-anchor.cjs');
+}
+
+/**
  * Load the exact TiddlyWiki CommonJS entry selected by the host. A package may
  * be wiki-local or copied to Resources/node_modules in a packaged application.
  *
@@ -84,7 +100,7 @@ export async function loadTiddlyWikiModule(
   // must not be anchored inside a wiki-local node_modules tree. That anchor can
   // block in Electron utility processes on macOS before require is even called.
   onPhase?.('require-host-begin');
-  const packageRequire = (dependencies.createRequire ?? createRequire)(import.meta.url);
+  const packageRequire = (dependencies.createRequire ?? createRequire)(getTiddlyWikiRequireAnchor());
   onPhase?.('require-host-end');
   onPhase?.('require-begin');
   const loadedModule = packageRequire(entryPath) as unknown;

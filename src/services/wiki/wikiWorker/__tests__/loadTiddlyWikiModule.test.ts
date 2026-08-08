@@ -2,8 +2,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { build } from 'vite';
 import { afterEach, describe, expect, it } from 'vitest';
-import { loadTiddlyWikiModule } from '../loadTiddlyWikiModule';
+import { getTiddlyWikiRequireAnchor, loadTiddlyWikiModule } from '../loadTiddlyWikiModule';
 
 const temporaryDirectories: string[] = [];
 
@@ -64,8 +65,49 @@ describe('loadTiddlyWikiModule', () => {
 
     expect(TiddlyWiki()).toEqual({ fixture: true });
     expect(requireAnchors).toHaveLength(1);
-    expect(String(requireAnchors[0])).toMatch(/loadTiddlyWikiModule\.ts$/);
+    expect(String(requireAnchors[0])).toBe(getTiddlyWikiRequireAnchor());
+    expect(path.isAbsolute(String(requireAnchors[0]))).toBe(true);
     expect(String(requireAnchors[0])).not.toContain(bootPath);
+  });
+
+  it('preserves a valid require anchor in the CommonJS utility-process bundle', async () => {
+    const bundleDirectory = mkdtempSync(path.join(tmpdir(), 'tidgi-wiki-worker-bundle-'));
+    temporaryDirectories.push(bundleDirectory);
+    await build({
+      configFile: false,
+      logLevel: 'silent',
+      build: {
+        emptyOutDir: false,
+        lib: {
+          entry: path.resolve(__dirname, '../loadTiddlyWikiModule.ts'),
+          fileName: () => 'loadTiddlyWikiModule.cjs',
+          formats: ['cjs'],
+        },
+        outDir: bundleDirectory,
+        rollupOptions: {
+          external: ['node:fs', 'node:module', 'node:path', 'path'],
+        },
+      },
+    });
+
+    const bundledLoader = createRequire(import.meta.url)(path.join(bundleDirectory, 'loadTiddlyWikiModule.cjs')) as typeof import('../loadTiddlyWikiModule');
+    const { bootPath } = createTiddlyWikiPackage();
+    const requireAnchors: Array<string | URL> = [];
+    const { TiddlyWiki } = await bundledLoader.loadTiddlyWikiModule(bootPath, undefined, {
+      createRequire: (anchor) => {
+        requireAnchors.push(anchor);
+        return createRequire(anchor);
+      },
+    });
+
+    expect(TiddlyWiki()).toEqual({ fixture: true });
+    expect(requireAnchors).toEqual([getTiddlyWikiRequireAnchor()]);
+    expect(path.isAbsolute(String(requireAnchors[0]))).toBe(true);
+    expect(String(requireAnchors[0])).not.toContain(bootPath);
+  });
+
+  it('rejects a non-absolute executable path for the require anchor', () => {
+    expect(() => getTiddlyWikiRequireAnchor('electron')).toThrow(/executable path must be absolute/i);
   });
 
   it('rejects a package whose manifest identity is not TiddlyWiki', async () => {
