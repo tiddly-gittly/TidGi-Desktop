@@ -15,7 +15,7 @@ import WikiWorkerFactory from './wikiWorker/index?utilityProcess';
 import { container } from '@services/container';
 
 import { WikiChannel } from '@/constants/channels';
-import { getTiddlyWikiBootPath, TIDDLERS_PATH, TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { getTiddlyWikiBootPath, NSFW_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IHtmlWikiService } from '@services/htmlWiki/interface';
@@ -51,6 +51,21 @@ import { wikiWorkerStartedEventName } from './constants';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
+
+/**
+ * Utility processes can boot a wiki-local TiddlyWiki installation. Keep the
+ * native nsfw dependency explicit so the bundled filesystem plugin never asks
+ * that installation to resolve `nsfw/build/Release/nsfw.node`.
+ */
+function createWikiWorkerEnvironment(proxyPreferences: Parameters<typeof createNetworkProxyEnvironment>[0]): Record<string, string> {
+  if (!NSFW_BINARY_PATH || !path.isAbsolute(NSFW_BINARY_PATH)) {
+    throw new Error('NSFW_BINARY_PATH must be an absolute path to nsfw.node');
+  }
+  return {
+    ...createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+    TIDGI_NSFW_BINARY_PATH: NSFW_BINARY_PATH,
+  };
+}
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -308,7 +323,7 @@ export class Wiki implements IWikiService {
     const wikiWorker = WikiWorkerFactory({
       stdio: 'pipe',
       serviceName: `wiki-worker-${workspaceID}`,
-      env: createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+      env: createWikiWorkerEnvironment(proxyPreferences),
       session: wikiBackendSession,
       // tiddlywiki/dugite may load native modules; on macOS this needs unsigned library loading
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
@@ -668,7 +683,7 @@ export class Wiki implements IWikiService {
     const nativeWorker = WikiWorkerFactory({
       stdio: 'pipe',
       serviceName: 'wiki-worker-extract-html',
-      env: createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+      env: createWikiWorkerEnvironment(proxyPreferences),
       session: wikiBackendSession,
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
@@ -699,7 +714,7 @@ export class Wiki implements IWikiService {
     const nativeWorker = WikiWorkerFactory({
       stdio: 'pipe',
       serviceName: 'wiki-worker-packet-html',
-      env: createNetworkProxyEnvironment(proxyPreferences, 'wikiBackend'),
+      env: createWikiWorkerEnvironment(proxyPreferences),
       session: wikiBackendSession,
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });

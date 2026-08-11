@@ -54,10 +54,12 @@ const config: ForgeConfig = {
     // (.ico on Windows, .icns on macOS, and .png on Linux).
     icon: 'build-resources/icon',
     asar: {
-      // Unpack worker files, utility process files, native modules path, and ALL .node binaries (including better-sqlite3)
+      // Unpack all Vite-built utility process chunks and ALL .node binaries (including better-sqlite3).
       // UtilityProcess files must be unpacked because utilityProcess.fork() reads from the
       // real filesystem, unlike Worker which can read from inside an asar.
-      unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/*Worker*,**/.webpack/main/native_modules/path.txt,**/{.**,**}/**/*.node}',
+      // The Forge Vite plugin emits main and utility-process chunks below .vite/build;
+      // include every JS chunk so hashed wiki/git worker names cannot be missed.
+      unpack: '{**/.vite/build/**/*.js,**/{.**,**}/**/*.node}',
     },
     extraResource: [
       'localization',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLocalAdHocMacSigningPackagerConfig } from '../../forge.config';
+import forgeConfig, { getLocalAdHocMacSigningPackagerConfig } from '../../forge.config';
 
 describe('getLocalAdHocMacSigningPackagerConfig', () => {
   it.each([undefined, '', '0', 'true'])('keeps signing absent unless the local-only switch is exactly 1 (%s)', value => {
@@ -25,5 +25,16 @@ describe('getLocalAdHocMacSigningPackagerConfig', () => {
       hardenedRuntime: false,
       timestamp: 'none',
     });
+  });
+});
+
+describe('packaged utility process files', () => {
+  it('unpacks Forge Vite JS chunks and native modules outside asar', () => {
+    const asar = forgeConfig.packagerConfig?.asar;
+    const unpack = typeof asar === 'object' && asar !== null ? asar.unpack : undefined;
+
+    expect(unpack).toEqual(expect.stringContaining('**/.vite/build/**/*.js'));
+    expect(unpack).toEqual(expect.stringContaining('*.node'));
+    expect(unpack).not.toEqual(expect.stringContaining('**/.webpack/main'));
   });
 });

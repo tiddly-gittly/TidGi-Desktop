@@ -17,21 +17,29 @@ const __dirname = path.dirname(__filename);
 
 /**
  * esbuild plugin to handle native .node files and their parent packages
- * Rewrites require() calls for .node files to use absolute paths from node_modules
+ * Rewrites require() calls for .node files to use an absolute path supplied by
+ * the main process.
  */
 const nativeNodeModulesPlugin = {
   name: 'native-node-modules',
   setup(build) {
-    // Rewrite nsfw's require() to use node_modules path
+    // Rewrite nsfw's require() to use the main-process binary path
     build.onLoad({ filter: /nsfw[/\\]js[/\\]src[/\\]index\.js$/ }, async (args) => {
       let contents = await fs.readFile(args.path, 'utf8');
 
-      // Replace relative path with require from node_modules
-      // Original: require('../../build/Release/nsfw.node')
-      // New: require('nsfw/build/Release/nsfw.node')
+      // The wiki worker may boot a wiki-local TiddlyWiki installation.  A bare
+      // `require('nsfw/...')` from the bundled plugin then resolves against that
+      // installation instead of TidGi's packaged dependency tree.  Resolve the
+      // native module from the absolute path supplied by the main process.
       contents = contents.replace(
-        /require\(['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\)/g,
-        "require('nsfw/build/Release/nsfw.node')",
+        /require\(\s*['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\s*\)/g,
+        `(() => {
+          const binaryPath = process.env['TIDGI_NSFW_BINARY_PATH'];
+          if (!binaryPath || !path.isAbsolute(binaryPath)) {
+            throw new Error('TIDGI_NSFW_BINARY_PATH must be an absolute path to nsfw.node');
+          }
+          return require(binaryPath);
+        })()`,
       );
 
       return {

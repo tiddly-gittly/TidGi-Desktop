@@ -63,6 +63,24 @@ export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'tiddly
  * When wiki uses a local TiddlyWiki installation, we still need to load TidGi's custom plugins from here.
  */
 export const TIDDLYWIKI_BUILT_IN_PLUGINS_PATH = path.resolve(PACKAGE_PATH_BASE, 'tiddlywiki', 'plugins');
+
+/**
+ * Resolve the native nsfw binary used by the bundled filesystem watcher.
+ *
+ * Keep this rooted at PACKAGE_PATH_BASE rather than a wiki's local
+ * node_modules directory: afterPack copies the binary to the same
+ * Resources/node_modules location used by packaged utility processes.
+ */
+export function resolveNsfwBinaryPath(packagePathBase: string): string {
+  const normalizedBase = packagePathBase.trim();
+  if (normalizedBase.length === 0) {
+    throw new Error('Cannot resolve nsfw native binary without a package path base');
+  }
+  return path.resolve(normalizedBase, 'nsfw', 'build', 'Release', 'nsfw.node');
+}
+
+export const NSFW_BINARY_PATH = resolveNsfwBinaryPath(PACKAGE_PATH_BASE);
+
 // better-sqlite3 v13+ uses prebuilt binaries in prebuilds/ instead of build/Release/
 // Fallback to build/Release/ for older versions or electron-rebuild output
 function getSqliteBinaryPath(): string {
