@@ -3,10 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { requiresVirtualXDisplay } from '../xDisplay';
 
 describe('requiresVirtualXDisplay', () => {
-  it('requires xvfb only for headless Linux', () => {
-    expect(requiresVirtualXDisplay('linux', false)).toBe(true);
-    expect(requiresVirtualXDisplay('linux', true)).toBe(false);
-    expect(requiresVirtualXDisplay('win32', false)).toBe(false);
-    expect(requiresVirtualXDisplay('darwin', false)).toBe(false);
-  });
+  it.each(
+    [
+      ['linux', false, true],
+      ['linux', true, false],
+      ['win32', false, false],
+      ['darwin', false, false],
+    ] as const,
+  )(
+    '%s with display=%s -> requires xvfb=%s',
+    (platform, hasDisplay, expected) => {
+      expect(requiresVirtualXDisplay(platform, hasDisplay)).toBe(expected);
+    },
+  );
 });

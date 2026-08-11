@@ -18,6 +18,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { requiresVirtualXDisplay } from './xDisplay';
 
 const projectRoot = resolve(__dirname, '..');
 
@@ -171,14 +172,25 @@ function reExecUnderXvfb(): never {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 function main(): void {
-  // 1. Already wrapped / display set → launch directly.
+  // 1. Already wrapped → launch directly.
   if (process.env[XVFB_WRAPPED_ENV] || process.env[REAL_DISPLAY_WRAPPED_ENV]) {
     launchForge();
     return;
   }
 
+  // X display probing and xvfb are Linux-only. macOS and Windows provide
+  // their own desktop display, so launch Forge directly without invoking any
+  // Linux utilities (xdpyinfo, pgrep, /proc, or xvfb-run).
+  if (process.platform !== 'linux') {
+    launchForge();
+    return;
+  }
+
   // 2. $DISPLAY is set and reachable → launch directly.
-  if (process.env.DISPLAY && isDisplayReachable(process.env.DISPLAY)) {
+  const hasReachableDisplay = Boolean(
+    process.env.DISPLAY && isDisplayReachable(process.env.DISPLAY),
+  );
+  if (!requiresVirtualXDisplay(process.platform, hasReachableDisplay)) {
     launchForge();
     return;
   }
