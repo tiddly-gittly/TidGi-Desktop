@@ -119,6 +119,36 @@ export function ProviderConfig({
     }
   }, [providers]);
 
+  // Provider observables intentionally redact credentials. Decrypt only the
+  // selected settings surface so users can reveal and copy their own key.
+  useEffect(() => {
+    let cancelled = false;
+    const provider = providers[selectedTabIndex];
+    if (!provider?.hasApiKey || isUserInputting.current[provider.provider]) return;
+
+    void window.service.externalAPI.getProviderApiKey(provider.provider)
+      .then(apiKey => {
+        if (cancelled || isUserInputting.current[provider.provider]) return;
+        setProviderForms(previous => {
+          const currentForm = previous[provider.provider];
+          return currentForm
+            ? { ...previous, [provider.provider]: { ...currentForm, apiKey } }
+            : previous;
+        });
+      })
+      .catch((error: unknown) => {
+        void window.service.native.log('error', 'Failed to load provider credential', {
+          function: 'ProviderConfig.loadProviderApiKey',
+          error,
+          provider: provider.provider,
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [providers, selectedTabIndex]);
+
   // Update available default providers
   useEffect(() => {
     const currentProviderNames = new Set(providers.map(p => p.provider));
@@ -723,7 +753,7 @@ export function ProviderConfig({
       />
       {addProviderSection}
       <KeyValueTabs
-        ariaLabel='Provider configuration tabs'
+        ariaLabel={t('Preference.ProviderConfigurationTabs')}
         selectedKey={providers[selectedTabIndex]?.provider}
         onSelectedKeyChange={key => {
           const index = providers.findIndex(provider => provider.provider === key);

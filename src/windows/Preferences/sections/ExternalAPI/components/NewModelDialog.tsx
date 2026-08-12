@@ -163,16 +163,16 @@ export function NewModelDialog({
 
               {(providerClass === 'openAICompatible' || providerClass === 'openai') && (
                 <FormControl fullWidth margin='normal'>
-                  <InputLabel>OpenAI API mode</InputLabel>
+                  <InputLabel>{t('Preference.OpenAIAPIMode', { ns: 'agent' })}</InputLabel>
                   <Select
                     value={newModelForm.apiMode ?? 'chat-completions'}
-                    label='OpenAI API mode'
+                    label={t('Preference.OpenAIAPIMode', { ns: 'agent' })}
                     onChange={(event) => {
                       onModelFormChange('apiMode', event.target.value);
                     }}
                   >
-                    <MenuItem value='chat-completions'>Chat Completions</MenuItem>
-                    <MenuItem value='responses'>Responses</MenuItem>
+                    <MenuItem value='chat-completions'>{t('Preference.ChatCompletions', { ns: 'agent' })}</MenuItem>
+                    <MenuItem value='responses'>{t('Preference.ResponsesAPI', { ns: 'agent' })}</MenuItem>
                   </Select>
                 </FormControl>
               )}
@@ -189,35 +189,35 @@ export function NewModelDialog({
               />
 
               <TextField
-                label='Context window / max input tokens'
+                label={t('Preference.ContextWindow', { ns: 'agent' })}
                 type='number'
                 value={newModelForm.contextWindowSize ?? ''}
                 onChange={(event) => {
                   onModelFormChange('contextWindowSize', event.target.value === '' ? undefined : Number(event.target.value));
                 }}
                 error={newModelForm.contextWindowSize !== undefined && (!Number.isInteger(newModelForm.contextWindowSize) || newModelForm.contextWindowSize <= 0)}
-                helperText='Positive integer token limit for model input context.'
+                helperText={t('Preference.ContextWindowDescription', { ns: 'agent' })}
                 fullWidth
                 margin='normal'
                 slotProps={{ htmlInput: { min: 1, step: 1, 'data-testid': 'model-context-window-input' } }}
               />
 
               <TextField
-                label='Max output tokens'
+                label={t('Preference.MaxOutputTokens', { ns: 'agent' })}
                 type='number'
                 value={newModelForm.maxOutputTokens ?? ''}
                 onChange={(event) => {
                   onModelFormChange('maxOutputTokens', event.target.value === '' ? undefined : Number(event.target.value));
                 }}
                 error={newModelForm.maxOutputTokens !== undefined && (!Number.isInteger(newModelForm.maxOutputTokens) || newModelForm.maxOutputTokens <= 0)}
-                helperText='Positive integer default; an explicit request limit takes precedence.'
+                helperText={t('Preference.MaxOutputTokensDescription', { ns: 'agent' })}
                 fullWidth
                 margin='normal'
                 slotProps={{ htmlInput: { min: 1, step: 1, 'data-testid': 'model-max-output-input' } }}
               />
 
               <TextField
-                label='Default top_p'
+                label={t('Preference.DefaultTopP', { ns: 'agent' })}
                 type='number'
                 value={newModelForm.modelOptions?.top_p ?? ''}
                 onChange={(event) => {
@@ -228,14 +228,14 @@ export function NewModelDialog({
                 }}
                 error={newModelForm.modelOptions?.top_p !== undefined &&
                   (!Number.isFinite(newModelForm.modelOptions.top_p) || newModelForm.modelOptions.top_p < 0 || newModelForm.modelOptions.top_p > 1)}
-                helperText='Number from 0 to 1; request-level topP takes precedence.'
+                helperText={t('Preference.DefaultTopPDescription', { ns: 'agent' })}
                 fullWidth
                 margin='normal'
                 slotProps={{ htmlInput: { min: 0, max: 1, step: 0.01, 'data-testid': 'model-top-p-input' } }}
               />
 
               <Typography variant='subtitle2' sx={{ mt: 2, mb: 1 }}>
-                Supported reasoning effort
+                {t('Preference.SupportedReasoningEffort', { ns: 'agent' })}
               </Typography>
               <FormGroup row>
                 {(['minimal', 'low', 'medium', 'high'] as ReasoningEffort[]).map(effort => (
@@ -259,19 +259,19 @@ export function NewModelDialog({
               </FormGroup>
 
               <FormControl fullWidth margin='normal'>
-                <InputLabel>Reasoning effort format</InputLabel>
+                <InputLabel>{t('Preference.ReasoningEffortFormat', { ns: 'agent' })}</InputLabel>
                 <Select
                   value={newModelForm.reasoningEffortFormat ?? ''}
-                  label='Reasoning effort format'
+                  label={t('Preference.ReasoningEffortFormat', { ns: 'agent' })}
                   onChange={(event) => {
                     onModelFormChange('reasoningEffortFormat', event.target.value || undefined);
                   }}
                   inputProps={{ 'data-testid': 'reasoning-effort-format-select' }}
                 >
                   <MenuItem value=''>
-                    <em>None</em>
+                    <em>{t('Preference.None', { ns: 'agent' })}</em>
                   </MenuItem>
-                  <MenuItem value='chat-completions'>Chat Completions (reasoning_effort)</MenuItem>
+                  <MenuItem value='chat-completions'>{t('Preference.ChatCompletionsReasoningEffort', { ns: 'agent' })}</MenuItem>
                 </Select>
               </FormControl>
 

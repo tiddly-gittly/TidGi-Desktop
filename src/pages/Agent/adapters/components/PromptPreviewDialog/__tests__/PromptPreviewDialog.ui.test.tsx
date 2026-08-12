@@ -92,7 +92,7 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
       useAgentChatStore.setState({
         previewLoading: true,
         previewProgress: 0.5,
-        previewCurrentStep: 'Starting...',
+        previewCurrentStep: 'Prompt.Progress.Starting',
       });
     });
 
@@ -112,8 +112,8 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     });
 
     // Should show loading indicator via visible text
-    expect(screen.getByText('Starting...')).toBeInTheDocument();
-    expect(screen.getByText('⚡ Live preview - this is not the final version and is still loading')).toBeInTheDocument();
+    expect(screen.getByText('Prompt.Progress.Starting')).toBeInTheDocument();
+    expect(screen.getByText('Prompt.Progress.LivePreview')).toBeInTheDocument();
     expect(screen.getByText(/50%/)).toBeInTheDocument();
 
     // Simulate loading completion using real store

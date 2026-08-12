@@ -173,7 +173,7 @@ export const EditView: FC<EditViewProps> = ({
           value={editorMode}
           onChange={handleEditorModeChange}
           variant='fullWidth'
-          aria-label='editor mode tabs'
+          aria-label={t('Prompt.EditorModeTabs')}
         >
           <Tab
             value='form'

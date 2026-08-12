@@ -138,6 +138,7 @@ describe('ExternalAPIService logging', () => {
     });
     expect(exposed).not.toHaveProperty('apiKey');
     expect(exposed).not.toHaveProperty('encryptedApiKey');
+    expect(await svc.getProviderApiKey('secure-provider')).toBe(plaintext);
     await svc.initialize();
     expect(JSON.stringify(await svc.getAPILogs())).not.toContain(plaintext);
   });

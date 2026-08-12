@@ -102,7 +102,7 @@ function FlatPromptList({ flatPrompts }: { flatPrompts?: PreviewMessage[] }) {
       {flatPrompts.map((message, index) => (
         <MessageItem key={index} elevation={0}>
           <RoleChip role={message.role} variant='caption'>
-            {message.role.toUpperCase()}
+            {t(`Prompt.Role.${message.role}`, { defaultValue: message.role.toUpperCase() })}
           </RoleChip>
           <Typography variant='body2' sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit' }}>
             {message.content}
@@ -224,7 +224,7 @@ export const PreviewTabsView: React.FC<PreviewTabsViewProps> = memo(({
         <PreviewTabs
           value={tab}
           onChange={handleTabChange}
-          aria-label='prompt preview tabs'
+          aria-label={t('Prompt.PreviewTabs')}
           variant='fullWidth'
           sx={{ flex: 1 }}
         >

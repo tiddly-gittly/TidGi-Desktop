@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { WikiChannel } from '@/constants/channels';
-import { isProviderConfigError } from '@/services/externalAPI/errors';
+import { getConfigErrorPresentation } from '@/services/externalAPI/configErrorPresentation';
 import { PreferenceSections } from '@/services/preferences/interface';
 import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
 import { AgentChatView } from '@memeloop/react-ui/agent';
@@ -69,15 +69,29 @@ interface DesktopAgentChatTabProps {
  * Renders a configuration error inside a message or empty state.
  * Detects the raw i18n key prefix `Chat.ConfigError.<Key>` and translates it.
  */
-function ConfigErrorMessage({
-  error,
+export function ConfigErrorMessage({
+  fallbackMessage,
+  translationKey,
   params,
 }: {
-  error: Error;
-  params?: Record<string, unknown>;
+  fallbackMessage: string;
+  translationKey: string;
+  params: Record<string, string>;
 }) {
   const { t } = useTranslation('agent');
-  const key = getConfigErrorKey(error);
+
+  const openExternalAPISettings = async (): Promise<void> => {
+    try {
+      const isTestMode = await window.service.context.get('isTest');
+      const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+      await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+    } catch (error) {
+      void window.service.native.log('error', 'Failed to open External API settings', {
+        error,
+        function: 'ConfigErrorMessage.openExternalAPISettings',
+      });
+    }
+  };
 
   return (
     <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
@@ -85,35 +99,18 @@ function ConfigErrorMessage({
         {t('Chat.ConfigError.Title')}
       </Typography>
       <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-        {t(`Chat.ConfigError.${key}`, { defaultValue: error.message, ...params })}
+        {t(`Chat.ConfigError.${translationKey}`, { defaultValue: fallbackMessage, ...params })}
       </Typography>
       <Button
         variant='outlined'
         size='small'
-        onClick={async () => {
-          const isTestMode = await window.service.context.get('isTest');
-          const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-          await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+        onClick={() => {
+          void openExternalAPISettings();
         }}
       >
         {t('Chat.ConfigError.GoToSettings')}
       </Button>
     </Box>
-  );
-}
-
-function getConfigErrorKey(error: Error): string {
-  if (error.message.startsWith('Chat.ConfigError.')) {
-    return error.message.slice('Chat.ConfigError.'.length);
-  }
-  return error.name;
-}
-
-function isConfigError(error: Error): boolean {
-  return (
-    error.message.startsWith('Chat.ConfigError.') ||
-    isProviderConfigError(error) ||
-    error.name === 'MissingConfigError'
   );
 }
 
@@ -492,38 +489,45 @@ export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, i
         loadingMessage={t('Agent.LoadingChat')}
         emptyMessage={t('Agent.StartConversation')}
         renderError={(error_) => {
-          if (!isConfigError(error_)) {
+          const presentation = getConfigErrorPresentation(error_.message, error_);
+          if (!presentation) {
             return (
               <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
                 <Typography>{error_.message}</Typography>
               </Box>
             );
           }
-          return <ConfigErrorMessage error={error_} />;
+          return (
+            <ConfigErrorMessage
+              fallbackMessage={presentation.fallbackMessage}
+              params={presentation.params}
+              translationKey={presentation.key}
+            />
+          );
         }}
         renderMessageContent={(message, _isUser) => {
           // Render known config errors (raw i18n key prefix) as a rich card
           // regardless of their role. Some error paths store them as role='error',
           // others may fall back to role='assistant'; the key is the reliable signal.
-          const isConfigErrorMessage = message.role === 'error' || message.content.startsWith('Chat.ConfigError.');
-          if (!isConfigErrorMessage) {
+          if (message.role !== 'error' && !message.content.startsWith('Chat.ConfigError.')) {
             return <MessageContent message={message} />;
           }
 
           const errorDetail = message.metadata?.errorDetail;
           const typedErrorDetail = (typeof errorDetail === 'object' && errorDetail !== null
             ? errorDetail
-            : {}) as { name?: unknown; params?: Record<string, unknown> };
-          const error = new Error(message.content);
-          error.name = typeof typedErrorDetail.name === 'string' ? typedErrorDetail.name : 'Error';
-          if (!isConfigError(error)) {
+            : {}) as Record<string, unknown>;
+          const presentation = getConfigErrorPresentation(message.content, typedErrorDetail);
+          if (!presentation) {
             return <MessageContent message={message} />;
           }
-
-          const parameters = typeof typedErrorDetail.params === 'object' && typedErrorDetail.params !== null
-            ? typedErrorDetail.params
-            : undefined;
-          return <ConfigErrorMessage error={error} params={parameters} />;
+          return (
+            <ConfigErrorMessage
+              fallbackMessage={presentation.fallbackMessage}
+              params={presentation.params}
+              translationKey={presentation.key}
+            />
+          );
         }}
       />
       <AIModelParametersDialog

@@ -341,6 +341,13 @@ export interface IExternalAPIService {
   getAIProviders(): Promise<AIProviderConfig[]>;
 
   /**
+   * Decrypt one provider credential for the explicit settings editor.
+   * Provider observables remain redacted so credentials are not broadcast to
+   * every renderer subscriber.
+   */
+  getProviderApiKey(provider: string): Promise<string>;
+
+  /**
    * Get recommended providers/models without mutating user configuration.
    * Pass refresh=true for a bounded network refresh of the fixed catalog source.
    */
@@ -414,6 +421,7 @@ export const ExternalAPIServiceIPCDescriptor = {
     generateImage: ProxyPropertyType.Function,
     cancelAIRequest: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
+    getProviderApiKey: ProxyPropertyType.Function,
     getProviderCatalog: ProxyPropertyType.Function,
     refreshOfficialModels: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,

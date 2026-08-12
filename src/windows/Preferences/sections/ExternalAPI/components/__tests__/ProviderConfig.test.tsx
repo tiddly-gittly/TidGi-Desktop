@@ -82,6 +82,11 @@ describe('ProviderConfig Component', () => {
       writable: true,
     });
 
+    Object.defineProperty(window.service.externalAPI, 'getProviderApiKey', {
+      value: vi.fn().mockResolvedValue('sk-decrypted-test'),
+      writable: true,
+    });
+
     Object.defineProperty(window.service.externalAPI, 'updateDefaultAIConfig', {
       value: vi.fn().mockResolvedValue(undefined),
       writable: true,
@@ -119,6 +124,15 @@ describe('ProviderConfig Component', () => {
 
     // Should show delete provider button (since mockProvider is not preset)
     expect(screen.getByTestId('delete-provider-button')).toBeInTheDocument();
+  });
+
+  it('loads the encrypted credential into the settings field for reveal and copy', async () => {
+    renderProviderConfig([{ ...mockProvider, apiKey: undefined, hasApiKey: true }]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('provider-api-key-input')).toHaveValue('sk-decrypted-test');
+    });
+    expect(window.service.externalAPI.getProviderApiKey).toHaveBeenCalledWith('openai');
   });
 
   it('should call deleteProvider API when delete button is clicked', async () => {

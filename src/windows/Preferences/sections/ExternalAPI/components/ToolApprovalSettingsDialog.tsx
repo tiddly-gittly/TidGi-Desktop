@@ -82,7 +82,7 @@ interface ToolApprovalSettingsDialogProps {
 }
 
 export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettingsDialogProps): React.JSX.Element {
-  const { t: _t } = useTranslation('agent');
+  const { t } = useTranslation('agent');
   const [settings, setSettings] = useState<ToolApprovalSettings>(DEFAULT_SETTINGS);
   const [newPatternText, setNewPatternText] = useState('');
   const [editingToolIndex, setEditingToolIndex] = useState<number | null>(null);
@@ -161,47 +161,47 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
-      <DialogTitle>Tool Approval & Timeout Settings</DialogTitle>
+      <DialogTitle>{t('ToolApproval.Title')}</DialogTitle>
       <DialogContent>
         {/* Global Settings */}
-        <Typography variant='subtitle1' sx={{ mt: 1, mb: 1 }}>Global Settings</Typography>
+        <Typography variant='subtitle1' sx={{ mt: 1, mb: 1 }}>{t('ToolApproval.GlobalSettings')}</Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <TextField
-            label='Global Timeout (ms)'
+            label={t('ToolApproval.GlobalTimeout')}
             type='number'
             size='small'
             value={settings.globalTimeoutMs}
             onChange={(event) => {
               setSettings(previous => ({ ...previous, globalTimeoutMs: Number(event.target.value) }));
             }}
-            helperText='Default timeout for all tool executions. 0 = no timeout.'
+            helperText={t('ToolApproval.GlobalTimeoutDescription')}
             sx={{ flex: 1 }}
           />
         </Box>
 
         {/* API Retry Settings */}
-        <Typography variant='subtitle1' sx={{ mb: 1 }}>API Retry (Exponential Backoff)</Typography>
+        <Typography variant='subtitle1' sx={{ mb: 1 }}>{t('ToolApproval.APIRetry')}</Typography>
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <TextField
-            label='Max Attempts'
+            label={t('ToolApproval.MaxAttempts')}
             type='number'
             size='small'
             value={settings.retryMaxAttempts}
             onChange={(event) => {
               setSettings(previous => ({ ...previous, retryMaxAttempts: Number(event.target.value) }));
             }}
-            helperText='0 = no retry'
+            helperText={t('ToolApproval.NoRetryDescription')}
             sx={{ flex: 1 }}
           />
           <TextField
-            label='Initial Delay (ms)'
+            label={t('ToolApproval.InitialDelay')}
             type='number'
             size='small'
             value={settings.retryInitialDelayMs}
             onChange={(event) => {
               setSettings(previous => ({ ...previous, retryInitialDelayMs: Number(event.target.value) }));
             }}
-            helperText='First retry delay, doubled each attempt'
+            helperText={t('ToolApproval.InitialDelayDescription')}
             sx={{ flex: 1 }}
           />
         </Box>
@@ -210,8 +210,8 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
 
         {/* Per-Tool Rules */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant='subtitle1'>Per-Tool Rules</Typography>
-          <Button startIcon={<AddIcon />} size='small' onClick={addToolRule}>Add Rule</Button>
+          <Typography variant='subtitle1'>{t('ToolApproval.PerToolRules')}</Typography>
+          <Button startIcon={<AddIcon />} size='small' onClick={addToolRule}>{t('ToolApproval.AddRule')}</Button>
         </Box>
 
         {settings.toolRules.length === 0 && (
@@ -221,7 +221,7 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
               color: 'text.secondary',
             }}
           >
-            No per-tool rules configured. All tools use the global timeout and auto-approval.
+            {t('ToolApproval.NoRules')}
           </Typography>
         )}
 
@@ -242,10 +242,10 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <FormControl size='small' sx={{ minWidth: 200 }}>
-                <InputLabel>Tool</InputLabel>
+                <InputLabel>{t('ToolApproval.Tool')}</InputLabel>
                 <Select
                   value={rule.toolId}
-                  label='Tool'
+                  label={t('ToolApproval.Tool')}
                   onChange={(event) => {
                     updateToolRule(index, { toolId: event.target.value });
                   }}
@@ -263,11 +263,11 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                     }}
                   />
                 }
-                label='Require approval'
+                label={t('ToolApproval.RequireApproval')}
               />
 
               <TextField
-                label='Timeout (ms)'
+                label={t('ToolApproval.Timeout')}
                 type='number'
                 size='small'
                 value={rule.timeoutMs}
@@ -298,7 +298,7 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                     color: 'text.secondary',
                   }}
                 >
-                  Patterns: deny patterns block execution, allow patterns skip approval.
+                  {t('ToolApproval.PatternsDescription')}
                 </Typography>
 
                 {/* Existing patterns */}
@@ -338,13 +338,13 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                         setPatternType(event.target.value);
                       }}
                     >
-                      <MenuItem value='allow'>Allow</MenuItem>
-                      <MenuItem value='deny'>Deny</MenuItem>
+                      <MenuItem value='allow'>{t('ToolApproval.Allow')}</MenuItem>
+                      <MenuItem value='deny'>{t('ToolApproval.Deny')}</MenuItem>
                     </Select>
                   </FormControl>
                   <TextField
                     size='small'
-                    placeholder='Regex pattern...'
+                    placeholder={t('ToolApproval.RegexPlaceholder')}
                     value={newPatternText}
                     onChange={(event) => {
                       setNewPatternText(event.target.value);
@@ -354,7 +354,7 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
                     }}
                     sx={{ flex: 1 }}
                   />
-                  <Button size='small' onClick={addPattern} disabled={!newPatternText.trim()}>Add</Button>
+                  <Button size='small' onClick={addPattern} disabled={!newPatternText.trim()}>{t('ToolApproval.Add')}</Button>
                 </Box>
               </Box>
             )}
@@ -362,8 +362,8 @@ export function ToolApprovalSettingsDialog({ open, onClose }: ToolApprovalSettin
         ))}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant='contained'>Save</Button>
+        <Button onClick={onClose}>{t('ToolApproval.Cancel')}</Button>
+        <Button onClick={handleSave} variant='contained'>{t('ToolApproval.Save')}</Button>
       </DialogActions>
     </Dialog>
   );

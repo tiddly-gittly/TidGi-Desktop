@@ -7,6 +7,7 @@ import { styled } from '@mui/material/styles';
 import type { AgentDefinition } from 'memeloop';
 import { getBuiltinLoopProfiles } from 'memeloop/loop-api';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const builtinAgentDefinitions = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
   systemPrompt: '',
@@ -55,6 +56,7 @@ interface AgentSwitcherProps {
 }
 
 export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId, onSwitch, disabled }) => {
+  const { t } = useTranslation('agent');
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const [agentDefs, setAgentDefs] = useState<AgentDefinition[]>(builtinAgentDefinitions);
   const open = Boolean(anchorElement);
@@ -162,7 +164,7 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
                 <TextField
                   {...parameters}
                   inputRef={searchInputReference}
-                  placeholder='Search agents...'
+                  placeholder={t('Agent.SearchAgents')}
                   autoFocus
                   data-testid='agent-switcher-search'
                   sx={{ mb: 0.5 }}

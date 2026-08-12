@@ -69,9 +69,7 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
 
       if (response.status === 'error') {
         const message = response.errorDetail?.message || 'Unknown AI provider error';
-        const errorName = response.errorDetail?.name;
-        const error = new Error(message);
-        if (errorName) error.name = errorName;
+        const error = Object.assign(new Error(message), response.errorDetail ?? {});
         logger.error('MemeLoop LLM provider error', { errorDetail: response.errorDetail, requestId: currentRequestId });
         // Let the host turn boundary persist the canonical error message and
         // terminate the turn as failed.

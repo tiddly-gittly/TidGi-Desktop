@@ -110,7 +110,6 @@ export function ProviderPanel({
         label={t('Preference.APIKey')}
         type={showApiKey ? 'text' : 'password'}
         value={formState.apiKey}
-        placeholder={provider.hasApiKey ? 'Configured securely; type to replace' : undefined}
         onChange={(event) => {
           onFormChange('apiKey', event.target.value);
         }}
@@ -128,6 +127,7 @@ export function ProviderPanel({
                   }}
                   edge='end'
                   size='small'
+                  aria-label={showApiKey ? t('Preference.HideAPIKey') : t('Preference.ShowAPIKey')}
                 >
                   {showApiKey ? <VisibilityOffIcon fontSize='small' /> : <VisibilityIcon fontSize='small' />}
                 </IconButton>
@@ -151,7 +151,7 @@ export function ProviderPanel({
             ? 'http://localhost:11434'
             : 'https://api.example.com/v1'}
           helperText={provider.providerClass === 'openAICompatible'
-            ? 'Enter the complete API base URL, including /v1 when required. It is not appended automatically.'
+            ? t('Preference.OpenAICompatibleBaseURLDescription')
             : undefined}
           slotProps={{ htmlInput: { 'data-testid': 'provider-base-url-input' } }}
         />
@@ -169,8 +169,8 @@ export function ProviderPanel({
             data-testid='refresh-official-models-button'
           >
             {refreshingModels
-              ? t('Preference.RefreshingOfficialModels', { defaultValue: 'Refreshing…' })
-              : t('Preference.RefreshOfficialModels', { defaultValue: 'Refresh models' })}
+              ? t('Preference.RefreshingOfficialModels')
+              : t('Preference.RefreshOfficialModels')}
           </Button>
         </Box>
 

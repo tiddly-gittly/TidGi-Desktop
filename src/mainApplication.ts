@@ -18,6 +18,7 @@ import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
 import { initializeMcpServer, stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
+import { createApplicationActivationGate } from './applicationActivationGate';
 import { installApplicationQuitLifecycle } from './applicationQuitLifecycle';
 
 // Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
@@ -165,13 +166,20 @@ installApplicationQuitLifecycle({
   logger,
 });
 
-app.on('second-instance', async () => {
+const applicationActivationGate = createApplicationActivationGate({
+  logger,
+  openMainWindow: async () => {
+    await windowService.open(WindowNames.main);
+  },
+});
+
+app.on('second-instance', () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
-  await windowService.open(WindowNames.main);
+  void applicationActivationGate.requestMainWindow();
 });
-app.on('activate', async () => {
-  await windowService.open(WindowNames.main);
+app.on('activate', () => {
+  void applicationActivationGate.requestMainWindow();
 });
 
 const commonInit = async (): Promise<void> => {
@@ -327,6 +335,7 @@ app.on('ready', async () => {
   });
   try {
     await commonInit();
+    applicationActivationGate.markInitializationReady();
     assertApplicationStartupActive();
     // buildLanguageMenu needs menuService which is initialized in commonInit
     await buildLanguageMenu();
@@ -335,6 +344,7 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
+    applicationActivationGate.markInitializationFailed();
     if (error instanceof ApplicationStartupCancelledError) {
       logger.info('Application startup stopped because quit was requested');
       return;

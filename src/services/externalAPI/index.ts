@@ -341,6 +341,11 @@ export class ExternalAPIService implements IExternalAPIService {
     return this.getPublicProviders();
   }
 
+  async getProviderApiKey(providerName: string): Promise<string> {
+    this.ensureSettingsLoaded();
+    return this.getRuntimeProvider(providerName)?.apiKey ?? '';
+  }
+
   async getProviderCatalog(refresh = false): Promise<ProviderCatalogResult> {
     return resolveDesktopProviderCatalog({
       cachePath: path.join(app.getPath('userData'), 'model-catalog.v1.json'),

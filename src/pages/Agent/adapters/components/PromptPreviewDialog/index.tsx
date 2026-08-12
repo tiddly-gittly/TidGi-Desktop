@@ -170,7 +170,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
             {(showEdit || showSideBySide) && agent?.agentDefId && (
               <Tooltip title={t('Preference.SaveToDefinition')}>
                 <IconButton
-                  aria-label='save-to-definition'
+                  aria-label={t('Preference.SaveToDefinition')}
                   onClick={() => {
                     void handleSaveToDefinition();
                   }}
@@ -192,7 +192,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
               </IconButton>
             </Tooltip>
             <IconButton
-              aria-label='toggle-fullscreen'
+              aria-label={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
               onClick={handleToggleFullScreen}
               sx={{ mr: 1 }}
               title={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
@@ -200,7 +200,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
               {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             </IconButton>
             <IconButton
-              aria-label='close'
+              aria-label={t('Prompt.Close')}
               onClick={onClose}
             >
               <CloseIcon />

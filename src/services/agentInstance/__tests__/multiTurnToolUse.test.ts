@@ -175,4 +175,40 @@ describe('multi-turn tool-use conversation', () => {
     expect(assistantMessages.length).toBeGreaterThanOrEqual(1);
     expect(assistantMessages[assistantMessages.length - 1].content).toBe('没有找到相关笔记。');
   }, 30000);
+
+  it('sends the first turn as context in the second model request', async () => {
+    const firstResponse = function*() {
+      yield { status: 'done' as const, content: 'Paris is the capital.', requestId: 'context-1' };
+    };
+    const secondResponse = function*() {
+      yield { status: 'done' as const, content: 'You asked about France.', requestId: 'context-2' };
+    };
+    mockExternalAPIService.generateFromAI = vi.fn()
+      .mockReturnValueOnce(firstResponse())
+      .mockReturnValueOnce(secondResponse());
+
+    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: 'What is the capital of France?' });
+    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: 'Which country did I ask about?' });
+
+    expect(mockExternalAPIService.generateFromAI).toHaveBeenCalledTimes(2);
+    const secondRequest = vi.mocked(mockExternalAPIService.generateFromAI).mock.calls[1]?.[0];
+    expect(secondRequest).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'user', content: 'What is the capital of France?' }),
+      expect.objectContaining({ role: 'assistant', content: 'Paris is the capital.' }),
+      expect.objectContaining({ role: 'user', content: 'Which country did I ask about?' }),
+    ]));
+
+    const history = secondRequest?.filter(message =>
+      typeof message.content === 'string' && [
+        'What is the capital of France?',
+        'Paris is the capital.',
+        'Which country did I ask about?',
+      ].includes(message.content)
+    );
+    expect(history?.map(message => message.content)).toEqual([
+      'What is the capital of France?',
+      'Paris is the capital.',
+      'Which country did I ask about?',
+    ]);
+  }, 30000);
 });

@@ -49,7 +49,10 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
   ) => {
     try {
       set({ previewLoading: true });
-      const messages = Array.from(get().messages.values());
+      const state = get();
+      const messages = state.orderedMessageIds
+        .map(messageId => state.messages.get(messageId))
+        .filter((message): message is NonNullable<typeof message> => message !== undefined);
 
       // Safety check - if agentFrameworkConfig is empty, fail early
       if (!agentFrameworkConfig || Object.keys(agentFrameworkConfig).length === 0) {
@@ -76,7 +79,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
       // Initialize progress
       set({
         previewProgress: 0,
-        previewCurrentStep: 'Starting...',
+        previewCurrentStep: 'Prompt.Progress.Starting',
         previewCurrentPlugin: null,
       });
 
@@ -91,12 +94,12 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
           next: (state) => {
             // Update progress and current step
             const stepDescription = state.step === 'plugin'
-              ? `Processing tool: ${state.currentPlugin?.toolId || 'unknown'}`
+              ? 'Prompt.Progress.ProcessingTool'
               : state.step === 'finalize'
-              ? 'Finalizing prompts...'
+              ? 'Prompt.Progress.Finalizing'
               : state.step === 'flatten'
-              ? 'Flattening prompt tree...'
-              : 'Completing...';
+              ? 'Prompt.Progress.Flattening'
+              : 'Prompt.Progress.Completing';
 
             set({
               previewProgress: state.progress,
@@ -123,7 +126,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewResult: null,
               previewLoading: false,
               previewProgress: 0,
-              previewCurrentStep: 'Error occurred',
+              previewCurrentStep: 'Prompt.Progress.Error',
               previewCurrentPlugin: null,
             });
             reject(error as Error);
@@ -134,7 +137,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewResult: finalResult,
               previewLoading: false,
               previewProgress: 1,
-              previewCurrentStep: 'Complete',
+              previewCurrentStep: 'Prompt.Progress.Complete',
               previewCurrentPlugin: null,
               lastUpdated: new Date(),
             });
@@ -150,7 +153,7 @@ export const previewActionsMiddleware: StateCreator<AgentChatStoreType, [], [], 
               previewResult: null,
               previewLoading: false,
               previewProgress: 0,
-              previewCurrentStep: 'Timeout',
+              previewCurrentStep: 'Prompt.Progress.Timeout',
               previewCurrentPlugin: null,
             });
             reject(new Error('Preview generation timed out'));

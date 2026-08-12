@@ -9,7 +9,8 @@ import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import { initializePluginSystem, pluginRegistry } from '@services/agentInstance/tools';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import { serializeAIError } from '@services/externalAPI/configErrorPresentation';
+import type { IExternalAPIService, ModelMessage } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -26,6 +27,7 @@ import {
   promptConcatStream,
   type PromptConcatStreamState,
 } from 'memeloop';
+import { includeConversationHistoryInPreview } from './runtime/promptPreviewMessages';
 
 import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
@@ -334,6 +336,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   private async persistMemeLoopError(agentId: string, error_: unknown): Promise<void> {
     const id = `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const serializedError = serializeAIError(error_);
     const message: ChatMessage = {
       messageId: id,
       conversationId: agentId,
@@ -341,10 +344,10 @@ export class AgentInstanceService implements IAgentInstanceService {
       timestamp: Date.now(),
       lamportClock: Date.now(),
       role: 'error',
-      content: error_ instanceof Error ? error_.message : String(error_),
+      content: serializedError.content,
       duration: 1,
       metadata: {
-        errorDetail: error_ instanceof Error ? { message: error_.message, name: error_.name } : { message: String(error_) },
+        errorDetail: serializedError.detail,
       },
     };
 
@@ -1150,7 +1153,10 @@ export class AgentInstanceService implements IAgentInstanceService {
 
           const streamGenerator = promptConcatStream(promptDescription, messages, frameworkContext as never);
           for await (const state of streamGenerator) {
-            observer.next(state);
+            observer.next({
+              ...state,
+              flatPrompts: includeConversationHistoryInPreview(state.flatPrompts as ModelMessage[], messages),
+            });
             if (state.isComplete) {
               observer.complete();
               break;

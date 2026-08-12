@@ -1,6 +1,7 @@
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 /**
@@ -22,6 +23,7 @@ interface PreviewProgressBarProps {
  * Uses debounce to prevent flashing for quick operations
  */
 export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) => {
+  const { t } = useTranslation('agent');
   const {
     previewProgress,
     previewCurrentStep,
@@ -69,7 +71,7 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
             color: 'text.secondary',
           }}
         >
-          {previewCurrentStep}
+          {t(previewCurrentStep, { plugin: previewCurrentPlugin ?? t('Prompt.Progress.UnknownTool') })}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {previewCurrentPlugin && (
@@ -109,7 +111,7 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
           display: 'block',
         }}
       >
-        ⚡ Live preview - this is not the final version and is still loading
+        {t('Prompt.Progress.LivePreview')}
       </Typography>
     </Box>
   );
