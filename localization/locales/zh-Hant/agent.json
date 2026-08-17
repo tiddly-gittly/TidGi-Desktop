@@ -42,6 +42,24 @@
   },
   "Chat": {
     "Cancel": "取消",
+    "ExecutionTarget": {
+      "NoActiveAgent": "目前沒有可用的智慧代理。",
+      "Platform": {
+        "cli": "命令列",
+        "desktop": "桌面端",
+        "mobile": "行動端"
+      },
+      "Reachability": {
+        "connecting": "連線中",
+        "nearby": "附近",
+        "offline": "離線",
+        "online": "上線"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RunOnThisDesktop": "在此桌面端執行",
+      "RunOnThisDesktopWithPeerId": "在此桌面端執行（{{peerId}}）",
+      "ThisDevice": "此裝置"
+    },
     "ConfigError": {
       "AuthenticationError": "{{provider}} 身份驗證失敗。請在設置中檢查您的 API 密鑰。",
       "AuthenticationFailed": "{{provider}} 身份驗證失敗。請在設置中檢查您的 API 密鑰。",
@@ -107,6 +125,31 @@
     "Loading": "正在載入 Wiki..."
   },
   "EditAgent": {
+    "ActiveHoursEnd": "活躍時段結束（可選）",
+    "ActiveHoursStart": "活躍時段開始（可選）",
+    "Hours": "小時",
+    "Minutes": "分鐘",
+    "ScheduleCron": "進階 Cron 表達式",
+    "ScheduleCronExpr": "Cron 表達式",
+    "ScheduleCronHelp": "5 段 Cron：分鐘 小時 日期 月份 星期",
+    "ScheduleCronPreview": "接下來執行：",
+    "ScheduleDaily": "每天（指定時間）",
+    "ScheduleDailyTime": "喚醒時間",
+    "ScheduledWakeup": "定時喚醒",
+    "ScheduledWakeupDescription": "設定重複排程，自動喚醒此智慧代理並傳送提醒訊息。",
+    "ScheduleInterval": "固定間隔（每 N 秒/分鐘/小時）",
+    "ScheduleIntervalUnit": "單位",
+    "ScheduleIntervalValue": "每隔",
+    "ScheduleMessage": "喚醒訊息",
+    "ScheduleMessagePlaceholder": "[定時] 週期檢查。請檢查任務並處理所有待辦事項。",
+    "ScheduleMode": "模式",
+    "ScheduleNone": "無（不定時喚醒）",
+    "ScheduleSave": "儲存排程",
+    "ScheduleSaveWait": "正在載入預覽智慧代理...",
+    "ScheduleSaving": "儲存中...",
+    "ScheduleTimezone": "時區",
+    "ScheduleUpdate": "更新排程",
+    "Seconds": "秒",
     "AgentDescription": "智能體描述",
     "AgentDescriptionHelper": "描述您的智慧體的功能和用途",
     "AgentDescriptionPlaceholder": "輸入智慧體描述...",

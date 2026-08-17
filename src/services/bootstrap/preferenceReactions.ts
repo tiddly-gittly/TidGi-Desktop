@@ -1,9 +1,11 @@
 import { WikiChannel } from '@/constants/channels';
 import type { IAnalyticsService } from '@services/analytics/interface';
+import { container } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
 import type { INotificationService } from '@services/notifications/interface';
 import type { IPreferenceReactionHandler, IPreferences, IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { DARK_LIGHT_CHANGE_ACTIONS_TAG, type IThemeService } from '@services/theme/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
@@ -12,13 +14,11 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { dialog, nativeTheme } from 'electron';
 
-export function initializePreferenceReactions(options: {
-  analyticsService: IAnalyticsService;
-  notificationService: INotificationService;
-  preferenceService: IPreferenceService;
-  windowService: IWindowService;
-}): void {
-  const { analyticsService, notificationService, preferenceService, windowService } = options;
+export function initializePreferenceReactions(): void {
+  const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+  const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
+  const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+  const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const handler: IPreferenceReactionHandler = async <K extends keyof IPreferences>(key: K, value: IPreferences[K]) => {
     if (key === 'analyticsEnabled' || key === 'analyticsHost' || key === 'analyticsHostname' || key === 'analyticsSiteId') {
       if (key === 'analyticsEnabled' && value === false) {
@@ -67,13 +67,11 @@ export function initializePreferenceReactions(options: {
   });
 }
 
-export function initializeThemeReactions(options: {
-  themeService: IThemeService;
-  viewService: IViewService;
-  wikiService: IWikiService;
-  workspaceService: IWorkspaceService;
-}): void {
-  const { themeService, viewService, wikiService, workspaceService } = options;
+export function initializeThemeReactions(): void {
+  const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
+  const viewService = container.get<IViewService>(serviceIdentifier.View);
+  const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   themeService.setActiveWikiThemeUpdater(async ({ shouldUseDarkColors }) => {
     const workspaces = await workspaceService.getWorkspacesAsList();
     const backgroundColor = shouldUseDarkColors ? '#212121' : '#ffffff';

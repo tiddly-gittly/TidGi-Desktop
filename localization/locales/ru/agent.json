@@ -42,6 +42,24 @@
   },
   "Chat": {
     "Cancel": "Отмена",
+    "ExecutionTarget": {
+      "NoActiveAgent": "Нет доступного активного агента.",
+      "Platform": {
+        "cli": "Командная строка",
+        "desktop": "Компьютер",
+        "mobile": "Мобильное устройство"
+      },
+      "Reachability": {
+        "connecting": "подключение",
+        "nearby": "рядом",
+        "offline": "не в сети",
+        "online": "в сети"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RunOnThisDesktop": "Запустить на этом компьютере",
+      "RunOnThisDesktopWithPeerId": "Запустить на этом компьютере ({{peerId}})",
+      "ThisDevice": "Это устройство"
+    },
     "ConfigError": {
       "AuthenticationError": "Ошибка аутентификации {{provider}}. Пожалуйста, проверьте API-ключ в настройках.",
       "AuthenticationFailed": "Ошибка аутентификации {{provider}}. Пожалуйста, проверьте API-ключ в настройках.",
@@ -108,6 +126,31 @@
     "Loading": "Загрузка Wiki..."
   },
   "EditAgent": {
+    "ActiveHoursEnd": "Конец активного времени (необязательно)",
+    "ActiveHoursStart": "Начало активного времени (необязательно)",
+    "Hours": "Часы",
+    "Minutes": "Минуты",
+    "ScheduleCron": "Расширенное выражение Cron",
+    "ScheduleCronExpr": "Выражение Cron",
+    "ScheduleCronHelp": "Cron из 5 полей: минута час день месяц день-недели",
+    "ScheduleCronPreview": "Следующие запуски:",
+    "ScheduleDaily": "Ежедневно (в заданное время)",
+    "ScheduleDailyTime": "Время пробуждения",
+    "ScheduledWakeup": "Запланированное пробуждение",
+    "ScheduledWakeupDescription": "Настройте повторяющееся расписание для автоматического пробуждения агента и отправки напоминания.",
+    "ScheduleInterval": "Интервал (каждые N секунд/минут/часов)",
+    "ScheduleIntervalUnit": "Единица",
+    "ScheduleIntervalValue": "Каждые",
+    "ScheduleMessage": "Сообщение пробуждения",
+    "ScheduleMessagePlaceholder": "[Расписание] Периодическая проверка. Проверьте задачи и выполните ожидающие действия.",
+    "ScheduleMode": "Режим",
+    "ScheduleNone": "Нет (без запланированного пробуждения)",
+    "ScheduleSave": "Сохранить расписание",
+    "ScheduleSaveWait": "Загрузка агента предпросмотра...",
+    "ScheduleSaving": "Сохранение...",
+    "ScheduleTimezone": "Часовой пояс",
+    "ScheduleUpdate": "Обновить расписание",
+    "Seconds": "Секунды",
     "AgentDescription": "описание агента",
     "AgentDescriptionHelper": "Опишите функции и назначение вашего агента.",
     "AgentDescriptionPlaceholder": "Введите описание интеллектуального агента...",

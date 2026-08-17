@@ -223,10 +223,6 @@ export const agentActions = (
             messageSubscriptions.clear();
             fullAgent.messages.forEach(message => {
               if (get().streamingMessageIds.has(message.messageId)) {
-                console.log('[AgentChat] Agent terminal state, clearing streaming for message', {
-                  messageId: message.messageId,
-                  agentState: fullAgent.status.state,
-                });
                 get().setMessageStreaming(message.messageId, false);
               }
             });
@@ -276,10 +272,6 @@ export const agentActions = (
                         });
                         // Clear streaming flag when status is completed
                         if (status.state === 'completed' || status.state === 'failed' || status.state === 'canceled' || status.state === 'input-required') {
-                          console.log('[AgentChat] Message completed via status update, clearing streaming', {
-                            messageId: statusMessage.messageId,
-                            state: status.state,
-                          });
                           get().setMessageStreaming(statusMessage.messageId, false);
                           messageSubscriptions.get(statusMessage.messageId)?.unsubscribe();
                           messageSubscriptions.delete(statusMessage.messageId);
@@ -287,7 +279,6 @@ export const agentActions = (
                       }
                     },
                     error: (error_: unknown) => {
-                      console.error('[AgentChat] Message subscription error', { messageId: message.messageId, error: error_ });
                       void window.service.native.log(
                         'error',
                         `Error in message subscription for ${message.messageId}`,
@@ -301,10 +292,6 @@ export const agentActions = (
                       messageSubscriptions.delete(message.messageId);
                     },
                     complete: () => {
-                      console.log('[AgentChat] Message subscription completed', {
-                        messageId: message.messageId,
-                        streamingIds: Array.from(get().streamingMessageIds),
-                      });
                       get().setMessageStreaming(message.messageId, false);
                       messageSubscriptions.delete(message.messageId);
                     },

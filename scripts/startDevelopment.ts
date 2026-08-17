@@ -18,7 +18,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { requiresVirtualXDisplay } from './xDisplay';
+import { isXDisplayReachable, isXvfbRunAvailable, reExecuteCurrentScriptUnderXvfb, requiresVirtualXDisplay } from './xDisplay';
 
 const projectRoot = resolve(__dirname, '..');
 
@@ -40,27 +40,6 @@ const DESKTOP_PROCESS_NAMES = [
 ];
 
 // ── X display detection helpers ──────────────────────────────────────────────
-
-function isDisplayReachable(display: string): boolean {
-  try {
-    const result = spawnSync('xdpyinfo', ['-display', display], {
-      stdio: 'ignore',
-      timeout: 2000,
-    });
-    return result.status === 0;
-  } catch {
-    return false;
-  }
-}
-
-function xvfbRunAvailable(): boolean {
-  try {
-    const result = spawnSync('which', ['xvfb-run'], { stdio: 'pipe', timeout: 3000 });
-    return result.status === 0;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Try to find a real desktop session by looking for known desktop processes
@@ -151,24 +130,6 @@ function launchForge(extraEnvironment: Record<string, string> = {}): void {
   process.on('SIGTERM', onSigTerm);
 }
 
-function reExecUnderXvfb(): never {
-  const xvfbArguments = [
-    '-a',
-    '--server-args=-screen 0 1920x1080x24',
-    process.execPath, // tsx
-    ...process.execArgv, // preserve flags
-    process.argv[1], // this script
-    ...process.argv.slice(2),
-  ];
-
-  const result = spawnSync('xvfb-run', xvfbArguments, {
-    stdio: 'inherit',
-    env: { ...process.env, [XVFB_WRAPPED_ENV]: '1' },
-  });
-
-  process.exit(result.status ?? 0);
-}
-
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 function main(): void {
@@ -188,7 +149,7 @@ function main(): void {
 
   // 2. $DISPLAY is set and reachable → launch directly.
   const hasReachableDisplay = Boolean(
-    process.env.DISPLAY && isDisplayReachable(process.env.DISPLAY),
+    process.env.DISPLAY && isXDisplayReachable(process.env.DISPLAY),
   );
   if (!requiresVirtualXDisplay(process.platform, hasReachableDisplay)) {
     launchForge();
@@ -206,7 +167,7 @@ function main(): void {
   }
 
   // 4. Fallback: xvfb-run.
-  if (!xvfbRunAvailable()) {
+  if (!isXvfbRunAvailable()) {
     console.error(
       '⚠ No X display available and xvfb-run is not installed.\n' +
         '  Install it with: sudo apt install xvfb  (Debian/Ubuntu)\n' +
@@ -216,7 +177,7 @@ function main(): void {
   }
 
   console.log('🖥 No X display or desktop session detected — re-executing under xvfb-run');
-  reExecUnderXvfb();
+  reExecuteCurrentScriptUnderXvfb(XVFB_WRAPPED_ENV);
 }
 
 main();

@@ -105,7 +105,7 @@ export function createDebouncedMessageUpdater(
               conversationId: aid,
               role: messageData_.role,
               content: messageData_.content,
-              originNodeId: 'tidgi-desktop',
+              originNodeId: messageData_.originNodeId,
               parts: messageData_.parts,
               toolCalls: messageData_.toolCalls,
               attachments: messageData_.attachments,

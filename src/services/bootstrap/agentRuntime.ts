@@ -2,11 +2,14 @@ import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { MemeLoopDesktopStorage } from '@services/agentInstance/runtime/storage';
+import { container } from '@services/container';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import { logger } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { createAgentRuntimeDeviceRpcHandler, type DeviceCapabilities } from 'memeloop';
+import { protectRemoteAgentRpcHandler } from './remoteAgentRpcPolicy';
 
 const emptyCapabilities: DeviceCapabilities = {
   tools: [],
@@ -35,13 +38,14 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
   const storage = new MemeLoopDesktopStorage({
     agentInstanceService,
     agentDefinitionService,
+    getLocalNodeId: async () => identity.peerId,
     notifyAgentChanged: () => {},
   });
 
   deviceNetworkService.configureRuntime({
     buildCapabilities: async () => buildDeviceNetworkCapabilities(workspaceService),
     syncStorage: storage,
-    rpcHandler: createAgentRuntimeDeviceRpcHandler({
+    rpcHandler: protectRemoteAgentRpcHandler(createAgentRuntimeDeviceRpcHandler({
       runtime: {
         createAgent: async ({ definitionId, initialMessage }) => {
           const agent = await agentInstanceService.createAgent(definitionId);
@@ -58,7 +62,7 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
       storage,
       getAgentDefinitions: () => agentDefinitionService.getAgentDefs(),
       localNodeId: identity.peerId,
-    }),
+    })),
   });
 
   await initializeTemplateBackends(agentDefinitionService, wikiService, workspaceService);
@@ -70,7 +74,18 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
  * control from starting. The user can delete the cache in Preferences and
  * restart the app to re-enable Agent services.
  */
-export async function initializeAgentServicesSafely(options: InitializeAgentServicesOptions): Promise<boolean> {
+export async function initializeAgentServicesSafely(): Promise<boolean> {
+  return initializeAgentServicesSafelyWithServices({
+    agentDefinitionService: container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition),
+    agentInstanceService: container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance),
+    deviceNetworkService: container.get<IDeviceNetworkService>(serviceIdentifier.DeviceNetwork),
+    wikiService: container.get<IWikiService>(serviceIdentifier.Wiki),
+    workspaceService: container.get<IWorkspaceService>(serviceIdentifier.Workspace),
+  });
+}
+
+/** Test seam for validating failure containment without mutating the global service container. */
+export async function initializeAgentServicesSafelyWithServices(options: InitializeAgentServicesOptions): Promise<boolean> {
   try {
     await initializeAgentServices(options);
     return true;

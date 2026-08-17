@@ -1,33 +1,12 @@
 /**
  * DesktopAgentConversationClient — wraps message operations
  * to implement the headless AgentConversationClient interface.
- */
-
-/**
- * DesktopAgentConversationClient — wraps message operations
- * to implement the headless AgentConversationClient interface.
  *
  * Tracks the current agentId internally — set via getMessages/sendMessage calls.
  */
 
 import type { AgentConversationClient, ChatMessage } from 'memeloop';
-
-/** Get message IDs for a turn starting from a user message. */
-function getTurnMessageIds(
-  userMessageId: string,
-  orderedMessageIds: string[],
-  messagesMap: Map<string, ChatMessage>,
-): string[] {
-  const startIndex = orderedMessageIds.indexOf(userMessageId);
-  if (startIndex === -1) return [];
-  const ids: string[] = [userMessageId];
-  for (let index = startIndex + 1; index < orderedMessageIds.length; index++) {
-    const message = messagesMap.get(orderedMessageIds[index]);
-    if (message?.role === 'user') break;
-    ids.push(orderedMessageIds[index]);
-  }
-  return ids;
-}
+import { deleteConversationTurn } from './conversationTurn';
 
 /**
  * Desktop implementation of AgentConversationClient.
@@ -92,18 +71,8 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
       const messages = agent.messages ?? [];
       const orderedMessageIds = messages.map((m) => m.messageId);
       const messagesMap = new Map(messages.map((m) => [m.messageId, m]));
-      const userMessage = messagesMap.get(userMessageId);
-
-      const turnIds = getTurnMessageIds(userMessageId, orderedMessageIds, messagesMap);
-      if (turnIds.length === 0) return undefined;
-
-      try {
-        await window.service.agentInstance.deleteMessages(agentId, turnIds);
-      } catch (error) {
-        void window.service.native.log('error', 'Failed to delete turn messages', { error });
-      }
-
-      return userMessage?.content;
+      const turn = await deleteConversationTurn(agentId, userMessageId, orderedMessageIds, messagesMap);
+      return turn?.userMessage.content;
     },
 
     retryTurn: async (userMessageId) => {
@@ -116,21 +85,12 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
       const messages = agent.messages ?? [];
       const orderedMessageIds = messages.map((m) => m.messageId);
       const messagesMap = new Map(messages.map((m) => [m.messageId, m]));
-      const userMessage = messagesMap.get(userMessageId);
-      if (!userMessage || userMessage.role !== 'user') return;
-
-      const turnIds = getTurnMessageIds(userMessageId, orderedMessageIds, messagesMap);
-      if (turnIds.length > 0) {
-        try {
-          await window.service.agentInstance.deleteMessages(agentId, turnIds);
-        } catch (error) {
-          void window.service.native.log('error', 'Failed to delete turn for retry', { error });
-        }
-      }
+      const turn = await deleteConversationTurn(agentId, userMessageId, orderedMessageIds, messagesMap);
+      if (!turn) return;
 
       // Re-send the user message
       await window.service.agentInstance.sendMsgToAgent(agentId, {
-        text: userMessage.content,
+        text: turn.userMessage.content,
       });
     },
   };

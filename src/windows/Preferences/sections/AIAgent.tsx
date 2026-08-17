@@ -33,7 +33,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
-import { LEGACY_AGENT_DATABASE_KEY, MEME_LOOP_DATABASE_KEY } from '@/constants/database';
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { CreateScheduledTaskInput, ScheduledTask } from '@/services/agentInstance/tools/scheduledTaskManager';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
@@ -48,7 +48,6 @@ export async function clearAgentDatabase(
   onNeedsRestart: () => void,
 ): Promise<void> {
   await databaseService.deleteDatabase(MEME_LOOP_DATABASE_KEY);
-  await databaseService.deleteDatabase(LEGACY_AGENT_DATABASE_KEY);
   onNeedsRestart();
 }
 

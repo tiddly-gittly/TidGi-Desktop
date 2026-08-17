@@ -37,6 +37,7 @@ export class MemeLoopDesktopRuntime {
     this.storage = new MemeLoopDesktopStorage({
       agentInstanceService: options.agentInstanceService,
       agentDefinitionService: options.agentDefinitionService,
+      getLocalNodeId: async () => (await options.deviceNetworkService.getLocalIdentity()).peerId,
       notifyAgentChanged: options.notifyAgentChanged,
     });
     registerBuiltinLoops();
@@ -49,12 +50,14 @@ export class MemeLoopDesktopRuntime {
     content: AgentUserContent;
     beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
   }): Promise<AgentInstanceState> {
+    const localNodeId = (await this.options.deviceNetworkService.getLocalIdentity()).peerId;
     const userMessage = await createMemeLoopUserMessage({
       agentId: input.agentId,
       content: input.content,
+      originNodeId: localNodeId,
       beforeCommitMap: input.beforeCommitMap,
     });
-    const context = await this.createContext(input.agentId);
+    const context = await this.createContext(input.agentId, undefined, localNodeId);
     const runner = await this.createProfileRunner(input.agentId, context);
 
     const result = await runAgentToolLoopTurn(
@@ -110,12 +113,17 @@ export class MemeLoopDesktopRuntime {
     });
   }
 
-  private async createContext(agentId: string, parentAgentId?: string): Promise<AgentFrameworkContext & DesktopRemoteAgentNetworkContext> {
+  private async createContext(
+    agentId: string,
+    parentAgentId?: string,
+    knownLocalNodeId?: string,
+  ): Promise<AgentFrameworkContext & DesktopRemoteAgentNetworkContext> {
     const isCancelled = (targetAgentId: string): boolean => {
       return this.options.isCancelled(targetAgentId) || (parentAgentId ? this.options.isCancelled(parentAgentId) : false);
     };
 
     const remoteNetworkContext = await createDesktopRemoteAgentNetworkContext(this.options.deviceNetworkService);
+    const localNodeId = knownLocalNodeId ?? (await this.options.deviceNetworkService.getLocalIdentity()).peerId;
     return {
       storage: this.storage,
       llmProvider: new MemeLoopDesktopLLMProvider({
@@ -136,7 +144,7 @@ export class MemeLoopDesktopRuntime {
       isCancelled: () => isCancelled(agentId),
       runChildAgent: this.createRunChildAgent(agentId),
       normalizeMessage: message => {
-        return { ...message, originNodeId: message.originNodeId || 'tidgi-desktop' };
+        return { ...message, originNodeId: message.originNodeId || localNodeId };
       },
       onTransientMessage: async (message) => {
         const agent = await this.options.agentInstanceService.getAgent(agentId).catch(() => undefined);

@@ -1,23 +1,7 @@
 import type { ChatMessage } from 'memeloop';
 import type { StoreApi } from 'zustand';
+import { deleteConversationTurn } from '../../../adapters/conversationTurn';
 import type { AgentChatStoreType } from '../types';
-
-/** Get IDs belonging to a turn started by the given user message. Includes the user message itself. */
-function getTurnMessageIds(
-  userMessageId: string,
-  orderedMessageIds: string[],
-  messages: Map<string, ChatMessage>,
-): string[] {
-  const startIndex = orderedMessageIds.indexOf(userMessageId);
-  if (startIndex === -1) return [];
-  const ids: string[] = [userMessageId];
-  for (let index = startIndex + 1; index < orderedMessageIds.length; index++) {
-    const message = messages.get(orderedMessageIds[index]);
-    if (message?.role === 'user') break; // Next turn
-    ids.push(orderedMessageIds[index]);
-  }
-  return ids;
-}
 
 export const messageActions = (
   set: StoreApi<AgentChatStoreType>['setState'],
@@ -125,29 +109,19 @@ export const messageActions = (
     const agentId = state.agent?.id;
     if (!agentId) return undefined;
 
-    const turnIds = getTurnMessageIds(userMessageId, state.orderedMessageIds, state.messages);
-    if (turnIds.length === 0) return undefined;
-
-    const userMessage = state.messages.get(userMessageId);
-    const userContent = userMessage?.content;
-
-    // Remove from backend DB
-    try {
-      await window.service.agentInstance.deleteMessages(agentId, turnIds);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to delete turn messages', { error });
-    }
+    const turn = await deleteConversationTurn(agentId, userMessageId, state.orderedMessageIds, state.messages);
+    if (!turn) return undefined;
 
     // Remove from frontend store
-    const deletedSet = new Set(turnIds);
+    const deletedSet = new Set(turn.messageIds);
     set(previous => {
       const newMessages = new Map(previous.messages);
-      for (const id of turnIds) newMessages.delete(id);
+      for (const id of turn.messageIds) newMessages.delete(id);
       const newOrderedIds = previous.orderedMessageIds.filter(id => !deletedSet.has(id));
       return { messages: newMessages, orderedMessageIds: newOrderedIds };
     });
 
-    return userContent;
+    return turn.userMessage.content;
   },
 
   retryTurn: async (userMessageId: string): Promise<void> => {
@@ -155,28 +129,18 @@ export const messageActions = (
     const agentId = state.agent?.id;
     if (!agentId) return;
 
-    const userMessage = state.messages.get(userMessageId);
-    if (!userMessage || userMessage.role !== 'user') return;
-    const userContent = userMessage.content;
+    const turn = await deleteConversationTurn(agentId, userMessageId, state.orderedMessageIds, state.messages);
+    if (!turn) return;
 
-    // Delete entire turn (user msg + all agent responses) from backend and store
-    const turnIds = getTurnMessageIds(userMessageId, state.orderedMessageIds, state.messages);
-    if (turnIds.length > 0) {
-      try {
-        await window.service.agentInstance.deleteMessages(agentId, turnIds);
-      } catch (error) {
-        void window.service.native.log('error', 'Failed to delete turn for retry', { error });
-      }
-      const deletedSet = new Set(turnIds);
-      set(previous => {
-        const newMessages = new Map(previous.messages);
-        for (const id of turnIds) newMessages.delete(id);
-        const newOrderedIds = previous.orderedMessageIds.filter(id => !deletedSet.has(id));
-        return { messages: newMessages, orderedMessageIds: newOrderedIds };
-      });
-    }
+    const deletedSet = new Set(turn.messageIds);
+    set(previous => {
+      const newMessages = new Map(previous.messages);
+      for (const id of turn.messageIds) newMessages.delete(id);
+      const newOrderedIds = previous.orderedMessageIds.filter(id => !deletedSet.has(id));
+      return { messages: newMessages, orderedMessageIds: newOrderedIds };
+    });
 
     // Re-send — sendMessage creates a fresh user message + triggers agent
-    await get().sendMessage(userContent);
+    await get().sendMessage(turn.userMessage.content);
   },
 });

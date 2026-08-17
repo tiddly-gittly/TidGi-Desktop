@@ -1,10 +1,13 @@
-import type { DeviceRelayReservationToken } from 'memeloop';
+import type { DeviceConnectionGrant, DeviceRelayReservationToken, LocalDeviceIdentity, TrustedDeviceRecord } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { IDatabaseService } from '@services/database/interface';
 
 import {
   classifyCloudConnectionError,
+  CLOUD_DEVICE_FRESHNESS_MS,
+  cloudDeviceReachability,
+  DeviceNetworkService,
   DeviceNetworkSettingsStore,
   hasValidDirectDeviceAddress,
   locallyPairedRecord,
@@ -93,6 +96,25 @@ describe('DeviceNetwork Cloud configuration', () => {
     expect(locallyPairedRecord(localRecord)).toBe(localRecord);
     expect(locallyPairedRecord(cloudRecord)).toBeUndefined();
     expect(locallyPairedRecord(undefined)).toBeUndefined();
+  });
+
+  it('marks Cloud directory entries online only while their advertised paths are fresh', () => {
+    const now = 1_000_000;
+    expect(cloudDeviceReachability({
+      lastSeen: now - CLOUD_DEVICE_FRESHNESS_MS,
+      multiaddrs: ['/ip4/192.168.1.20/tcp/4001/ws/p2p/peer-1'],
+      relayReservations: [],
+    }, now)).toEqual({ state: 'online', paths: ['direct'] });
+    expect(cloudDeviceReachability({
+      lastSeen: now - CLOUD_DEVICE_FRESHNESS_MS - 1,
+      multiaddrs: ['/ip4/192.168.1.20/tcp/4001/ws/p2p/peer-1'],
+      relayReservations: ['/dns4/relay.example.test/tcp/443/wss/p2p/relay/p2p-circuit/p2p/peer-1'],
+    }, now)).toEqual({ state: 'offline', paths: [] });
+    expect(cloudDeviceReachability({
+      lastSeen: now,
+      multiaddrs: [],
+      relayReservations: [],
+    }, now)).toEqual({ state: 'offline', paths: [] });
   });
 
   it('requires relay only when no externally dialable direct address exists', () => {
@@ -188,5 +210,76 @@ describe('DeviceNetwork settings persistence', () => {
       cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
       identityV1: { peerId: 'peer-1' },
     });
+  });
+});
+
+describe('DeviceNetwork outbound Cloud grants', () => {
+  const identity: LocalDeviceIdentity = {
+    peerId: 'local-peer',
+    publicKeyMultibase: 'zLocalPublicKey',
+    privateKeyRef: 'test',
+    deviceName: 'Desktop',
+    platform: 'desktop',
+    createdAt: 1,
+  };
+  const cloudGrant: DeviceConnectionGrant = {
+    issuer: 'memeloop-cloud',
+    accountId: 'account-1',
+    subjectPeerId: 'local-peer',
+    allowedPeerIds: ['cloud-peer'],
+    issuedAt: 1,
+    expiresAt: Date.now() + 60_000,
+    signature: 'signature',
+  };
+
+  function record(peerId: string, trustMode: TrustedDeviceRecord['trustMode']): TrustedDeviceRecord {
+    return {
+      peerId,
+      publicKeyMultibase: 'zPeerPublicKey',
+      deviceName: 'Peer',
+      platform: 'desktop',
+      trustMode,
+      accountId: trustMode === 'cloud-account' ? 'account-1' : undefined,
+      createdAt: 1,
+    };
+  }
+
+  function createService(trustedDevice: TrustedDeviceRecord, createConnectionGrant: () => Promise<DeviceConnectionGrant>) {
+    const sendRpc = vi.fn(async () => ({ ok: true }));
+    const service = new DeviceNetworkService(
+      {} as never,
+      { getSetting: vi.fn(() => undefined) } as unknown as IDatabaseService,
+    );
+    Object.assign(service as unknown as Record<string, unknown>, {
+      started: true,
+      identity,
+      cloudClient: { createConnectionGrant },
+      core: {
+        getTrustedDevice: vi.fn(() => trustedDevice),
+        sendRpc,
+      },
+    });
+    return { sendRpc, service };
+  }
+
+  it('keeps an explicit local pairing usable without requesting a Cloud grant', async () => {
+    const createConnectionGrant = vi.fn(async () => cloudGrant);
+    const { sendRpc, service } = createService(record('local-pair', 'local-pairing'), createConnectionGrant);
+
+    await expect(service.sendRpc('local-pair', 'test.method', {})).resolves.toEqual({ ok: true });
+    expect(createConnectionGrant).not.toHaveBeenCalled();
+    expect(sendRpc).toHaveBeenCalledWith('local-pair', 'test.method', {}, undefined);
+  });
+
+  it('fails a Cloud-account request locally with an explicit error when grant acquisition fails', async () => {
+    const createConnectionGrant = vi.fn(async () => {
+      throw new Error('503 unavailable');
+    });
+    const { sendRpc, service } = createService(record('cloud-peer', 'cloud-account'), createConnectionGrant);
+
+    await expect(service.sendRpc('cloud-peer', 'test.method', {})).rejects.toThrow(
+      'device_cloud_grant_unavailable:cloud-peer',
+    );
+    expect(sendRpc).not.toHaveBeenCalled();
   });
 });

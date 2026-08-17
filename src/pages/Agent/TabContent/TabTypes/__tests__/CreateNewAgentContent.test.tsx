@@ -18,6 +18,8 @@ const mockUpdateTab = vi.fn();
 const mockGetAllTabs = vi.fn();
 const mockGetActiveTabId = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
+const mockCreateAgent = vi.fn();
+const mockDeleteAgent = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -31,6 +33,8 @@ Object.defineProperty(window, 'service', {
     },
     agentInstance: {
       getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
+      createAgent: mockCreateAgent,
+      deleteAgent: mockDeleteAgent,
     },
     agentBrowser: {
       updateTab: mockUpdateTab,
@@ -131,6 +135,9 @@ describe('CreateNewAgentContent', () => {
         },
       },
     });
+    mockUpdateAgentDef.mockResolvedValue({ id: 'saved-agent-definition' });
+    mockCreateAgent.mockResolvedValue({ id: 'preview-agent' });
+    mockDeleteAgent.mockResolvedValue(undefined);
   });
 
   it('should render the first step (setup agent)', () => {
@@ -337,6 +344,36 @@ describe('CreateNewAgentContent', () => {
 
     // Should show editPrompt content
     expect(await screen.findByText('请先选择一个模板')).toBeInTheDocument();
+  });
+
+  it('saves the latest controlled prompt edit before advancing', async () => {
+    mockGetAgentDef.mockResolvedValue({
+      id: 'temp-123',
+      name: 'Test Agent',
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }], plugins: [] },
+    });
+
+    render(
+      <ThemeProvider theme={lightTheme}>
+        <CreateNewAgentContent tab={{ ...mockTab, currentStep: 1, agentDefId: 'temp-123' }} />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '展开' }));
+    const promptInput = await screen.findByDisplayValue('Original prompt');
+    fireEvent.change(promptInput, { target: { value: 'Latest prompt edit' } });
+    fireEvent.click(screen.getByTestId('next-button'));
+
+    await waitFor(() => {
+      expect(mockUpdateAgentDef).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentFrameworkConfig: expect.objectContaining({
+            prompts: [expect.objectContaining({ text: 'Latest prompt edit' })],
+          }),
+        }),
+      );
+    });
   });
 
   it('should call createAgentDef when template is selected', async () => {

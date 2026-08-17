@@ -16,7 +16,7 @@ import React, { useEffect, useRef } from 'react';
 export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
   const rootReference = useRef<HTMLDivElement>(null);
   const aui = useAui();
-  const threadIsRunning = useAuiState((s) => s.thread.isRunning);
+  const threadIsRunning = useAuiState((state: { thread: { isRunning: boolean } }) => state.thread.isRunning);
 
   useEffect(() => {
     const input = rootReference.current?.querySelector('.assistant-ui-composer-input');

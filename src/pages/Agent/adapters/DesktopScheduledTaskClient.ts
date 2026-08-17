@@ -3,45 +3,36 @@
  * to implement the headless ScheduledTaskClient interface.
  */
 
-import type { CreateScheduledTaskInput, ScheduledTask, ScheduledTaskClient } from 'memeloop';
+import type { ScheduledTask as DesktopScheduledTask } from '@services/agentInstance/tools/scheduledTaskTypes';
+import type { ScheduledTask, ScheduledTaskClient } from 'memeloop';
+
+const toScheduledTask = (task: DesktopScheduledTask): ScheduledTask => ({
+  id: task.id,
+  agentInstanceId: task.agentInstanceId,
+  agentDefinitionId: task.agentDefinitionId ?? task.agentInstanceId,
+  name: task.name ?? task.id,
+  schedule: task.schedule,
+  payload: task.payload,
+  activeHoursStart: task.activeHoursStart,
+  activeHoursEnd: task.activeHoursEnd,
+  enabled: task.enabled,
+  createdBy: task.createdBy,
+});
 
 /**
  * Desktop implementation of ScheduledTaskClient.
  * Delegates to window.service.agentInstance IPC methods.
  */
 export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => ({
-  listScheduledTasksForAgent: async (agentInstanceId) => {
-    const service = window.service.agentInstance as unknown as {
-      listScheduledTasksForAgent: (id: string) => Promise<ScheduledTask[]>;
-    };
-    return service.listScheduledTasksForAgent(agentInstanceId);
+  listScheduledTasksForAgent: async agentInstanceId => (await window.service.agentInstance.listScheduledTasksForAgent(agentInstanceId)).map(toScheduledTask),
+
+  createScheduledTask: async input => toScheduledTask(await window.service.agentInstance.createScheduledTask(input)),
+
+  updateScheduledTask: async (id, input) => toScheduledTask(await window.service.agentInstance.updateScheduledTask({ id, ...input })),
+
+  deleteScheduledTask: async id => {
+    await window.service.agentInstance.deleteScheduledTask(id);
   },
 
-  createScheduledTask: async (input) => {
-    const service = window.service.agentInstance as unknown as {
-      createScheduledTask: (input: CreateScheduledTaskInput) => Promise<ScheduledTask>;
-    };
-    return service.createScheduledTask(input);
-  },
-
-  updateScheduledTask: async (id, input) => {
-    const service = window.service.agentInstance as unknown as {
-      updateScheduledTask: (id: string, input: Partial<CreateScheduledTaskInput>) => Promise<ScheduledTask>;
-    };
-    return service.updateScheduledTask(id, input);
-  },
-
-  deleteScheduledTask: async (id) => {
-    const service = window.service.agentInstance as unknown as {
-      deleteScheduledTask: (id: string) => Promise<void>;
-    };
-    return service.deleteScheduledTask(id);
-  },
-
-  getCronPreviewDates: async (expression, timezone, count) => {
-    const service = window.service.agentInstance as unknown as {
-      getCronPreviewDates: (expr: string, tz?: string, count?: number) => Promise<string[]>;
-    };
-    return service.getCronPreviewDates(expression, timezone, count);
-  },
+  getCronPreviewDates: async (expression, timezone, count) => await window.service.agentInstance.getCronPreviewDates(expression, timezone, count),
 });

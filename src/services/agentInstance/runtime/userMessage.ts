@@ -21,6 +21,7 @@ export type AgentUserContent = {
 export async function createMemeLoopUserMessage(input: {
   agentId: string;
   content: AgentUserContent;
+  originNodeId: string;
   messageId?: string;
   beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
 }): Promise<ChatMessage> {
@@ -55,7 +56,7 @@ export async function createMemeLoopUserMessage(input: {
     conversationId: input.agentId,
     role: 'user',
     content: messageContent,
-    originNodeId: 'tidgi-desktop',
+    originNodeId: input.originNodeId,
     contentType: 'text/plain',
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     duration: undefined,

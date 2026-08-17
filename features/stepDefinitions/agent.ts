@@ -632,6 +632,12 @@ When('I send ask AI with selection message with text {string} and workspace {str
     throw new Error('Electron app not found');
   }
 
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const requestCountBeforeSend = this.mockOpenAIServer.getAllRequests().length;
+
   const sendResult = await this.app.evaluate(async ({ BrowserWindow }, { text, wsId }: { text: string; wsId: string }) => {
     // Find main window - the first window is always the main window in TidGi
     const allWindows = BrowserWindow.getAllWindows();
@@ -657,8 +663,23 @@ When('I send ask AI with selection message with text {string} and workspace {str
     throw new Error(`Failed to send IPC message: ${sendResult.error || 'Unknown error'}`);
   }
 
-  // Small delay to ensure IPC message is processed (cross-process communication needs time)
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // Wait for the observable result of the cross-process event instead of assuming
+  // a fixed delay is long enough on every CI host.
+  await backOff(
+    async () => {
+      const requestsAfterSend = this.mockOpenAIServer!.getAllRequests().slice(requestCountBeforeSend);
+      const receivedSelection = requestsAfterSend.some(
+        (request) =>
+          request.messages.some(
+            (message) => message.role === 'user' && message.content?.includes(selectionText),
+          ),
+      );
+      if (!receivedSelection) {
+        throw new Error('The Ask AI selection has not reached the mock provider yet');
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  );
 });
 
 export { clearAISettings };

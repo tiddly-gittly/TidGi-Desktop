@@ -10,6 +10,7 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     private readonly options: {
       agentInstanceService: IAgentInstanceService;
       agentDefinitionService: IAgentDefinitionService;
+      getLocalNodeId: () => Promise<string>;
       notifyAgentChanged: (agentId: string, agent: AgentInstance) => void;
     },
   ) {}
@@ -18,10 +19,11 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     const pageSize = options?.limit ?? 200;
     const page = options?.offset ? Math.floor(options.offset / pageSize) + 1 : 1;
     const agents = await this.options.agentInstanceService.getAgents(page, pageSize, { closed: false });
+    const localNodeId = await this.options.getLocalNodeId();
     return Promise.all(agents.map(async agent => {
       const fullAgent = await this.options.agentInstanceService.getAgent(agent.id);
       const definition = fullAgent ? await this.options.agentDefinitionService.getAgentDef(fullAgent.agentDefId) : undefined;
-      return toConversationMeta({ ...agent, messages: fullAgent?.messages ?? [] }, definition);
+      return toConversationMeta({ ...agent, messages: fullAgent?.messages ?? [] }, localNodeId, definition);
     }));
   }
 
@@ -88,7 +90,7 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     const agent = await this.options.agentInstanceService.getAgent(conversationId);
     if (!agent) return null;
     const definition = await this.options.agentDefinitionService.getAgentDef(agent.agentDefId);
-    return toConversationMeta(agent, definition);
+    return toConversationMeta(agent, await this.options.getLocalNodeId(), definition);
   }
 
   private async notify(agentId: string): Promise<void> {

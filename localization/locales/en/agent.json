@@ -43,6 +43,24 @@
   },
   "Chat": {
     "Cancel": "Cancel",
+    "ExecutionTarget": {
+      "NoActiveAgent": "No active agent is available.",
+      "Platform": {
+        "cli": "CLI",
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+      },
+      "Reachability": {
+        "connecting": "connecting",
+        "nearby": "nearby",
+        "offline": "offline",
+        "online": "online"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RunOnThisDesktop": "Run on this Desktop",
+      "RunOnThisDesktopWithPeerId": "Run on this Desktop ({{peerId}})",
+      "ThisDevice": "This device"
+    },
     "ConfigError": {
       "AuthenticationError": "{{provider}} authentication failed. Please check your API key in Settings.",
       "AuthenticationFailed": "{{provider}} authentication failed. Please check your API key in Settings.",
@@ -109,6 +127,31 @@
     "Loading": "Loading wiki..."
   },
   "EditAgent": {
+    "ActiveHoursEnd": "Active hours end (optional)",
+    "ActiveHoursStart": "Active hours start (optional)",
+    "Hours": "Hours",
+    "Minutes": "Minutes",
+    "ScheduleCron": "Advanced cron expression",
+    "ScheduleCronExpr": "Cron expression",
+    "ScheduleCronHelp": "5-field cron: minute hour day month weekday",
+    "ScheduleCronPreview": "Next runs:",
+    "ScheduleDaily": "Daily (at a specific time)",
+    "ScheduleDailyTime": "Wake time",
+    "ScheduledWakeup": "Scheduled Wake-up",
+    "ScheduledWakeupDescription": "Configure a recurring schedule to automatically wake this agent and send a reminder message.",
+    "ScheduleInterval": "Interval (every N seconds/minutes/hours)",
+    "ScheduleIntervalUnit": "Unit",
+    "ScheduleIntervalValue": "Every",
+    "ScheduleMessage": "Wake-up message",
+    "ScheduleMessagePlaceholder": "[Scheduled] Periodic check-in. Review your tasks and take any pending actions.",
+    "ScheduleMode": "Mode",
+    "ScheduleNone": "None (no scheduled wake-up)",
+    "ScheduleSave": "Save schedule",
+    "ScheduleSaveWait": "Preview agent loading...",
+    "ScheduleSaving": "Saving...",
+    "ScheduleTimezone": "Timezone",
+    "ScheduleUpdate": "Update schedule",
+    "Seconds": "Seconds",
     "AgentDescription": "Agent Description",
     "AgentDescriptionHelper": "Describe the functionality and purpose of your intelligent agent.",
     "AgentDescriptionPlaceholder": "Enter agent description...",

@@ -19,6 +19,8 @@ const mockGetAgentDef = vi.fn();
 const mockUpdateAgentDef = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
 const mockLog = vi.fn();
+const mockListScheduledTasksForAgent = vi.fn();
+const mockGetCronPreviewDates = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -34,6 +36,8 @@ Object.defineProperty(window, 'service', {
       createAgent: mockCreateAgent,
       deleteAgent: mockDeleteAgent,
       getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
+      listScheduledTasksForAgent: mockListScheduledTasksForAgent,
+      getCronPreviewDates: mockGetCronPreviewDates,
     },
     agentDefinition: {
       getAgentDef: mockGetAgentDef,
@@ -81,6 +85,8 @@ describe('EditAgentDefinitionContent', () => {
       title: 'Test Chat',
     });
     mockUpdateAgentDef.mockResolvedValue(mockAgentDefinition);
+    mockListScheduledTasksForAgent.mockResolvedValue([]);
+    mockGetCronPreviewDates.mockResolvedValue([]);
   });
 
   afterEach(() => {

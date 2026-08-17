@@ -1,8 +1,8 @@
-import { execFileSync, spawnSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
-import { requiresVirtualXDisplay } from './xDisplay';
+import { isXDisplayReachable, isXvfbRunAvailable, reExecuteCurrentScriptUnderXvfb, requiresVirtualXDisplay } from './xDisplay';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // X Display auto-detection — re-exec under xvfb-run when no DISPLAY is set.
@@ -10,42 +10,16 @@ import { requiresVirtualXDisplay } from './xDisplay';
 // ═══════════════════════════════════════════════════════════════════════════
 const XVFB_WRAPPED_ENV = 'TIDGI_E2E_XVFB_WRAPPED';
 
-function hasXDisplay(): boolean {
-  if (!process.env.DISPLAY) return false;
-  try {
-    spawnSync('xdpyinfo', ['-display', process.env.DISPLAY], { stdio: 'ignore', timeout: 2000 });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function ensureXvfbWrapper(scriptLabel: string): void {
-  if (process.env[XVFB_WRAPPED_ENV] === '1' || !requiresVirtualXDisplay(process.platform, hasXDisplay())) return;
+  if (process.env[XVFB_WRAPPED_ENV] === '1' || !requiresVirtualXDisplay(process.platform, isXDisplayReachable(process.env.DISPLAY))) return;
 
-  try {
-    if (spawnSync('which', ['xvfb-run'], { stdio: 'pipe', timeout: 3000 }).status !== 0) {
-      console.error(`[${scriptLabel}] No X display and xvfb-run not found. Install xvfb: sudo apt install xvfb`);
-      process.exit(1);
-    }
-  } catch {
+  if (!isXvfbRunAvailable()) {
     console.error(`[${scriptLabel}] No X display and xvfb-run not found. Install xvfb: sudo apt install xvfb`);
     process.exit(1);
   }
 
   console.warn(`[${scriptLabel}] No X display detected — re-executing under xvfb-run`);
-  const result = spawnSync('xvfb-run', [
-    '-a',
-    '--server-args=-screen 0 1920x1080x24',
-    process.execPath,
-    ...process.execArgv,
-    process.argv[1],
-    ...process.argv.slice(2),
-  ], {
-    stdio: 'inherit',
-    env: { ...process.env, [XVFB_WRAPPED_ENV]: '1' },
-  });
-  process.exit(result.status ?? 1);
+  reExecuteCurrentScriptUnderXvfb(XVFB_WRAPPED_ENV);
 }
 
 interface StepTiming {

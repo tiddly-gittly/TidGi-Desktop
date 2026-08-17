@@ -52,6 +52,7 @@ import type {
 import { TrustedRpcGate } from './trustedRpcGate';
 
 const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
+export const CLOUD_DEVICE_FRESHNESS_MS = 3 * 60_000;
 const RELAY_RENEWAL_WINDOW_MS = 2 * 60_000;
 const CLOUD_REQUEST_TIMEOUT_MS = 10_000;
 const CLOUD_RESPONSE_MAX_BYTES = 2 * 1024 * 1024;
@@ -521,10 +522,15 @@ export class DeviceNetworkService implements IDeviceNetworkService {
           createdAt: existing?.createdAt ?? Date.now(),
           lastSeen: device.lastSeen,
         };
-        const paths = [
-          ...(device.multiaddrs.length > 0 ? ['direct' as const] : []),
-          ...(device.relayReservations.length > 0 ? ['relay' as const] : []),
+        const directMultiaddrs = device.multiaddrs.filter(address => !address.includes('/p2p-circuit'));
+        const relayMultiaddrs = [
+          ...new Set([
+            ...device.multiaddrs.filter(address => address.includes('/p2p-circuit')),
+            ...device.relayReservations,
+          ]),
         ];
+        const dialableMultiaddrs = [...new Set([...directMultiaddrs, ...relayMultiaddrs])];
+        const reachability = cloudDeviceReachability(device, Date.now());
         if (existing?.trustMode !== 'local-pairing') {
           this.core.upsertTrustedDevice(trustedDevice);
         }
@@ -534,9 +540,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
           platform: device.platform,
           trustMode: 'cloud-account',
           trusted: true,
-          reachability: { state: 'online', paths },
+          reachability,
           capabilities: device.capabilities,
-          multiaddrs: device.multiaddrs,
+          multiaddrs: dialableMultiaddrs,
           lastSeen: device.lastSeen,
         });
       }
@@ -749,7 +755,14 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   }
 
   private async resolveOutboundGrant(peerId: string): Promise<DeviceConnectionGrant | undefined> {
-    if (!this.cloudClient || !this.identity) return undefined;
+    const trustedDevice = this.core?.getTrustedDevice(peerId);
+    // A local pairing is its own explicit authorization boundary and must keep
+    // working while Cloud is unavailable. Cloud-account trust, on the other
+    // hand, is valid only together with a current signed connection grant.
+    if (trustedDevice?.trustMode !== 'cloud-account') return undefined;
+    if (!this.cloudClient || !this.identity) {
+      throw new Error(`device_cloud_grant_unavailable:${peerId}`);
+    }
     const cached = this.cloudGrantCache.get(peerId);
     if (cached && cached.expiresAt > Date.now() + 30_000) return cached;
     try {
@@ -759,8 +772,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       });
       this.cloudGrantCache.set(peerId, grant);
       return grant;
-    } catch {
-      return undefined;
+    } catch (error) {
+      logger.warn('Failed to obtain outbound Cloud connection grant', { error, peerId });
+      throw new Error(`device_cloud_grant_unavailable:${peerId}`, { cause: error });
     }
   }
 
@@ -933,6 +947,22 @@ export function shouldRenewRelayReservation(
 
 export function locallyPairedRecord(record: TrustedDeviceRecord | undefined): TrustedDeviceRecord | undefined {
   return record?.trustMode === 'local-pairing' ? record : undefined;
+}
+
+export function cloudDeviceReachability(
+  device: Pick<CloudDeviceRecord, 'lastSeen' | 'multiaddrs' | 'relayReservations'>,
+  now: number,
+): Device['reachability'] {
+  const fresh = device.lastSeen >= now - CLOUD_DEVICE_FRESHNESS_MS;
+  if (!fresh) return { state: 'offline', paths: [] };
+  const hasDirectAddress = device.multiaddrs.some(address => !address.includes('/p2p-circuit'));
+  const hasRelayAddress = device.relayReservations.length > 0 ||
+    device.multiaddrs.some(address => address.includes('/p2p-circuit'));
+  const paths: Device['reachability']['paths'] = [
+    ...(hasDirectAddress ? ['direct' as const] : []),
+    ...(hasRelayAddress ? ['relay' as const] : []),
+  ];
+  return paths.length > 0 ? { state: 'online', paths } : { state: 'offline', paths: [] };
 }
 
 function isUnspecifiedOrLoopback(host: string): boolean {

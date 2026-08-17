@@ -15,8 +15,6 @@ overrides:
   "tar-stream>bl": "^4.1.0"
 
 peerDependencyRules:
-  allowedVersions:
-    memeloop: ">=0.1.0 <0.3.0"
   ignoreMissing:
     - moment
     - moment-hijri
@@ -40,7 +38,7 @@ allowBuilds:
   '@ipshipyard/node-datachannel': true
   '@swc/core': true
   better-sqlite3: true
-  core-js-pure: set this to true or false
+  core-js-pure: true
   dprint: true
   dugite: true
   electron: true

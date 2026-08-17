@@ -29,8 +29,6 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
@@ -44,7 +42,6 @@ import type { IMainMenuService } from '@services/menu/interface';
 
 import type { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
-import type { INotificationService } from '@services/notifications/interface';
 import type { IThemeService } from '@services/theme/interface';
 import type { IUpdaterService } from '@services/updater/interface';
 import type { IViewService } from '@services/view/interface';
@@ -103,13 +100,10 @@ const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Work
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 const deviceNetworkService = container.get<IDeviceNetworkService>(serviceIdentifier.DeviceNetwork);
-const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
-const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
 const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const menuService = container.get<IMainMenuService>(serviceIdentifier.MenuService);
-const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
 const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
@@ -213,8 +207,8 @@ const commonInit = async (): Promise<void> => {
     logger.error('Application menu initialization failed; continuing startup', { error });
   }
 
-  initializePreferenceReactions({ analyticsService, notificationService, preferenceService, windowService });
-  initializeThemeReactions({ themeService, viewService, wikiService, workspaceService });
+  initializePreferenceReactions();
+  initializeThemeReactions();
   authService.setOAuthWindowContextMenuInitializer((webContents) => menuService.initContextMenuForWindowWebContents(webContents));
 
   // Apply preferences that need to be set early
@@ -230,7 +224,7 @@ const commonInit = async (): Promise<void> => {
   }
 
   // Initialize agent-related services after database is ready
-  await initializeAgentServicesSafely({ agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService });
+  await initializeAgentServicesSafely();
   await Promise.all([
     wikiEmbeddingService.initialize(),
     externalAPIService.initialize(),

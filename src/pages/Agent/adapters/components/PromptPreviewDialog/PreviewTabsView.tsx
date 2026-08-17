@@ -1,25 +1,28 @@
 import { Box, List, Paper, styled, Typography } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import type { ModelMessage } from '@services/externalAPI/interface';
 import React, { memo, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import { PromptTree } from '@memeloop/react-ui/agent';
+import type { PromptConcatStreamState } from 'memeloop';
 
-interface ModelMessageContent {
-  text?: string;
-  content?: string;
-}
+type PromptPreviewMessage = PromptConcatStreamState['flatPrompts'][number];
 
-interface PreviewMessage {
-  role: string;
+interface FormattedPromptPreviewMessage {
+  role: PromptPreviewMessage['role'];
   content: string;
 }
 
-function getFormattedContent(content: ModelMessage['content']): string {
+function getStringProperty(value: unknown, property: 'content' | 'text'): string {
+  if (typeof value !== 'object' || value === null) return '';
+  const candidate = (value as Record<string, unknown>)[property];
+  return typeof candidate === 'string' ? candidate : '';
+}
+
+function getFormattedContent(content: PromptPreviewMessage['content']): string {
   if (typeof content === 'string') {
     return content;
   }
@@ -27,10 +30,7 @@ function getFormattedContent(content: ModelMessage['content']): string {
     return content
       .map(part => {
         if (typeof part === 'string') return part;
-        const typedPart = part as ModelMessageContent;
-        if (typedPart.text) return typedPart.text;
-        if (typedPart.content) return typedPart.content;
-        return '';
+        return getStringProperty(part, 'text') || getStringProperty(part, 'content');
       })
       .join('');
   }
@@ -86,7 +86,7 @@ const RoleChip = styled(Typography, {
   color: theme.palette.common.white,
 }));
 
-function FlatPromptList({ flatPrompts }: { flatPrompts?: PreviewMessage[] }) {
+function FlatPromptList({ flatPrompts }: { flatPrompts?: FormattedPromptPreviewMessage[] }) {
   const { t } = useTranslation('agent');
 
   if (!flatPrompts?.length) {
@@ -157,7 +157,7 @@ const FlatContent = memo<{ isFullScreen: boolean }>(({ isFullScreen }) => {
 
   // Memoize formatted preview to prevent unnecessary recalculations
   const formattedFlatPrompts = useMemo(() => {
-    return flatPrompts?.map((message: ModelMessage) => ({
+    return flatPrompts?.map((message: PromptPreviewMessage) => ({
       role: message.role,
       content: getFormattedContent(message.content),
     }));

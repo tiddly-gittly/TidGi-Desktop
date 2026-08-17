@@ -52,8 +52,8 @@ describe('AIAgent database recovery', () => {
 
     await clearAgentDatabase({ deleteDatabase }, onNeedsRestart);
 
-    expect(deleteDatabase).toHaveBeenNthCalledWith(1, 'meme-loop');
-    expect(deleteDatabase).toHaveBeenNthCalledWith(2, 'agent');
+    expect(deleteDatabase).toHaveBeenCalledOnce();
+    expect(deleteDatabase).toHaveBeenCalledWith('meme-loop');
     expect(onNeedsRestart).toHaveBeenCalledOnce();
   });
 });

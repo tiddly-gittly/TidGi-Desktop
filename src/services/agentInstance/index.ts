@@ -337,10 +337,11 @@ export class AgentInstanceService implements IAgentInstanceService {
   private async persistMemeLoopError(agentId: string, error_: unknown): Promise<void> {
     const id = `ai-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const serializedError = serializeAIError(error_);
+    const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
     const message: ChatMessage = {
       messageId: id,
       conversationId: agentId,
-      originNodeId: 'tidgi-desktop',
+      originNodeId,
       timestamp: Date.now(),
       lamportClock: Date.now(),
       role: 'error',

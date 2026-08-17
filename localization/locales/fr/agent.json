@@ -42,6 +42,24 @@
   },
   "Chat": {
     "Cancel": "Annuler",
+    "ExecutionTarget": {
+      "NoActiveAgent": "Aucun agent actif n’est disponible.",
+      "Platform": {
+        "cli": "Ligne de commande",
+        "desktop": "Ordinateur",
+        "mobile": "Mobile"
+      },
+      "Reachability": {
+        "connecting": "connexion en cours",
+        "nearby": "à proximité",
+        "offline": "hors ligne",
+        "online": "en ligne"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RunOnThisDesktop": "Exécuter sur cet ordinateur",
+      "RunOnThisDesktopWithPeerId": "Exécuter sur cet ordinateur ({{peerId}})",
+      "ThisDevice": "Cet appareil"
+    },
     "ConfigError": {
       "AuthenticationError": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
       "AuthenticationFailed": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
@@ -108,6 +126,31 @@
     "Loading": "Chargement du wiki..."
   },
   "EditAgent": {
+    "ActiveHoursEnd": "Fin des heures actives (facultatif)",
+    "ActiveHoursStart": "Début des heures actives (facultatif)",
+    "Hours": "Heures",
+    "Minutes": "Minutes",
+    "ScheduleCron": "Expression Cron avancée",
+    "ScheduleCronExpr": "Expression Cron",
+    "ScheduleCronHelp": "Cron à 5 champs : minute heure jour mois jour-semaine",
+    "ScheduleCronPreview": "Prochaines exécutions :",
+    "ScheduleDaily": "Quotidien (à une heure précise)",
+    "ScheduleDailyTime": "Heure de réveil",
+    "ScheduledWakeup": "Réveil planifié",
+    "ScheduledWakeupDescription": "Configurez une planification récurrente pour réveiller automatiquement cet agent et envoyer un rappel.",
+    "ScheduleInterval": "Intervalle (toutes les N secondes/minutes/heures)",
+    "ScheduleIntervalUnit": "Unité",
+    "ScheduleIntervalValue": "Toutes les",
+    "ScheduleMessage": "Message de réveil",
+    "ScheduleMessagePlaceholder": "[Planifié] Vérification périodique. Examinez vos tâches et traitez celles en attente.",
+    "ScheduleMode": "Mode",
+    "ScheduleNone": "Aucun (pas de réveil planifié)",
+    "ScheduleSave": "Enregistrer la planification",
+    "ScheduleSaveWait": "Chargement de l’agent d’aperçu...",
+    "ScheduleSaving": "Enregistrement...",
+    "ScheduleTimezone": "Fuseau horaire",
+    "ScheduleUpdate": "Mettre à jour la planification",
+    "Seconds": "Secondes",
     "AgentDescription": "Description de l'agent intelligent",
     "AgentDescriptionHelper": "Décrivez les fonctionnalités et l'utilité de votre agent intelligent",
     "AgentDescriptionPlaceholder": "Entrez la description de l'agent intelligent...",

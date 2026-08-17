@@ -19,4 +19,41 @@ describe('Simplified Chinese locale parity', () => {
       expect(englishKeys.filter(key => !chineseKeys.has(key))).toEqual([]);
     });
   }
+
+  it('contains the scheduled wake-up editor keys in every supported locale', () => {
+    const scheduledWakeupKeys = [
+      'ActiveHoursEnd',
+      'ActiveHoursStart',
+      'Hours',
+      'Minutes',
+      'Seconds',
+      'ScheduledWakeup',
+      'ScheduledWakeupDescription',
+      'ScheduleCron',
+      'ScheduleCronExpr',
+      'ScheduleCronHelp',
+      'ScheduleCronPreview',
+      'ScheduleDaily',
+      'ScheduleDailyTime',
+      'ScheduleInterval',
+      'ScheduleIntervalUnit',
+      'ScheduleIntervalValue',
+      'ScheduleMessage',
+      'ScheduleMessagePlaceholder',
+      'ScheduleMode',
+      'ScheduleNone',
+      'ScheduleSave',
+      'ScheduleSaveWait',
+      'ScheduleSaving',
+      'ScheduleTimezone',
+      'ScheduleUpdate',
+    ];
+
+    for (const locale of ['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant']) {
+      const agentLocale = JSON.parse(
+        fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
+      ) as { EditAgent?: Record<string, unknown> };
+      expect(scheduledWakeupKeys.filter(key => !(key in (agentLocale.EditAgent ?? {}))), locale).toEqual([]);
+    }
+  });
 });

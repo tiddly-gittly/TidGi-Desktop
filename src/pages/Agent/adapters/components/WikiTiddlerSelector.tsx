@@ -133,7 +133,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
 
   return (
     <>
-      <Tooltip title={t('Agent.Attachment.Add', 'Add attachment')}>
+      <Tooltip title={t('Agent.Attachment.AddAttachment')}>
         <span>
           <IconButton
             size='small'
@@ -191,7 +191,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
                 return (
                   <TextField
                     {...otherParameters}
-                    placeholder={t('Agent.Attachment.Search', 'Search attachments...')}
+                    placeholder={t('Agent.Attachment.SearchPlaceholder')}
                     slotProps={{
                       ...parameterSlotProps,
                       htmlInput: {
@@ -203,7 +203,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
                 );
               }}
               onChange={handleSelect}
-              noOptionsText={t('Agent.Attachment.NoResults', 'No attachments found')}
+              noOptionsText={t('Agent.Attachment.NoOptions')}
               isOptionEqualToValue={(option, value) =>
                 option.kind === value.kind && (option.kind === 'image'
                   ? option.id === (value as ImageOption).id

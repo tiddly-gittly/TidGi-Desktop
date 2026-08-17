@@ -42,6 +42,24 @@
   },
   "Chat": {
     "Cancel": "キャンセル",
+    "ExecutionTarget": {
+      "NoActiveAgent": "利用可能なエージェントがありません。",
+      "Platform": {
+        "cli": "CLI",
+        "desktop": "デスクトップ",
+        "mobile": "モバイル"
+      },
+      "Reachability": {
+        "connecting": "接続中",
+        "nearby": "近く",
+        "offline": "オフライン",
+        "online": "オンライン"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RunOnThisDesktop": "このデスクトップで実行",
+      "RunOnThisDesktopWithPeerId": "このデスクトップで実行（{{peerId}}）",
+      "ThisDevice": "このデバイス"
+    },
     "ConfigError": {
       "AuthenticationError": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
       "AuthenticationFailed": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
@@ -108,6 +126,31 @@
     "Loading": "Wiki を読み込んでいます..."
   },
   "EditAgent": {
+    "ActiveHoursEnd": "アクティブ時間の終了（任意）",
+    "ActiveHoursStart": "アクティブ時間の開始（任意）",
+    "Hours": "時間",
+    "Minutes": "分",
+    "ScheduleCron": "高度な Cron 式",
+    "ScheduleCronExpr": "Cron 式",
+    "ScheduleCronHelp": "5 フィールド Cron：分 時 日 月 曜日",
+    "ScheduleCronPreview": "次回の実行：",
+    "ScheduleDaily": "毎日（指定時刻）",
+    "ScheduleDailyTime": "起動時刻",
+    "ScheduledWakeup": "スケジュール起動",
+    "ScheduledWakeupDescription": "このエージェントを自動的に起動してリマインダーを送信する定期スケジュールを設定します。",
+    "ScheduleInterval": "間隔（N 秒/分/時間ごと）",
+    "ScheduleIntervalUnit": "単位",
+    "ScheduleIntervalValue": "間隔",
+    "ScheduleMessage": "起動メッセージ",
+    "ScheduleMessagePlaceholder": "[スケジュール] 定期確認。タスクを確認し、保留中の項目を処理してください。",
+    "ScheduleMode": "モード",
+    "ScheduleNone": "なし（スケジュール起動なし）",
+    "ScheduleSave": "スケジュールを保存",
+    "ScheduleSaveWait": "プレビューエージェントを読み込み中...",
+    "ScheduleSaving": "保存中...",
+    "ScheduleTimezone": "タイムゾーン",
+    "ScheduleUpdate": "スケジュールを更新",
+    "Seconds": "秒",
     "AgentDescription": "エージェントの説明",
     "AgentDescriptionHelper": "あなたのエージェントの機能と用途を説明してください",
     "AgentDescriptionPlaceholder": "入力エージェントの説明...",

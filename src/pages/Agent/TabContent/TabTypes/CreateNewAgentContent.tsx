@@ -2,7 +2,7 @@ import { PromptConfigForm } from '@memeloop/react-ui/agent';
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
-import type { AgentDefinition } from 'memeloop';
+import type { AgentDefinition, AgentFrameworkConfig } from 'memeloop';
 import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -63,7 +63,6 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   const [isLoading, setIsLoading] = useState(false);
   const [promptSchema, setPromptSchema] = useState<RJSFSchema | null>(null);
   const latestTemporaryAgentDefinitionReference = useRef<AgentDefinition | null>(null);
-  const promptFormContainerReference = useRef<HTMLDivElement | null>(null);
   const temporaryAgentDefinitionIdReference = useRef<string | null>(tab.agentDefId ?? null);
   const previewAgentIdReference = useRef<string | null>(null);
   const [agentDefinitionSaveQueue] = useState(() => createAgentDefinitionSaveQueue(async definition => await window.service.agentDefinition.updateAgentDef(definition)));
@@ -209,35 +208,11 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     };
   }, [agentDefinitionSaveQueue]);
 
-  const syncVisiblePromptFormEdits = () => {
-    const latestTemporaryAgentDefinition = latestTemporaryAgentDefinitionReference.current;
-    if (!latestTemporaryAgentDefinition?.agentFrameworkConfig?.prompts?.length) return latestTemporaryAgentDefinition;
-
-    const promptTextControl = promptFormContainerReference.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-      "[role='tabpanel']:not([hidden]) :is(textarea,input)[id$='_text']:not([readonly])",
-    );
-    const promptText = promptTextControl?.value;
-    if (promptText === undefined) return latestTemporaryAgentDefinition;
-
-    const currentPrompt = latestTemporaryAgentDefinition.agentFrameworkConfig.prompts[0];
-    if (currentPrompt?.text === promptText) return latestTemporaryAgentDefinition;
-
-    const updatedDefinition: AgentDefinition = {
-      ...latestTemporaryAgentDefinition,
-      agentFrameworkConfig: {
-        ...latestTemporaryAgentDefinition.agentFrameworkConfig,
-        prompts: latestTemporaryAgentDefinition.agentFrameworkConfig.prompts.map((prompt, index) => index === 0 ? { ...prompt, text: promptText } : prompt),
-      },
-    };
-    latestTemporaryAgentDefinitionReference.current = updatedDefinition;
-    setTemporaryAgentDefinition(updatedDefinition);
-    return updatedDefinition;
-  };
-
   const handleNext = async () => {
     if (currentStep < STEPS.length - 1) {
-      // Force save before advancing to next step (especially step 3)
-      const latestTemporaryAgentDefinition = syncVisiblePromptFormEdits() ?? latestTemporaryAgentDefinitionReference.current;
+      // PromptConfigForm is controlled: its onChange handler updates this ref
+      // synchronously, so advancing never depends on RJSF's private DOM shape.
+      const latestTemporaryAgentDefinition = latestTemporaryAgentDefinitionReference.current;
       if (latestTemporaryAgentDefinition?.id) {
         try {
           await agentDefinitionSaveQueue.save(latestTemporaryAgentDefinition);
@@ -294,7 +269,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     }
   }, [agentName, tab.id, updateTabData]);
 
-  const handleAgentDefinitionChange = async (updatedDefinition: AgentDefinition) => {
+  const handleAgentDefinitionChange = (updatedDefinition: AgentDefinition) => {
     // Immediately update React state
     latestTemporaryAgentDefinitionReference.current = updatedDefinition;
     setTemporaryAgentDefinition(updatedDefinition);
@@ -434,13 +409,14 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             </Typography>
             {temporaryAgentDefinition && promptSchema
               ? (
-                <Box ref={promptFormContainerReference} sx={{ mt: 2, height: 400, overflow: 'auto' }} data-testid='prompt-config-form'>
+                <Box sx={{ mt: 2, height: 400, overflow: 'auto' }} data-testid='prompt-config-form'>
                   <PromptConfigForm
                     schema={promptSchema}
                     formData={temporaryAgentDefinition.agentFrameworkConfig ?? { prompts: [], plugins: [] }}
-                    onChange={(updatedConfig) => {
-                      void handleAgentDefinitionChange({
-                        ...temporaryAgentDefinition,
+                    onChange={(updatedConfig: AgentFrameworkConfig) => {
+                      const latestDefinition = latestTemporaryAgentDefinitionReference.current ?? temporaryAgentDefinition;
+                      handleAgentDefinitionChange({
+                        ...latestDefinition,
                         agentFrameworkConfig: updatedConfig,
                       });
                     }}

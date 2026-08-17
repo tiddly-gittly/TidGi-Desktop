@@ -53,7 +53,7 @@ Feature: Create New Agent Workflow
     When I click on a "first config tab" element with selector "[data-testid='prompt-config-form'] .MuiTab-root:first-of-type"
     And I should see a "visible tab panel" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
-    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) [data-testid='prompt-array-item-toggle-0']"
     # The canonical builtin profile stores its editable system prompt directly on prompts[0].
     When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
@@ -117,7 +117,7 @@ Feature: Create New Agent Workflow
     When I click on a "first config tab" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTab-root:first-of-type"
     And I should see a "visible tab panel" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
-    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) [data-testid='prompt-array-item-toggle-0']"
     # Click the system prompt text field to focus it for editing
     When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"

@@ -25,6 +25,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 
 import { PageType } from '@/constants/pageTypes';
+import { DND_DRAG_OVERLAY_TEST_ID } from '@/constants/testIds';
 import { getBuildInPageIcon } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageIcon';
 import { getBuildInPageName } from '@/pages/Main/WorkspaceIconAndSelector/getBuildInPageName';
 import { PreferenceSections } from '@services/preferences/interface';
@@ -1231,7 +1232,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         </SortableContext>
         <DragOverlay dropAnimation={null}>
           {(activeWorkspace !== undefined || activeGroup !== undefined) && (
-            <div data-testid='dnd-drag-overlay'>
+            <div data-testid={DND_DRAG_OVERLAY_TEST_ID}>
               {activeWorkspace && (
                 <DragOverlayWorkspaceItem
                   workspace={activeWorkspace}

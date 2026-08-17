@@ -4,7 +4,7 @@
  * Adapted for electron forge https://github.com/electron-userland/electron-forge/issues/2248
  */
 import fs from 'fs-extra';
-import { createRequire } from 'node:module';
+import { findPackageJSON } from 'node:module';
 import path from 'path';
 
 // Packages whose absence makes the app non-functional at runtime.
@@ -23,27 +23,51 @@ const CRITICAL_PACKAGES = [
 interface PackageJsonWithDependencies {
   dependencies?: Record<string, string>;
   name?: string;
+  optionalDependencies?: Record<string, string>;
 }
 
+const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/i;
+
+class PackageNotFoundError extends Error {}
+
+/**
+ * Resolve a package root with Node's package-aware resolver.
+ *
+ * `findPackageJSON` understands scoped packages, package `exports`, pnpm's
+ * nested layout, and platform path rules. Passing the parent package.json as
+ * the base keeps resolution anchored to the package that declares the
+ * dependency instead of assuming that every dependency was hoisted.
+ */
 export function resolvePackageDirectory(packageName: string, fromFolder: string): string {
-  const resolver = createRequire(path.join(fromFolder, 'package.json'));
-  let current: string;
+  if (!PACKAGE_NAME_PATTERN.test(packageName)) {
+    throw new Error(`Invalid package name in runtime dependency closure: ${packageName}`);
+  }
+
+  let packageJsonPath: string | undefined;
   try {
-    current = path.dirname(resolver.resolve(`${packageName}/package.json`));
-  } catch {
-    current = path.dirname(resolver.resolve(packageName));
-  }
-  while (true) {
-    const packageJsonPath = path.join(current, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-      const packageJson = fs.readJsonSync(packageJsonPath) as PackageJsonWithDependencies;
-      if (packageJson.name === packageName) return current;
+    packageJsonPath = findPackageJSON(packageName, path.join(fromFolder, 'package.json'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
+      throw new PackageNotFoundError(
+        `Could not resolve package directory for ${packageName} from ${fromFolder}`,
+        { cause: error },
+      );
     }
-    const parent = path.dirname(current);
-    if (parent === current) break;
-    current = parent;
+    throw error;
   }
-  throw new Error(`Could not resolve package directory for ${packageName} from ${fromFolder}`);
+  if (packageJsonPath === undefined) {
+    throw new PackageNotFoundError(
+      `Could not resolve package directory for ${packageName} from ${fromFolder}`,
+    );
+  }
+
+  const packageJson = fs.readJsonSync(packageJsonPath) as PackageJsonWithDependencies;
+  if (packageJson.name !== packageName) {
+    throw new Error(
+      `Node resolved ${packageName} to a package manifest named ${packageJson.name ?? '<unnamed>'}`,
+    );
+  }
+  return path.dirname(packageJsonPath);
 }
 
 function copyWithTracking(
@@ -62,6 +86,18 @@ function copyWithTracking(
   }
 }
 
+/**
+ * Restore one Vite-externalized package and its installed runtime dependency
+ * closure after Electron Packager has pruned the staging directory.
+ *
+ * A full `pnpm deploy` would stage every production dependency and duplicate
+ * Forge/Vite's normal packaging work. This targeted traversal instead follows
+ * Node's resolver from each parent package and copies only the externals that
+ * cannot be bundled safely. Regular dependencies are required. Installed
+ * optional dependencies are copied and become required once selected, while
+ * optional dependencies that are absent for the current OS/CPU are skipped.
+ * The `copiedPackages` set also breaks cycles and avoids repeated copies.
+ */
 export function copyPackageDependencyClosure(
   packageName: string,
   resolutionBaseFolder: string,
@@ -69,20 +105,22 @@ export function copyPackageDependencyClosure(
   criticalPackage: string,
   failures: Set<string>,
   copiedPackages: Set<string> = new Set(),
+  optional = false,
 ): void {
   if (copiedPackages.has(packageName)) return;
-  copiedPackages.add(packageName);
 
   const packageSegments = packageName.split('/');
   let source: string;
   try {
     source = resolvePackageDirectory(packageName, resolutionBaseFolder);
   } catch (error) {
+    if (optional && error instanceof PackageNotFoundError) return;
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Error resolving ${packageName}: ${errorMessage}`);
     failures.add(criticalPackage);
     return;
   }
+  copiedPackages.add(packageName);
   const destination = path.resolve(destinationNodeModulesFolder, ...packageSegments);
   copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
 
@@ -96,7 +134,16 @@ export function copyPackageDependencyClosure(
     return;
   }
 
+  const runtimeDependencies = new Map<string, { optional: boolean }>();
   for (const dependencyName of Object.keys(packageJson.dependencies ?? {})) {
+    runtimeDependencies.set(dependencyName, { optional: false });
+  }
+  for (const dependencyName of Object.keys(packageJson.optionalDependencies ?? {})) {
+    // npm treats an entry present in both maps as optional.
+    runtimeDependencies.set(dependencyName, { optional: true });
+  }
+
+  for (const [dependencyName, dependency] of runtimeDependencies) {
     copyPackageDependencyClosure(
       dependencyName,
       source,
@@ -104,6 +151,7 @@ export function copyPackageDependencyClosure(
       criticalPackage,
       failures,
       copiedPackages,
+      dependency.optional,
     );
   }
 }

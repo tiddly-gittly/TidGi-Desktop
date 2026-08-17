@@ -1,6 +1,7 @@
 import { DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 
+import { DND_DRAG_OVERLAY_TEST_ID } from '../../src/constants/testIds';
 import type { IWorkspaceGroup } from '../../src/services/workspaces/interface';
 // Pull in renderer window type declarations so Playwright page.evaluate callbacks
 // can access window.service with proper typing.
@@ -14,6 +15,8 @@ const BACKOFF_OPTIONS = {
   maxDelay: 1000,
   timeMultiple: 2,
 };
+
+const DND_DRAG_OVERLAY_SELECTOR = `[data-testid="${DND_DRAG_OVERLAY_TEST_ID}"]`;
 
 interface ITestWorkspace {
   id: string;
@@ -224,7 +227,7 @@ async function dragLocatorToCoordinates(
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 10 });
 
   // Wait for dnd-kit to acknowledge the drag — the DragOverlay portal appears in the DOM
-  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+  await world.currentWindow.locator(DND_DRAG_OVERLAY_SELECTOR).waitFor({ state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
   // Compute target center late, after drag activation, so coordinates reflect
   // the current layout.
@@ -255,7 +258,7 @@ async function dragLocatorToCoordinates(
   }
 
   await world.currentWindow.mouse.up();
-  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({
+  await world.currentWindow.locator(DND_DRAG_OVERLAY_SELECTOR).waitFor({
     state: 'hidden',
     timeout: PLAYWRIGHT_SHORT_TIMEOUT,
   });
@@ -289,7 +292,7 @@ async function dragLocatorAndHoldAtCoordinates(
   await world.currentWindow.mouse.down();
   await world.currentWindow.mouse.move(startX + 12, startY + 12, { steps: 10 });
 
-  await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').waitFor({ state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
+  await world.currentWindow.locator(DND_DRAG_OVERLAY_SELECTOR).waitFor({ state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
   let { targetX, targetY } = await resolveTargetCoordinates();
   await world.currentWindow.mouse.move(targetX, targetY, { steps: 10 });
@@ -412,7 +415,7 @@ async function buildDragIntentError(
     sourceRect = await world.currentWindow.locator(sourceSelector).boundingBox();
   } catch { /* ignore */ }
   try {
-    hasOverlay = (await world.currentWindow.locator('[data-testid="dnd-drag-overlay"]').count()) > 0;
+    hasOverlay = (await world.currentWindow.locator(DND_DRAG_OVERLAY_SELECTOR).count()) > 0;
   } catch { /* ignore */ }
   try {
     const elementTag = await world.currentWindow.evaluate(({ x, y }: { x: number; y: number }) => {
