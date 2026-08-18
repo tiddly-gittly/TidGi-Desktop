@@ -80,7 +80,7 @@ minimumReleaseAgeExclude:
   - ai@7.0.37
   - fs-extra@11.4.0
   - inversify@8.2.3
-  - '@memeloop/libp2p@0.2.2'
-  - '@memeloop/react-ui@0.1.0 || 0.1.1 || 0.1.2'
-  - memeloop@0.2.2 || 0.2.3 || 0.2.4
+  - '@memeloop/libp2p@0.2.2 || 0.2.3'
+  - '@memeloop/react-ui@0.1.0 || 0.1.1 || 0.1.2 || 0.1.3'
+  - memeloop@0.2.2 || 0.2.3 || 0.2.4 || 0.2.5
   - multiformats@14.0.5
