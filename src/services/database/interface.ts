@@ -15,6 +15,7 @@ export interface IAnalyticsSecretSettings {
    * grouped under the same user regardless of IP or User-Agent changes.
    */
   deviceId?: string;
+  analyticsDefaultsMigrationVersion?: number;
 }
 
 export interface ISettingFile {

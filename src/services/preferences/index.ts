@@ -53,8 +53,45 @@ export class Preference implements IPreferenceService {
     const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
     let preferencesFromDisk = databaseService.getSetting(`preferences`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
+    preferencesFromDisk = this.migrateLegacyAnalyticsDefault(preferencesFromDisk, databaseService);
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
   };
+
+  /**
+   * Re-enable analytics for installs that inherited the old default-off value
+   * without the user explicitly opting out after the first-run notice.
+   */
+  private migrateLegacyAnalyticsDefault(
+    preferencesFromDisk: Partial<IPreferences>,
+    databaseService: IDatabaseService,
+  ): Partial<IPreferences> {
+    const migrationVersion = 1;
+    const analyticsSecrets = databaseService.getSetting('analyticsSecrets') ?? {};
+    const storedVersion = analyticsSecrets.analyticsDefaultsMigrationVersion ?? 0;
+    if (storedVersion >= migrationVersion) {
+      return preferencesFromDisk;
+    }
+
+    const migrated = { ...preferencesFromDisk };
+    if (
+      migrated.analyticsEnabled === false &&
+      (migrated.analyticsHost === undefined || migrated.analyticsHost === defaultPreferences.analyticsHost) &&
+      (migrated.analyticsSiteId === undefined || migrated.analyticsSiteId === defaultPreferences.analyticsSiteId)
+    ) {
+      migrated.analyticsEnabled = true;
+    }
+
+    databaseService.setSetting('analyticsSecrets', {
+      ...analyticsSecrets,
+      analyticsDefaultsMigrationVersion: migrationVersion,
+    });
+    if (migrated.analyticsEnabled !== preferencesFromDisk.analyticsEnabled) {
+      const existingPreferences = databaseService.getSetting('preferences') ?? defaultPreferences;
+      databaseService.setSetting('preferences', { ...existingPreferences, ...migrated });
+    }
+
+    return migrated;
+  }
 
   /**
    * Pure function that make sure loaded or input preference are good, reset some bad values in preference
