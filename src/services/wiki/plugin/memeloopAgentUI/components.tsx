@@ -5,6 +5,7 @@ import { createDesktopAgentInstanceClient } from '@/pages/Agent/adapters/Desktop
 import { createDesktopConversationTimelineClient } from '@/pages/Agent/adapters/DesktopConversationTimelineClient';
 import { createDesktopMessageDetailLoader } from '@/pages/Agent/adapters/DesktopMessageDetailLoader';
 import { createDesktopPromptPreviewController } from '@/pages/Agent/adapters/DesktopPromptPreviewController';
+import { createDesktopVisibleAttachmentLoader } from '@/pages/Agent/adapters/DesktopVisibleAttachmentLoader';
 import { useExecutionTargets } from '@/pages/Agent/adapters/hooks/useExecutionTargets';
 import { localizeAgentRunError } from '@/pages/Agent/adapters/localizeAgentRunError';
 import { ScheduledWakeupEditor } from '@/pages/Agent/TabContent/TabTypes/ScheduledWakeupEditor';
@@ -413,6 +414,7 @@ function BoundMemeLoopWikiChat({
   const translateAgentError = useMemo(() => i18n.getFixedT(locale, 'agent'), [i18n, locale]);
   const labels = getWikiAgentLabels(language);
   const loadMessageDetail = useMemo(() => createDesktopMessageDetailLoader(), []);
+  const loadVisibleAttachments = useMemo(() => createDesktopVisibleAttachmentLoader(), []);
   const adapterOptions = useMemo(() => ({
     conversationId,
     timelineController,
@@ -441,6 +443,7 @@ function BoundMemeLoopWikiChat({
 
   const adapter = useMemo((): WebMemeLoopChatAdapter => ({
     ...baseAdapter,
+    loadVisibleAttachments,
     activeExecutionTargetId: targets.activeExecutionTargetId,
     error: targets.error ?? baseAdapter.error,
     executionTargets: targets.executionTargets,
@@ -459,7 +462,7 @@ function BoundMemeLoopWikiChat({
     resolveAskQuestion: async (questionId, answer) => {
       await window.service.agentInstance.resolveAskQuestion(conversationId, questionId, answer);
     },
-  }), [baseAdapter, clearAttachmentsForRevision, conversationId, targets]);
+  }), [baseAdapter, clearAttachmentsForRevision, conversationId, loadVisibleAttachments, targets]);
 
   const timelineTimestampFormatter = useMemo(() =>
     new Intl.DateTimeFormat(locale, {
@@ -595,6 +598,7 @@ function BoundMemeLoopWikiChat({
       }}
       messageLabels={{
         attachmentAlt: labels.attachment,
+        attachmentLoadFailed: labels.attachmentLoadFailed,
         noDetails: labels.noDetails,
         loadDetails: labels.loadDetails,
         reloadDetails: labels.reloadDetails,

@@ -129,6 +129,7 @@
     },
     "Message": {
       "AttachmentAlt": "附件",
+      "AttachmentLoadFailed": "无法加载附件预览。",
       "NoDetails": "没有可用的详细内容。",
       "LoadDetails": "加载详细内容",
       "HideDetails": "隐藏详细内容",

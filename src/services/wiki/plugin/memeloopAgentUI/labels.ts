@@ -57,6 +57,7 @@ export interface WikiAgentLabels {
   copyAll: string;
   user: string;
   attachment: string;
+  attachmentLoadFailed: string;
   noDetails: string;
   loadDetails: string;
   reloadDetails: string;
@@ -152,6 +153,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     copyAll: 'Copy all',
     user: 'User',
     attachment: 'Attachment',
+    attachmentLoadFailed: 'Attachment preview could not be loaded.',
     noDetails: 'No details available.',
     loadDetails: 'Load details',
     reloadDetails: 'Reload details',
@@ -227,6 +229,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     copyAll: 'Tout copier',
     user: 'Utilisateur',
     attachment: 'Pièce jointe',
+    attachmentLoadFailed: 'Impossible de charger l’aperçu de la pièce jointe.',
     noDetails: 'Aucun détail disponible.',
     loadDetails: 'Charger les détails',
     reloadDetails: 'Recharger les détails',
@@ -302,6 +305,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     copyAll: 'すべてコピー',
     user: 'ユーザー',
     attachment: '添付ファイル',
+    attachmentLoadFailed: '添付ファイルのプレビューを読み込めませんでした。',
     noDetails: '詳細はありません。',
     loadDetails: '詳細を読み込む',
     reloadDetails: '詳細を再読み込み',
@@ -377,6 +381,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     copyAll: 'Копировать всё',
     user: 'Пользователь',
     attachment: 'Вложение',
+    attachmentLoadFailed: 'Не удалось загрузить предварительный просмотр вложения.',
     noDetails: 'Подробности недоступны.',
     loadDetails: 'Загрузить подробности',
     reloadDetails: 'Перезагрузить подробности',
@@ -452,6 +457,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     copyAll: '复制全部',
     user: '用户',
     attachment: '附件',
+    attachmentLoadFailed: '无法加载附件预览。',
     noDetails: '没有可用详情。',
     loadDetails: '加载详情',
     reloadDetails: '重新加载详情',
@@ -527,6 +533,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     copyAll: '全部複製',
     user: '使用者',
     attachment: '附件',
+    attachmentLoadFailed: '無法載入附件預覽。',
     noDetails: '沒有可用詳情。',
     loadDetails: '載入詳情',
     reloadDetails: '重新載入詳情',

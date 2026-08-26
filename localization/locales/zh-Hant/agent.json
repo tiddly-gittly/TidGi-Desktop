@@ -126,6 +126,7 @@
     },
     "Message": {
       "AttachmentAlt": "附件",
+      "AttachmentLoadFailed": "無法載入附件預覽。",
       "NoDetails": "沒有可用的詳細內容。",
       "LoadDetails": "載入詳細內容",
       "HideDetails": "隱藏詳細內容",

@@ -127,6 +127,7 @@
     },
     "Message": {
       "AttachmentAlt": "添付ファイル",
+      "AttachmentLoadFailed": "添付ファイルのプレビューを読み込めませんでした。",
       "NoDetails": "詳細はありません。",
       "LoadDetails": "詳細を読み込む",
       "HideDetails": "詳細を隠す",

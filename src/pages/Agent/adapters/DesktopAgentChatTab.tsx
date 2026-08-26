@@ -30,6 +30,7 @@ import { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
 import { createDesktopConversationTimelineClient } from './DesktopConversationTimelineClient';
 import { createDesktopMessageDetailLoader } from './DesktopMessageDetailLoader';
 import { createDesktopPromptPreviewController } from './DesktopPromptPreviewController';
+import { createDesktopVisibleAttachmentLoader } from './DesktopVisibleAttachmentLoader';
 import { useExecutionTargets } from './hooks/useExecutionTargets';
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { localizeAgentRunError } from './localizeAgentRunError';
@@ -168,6 +169,7 @@ function DesktopAgentChatView({
     });
   }, [snapshot.error, tab.agentId]);
   const detailLoader = useMemo(createDesktopMessageDetailLoader, []);
+  const visibleAttachmentLoader = useMemo(createDesktopVisibleAttachmentLoader, []);
   const promptPreviewController = useMemo(createDesktopPromptPreviewController, [tab.agentId]);
   const baseAdapter = useAgentSessionChatAdapter({
     conversationId: tab.agentId,
@@ -221,6 +223,7 @@ function DesktopAgentChatView({
 
   const adapter = useMemo((): WebMemeLoopChatAdapter => ({
     ...baseAdapter,
+    loadVisibleAttachments: visibleAttachmentLoader,
     executionTargets: targets.executionTargets,
     activeExecutionTargetId: targets.activeExecutionTargetId,
     setExecutionTarget: targets.setExecutionTarget,
@@ -235,7 +238,7 @@ function DesktopAgentChatView({
     deleteTurn: targets.deleteTurn,
     retryTurn: targets.retryTurn,
     resolveAskQuestion: (questionId, answer) => resolveDesktopAskQuestion(tab.agentId, questionId, answer),
-  }), [baseAdapter, clearAttachments, tab.agentId, targets]);
+  }), [baseAdapter, clearAttachments, tab.agentId, targets, visibleAttachmentLoader]);
 
   const updateTabData = useTabStore(useShallow(state => state.updateTabData));
   const handleSwitchAgent = useCallback(async (agentDefinitionId: string) => {
@@ -389,6 +392,7 @@ function DesktopAgentChatView({
       }}
       messageLabels={{
         attachmentAlt: t('Chat.Message.AttachmentAlt'),
+        attachmentLoadFailed: t('Chat.Message.AttachmentLoadFailed'),
         noDetails: t('Chat.Message.NoDetails'),
         loadDetails: t('Chat.Message.LoadDetails'),
         hideDetails: t('Chat.Message.HideDetails'),

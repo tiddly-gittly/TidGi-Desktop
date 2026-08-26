@@ -127,6 +127,7 @@
     },
     "Message": {
       "AttachmentAlt": "Pièce jointe",
+      "AttachmentLoadFailed": "Impossible de charger l’aperçu de la pièce jointe.",
       "NoDetails": "Aucun détail disponible.",
       "LoadDetails": "Charger les détails",
       "HideDetails": "Masquer les détails",

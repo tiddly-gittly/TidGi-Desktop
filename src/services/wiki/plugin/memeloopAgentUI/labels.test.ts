@@ -28,6 +28,8 @@ describe('formatTimelineTurn', () => {
     expect(getWikiAgentLabels('ru').moreResponses(1)).toContain('1 ответ ');
     expect(getWikiAgentLabels('ru').moreResponses(3)).toContain('3 ответа ');
     expect(getWikiAgentLabels('ru').moreResponses(12)).toContain('12 ответов ');
+    expect(getWikiAgentLabels('en').attachmentLoadFailed).toBe('Attachment preview could not be loaded.');
+    expect(getWikiAgentLabels('zh-Hans').attachmentLoadFailed).toBe('无法加载附件预览。');
     expect(resolveWikiAgentLocale('$:/languages/zh-Hant')).toBe('zh-Hant');
     expect(resolveWikiAgentLocale('unknown')).toBe('en');
   });

@@ -45,28 +45,38 @@ async function loadCanonicalMessageDetail(
   projection: ChatMessage,
   request: MemeLoopMessageDetailRequest,
 ): Promise<MemeLoopMessageDetailPage | null> {
-  request.signal.throwIfAborted();
+  const canonical = await loadDesktopCanonicalMessage(projection, request.signal);
+  if (!canonical) return null;
+  return boundedCanonicalDetailPage(canonical, projection, request.maxBytes);
+}
+
+/** Recover one exact authoritative message without retaining it in the resident list. */
+export async function loadDesktopCanonicalMessage(
+  projection: ChatMessage,
+  signal: AbortSignal,
+): Promise<ChatMessage | null> {
+  signal.throwIfAborted();
   const firstIdentity = await window.service.agentInstance.getAgentMessageIdentity(
     projection.conversationId,
     projection.messageId,
   );
-  request.signal.throwIfAborted();
+  signal.throwIfAborted();
   if (!firstIdentity) return null;
-  assertSameIdentity(projection, firstIdentity);
+  assertDesktopMessageIdentity(projection, firstIdentity);
 
   const decoder = new TextDecoder('utf-8', { fatal: true });
   let json = '';
   let offset = 0;
   let totalBytes: number | undefined;
   for (;;) {
-    request.signal.throwIfAborted();
+    signal.throwIfAborted();
     const range = await window.service.agentInstance.readAgentMessageDetailRange(
       projection.conversationId,
       projection.messageId,
       offset,
       DETAIL_RANGE_BYTES,
     );
-    request.signal.throwIfAborted();
+    signal.throwIfAborted();
     if (!range.found) {
       if (offset === 0) return null;
       throw new Error('message detail was removed while loading');
@@ -92,17 +102,17 @@ async function loadCanonicalMessageDetail(
     throw new Error('invalid canonical message detail JSON', { cause: error });
   }
   assertCanonicalChatMessageProjection(canonical, projection.conversationId);
-  assertSameIdentity(canonical, firstIdentity);
+  assertDesktopMessageIdentity(canonical, firstIdentity);
   const finalIdentity = await window.service.agentInstance.getAgentMessageIdentity(
     projection.conversationId,
     projection.messageId,
   );
-  request.signal.throwIfAborted();
+  signal.throwIfAborted();
   if (!finalIdentity || !sameIdentity(firstIdentity, finalIdentity)) {
     throw new Error('message detail identity changed while loading');
   }
 
-  return boundedCanonicalDetailPage(canonical, projection, request.maxBytes);
+  return canonical;
 }
 
 function boundedCanonicalDetailPage(
@@ -171,7 +181,7 @@ function isUint8ArrayView(value: unknown): value is Uint8Array {
   return ArrayBuffer.isView(value) && Object.prototype.toString.call(value) === '[object Uint8Array]';
 }
 
-function assertSameIdentity(message: ChatMessage, identity: ConversationMessageIdentity): void {
+export function assertDesktopMessageIdentity(message: ChatMessage, identity: ConversationMessageIdentity): void {
   if (
     message.messageId !== identity.messageId || message.timestamp !== identity.timestamp ||
     message.lamportClock !== identity.lamportClock || message.originNodeId !== identity.originNodeId
