@@ -70,6 +70,8 @@
   },
   "Chat": {
     "Cancel": "取消",
+    "GenericError": "智能体未能完成此请求，请重试。",
+    "OperationError": "对话操作失败，请重试。",
     "ExecutionTarget": {
       "NoActiveAgent": "当前没有可用的智能体。",
       "Platform": {

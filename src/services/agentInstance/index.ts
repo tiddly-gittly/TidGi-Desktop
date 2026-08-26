@@ -79,6 +79,7 @@ import {
   DesktopAttachmentUploadStore,
   type WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadStore';
+import { DesktopAgentExecutionPortError } from './executionPortErrors';
 import type { DesktopPromptPreviewPreparedExecution, DesktopPromptPreviewPrepareInput } from './promptPreview';
 import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
 import { includeConversationHistoryInPreview } from './runtime/promptPreviewMessages';
@@ -677,8 +678,16 @@ export class AgentInstanceService implements IAgentInstanceService {
     request: AgentDeviceRpcRetryTurnRequest,
   ): Promise<AgentDeviceRpcRetryTurnResponse> {
     this.ensureRepositories();
+    const subjectActive = this.conversationSubjects.has(request.conversationId);
+    const previousState = subjectActive ? await this.getConversationState(request.conversationId) : { revision: '0', totalMessages: 0 };
     const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
     const result = await (await this.getDurableAgentRuntime()).retryTurn({ ...request, requestPeerId });
+    if (subjectActive) {
+      // Core's atomic retry writes directly through the run-state store, so it
+      // deliberately bypasses appendLocalConversationEventsAtomic. Publish one
+      // reset edge for the tombstone + replacement root before later run output.
+      await this.publishConversationInvalidation(request.conversationId, previousState, 'reset');
+    }
     return {
       ok: true,
       ...result.handle,
@@ -1066,6 +1075,15 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (!agent || agent.agentDefId !== request.definitionId) {
       throw new Error('agent conversation definition mismatch');
     }
+    const definition = await this.agentDefinitionService.getAgentDef(request.definitionId);
+    if (!definition) throw new Error('agent definition not found');
+    const instanceModel = agent.modelConfig;
+    if (instanceModel === undefined && definition.modelConfig === undefined) {
+      const globalModel = (await this.externalAPIService.getAIConfig()).default;
+      if (!globalModel?.provider || !globalModel.model) {
+        throw new DesktopAgentExecutionPortError('MODEL_SELECTION_NOT_CONFIGURED');
+      }
+    }
     const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
     if (request.attachment) {
       await this.assertAgentAttachmentAuthorized(request.conversationId, request.attachment.reference, false);
@@ -1170,14 +1188,6 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async cancelAgent(agentId: string): Promise<void> {
     // Stop heartbeat on cancel
     stopHeartbeat(agentId);
-
-    // Cancel any pending ask-question promises so the agent loop can exit
-    try {
-      const { cancelPendingQuestions } = await import('./tools/askQuestionPending');
-      cancelPendingQuestions(agentId);
-    } catch {
-      // ignore if module not loaded
-    }
 
     const durableRunIds = [...(this.activeDurableRunIds.get(agentId) ?? [])];
     await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
@@ -1306,13 +1316,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     resolveApproval(approvalId, decision);
   }
 
-  public resolveAskQuestion(agentId: string, questionId: string, answer: string): void {
-    // Resolve ask-question by injecting the answer as a tool result and resuming the agent loop.
-    // This keeps the answer in the same turn (no new user message).
-    void this.resolveAskQuestionAsync(agentId, questionId, answer);
-  }
-
-  private async resolveAskQuestionAsync(agentId: string, questionId: string, answer: string): Promise<void> {
+  public async resolveAskQuestion(agentId: string, questionId: string, answer: string): Promise<void> {
     try {
       await this.executeLocalAgentMessage(agentId, { text: answer }, {
         source: 'ask-question',
@@ -1323,6 +1327,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       logger.debug('Ask-question resolved via durable local run', { questionId, agentId });
     } catch (error) {
       logger.error('Failed to resolve ask-question', { questionId, error });
+      throw error;
     }
   }
 

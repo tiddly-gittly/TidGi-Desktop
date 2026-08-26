@@ -69,6 +69,8 @@
   },
   "Chat": {
     "Cancel": "Annuler",
+    "GenericError": "L’agent n’a pas pu terminer cette demande. Veuillez réessayer.",
+    "OperationError": "L’opération de discussion a échoué. Veuillez réessayer.",
     "ExecutionTarget": {
       "NoActiveAgent": "Aucun agent actif n’est disponible.",
       "Platform": {

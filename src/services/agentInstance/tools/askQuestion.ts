@@ -83,9 +83,9 @@ export const askQuestionDefinition = defineDesktopTool({
       duration: 3,
     });
 
-    // Signal the framework to set status to 'input-required' so the UI can render the question.
-    // When the user answers, resolveAskQuestion() will inject the answer as a tool result
-    // and resume the agent loop in the same turn (no new user message).
+    // Signal input-required so the UI can render the question. The host resumes
+    // through a separately identified durable answer turn; this completed turn
+    // remains immutable and can be replayed across restarts.
     yieldToHuman();
     logger.debug('Ask question: yielding to user for answer', { questionId });
   },

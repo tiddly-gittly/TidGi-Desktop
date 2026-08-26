@@ -69,6 +69,8 @@
   },
   "Chat": {
     "Cancel": "取消",
+    "GenericError": "智慧代理未能完成此請求，請重試。",
+    "OperationError": "對話操作失敗，請重試。",
     "ExecutionTarget": {
       "NoActiveAgent": "目前沒有可用的智慧代理。",
       "Platform": {

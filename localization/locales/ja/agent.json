@@ -69,6 +69,8 @@
   },
   "Chat": {
     "Cancel": "キャンセル",
+    "GenericError": "エージェントはこのリクエストを完了できませんでした。もう一度お試しください。",
+    "OperationError": "チャット操作に失敗しました。もう一度お試しください。",
     "ExecutionTarget": {
       "NoActiveAgent": "利用可能なエージェントがありません。",
       "Platform": {

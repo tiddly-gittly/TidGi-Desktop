@@ -104,6 +104,11 @@ async function openExternalApiSettings(): Promise<void> {
   await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
 }
 
+/** Host bridge used by the shared ask-question content renderer. */
+export async function resolveDesktopAskQuestion(agentId: string, questionId: string, answer: string): Promise<void> {
+  await window.service.agentInstance.resolveAskQuestion(agentId, questionId, answer);
+}
+
 type ActiveChatTab = IChatTab & { agentId: string };
 
 function DesktopAgentChatSession({ tab, isSplitView }: { tab: ActiveChatTab; isSplitView?: boolean }) {
@@ -229,7 +234,8 @@ function DesktopAgentChatView({
     },
     deleteTurn: targets.deleteTurn,
     retryTurn: targets.retryTurn,
-  }), [baseAdapter, clearAttachments, targets]);
+    resolveAskQuestion: (questionId, answer) => resolveDesktopAskQuestion(tab.agentId, questionId, answer),
+  }), [baseAdapter, clearAttachments, tab.agentId, targets]);
 
   const updateTabData = useTabStore(useShallow(state => state.updateTabData));
   const handleSwitchAgent = useCallback(async (agentDefinitionId: string) => {
@@ -248,7 +254,7 @@ function DesktopAgentChatView({
       : extractAgentRunError(value.metadata?.agentRunError);
     if (!runError) return null;
     return {
-      title: t('Chat.Message.Error'),
+      title: runError.settingTarget === undefined ? t('Chat.Message.Error') : t('Chat.ConfigError.Title'),
       message: localizeAgentRunError(runError, t),
       diagnosticId: runError.diagnosticId,
       settingTarget: runError.settingTarget,

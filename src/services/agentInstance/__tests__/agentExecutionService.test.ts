@@ -14,7 +14,16 @@ describe('AgentInstanceService durable execution IPC', () => {
     const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
     const mutable = service as unknown as Record<string, unknown>;
     mutable.deviceNetworkService = { getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }) };
-    mutable.getAgentMetadata = vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1' });
+    mutable.agentDefinitionService = {
+      getAgentDef: vi.fn().mockResolvedValue({
+        id: 'definition-1',
+        modelConfig: { providerId: 'cpa', modelId: 'model-1' },
+      }),
+    };
+    mutable.getAgentMetadata = vi.fn().mockResolvedValue({
+      id: 'conversation-1',
+      agentDefId: 'definition-1',
+    });
     mutable.getDurableAgentRuntime = vi.fn().mockResolvedValue({ sendMessage });
 
     await expect(service.executeAgentRun({
@@ -55,6 +64,87 @@ describe('AgentInstanceService durable execution IPC', () => {
       requestId: 'request-1',
       turnId: 'turn-1',
     })).rejects.toThrow('agent conversation definition mismatch');
+  });
+
+  it('rejects a missing model selection with one stable IPC-safe code before accepting a run', async () => {
+    const sendMessage = vi.fn();
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    const mutable = service as unknown as Record<string, unknown>;
+    mutable.agentDefinitionService = { getAgentDef: vi.fn().mockResolvedValue({ id: 'definition-1' }) };
+    mutable.externalAPIService = { getAIConfig: vi.fn().mockResolvedValue({ default: undefined }) };
+    mutable.getAgentMetadata = vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1' });
+    mutable.getDurableAgentRuntime = vi.fn().mockResolvedValue({ sendMessage });
+
+    await expect(service.executeAgentRun({
+      conversationId: 'conversation-1',
+      definitionId: 'definition-1',
+      message: 'hello',
+      requestId: 'request-1',
+      turnId: 'turn-1',
+    })).rejects.toEqual(expect.objectContaining({
+      code: 'MODEL_SELECTION_NOT_CONFIGURED',
+      name: 'DesktopAgentExecutionPortError',
+    }));
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('awaits an ask-question answer turn and propagates its terminal failure to the UI', async () => {
+    const terminalFailure = new Error('answer run failed');
+    const executeLocalAgentMessage = vi.fn().mockRejectedValue(terminalFailure);
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    Object.assign(service as unknown as Record<string, unknown>, { executeLocalAgentMessage });
+
+    await expect(service.resolveAskQuestion('conversation-1', 'question-1', 'Approach A')).rejects.toBe(terminalFailure);
+    expect(executeLocalAgentMessage).toHaveBeenCalledWith(
+      'conversation-1',
+      { text: 'Approach A' },
+      {
+        source: 'ask-question',
+        requestId: 'ask-question:question-1:request',
+        turnId: 'ask-question:question-1:turn',
+        provenance: { questionId: 'question-1' },
+      },
+    );
+  });
+
+  it('publishes one reset invalidation for the atomic retry pair', async () => {
+    const retryResult = {
+      handle: {
+        runId: 'run-retry',
+        conversationId: 'conversation-1',
+        turnId: 'replacement-turn',
+        requestId: 'retry-request',
+        state: 'accepted' as const,
+      },
+      tombstone: { kind: 'tombstone' },
+      userEvent: { kind: 'message' },
+    };
+    const retryTurn = vi.fn().mockResolvedValue(retryResult);
+    const publishConversationInvalidation = vi.fn().mockResolvedValue(undefined);
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    Object.assign(service as unknown as Record<string, unknown>, {
+      agentInstanceRepository: {},
+      agentMessageRepository: {},
+      remoteScheduledTaskProjectionRepository: {},
+      conversationSubjects: new Map([['conversation-1', {}]]),
+      deviceNetworkService: { getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }) },
+      getConversationState: vi.fn().mockResolvedValue({ revision: '4', totalMessages: 2 }),
+      getDurableAgentRuntime: vi.fn().mockResolvedValue({ retryTurn }),
+      publishConversationInvalidation,
+    });
+
+    await expect(service.retryConversationTurn({
+      conversationId: 'conversation-1',
+      definitionId: 'definition-1',
+      newTurnId: 'replacement-turn',
+      requestId: 'retry-request',
+      turnId: 'source-turn',
+    })).resolves.toEqual({ ok: true, ...retryResult.handle, tombstone: retryResult.tombstone, userEvent: retryResult.userEvent });
+    expect(publishConversationInvalidation).toHaveBeenCalledWith(
+      'conversation-1',
+      { revision: '4', totalMessages: 2 },
+      'reset',
+    );
   });
 
   it('executes background work through a stable durable payload without volatile timestamps', async () => {

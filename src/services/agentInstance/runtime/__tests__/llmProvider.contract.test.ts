@@ -1,6 +1,7 @@
-import type { PortableLlmRequest, PortableLlmStreamPart } from 'memeloop';
+import { extractAgentRunError, type PortableLlmRequest, type PortableLlmStreamPart } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
+import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from '@services/externalAPI/errors';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { MemeLoopDesktopLLMProvider } from '../llmProvider';
 
@@ -63,5 +64,49 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
       }
     }).rejects.toMatchObject({ name: 'AgentRunFailure' });
     expect(generatePortableLlm).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      createError: () => new MissingAPIKeyError('cpa'),
+      code: 'PROVIDER_AUTH_MISSING',
+      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'apiKey' },
+    },
+    {
+      createError: () => new MissingBaseURLError('cpa'),
+      code: 'PROVIDER_CONFIGURATION_MISSING',
+      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'baseUrl' },
+    },
+    {
+      createError: () => new AuthenticationError('cpa'),
+      code: 'PROVIDER_AUTH_MISSING',
+      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'apiKey' },
+    },
+  ])('turns provider configuration failures into actionable $code run errors', async ({ createError, code, settingTarget }) => {
+    const generatePortableLlm = vi.fn(async function*() {
+      yield { type: 'text-delta' as const, id: 'partial', text: '' };
+      throw createError();
+    });
+    const provider = new MemeLoopDesktopLLMProvider({
+      providerId: 'cpa',
+      externalAPIService: { generatePortableLlm } as unknown as IExternalAPIService,
+    });
+
+    let received: unknown;
+    try {
+      for await (const _part of provider.chat(request()) as AsyncIterable<PortableLlmStreamPart>) {
+        // The provider fails before yielding.
+      }
+    } catch (error) {
+      received = error;
+    }
+
+    expect(extractAgentRunError(received)).toEqual(expect.objectContaining({
+      code,
+      retryable: false,
+      providerId: 'cpa',
+      modelId: 'logical-model',
+      settingTarget,
+    }));
   });
 });

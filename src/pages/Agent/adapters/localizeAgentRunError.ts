@@ -11,6 +11,11 @@ type ExtendedLocalizationParameters = NonNullable<AgentRunError['localizedParams
 
 /** Keep the base error readable when optional progress metadata is absent. */
 export function localizeAgentRunError(error: AgentRunError, t: Translate): string {
+  if (
+    error.code === 'PROVIDER_CONFIGURATION_MISSING' &&
+    error.settingTarget?.kind === 'runtime' &&
+    error.settingTarget.section === 'agent'
+  ) return t('Chat.ConfigError.NoDefaultModel');
   const parameters: ExtendedLocalizationParameters | undefined = error.localizedParams;
   const code: string = error.code;
   const interpolation: Record<string, unknown> = { ...(parameters ?? {}) };

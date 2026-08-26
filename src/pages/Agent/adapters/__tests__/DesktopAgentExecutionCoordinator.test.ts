@@ -1,6 +1,8 @@
+import { AGENT_RUN_ERROR_MESSAGE_KEYS, createAgentRunError, extractAgentRunError } from 'memeloop';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createDesktopAgentExecutionCoordinator, type DesktopAgentExecutionCoordinatorServices } from '../DesktopAgentExecutionCoordinator';
+import { DesktopAgentExecutionPortError } from '@/services/agentInstance/executionPortErrors';
+import { createDesktopAgentExecutionCoordinator, type DesktopAgentExecutionCoordinatorServices, normalizeDesktopExecutionPortError } from '../DesktopAgentExecutionCoordinator';
 
 describe('DesktopAgentExecutionCoordinator', () => {
   afterEach(() => {
@@ -43,6 +45,56 @@ describe('DesktopAgentExecutionCoordinator', () => {
     );
     expect(snapshots).toEqual(['queued', 'running', 'succeeded']);
     await coordinator.dispose();
+  });
+
+  it('preserves the structured failure from an accepted durable run', async () => {
+    const services = createServices();
+    const runError = createAgentRunError({
+      code: 'PROVIDER_AUTH_MISSING',
+      messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_AUTH_MISSING,
+      retryable: false,
+      providerId: 'cpa',
+      modelId: 'model-1',
+      localizedParams: { providerId: 'cpa', modelId: 'model-1', settingField: 'apiKey' },
+      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'apiKey' },
+    });
+    services.agentInstance.getAgentRunStatus = vi.fn().mockResolvedValue({
+      ...runStatus('failed'),
+      error: runError,
+    });
+    const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
+      createId: sequentialIds(),
+      pollIntervalMs: 1,
+      services,
+    });
+
+    let received: unknown;
+    try {
+      await coordinator.execute({
+        target: { kind: 'local' },
+        provenance: provenanceOf('turn-1', 'request-1'),
+        message: 'hello',
+      });
+    } catch (error) {
+      received = error;
+    }
+
+    expect(extractAgentRunError(received)).toEqual(runError);
+    expect(coordinator.getSnapshot('conversation-1').error).toBe(received);
+    await coordinator.dispose();
+  });
+
+  it('maps the stable no-model IPC code to an actionable runtime setting target', () => {
+    const error = normalizeDesktopExecutionPortError(
+      new DesktopAgentExecutionPortError('MODEL_SELECTION_NOT_CONFIGURED'),
+    );
+
+    expect(extractAgentRunError(error)).toEqual(expect.objectContaining({
+      code: 'PROVIDER_CONFIGURATION_MISSING',
+      retryable: false,
+      localizedParams: { settingField: 'model' },
+      settingTarget: { kind: 'runtime', section: 'agent' },
+    }));
   });
 
   it('uses the typed remote RPC client, polls to terminal, then synchronizes once', async () => {

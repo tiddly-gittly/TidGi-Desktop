@@ -70,6 +70,8 @@
   },
   "Chat": {
     "Cancel": "Cancel",
+    "GenericError": "The agent could not complete this request. Please try again.",
+    "OperationError": "The chat operation failed. Please try again.",
     "ExecutionTarget": {
       "NoActiveAgent": "No active agent is available.",
       "Platform": {

@@ -2,6 +2,7 @@ import type {
   AgentAttachmentInput,
   AgentDeviceRpcClient,
   AgentDeviceRpcRunStatus,
+  AgentRunError,
   AttachmentReference,
   MemeLoopRunHandle,
   MemeLoopRunStatus,
@@ -15,7 +16,15 @@ import type {
   RemoteAgentExecutionTarget,
   RemoteAgentRetryRequest,
 } from 'memeloop';
-import { ATTACHMENT_UPLOAD_LIMITS, buildAttachmentUploadChunkRequest, createAgentDeviceRpcClient, RemoteAgentExecutionCoordinator, RemoteAgentExecutionError } from 'memeloop';
+import {
+  AGENT_RUN_ERROR_MESSAGE_KEYS,
+  ATTACHMENT_UPLOAD_LIMITS,
+  buildAttachmentUploadChunkRequest,
+  createAgentDeviceRpcClient,
+  createAgentRunError,
+  RemoteAgentExecutionCoordinator,
+  RemoteAgentExecutionError,
+} from 'memeloop';
 
 import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/services/agentInstance/attachmentUploadProtocol';
 import type {
@@ -24,6 +33,7 @@ import type {
   DesktopPreparedAgentUserMessage,
   ReadDesktopAgentAttachmentChunkInput,
 } from '@/services/agentInstance/attachmentUploadProtocol';
+import { extractDesktopAgentExecutionPortErrorCode } from '@/services/agentInstance/executionPortErrors';
 
 const DEFAULT_RUN_POLL_INTERVAL_MS = 500;
 
@@ -165,7 +175,7 @@ export function createDesktopAgentExecutionCoordinator(
         requestId: request.provenance.requestId,
         error,
       });
-      throw error;
+      throw normalizeDesktopExecutionPortError(error);
     } finally {
       await releaseStagedAttachment(staged, services);
     }
@@ -232,25 +242,35 @@ export function createDesktopAgentExecutionCoordinator(
     request: RemoteAgentRetryRequest,
     callOptions: RemoteAgentExecutionCallOptions,
   ): Promise<RemoteAgentExecutionResult> => {
-    const handle = await services.agentInstance.retryConversationTurn({
-      conversationId: request.provenance.conversationId,
-      definitionId: request.provenance.definitionId,
-      newTurnId: request.provenance.turnId,
-      requestId: request.provenance.requestId,
-      turnId: request.sourceTurnId,
-    });
-    assertRunHandleCorrelation(handle, request.provenance);
-    await waitForAcceptedRun({
-      activeRuns,
-      conversationId: request.provenance.conversationId,
-      handle,
-      load: () => services.agentInstance.getAgentRunStatus(handle.runId),
-      pollIntervalMs,
-      signal: callOptions.signal,
-      target: request.target,
-      cancelOnAbort: () => services.agentInstance.cancelAgentRun(handle.runId).then(() => undefined),
-    });
-    return { runId: handle.runId };
+    try {
+      const handle = await services.agentInstance.retryConversationTurn({
+        conversationId: request.provenance.conversationId,
+        definitionId: request.provenance.definitionId,
+        newTurnId: request.provenance.turnId,
+        requestId: request.provenance.requestId,
+        turnId: request.sourceTurnId,
+      });
+      assertRunHandleCorrelation(handle, request.provenance);
+      await waitForAcceptedRun({
+        activeRuns,
+        conversationId: request.provenance.conversationId,
+        handle,
+        load: () => services.agentInstance.getAgentRunStatus(handle.runId),
+        pollIntervalMs,
+        signal: callOptions.signal,
+        target: request.target,
+        cancelOnAbort: () => services.agentInstance.cancelAgentRun(handle.runId).then(() => undefined),
+      });
+      return { runId: handle.runId };
+    } catch (error) {
+      services.logWarning('Local agent retry port failed', {
+        conversationId: request.provenance.conversationId,
+        requestId: request.provenance.requestId,
+        sourceTurnId: request.sourceTurnId,
+        error,
+      });
+      throw normalizeDesktopExecutionPortError(error);
+    }
   };
 
   const retryRemote = async (
@@ -495,7 +515,9 @@ async function waitForAcceptedRun(options: {
         status.requestId !== options.handle.requestId
       ) throw new RemoteAgentExecutionError('PORT_FAILURE', false);
       if (status.state === 'completed') return;
-      if (status.state === 'failed') throw new RemoteAgentExecutionError('PORT_FAILURE', status.error?.retryable ?? true);
+      if (status.state === 'failed') {
+        throw createRemoteExecutionFailure('PORT_FAILURE', status.error?.retryable ?? true, status.error);
+      }
       if (status.state === 'cancelled') throw new RemoteAgentExecutionError('CANCELLED', false);
       await abortableDelay(options.pollIntervalMs, options.signal);
     }
@@ -503,6 +525,38 @@ async function waitForAcceptedRun(options: {
     options.signal.removeEventListener('abort', abortListener);
     if (options.activeRuns.get(options.conversationId) === active) options.activeRuns.delete(options.conversationId);
   }
+}
+
+function createRemoteExecutionFailure(
+  code: ConstructorParameters<typeof RemoteAgentExecutionError>[0],
+  retryable: boolean,
+  agentRunError?: AgentRunError,
+): RemoteAgentExecutionError {
+  const error = new RemoteAgentExecutionError(code, retryable);
+  if (agentRunError) {
+    Object.defineProperty(error, 'agentRunError', {
+      value: agentRunError,
+      enumerable: false,
+    });
+  }
+  return error;
+}
+
+/** Convert only stable Desktop IPC codes; unknown host errors remain opaque. */
+export function normalizeDesktopExecutionPortError(error: unknown): unknown {
+  if (error instanceof RemoteAgentExecutionError) return error;
+  if (extractDesktopAgentExecutionPortErrorCode(error) !== 'MODEL_SELECTION_NOT_CONFIGURED') return error;
+  return createRemoteExecutionFailure(
+    'PORT_FAILURE',
+    false,
+    createAgentRunError({
+      code: 'PROVIDER_CONFIGURATION_MISSING',
+      messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
+      retryable: false,
+      localizedParams: { settingField: 'model' },
+      settingTarget: { kind: 'runtime', section: 'agent' },
+    }),
+  );
 }
 
 async function cancelTrackedRun(

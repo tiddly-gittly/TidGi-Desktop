@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { type IChatTab, TabState, TabType } from '@/pages/Agent/types/tab';
-import { DesktopAgentChatTab } from '../DesktopAgentChatTab';
+import { DesktopAgentChatTab, resolveDesktopAskQuestion } from '../DesktopAgentChatTab';
 
 const lifecycle = vi.hoisted(() => ({
   sessions: [] as Array<{ start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }>,
@@ -42,6 +42,17 @@ vi.mock('../DesktopPromptPreviewController', () => ({
 }));
 
 describe('DesktopAgentChatTab lifecycle', () => {
+  it('awaits the Desktop ask-question IPC port with the exact question identity', async () => {
+    const resolveAskQuestion = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window.service, 'agentInstance', {
+      configurable: true,
+      value: { resolveAskQuestion },
+    });
+
+    await expect(resolveDesktopAskQuestion('agent-1', 'question-1', 'Approach A')).resolves.toBeUndefined();
+    expect(resolveAskQuestion).toHaveBeenCalledWith('agent-1', 'question-1', 'Approach A');
+  });
+
   it('disposes the old timeline on conversation switch and again on unmount', async () => {
     lifecycle.sessions.length = 0;
     lifecycle.timelines.length = 0;

@@ -341,13 +341,13 @@ export interface IAgentInstanceService {
   resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void>;
 
   /**
-   * Resolve a pending ask-question request from the UI.
-   * The user's answer is sent as a tool result (same turn), not as a new user message.
+   * Resolve an ask-question request from the UI through one idempotent durable
+   * answer turn. The promise settles only after that answer run is terminal.
    * @param agentId The agent instance ID
    * @param questionId The question ID embedded in the ask-question tool result
    * @param answer The user's answer text
    */
-  resolveAskQuestion(agentId: string, questionId: string, answer: string): void;
+  resolveAskQuestion(agentId: string, questionId: string, answer: string): Promise<void>;
 
   /**
    * Delete specific messages from an agent instance.

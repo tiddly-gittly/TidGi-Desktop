@@ -456,7 +456,10 @@ function BoundMemeLoopWikiChat({
     },
     deleteTurn: targets.deleteTurn,
     retryTurn: targets.retryTurn,
-  }), [baseAdapter, clearAttachmentsForRevision, targets]);
+    resolveAskQuestion: async (questionId, answer) => {
+      await window.service.agentInstance.resolveAskQuestion(conversationId, questionId, answer);
+    },
+  }), [baseAdapter, clearAttachmentsForRevision, conversationId, targets]);
 
   const timelineTimestampFormatter = useMemo(() =>
     new Intl.DateTimeFormat(locale, {

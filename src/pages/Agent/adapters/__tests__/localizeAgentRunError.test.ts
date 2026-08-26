@@ -23,6 +23,19 @@ describe('localizeAgentRunError', () => {
     });
     expect(localizeAgentRunError(pending, translate)).toContain('contextCompactionPendingProgressEstimate');
   });
+
+  it('uses the host configuration message for a missing runtime model selection', () => {
+    const error = {
+      code: 'PROVIDER_CONFIGURATION_MISSING',
+      messageKey: 'agent.run.error.providerConfigurationMissing',
+      retryable: false,
+      diagnosticId: 'diagnostic-configuration',
+      localizedParams: { settingField: 'model' },
+      settingTarget: { kind: 'runtime', section: 'agent' },
+    } as AgentRunError;
+
+    expect(localizeAgentRunError(error, translate)).toBe('Chat.ConfigError.NoDefaultModel:{}');
+  });
 });
 
 function runError(
