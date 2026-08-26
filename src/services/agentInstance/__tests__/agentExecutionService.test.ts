@@ -72,7 +72,12 @@ describe('AgentInstanceService durable execution IPC', () => {
     const mutable = service as unknown as Record<string, unknown>;
     mutable.agentDefinitionService = { getAgentDef: vi.fn().mockResolvedValue({ id: 'definition-1' }) };
     mutable.externalAPIService = { getAIConfig: vi.fn().mockResolvedValue({ default: undefined }) };
-    mutable.getAgentMetadata = vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1' });
+    mutable.getAgentMetadata = vi.fn().mockResolvedValue({
+      id: 'conversation-1',
+      agentDefId: 'definition-1',
+      // TypeORM's nullable JSON column is hydrated as null for a new agent.
+      modelConfig: null,
+    });
     mutable.getDurableAgentRuntime = vi.fn().mockResolvedValue({ sendMessage });
 
     await expect(service.executeAgentRun({

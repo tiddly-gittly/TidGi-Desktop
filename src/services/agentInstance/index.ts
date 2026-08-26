@@ -1078,7 +1078,11 @@ export class AgentInstanceService implements IAgentInstanceService {
     const definition = await this.agentDefinitionService.getAgentDef(request.definitionId);
     if (!definition) throw new Error('agent definition not found');
     const instanceModel = agent.modelConfig;
-    if (instanceModel === undefined && definition.modelConfig === undefined) {
+    // TypeORM may hydrate an absent JSON model override as `null` even though
+    // the portable contract exposes it as optional. Treat both nullish forms
+    // as absent so Core never becomes the first layer to discover the missing
+    // selection with an untyped error after crossing IPC.
+    if (instanceModel == null && definition.modelConfig == null) {
       const globalModel = (await this.externalAPIService.getAIConfig()).default;
       if (!globalModel?.provider || !globalModel.model) {
         throw new DesktopAgentExecutionPortError('MODEL_SELECTION_NOT_CONFIGURED');
