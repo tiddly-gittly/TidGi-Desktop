@@ -42,10 +42,11 @@ describe('packaged utility process files', () => {
 
 describe('renderer package entry aliases', () => {
   it('keeps MemeLoop agent subpath exports distinct from the agent root', () => {
-    const matchingAliases = (specifier: string) => rendererAliases.filter(alias => {
-      const matcher = alias.find;
-      return typeof matcher === 'string' ? matcher === specifier : matcher.test(specifier);
-    });
+    const matchingAliases = (specifier: string) =>
+      rendererAliases.filter(alias => {
+        const matcher = alias.find;
+        return typeof matcher === 'string' ? matcher === specifier : matcher.test(specifier);
+      });
 
     expect(matchingAliases('@memeloop/react-ui/agent')).toHaveLength(1);
     expect(matchingAliases('@memeloop/react-ui/agent/prompts')).toHaveLength(1);
