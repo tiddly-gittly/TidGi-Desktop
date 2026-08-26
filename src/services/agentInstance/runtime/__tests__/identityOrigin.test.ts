@@ -72,6 +72,58 @@ describe('Desktop message origin identity', () => {
     expect(JSON.parse(JSON.stringify(message))).toStrictEqual(message);
   });
 
+  it('assembles model attachment bytes from bounded host range reads', async () => {
+    const bytes = new Uint8Array(300_000).map((_, index) => index % 251);
+    const readAgentAttachmentRange = vi.fn(async (_contentHash: string, offset: number, maxBytes: number) => bytes.slice(offset, Math.min(bytes.byteLength, offset + maxBytes)));
+    const storage = new MemeLoopDesktopStorage({
+      agentDefinitionService: { getAgentDef: vi.fn() } as unknown as IAgentDefinitionService,
+      agentInstanceService: {
+        getAgentAttachmentReference: vi.fn(async () => ({
+          contentHash: `sha256:${'a'.repeat(64)}`,
+          filename: 'image.png',
+          mimeType: 'image/png',
+          size: bytes.byteLength,
+        })),
+        readAgentAttachmentRange,
+      } as unknown as IAgentInstanceService,
+      getLocalNodeId: vi.fn(async () => 'desktop'),
+      notifyAgentChanged: vi.fn(),
+    });
+
+    await expect(storage.readAttachmentData(`sha256:${'a'.repeat(64)}`)).resolves.toEqual(bytes);
+    expect(readAgentAttachmentRange).toHaveBeenCalledTimes(2);
+    expect(readAgentAttachmentRange).toHaveBeenNthCalledWith(1, expect.any(String), 0, 256 * 1_024, undefined);
+    expect(readAgentAttachmentRange).toHaveBeenNthCalledWith(2, expect.any(String), 256 * 1_024, bytes.byteLength - 256 * 1_024, undefined);
+  });
+
+  it('aborts attachment assembly between bounded range reads', async () => {
+    const controller = new AbortController();
+    const reference = {
+      contentHash: `sha256:${'b'.repeat(64)}`,
+      filename: 'image.png',
+      mimeType: 'image/png',
+      size: 300_000,
+    };
+    const readAgentAttachmentRange = vi.fn(async () => {
+      controller.abort(new Error('cancel model image'));
+      return new Uint8Array(256 * 1_024);
+    });
+    const storage = new MemeLoopDesktopStorage({
+      agentDefinitionService: { getAgentDef: vi.fn() } as unknown as IAgentDefinitionService,
+      agentInstanceService: {
+        getAgentAttachmentReference: vi.fn(async () => reference),
+        readAgentAttachmentRange,
+      } as unknown as IAgentInstanceService,
+      getLocalNodeId: vi.fn(async () => 'desktop'),
+      notifyAgentChanged: vi.fn(),
+    });
+
+    await expect(storage.readAttachmentData(reference.contentHash, { signal: controller.signal })).rejects.toThrow(
+      'cancel model image',
+    );
+    expect(readAgentAttachmentRange).toHaveBeenCalledOnce();
+  });
+
   it('uses the local libp2p PeerId for conversation metadata', async () => {
     const currentAgent = {
       ...agent(),

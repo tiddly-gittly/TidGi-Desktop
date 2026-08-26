@@ -31,7 +31,7 @@ import type {
   MessageVersionFrontierPage,
   RetainedCompactionControlPage,
 } from 'memeloop';
-import { assertCanonicalChatMessageProjection } from 'memeloop';
+import { assertCanonicalChatMessageProjection, PORTABLE_LLM_REQUEST_LIMITS } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance } from 'memeloop';
@@ -254,6 +254,45 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
 
   public getAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<AttachmentReference | null> {
     return this.options.agentInstanceService.getAgentAttachmentReference(contentHash, options);
+  }
+
+  /**
+   * Model requests are the one bounded consumer that needs complete attachment
+   * bytes. Sync and UI callers continue to use range reads, while this adapter
+   * assembles at most Core's per-file request limit without exposing the host
+   * filesystem to the portable runtime.
+   */
+  public async readAttachmentData(contentHash: string, options?: { signal?: AbortSignal }): Promise<Uint8Array | null> {
+    options?.signal?.throwIfAborted();
+    const reference = await this.options.agentInstanceService.getAgentAttachmentReference(contentHash, options);
+    options?.signal?.throwIfAborted();
+    if (!reference) return null;
+    if (
+      reference.contentHash !== contentHash || !Number.isSafeInteger(reference.size) || reference.size < 1 ||
+      reference.size > PORTABLE_LLM_REQUEST_LIMITS.fileBytes
+    ) {
+      throw new RangeError('model attachment exceeds the portable per-file limit');
+    }
+    const result = new Uint8Array(reference.size);
+    const chunkBytes = 256 * 1_024;
+    let offset = 0;
+    while (offset < reference.size) {
+      options?.signal?.throwIfAborted();
+      const requestedBytes = Math.min(chunkBytes, reference.size - offset);
+      const chunk = await this.options.agentInstanceService.readAgentAttachmentRange(
+        contentHash,
+        offset,
+        requestedBytes,
+        options,
+      );
+      options?.signal?.throwIfAborted();
+      if (!chunk || chunk.byteLength < 1 || chunk.byteLength > requestedBytes) {
+        throw new Error('model attachment range is incomplete');
+      }
+      result.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return result;
   }
 
   public saveAttachment(reference: AttachmentReference, data: Uint8Array): Promise<void> {
