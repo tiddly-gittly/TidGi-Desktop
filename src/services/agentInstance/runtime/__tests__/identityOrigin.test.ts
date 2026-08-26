@@ -1,4 +1,4 @@
-import type { AgentInstance, ChatMessage } from 'memeloop';
+import { type AgentInstance, canonicalJsonBytes, type ChatMessage, createAtomicAgentRetryReplacementPayload } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
@@ -23,6 +23,43 @@ function agent(): AgentInstance {
 }
 
 describe('Desktop message origin identity', () => {
+  it('projects a TypeORM point read to a canonical plain retry source', async () => {
+    class TypeOrmMessageEntity {
+      public readonly agentInstance = { id: 'must-not-cross-storage-boundary' };
+    }
+    const entity = Object.assign(new TypeOrmMessageEntity(), {
+      messageId: 'turn-source',
+      turnId: 'turn-source',
+      conversationId: 'conversation-1',
+      originNodeId: 'desktop',
+      originSequence: 1,
+      timestamp: 1,
+      lamportClock: 1,
+      role: 'user' as const,
+      content: 'retry me',
+      parts: null,
+      metadata: { source: 'typeorm' },
+    });
+    const storage = new MemeLoopDesktopStorage({
+      agentDefinitionService: { getAgentDef: vi.fn() } as unknown as IAgentDefinitionService,
+      agentInstanceService: {
+        getAgentMessage: vi.fn(async () => entity as unknown as ChatMessage),
+      } as unknown as IAgentInstanceService,
+      getLocalNodeId: vi.fn(async () => 'desktop'),
+      notifyAgentChanged: vi.fn(),
+    });
+
+    const source = await storage.getMessageById('conversation-1', 'turn-source');
+    expect(source).not.toBeNull();
+    expect(Object.getPrototypeOf(source)).toBe(Object.prototype);
+    expect(source).not.toHaveProperty('agentInstance');
+    expect(source).not.toHaveProperty('parts');
+    expect(() => canonicalJsonBytes(source)).not.toThrow();
+    const replacement = createAtomicAgentRetryReplacementPayload(source!, 'turn-replacement');
+    expect(Object.getPrototypeOf(replacement)).toBe(Object.prototype);
+    expect(() => canonicalJsonBytes(replacement)).not.toThrow();
+  });
+
   it('uses the local libp2p PeerId for newly created user messages', async () => {
     const message = await createMemeLoopUserMessage({
       agentId: 'conversation-1',

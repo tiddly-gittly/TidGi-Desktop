@@ -31,11 +31,42 @@ import type {
   MessageVersionFrontierPage,
   RetainedCompactionControlPage,
 } from 'memeloop';
+import { assertCanonicalChatMessageProjection } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance } from 'memeloop';
 import type { IAgentInstanceService } from '../interface';
 import { toConversationMeta } from './messageMapping';
+
+/**
+ * TypeORM point reads are class instances. Core's canonical retry contract
+ * deliberately rejects non-plain objects, so project the entity at the host
+ * storage boundary instead of weakening or stringify-cloning the validator.
+ */
+function toPlainStorageMessage(message: ChatMessage): ChatMessage {
+  const result: ChatMessage = {
+    messageId: message.messageId,
+    conversationId: message.conversationId,
+    originNodeId: message.originNodeId,
+    originSequence: message.originSequence,
+    turnId: message.turnId,
+    timestamp: message.timestamp,
+    lamportClock: message.lamportClock,
+    role: message.role,
+    content: message.content,
+    ...(message.parts == null ? {} : { parts: message.parts }),
+    ...(message.toolCalls == null ? {} : { toolCalls: message.toolCalls }),
+    ...(message.attachments == null ? {} : { attachments: message.attachments }),
+    ...(message.detailRef == null ? {} : { detailRef: message.detailRef }),
+    ...(message.reasoning_content == null ? {} : { reasoning_content: message.reasoning_content }),
+    ...(message.contentType == null ? {} : { contentType: message.contentType }),
+    ...(message.hidden == null ? {} : { hidden: message.hidden }),
+    ...(message.duration == null ? {} : { duration: message.duration }),
+    ...(message.metadata == null ? {} : { metadata: message.metadata }),
+  };
+  assertCanonicalChatMessageProjection(result, message.conversationId);
+  return result;
+}
 
 export class MemeLoopDesktopStorage implements IAgentStorage {
   public constructor(
@@ -116,7 +147,7 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     callOptions?.signal?.throwIfAborted();
     const message = await this.options.agentInstanceService.getAgentMessage(messageId);
     callOptions?.signal?.throwIfAborted();
-    return message?.conversationId === conversationId ? message : null;
+    return message?.conversationId === conversationId ? toPlainStorageMessage(message) : null;
   }
 
   public async readMessageDetailRange(
