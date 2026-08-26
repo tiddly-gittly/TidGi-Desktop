@@ -1430,10 +1430,32 @@ export async function getMessage(
   repository: Repository<AgentInstanceMessageEntity>,
   messageId: string,
 ): Promise<ChatMessage | undefined> {
-  return await repository.createQueryBuilder('message')
+  // The projection table deliberately supplies SQLite/TypeORM defaults (for
+  // example hidden=false) and therefore cannot reproduce whether an optional
+  // field was absent in the immutable event. Retry compares canonical bytes,
+  // so point reads must materialize the authoritative event JSON exactly.
+  const [row] = await repository.manager.query<Array<{ eventJson: string }>>(
+    `SELECT event.eventJson
+     FROM conversation_events AS event
+     WHERE event.eventId = ? AND event.kind IN ('message', 'compaction')
+       AND (event.turnId IS NULL OR NOT EXISTS (
+         SELECT 1 FROM conversation_turn_tombstones AS tombstone
+         WHERE tombstone.conversationId = event.conversationId
+           AND tombstone.turnId = event.turnId
+       ))
+     LIMIT 1`,
+    [messageId],
+  );
+  if (row) return conversationEventProjectionMessage(parseStoredConversationEvent(row.eventJson));
+  const visibleProjection = await repository.createQueryBuilder('message')
+    .select('message.messageId', 'messageId')
     .where('message.messageId = :messageId', { messageId })
     .andWhere(visibleMessagePredicate())
-    .getOne() ?? undefined;
+    .getRawOne<{ messageId: string }>();
+  if (visibleProjection) {
+    throw eventStoreError('CONFLICT', `message projection ${messageId} has no authoritative event`);
+  }
+  return undefined;
 }
 
 export async function getLatestContextCompactionSummary(

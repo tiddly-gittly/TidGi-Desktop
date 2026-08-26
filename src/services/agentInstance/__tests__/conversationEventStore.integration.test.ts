@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 import 'reflect-metadata';
 
-import { assertConversationTimelinePage, MAX_CONVERSATION_EVENT_BYTES } from 'memeloop';
+import { assertConversationTimelinePage, canonicalJsonBytes, MAX_CONVERSATION_EVENT_BYTES } from 'memeloop';
 import type { ConversationEvent, ConversationEventDraft } from 'memeloop';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -27,6 +27,7 @@ import {
   getConversationEventPage,
   getConversationTimelinePage,
   getEventVersionFrontiers,
+  getMessage,
   getMessageIdentity,
   getMessagePage,
   getMessageWindowAround,
@@ -122,7 +123,33 @@ describe('Desktop canonical conversation event store', () => {
       message: { messageId: 'local-user', turnId: 'local-user', role: 'user', content: 'hello' },
     });
     expect(event).toMatchObject({ originSequence: 2, lamportClock: 2 });
-    const page = await getMessagePage(dataSource.getRepository(AgentInstanceMessageEntity), 'conversation', { limit: 20, maxBytes: 64 * 1024 });
+    const messageRepository = dataSource.getRepository(AgentInstanceMessageEntity);
+    const pointRead = await getMessage(messageRepository, 'local-user');
+    expect(Object.getPrototypeOf(pointRead)).toBe(Object.prototype);
+    expect(pointRead).not.toHaveProperty('hidden');
+    expect(() => canonicalJsonBytes(pointRead)).not.toThrow();
+    expect(pointRead).toEqual(expect.objectContaining({
+      messageId: 'local-user',
+      turnId: 'local-user',
+      originSequence: 2,
+      lamportClock: 2,
+    }));
+    await messageRepository.insert({
+      messageId: 'projection-only',
+      conversationId: 'conversation',
+      originNodeId: 'desktop',
+      originSequence: 999,
+      turnId: 'projection-only',
+      timestamp: 999,
+      lamportClock: 999,
+      role: 'user',
+      content: 'orphaned projection',
+    });
+    await expect(getMessage(messageRepository, 'projection-only')).rejects.toThrow(
+      'message projection projection-only has no authoritative event',
+    );
+    await messageRepository.delete({ messageId: 'projection-only' });
+    const page = await getMessagePage(messageRepository, 'conversation', { limit: 20, maxBytes: 64 * 1024 });
     if (page.reset) throw new Error('unexpected reset');
     expect(page.items).toEqual([expect.objectContaining({
       messageId: 'local-user',
