@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PromptPreviewButtonWithMenu } from '../PromptPreviewButtonWithMenu';
 
 vi.mock('@memeloop/react-ui/chat', () => ({
-  useAui: () => ({ composer: () => ({ getState: () => ({ text: 'unsent input' }) }) }),
+  useAui: () => ({ composer: { getState: () => ({ text: 'unsent input' }) } }),
 }));
 
 vi.mock('@/pages/Agent/store/tabStore', () => ({

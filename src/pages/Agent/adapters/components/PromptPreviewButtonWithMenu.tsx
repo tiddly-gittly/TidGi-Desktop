@@ -60,12 +60,12 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
   const { addTab, createSplitViewFromTabs, addTabToSplitView, tabs } = useTabStore();
 
   const handleOpenPreview = useCallback(() => {
-    setPreviewInputText(aui.composer().getState().text);
+    setPreviewInputText(aui.composer.getState().text);
     controller.open();
   }, [aui, controller]);
 
   const handleOpenEdit = useCallback(() => {
-    setPreviewInputText(aui.composer().getState().text);
+    setPreviewInputText(aui.composer.getState().text);
     controller.open('edit');
     setMenuAnchor(null);
   }, [aui, controller]);

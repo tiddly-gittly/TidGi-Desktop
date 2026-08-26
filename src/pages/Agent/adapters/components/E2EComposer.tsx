@@ -31,12 +31,12 @@ export const E2EComposer: React.FC<MemeLoopComposerProps> = (props) => {
 
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
-      const composerState = aui.composer().getState();
-      const threadState = aui.thread().getState();
+      const composerState = aui.composer.getState();
+      const threadState = aui.thread.getState();
       if (composerState.isEditing && composerState.canSend && !threadState.isRunning) {
         event.preventDefault();
         event.stopPropagation();
-        aui.composer().send();
+        aui.composer.send();
       }
     };
 

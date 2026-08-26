@@ -271,7 +271,7 @@ function WikiPromptPreview({
     configAbortReference.current?.abort();
     const abortController = new AbortController();
     configAbortReference.current = abortController;
-    const nextInput = aui.composer().getState().text;
+    const nextInput = aui.composer.getState().text;
     setInputText(nextInput);
     setPreviewError(false);
     controller.open();
