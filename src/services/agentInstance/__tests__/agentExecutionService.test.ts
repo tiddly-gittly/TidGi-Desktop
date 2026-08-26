@@ -39,6 +39,8 @@ describe('AgentInstanceService durable execution IPC', () => {
         content: 'hello',
       }),
     });
+    const durableInput = sendMessage.mock.calls[0]?.[0];
+    expect(JSON.parse(JSON.stringify(durableInput))).toStrictEqual(durableInput);
   });
 
   it('rejects a renderer run whose conversation definition does not match', async () => {

@@ -4,7 +4,7 @@
  */
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
-import type { AgentDefinition } from 'memeloop';
+import type { AgentDefinition, HostAgentToolConfig } from 'memeloop';
 import { AGENT_TOOL_LOOP_ID, getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
@@ -18,12 +18,46 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { AgentTemplateSource, IAgentDefinitionService } from './interface';
 
-const defaultAgentsList = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
-  systemPrompt: '',
-  tools: [],
-  version: '1',
-  ...profile,
-}));
+const GENERAL_ASSISTANT_ID = 'memeloop:general-assistant';
+const DESKTOP_WIKI_PROFILE_ID = 'memeloop:frontend-ui-ux';
+const DESKTOP_GENERAL_ASSISTANT_TOOL_IDS = new Set(['workspacesList', 'wikiSearch', 'wikiOperation']);
+
+export function mergeDesktopGeneralAssistantTools(
+  tools: readonly HostAgentToolConfig[] | undefined,
+  desktopTools: readonly HostAgentToolConfig[],
+): HostAgentToolConfig[] {
+  const merged = [...(tools ?? [])];
+  const configuredToolIds = new Set(merged.map(tool => tool.toolId));
+  for (const tool of desktopTools) {
+    if (configuredToolIds.has(tool.toolId)) continue;
+    merged.push(tool);
+    configuredToolIds.add(tool.toolId);
+  }
+  return merged;
+}
+
+function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
+  const portableDefinitions = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  }));
+  const desktopWikiTools = portableDefinitions
+    .find(definition => definition.id === DESKTOP_WIKI_PROFILE_ID)
+    ?.agentTools?.filter(tool => DESKTOP_GENERAL_ASSISTANT_TOOL_IDS.has(tool.toolId)) ?? [];
+
+  return portableDefinitions.map(definition =>
+    definition.id === GENERAL_ASSISTANT_ID
+      ? {
+        ...definition,
+        agentTools: mergeDesktopGeneralAssistantTools(definition.agentTools, desktopWikiTools),
+      }
+      : definition
+  );
+}
+
+const defaultAgentsList = createDesktopBuiltinAgentDefinitions();
 
 function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
   return value?.trim() ? value : fallback;

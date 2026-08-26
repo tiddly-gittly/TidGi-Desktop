@@ -1,6 +1,7 @@
+import type { HostAgentToolConfig } from 'memeloop';
 import { describe, expect, it } from 'vitest';
 
-import { shouldRefreshBuiltinDefinition } from '../index';
+import { mergeDesktopGeneralAssistantTools, shouldRefreshBuiltinDefinition } from '../index';
 
 function legacyEntity(created: string, updated: string) {
   return {
@@ -12,6 +13,24 @@ function legacyEntity(created: string, updated: string) {
 }
 
 describe('bundled Agent definition refresh', () => {
+  it('adds missing Desktop tools without replacing a configured tool', () => {
+    const configuredWikiSearch = {
+      toolId: 'wikiSearch',
+      parameters: { wikiSearchParam: { sourceType: 'custom-wiki' } },
+    } as HostAgentToolConfig;
+    const result = mergeDesktopGeneralAssistantTools(
+      [configuredWikiSearch],
+      [
+        { toolId: 'workspacesList' },
+        { toolId: 'wikiSearch', parameters: { wikiSearchParam: { sourceType: 'desktop-wiki' } } },
+        { toolId: 'wikiOperation' },
+      ] as HostAgentToolConfig[],
+    );
+
+    expect(result.map(tool => tool.toolId)).toEqual(['wikiSearch', 'workspacesList', 'wikiOperation']);
+    expect(result[0]).toBe(configuredWikiSearch);
+  });
+
   it('refreshes an explicitly uncustomized bundled definition', () => {
     expect(shouldRefreshBuiltinDefinition({
       ...legacyEntity('2026-01-01T00:00:00Z', '2026-01-02T00:00:00Z'),

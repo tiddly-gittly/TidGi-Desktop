@@ -155,6 +155,13 @@ function DesktopAgentChatView({
 }) {
   const { t, i18n } = useTranslation('agent');
   const { snapshot } = useAgentSession();
+  useEffect(() => {
+    if (!snapshot.error) return;
+    void window.service.native.log('error', 'MemeLoop agent session failed', {
+      agentId: tab.agentId,
+      error: snapshot.error,
+    });
+  }, [snapshot.error, tab.agentId]);
   const detailLoader = useMemo(createDesktopMessageDetailLoader, []);
   const promptPreviewController = useMemo(createDesktopPromptPreviewController, [tab.agentId]);
   const baseAdapter = useAgentSessionChatAdapter({

@@ -159,6 +159,13 @@ export function createDesktopAgentExecutionCoordinator(
         cancelOnAbort: () => services.agentInstance.cancelAgentRun(handle.runId).then(() => undefined),
       });
       return { runId: handle.runId };
+    } catch (error) {
+      services.logWarning('Local agent execution port failed', {
+        conversationId: request.provenance.conversationId,
+        requestId: request.provenance.requestId,
+        error,
+      });
+      throw error;
     } finally {
       await releaseStagedAttachment(staged, services);
     }

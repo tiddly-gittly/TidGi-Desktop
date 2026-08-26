@@ -31,6 +31,8 @@ describe('Desktop message origin identity', () => {
     });
 
     expect(message.originNodeId).toBe('12D3KooWDesktopPeer');
+    expect(Reflect.ownKeys(message)).not.toContain('metadata');
+    expect(JSON.parse(JSON.stringify(message))).toStrictEqual(message);
   });
 
   it('uses the local libp2p PeerId for conversation metadata', async () => {

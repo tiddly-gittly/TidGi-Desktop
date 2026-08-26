@@ -51,7 +51,7 @@ export async function createMemeLoopUserMessage(input: {
     timestamp: Date.now(),
     contentType: 'text/plain',
     ...(input.content.attachment === undefined ? {} : { attachments: [input.content.attachment.reference] }),
-    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
   };
 }
 

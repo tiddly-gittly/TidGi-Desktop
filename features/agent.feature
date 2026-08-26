@@ -32,7 +32,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
     And I wait for 1 seconds for "agent suggestions to load"
     # Step 3: Select agent from autocomplete (not new tab)
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Step 4: Send message to agent - using generic steps combination
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -61,7 +61,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
     And I wait for 1 seconds for "agent suggestions to load"
     # Step 3: Select agent from autocomplete (not new tab)
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # First round: try create note using test-expected-to-fail workspace (expected to fail)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"

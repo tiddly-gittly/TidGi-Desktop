@@ -61,7 +61,7 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
             },
             item({ item, state }) {
               return (
-                <div className='aa-ItemWrapper'>
+                <div className='aa-ItemWrapper' data-agent-definition-id={item.id}>
                   <div className='aa-ItemContent'>
                     <div className='aa-ItemIcon'>
                       {item.avatarUrl

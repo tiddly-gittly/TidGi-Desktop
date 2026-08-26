@@ -87,6 +87,12 @@ function encodeCursor(revision: string, cursor?: ConversationMessageCursor): str
   return encodeBase64Url(new TextEncoder().encode(JSON.stringify(envelope)));
 }
 
+function requireEncodedCursor(revision: string, cursor: ConversationMessageCursor | undefined): string {
+  const encoded = encodeCursor(revision, cursor);
+  if (encoded === undefined) throw new Error('Desktop conversation page omitted a required boundary cursor');
+  return encoded;
+}
+
 function decodeCursor(value: string, expectedRevision?: string): DesktopMessageCursorEnvelope {
   let decoded: unknown;
   try {
@@ -190,8 +196,8 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
       items,
       hasMoreBefore: page.hasMoreBefore,
       hasMoreAfter: page.hasMoreAfter,
-      previousCursor: page.hasMoreBefore ? encodeCursor(page.revision, page.startCursor) : undefined,
-      nextCursor: page.hasMoreAfter ? encodeCursor(page.revision, page.endCursor) : undefined,
+      ...(page.hasMoreBefore ? { previousCursor: requireEncodedCursor(page.revision, page.startCursor) } : {}),
+      ...(page.hasMoreAfter ? { nextCursor: requireEncodedCursor(page.revision, page.endCursor) } : {}),
     };
   },
 
@@ -215,8 +221,8 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
       items: validateProjectionPage(request.conversationId, result.items, request.maxMessages, request.maxBytes),
       hasMoreBefore: result.hasMoreBefore,
       hasMoreAfter: result.hasMoreAfter,
-      previousCursor: result.hasMoreBefore ? encodeCursor(result.revision, result.startCursor) : undefined,
-      nextCursor: result.hasMoreAfter ? encodeCursor(result.revision, result.endCursor) : undefined,
+      ...(result.hasMoreBefore ? { previousCursor: requireEncodedCursor(result.revision, result.startCursor) } : {}),
+      ...(result.hasMoreAfter ? { nextCursor: requireEncodedCursor(result.revision, result.endCursor) } : {}),
     };
     return mapped;
   },
