@@ -527,6 +527,12 @@ describe('ScheduledTaskManager', () => {
       for (const date of dates) {
         expect(() => new Date(date)).not.toThrow();
       }
+      expect(new Set(dates).size).toBe(3);
+      expect(dates).toEqual([...dates].sort());
+    });
+
+    it.each([0, -1, 1.5, 11, Number.NaN])('rejects an invalid preview count (%s)', count => {
+      expect(manager.getCronPreviewDates('0 9 * * *', undefined, count)).toEqual([]);
     });
 
     it('returns empty array for invalid cron expression', () => {

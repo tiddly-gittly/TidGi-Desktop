@@ -11,6 +11,7 @@
  */
 
 import { Cron } from 'croner';
+import { previewScheduledTaskCron } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { In, Repository } from 'typeorm';
 
@@ -774,15 +775,7 @@ export function stopAllScheduledTasks(): void {
 /** Get next N run times for a cron expression (for UI preview). */
 export function getCronPreviewDates(expression: string, timezone?: string, count = 3): string[] {
   try {
-    const dates: string[] = [];
-    const cron = new Cron(expression, { timezone, maxRuns: count });
-    let next = cron.nextRun();
-    while (next && dates.length < count) {
-      dates.push(next.toISOString());
-      next = cron.nextRun();
-    }
-    cron.stop();
-    return dates;
+    return previewScheduledTaskCron(expression, { count, ...(timezone === undefined ? {} : { timezone }) });
   } catch {
     return [];
   }
