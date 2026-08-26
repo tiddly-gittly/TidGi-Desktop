@@ -1,7 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField, Typography } from '@mui/material';
+import type { DesktopAIConfig, DesktopModelParameters } from '@services/externalAPI/interface';
 import { cloneDeep } from 'lodash';
-import type { AiAPIConfig } from 'memeloop';
-import type { ModelParameters } from 'memeloop';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,8 +10,8 @@ import { useTranslation } from 'react-i18next';
 interface AIModelParametersDialogProps {
   open: boolean;
   onClose: () => void;
-  config: AiAPIConfig | null;
-  onSave: (newConfig: AiAPIConfig) => Promise<void>;
+  config: DesktopAIConfig | null;
+  onSave: (newConfig: DesktopAIConfig) => Promise<void>;
 }
 
 /**
@@ -21,7 +20,7 @@ interface AIModelParametersDialogProps {
  */
 export function AIModelParametersDialog({ open, onClose, config, onSave }: AIModelParametersDialogProps) {
   const { t } = useTranslation(['translation', 'agent']);
-  const [parameters, setParameters] = useState<ModelParameters>({
+  const [parameters, setParameters] = useState<DesktopModelParameters>({
     temperature: 0.7,
     maxTokens: 1000,
     topP: 0.95,

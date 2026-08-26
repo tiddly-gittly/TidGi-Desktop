@@ -7,9 +7,9 @@ import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const GetErrorsParameterSchema = z.object({
   toolListPosition: z.object({
@@ -96,7 +96,7 @@ async function executeGetErrors(parameters: z.infer<typeof GetErrorsToolSchema>)
   }
 }
 
-const getErrorsDefinition = registerToolDefinition({
+export const getErrorsDefinition = defineDesktopTool({
   toolId: 'getErrors',
   displayName: 'Wiki Get Errors',
   description: 'Render a tiddler and check for rendering errors or warnings',
@@ -115,5 +115,3 @@ const getErrorsDefinition = registerToolDefinition({
     await executeToolCall('wiki-get-errors', executeGetErrors);
   },
 });
-
-export const getErrorsTool = getErrorsDefinition.tool;

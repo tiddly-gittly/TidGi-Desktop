@@ -36,6 +36,8 @@ export interface IWorkspaceViewService {
    * Prepare All workspaces on startup
    */
   initializeAllWorkspaceView(): Promise<void>;
+  /** Register main-process menu contributions after Electron and the database are ready. */
+  initializeMenu(): Promise<void>;
   /**
    * prepare view and wiki for a workspace, work for both public and private wiki, call by `initializeAllWorkspaceView()` for all workspaces.
    */

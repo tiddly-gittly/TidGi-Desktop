@@ -11,9 +11,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 /**
  * Wiki Operation Config Schema (user-configurable in UI)
@@ -192,7 +192,7 @@ export async function executeWikiOperation(parameters: WikiOperationToolParamete
 /**
  * Wiki Operation Tool Definition
  */
-const wikiOperationDefinition = registerToolDefinition({
+export const wikiOperationDefinition = defineDesktopTool({
   toolId: 'wikiOperation',
   displayName: t('Schema.WikiOperation.Title'),
   description: t('Schema.WikiOperation.Description'),
@@ -230,5 +230,3 @@ const wikiOperationDefinition = registerToolDefinition({
     await executeToolCall('wiki-operation', executeWikiOperation);
   },
 });
-
-export const wikiOperationTool = wikiOperationDefinition.tool;

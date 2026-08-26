@@ -1,0 +1,15 @@
+title: $:/plugins/linonetwo/memeloop-agent-ui/readme
+caption: MemeLoop Agent UI
+type: text/vnd.tiddlywiki
+
+This example embeds the reusable `@memeloop/react-ui` Agent shell in TiddlyWiki through `tw-react`.
+
+Open [[MemeLoop Agent]] for the full view, or use the //MemeLoop// sidebar tab. Both mount the same shared `AgentSessionController`/`AgentChatShell`, keep at most 50 messages and 256 KiB resident, and use revision-safe absolute timeline seeks. The example exposes agent, model and execution-target selection, typed configuration actions, prompt preview and the shared scheduled-task editor. Dragging one or more TiddlyWiki tiddlers into either view atomically adds them to the next message as Wiki attachments.
+
+The same widget follows the Wiki language direction and light/dark palette. Container queries collapse its controls for the narrow sidebar without maintaining a second UI implementation. If the Electron host is unavailable, it fails closed with a localized configuration action instead of calling missing services.
+
+To bind a specific conversation:
+
+```
+<$memeloopAgentChat agentId="your-agent-instance-id" mode="full" />
+```

@@ -72,6 +72,29 @@ describe('DeepLinkService – preferences URL routing', () => {
     );
   });
 
+  it('forwards a validated provider field focus target to External API settings', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://preferences/externalAPI?provider=siliconflow&field=apiKey');
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      WindowNames.preferences,
+      {
+        preferenceGotoTab: PreferenceSections.externalAPI,
+        preferenceFocus: { providerId: 'siliconflow', field: 'apiKey' },
+      },
+    );
+  });
+
+  it('drops invalid provider focus fields instead of forwarding arbitrary metadata', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://preferences/externalAPI?provider=siliconflow&field=secret');
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      WindowNames.preferences,
+      { preferenceGotoTab: PreferenceSections.externalAPI },
+    );
+  });
+
   it('opens preferences window with notifications section', async () => {
     const service = makeService();
     await service.openDeepLink('tidgi://preferences/notifications');

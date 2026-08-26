@@ -1,10 +1,9 @@
 /**
  * ScheduledTaskManager — Unified scheduling engine replacing the separate heartbeatManager and alarmClock modules.
  *
- * Supports three schedule kinds:
- *   - "interval": run every N seconds (replaces heartbeat)
- *   - "at": run at a specific ISO datetime, optionally repeating every M minutes (replaces alarm)
- *   - "cron": run on a cron expression with optional IANA timezone (new)
+ * User-created tasks use one of two explicit schedule kinds:
+ *   - "at": run once at a specific ISO datetime
+ *   - "cron": recurring schedule with an optional IANA timezone
  *
  * All tasks are persisted to ScheduledTaskEntity so they survive app restarts.
  * Volatile agent instances (sub-agents / preview) are never scheduled.
@@ -13,22 +12,31 @@
 
 import { Cron } from 'croner';
 import { nanoid } from 'nanoid';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from '../interface';
-import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
+import type {
+  CreateScheduledTaskInput,
+  ListScheduledTasksOptions,
+  ListScheduledTasksPageForAgentInput,
+  ScheduledTask,
+  ScheduledTaskCallOptions,
+  ScheduledTaskPage,
+  ScheduledTaskScope,
+  UpdateScheduledTaskInput,
+} from './scheduledTaskTypes';
 
 export type { CreateScheduledTaskInput, ScheduleConfig, ScheduledTask, ScheduleKind, UpdateScheduledTaskInput } from './scheduledTaskTypes';
 
 // ─── Internal runtime entry ───────────────────────────────────────────────────
 
 interface RuntimeEntry {
-  task: ScheduledTaskEntity;
+  task: Pick<ScheduledTaskEntity, 'id' | 'agentInstanceId'>;
   /** croner Cron instance (only for cron-kind tasks) */
   cronJob?: InstanceType<typeof Cron>;
-  /** setInterval handle (only for interval-kind tasks) */
+  /** setInterval handle used only by the internal heartbeat runtime. */
   intervalHandle?: ReturnType<typeof setInterval>;
   /** setTimeout handle (only for at-kind one-shot tasks) */
   timeoutHandle?: ReturnType<typeof setTimeout>;
@@ -36,10 +44,28 @@ interface RuntimeEntry {
 
 // ─── Utility helpers ──────────────────────────────────────────────────────────
 
-function isWithinActiveHours(task: ScheduledTaskEntity): boolean {
+const MAX_TIMER_DELAY_MS = 2_147_000_000;
+const SCHEDULE_RETRY_BASE_MS = 60_000;
+const SCHEDULE_RETRY_MAX_MS = 60 * 60_000;
+
+function minutesInTimezone(date: Date, timezone?: string): number {
+  if (!timezone) return date.getHours() * 60 + date.getMinutes();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const hour = Number(parts.find(part => part.type === 'hour')?.value);
+  const minute = Number(parts.find(part => part.type === 'minute')?.value);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) throw new Error('scheduled_task_invalid_timezone');
+  return hour * 60 + minute;
+}
+
+function isWithinActiveHours(task: ScheduledTaskEntity, now = new Date()): boolean {
   if (!task.activeHoursStart || !task.activeHoursEnd) return true;
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const timezone = task.schedule.kind === 'cron' ? task.schedule.timezone : undefined;
+  const currentMinutes = minutesInTimezone(now, timezone);
 
   const parseTime = (t: string): number => {
     const [h, m] = t.split(':').map(Number);
@@ -60,18 +86,27 @@ function entityToDto(entity: ScheduledTaskEntity): ScheduledTask {
     name: entity.name,
     scheduleKind: entity.scheduleKind,
     schedule: entity.schedule,
-    payload: entity.payload,
+    payload: entity.payload ?? undefined,
     enabled: entity.enabled,
     deleteAfterRun: entity.deleteAfterRun,
-    activeHoursStart: entity.activeHoursStart,
-    activeHoursEnd: entity.activeHoursEnd,
+    activeHoursStart: entity.activeHoursStart ?? undefined,
+    activeHoursEnd: entity.activeHoursEnd ?? undefined,
     lastRunAt: entity.lastRunAt?.toISOString(),
+    lastRunStatus: entity.lastRunStatus,
+    lastError: entity.lastError ?? undefined,
+    lastFailureAt: entity.lastFailureAt?.toISOString(),
+    consecutiveFailures: entity.consecutiveFailures,
+    nextRetryAt: entity.nextRetryAt?.toISOString(),
     nextRunAt: entity.nextRunAt?.toISOString(),
     runCount: entity.runCount,
     maxRuns: entity.maxRuns,
     createdBy: entity.createdBy,
     created: entity.created?.toISOString() ?? new Date().toISOString(),
     updated: entity.updated?.toISOString() ?? new Date().toISOString(),
+    state: entity.state,
+    executionNodeId: entity.executionNodeId,
+    executionNodeLabel: entity.executionNodeLabel ?? undefined,
+    originNodeId: entity.originNodeId,
   };
 }
 
@@ -81,36 +116,79 @@ const activeEntries = new Map<string, RuntimeEntry>();
 
 let scheduledTaskRepo: Repository<ScheduledTaskEntity> | null = null;
 let agentInstanceServiceReference: IAgentInstanceService | null = null;
+let getLocalSchedulingIdentity: (() => Promise<{ peerId: string; deviceName?: string }>) | null = null;
+
+async function requireDurableAgentInstance(agentInstanceId: string, expectedDefinitionId?: string): Promise<Awaited<ReturnType<IAgentInstanceService['getAgentMetadata']>>> {
+  const agent = await agentInstanceServiceReference?.getAgentMetadata(agentInstanceId);
+  if (!agent) throw new Error('scheduled_task_agent_unavailable');
+  if (agent.volatile) throw new Error('scheduled_task_volatile_agent');
+  if (expectedDefinitionId !== undefined && agent.agentDefId !== expectedDefinitionId) {
+    throw new Error('scheduled_task_definition_mismatch');
+  }
+  return agent;
+}
 
 export function initScheduledTaskManager(
   repo: Repository<ScheduledTaskEntity>,
   agentInstanceService: IAgentInstanceService,
+  identityProvider: () => Promise<{ peerId: string; deviceName?: string }>,
 ): void {
   scheduledTaskRepo = repo;
   agentInstanceServiceReference = agentInstanceService;
+  getLocalSchedulingIdentity = identityProvider;
 }
 
 // ─── Fire a task ─────────────────────────────────────────────────────────────
 
-async function fireTask(task: ScheduledTaskEntity): Promise<void> {
+type TaskFireOutcome = 'succeeded' | 'failed' | 'skipped';
+
+async function fireTask(task: ScheduledTaskEntity): Promise<TaskFireOutcome> {
   if (!isWithinActiveHours(task)) {
     logger.debug('ScheduledTaskManager: skipped outside active hours', { taskId: task.id });
-    return;
+    return 'skipped';
   }
 
   const service = agentInstanceServiceReference;
   if (!service) {
     logger.warn('ScheduledTaskManager: agentInstanceService not ready', { taskId: task.id });
-    return;
+    return 'failed';
   }
 
   const message = task.payload?.message || `[Scheduled] Task "${task.name ?? task.id}" triggered.`;
 
   try {
-    await service.sendMsgToAgent(task.agentInstanceId, { text: message });
+    await requireDurableAgentInstance(task.agentInstanceId, task.agentDefinitionId);
+    const scheduledFor = (task.nextRetryAt ?? task.nextRunAt ?? new Date()).getTime();
+    await service.executeLocalAgentMessage(task.agentInstanceId, { text: message }, {
+      source: 'scheduled-task',
+      requestId: `scheduled-task:${task.id}:${scheduledFor}:request`,
+      turnId: `scheduled-task:${task.id}:${scheduledFor}:turn`,
+      provenance: {
+        taskId: task.id,
+        scheduledFor,
+        executionNodeId: task.executionNodeId,
+        originNodeId: task.originNodeId,
+        createdBy: task.createdBy,
+      },
+    });
     logger.info('ScheduledTaskManager: task fired', { taskId: task.id, agentInstanceId: task.agentInstanceId });
   } catch (error) {
     logger.error('ScheduledTaskManager: failed to send message', { taskId: task.id, error });
+    const now = new Date();
+    const lastError = error instanceof Error ? error.message : String(error);
+    task.lastRunStatus = 'failed';
+    task.lastError = lastError;
+    task.lastFailureAt = now;
+    task.consecutiveFailures = (task.consecutiveFailures ?? 0) + 1;
+    if (scheduledTaskRepo) {
+      await scheduledTaskRepo.update(task.id, {
+        lastRunStatus: 'failed',
+        lastError,
+        lastFailureAt: now,
+        consecutiveFailures: task.consecutiveFailures,
+      });
+    }
+    return 'failed';
   }
 
   // Update DB counters
@@ -121,81 +199,94 @@ async function fireTask(task: ScheduledTaskEntity): Promise<void> {
     const update: Partial<ScheduledTaskEntity> = {
       runCount: newRunCount,
       lastRunAt: now,
+      lastRunStatus: 'succeeded',
+      // TypeORM intentionally ignores `undefined` update values. Persist NULL
+      // so a task which succeeds after a transient failure no longer exposes
+      // stale failure metadata in the scheduler UI or synchronized projection.
+      lastError: null,
+      lastFailureAt: null,
+      consecutiveFailures: 0,
+      nextRetryAt: null,
     };
 
     const maxRunsReached = task.maxRuns != null && newRunCount >= task.maxRuns;
     if (task.deleteAfterRun || maxRunsReached) {
-      await removeTask(task.id);
-      return;
+      await completeTask(task.id);
+      return 'succeeded';
     }
 
     task.runCount = newRunCount;
     task.lastRunAt = now;
+    task.lastRunStatus = 'succeeded';
+    task.lastError = null;
+    task.lastFailureAt = null;
+    task.consecutiveFailures = 0;
+    task.nextRetryAt = null;
     await scheduledTaskRepo.update(task.id, update);
   }
+  return 'succeeded';
 }
 
 // ─── Schedule a runtime entry ─────────────────────────────────────────────────
 
+function retryDelay(task: ScheduledTaskEntity): number {
+  return Math.min(
+    SCHEDULE_RETRY_MAX_MS,
+    SCHEDULE_RETRY_BASE_MS * 2 ** Math.max(0, (task.consecutiveFailures ?? 1) - 1),
+  );
+}
+
+function scheduleAtEntry(task: ScheduledTaskEntity, wakeAt: Date): void {
+  cancelEntry(task.id);
+  task.nextRunAt = wakeAt;
+  const remaining = Math.max(0, wakeAt.getTime() - Date.now());
+  const delay = Math.min(remaining, MAX_TIMER_DELAY_MS);
+  const handle = setTimeout(() => {
+    if (remaining > MAX_TIMER_DELAY_MS) {
+      scheduleAtEntry(task, wakeAt);
+      return;
+    }
+    void fireTask(task).then(async outcome => {
+      if (outcome === 'succeeded') {
+        if (activeEntries.has(task.id)) await completeTask(task.id);
+        return;
+      }
+      const nextRetryAt = new Date(Date.now() + (outcome === 'failed' ? retryDelay(task) : SCHEDULE_RETRY_BASE_MS));
+      task.nextRetryAt = nextRetryAt;
+      task.nextRunAt = nextRetryAt;
+      if (scheduledTaskRepo) await scheduledTaskRepo.update(task.id, { nextRetryAt, nextRunAt: nextRetryAt });
+      scheduleAtEntry(task, nextRetryAt);
+    });
+  }, delay);
+  handle.unref?.();
+  activeEntries.set(task.id, { task, timeoutHandle: handle });
+}
+
 function scheduleEntry(task: ScheduledTaskEntity): void {
   cancelEntry(task.id);
 
-  if (!task.enabled) return;
+  if (!task.enabled || task.state !== 'active') return;
 
   const schedule = task.schedule;
 
-  if (schedule.kind === 'interval') {
-    const intervalMs = Math.max(60, schedule.intervalSeconds) * 1000;
-    const handle = setInterval(() => {
-      void fireTask(task);
-      // Update nextRunAt in task object
-      task.nextRunAt = new Date(Date.now() + intervalMs);
-      if (scheduledTaskRepo) void scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
-    }, intervalMs);
-    handle.unref?.();
-    task.nextRunAt = new Date(Date.now() + intervalMs);
-    activeEntries.set(task.id, { task, intervalHandle: handle });
-  } else if (schedule.kind === 'at') {
+  if (schedule.kind === 'at') {
     const atSchedule = schedule;
     const wakeAt = new Date(atSchedule.wakeAtISO);
-    const delayMs = Math.max(0, wakeAt.getTime() - Date.now());
-    task.nextRunAt = wakeAt;
-
-    const handle = setTimeout(() => {
-      void fireTask(task).then(async () => {
-        const entry = activeEntries.get(task.id);
-        if (!entry) return;
-
-        if (atSchedule.repeatIntervalMinutes && atSchedule.repeatIntervalMinutes > 0) {
-          // Convert to interval
-          const repeatMs = atSchedule.repeatIntervalMinutes * 60_000;
-          const repeatHandle = setInterval(() => {
-            void fireTask(task);
-            task.nextRunAt = new Date(Date.now() + repeatMs);
-            if (scheduledTaskRepo) void scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
-          }, repeatMs);
-          repeatHandle.unref?.();
-          task.nextRunAt = new Date(Date.now() + repeatMs);
-          activeEntries.set(task.id, { task, intervalHandle: repeatHandle });
-          if (scheduledTaskRepo) await scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
-        } else {
-          activeEntries.delete(task.id);
-        }
-      });
-    }, delayMs);
-    handle.unref?.();
-    activeEntries.set(task.id, { task, timeoutHandle: handle });
+    scheduleAtEntry(task, wakeAt);
   } else if (schedule.kind === 'cron') {
     const cronSchedule = schedule;
     try {
       const cronJob = new Cron(cronSchedule.expression, {
         timezone: cronSchedule.timezone,
         protect: true,
-      }, () => {
-        void fireTask(task).then(() => {
-          task.nextRunAt = cronJob.nextRun() ?? undefined;
-          if (scheduledTaskRepo && task.nextRunAt) void scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
-        });
+      }, async () => {
+        // Return the promise to Croner. `protect: true` can prevent overlapping
+        // agent turns only while it can observe that the previous callback is
+        // still pending; a fire-and-forget callback defeats that guarantee.
+        await fireTask(task);
+        if (!activeEntries.has(task.id)) return;
+        task.nextRunAt = cronJob.nextRun() ?? undefined;
+        if (scheduledTaskRepo && task.nextRunAt) await scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
       });
       task.nextRunAt = cronJob.nextRun() ?? undefined;
       activeEntries.set(task.id, { task, cronJob });
@@ -206,6 +297,41 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
 
   if (scheduledTaskRepo && task.nextRunAt) {
     void scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
+  }
+}
+
+function validateActiveHours(start?: string | null, end?: string | null): void {
+  if ((start && !end) || (!start && end)) throw new Error('scheduled_task_invalid_active_hours');
+  for (const value of [start, end]) {
+    if (!value) continue;
+    const match = /^(\d{2}):(\d{2})$/.exec(value);
+    if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) {
+      throw new Error('scheduled_task_invalid_active_hours');
+    }
+  }
+}
+
+function validateSchedule(task: Pick<ScheduledTaskEntity, 'schedule' | 'scheduleKind' | 'activeHoursStart' | 'activeHoursEnd'>): void {
+  if (task.schedule.kind !== task.scheduleKind) throw new Error('scheduled_task_schedule_kind_mismatch');
+  validateActiveHours(task.activeHoursStart, task.activeHoursEnd);
+  if (task.schedule.kind === 'at') {
+    if (!Number.isFinite(new Date(task.schedule.wakeAtISO).getTime())) throw new Error('scheduled_task_invalid_at');
+    return;
+  }
+  if (task.schedule.timezone) {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: task.schedule.timezone }).format(new Date());
+    } catch (error) {
+      throw new Error('scheduled_task_invalid_timezone', { cause: error });
+    }
+  }
+  try {
+    const cron = new Cron(task.schedule.expression, { timezone: task.schedule.timezone });
+    const next = cron.nextRun();
+    cron.stop();
+    if (!next) throw new Error('no_next_run');
+  } catch (error) {
+    throw new Error('scheduled_task_invalid_cron', { cause: error });
   }
 }
 
@@ -230,17 +356,31 @@ export async function restoreScheduledTasks(
   repo: Repository<ScheduledTaskEntity>,
   isVolatile: (agentInstanceId: string) => Promise<boolean>,
 ): Promise<void> {
-  const tasks = await repo.find({ where: { enabled: true } });
+  const tasks = await repo.find({ where: { enabled: true, state: 'active' } });
   let restored = 0;
 
   for (const task of tasks) {
     if (await isVolatile(task.agentInstanceId)) continue;
+    try {
+      validateSchedule(task);
+    } catch (error) {
+      cancelEntry(task.id);
+      await repo.update(task.id, {
+        enabled: false,
+        state: 'paused',
+        lastRunStatus: 'failed',
+        lastError: error instanceof Error ? error.message : String(error),
+        lastFailureAt: new Date(),
+      });
+      logger.warn('ScheduledTaskManager: disabled invalid persisted task', { taskId: task.id, error });
+      continue;
+    }
 
     // For 'at' tasks that are in the past and not repeating, fire immediately
     if (task.schedule.kind === 'at') {
       const atSchedule = task.schedule;
       const wakeAt = new Date(atSchedule.wakeAtISO);
-      if (wakeAt.getTime() <= Date.now() && !atSchedule.repeatIntervalMinutes) {
+      if (wakeAt.getTime() <= Date.now()) {
         scheduleEntry(Object.assign(new ScheduledTaskEntity(), task, { schedule: { ...atSchedule, wakeAtISO: new Date().toISOString() } }));
       } else {
         scheduleEntry(task);
@@ -257,55 +397,96 @@ export async function restoreScheduledTasks(
 }
 
 /** Add a new task (persists to DB + starts timer). */
-export async function addTask(input: CreateScheduledTaskInput): Promise<ScheduledTask> {
+export async function addTask(input: CreateScheduledTaskInput, options: ScheduledTaskCallOptions = {}): Promise<ScheduledTask> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
+  options.signal?.throwIfAborted();
+  if (!getLocalSchedulingIdentity) throw new Error('scheduled_task_identity_unavailable');
+  const identity = await getLocalSchedulingIdentity().catch((error: unknown) => {
+    throw new Error('scheduled_task_identity_unavailable', { cause: error });
+  });
+  if (!identity.peerId) throw new Error('scheduled_task_identity_unavailable');
+  const agent = await requireDurableAgentInstance(input.agentInstanceId, input.agentDefinitionId);
+  const agentDefinitionId = input.agentDefinitionId ?? agent?.agentDefId;
+  if (!agentDefinitionId) throw new Error('scheduled_task_definition_unavailable');
+  const name = input.name ?? `${agent?.name || input.agentInstanceId} schedule`;
+  const executionNodeId = input.executionNodeId ?? identity.peerId;
+  // A manager owns timers only for its own stable PeerId. Remote creation is
+  // routed to that peer's manager; accepting a third-party target here would
+  // make the task appear remotely owned while executing on this process.
+  if (executionNodeId !== identity.peerId) {
+    throw new Error(`scheduled_task_wrong_execution_node:${executionNodeId}`);
+  }
 
   const entity = scheduledTaskRepo.create({
     id: nanoid(),
     agentInstanceId: input.agentInstanceId,
-    agentDefinitionId: input.agentDefinitionId,
-    name: input.name,
+    agentDefinitionId,
+    name,
     scheduleKind: input.scheduleKind,
     schedule: input.schedule,
-    payload: input.payload,
+    payload: input.payload ?? null,
     enabled: input.enabled ?? true,
+    state: input.state ?? (input.enabled === false ? 'paused' : 'active'),
+    executionNodeId,
+    executionNodeLabel: input.executionNodeLabel ?? identity.deviceName ?? null,
+    originNodeId: input.originNodeId ?? identity.peerId,
     deleteAfterRun: input.deleteAfterRun ?? false,
-    activeHoursStart: input.activeHoursStart,
-    activeHoursEnd: input.activeHoursEnd,
+    activeHoursStart: input.activeHoursStart ?? null,
+    activeHoursEnd: input.activeHoursEnd ?? null,
     maxRuns: input.maxRuns,
     createdBy: input.createdBy ?? 'settings-ui',
     runCount: 0,
+    consecutiveFailures: 0,
   });
 
-  await scheduledTaskRepo.save(entity);
+  validateSchedule(entity);
 
-  if (entity.enabled) {
-    scheduleEntry(entity);
+  const saved = await scheduledTaskRepo.manager.transaction(async manager => {
+    options.signal?.throwIfAborted();
+    const result = await manager.getRepository(ScheduledTaskEntity).save(entity);
+    options.signal?.throwIfAborted();
+    return result;
+  });
+
+  if (saved.enabled) {
+    scheduleEntry(saved);
   }
 
-  logger.info('ScheduledTaskManager: task added', { taskId: entity.id, kind: entity.scheduleKind });
-  return entityToDto(entity);
+  logger.info('ScheduledTaskManager: task added', { taskId: saved.id, kind: saved.scheduleKind });
+  return entityToDto(saved);
 }
 
 /** Update an existing task (restarts timer). */
 export async function updateTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
 
-  const entity = await scheduledTaskRepo.findOne({ where: { id: input.id } });
-  if (!entity) throw new Error(`ScheduledTask not found: ${input.id}`);
+  const persisted = await scheduledTaskRepo.findOne({ where: { id: input.id } });
+  if (!persisted) throw new Error(`ScheduledTask not found: ${input.id}`);
+  await requireDurableAgentInstance(persisted.agentInstanceId, input.agentDefinitionId ?? persisted.agentDefinitionId);
+  // Validate a detached candidate so a rejected update cannot mutate the
+  // repository-managed entity before save.
+  const entity = scheduledTaskRepo.create();
+  Object.assign(entity, persisted);
 
   if (input.schedule !== undefined) {
     entity.schedule = input.schedule;
     entity.scheduleKind = input.schedule.kind;
   }
   if (input.name !== undefined) entity.name = input.name;
-  if (input.payload !== undefined) entity.payload = input.payload;
+  if (Object.hasOwn(input, 'payload')) entity.payload = input.payload ?? null;
   if (input.enabled !== undefined) entity.enabled = input.enabled;
+  if (input.state !== undefined) entity.state = input.state;
+  else if (input.enabled !== undefined) entity.state = input.enabled ? 'active' : 'paused';
+  if (input.executionNodeId !== undefined) entity.executionNodeId = input.executionNodeId;
+  if (Object.hasOwn(input, 'executionNodeLabel')) entity.executionNodeLabel = input.executionNodeLabel ?? null;
+  if (input.originNodeId !== undefined) entity.originNodeId = input.originNodeId;
   if (input.deleteAfterRun !== undefined) entity.deleteAfterRun = input.deleteAfterRun;
-  if (input.activeHoursStart !== undefined) entity.activeHoursStart = input.activeHoursStart;
-  if (input.activeHoursEnd !== undefined) entity.activeHoursEnd = input.activeHoursEnd;
+  if (Object.hasOwn(input, 'activeHoursStart')) entity.activeHoursStart = input.activeHoursStart ?? null;
+  if (Object.hasOwn(input, 'activeHoursEnd')) entity.activeHoursEnd = input.activeHoursEnd ?? null;
   if (input.maxRuns !== undefined) entity.maxRuns = input.maxRuns;
   if (input.agentDefinitionId !== undefined) entity.agentDefinitionId = input.agentDefinitionId;
+
+  validateSchedule(entity);
 
   await scheduledTaskRepo.save(entity);
 
@@ -316,25 +497,272 @@ export async function updateTask(input: UpdateScheduledTaskInput): Promise<Sched
   return entityToDto(entity);
 }
 
+/** Atomically validate the complete RPC resource tuple and update one task. */
+export async function updateTaskScoped(
+  scope: ScheduledTaskScope,
+  input: UpdateScheduledTaskInput,
+  options: ScheduledTaskCallOptions = {},
+): Promise<ScheduledTask> {
+  if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
+  options.signal?.throwIfAborted();
+  assertScopedUpdateIdentity(scope, input);
+  const entity = await scheduledTaskRepo.manager.transaction(async manager => {
+    const repository = manager.getRepository(ScheduledTaskEntity);
+    const where = scopeWhere(scope);
+    const persisted = await repository.findOne({ where });
+    options.signal?.throwIfAborted();
+    if (!persisted) throw new Error('scheduled_task_scope_unavailable');
+    const candidate = applyTaskUpdate(repository.create(), persisted, input);
+    validateSchedule(candidate);
+    options.signal?.throwIfAborted();
+    const result = await repository.createQueryBuilder()
+      .update(ScheduledTaskEntity)
+      .set(mutableTaskFields(candidate))
+      .where('id = :id', { id: where.id })
+      .andWhere('agentInstanceId = :agentInstanceId', { agentInstanceId: where.agentInstanceId })
+      .andWhere('agentDefinitionId = :agentDefinitionId', { agentDefinitionId: where.agentDefinitionId })
+      .andWhere('executionNodeId = :executionNodeId', { executionNodeId: where.executionNodeId })
+      .execute();
+    options.signal?.throwIfAborted();
+    if (result.affected !== 1) throw new Error('scheduled_task_scope_unavailable');
+    const updated = await repository.findOne({ where });
+    options.signal?.throwIfAborted();
+    if (!updated) throw new Error('scheduled_task_scope_unavailable');
+    return updated;
+  });
+  cancelEntry(entity.id);
+  if (entity.enabled) scheduleEntry(entity);
+  logger.info('ScheduledTaskManager: task updated', { taskId: entity.id });
+  return entityToDto(entity);
+}
+
+/** Read one task by the same complete scope used for mutations. */
+export async function getTaskByScope(
+  scope: ScheduledTaskScope,
+  options: ScheduledTaskCallOptions = {},
+): Promise<ScheduledTask | undefined> {
+  if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
+  options.signal?.throwIfAborted();
+  const entity = await scheduledTaskRepo.findOne({ where: scopeWhere(scope) });
+  options.signal?.throwIfAborted();
+  return entity ? entityToDto(entity) : undefined;
+}
+
+/** Atomically match the full scope before soft-deleting a task. */
+export async function removeTaskScoped(
+  scope: ScheduledTaskScope,
+  options: ScheduledTaskCallOptions = {},
+): Promise<void> {
+  if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
+  options.signal?.throwIfAborted();
+  await scheduledTaskRepo.manager.transaction(async manager => {
+    const where = scopeWhere(scope);
+    const result = await manager.getRepository(ScheduledTaskEntity).createQueryBuilder()
+      .update(ScheduledTaskEntity)
+      .set({ enabled: false, state: 'cancelled' })
+      .where('id = :id', { id: where.id })
+      .andWhere('agentInstanceId = :agentInstanceId', { agentInstanceId: where.agentInstanceId })
+      .andWhere('agentDefinitionId = :agentDefinitionId', { agentDefinitionId: where.agentDefinitionId })
+      .andWhere('executionNodeId = :executionNodeId', { executionNodeId: where.executionNodeId })
+      .execute();
+    options.signal?.throwIfAborted();
+    if (result.affected !== 1) throw new Error('scheduled_task_scope_unavailable');
+  });
+  cancelEntry(scope.taskId);
+  logger.info('ScheduledTaskManager: task removed', { taskId: scope.taskId });
+}
+
+function scopeWhere(scope: ScheduledTaskScope): Pick<ScheduledTaskEntity, 'id' | 'agentInstanceId' | 'agentDefinitionId' | 'executionNodeId'> {
+  return {
+    id: scope.taskId,
+    agentInstanceId: scope.agentInstanceId,
+    agentDefinitionId: scope.agentDefinitionId,
+    executionNodeId: scope.executionNodeId,
+  };
+}
+
+/**
+ * A scoped mutation may change task configuration, never its resource identity.
+ * Keep this check independent from agent metadata: the authenticated RPC grant
+ * and the conditional SQL write are the authorization boundary for an existing
+ * task, while a metadata lookup would be a separate, racy existence oracle.
+ */
+function assertScopedUpdateIdentity(scope: ScheduledTaskScope, input: UpdateScheduledTaskInput): void {
+  if (
+    input.id !== scope.taskId ||
+    (input.agentDefinitionId !== undefined && input.agentDefinitionId !== scope.agentDefinitionId) ||
+    (input.executionNodeId !== undefined && input.executionNodeId !== scope.executionNodeId)
+  ) {
+    throw new Error('scheduled_task_scope_unavailable');
+  }
+}
+
+function applyTaskUpdate(
+  entity: ScheduledTaskEntity,
+  persisted: ScheduledTaskEntity,
+  input: UpdateScheduledTaskInput,
+): ScheduledTaskEntity {
+  Object.assign(entity, persisted);
+  if (input.schedule !== undefined) {
+    entity.schedule = input.schedule;
+    entity.scheduleKind = input.schedule.kind;
+  }
+  if (input.name !== undefined) entity.name = input.name;
+  if (Object.hasOwn(input, 'payload')) entity.payload = input.payload ?? null;
+  if (input.enabled !== undefined) entity.enabled = input.enabled;
+  if (input.state !== undefined) entity.state = input.state;
+  else if (input.enabled !== undefined) entity.state = input.enabled ? 'active' : 'paused';
+  if (Object.hasOwn(input, 'executionNodeLabel')) entity.executionNodeLabel = input.executionNodeLabel ?? null;
+  if (input.deleteAfterRun !== undefined) entity.deleteAfterRun = input.deleteAfterRun;
+  if (Object.hasOwn(input, 'activeHoursStart')) entity.activeHoursStart = input.activeHoursStart ?? null;
+  if (Object.hasOwn(input, 'activeHoursEnd')) entity.activeHoursEnd = input.activeHoursEnd ?? null;
+  if (input.maxRuns !== undefined) entity.maxRuns = input.maxRuns;
+  return entity;
+}
+
+function mutableTaskFields(entity: ScheduledTaskEntity): Partial<ScheduledTaskEntity> {
+  return {
+    name: entity.name,
+    scheduleKind: entity.scheduleKind,
+    schedule: entity.schedule,
+    payload: entity.payload,
+    enabled: entity.enabled,
+    state: entity.state,
+    executionNodeLabel: entity.executionNodeLabel,
+    deleteAfterRun: entity.deleteAfterRun,
+    activeHoursStart: entity.activeHoursStart,
+    activeHoursEnd: entity.activeHoursEnd,
+    maxRuns: entity.maxRuns,
+  };
+}
+
 /** Remove a task (stops timer and deletes from DB). */
 export async function removeTask(taskId: string): Promise<void> {
   cancelEntry(taskId);
   if (scheduledTaskRepo) {
-    await scheduledTaskRepo.delete(taskId);
+    await scheduledTaskRepo.update(taskId, { enabled: false, state: 'cancelled' });
   }
   logger.info('ScheduledTaskManager: task removed', { taskId });
 }
 
+async function completeTask(taskId: string): Promise<void> {
+  cancelEntry(taskId);
+  if (scheduledTaskRepo) {
+    await scheduledTaskRepo.update(taskId, { enabled: false, state: 'completed' });
+  }
+}
+
 /** List all active in-memory tasks. */
-export function getActiveTasks(): ScheduledTask[] {
-  return [...activeEntries.values()].map(entry => entityToDto(entry.task));
+export async function getActiveTasks(options: ListScheduledTasksOptions = {}): Promise<ScheduledTask[]> {
+  if (!scheduledTaskRepo) return [];
+  const states = options.states?.length ? options.states : ['active'];
+  return (await scheduledTaskRepo.find({
+    where: {
+      state: In(states),
+      ...(options.executionNodeIds?.length ? { executionNodeId: In(options.executionNodeIds) } : {}),
+    },
+    order: { updated: 'DESC' },
+  })).map(entityToDto);
 }
 
 /** List tasks for a specific agent instance. */
-export function getActiveTasksForAgent(agentInstanceId: string): ScheduledTask[] {
-  return [...activeEntries.values()]
-    .filter(entry => entry.task.agentInstanceId === agentInstanceId)
-    .map(entry => entityToDto(entry.task));
+export async function getActiveTasksForAgent(
+  agentInstanceId: string,
+  options: ListScheduledTasksOptions = {},
+): Promise<ScheduledTask[]> {
+  if (!scheduledTaskRepo) return [];
+  const states = options.states?.length ? options.states : ['active'];
+  return (await scheduledTaskRepo.find({
+    where: {
+      agentInstanceId,
+      state: In(states),
+      ...(options.executionNodeIds?.length ? { executionNodeId: In(options.executionNodeIds) } : {}),
+    },
+    order: { updated: 'DESC' },
+  })).map(entityToDto);
+}
+
+/**
+ * Read one stable, bounded RPC page directly from SQLite. The revision covers
+ * every state in the scoped agent/device set, so an archive or other mutation
+ * invalidates an older cursor instead of silently skipping or duplicating a
+ * row. Concurrent inserts are handled the same way.
+ */
+export async function getScheduledTasksPageForAgent(
+  input: ListScheduledTasksPageForAgentInput,
+): Promise<ScheduledTaskPage> {
+  if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
+  input.signal?.throwIfAborted();
+  if (!Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > 100) {
+    throw new Error('scheduled_task_invalid_page_limit');
+  }
+  if (input.states.length < 1 || input.states.length > 5 || new Set(input.states).size !== input.states.length) {
+    throw new Error('scheduled_task_invalid_states');
+  }
+  if (input.after && (!input.after.id || !Number.isFinite(new Date(input.after.updatedAt).getTime()))) {
+    throw new Error('scheduled_task_invalid_cursor');
+  }
+
+  await ensureScheduledTaskRevisionSchema(scheduledTaskRepo);
+  input.signal?.throwIfAborted();
+  return scheduledTaskRepo.manager.transaction(async manager => {
+    input.signal?.throwIfAborted();
+    const repository = manager.getRepository(ScheduledTaskEntity);
+    const revisionRows = await manager.query<Array<{ revision?: number | string }>>(
+      'SELECT revision FROM scheduled_task_revision WHERE id = 1',
+    );
+    input.signal?.throwIfAborted();
+    const revisionValue = revisionRows[0]?.revision;
+    const revision = typeof revisionValue === 'number' || typeof revisionValue === 'string'
+      ? String(revisionValue)
+      : '0';
+    if (input.expectedRevision !== undefined && input.expectedRevision !== revision) {
+      throw new Error('scheduled_task_cursor_stale');
+    }
+
+    const query = repository.createQueryBuilder('task')
+      .where('task.agentInstanceId = :agentInstanceId', { agentInstanceId: input.agentInstanceId })
+      .andWhere('task.executionNodeId = :executionNodeId', { executionNodeId: input.executionNodeId })
+      .andWhere('task.state IN (:...states)', { states: input.states })
+      .orderBy('task.updated', 'DESC')
+      .addOrderBy('task.id', 'DESC')
+      .take(input.limit + 1);
+    if (input.after) {
+      query.andWhere(
+        '(task.updated < :afterUpdated OR (task.updated = :afterUpdated AND task.id < :afterId))',
+        { afterUpdated: new Date(input.after.updatedAt), afterId: input.after.id },
+      );
+    }
+    const rows = await query.getMany();
+    input.signal?.throwIfAborted();
+    const hasMore = rows.length > input.limit;
+    const pageRows = hasMore ? rows.slice(0, input.limit) : rows;
+    const last = pageRows.at(-1);
+    return {
+      items: pageRows.map(entityToDto),
+      revision,
+      ...(hasMore && last
+        ? { next: { updatedAt: last.updated.toISOString(), id: last.id } }
+        : {}),
+    };
+  });
+}
+
+const revisionSchemaManagers = new WeakSet<object>();
+
+async function ensureScheduledTaskRevisionSchema(repository: Repository<ScheduledTaskEntity>): Promise<void> {
+  const manager = repository.manager;
+  if (revisionSchemaManagers.has(manager)) return;
+  await manager.query(
+    'CREATE TABLE IF NOT EXISTS scheduled_task_revision (id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL)',
+  );
+  await manager.query('INSERT OR IGNORE INTO scheduled_task_revision (id, revision) VALUES (1, 0)');
+  for (const operation of ['INSERT', 'UPDATE', 'DELETE']) {
+    await manager.query(
+      `CREATE TRIGGER IF NOT EXISTS scheduled_task_revision_${operation.toLowerCase()} AFTER ${operation} ON scheduled_tasks BEGIN UPDATE scheduled_task_revision SET revision = revision + 1 WHERE id = 1; END`,
+    );
+  }
+  revisionSchemaManagers.add(manager);
 }
 
 /** Stop all timers (for app shutdown). */
@@ -363,11 +791,17 @@ export function getCronPreviewDates(expression: string, timezone?: string, count
 /**
  * Cancel all tasks for an agent instance (used on closeAgent / deleteAgent).
  */
-export function cancelTasksForAgent(agentInstanceId: string): void {
+export async function cancelTasksForAgent(agentInstanceId: string): Promise<void> {
   for (const [id, entry] of activeEntries) {
     if (entry.task.agentInstanceId === agentInstanceId) {
       cancelEntry(id);
     }
+  }
+  if (scheduledTaskRepo) {
+    await scheduledTaskRepo.update(
+      { agentInstanceId, state: 'active' },
+      { enabled: false, state: 'cancelled' },
+    );
   }
 }
 
@@ -428,7 +862,18 @@ export function startHeartbeat(
       }
     }
 
-    void agentInstanceService.sendMsgToAgent(agentId, { text: `[Heartbeat] ${message}` }).catch((error: unknown) => {
+    const fireIdentity = s.lastRunAtISO ?? new Date().toISOString();
+    void agentInstanceService.executeLocalAgentMessage(agentId, { text: `[Heartbeat] ${message}` }, {
+      source: 'heartbeat',
+      requestId: `heartbeat:${agentId}:${fireIdentity}:request`,
+      turnId: `heartbeat:${agentId}:${fireIdentity}:turn`,
+      restartHeartbeat: false,
+      provenance: {
+        heartbeatId: `__heartbeat:${agentId}`,
+        scheduledFor: Date.parse(fireIdentity),
+        createdBy: state.createdBy ?? 'agent-definition',
+      },
+    }).catch((error: unknown) => {
       logger.error('Heartbeat failed to send message', { error, agentId });
     });
   }, intervalMs);
@@ -436,7 +881,7 @@ export function startHeartbeat(
   handle.unref?.();
   // Store handle under a heartbeat-specific key to avoid conflicting with scheduled tasks
   activeEntries.set(`__heartbeat:${agentId}`, {
-    task: { id: `__heartbeat:${agentId}`, agentInstanceId: agentId, enabled: true, schedule: { kind: 'interval', intervalSeconds: config.intervalSeconds } } as ScheduledTaskEntity,
+    task: { id: `__heartbeat:${agentId}`, agentInstanceId: agentId },
     intervalHandle: handle,
   });
   logger.info('Heartbeat started', { agentId, intervalMs });

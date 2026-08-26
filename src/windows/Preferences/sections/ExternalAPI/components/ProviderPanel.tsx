@@ -3,7 +3,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, Chip, FormControlLabel, IconButton, InputAdornment, Switch, Typography } from '@mui/material';
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
 
@@ -27,6 +27,7 @@ interface ProviderPanelProps {
   onDeleteProvider?: () => void;
   onRefreshModels: () => void;
   refreshingModels?: boolean;
+  focusField?: 'apiKey' | 'baseUrl' | 'model' | 'apiMode';
 }
 
 export function ProviderPanel({
@@ -40,14 +41,32 @@ export function ProviderPanel({
   onDeleteProvider,
   onRefreshModels,
   refreshingModels = false,
+  focusField,
 }: ProviderPanelProps) {
   const { t } = useTranslation('agent');
   const isEnabled = provider.enabled !== false;
   const shouldShowBaseURL = provider.showBaseURLField || provider.providerClass === 'openAICompatible';
-  const [showApiKey, setShowApiKey] = useState(false);
+  // This is the user's explicit credential editor. Keep the loaded value
+  // visible by default so it can be inspected and copied without first
+  // replacing a redacted placeholder. The visibility toggle remains useful
+  // when somebody else can see the screen.
+  const [showApiKey, setShowApiKey] = useState(true);
+  const rootReference = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!focusField) return;
+    const testId = focusField === 'apiKey'
+      ? 'provider-api-key-input'
+      : focusField === 'baseUrl'
+      ? 'provider-base-url-input'
+      : 'add-new-model-button';
+    const element = rootReference.current?.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element?.focus();
+  }, [focusField]);
 
   return (
-    <>
+    <Box ref={rootReference}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
           <Typography variant='h6'>
@@ -201,6 +220,6 @@ export function ProviderPanel({
           {t('Preference.AddNewModel')}
         </Button>
       </Box>
-    </>
+    </Box>
   );
 }

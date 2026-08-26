@@ -1,12 +1,11 @@
-import { AIProviderConfig } from '@services/externalAPI/interface';
+import { AIProviderConfig, type DesktopAIConfig } from '@services/externalAPI/interface';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { AiAPIConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAIConfigManagement } from '../useAIConfigManagement';
 
 describe('useAIConfigManagement', () => {
-  const mockAIConfig: AiAPIConfig = {
+  const mockAIConfig: DesktopAIConfig = {
     default: {
       provider: 'openai',
       model: 'gpt-4',
@@ -87,7 +86,7 @@ describe('useAIConfigManagement', () => {
       });
 
       // Update the observable
-      const updatedConfig: AiAPIConfig = {
+      const updatedConfig: DesktopAIConfig = {
         ...mockAIConfig,
         default: mockAIConfig.default
           ? {
@@ -177,6 +176,45 @@ describe('useAIConfigManagement', () => {
 
       // Verify backend was called
       expect(window.service.externalAPI.updateDefaultAIConfig).toHaveBeenCalled();
+    });
+
+    it('persists an instance override as canonical AgentModelConfig only', async () => {
+      const updateAgent = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(window.service, 'agentInstance', {
+        value: {
+          getAgentMetadata: vi.fn().mockResolvedValue({
+            id: 'conversation-1',
+            agentDefId: 'definition-1',
+            modelConfig: {
+              providerId: 'openai',
+              modelId: 'gpt-4',
+              parameters: { temperature: 0.3, maxOutputTokens: 2048, topP: 0.8 },
+            },
+          }),
+          updateAgent,
+        },
+        writable: true,
+      });
+
+      const { result } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+      expect(result.current.config).toMatchObject({
+        default: { provider: 'openai', model: 'gpt-4' },
+        modelParameters: { temperature: 0.3, maxTokens: 2048, topP: 0.8 },
+      });
+
+      await act(async () => result.current.handleModelChange('openai', 'gpt-4.1'));
+      expect(updateAgent).toHaveBeenCalledWith('conversation-1', {
+        modelConfig: {
+          providerId: 'openai',
+          modelId: 'gpt-4.1',
+          parameters: { temperature: 0.3, maxOutputTokens: 2048, topP: 0.8 },
+        },
+      });
+      expect(updateAgent.mock.calls[0]?.[1]).not.toHaveProperty('providers');
+      expect(updateAgent.mock.calls[0]?.[1]).not.toHaveProperty('apiKey');
     });
   });
 

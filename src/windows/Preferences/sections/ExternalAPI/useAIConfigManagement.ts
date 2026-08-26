@@ -1,6 +1,6 @@
-import { AIProviderConfig } from '@services/externalAPI/interface';
+import { AIProviderConfig, type DesktopAIConfig } from '@services/externalAPI/interface';
 import { cloneDeep } from 'lodash';
-import type { AiAPIConfig } from 'memeloop';
+import type { AgentModelConfig } from 'memeloop';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseAIConfigManagementProps {
@@ -10,7 +10,7 @@ interface UseAIConfigManagementProps {
 
 interface UseAIConfigManagementResult {
   loading: boolean;
-  config: AiAPIConfig | null;
+  config: DesktopAIConfig | null;
   providers: AIProviderConfig[];
   setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
   handleModelChange: (provider: string, model: string) => Promise<void>;
@@ -19,19 +19,19 @@ interface UseAIConfigManagementResult {
   handleImageGenerationModelChange: (provider: string, model: string) => Promise<void>;
   handleTranscriptionsModelChange: (provider: string, model: string) => Promise<void>;
   handleFreeModelChange: (provider: string, model: string) => Promise<void>;
-  handleConfigChange: (newConfig: AiAPIConfig) => Promise<void>;
+  handleConfigChange: (newConfig: DesktopAIConfig) => Promise<void>;
 }
 
 export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<AiAPIConfig | null>(null);
+  const [config, setConfig] = useState<DesktopAIConfig | null>(null);
   const [providers, setProviders] = useState<AIProviderConfig[]>([]);
 
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         setLoading(true);
-        let finalConfig: AiAPIConfig | null = null;
+        let agentModelConfig: AgentModelConfig | undefined;
 
         // Three-tier configuration hierarchy: global < definition < instance
         // Load global config as base
@@ -39,30 +39,21 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
         if (agentId) {
           // Get instance config first
-          const agentInstance = await window.service.agentInstance.getAgent(agentId);
-          if (agentInstance?.aiApiConfig && Object.keys(agentInstance.aiApiConfig).length > 0) {
-            finalConfig = agentInstance.aiApiConfig;
+          const agentInstance = await window.service.agentInstance.getAgentMetadata(agentId);
+          if (agentInstance?.modelConfig) {
+            agentModelConfig = agentInstance.modelConfig;
           } else if (agentInstance?.agentDefId) {
             // Auto-resolve agentDefId from agentId and get definition config
             const agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
-            if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
-              finalConfig = agentDefinition.aiApiConfig;
-            }
+            agentModelConfig = agentDefinition?.modelConfig;
           }
         } else if (agentDefId) {
           // Get definition config
           const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
-          if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
-            finalConfig = agentDefinition.aiApiConfig;
-          }
+          agentModelConfig = agentDefinition?.modelConfig;
         }
 
-        // Fallback to global config if no specific config found
-        if (!finalConfig) {
-          finalConfig = globalConfig;
-        }
-
-        setConfig(finalConfig);
+        setConfig(toDesktopConfig(globalConfig, agentModelConfig));
 
         const providersData = await window.service.externalAPI.getAIProviders();
         setProviders(providersData);
@@ -94,15 +85,13 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     };
   }, [agentDefId, agentId]);
 
-  const updateConfig = useCallback(async (updatedConfig: AiAPIConfig) => {
+  const updateConfig = useCallback(async (updatedConfig: DesktopAIConfig) => {
     if (agentId) {
-      // Direct update for instance config
-      await window.service.agentInstance.updateAgent(agentId, { aiApiConfig: updatedConfig });
+      await window.service.agentInstance.updateAgent(agentId, { modelConfig: toAgentModelConfig(updatedConfig) });
     } else if (agentDefId) {
-      // Direct update for definition config
       await window.service.agentDefinition.updateAgentDef({
         id: agentDefId,
-        aiApiConfig: updatedConfig,
+        modelConfig: toAgentModelConfig(updatedConfig),
       });
     } else {
       // Update global config
@@ -209,7 +198,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     }
   }, [config, updateConfig]);
 
-  const handleConfigChange = useCallback(async (newConfig: AiAPIConfig) => {
+  const handleConfigChange = useCallback(async (newConfig: DesktopAIConfig) => {
     try {
       setConfig(newConfig);
       await updateConfig(newConfig);
@@ -232,3 +221,37 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     handleConfigChange,
   };
 };
+
+function toDesktopConfig(
+  globalConfig: DesktopAIConfig,
+  modelConfig: AgentModelConfig | undefined,
+): DesktopAIConfig {
+  const result = cloneDeep(globalConfig);
+  if (!modelConfig) return result;
+  result.default = { provider: modelConfig.providerId, model: modelConfig.modelId };
+  result.modelParameters = {
+    ...result.modelParameters,
+    ...modelConfig.parameters,
+    ...(modelConfig.parameters?.maxOutputTokens === undefined
+      ? {}
+      : { maxTokens: modelConfig.parameters.maxOutputTokens }),
+  };
+  return result;
+}
+
+function toAgentModelConfig(config: DesktopAIConfig): AgentModelConfig {
+  const selected = config.default;
+  if (!selected?.provider || !selected.model) throw new Error('Agent model selection is required');
+  const maxOutputTokens = config.modelParameters.maxOutputTokens ?? config.modelParameters.maxTokens;
+  return {
+    providerId: selected.provider,
+    modelId: selected.model,
+    parameters: {
+      ...(config.modelParameters.temperature === undefined
+        ? {}
+        : { temperature: config.modelParameters.temperature }),
+      ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
+      ...(config.modelParameters.topP === undefined ? {} : { topP: config.modelParameters.topP }),
+    },
+  };
+}

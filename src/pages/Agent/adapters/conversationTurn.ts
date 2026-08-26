@@ -31,14 +31,11 @@ export function getConversationTurn(
 export async function deleteConversationTurn(
   agentId: string,
   userMessageId: string,
-  orderedMessageIds: string[],
-  messages: Map<string, ChatMessage>,
+  _orderedMessageIds: string[],
+  _messages: Map<string, ChatMessage>,
 ): Promise<ConversationTurn | undefined> {
-  const turn = getConversationTurn(userMessageId, orderedMessageIds, messages);
-  if (!turn) return undefined;
-
   try {
-    await window.service.agentInstance.deleteMessages(agentId, turn.messageIds);
+    return await window.service.agentInstance.deleteAgentTurn(agentId, userMessageId);
   } catch (error) {
     void window.service.native.log('error', 'Failed to delete conversation turn', {
       agentId,
@@ -47,5 +44,4 @@ export async function deleteConversationTurn(
     });
     throw error;
   }
-  return turn;
 }

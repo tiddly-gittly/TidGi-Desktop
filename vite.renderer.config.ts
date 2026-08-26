@@ -3,6 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
 import monacoEditorPlugin from 'vite-plugin-monaco-editor';
+import { rendererAliases } from './vite.renderer.aliases';
 
 export default defineConfig({
   plugins: [
@@ -13,18 +14,7 @@ export default defineConfig({
     monacoEditorPlugin({}),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@services': path.resolve(__dirname, './src/services'),
-      '@memeloop/react-ui/chat': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js'),
-      '@memeloop/react-ui/web': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js'),
-      '@memeloop/react-ui/native': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/native/index.js'),
-      '@memeloop/react-ui/theme': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/theme/index.js'),
-      '@memeloop/react-ui/agent': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/index.js'),
-      '@memeloop/react-ui': path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js'),
-      'react-transition-group/cjs/TransitionGroupContext.js': path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js'),
-      'react-transition-group/esm/TransitionGroupContext.js': path.resolve(__dirname, './node_modules/react-transition-group/esm/TransitionGroupContext.js'),
-    },
+    alias: rendererAliases,
   },
   optimizeDeps: {
     include: ['monaco-editor'],

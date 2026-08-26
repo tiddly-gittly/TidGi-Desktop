@@ -43,6 +43,7 @@ vi.mock('@services/container', async () => {
 });
 
 import { WORKSPACE_STARTUP_CONCURRENCY, WorkspaceView } from '..';
+import { registerMenu } from '../registerMenu';
 
 function createWorkspace(id: string, overrides: Partial<IWikiWorkspace> = {}): IWikiWorkspace {
   return {
@@ -66,6 +67,20 @@ function createService(): WorkspaceView {
 describe('WorkspaceView startup lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('does not schedule Electron menu work merely by constructing the service', async () => {
+    vi.useFakeTimers();
+    try {
+      const service = createService();
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(registerMenu).not.toHaveBeenCalled();
+
+      await service.initializeMenu();
+      expect(registerMenu).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('fails duplicate folder and HTTP-port resources before starting workers', async () => {

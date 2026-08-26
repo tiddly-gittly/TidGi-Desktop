@@ -100,6 +100,8 @@ export class AgentBrowserService implements IAgentBrowserService {
           type: TabType.CHAT,
           agentId: data.agentId as string | undefined,
           agentDefId: data.agentDefId as string | undefined,
+          initialMessage: data.initialMessage as string | undefined,
+          initialWikiTiddlers: data.initialWikiTiddlers as IChatTab['initialWikiTiddlers'],
         };
       case TabType.NEW_TAB:
         return {
@@ -169,10 +171,12 @@ export class AgentBrowserService implements IAgentBrowserService {
         break;
       }
       case TabType.CHAT: {
-        const chatTab = tab as { agentId?: string; agentDefId?: string };
+        const chatTab = tab;
         entity.data = {
           agentId: chatTab.agentId,
           agentDefId: chatTab.agentDefId,
+          initialMessage: chatTab.initialMessage,
+          initialWikiTiddlers: chatTab.initialWikiTiddlers,
         };
         break;
       }
@@ -381,7 +385,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           break;
         }
         case TabType.CHAT: {
-          const chatData = pick(data, ['agentId', 'agentDefId']);
+          const chatData = pick(data, ['agentId', 'agentDefId', 'initialMessage', 'initialWikiTiddlers']);
           Object.assign(existingTab.data, chatData);
           break;
         }
@@ -413,6 +417,43 @@ export class AgentBrowserService implements IAgentBrowserService {
       logger.error('Failed to update tab', { error });
       throw error;
     }
+  }
+
+  public async acknowledgeInitialMessage(tabId: string, agentId: string, expectedMessage: string): Promise<boolean> {
+    this.ensureRepositories();
+    const acknowledged = await this.dataSource!.transaction(async manager => {
+      const repository = manager.getRepository(AgentBrowserTabEntity);
+      const direct = await repository.findOne({ where: { id: tabId, opened: true } });
+      if (direct?.tabType === TabType.CHAT) {
+        const data = { ...(direct.data ?? {}) };
+        if (data.agentId !== agentId || data.initialMessage !== expectedMessage) return false;
+        delete data.initialMessage;
+        delete data.initialWikiTiddlers;
+        direct.data = data;
+        await repository.save(direct);
+        return true;
+      }
+
+      const splitTabs = await repository.find({ where: { tabType: TabType.SPLIT_VIEW, opened: true } });
+      for (const split of splitTabs) {
+        const childTabs = Array.isArray(split.data?.childTabs) ? split.data.childTabs as TabItem[] : [];
+        const childIndex = childTabs.findIndex(child => child.id === tabId && child.type === TabType.CHAT);
+        if (childIndex < 0) continue;
+        const child = childTabs[childIndex] as IChatTab;
+        if (child.agentId !== agentId || child.initialMessage !== expectedMessage) return false;
+        const nextChild = { ...child };
+        delete nextChild.initialMessage;
+        delete nextChild.initialWikiTiddlers;
+        const nextChildren = [...childTabs];
+        nextChildren[childIndex] = nextChild;
+        split.data = { ...(split.data ?? {}), childTabs: nextChildren };
+        await repository.save(split);
+        return true;
+      }
+      return false;
+    });
+    if (acknowledged) await this.updateTabsObservable();
+    return acknowledged;
   }
 
   /**
@@ -732,9 +773,11 @@ export class AgentBrowserService implements IAgentBrowserService {
             if (chatChild?.agentId) {
               // Send the new message with wiki tiddler attachment to existing agent
               const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-              await agentInstanceService.sendMsgToAgent(chatChild.agentId, {
+              await agentInstanceService.executeLocalAgentMessage(chatChild.agentId, {
                 text: selectionText,
                 wikiTiddlers,
+              }, {
+                source: 'agent-browser',
               });
             }
 
@@ -759,6 +802,7 @@ export class AgentBrowserService implements IAgentBrowserService {
         agentDefId: agent.agentDefId,
         agentId: agent.id,
         initialMessage: selectionText,
+        initialWikiTiddlers: wikiTiddlers,
         state: TabState.ACTIVE,
         isPinned: false,
         createdAt: timestamp,
@@ -784,17 +828,6 @@ export class AgentBrowserService implements IAgentBrowserService {
           };
           childTabs.push(wikiEmbedTab);
         }
-      }
-
-      // Send initial message to the agent with wiki tiddler attachment
-      // Note: When creating SPLIT_VIEW tabs (not plain CHAT tabs), we need to send the message here
-      // because basicActions.ts only handles direct CHAT tab creation.
-      // The child CHAT tab has initialMessage set, but we must explicitly send it.
-      if (selectionText && agent.id) {
-        await agentInstanceService.sendMsgToAgent(agent.id, {
-          text: selectionText,
-          wikiTiddlers,
-        });
       }
 
       // Create a split view tab with the child tabs

@@ -13,9 +13,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const EditTiddlerParameterSchema = z.object({
   toolListPosition: z.object({
@@ -148,7 +148,7 @@ async function executeEditTiddler(parameters: EditTiddlerParameters): Promise<To
   };
 }
 
-const editTiddlerDefinition = registerToolDefinition({
+export const editTiddlerDefinition = defineDesktopTool({
   toolId: 'editTiddler',
   displayName: 'Edit Tiddler (Range Replace)',
   description: 'Replace a unique substring inside a tiddler — returns a diff with +/- counts',
@@ -167,5 +167,3 @@ const editTiddlerDefinition = registerToolDefinition({
     await executeToolCall('edit-tiddler', executeEditTiddler);
   },
 });
-
-export const editTiddlerTool = editTiddlerDefinition.tool;

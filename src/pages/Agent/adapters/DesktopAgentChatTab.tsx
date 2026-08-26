@@ -1,52 +1,82 @@
-/**
- * DesktopAgentChatTab — Desktop-specific chat tab adapter.
- *
- * Bridges the Desktop Zustand store (useAgentChatStore) with the shared
- * AgentChatView from @memeloop/react-ui/agent.
- *
- * Desktop-specific responsibilities:
- * - Agent loading/subscription lifecycle via tab.agentId
- * - Wiki tiddler selector integration
- * - Model parameters dialog
- * - Agent switching with tab data updates
- * - Wiki tiddler click navigation
- * - Split view handling
- */
-
-import { Box, Button, Typography } from '@mui/material';
-import type { ChatMessage, WikiTiddlerClickData } from 'memeloop';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import { WikiChannel } from '@/constants/channels';
+import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown';
+import { useTabStore } from '@/pages/Agent/store/tabStore';
+import type { IChatTab, TabItem } from '@/pages/Agent/types/tab';
+import { PreferenceSections } from '@/services/preferences/interface';
+import { parseTiddlyWikiDrop } from '@/services/wiki/plugin/memeloopAgentUI/dropPayload';
+import {
+  AgentChatConfigError,
+  type AgentChatErrorPresentation,
+  AgentChatShell,
+  AgentSessionProvider,
+  useAgentSession,
+  useAgentSessionChatAdapter,
+  type WikiAttachmentOption,
+} from '@memeloop/react-ui/agent';
+import { ConversationTimelineWindowController, type WebMemeLoopChatAdapter } from '@memeloop/react-ui/chat';
+import TuneIcon from '@mui/icons-material/Tune';
+import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { AgentSessionController, type ChatMessage, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
-import { WikiChannel } from '@/constants/channels';
-import { getConfigErrorPresentation } from '@/services/externalAPI/configErrorPresentation';
-import { PreferenceSections } from '@/services/preferences/interface';
-import { AIModelParametersDialog } from '@/windows/Preferences/sections/ExternalAPI/components/AIModelParametersDialog';
-import { AgentChatView } from '@memeloop/react-ui/agent';
-import { type MemeLoopChatAdapter, MessageContent } from '@memeloop/react-ui/chat';
-
-import { ChatHeader } from './components/ChatHeader';
-import { ChatToolbar } from './components/ChatToolbar';
-import { E2EComposer } from './components/E2EComposer';
-import { WikiTiddlerSelector } from './components/WikiTiddlerSelector';
+import { AgentSwitcher } from './components/AgentSwitcher';
+import { CompactModelSelector } from './components/CompactModelSelector';
+import { PromptPreviewButtonWithMenu } from './components/PromptPreviewButtonWithMenu';
+import { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
+import { createDesktopFileAttachmentSource } from './DesktopAgentExecutionCoordinator';
+import { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
+import { createDesktopConversationTimelineClient } from './DesktopConversationTimelineClient';
+import { createDesktopMessageDetailLoader } from './DesktopMessageDetailLoader';
+import { createDesktopPromptPreviewController } from './DesktopPromptPreviewController';
 import { useExecutionTargets } from './hooks/useExecutionTargets';
 import { useMessageHandling } from './hooks/useMessageHandling';
+import { localizeAgentRunError } from './localizeAgentRunError';
 import { isChatTab } from './utils/tabTypeGuards';
-
-import { useAgentChatStore } from '../store/agentChatStore';
-import { useTabStore } from '../store/tabStore';
-import type { TabItem } from '../types/tab';
 
 interface DesktopAgentChatTabProps {
   tab: TabItem;
   isSplitView?: boolean;
 }
 
-/**
- * Renders a configuration error inside a message or empty state.
- * Detects the raw i18n key prefix `Chat.ConfigError.<Key>` and translates it.
- */
+const createId = (): string => crypto.randomUUID();
+
+function dataIsTiddlerArray(value: unknown): value is Array<{ title?: string }> {
+  return Array.isArray(value);
+}
+
+async function loadWikiAttachmentOptions(signal: AbortSignal): Promise<readonly WikiAttachmentOption[]> {
+  signal.throwIfAborted();
+  const workspaces = await window.service.workspace.getWorkspacesAsList();
+  signal.throwIfAborted();
+  const options: WikiAttachmentOption[] = [];
+  for (const workspace of workspaces) {
+    signal.throwIfAborted();
+    if (!('wikiFolderLocation' in workspace) || workspace.hibernated) continue;
+    const response = await window.service.wiki.callWikiIpcServerRoute(
+      workspace.id,
+      'getTiddlersJSON',
+      '[!is[system]sort[title]limit[200]]',
+      ['text'],
+    ).catch(() => undefined);
+    signal.throwIfAborted();
+    if (response?.statusCode !== 200 || !dataIsTiddlerArray(response.data)) continue;
+    for (const tiddler of response.data) {
+      if (typeof tiddler.title !== 'string' || tiddler.title.length === 0) continue;
+      options.push({
+        id: `${workspace.id}:${tiddler.title}`,
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        tiddlerTitle: tiddler.title,
+      });
+      if (options.length >= 200) return options;
+    }
+  }
+  return options;
+}
+
+/** Kept as a small compatibility export for existing focused rendering tests. */
 export function ConfigErrorMessage({
   fallbackMessage,
   translationKey,
@@ -57,358 +87,316 @@ export function ConfigErrorMessage({
   params: Record<string, string>;
 }) {
   const { t } = useTranslation('agent');
-
-  const openExternalAPISettings = async (): Promise<void> => {
-    try {
-      const isTestMode = await window.service.context.get('isTest');
-      const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-      await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to open External API settings', {
-        error,
-        function: 'ConfigErrorMessage.openExternalAPISettings',
-      });
-    }
-  };
-
   return (
-    <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2 }}>
-      <Typography color='error.main' variant='h6' gutterBottom>
-        {t('Chat.ConfigError.Title')}
-      </Typography>
-      <Typography color='text.secondary' sx={{ mb: 1.5 }}>
-        {t(`Chat.ConfigError.${translationKey}`, { defaultValue: fallbackMessage, ...params })}
-      </Typography>
-      <Button
-        variant='outlined'
-        size='small'
-        onClick={() => {
-          void openExternalAPISettings();
-        }}
-      >
-        {t('Chat.ConfigError.GoToSettings')}
-      </Button>
-    </Box>
+    <AgentChatConfigError
+      title={t('Chat.ConfigError.Title')}
+      message={t(`Chat.ConfigError.${translationKey}`, { defaultValue: fallbackMessage, ...params })}
+      actionLabel={t('Chat.ConfigError.GoToSettings')}
+      actionId='open-external-api-settings'
+      onAction={openExternalApiSettings}
+    />
   );
 }
 
-/**
- * Desktop Agent Chat Tab Component
- * Displays a chat interface for interacting with an AI agent.
- */
-export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, isSplitView }) => {
-  const { t } = useTranslation('agent');
+async function openExternalApiSettings(): Promise<void> {
+  const isTestMode = await window.service.context.get('isTest');
+  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
+  await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
+}
 
-  if (!isChatTab(tab)) {
-    return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography color='error'>{t('Agent.InvalidTabType')}</Typography>
-      </Box>
-    );
-  }
+type ActiveChatTab = IChatTab & { agentId: string };
 
-  const {
-    fetchAgent,
-    cancelAgent,
-    subscribeToUpdates,
-    updateAgent,
-    loading,
-    error,
-    agent,
-    messages,
-    orderedMessageIds,
-    streamingMessageIds,
-    sendMessage: storeSendMessage,
-    updateMessage,
-    deleteTurn,
-    retryTurn,
-  } = useAgentChatStore(
-    useShallow((state) => ({
-      fetchAgent: state.fetchAgent,
-      cancelAgent: state.cancelAgent,
-      subscribeToUpdates: state.subscribeToUpdates,
-      updateAgent: state.updateAgent,
-      loading: state.loading,
-      error: state.error,
-      agent: state.agent,
-      messages: state.messages,
-      orderedMessageIds: state.orderedMessageIds,
-      streamingMessageIds: state.streamingMessageIds,
-      sendMessage: state.sendMessage,
-      updateMessage: state.updateMessage,
-      deleteTurn: state.deleteTurn,
-      retryTurn: state.retryTurn,
-    })),
+function DesktopAgentChatSession({ tab, isSplitView }: { tab: ActiveChatTab; isSplitView?: boolean }) {
+  const conversationClient = useMemo(createDesktopAgentConversationClient, []);
+  const instanceClient = useMemo(createDesktopAgentInstanceClient, []);
+  const timelineClient = useMemo(createDesktopConversationTimelineClient, []);
+  const controller = useMemo(() =>
+    new AgentSessionController({
+      agentInstanceClient: instanceClient,
+      conversationClient,
+      maxResidentMessages: 50,
+      maxResidentBytes: 256 * 1024,
+    }), [conversationClient, instanceClient, tab.agentId]);
+  const timelineController = useMemo(
+    () => new ConversationTimelineWindowController(timelineClient),
+    [tab.agentId, timelineClient],
   );
 
+  useEffect(() => {
+    void controller.start({ agentId: tab.agentId, conversationId: tab.agentId });
+    return () => {
+      controller.stop();
+      timelineController.dispose();
+    };
+  }, [controller, tab.agentId, timelineController]);
+
+  return (
+    <AgentSessionProvider controller={controller}>
+      <DesktopAgentChatView
+        tab={tab}
+        isSplitView={isSplitView}
+        instanceClient={instanceClient}
+        timelineController={timelineController}
+      />
+    </AgentSessionProvider>
+  );
+}
+
+function DesktopAgentChatView({
+  tab,
+  isSplitView,
+  instanceClient,
+  timelineController,
+}: {
+  tab: ActiveChatTab;
+  isSplitView?: boolean;
+  instanceClient: ReturnType<typeof createDesktopAgentInstanceClient>;
+  timelineController: ConversationTimelineWindowController;
+}) {
+  const { t, i18n } = useTranslation('agent');
+  const { snapshot } = useAgentSession();
+  const detailLoader = useMemo(createDesktopMessageDetailLoader, []);
+  const promptPreviewController = useMemo(createDesktopPromptPreviewController, [tab.agentId]);
+  const baseAdapter = useAgentSessionChatAdapter({
+    conversationId: tab.agentId,
+    timelineController,
+    createId,
+    loadMessageDetail: detailLoader,
+    onError: (error, operation) => {
+      void window.service.native.log('error', 'MemeLoop chat operation failed', { operation, error });
+    },
+  });
   const {
-    parametersOpen,
-    setParametersOpen,
-    handleOpenParameters,
     selectedFile,
     handleFileSelect,
     handleClearFile,
     selectedWikiTiddlers,
     handleWikiTiddlerSelect,
     handleRemoveWikiTiddler,
+    handleAttachmentsSelect,
     clearAttachments,
   } = useMessageHandling();
 
-  // Fetch agent and subscribe on tab/agent change.
-  useEffect(() => {
-    if (!tab.agentId) return;
-
-    void window.service.native.log('info', 'DesktopAgentChatTab: Setting up agent subscription', {
-      agentId: tab.agentId,
-      tabId: tab.id,
-      tabTitle: tab.title,
-    });
-
-    void fetchAgent(tab.agentId);
-    const unsub = subscribeToUpdates(tab.agentId);
-    return () => {
-      if (unsub) unsub();
-    };
-  }, [tab.agentId, fetchAgent, subscribeToUpdates]);
-
-  const orderedMessages = useMemo(
-    () =>
-      orderedMessageIds
-        .map((id) => messages.get(id))
-        .filter((message): message is ChatMessage => message !== undefined),
-    [messages, orderedMessageIds],
-  );
-
-  const isWorking = loading;
-  const isStreaming = streamingMessageIds.size > 0;
-
-  const {
-    activeExecutionTargetId,
-    cancelSelectedTarget,
-    executionTargets,
-    loadMessageDetail,
-    remoteError,
-    remoteRunning,
-    sendMessage: sendToExecutionTarget,
-    setExecutionTarget,
-  } = useExecutionTargets({
-    agent,
-    cancelLocalAgent: cancelAgent,
-    deleteTurn,
-    fetchAgent,
-    orderedMessages,
-    sendLocalMessage: storeSendMessage,
-    tabTitle: tab.title,
+  const targets = useExecutionTargets({
+    agent: snapshot.agent,
+    orderedMessages: snapshot.messages,
   });
+  const acknowledgeInitialMessage = useTabStore(useShallow(state => state.acknowledgeInitialMessage));
+  const submittedInitialMessageReference = useRef<string | undefined>(undefined);
 
-  const adapter: MemeLoopChatAdapter = useMemo(
-    () => ({
-      messages: orderedMessages,
-      isRunning: isWorking || remoteRunning,
-      isLoading: loading,
-      isMessageStreaming: (messageId) => streamingMessageIds.has(messageId),
-      error: error ?? remoteError,
-      executionTargets,
-      activeExecutionTargetId,
-      setExecutionTarget,
-      loadMessageDetail,
-      sendMessage: async ({ text, file, wikiTiddlers }) => {
-        await sendToExecutionTarget(text, file, wikiTiddlers);
-        clearAttachments();
+  useEffect(() => {
+    if (!targets.isReady || !tab.initialMessage) return;
+    const identity = `${tab.id}:${tab.agentId}`;
+    if (submittedInitialMessageReference.current === identity) return;
+    submittedInitialMessageReference.current = identity;
+    const requestId = `initial:${tab.id}:${tab.agentId}:request`;
+    const turnId = `initial:${tab.id}:${tab.agentId}:turn`;
+    void targets.sendMessage(tab.initialMessage, undefined, tab.initialWikiTiddlers, {
+      requestId,
+      turnId,
+      onAccepted: async () => {
+        await acknowledgeInitialMessage(tab.id, tab.agentId, tab.initialMessage!);
       },
-      cancel: cancelSelectedTarget,
-      deleteTurn: async (userMessageId) => {
-        await deleteTurn(userMessageId);
-      },
-      retryTurn,
-      resolveAskQuestion: async (questionId, answer) => {
-        if (agent?.id) {
-          await window.service.agentInstance.resolveAskQuestion(agent.id, questionId, answer);
-        }
-      },
-      updateMessage: async (message) => {
-        updateMessage(message);
-        if (agent?.id) {
-          await window.service.agentInstance.debounceUpdateMessage(message, agent.id, 0);
-        }
-      },
-    }),
-    [
-      orderedMessages,
-      isWorking,
-      remoteRunning,
-      loading,
-      streamingMessageIds,
-      error,
-      remoteError,
-      executionTargets,
-      activeExecutionTargetId,
-      setExecutionTarget,
-      loadMessageDetail,
-      sendToExecutionTarget,
-      clearAttachments,
-      cancelSelectedTarget,
-      agent?.id,
-      updateMessage,
-      deleteTurn,
-      retryTurn,
-    ],
-  );
+    }).catch((error: unknown) => {
+      void window.service.native.log('error', 'Failed to submit pending initial MemeLoop message', {
+        tabId: tab.id,
+        agentId: tab.agentId,
+        requestId,
+        error,
+      });
+    });
+  }, [acknowledgeInitialMessage, tab.agentId, tab.id, tab.initialMessage, tab.initialWikiTiddlers, targets.isReady, targets.sendMessage]);
 
-  const updateTabData = useTabStore(useShallow((state) => state.updateTabData));
-  const handleSwitchAgent = React.useCallback(
-    async (newAgentDefinitionId: string) => {
-      if (newAgentDefinitionId === tab.agentDefId) return;
-      try {
-        const newAgent = await window.service.agentInstance.createAgent(newAgentDefinitionId);
-        updateTabData(tab.id, {
-          agentId: newAgent.id,
-          agentDefId: newAgentDefinitionId,
-          title: newAgent.name,
-        });
-        await fetchAgent(newAgent.id);
-      } catch (error_) {
-        void window.service.native.log('error', 'Failed to switch agent', { error: error_ });
-      }
+  const adapter = useMemo((): WebMemeLoopChatAdapter => ({
+    ...baseAdapter,
+    executionTargets: targets.executionTargets,
+    activeExecutionTargetId: targets.activeExecutionTargetId,
+    setExecutionTarget: targets.setExecutionTarget,
+    isRunning: targets.isRunning,
+    error: targets.error ?? baseAdapter.error,
+    cancel: targets.cancelSelectedTarget,
+    sendMessage: async input => {
+      const attachment = input.file ? createDesktopFileAttachmentSource(input.file) : undefined;
+      await targets.sendMessage(input.text, attachment, input.wikiTiddlers);
+      clearAttachments();
     },
-    [tab.agentDefId, tab.id, updateTabData, fetchAgent],
-  );
+    deleteTurn: targets.deleteTurn,
+    retryTurn: targets.retryTurn,
+  }), [baseAdapter, clearAttachments, targets]);
 
-  const renderAttachmentPicker: NonNullable<React.ComponentProps<typeof AgentChatView>['renderAttachmentPicker']> = ({ disabled, openFilePicker }) => (
-    <WikiTiddlerSelector
-      disabled={disabled}
-      onAddImage={openFilePicker}
-      onSelect={handleWikiTiddlerSelect}
-    />
-  );
+  const updateTabData = useTabStore(useShallow(state => state.updateTabData));
+  const handleSwitchAgent = useCallback(async (agentDefinitionId: string) => {
+    if (agentDefinitionId === tab.agentDefId) return;
+    const newAgent = await instanceClient.createAgent(agentDefinitionId);
+    updateTabData(tab.id, {
+      agentId: newAgent.id,
+      agentDefId: agentDefinitionId,
+      title: agentDefinitionId,
+    });
+  }, [instanceClient, tab.agentDefId, tab.id, updateTabData]);
 
-  /**
-   * Handle click on a wiki tiddler chip inside a chat message.
-   * Opens the tiddler in the wiki view or navigates to the workspace.
-   */
-  const handleWikiTiddlerClick = useCallback(
-    (tiddler: WikiTiddlerClickData) => {
-      void (async () => {
-        try {
-          if (isSplitView) {
-            await window.service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, tiddler.workspaceId, [
-              tiddler.tiddlerTitle,
-            ]);
-          } else {
-            await window.service.workspaceView.setActiveWorkspaceView(tiddler.workspaceId);
-          }
-          void window.service.native.log('debug', 'Navigated to wiki tiddler', {
-            workspaceId: tiddler.workspaceId,
-            workspaceName: tiddler.workspaceName,
-            tiddlerTitle: tiddler.tiddlerTitle,
-            isSplitView,
-          });
-        } catch (error) {
-          void window.service.native.log('error', 'Failed to navigate to wiki tiddler', {
-            error,
-            workspaceId: tiddler.workspaceId,
-            tiddlerTitle: tiddler.tiddlerTitle,
-          });
-        }
-      })();
-    },
-    [isSplitView],
+  const resolveErrorPresentation = useCallback((value: Error | ChatMessage): AgentChatErrorPresentation | null => {
+    const runError = value instanceof Error
+      ? extractAgentRunError(value)
+      : extractAgentRunError(value.metadata?.agentRunError);
+    if (!runError) return null;
+    return {
+      title: t('Chat.Message.Error'),
+      message: localizeAgentRunError(runError, t),
+      diagnosticId: runError.diagnosticId,
+      settingTarget: runError.settingTarget,
+      ...(runError.settingTarget === undefined
+        ? {}
+        : {
+          actionLabel: t('Chat.ConfigError.GoToSettings'),
+          actionId: 'open-agent-run-setting',
+        }),
+    };
+  }, [t]);
+
+  const handleWikiTiddlerClick = useCallback((tiddler: WikiTiddlerClickData) => {
+    void (isSplitView
+      ? window.service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, tiddler.workspaceId, [tiddler.tiddlerTitle])
+      : window.service.workspaceView.setActiveWorkspaceView(tiddler.workspaceId));
+  }, [isSplitView]);
+
+  const resolveDroppedWikiTiddlers = useCallback(async (drop: Parameters<typeof parseTiddlyWikiDrop>[0]) => {
+    const activeWorkspace = await window.service.workspace.getActiveWorkspace();
+    return activeWorkspace ? parseTiddlyWikiDrop(drop, activeWorkspace.name) : [];
+  }, []);
+  const timeFormatter = useMemo(
+    () => new Intl.DateTimeFormat(i18n.language, { dateStyle: 'short', timeStyle: 'short' }),
+    [i18n.language],
   );
+  const activeAgentDefinitionId = snapshot.agent?.agentDefId ?? tab.agentDefId ?? tab.agentId;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
-      <AgentChatView
-        adapter={adapter}
-        header={<ChatHeader title={tab.title} isSplitView={isSplitView} />}
-        composerToolbar={
-          <ChatToolbar
-            tabId={tab.id}
-            currentAgentDefId={tab.agentDefId}
-            onSwitchAgent={handleSwitchAgent}
-            onOpenParameters={handleOpenParameters}
-            loading={isWorking}
-            isStreaming={isStreaming}
-            isSplitView={isSplitView}
-            embedded
+    <AgentChatShell
+      adapter={adapter}
+      header={{
+        title: snapshot.agent?.name || tab.title,
+        navigation: isSplitView ? undefined : <TabListDropdown />,
+        editTitleLabel: t('Agent.EditTitle'),
+        onTitleChange: async name => {
+          await instanceClient.updateAgent(tab.agentId, { name });
+        },
+      }}
+      toolbar={{
+        primary: (
+          <AgentSwitcher
+            currentAgentDefId={activeAgentDefinitionId}
+            onSwitch={agentDefinitionId => {
+              void handleSwitchAgent(agentDefinitionId);
+            }}
+            disabled={adapter.isRunning}
           />
-        }
-        renderAttachmentPicker={renderAttachmentPicker}
-        selectedFile={selectedFile}
-        selectedWikiTiddlers={selectedWikiTiddlers}
-        onFileSelect={handleFileSelect}
-        onWikiTiddlerSelect={handleWikiTiddlerSelect}
-        onClearFile={handleClearFile}
-        onRemoveWikiTiddler={handleRemoveWikiTiddler}
-        onWikiTiddlerClick={handleWikiTiddlerClick}
-        composerComponent={E2EComposer}
-        disabled={!agent || isWorking}
-        placeholder={t('Agent.StartConversation')}
-        loadingMessage={t('Agent.LoadingChat')}
-        emptyMessage={t('Agent.StartConversation')}
-        renderError={(error_) => {
-          const presentation = getConfigErrorPresentation(error_.message, error_);
-          if (!presentation) {
-            return (
-              <Box data-testid='error-message' sx={{ textAlign: 'center', p: 2, color: 'error.main' }}>
-                <Typography>{error_.message}</Typography>
-              </Box>
-            );
-          }
-          return (
-            <ConfigErrorMessage
-              fallbackMessage={presentation.fallbackMessage}
-              params={presentation.params}
-              translationKey={presentation.key}
+        ),
+        secondary: (
+          <>
+            <CompactModelSelector agentId={tab.agentId} agentDefId={activeAgentDefinitionId} />
+            <PromptPreviewButtonWithMenu
+              tabId={tab.id}
+              isSplitView={isSplitView}
+              agentId={tab.agentId}
+              agentDefinitionId={activeAgentDefinitionId}
+              controller={promptPreviewController}
+              disabled={adapter.isRunning}
             />
-          );
-        }}
-        renderMessageContent={(message, _isUser) => {
-          // Render known config errors (raw i18n key prefix) as a rich card
-          // regardless of their role. Some error paths store them as role='error',
-          // others may fall back to role='assistant'; the key is the reliable signal.
-          if (message.role !== 'error' && !message.content.startsWith('Chat.ConfigError.')) {
-            return <MessageContent message={message} />;
-          }
-
-          const errorDetail = message.metadata?.errorDetail;
-          const typedErrorDetail = (typeof errorDetail === 'object' && errorDetail !== null
-            ? errorDetail
-            : {}) as Record<string, unknown>;
-          const presentation = getConfigErrorPresentation(message.content, typedErrorDetail);
-          if (!presentation) {
-            return <MessageContent message={message} />;
-          }
-          return (
-            <ConfigErrorMessage
-              fallbackMessage={presentation.fallbackMessage}
-              params={presentation.params}
-              translationKey={presentation.key}
-            />
-          );
-        }}
-      />
-      <AIModelParametersDialog
-        open={parametersOpen}
-        onClose={() => {
-          setParametersOpen(false);
-        }}
-        config={{
-          default: agent?.aiApiConfig?.default || { provider: 'openai', model: 'gpt-3.5-turbo' },
-          modelParameters: agent?.aiApiConfig?.modelParameters || {
-            temperature: 0.7,
-            maxTokens: 1000,
-            topP: 0.95,
-          },
-        }}
-        onSave={async (newConfig) => {
-          if (agent && tab.agentId) {
-            await updateAgent({
-              aiApiConfig: newConfig,
-            });
-            setParametersOpen(false);
-          }
-        }}
-      />
-    </Box>
+            <Tooltip title={t('Preference.ModelParameters')}>
+              <IconButton size='small' onClick={() => void openExternalApiSettings()}>
+                <TuneIcon />
+              </IconButton>
+            </Tooltip>
+          </>
+        ),
+        loading: adapter.isLoading,
+        status: snapshot.agent?.status.progress
+          ? <Typography variant='caption' noWrap>{snapshot.agent.status.progress}</Typography>
+          : undefined,
+      }}
+      attachmentSelector={{
+        loadOptions: loadWikiAttachmentOptions,
+        labels: {
+          addAttachment: t('Agent.Attachment.AddAttachment'),
+          addFile: t('Agent.Attachment.AddImage'),
+          searchPlaceholder: t('Agent.Attachment.SearchPlaceholder'),
+          noOptions: t('Agent.Attachment.NoOptions'),
+        },
+      }}
+      resolveErrorPresentation={resolveErrorPresentation}
+      genericErrorPresentation={{
+        title: t('Chat.Message.Error'),
+        message: t('Chat.GenericError'),
+      }}
+      onErrorAction={async presentation => {
+        if (presentation.settingTarget) await openExternalApiSettings();
+      }}
+      selectedFile={selectedFile}
+      selectedWikiTiddlers={selectedWikiTiddlers}
+      onFileSelect={handleFileSelect}
+      onWikiTiddlerSelect={handleWikiTiddlerSelect}
+      onAttachmentsSelect={handleAttachmentsSelect}
+      onClearFile={handleClearFile}
+      onClearAttachments={clearAttachments}
+      onRemoveWikiTiddler={handleRemoveWikiTiddler}
+      resolveDroppedWikiTiddlers={resolveDroppedWikiTiddlers}
+      onWikiTiddlerClick={handleWikiTiddlerClick}
+      disabled={!snapshot.agent || adapter.isRunning}
+      placeholder={t('Agent.StartConversation')}
+      loadingMessage={t('Agent.LoadingChat')}
+      emptyMessage={t('Agent.StartConversation')}
+      operationErrorMessage={t('Chat.OperationError')}
+      timelineLabels={{
+        navigation: t('Chat.Timeline.Navigation'),
+        turn: (index, total) => t('Chat.Timeline.Turn', { index, total }),
+        compacted: count => t('Chat.Timeline.Compacted', { count }),
+        loadEarlier: t('Chat.Timeline.LoadEarlier'),
+        loadLater: t('Chat.Timeline.LoadLater'),
+        seek: t('Chat.Timeline.Seek'),
+        close: t('Chat.Timeline.Close'),
+        newMessages: count => t('Chat.Timeline.NewMessages', { count }),
+        moreResponses: count => t('Chat.Timeline.MoreResponses', { count }),
+      }}
+      formatTimelineTimestamp={timestamp => timeFormatter.format(new Date(timestamp))}
+      actionLabels={{
+        retry: t('Chat.Actions.Retry'),
+        deleteTurn: t('Chat.Actions.DeleteTurn'),
+        copy: t('Chat.Actions.Copy'),
+        copyAll: t('Chat.Actions.CopyAll'),
+        user: t('Chat.Actions.User'),
+        agent: t('Chat.Actions.Agent'),
+      }}
+      composerLabels={{
+        input: t('Chat.InputPlaceholder'),
+        send: t('Chat.Send'),
+        cancel: t('Chat.Cancel'),
+        addFile: t('Agent.Attachment.AddImage'),
+        removeFile: name => t('Chat.Attachment.RemoveFile', { name }),
+        removeTiddler: (workspaceName, title) => t('Chat.Attachment.RemoveTiddler', { workspaceName, title }),
+      }}
+      messageLabels={{
+        attachmentAlt: t('Chat.Message.AttachmentAlt'),
+        noDetails: t('Chat.Message.NoDetails'),
+        loadDetails: t('Chat.Message.LoadDetails'),
+        hideDetails: t('Chat.Message.HideDetails'),
+        showDetails: t('Chat.Message.ShowDetails'),
+        error: t('Chat.Message.Error'),
+        toolResult: t('Chat.Message.ToolResult'),
+        toolCall: name => t('Chat.Message.ToolCall', { toolName: name }),
+        truncated: count => t('Chat.Message.Truncated', { count }),
+      }}
+    />
   );
+}
+
+export const DesktopAgentChatTab: React.FC<DesktopAgentChatTabProps> = ({ tab, isSplitView }) => {
+  const { t } = useTranslation('agent');
+  if (!isChatTab(tab) || !tab.agentId) {
+    return (
+      <Box sx={{ p: 2, textAlign: 'center' }}>
+        <Typography color='error'>{t('Agent.InvalidTabType')}</Typography>
+      </Box>
+    );
+  }
+  return <DesktopAgentChatSession tab={tab as ActiveChatTab} isSplitView={isSplitView} />;
 };

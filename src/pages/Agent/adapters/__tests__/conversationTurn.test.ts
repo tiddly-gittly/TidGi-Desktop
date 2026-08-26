@@ -39,7 +39,7 @@ describe('conversationTurn', () => {
 
   it('rethrows persistence failures so callers cannot diverge from the backend', async () => {
     const failure = new Error('database unavailable');
-    mutableService.agentInstance = { deleteMessages: vi.fn().mockRejectedValue(failure) };
+    mutableService.agentInstance = { deleteAgentTurn: vi.fn().mockRejectedValue(failure) };
     const messages = new Map([['user-1', message('user-1', 'user')]]);
 
     await expect(deleteConversationTurn('agent-1', 'user-1', ['user-1'], messages)).rejects.toBe(failure);

@@ -147,6 +147,7 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
               autoHighlight
               size='small'
               options={agentDefs}
+              getOptionKey={(option) => option.id}
               getOptionLabel={(option) => option.name ?? option.id}
               value={currentDefinition ?? (agentDefs[0]) ?? { id: '', agentFrameworkConfig: {} }}
               onChange={(_event, value) => {
@@ -170,11 +171,11 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
                   sx={{ mb: 0.5 }}
                 />
               )}
-              renderOption={(props, option) => (
+              renderOption={({ key, ...optionProps }, option) => (
                 <Box
                   component='li'
-                  {...props}
-                  key={option.id}
+                  key={key}
+                  {...optionProps}
                   data-testid={`agent-switcher-option-${option.id}`}
                   sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start !important', py: 0.5 }}
                 >

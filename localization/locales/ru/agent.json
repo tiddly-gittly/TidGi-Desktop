@@ -1,4 +1,31 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "Выполнение отменено.",
+        "interrupted": "Выполнение прервано.",
+        "invalidRequest": "Запрос агента недействителен.",
+        "modelNotFound": "Модель {{modelId}} недоступна у {{providerId}}.",
+        "providerAuthMissing": "Данные авторизации {{providerId}} отсутствуют или недействительны.",
+        "providerConfigurationMissing": "Для {{providerId}} не задан обязательный параметр {{settingField}}.",
+        "providerUnavailable": "{{providerId}} временно недоступен.",
+        "rateLimited": "{{providerId}} ограничивает частоту запросов. Повторите попытку позже.",
+        "runnerUnavailable": "Нет доступного исполнителя агента.",
+        "storageUnavailable": "Хранилище агента недоступно.",
+        "deviceAuthRequired": "Перед запуском агента необходимо авторизовать это устройство.",
+        "devicePermissionDenied": "Этому устройству запрещено запускать данного агента.",
+        "networkUnavailable": "Сеть агентов недоступна.",
+        "userMessageTooLarge": "Сообщение пользователя слишком велико для этого запуска. Сократите его или отправьте большой объём данных во вложении.",
+        "userMessageTooLargeDetail": "Запрошено {{requested}} байт; предел — {{limit}} байт.",
+        "contextCompactionPending": "Длинный диалог всё ещё сжимается. Прогресс сохранён; повторите попытку чуть позже.",
+        "contextCompactionPendingProgress": "Обработано сообщений: {{processedMessages}}.",
+        "contextCompactionPendingProgressEstimate": "Обработано сообщений: {{processedMessages}}; осталось примерно {{remainingEstimate}}.",
+        "contextCompactionFailed": "Не удалось безопасно сжать длинный диалог.",
+        "contextBudgetExceeded": "Диалог превышает лимит контекста модели.",
+        "internal": "В агенте произошла внутренняя ошибка."
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "Показать журнал агента: {{agentId}}",
     "Description": "Журнал отладки вызовов внешнего API этого агента. Включите параметр 'Отладка внешнего API' в настройках, чтобы начать запись.",
@@ -56,6 +83,15 @@
         "online": "в сети"
       },
       "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "Вложения пока не поддерживаются при удалённом выполнении. Переключитесь на это устройство или отправьте только текст.",
+      "RunOn": "Запустить на",
+      "Label": "Цель выполнения",
+      "RunOnTarget": "Запустить на {{target}}",
+      "ConfirmTitle": "Сменить цель выполнения?",
+      "ConfirmDescription": "Текущий ход ещё выполняется. При переходе на {{target}} он будет остановлен, а последний ход пользователя запущен там заново.",
+      "AnotherTarget": "другая цель",
+      "KeepRunning": "Продолжить выполнение",
+      "StopAndRestart": "Остановить и перезапустить",
       "RunOnThisDesktop": "Запустить на этом компьютере",
       "RunOnThisDesktopWithPeerId": "Запустить на этом компьютере ({{peerId}})",
       "ThisDevice": "Это устройство"
@@ -78,7 +114,38 @@
       "TooLarge": "Размер файла {{size}}МБ превышает лимит ({{maxSize}}МБ). Пожалуйста, выберите файл меньшего размера."
     },
     "InputPlaceholder": "Введите сообщение, Ctrl+Enter для отправки",
-    "Send": "Отправить"
+    "Send": "Отправить",
+    "Actions": {
+      "Retry": "Повторить",
+      "DeleteTurn": "Удалить ход",
+      "Copy": "Копировать",
+      "CopyAll": "Копировать всё",
+      "User": "Пользователь",
+      "Agent": "Агент"
+    },
+    "Message": {
+      "AttachmentAlt": "Вложение",
+      "NoDetails": "Подробности недоступны.",
+      "LoadDetails": "Загрузить подробности",
+      "HideDetails": "Скрыть подробности",
+      "ShowDetails": "Показать подробности",
+      "DetailLine": "{{role}}: {{content}}",
+      "Error": "Ошибка",
+      "ToolResult": "Результат инструмента",
+      "ToolCall": "Вызов инструмента: {{toolName}}",
+      "Truncated": "Сообщение сокращено для отображения (символов: {{count}}). Полный текст доступен в экспорте разговора или подробностях сообщения."
+    },
+    "Timeline": {
+      "Navigation": "Хронология разговора",
+      "Turn": "Ход {{index}} из {{total}}",
+      "Compacted": "Сжато предыдущих сообщений: {{count}}",
+      "LoadEarlier": "Загрузить предыдущие сообщения",
+      "LoadLater": "Загрузить следующие сообщения",
+      "Seek": "Перейти к ходу диалога",
+      "Close": "Закрыть шкалу диалога",
+      "NewMessages": "Новых сообщений: {{count}} — перейти к последним",
+      "MoreResponses": "Ещё ответов в этом ходе: {{count}}"
+    }
   },
   "Common": {
     "None": "не выбрано"
@@ -134,6 +201,17 @@
     "ScheduleCronExpr": "Выражение Cron",
     "ScheduleCronHelp": "Cron из 5 полей: минута час день месяц день-недели",
     "ScheduleCronPreview": "Следующие запуски:",
+    "ScheduleExecutionTarget": "Устройство выполнения",
+    "ScheduleExecutionTargetUnavailable": "Выбранное устройство недоступно. Перед изменением расписания выберите доступное устройство.",
+    "ScheduleIdentityLoading": "Загрузка защищённого идентификатора этого устройства…",
+    "ScheduleIdentityError": "Защищённый идентификатор этого устройства недоступен. Планирование отключено, пока сеть устройств не будет готова.",
+    "ScheduleConversation": "Диалог для расписания",
+    "ScheduleConversationRequired": "Создайте или откройте постоянный диалог с этим агентом перед настройкой задач. Предварительные диалоги временны и не могут владеть расписанием.",
+    "ScheduleDefaultTaskName": "Расписание: {{agentName}}",
+    "ScheduleInvalidCron": "Введите корректное расписание Cron.",
+    "ScheduleInvalidTimezone": "Выберите поддерживаемый часовой пояс.",
+    "ScheduleNoPreview": "Будущие запуски не найдены.",
+    "SchedulePreviewLoading": "Проверка расписания...",
     "ScheduleDaily": "Ежедневно (в заданное время)",
     "ScheduleDailyTime": "Время пробуждения",
     "ScheduledWakeup": "Запланированное пробуждение",
@@ -148,6 +226,14 @@
     "ScheduleSave": "Сохранить расписание",
     "ScheduleSaveWait": "Загрузка агента предпросмотра...",
     "ScheduleSaving": "Сохранение...",
+    "ScheduleTaskSelection": "Запланированная задача",
+    "ScheduleNewTask": "Новая запланированная задача",
+    "ScheduleOperationFailed": "Не удалось выполнить операцию с запланированной задачей.",
+    "ScheduleSourceIncomplete": "Некоторые устройства не предоставили полное актуальное расписание. Изменения отключены, пока не будут доступны все источники.",
+    "ScheduleSourceOnline": "{{executionTarget}} в сети.",
+    "ScheduleSourceOffline": "{{executionTarget}} не в сети.",
+    "ScheduleSourceDegraded": "{{executionTarget}} работает с ограничениями.",
+    "ScheduleSourceCached": "{{executionTarget}} показывает кэшированные данные расписания.",
     "ScheduleTimezone": "Часовой пояс",
     "ScheduleUpdate": "Обновить расписание",
     "Seconds": "Секунды",
@@ -307,8 +393,19 @@
     "WorkflowFilePath": "Путь к файлу рабочего процесса"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "Сводка сжатия",
+      "ConversationMessage": "Сообщение диалога",
+      "PreviewInput": "Текущий ввод",
+      "Prompt": "Подсказка",
+      "System": "Системная подсказка",
+      "Tool": "Сообщение инструмента"
+    },
     "AutoRefresh": "Предварительный просмотр автоматически обновляется при изменении введенного текста.",
     "CodeEditor": "Редактор кода",
+    "CompactionSummaryCount": "Сводки сжатия",
+    "ContextSegments": "Сегменты эффективного контекста",
+    "ContextStats": "Статистика эффективного контекста",
     "Edit": "редактирование подсказок",
     "Enabled": "включить",
     "EnterEditSideBySide": "Редактирование с разделенным экраном",
@@ -320,6 +417,8 @@
     "FormEditor": "редактор форм",
     "LastUpdated": "Дата последнего обновления",
     "Loading": "Загрузка в предварительном просмотре...",
+    "MessageCount": "Сообщения контекста",
+    "ModelRequest": "Точный запрос к модели",
     "NoMessages": "Нет сообщений для предварительного просмотра",
     "Preview": "Предварительный просмотр подсказок",
     "SchemaNotProvided": "Формат не предоставлен.",
@@ -346,6 +445,24 @@
     }
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM; пропускать запуски после этого времени.",
+      "ActiveHoursStartDescription": "HH:MM; пропускать запуски до этого времени.",
+      "AlarmDescription": "Задать одноразовое пробуждение и временно завершить цикл диалога. Для повторений используйте Cron.",
+      "EnabledDescription": "Включить или отключить задачу без удаления.",
+      "EnabledTitle": "Включено",
+      "KindDescription": "«at» выполняется один раз в дату ISO; «cron» задаёт повторяющееся расписание.",
+      "ListDescription": "Показать активные запланированные задачи этого агента.",
+      "MessageDescription": "Сообщение агенту при срабатывании расписания.",
+      "RemoveDescription": "Удалить активную запланированную задачу по ID.",
+      "TaskIdDescription": "ID задачи, полученный из list-schedules.",
+      "TaskIdTitle": "ID задачи",
+      "TaskNameDescription": "Понятное название этого расписания.",
+      "TaskNameTitle": "Название задачи",
+      "TimezoneDescription": "Часовой пояс IANA для Cron, например Europe/Moscow.",
+      "UpdateDescription": "Изменить состояние, сообщение или активные часы задачи.",
+      "WakeAtDescription": "Дата и время ISO 8601 для пробуждения агента."
+    },
     "AIConfig": {
       "Default": "модель диалога по умолчанию",
       "DefaultTitle": "модель по умолчанию",
@@ -695,6 +812,16 @@
     }
   },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "Активные запланированные задачи:\n{{summary}}",
+      "AlarmSet": "Будильник установлен на {{wakeAtISO}} (через {{delaySeconds}} с). Цикл завершён и продолжится при срабатывании.",
+      "NoActiveTasks": "Нет активных запланированных задач.",
+      "TaskCreated": "Запланированная задача создана (ID: {{taskId}}). Следующий запуск: {{nextRun}}.",
+      "TaskRemoved": "Запланированная задача {{taskId}} удалена.",
+      "TaskSummary": "[{{taskId}}] {{name}} — следующий: {{nextRun}} — запусков: {{runCount}}",
+      "TaskUpdated": "Запланированная задача {{taskId}} обновлена.",
+      "Unknown": "неизвестно"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "Название или идентификатор рабочей области \"{{workspaceName}}\" не существует"

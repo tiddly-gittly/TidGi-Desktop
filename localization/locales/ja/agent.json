@@ -1,4 +1,31 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "実行はキャンセルされました。",
+        "interrupted": "実行は中断されました。",
+        "invalidRequest": "エージェントのリクエストが無効です。",
+        "modelNotFound": "{{providerId}} でモデル {{modelId}} を利用できません。",
+        "providerAuthMissing": "{{providerId}} の認証情報がないか無効です。",
+        "providerConfigurationMissing": "{{providerId}} に必要な {{settingField}} 設定がありません。",
+        "providerUnavailable": "{{providerId}} は一時的に利用できません。",
+        "rateLimited": "{{providerId}} がリクエストを制限しています。後でもう一度お試しください。",
+        "runnerUnavailable": "利用できるエージェントランナーがありません。",
+        "storageUnavailable": "エージェントストレージを利用できません。",
+        "deviceAuthRequired": "エージェントを実行する前にこのデバイスを承認してください。",
+        "devicePermissionDenied": "このデバイスにはエージェントを実行する権限がありません。",
+        "networkUnavailable": "エージェントネットワークを利用できません。",
+        "userMessageTooLarge": "ユーザーメッセージが大きすぎるため、この実行を開始できません。内容を短くするか、大きな内容を添付ファイルとして送信してください。",
+        "userMessageTooLargeDetail": "要求サイズは {{requested}} バイト、上限は {{limit}} バイトです。",
+        "contextCompactionPending": "長い会話の圧縮を続行しています。進捗は保存されています。しばらくしてから再試行してください。",
+        "contextCompactionPendingProgress": "{{processedMessages}} 件のメッセージを処理しました。",
+        "contextCompactionPendingProgressEstimate": "{{processedMessages}} 件のメッセージを処理し、残りは約 {{remainingEstimate}} 件です。",
+        "contextCompactionFailed": "長い会話を安全に圧縮できませんでした。",
+        "contextBudgetExceeded": "会話がモデルのコンテキスト上限を超えています。",
+        "internal": "エージェントで内部エラーが発生しました。"
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "エージェントログを表示: {{agentId}}",
     "Description": "このインテリジェントエージェントの外部API呼び出しデバッグログ。設定で「外部APIデバッグ」を有効にして記録を開始します。",
@@ -56,6 +83,15 @@
         "online": "オンライン"
       },
       "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "リモート実行では添付ファイルをまだ利用できません。このデバイスに切り替えるか、テキストのみを送信してください。",
+      "RunOn": "実行先",
+      "Label": "実行ターゲット",
+      "RunOnTarget": "{{target}} で実行",
+      "ConfirmTitle": "実行ターゲットを切り替えますか？",
+      "ConfirmDescription": "現在のターンはまだ実行中です。{{target}} に切り替えると停止し、最新のユーザーターンをそこで再開します。",
+      "AnotherTarget": "別のターゲット",
+      "KeepRunning": "実行を続ける",
+      "StopAndRestart": "停止して再開",
       "RunOnThisDesktop": "このデスクトップで実行",
       "RunOnThisDesktopWithPeerId": "このデスクトップで実行（{{peerId}}）",
       "ThisDevice": "このデバイス"
@@ -78,7 +114,38 @@
       "TooLarge": "ファイルサイズ {{size}}MB が制限（{{maxSize}}MB）を超えています。もっと小さいファイルを選択してください。"
     },
     "InputPlaceholder": "メッセージを入力、Ctrl+Enterで送信",
-    "Send": "送信"
+    "Send": "送信",
+    "Actions": {
+      "Retry": "再試行",
+      "DeleteTurn": "このターンを削除",
+      "Copy": "コピー",
+      "CopyAll": "すべてコピー",
+      "User": "ユーザー",
+      "Agent": "エージェント"
+    },
+    "Message": {
+      "AttachmentAlt": "添付ファイル",
+      "NoDetails": "詳細はありません。",
+      "LoadDetails": "詳細を読み込む",
+      "HideDetails": "詳細を隠す",
+      "ShowDetails": "詳細を表示",
+      "DetailLine": "{{role}}: {{content}}",
+      "Error": "エラー",
+      "ToolResult": "ツール結果",
+      "ToolCall": "ツール呼び出し: {{toolName}}",
+      "Truncated": "表示のためメッセージを短縮しました（{{count}} 文字）。完全な内容は会話のエクスポートまたはメッセージ詳細で確認できます。"
+    },
+    "Timeline": {
+      "Navigation": "会話タイムライン",
+      "Turn": "{{total}} 件中 {{index}} 番目のターン",
+      "Compacted": "以前の {{count}} 件のメッセージを圧縮済み",
+      "LoadEarlier": "以前のメッセージを読み込む",
+      "LoadLater": "新しいメッセージを読み込む",
+      "Seek": "会話ターンへ移動",
+      "Close": "タイムラインを閉じる",
+      "NewMessages": "新着メッセージ {{count}} 件 — 最新へ移動",
+      "MoreResponses": "このターンには他に {{count}} 件の応答があります"
+    }
   },
   "Common": {
     "None": "選択されていません"
@@ -134,6 +201,17 @@
     "ScheduleCronExpr": "Cron 式",
     "ScheduleCronHelp": "5 フィールド Cron：分 時 日 月 曜日",
     "ScheduleCronPreview": "次回の実行：",
+    "ScheduleExecutionTarget": "実行するデバイス",
+    "ScheduleExecutionTargetUnavailable": "選択したデバイスは利用できません。スケジュールを変更する前に、利用可能なデバイスを選択してください。",
+    "ScheduleIdentityLoading": "このデバイスの安全な識別情報を読み込んでいます…",
+    "ScheduleIdentityError": "このデバイスの安全な識別情報を利用できません。デバイスネットワークの準備が完了するまでスケジュールは無効です。",
+    "ScheduleConversation": "スケジュールする会話",
+    "ScheduleConversationRequired": "タスクをスケジュールする前に、このエージェントとの永続的な会話を作成または開いてください。プレビュー会話は一時的なため、スケジュールを保持できません。",
+    "ScheduleDefaultTaskName": "{{agentName}} のスケジュール",
+    "ScheduleInvalidCron": "有効な Cron スケジュールを入力してください。",
+    "ScheduleInvalidTimezone": "対応しているタイムゾーンを選択してください。",
+    "ScheduleNoPreview": "今後の実行時刻が見つかりません。",
+    "SchedulePreviewLoading": "スケジュールを確認中...",
     "ScheduleDaily": "毎日（指定時刻）",
     "ScheduleDailyTime": "起動時刻",
     "ScheduledWakeup": "スケジュール起動",
@@ -148,6 +226,14 @@
     "ScheduleSave": "スケジュールを保存",
     "ScheduleSaveWait": "プレビューエージェントを読み込み中...",
     "ScheduleSaving": "保存中...",
+    "ScheduleTaskSelection": "スケジュール済みタスク",
+    "ScheduleNewTask": "新しいスケジュール済みタスク",
+    "ScheduleOperationFailed": "スケジュール済みタスクの操作に失敗しました。",
+    "ScheduleSourceIncomplete": "一部のデバイスから完全な最新スケジュールを取得できませんでした。すべてのソースが利用可能になるまで変更できません。",
+    "ScheduleSourceOnline": "{{executionTarget}} はオンラインです。",
+    "ScheduleSourceOffline": "{{executionTarget}} はオフラインです。",
+    "ScheduleSourceDegraded": "{{executionTarget}} は機能が低下しています。",
+    "ScheduleSourceCached": "{{executionTarget}} はキャッシュ済みのスケジュールを表示しています。",
     "ScheduleTimezone": "タイムゾーン",
     "ScheduleUpdate": "スケジュールを更新",
     "Seconds": "秒",
@@ -307,8 +393,19 @@
     "WorkflowFilePath": "ワークフローファイルのパス"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "圧縮サマリー",
+      "ConversationMessage": "会話メッセージ",
+      "PreviewInput": "現在の入力",
+      "Prompt": "プロンプト",
+      "System": "システムプロンプト",
+      "Tool": "ツールメッセージ"
+    },
     "AutoRefresh": "プレビューは入力テキストの変更に応じて自動的に更新されます",
     "CodeEditor": "コードエディタ",
+    "CompactionSummaryCount": "圧縮サマリー",
+    "ContextSegments": "有効なコンテキストセグメント",
+    "ContextStats": "有効なコンテキスト統計",
     "Edit": "プロンプト編集",
     "Enabled": "有効化",
     "EnterEditSideBySide": "分割画面表示編集",
@@ -320,6 +417,8 @@
     "FormEditor": "フォームエディター",
     "LastUpdated": "前回の更新時間",
     "Loading": "プレビューを読み込み中...",
+    "MessageCount": "コンテキストメッセージ",
+    "ModelRequest": "実際のモデルリクエスト",
     "NoMessages": "まだプレビューできるメッセージはありません",
     "Preview": "プロンプトプレビュー",
     "SchemaNotProvided": "フォーマットが提供されていません",
@@ -346,6 +445,24 @@
     }
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM。この時刻より後の実行をスキップします。",
+      "ActiveHoursStartDescription": "HH:MM。この時刻より前の実行をスキップします。",
+      "AlarmDescription": "一度だけの起動時刻を設定して会話ループを一時終了します。繰り返し作業には Cron を使用します。",
+      "EnabledDescription": "削除せずにタスクを有効または無効にします。",
+      "EnabledTitle": "有効",
+      "KindDescription": "「at」は ISO 日時に一度実行し、「cron」は繰り返しスケジュールを定義します。",
+      "ListDescription": "このエージェントの有効なスケジュールタスクを一覧表示します。",
+      "MessageDescription": "スケジュール実行時にエージェントへ送るメッセージです。",
+      "RemoveDescription": "ID を指定して有効なスケジュールタスクを削除します。",
+      "TaskIdDescription": "list-schedules が返したスケジュールタスクの ID です。",
+      "TaskIdTitle": "タスク ID",
+      "TaskNameDescription": "このスケジュールの読みやすい名前です。",
+      "TaskNameTitle": "タスク名",
+      "TimezoneDescription": "Cron 用の IANA タイムゾーン（例：Asia/Tokyo）。",
+      "UpdateDescription": "既存タスクの状態、メッセージ、稼働時間を更新します。",
+      "WakeAtDescription": "エージェントを起動する ISO 8601 日時です。"
+    },
     "AIConfig": {
       "Default": "デフォルトで使用される対話モデル",
       "DefaultTitle": "デフォルトモデル",
@@ -695,6 +812,16 @@
     }
   },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "有効なスケジュールタスク：\n{{summary}}",
+      "AlarmSet": "{{wakeAtISO}}（{{delaySeconds}} 秒後）にアラームを設定しました。ループを終了し、時刻になると再開します。",
+      "NoActiveTasks": "有効なスケジュールタスクはありません。",
+      "TaskCreated": "スケジュールタスクを作成しました（ID: {{taskId}}）。次回：{{nextRun}}。",
+      "TaskRemoved": "スケジュールタスク {{taskId}} を削除しました。",
+      "TaskSummary": "[{{taskId}}] {{name}} — 次回：{{nextRun}} — 実行回数：{{runCount}}",
+      "TaskUpdated": "スケジュールタスク {{taskId}} を更新しました。",
+      "Unknown": "不明"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません"

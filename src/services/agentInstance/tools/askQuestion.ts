@@ -4,8 +4,8 @@
  */
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
-import { registerToolDefinition } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const AskQuestionParameterSchema = z.object({
   toolListPosition: z.object({
@@ -47,8 +47,8 @@ const AskQuestionToolSchema = z.object({
   ],
 });
 
-const askQuestionDefinition = registerToolDefinition({
-  toolId: 'askQuestion',
+export const askQuestionDefinition = defineDesktopTool({
+  toolId: 'ask-question',
   displayName: 'Ask Question',
   description: 'Pause to ask the user a clarifying question with optional choices',
   configSchema: AskQuestionParameterSchema,
@@ -90,5 +90,3 @@ const askQuestionDefinition = registerToolDefinition({
     logger.debug('Ask question: yielding to user for answer', { questionId });
   },
 });
-
-export const askQuestionTool = askQuestionDefinition.tool;

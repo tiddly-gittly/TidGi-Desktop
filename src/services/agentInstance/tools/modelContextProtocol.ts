@@ -12,9 +12,9 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 /**
  * Model Context Protocol Parameter Schema
@@ -207,8 +207,8 @@ export async function cleanupMCPClient(agentId: string): Promise<void> {
 /**
  * MCP Tool Definition — dynamically creates tool schemas based on connected server's tools.
  */
-const mcpDefinition = registerToolDefinition({
-  toolId: 'modelContextProtocol',
+export const mcpDefinition = defineDesktopTool({
+  toolId: 'mcpClient',
   displayName: 'MCP (Model Context Protocol)',
   description: 'Connect to external MCP servers and use their tools',
   configSchema: ModelContextProtocolParameterSchema,
@@ -277,5 +277,3 @@ const mcpDefinition = registerToolDefinition({
     // (yieldToSelf would be called by the caller if needed)
   },
 });
-
-export const modelContextProtocolTool = mcpDefinition.tool;

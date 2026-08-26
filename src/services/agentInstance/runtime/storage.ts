@@ -1,4 +1,36 @@
-import type { AgentDefinition, AgentInstanceMeta, AttachmentReference, ChatMessage, ConversationMeta, GetMessagesOptions, IAgentStorage, ListConversationsOptions } from 'memeloop';
+import type {
+  AgentDefinition,
+  AgentInstanceMeta,
+  AttachmentReference,
+  ChatMessage,
+  CompactionCandidatePage,
+  ConversationEvent,
+  ConversationEventDraft,
+  ConversationEventPage,
+  ConversationListPage,
+  ConversationListPageCallOptions,
+  ConversationMessageCursor,
+  ConversationMessageDetailRange,
+  ConversationMessageIdentity,
+  ConversationMessagePage,
+  ConversationMessageWindowResult,
+  ConversationMeta,
+  ConversationTimelinePage,
+  ConversationTimelinePageCallOptions,
+  GetCompactionCandidatePageOptions,
+  GetConversationEventPageOptions,
+  GetConversationListPageOptions,
+  GetConversationMessageWindowAroundOptions,
+  GetConversationTimelinePageOptions,
+  GetMessagePageOptions,
+  GetMessagesOptions,
+  GetRetainedCompactionControlsOptions,
+  IAgentStorage,
+  MessageVersionFrontier,
+  MessageVersionFrontierCursor,
+  MessageVersionFrontierPage,
+  RetainedCompactionControlPage,
+} from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstance } from 'memeloop';
@@ -15,61 +47,206 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     },
   ) {}
 
-  public async listConversations(options?: ListConversationsOptions): Promise<ConversationMeta[]> {
-    const pageSize = options?.limit ?? 200;
-    const page = options?.offset ? Math.floor(options.offset / pageSize) + 1 : 1;
-    const agents = await this.options.agentInstanceService.getAgents(page, pageSize, { closed: false });
+  public async listConversationsPage(
+    options: GetConversationListPageOptions,
+    callOptions?: ConversationListPageCallOptions,
+  ): Promise<ConversationListPage> {
+    callOptions?.signal?.throwIfAborted();
     const localNodeId = await this.options.getLocalNodeId();
-    return Promise.all(agents.map(async agent => {
-      const fullAgent = await this.options.agentInstanceService.getAgent(agent.id);
-      const definition = fullAgent ? await this.options.agentDefinitionService.getAgentDef(fullAgent.agentDefId) : undefined;
-      return toConversationMeta({ ...agent, messages: fullAgent?.messages ?? [] }, localNodeId, definition);
-    }));
+    callOptions?.signal?.throwIfAborted();
+    const page = await this.options.agentInstanceService.getAgentConversationListPage(localNodeId, options);
+    callOptions?.signal?.throwIfAborted();
+    return page;
   }
 
-  public async getMessages(conversationId: string, _options?: GetMessagesOptions): Promise<ChatMessage[]> {
-    const agent = await this.options.agentInstanceService.getAgent(conversationId);
-    return agent?.messages ?? [];
+  public async getMessages(conversationId: string, options?: GetMessagesOptions): Promise<ChatMessage[]> {
+    // Core's hierarchical compactor uses bounded storage-native candidate pages.
+    // This compatibility read is bounded by default; an explicit full-content
+    // request is the only path allowed to enumerate the entire projection.
+    if (options?.mode !== 'full-content') {
+      const page = await this.options.agentInstanceService.getAgentMessagePage(conversationId, { limit: 80, maxBytes: 512 * 1024 });
+      return page.reset ? [] : page.items;
+    }
+    const messages: ChatMessage[] = [];
+    let after: ConversationMessageCursor | undefined;
+    let expectedRevision: string | undefined;
+    do {
+      const page = await this.options.agentInstanceService.getAgentMessagePage(conversationId, {
+        limit: 80,
+        maxBytes: 4 * 1024 * 1024,
+        direction: 'forward',
+        mode: 'full-content',
+        ...(after ? { after, expectedRevision } : {}),
+      });
+      if (page.reset) throw new Error('conversation_message_page_invalidated');
+      messages.push(...page.items);
+      expectedRevision = page.revision;
+      after = page.hasMoreAfter ? page.endCursor : undefined;
+    } while (after);
+    return messages;
   }
 
-  public async appendMessage(message: ChatMessage): Promise<void> {
-    const agentMessage = message;
-    await this.saveMessageBestEffort(agentMessage);
-    await this.upsertAndNotify(agentMessage);
+  public async getMessagePage(
+    conversationId: string,
+    options: GetMessagePageOptions,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessagePage> {
+    callOptions?.signal?.throwIfAborted();
+    const page = await this.options.agentInstanceService.getAgentMessagePage(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return page;
+  }
+
+  public async getMessageIdentity(
+    conversationId: string,
+    messageId: string,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessageIdentity | null> {
+    callOptions?.signal?.throwIfAborted();
+    const identity = await this.options.agentInstanceService.getAgentMessageIdentity(conversationId, messageId);
+    callOptions?.signal?.throwIfAborted();
+    return identity;
+  }
+
+  public async getMessageById(
+    conversationId: string,
+    messageId: string,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ChatMessage | null> {
+    callOptions?.signal?.throwIfAborted();
+    const message = await this.options.agentInstanceService.getAgentMessage(messageId);
+    callOptions?.signal?.throwIfAborted();
+    return message?.conversationId === conversationId ? message : null;
+  }
+
+  public async readMessageDetailRange(
+    conversationId: string,
+    messageId: string,
+    offset: number,
+    maxBytes: number,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessageDetailRange> {
+    callOptions?.signal?.throwIfAborted();
+    const range = await this.options.agentInstanceService.readAgentMessageDetailRange(
+      conversationId,
+      messageId,
+      offset,
+      maxBytes,
+    );
+    callOptions?.signal?.throwIfAborted();
+    return range;
+  }
+
+  public async getMessageWindowAround(
+    conversationId: string,
+    options: GetConversationMessageWindowAroundOptions,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessageWindowResult> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.options.agentInstanceService.getAgentMessageWindowAround(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public getConversationTimelinePage(
+    conversationId: string,
+    options: GetConversationTimelinePageOptions,
+    callOptions?: ConversationTimelinePageCallOptions,
+  ): Promise<ConversationTimelinePage> {
+    callOptions?.signal?.throwIfAborted();
+    return this.options.agentInstanceService.getAgentConversationTimelinePage(conversationId, options)
+      .then(page => {
+        callOptions?.signal?.throwIfAborted();
+        return page;
+      });
+  }
+
+  public getCompactionCandidatePage(
+    conversationId: string,
+    options: GetCompactionCandidatePageOptions,
+  ): Promise<CompactionCandidatePage> {
+    return this.options.agentInstanceService.getAgentCompactionCandidatePage(conversationId, options);
+  }
+
+  public getRetainedCompactionControls(
+    conversationId: string,
+    options: GetRetainedCompactionControlsOptions,
+  ): Promise<RetainedCompactionControlPage> {
+    return this.options.agentInstanceService.getAgentRetainedCompactionControls(conversationId, options);
+  }
+
+  public async appendLocalEvent(draft: ConversationEventDraft): Promise<ConversationEvent> {
+    const event = await this.options.agentInstanceService.appendLocalConversationEvent(draft);
+    await this.notifyEvent(event);
+    return event;
+  }
+
+  public async appendLocalEventsAtomic(drafts: readonly ConversationEventDraft[]): Promise<ConversationEvent[]> {
+    const events = await this.options.agentInstanceService.appendLocalConversationEventsAtomic(drafts);
+    for (const event of events) await this.notifyEvent(event);
+    return events;
   }
 
   public async upsertConversationMetadata(_meta: ConversationMeta): Promise<void> {
     return undefined;
   }
 
-  public async insertMessagesIfAbsent(messages: ChatMessage[]): Promise<void> {
-    const byAgent = new Map<string, ChatMessage[]>();
-    for (const message of messages) {
-      const existing = byAgent.get(message.conversationId) ?? [];
-      existing.push(message);
-      byAgent.set(message.conversationId, existing);
-    }
-
-    for (const [agentId, agentMessages] of byAgent) {
-      const agent = await this.options.agentInstanceService.getAgent(agentId);
-      const existingIds = new Set(agent?.messages.map(message => message.messageId) ?? []);
-      for (const agentMessage of agentMessages) {
-        const shouldUpsert = !existingIds.has(agentMessage.messageId) || agentMessage.metadata?.isToolResult || agentMessage.metadata?.containsToolCall;
-        if (shouldUpsert) {
-          await this.saveMessageBestEffort(agentMessage);
-          this.debounceMessageBestEffort(agentMessage, agentId);
-        }
-      }
-      await this.notify(agentId);
-    }
+  public async insertEventsIfAbsent(events: readonly ConversationEvent[]): Promise<void> {
+    await this.options.agentInstanceService.insertConversationEventsIfAbsent(events);
+    for (const event of events) await this.notifyEvent(event);
   }
 
-  public async getAttachment(_contentHash: string): Promise<AttachmentReference | null> {
-    return null;
+  public getConversationEventPage(
+    conversationId: string,
+    options: GetConversationEventPageOptions,
+  ): Promise<ConversationEventPage> {
+    return this.options.agentInstanceService.getConversationEventPage(conversationId, options);
   }
 
-  public async saveAttachment(_reference: AttachmentReference, _data: Buffer | Uint8Array): Promise<void> {
-    return undefined;
+  public getEventVersionFrontiers(conversationIds?: readonly string[]): Promise<MessageVersionFrontier[]> {
+    return this.options.agentInstanceService.getConversationEventVersionFrontiers(conversationIds);
+  }
+
+  public getEventVersionFrontierPage(options: {
+    limit: number;
+    after?: MessageVersionFrontierCursor;
+    conversationIds?: readonly string[];
+  }): Promise<MessageVersionFrontierPage> {
+    return this.options.agentInstanceService.getConversationEventVersionFrontierPage(options);
+  }
+
+  public getEventVersionFrontiersForKeys(
+    keys: readonly MessageVersionFrontierCursor[],
+  ): Promise<MessageVersionFrontier[]> {
+    return this.options.agentInstanceService.getConversationEventVersionFrontiersForKeys(keys);
+  }
+
+  public getAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<AttachmentReference | null> {
+    return this.options.agentInstanceService.getAgentAttachmentReference(contentHash, options);
+  }
+
+  public saveAttachment(reference: AttachmentReference, data: Uint8Array): Promise<void> {
+    return this.options.agentInstanceService.saveAgentAttachment(reference, data);
+  }
+
+  public readAttachmentRange(
+    contentHash: string,
+    offset: number,
+    maxBytes: number,
+    options?: { signal?: AbortSignal },
+  ): Promise<Uint8Array | null> {
+    return this.options.agentInstanceService.readAgentAttachmentRange(contentHash, offset, maxBytes, options);
+  }
+
+  public async conversationReferencesAttachment(
+    conversationId: string,
+    contentHash: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<boolean> {
+    options?.signal?.throwIfAborted();
+    const referenced = await this.options.agentInstanceService.conversationReferencesAttachment(conversationId, contentHash);
+    options?.signal?.throwIfAborted();
+    return referenced;
   }
 
   public async getAgentDefinition(id: string): Promise<AgentDefinition | null> {
@@ -78,8 +255,7 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
   }
 
   public async getMaxLamportClockForConversation(conversationId: string): Promise<number> {
-    const messages = await this.getMessages(conversationId, { mode: 'metadata-only' });
-    return messages.reduce((max, message) => Math.max(max, message.lamportClock), 0);
+    return this.options.agentInstanceService.getMaxAgentLamportClock(conversationId);
   }
 
   public async saveAgentInstance(_meta: AgentInstanceMeta): Promise<void> {
@@ -87,49 +263,32 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
   }
 
   public async getConversationMeta(conversationId: string): Promise<ConversationMeta | null> {
-    const agent = await this.options.agentInstanceService.getAgent(conversationId);
+    const agent = await this.options.agentInstanceService.getAgentMetadata(conversationId);
     if (!agent) return null;
-    const definition = await this.options.agentDefinitionService.getAgentDef(agent.agentDefId);
-    return toConversationMeta(agent, await this.options.getLocalNodeId(), definition);
+    const [tail, timeline, localNodeId, originClock] = await Promise.all([
+      this.options.agentInstanceService.getAgentMessagePage(conversationId, { limit: 1, maxBytes: 64 * 1024 }),
+      this.options.agentInstanceService.getAgentConversationTimelinePage(conversationId, { limit: 1, maxBytes: 16 * 1024 }),
+      this.options.getLocalNodeId(),
+      this.options.agentInstanceService.getMaxAgentLamportClock(conversationId),
+    ]);
+    return {
+      ...toConversationMeta({ ...agent, messages: tail.reset ? [] : tail.items }, localNodeId),
+      messageCount: timeline.reset ? 0 : timeline.totalMessages,
+      originClock,
+    };
   }
 
   private async notify(agentId: string): Promise<void> {
-    const agent = await this.options.agentInstanceService.getAgent(agentId);
-    if (agent) {
-      this.options.notifyAgentChanged(agentId, agent);
-    }
+    const agent = await this.options.agentInstanceService.getAgentMetadata(agentId);
+    if (agent) this.options.notifyAgentChanged(agentId, { ...agent, messages: [] });
   }
 
-  private async upsertAndNotify(message: ChatMessage): Promise<void> {
-    this.debounceMessageBestEffort(message, message.conversationId);
-    const agent = await this.options.agentInstanceService.getAgent(message.conversationId);
+  private async notifyEvent(event: ConversationEvent): Promise<void> {
+    const agent = await this.options.agentInstanceService.getAgentMetadata(event.conversationId);
     if (!agent) return;
-
-    const existingIndex = agent.messages.findIndex(item => item.messageId === message.messageId);
-    if (existingIndex >= 0) {
-      agent.messages[existingIndex] = message;
-    } else {
-      agent.messages.push(message);
-    }
-    this.options.notifyAgentChanged(message.conversationId, agent);
-  }
-
-  private async saveMessageBestEffort(message: ChatMessage): Promise<void> {
-    try {
-      await this.options.agentInstanceService.saveUserMessage(message);
-    } catch {
-      const agent = await this.options.agentInstanceService.getAgent(message.conversationId).catch(() => undefined);
-      if (!agent) {
-        throw new Error(`Agent instance not found: ${message.conversationId}`);
-      }
-    }
-  }
-
-  private debounceMessageBestEffort(message: ChatMessage, agentId: string): void {
-    try {
-      this.options.agentInstanceService.debounceUpdateMessage(message, agentId, 0);
-    } catch {
-      // No database-backed debounce updater in framework-only unit tests.
-    }
+    this.options.notifyAgentChanged(event.conversationId, {
+      ...agent,
+      messages: [],
+    });
   }
 }

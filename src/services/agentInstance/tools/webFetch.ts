@@ -5,9 +5,9 @@ import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { net } from 'electron';
 import { convert } from 'html-to-text';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const WebFetchParameterSchema = z.object({
   toolListPosition: z.object({
@@ -105,7 +105,7 @@ async function executeWebFetch(parameters: z.infer<typeof WebFetchToolSchema>, m
   }
 }
 
-const webFetchDefinition = registerToolDefinition({
+export const webFetchDefinition = defineDesktopTool({
   toolId: 'webFetch',
   displayName: 'Web Fetch',
   description: 'Fetch content from a URL for external reference',
@@ -125,5 +125,3 @@ const webFetchDefinition = registerToolDefinition({
     await executeToolCall('web-fetch', (parameters) => executeWebFetch(parameters, maxLength));
   },
 });
-
-export const webFetchTool = webFetchDefinition.tool;

@@ -1,4 +1,3 @@
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
 import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
 import ArticleIcon from '@mui/icons-material/Article';
 import CloseIcon from '@mui/icons-material/Close';
@@ -14,14 +13,18 @@ import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import Tooltip from '@mui/material/Tooltip';
+import type { PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useShallow } from 'zustand/react/shallow';
 import { EditView } from './EditView';
 import { PreviewProgressBar } from './PreviewProgressBar';
 import { PreviewTabsView } from './PreviewTabsView';
 
-interface PromptPreviewDialogProps {
+export interface PromptPreviewDialogProps {
+  agentId: string;
+  agentDefinitionId: string;
+  state: PromptPreviewDialogState;
+  controller: PromptPreviewController;
   open: boolean;
   onClose: () => void;
   inputText?: string;
@@ -29,13 +32,16 @@ interface PromptPreviewDialogProps {
 }
 
 export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
+  agentId,
+  agentDefinitionId,
+  state,
+  controller,
   open,
   onClose,
   inputText = '',
   initialBaseMode = 'preview',
 }) => {
   const { t } = useTranslation('agent');
-  const agent = useAgentChatStore(state => state.agent);
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [baseMode, setBaseMode] = useState<'preview' | 'edit'>(initialBaseMode);
@@ -47,15 +53,15 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     loading: agentFrameworkConfigLoading,
     config: agentFrameworkConfig,
   } = useAgentFrameworkConfigManagement({
-    agentDefId: agent?.agentDefId,
-    agentId: agent?.id,
+    agentDefId: agentDefinitionId,
+    agentId,
   });
 
   /** Copy current instance prompt config to the agent definition */
   const handleSaveToDefinition = useCallback(async () => {
-    if (!agent?.agentDefId || !agentFrameworkConfig) return;
+    if (!agentFrameworkConfig) return;
     try {
-      const agentDefinition = await window.service.agentDefinition.getAgentDef(agent.agentDefId);
+      const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefinitionId);
       if (agentDefinition) {
         await window.service.agentDefinition.updateAgentDef({
           ...agentDefinition,
@@ -66,30 +72,16 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
     } catch (error) {
       void window.service.native.log('error', 'Failed to save config to definition', { error });
     }
-  }, [agent?.agentDefId, agentFrameworkConfig]);
+  }, [agentDefinitionId, agentFrameworkConfig]);
 
-  const {
-    getPreviewPromptResult,
-    previewLoading,
-  } = useAgentChatStore(
-    useShallow((state) => ({
-      getPreviewPromptResult: state.getPreviewPromptResult,
-      previewLoading: state.previewLoading,
-    })),
-  );
   useEffect(() => {
-    const fetchInitialPreview = async () => {
-      if (!agent?.agentDefId || agentFrameworkConfigLoading || !agentFrameworkConfig || !open) {
-        return;
-      }
-      try {
-        await getPreviewPromptResult(inputText, agentFrameworkConfig);
-      } catch (error) {
-        console.error('PromptPreviewDialog: Error fetching initial preview:', error);
-      }
-    };
-    void fetchInitialPreview();
-  }, [agent?.agentDefId, agentFrameworkConfig, agentFrameworkConfigLoading, inputText, open]); // 移除 getPreviewPromptResult
+    if (agentFrameworkConfigLoading || !agentFrameworkConfig || !open) return;
+    void controller.generate(
+      agentFrameworkConfig,
+      agentId,
+      inputText.trim().length === 0 ? undefined : inputText,
+    );
+  }, [agentFrameworkConfig, agentFrameworkConfigLoading, agentId, controller, inputText, open]);
 
   const handleToggleFullScreen = useCallback((): void => {
     setIsFullScreen(previous => !previous);
@@ -109,11 +101,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   }, [baseMode, baseModeBeforeSideBySide]);
 
   // Listen for form field scroll targets to automatically switch to side-by-side mode
-  const { formFieldsToScrollTo } = useAgentChatStore(
-    useShallow((state) => ({
-      formFieldsToScrollTo: state.formFieldsToScrollTo,
-    })),
-  );
+  const { formFieldsToScrollTo } = state;
   useEffect(() => {
     if (formFieldsToScrollTo.length > 0) {
       // Save current baseMode before switching to side-by-side
@@ -167,7 +155,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
           <Box>{t('Prompt.Preview')}</Box>
           <Box sx={{ display: 'flex' }}>
             {/* Save to definition button — only in edit mode */}
-            {(showEdit || showSideBySide) && agent?.agentDefId && (
+            {(showEdit || showSideBySide) && (
               <Tooltip title={t('Preference.SaveToDefinition')}>
                 <IconButton
                   aria-label={t('Preference.SaveToDefinition')}
@@ -218,31 +206,49 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
         }}
       >
         {showPreview && showEdit && (
-          <Box sx={{ display: 'flex', gap: 2, height: isFullScreen ? '100%' : '70vh' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              gap: 2,
+              height: isFullScreen ? '100%' : '70vh',
+              overflow: 'auto',
+            }}
+          >
             <Box
               sx={{
                 flex: '1',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
+                minWidth: 0,
+                minHeight: 240,
               }}
             >
-              <PreviewProgressBar show={previewLoading} />
+              <PreviewProgressBar show={state.loading} state={state} />
               <PreviewTabsView
                 isFullScreen={isFullScreen}
+                state={state}
+                controller={controller}
               />
             </Box>
             <Box
               sx={{
-                flex: '0 0 50%',
+                flex: { xs: '1 0 320px', md: '0 0 50%' },
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
+                minWidth: 0,
+                minHeight: 320,
               }}
             >
               <EditView
                 isFullScreen={isFullScreen}
                 inputText={inputText}
+                agentId={agentId}
+                agentDefinitionId={agentDefinitionId}
+                state={state}
+                controller={controller}
               />
             </Box>
           </Box>
@@ -250,9 +256,11 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
 
         {showPreview && !showEdit && (
           <Box sx={{ display: 'flex', flexDirection: 'column', height: isFullScreen ? '100%' : '70vh' }}>
-            <PreviewProgressBar show={previewLoading} />
+            <PreviewProgressBar show={state.loading} state={state} />
             <PreviewTabsView
               isFullScreen={isFullScreen}
+              state={state}
+              controller={controller}
             />
           </Box>
         )}
@@ -262,6 +270,10 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
             <EditView
               isFullScreen={isFullScreen}
               inputText={inputText}
+              agentId={agentId}
+              agentDefinitionId={agentDefinitionId}
+              state={state}
+              controller={controller}
             />
           </Box>
         )}

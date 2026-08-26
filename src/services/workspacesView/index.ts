@@ -23,7 +23,6 @@ import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interfa
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceStrategy } from '@services/workspaces/strategies';
 
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { ISyncService } from '@services/sync/interface';
 import { workspaceSorter } from '@services/workspaces/utilities';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
@@ -37,10 +36,11 @@ export class WorkspaceView implements IWorkspaceViewService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
-  ) {
-    setTimeout(() => {
-      void registerMenu();
-    }, DELAY_MENU_REGISTER);
+  ) {}
+
+  /** Register menu contributions only from the application-ready boundary. */
+  public async initializeMenu(): Promise<void> {
+    await registerMenu();
   }
 
   private startupAbortController: AbortController | undefined;

@@ -1,8 +1,7 @@
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
+import type { PromptPreviewDialogState } from 'memeloop';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Debounce delay before showing the progress bar (ms)
@@ -15,6 +14,7 @@ interface PreviewProgressBarProps {
    * Whether to show the progress bar
    */
   show: boolean;
+  state: PromptPreviewDialogState;
 }
 
 /**
@@ -22,27 +22,21 @@ interface PreviewProgressBarProps {
  * Shows real-time progress and current processing step
  * Uses debounce to prevent flashing for quick operations
  */
-export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) => {
+export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show, state }) => {
   const { t } = useTranslation('agent');
   const {
-    previewProgress,
-    previewCurrentStep,
-    previewCurrentPlugin,
-    previewLoading,
-  } = useAgentChatStore(
-    useShallow((state) => ({
-      previewProgress: state.previewProgress,
-      previewCurrentStep: state.previewCurrentStep,
-      previewCurrentPlugin: state.previewCurrentPlugin,
-      previewLoading: state.previewLoading,
-    })),
-  );
+    progress,
+    currentStep,
+    currentStepDisplay,
+    currentPlugin,
+    loading,
+  } = state;
 
   // Debounce visibility to prevent flashing for quick operations
   const [showDelayed, setShowDelayed] = useState(false);
 
   useEffect(() => {
-    if (show && previewLoading) {
+    if (show && loading) {
       // Delay showing the progress bar
       const timer = setTimeout(() => {
         setShowDelayed(true);
@@ -54,13 +48,13 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
       // Hide immediately when loading is done
       setShowDelayed(false);
     }
-  }, [show, previewLoading]);
+  }, [loading, show]);
 
   if (!showDelayed) {
     return null;
   }
 
-  const progressPercentage = Math.round(previewProgress * 100);
+  const progressPercentage = Math.round(progress * 100);
 
   return (
     <Box sx={{ width: '100%', mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
@@ -71,12 +65,14 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
             color: 'text.secondary',
           }}
         >
-          {t(previewCurrentStep, { plugin: previewCurrentPlugin ?? t('Prompt.Progress.UnknownTool') })}
+          {t(stepTranslationKey(currentStep), {
+            plugin: currentPlugin ?? t('Prompt.Progress.UnknownTool'),
+          })}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {previewCurrentPlugin && (
+          {currentPlugin && (
             <Chip
-              label={previewCurrentPlugin}
+              label={currentPlugin}
               size='small'
               variant='outlined'
               color='primary'
@@ -92,6 +88,14 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
           </Typography>
         </Box>
       </Box>
+      {currentStepDisplay && (
+        <Typography
+          variant='caption'
+          sx={{ color: 'text.secondary', mb: 1, display: 'block', overflowWrap: 'anywhere' }}
+        >
+          {currentStepDisplay}
+        </Typography>
+      )}
       <LinearProgress
         variant='determinate'
         value={progressPercentage}
@@ -116,3 +120,19 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show }) 
     </Box>
   );
 };
+
+const STEP_TRANSLATION_KEYS: Record<PromptPreviewDialogState['currentStep'], string> = {
+  idle: 'Prompt.Progress.Starting',
+  starting: 'Prompt.Progress.Starting',
+  preparing: 'Prompt.Progress.Starting',
+  plugin: 'Prompt.Progress.ProcessingTool',
+  flatten: 'Prompt.Progress.Flattening',
+  finalize: 'Prompt.Progress.Finalizing',
+  completing: 'Prompt.Progress.Completing',
+  complete: 'Prompt.Progress.Complete',
+  error: 'Prompt.Progress.Error',
+};
+
+function stepTranslationKey(step: PromptPreviewDialogState['currentStep']): string {
+  return STEP_TRANSLATION_KEYS[step];
+}

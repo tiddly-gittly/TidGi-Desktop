@@ -3,7 +3,41 @@ import type { BehaviorSubject, Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import type { AiAPIConfig } from 'memeloop';
+import type { PortableLlmRequest, PortableLlmStreamPart } from 'memeloop';
+
+/**
+ * Desktop-owned selections for non-agent features such as embeddings, speech,
+ * image generation and the lightweight "free" helper model. Agent execution
+ * deliberately uses MemeLoop's canonical `AgentModelConfig` instead.
+ */
+export interface DesktopModelSelection {
+  provider: string;
+  model: string;
+}
+
+/** Desktop settings UI shape; converted to `AgentModelParameters` at the host boundary. */
+export interface DesktopModelParameters {
+  temperature?: number;
+  maxOutputTokens?: number;
+  /** Historical settings-key name retained only in the Desktop settings store. */
+  maxTokens?: number;
+  topP?: number;
+  reasoningEffort?: ReasoningEffort;
+}
+
+/**
+ * Desktop's global multi-capability AI settings. This is not an agent model
+ * contract and must never be exported from MemeLoop core.
+ */
+export interface DesktopAIConfig {
+  default?: DesktopModelSelection;
+  embedding?: DesktopModelSelection;
+  speech?: DesktopModelSelection;
+  imageGeneration?: DesktopModelSelection;
+  transcriptions?: DesktopModelSelection;
+  free?: DesktopModelSelection;
+  modelParameters: DesktopModelParameters;
+}
 
 /**
  * Vercel AI SDK message shape used by the External API service.
@@ -225,7 +259,7 @@ export interface AIGlobalSettings {
   /** Providers configuration including API keys and base URLs */
   providers: AIProviderConfig[];
   /** Default AI configuration */
-  defaultConfig: AiAPIConfig;
+  defaultConfig: DesktopAIConfig;
 }
 
 /**
@@ -243,7 +277,7 @@ export interface IExternalAPIService {
    */
   streamFromAI(
     messages: Array<ModelMessage>,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): Observable<AIStreamResponse>;
 
@@ -254,7 +288,7 @@ export interface IExternalAPIService {
    */
   generateFromAI(
     messages: Array<ModelMessage>,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): AsyncGenerator<AIStreamResponse, void, unknown>;
 
@@ -263,7 +297,7 @@ export interface IExternalAPIService {
    */
   generateEmbeddings(
     inputs: string[],
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       /** Dimensions for the embedding (supported by some providers) */
       dimensions?: number;
@@ -277,7 +311,7 @@ export interface IExternalAPIService {
    */
   generateSpeech(
     input: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       /** Response audio format (mp3, wav, opus, etc.) */
       responseFormat?: string;
@@ -301,7 +335,7 @@ export interface IExternalAPIService {
    */
   generateTranscription(
     audioFile: File | Blob,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       /** Language of the audio (ISO-639-1 format, e.g., 'en', 'zh') */
       language?: string;
@@ -319,7 +353,7 @@ export interface IExternalAPIService {
    */
   generateImage(
     prompt: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       /** Number of images to generate */
       numImages?: number;
@@ -362,7 +396,17 @@ export interface IExternalAPIService {
   /**
    * Get readonly AI configuration default values
    */
-  getAIConfig(): Promise<AiAPIConfig>;
+  getAIConfig(): Promise<DesktopAIConfig>;
+
+  /**
+   * Main-process agent execution path. It preserves MemeLoop's exact portable
+   * request/stream contracts instead of round-tripping through accumulated
+   * renderer-friendly strings.
+   */
+  generatePortableLlm(
+    request: PortableLlmRequest,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
+  ): AsyncIterable<PortableLlmStreamPart>;
 
   /**
    * Check if AI is available (has free model and provider configured)
@@ -373,7 +417,7 @@ export interface IExternalAPIService {
   /**
    * Observable for changes to default AI configuration
    */
-  defaultConfig$: BehaviorSubject<AiAPIConfig>;
+  defaultConfig$: BehaviorSubject<DesktopAIConfig>;
 
   /**
    * Observable for changes to providers list
@@ -393,7 +437,7 @@ export interface IExternalAPIService {
   /**
    * Update default AI configuration settings
    */
-  updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void>;
+  updateDefaultAIConfig(config: Partial<DesktopAIConfig>): Promise<void>;
 
   /**
    * Delete a field from default AI configuration

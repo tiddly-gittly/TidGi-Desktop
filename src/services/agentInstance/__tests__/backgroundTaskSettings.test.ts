@@ -23,6 +23,7 @@ describe('AgentInstanceService background task settings APIs', () => {
         update: typeof updateMock;
       };
       agentMessageRepository: Record<string, unknown>;
+      remoteScheduledTaskProjectionRepository: Record<string, unknown>;
       agentDefinitionService: {
         getAgentDef: typeof getAgentDefMock;
         updateAgentDef: typeof updateAgentDefMock;
@@ -35,6 +36,7 @@ describe('AgentInstanceService background task settings APIs', () => {
       update: updateMock,
     };
     mutableService.agentMessageRepository = {};
+    mutableService.remoteScheduledTaskProjectionRepository = {};
     mutableService.agentDefinitionService = {
       getAgentDef: getAgentDefMock,
       updateAgentDef: updateAgentDefMock,
@@ -66,25 +68,15 @@ describe('AgentInstanceService background task settings APIs', () => {
     await service.setBackgroundAlarm('agent-1', {
       wakeAtISO: '2026-03-06T10:00:00.000Z',
       message: 'Run follow-up check',
-      repeatIntervalMinutes: 30,
     });
 
     expect(scheduleAlarmTimerSpy).toHaveBeenCalledWith(
       'agent-1',
       '2026-03-06T10:00:00.000Z',
       'Run follow-up check',
-      30,
       { createdBy: 'settings-ui', runCount: 0 },
     );
-    expect(updateMock).toHaveBeenCalledWith('agent-1', {
-      scheduledAlarm: {
-        wakeAtISO: '2026-03-06T10:00:00.000Z',
-        reminderMessage: 'Run follow-up check',
-        repeatIntervalMinutes: 30,
-        createdBy: 'settings-ui',
-        runCount: 0,
-      },
-    });
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it('enables heartbeat from settings UI and starts runtime heartbeat', async () => {
@@ -152,7 +144,7 @@ describe('AgentInstanceService background task settings APIs', () => {
     expect(startHeartbeatSpy).not.toHaveBeenCalled();
   });
 
-  it('restores heartbeat and alarm tasks on startup with metadata', async () => {
+  it('restores heartbeats while unified scheduled tasks restore separately', async () => {
     findMock.mockResolvedValue([
       {
         id: 'agent-1',
@@ -164,14 +156,6 @@ describe('AgentInstanceService background task settings APIs', () => {
             intervalSeconds: 120,
             message: 'Restore heartbeat',
           },
-        },
-        scheduledAlarm: {
-          wakeAtISO: '2099-01-01T00:00:00.000Z',
-          reminderMessage: 'Restore alarm',
-          repeatIntervalMinutes: 60,
-          createdBy: 'settings-ui',
-          runCount: 4,
-          lastRunAtISO: '2026-03-06T00:00:00.000Z',
         },
       },
     ]);
@@ -190,17 +174,6 @@ describe('AgentInstanceService background task settings APIs', () => {
       service,
       { createdBy: 'agent-definition' },
     );
-
-    expect(scheduleAlarmTimerSpy).toHaveBeenCalledWith(
-      'agent-1',
-      '2099-01-01T00:00:00.000Z',
-      'Restore alarm',
-      60,
-      {
-        createdBy: 'settings-ui',
-        runCount: 4,
-        lastRunAtISO: '2026-03-06T00:00:00.000Z',
-      },
-    );
+    expect(scheduleAlarmTimerSpy).not.toHaveBeenCalled();
   });
 });

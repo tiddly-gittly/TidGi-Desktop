@@ -1,8 +1,7 @@
 import { logger } from '@services/libs/log';
 
-import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
-import type { AIEmbeddingResponse, AIProviderConfig } from './interface';
+import type { AIEmbeddingResponse, AIProviderConfig, DesktopAIConfig } from './interface';
 
 interface EmbeddingAPIResponse {
   data?: Array<{ embedding: number[] }>;
@@ -25,7 +24,7 @@ interface EmbeddingOptions {
  */
 export async function generateEmbeddingsFromProvider(
   inputs: string[],
-  config: AiAPIConfig,
+  config: DesktopAIConfig,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
   options: EmbeddingOptions = {},

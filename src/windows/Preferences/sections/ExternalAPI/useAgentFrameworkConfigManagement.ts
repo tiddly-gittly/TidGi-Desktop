@@ -31,7 +31,7 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
         let agentFrameworkID: string | undefined;
 
         if (agentId) {
-          const agentInstance = await window.service.agentInstance.getAgent(agentId);
+          const agentInstance = await window.service.agentInstance.getAgentMetadata(agentId);
           let agentDefinition: Awaited<ReturnType<typeof window.service.agentDefinition.getAgentDef>> | undefined;
           if (agentInstance?.agentDefId) {
             agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);

@@ -9,9 +9,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const ListTiddlersParameterSchema = z.object({
   toolListPosition: z.object({
@@ -94,7 +94,7 @@ async function executeListTiddlers(parameters: z.infer<typeof ListTiddlersToolSc
   };
 }
 
-const listTiddlersDefinition = registerToolDefinition({
+export const listTiddlersDefinition = defineDesktopTool({
   toolId: 'listTiddlers',
   displayName: 'Wiki List Tiddlers',
   description: 'List tiddlers with skinny data and pagination for large wikis',
@@ -113,5 +113,3 @@ const listTiddlersDefinition = registerToolDefinition({
     await executeToolCall('wiki-list-tiddlers', executeListTiddlers);
   },
 });
-
-export const listTiddlersTool = listTiddlersDefinition.tool;

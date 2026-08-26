@@ -26,9 +26,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ChatMessage, ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 /* ------------------------------------------------------------------ */
 /*  Config schema                                                      */
@@ -175,8 +175,8 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
 /*  Registration                                                       */
 /* ------------------------------------------------------------------ */
 
-const todoDefinition = registerToolDefinition({
-  toolId: 'todo',
+export const todoDefinition = defineDesktopTool({
+  toolId: 'todoWrite',
   displayName: 'Todo / Plan List',
   description: 'Persistent todo list that the agent uses to track progress — auto-injected into every prompt',
   configSchema: TodoParameterSchema,
@@ -222,5 +222,3 @@ const todoDefinition = registerToolDefinition({
     });
   },
 });
-
-export const todoTool = todoDefinition.tool;

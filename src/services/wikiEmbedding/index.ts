@@ -5,13 +5,12 @@ import { DataSource, Repository } from 'typeorm';
 import { WikiChannel } from '@/constants/channels';
 import type { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
-import type { IExternalAPIService } from '@services/externalAPI/interface';
+import type { DesktopAIConfig, IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 
-import type { AiAPIConfig } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import type { EmbeddingStatus, IWikiEmbeddingService, SearchResult } from './interface';
 
@@ -336,7 +335,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
   public async generateEmbeddings(
     workspaceId: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     forceUpdate = false,
   ): Promise<void> {
     try {
@@ -602,7 +601,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
   public async searchSimilar(
     workspaceId: string,
     query: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     limit = 10,
     threshold = 0.7,
   ): Promise<SearchResult[]> {

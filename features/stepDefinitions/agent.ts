@@ -378,7 +378,7 @@ function createProviderConfig(): AIProviderConfig {
   };
 }
 
-const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
+const desiredModelParameters = { temperature: 0.7, topP: 0.95 };
 
 // Step to remove AI settings for testing config errors
 Given('I remove test ai settings', function(this: ApplicationWorld) {

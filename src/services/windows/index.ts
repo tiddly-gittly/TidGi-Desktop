@@ -15,7 +15,6 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { TIDGI_APP_ICON_PATH } from '@/constants/paths';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isLinux, isMac } from '@/helpers/system';
@@ -47,10 +46,16 @@ export class Window implements IWindowService {
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
-  ) {
-    setTimeout(() => {
-      void registerMenu();
-    }, DELAY_MENU_REGISTER);
+  ) {}
+
+  /**
+   * Register window menu contributions at the explicit application-ready
+   * boundary. Service construction happens while mainApplication is imported;
+   * scheduling Electron work from the constructor can therefore run before
+   * `app.whenReady()` on a slow macOS launch.
+   */
+  public async initializeMenu(): Promise<void> {
+    await registerMenu();
   }
 
   public async findInPage(text: string, forward?: boolean): Promise<void> {
@@ -164,6 +169,11 @@ export class Window implements IWindowService {
     config?: IWindowOpenConfig<N>,
     returnWindow?: boolean,
   ): Promise<undefined | BrowserWindow> {
+    // `electron-window-state` validates saved bounds through `screen` as soon
+    // as it is constructed. Keep this method safe even if a future deep-link,
+    // test hook, or lifecycle listener bypasses mainApplication's activation
+    // gate and asks for a window during module initialization.
+    await app.whenReady();
     const { recreate = false, multiple = false, recreateUnlessWorkspaceID } = config ?? {};
     const existedWindow = this.get(windowName);
     // Read the OLD meta before overwriting — recreate() must compare old vs new to decide whether to close.

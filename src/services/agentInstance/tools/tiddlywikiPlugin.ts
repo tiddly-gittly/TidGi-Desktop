@@ -30,10 +30,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const TiddlyWikiPluginParameterSchema = z.object({
   workspaceNameOrID: z.string().default('wiki').meta({
@@ -157,7 +157,7 @@ async function executeTiddlyWikiPlugin(parameters: TiddlyWikiPluginParameters, c
   };
 }
 
-const tiddlyWikiPluginDefinition = registerToolDefinition({
+export const tiddlyWikiPluginDefinition = defineDesktopTool({
   toolId: 'tiddlywikiPlugin',
   displayName: t('Schema.TiddlyWikiPlugin.Title'),
   description: t('Schema.TiddlyWikiPlugin.Description'),
@@ -265,5 +265,3 @@ const tiddlyWikiPluginDefinition = registerToolDefinition({
     await executeToolCall('tiddlywiki-plugin', (parameters) => executeTiddlyWikiPlugin(parameters, typedConfig));
   },
 });
-
-export const tiddlywikiPluginTool = tiddlyWikiPluginDefinition.tool;

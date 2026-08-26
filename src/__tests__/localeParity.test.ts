@@ -33,15 +33,24 @@ describe('Simplified Chinese locale parity', () => {
       'ScheduleCronExpr',
       'ScheduleCronHelp',
       'ScheduleCronPreview',
+      'ScheduleExecutionTarget',
+      'ScheduleExecutionTargetUnavailable',
+      'ScheduleIdentityLoading',
+      'ScheduleIdentityError',
+      'ScheduleDefaultTaskName',
       'ScheduleDaily',
       'ScheduleDailyTime',
       'ScheduleInterval',
       'ScheduleIntervalUnit',
       'ScheduleIntervalValue',
+      'ScheduleInvalidCron',
+      'ScheduleInvalidTimezone',
       'ScheduleMessage',
       'ScheduleMessagePlaceholder',
       'ScheduleMode',
       'ScheduleNone',
+      'ScheduleNoPreview',
+      'SchedulePreviewLoading',
       'ScheduleSave',
       'ScheduleSaveWait',
       'ScheduleSaving',
@@ -54,6 +63,39 @@ describe('Simplified Chinese locale parity', () => {
         fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
       ) as { EditAgent?: Record<string, unknown> };
       expect(scheduledWakeupKeys.filter(key => !(key in (agentLocale.EditAgent ?? {}))), locale).toEqual([]);
+    }
+  });
+
+  it('contains every shared chat-shell label in every supported locale', () => {
+    const executionTargetKeys = [
+      'AnotherTarget',
+      'ConfirmDescription',
+      'ConfirmTitle',
+      'KeepRunning',
+      'Label',
+      'RunOn',
+      'RunOnTarget',
+      'StopAndRestart',
+    ];
+    const messageKeys = [
+      'AttachmentAlt',
+      'DetailLine',
+      'Error',
+      'HideDetails',
+      'LoadDetails',
+      'NoDetails',
+      'ShowDetails',
+      'ToolCall',
+      'ToolResult',
+      'Truncated',
+    ];
+
+    for (const locale of ['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant']) {
+      const agentLocale = JSON.parse(
+        fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
+      ) as { Chat?: { ExecutionTarget?: Record<string, unknown>; Message?: Record<string, unknown> } };
+      expect(executionTargetKeys.filter(key => !(key in (agentLocale.Chat?.ExecutionTarget ?? {}))), locale).toEqual([]);
+      expect(messageKeys.filter(key => !(key in (agentLocale.Chat?.Message ?? {}))), locale).toEqual([]);
     }
   });
 });

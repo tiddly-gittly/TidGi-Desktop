@@ -5,6 +5,21 @@ import '@testing-library/jest-dom/vitest';
 import { type IEditAgentDefinitionTab, TabState, TabType } from '@/pages/Agent/types/tab';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+
+// This suite verifies the editor's state and service interactions. The live
+// chat, JSON-schema renderer, and cron editor have their own focused suites;
+// importing those full graphs here makes Vitest collect the entire agent
+// runtime and RJSF stack before the first test can start.
+vi.mock('@memeloop/react-ui/agent/prompts', () => ({
+  PromptConfigForm: () => <div data-testid='mock-prompt-config-form' />,
+}));
+vi.mock('../../../adapters', () => ({
+  DesktopAgentChatTab: () => <div data-testid='mock-desktop-agent-chat' />,
+}));
+vi.mock('../ScheduledWakeupEditor', () => ({
+  ScheduledWakeupEditor: () => <div data-testid='mock-scheduled-wakeup-editor' />,
+}));
+
 import { EditAgentDefinitionContent } from '../EditAgentDefinitionContent';
 
 // Mock backend services

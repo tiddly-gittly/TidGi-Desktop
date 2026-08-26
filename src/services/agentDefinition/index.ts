@@ -42,7 +42,7 @@ function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
     avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
     agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || AGENT_TOOL_LOOP_ID,
     agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? { prompts: [], plugins: [] },
-    aiApiConfig: entity.aiApiConfig ?? defaultAgent?.aiApiConfig,
+    modelConfig: entity.modelConfig ?? defaultAgent?.modelConfig,
     agentTools: entity.agentTools ?? defaultAgent?.agentTools,
     heartbeat: entity.heartbeat ?? defaultAgent?.heartbeat,
   };
@@ -110,7 +110,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           avatarUrl: definition.avatarUrl,
           agentFrameworkID: definition.agentFrameworkID || AGENT_TOOL_LOOP_ID,
           agentFrameworkConfig: definition.agentFrameworkConfig,
-          aiApiConfig: definition.aiApiConfig,
+          modelConfig: definition.modelConfig,
           agentTools: definition.agentTools,
           heartbeat: definition.heartbeat,
           builtinVersion: definition.version,
@@ -155,7 +155,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     Object.assign(
       existing,
       Object.fromEntries(
-        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'aiApiConfig', 'agentTools', 'heartbeat']))
+        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'modelConfig', 'agentTools', 'heartbeat']))
           .filter(([, v]) => v !== undefined),
       ),
     );

@@ -1,5 +1,5 @@
+import type { DesktopAIConfig } from '@services/externalAPI/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { AiAPIConfig } from 'memeloop';
 import type { Observable } from 'rxjs';
 import type { ITiddlerFields } from 'tiddlywiki';
 
@@ -79,7 +79,7 @@ export interface IWikiEmbeddingService {
    * @param config AI configuration for embedding generation
    * @param forceUpdate Whether to force update all embeddings even if unchanged
    */
-  generateEmbeddings(workspaceId: string, config: AiAPIConfig, forceUpdate?: boolean): Promise<void>;
+  generateEmbeddings(workspaceId: string, config: DesktopAIConfig, forceUpdate?: boolean): Promise<void>;
 
   /**
    * Search for similar content using vector similarity
@@ -92,7 +92,7 @@ export interface IWikiEmbeddingService {
   searchSimilar(
     workspaceId: string,
     query: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     limit?: number,
     threshold?: number,
   ): Promise<SearchResult[]>;

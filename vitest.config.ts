@@ -3,6 +3,9 @@ import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // SWC owns TS/JS transformation in this test pipeline. Vitest 4 otherwise
+  // enables Oxc after the SWC plugin disables esbuild and emits a warning.
+  oxc: false,
   plugins: [swc.vite({
     jsc: {
       transform: {
@@ -63,15 +66,13 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
-  },
-
-  // Vitest 4 requires pool options at the top level
-  pool: 'forks',
-  poolOptions: {
-    forks: {
-      maxForks: 6,
-      minForks: 2,
-    },
+    // Electron retains an isolated V8/module graph for every concurrent test
+    // file. Higher worker counts make otherwise small shards enter exit-time
+    // GC for minutes, so keep concurrency bounded instead of enlarging V8's
+    // heap. Threads support the native modules used by these tests and each
+    // file remains isolated.
+    pool: 'threads',
+    maxWorkers: 2,
     isolate: true,
   },
 

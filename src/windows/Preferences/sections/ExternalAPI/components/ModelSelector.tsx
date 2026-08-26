@@ -1,13 +1,12 @@
 import { Autocomplete, Box, Typography } from '@mui/material';
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
-import type { ModelSelection } from 'memeloop';
+import { AIProviderConfig, type DesktopModelSelection, ModelInfo } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
 import { ModelFeatureChip } from './ModelFeatureChip';
 
 interface ModelSelectorProps {
-  selectedModel: ModelSelection | undefined;
+  selectedModel: DesktopModelSelection | undefined;
   modelOptions: Array<[AIProviderConfig, ModelInfo]>;
   onChange: (provider: string, model: string) => void;
   onClear?: () => void;

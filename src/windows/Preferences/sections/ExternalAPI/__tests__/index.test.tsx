@@ -5,10 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
-import type { AiAPIConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, type DesktopAIConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ExternalAPI } from '../index';
 
 // Mock data
@@ -154,7 +153,7 @@ describe('ExternalAPI Component', () => {
     // Mock observables for externalAPI
     Object.defineProperty(window.observables, 'externalAPI', {
       value: {
-        defaultConfig$: new BehaviorSubject<AiAPIConfig>(mockAIConfig),
+        defaultConfig$: new BehaviorSubject<DesktopAIConfig>(mockAIConfig),
         providers$: new BehaviorSubject<AIProviderConfig[]>([mockProvider]),
       },
       writable: true,

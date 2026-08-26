@@ -6,8 +6,10 @@ import { extractLatestTodoText } from '../todo';
 function toolMessage(content: string): ChatMessage {
   return {
     messageId: 'tool-1',
+    turnId: 'turn-1',
     conversationId: 'agent-1',
     originNodeId: 'test',
+    originSequence: 1,
     timestamp: 1,
     lamportClock: 1,
     role: 'tool',

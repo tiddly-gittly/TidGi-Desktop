@@ -1,9 +1,8 @@
 import { logger } from '@services/libs/log';
 import fs from 'fs-extra';
 
-import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
-import type { AIImageGenerationResponse, AIProviderConfig } from './interface';
+import type { AIImageGenerationResponse, AIProviderConfig, DesktopAIConfig } from './interface';
 
 interface ImageGenerationOptions {
   /** Number of images to generate */
@@ -19,7 +18,7 @@ interface ImageGenerationOptions {
  */
 export async function generateImageFromProvider(
   prompt: string,
-  config: AiAPIConfig,
+  config: DesktopAIConfig,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
   options: ImageGenerationOptions = {},
@@ -163,7 +162,7 @@ export async function generateImageFromProvider(
  */
 async function generateImageFromComfyUI(
   prompt: string,
-  _config: AiAPIConfig,
+  _config: DesktopAIConfig,
   signal: AbortSignal,
   providerConfig: AIProviderConfig | undefined,
   _options: ImageGenerationOptions,

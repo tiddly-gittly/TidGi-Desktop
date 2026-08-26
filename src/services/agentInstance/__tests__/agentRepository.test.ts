@@ -15,7 +15,7 @@ describe('agentRepository.createAgent', () => {
     tools: [],
     version: '1',
     avatarUrl: 'avatar.png',
-    aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' }, modelParameters: {} },
+    modelConfig: { providerId: 'openai', modelId: 'gpt-5.3-codex' },
     agentFrameworkID: 'agent-tool-loop',
     agentFrameworkConfig: { prompts: [], plugins: [] },
   };
@@ -49,6 +49,7 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).toBe(true);
+    expect(created.modelConfig).toEqual(mockDefinition.modelConfig);
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
   });

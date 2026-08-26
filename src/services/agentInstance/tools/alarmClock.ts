@@ -4,9 +4,10 @@
  *
  * Timer-management delegated to scheduledTaskManager; this file only holds the tool definition.
  */
+import { i18n } from '@services/libs/i18n';
 import { t } from '@services/libs/i18n/placeholder';
-import { registerToolDefinition } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 import { addTask, getActiveTasksForAgent, removeTask, updateTask } from './scheduledTaskManager';
 
 export const AlarmClockParameterSchema = z.object({
@@ -14,30 +15,24 @@ export const AlarmClockParameterSchema = z.object({
     targetId: z.string().meta({ title: t('Schema.Common.ToolListPosition.TargetIdTitle'), description: t('Schema.Common.ToolListPosition.TargetId') }),
     position: z.enum(['before', 'after']).meta({ title: t('Schema.Common.ToolListPosition.PositionTitle'), description: t('Schema.Common.ToolListPosition.Position') }),
   }).optional().meta({ title: t('Schema.Common.ToolListPositionTitle'), description: t('Schema.Common.ToolListPosition.Description') }),
-}).meta({ title: 'Alarm Clock Config', description: 'Configuration for the alarm clock / self-wake tool' });
+}).meta({ title: t('EditAgent.ScheduledWakeup'), description: t('EditAgent.ScheduledWakeupDescription') });
 
 export type AlarmClockParameter = z.infer<typeof AlarmClockParameterSchema>;
 
 const AlarmClockToolSchema = z.object({
   wakeAtISO: z.string().meta({
-    title: 'Wake time (ISO 8601)',
-    description: 'The ISO 8601 datetime string for when to wake the agent. e.g. "2025-12-01T09:00:00Z"',
+    title: t('EditAgent.ScheduleDailyTime'),
+    description: t('Schema.AlarmClock.WakeAtDescription'),
   }),
   reminderMessage: z.string().optional().meta({
-    title: 'Reminder message',
-    description: 'A message to send to yourself when you wake up, to remind you what to do next.',
-  }),
-  repeatIntervalMinutes: z.number().optional().meta({
-    title: 'Repeat interval (minutes)',
-    description: 'If set, the alarm repeats at this interval after the initial wake time. 0 or omitted = one-shot.',
+    title: t('EditAgent.ScheduleMessage'),
+    description: t('Schema.AlarmClock.MessageDescription'),
   }),
 }).meta({
   title: 'alarm-clock',
-  description:
-    'Set a future wake-up time and temporarily exit the conversation loop. At the scheduled time, the agent will receive the reminder message and resume working. Optionally set a repeat interval for recurring wake-ups.',
+  description: t('Schema.AlarmClock.AlarmDescription'),
   examples: [
     { wakeAtISO: '2025-12-01T09:00:00Z', reminderMessage: 'Check if the daily note was created successfully.' },
-    { wakeAtISO: '2025-12-01T09:00:00Z', reminderMessage: 'Hourly check-in', repeatIntervalMinutes: 60 },
   ],
 });
 
@@ -49,7 +44,6 @@ export async function scheduleAlarmTimer(
   agentId: string,
   wakeAtISO: string,
   reminderMessage?: string,
-  repeatIntervalMinutes?: number,
   options?: {
     createdBy?: string;
     runCount?: number;
@@ -60,7 +54,7 @@ export async function scheduleAlarmTimer(
     agentInstanceId: agentId,
     name: `alarm-${wakeAtISO.slice(0, 10)}`,
     scheduleKind: 'at',
-    schedule: { kind: 'at', wakeAtISO, repeatIntervalMinutes },
+    schedule: { kind: 'at', wakeAtISO },
     payload: reminderMessage ? { message: reminderMessage } : undefined,
     createdBy: options?.createdBy ?? 'agent-tool',
     enabled: true,
@@ -69,102 +63,94 @@ export async function scheduleAlarmTimer(
 
 /** Cancel all alarm tasks for an agent. */
 export function cancelAlarm(agentId: string): void {
-  for (const task of getActiveTasksForAgent(agentId)) {
-    if (task.scheduleKind === 'at') {
-      void removeTask(task.id);
-    }
-  }
+  void getActiveTasksForAgent(agentId).then(tasks =>
+    Promise.all(
+      tasks.filter(task => task.scheduleKind === 'at').map(task => removeTask(task.id)),
+    )
+  );
 }
 
 // ─── schedule-task / list-schedules / remove-schedule / update-schedule ──────
 
 const ScheduleTaskToolSchema = z.object({
-  kind: z.enum(['interval', 'at', 'cron']).meta({
-    title: 'Schedule kind',
-    description: '"interval" (repeat every N seconds), "at" (run at ISO datetime, optionally repeating), "cron" (cron expression)',
-  }),
-  intervalSeconds: z.number().optional().meta({
-    title: 'Interval (seconds)',
-    description: 'Required when kind="interval". Minimum 60.',
+  kind: z.enum(['at', 'cron']).meta({
+    title: t('EditAgent.ScheduleMode'),
+    description: t('Schema.AlarmClock.KindDescription'),
   }),
   wakeAtISO: z.string().optional().meta({
-    title: 'Wake time (ISO 8601)',
-    description: 'Required when kind="at". The datetime to wake at.',
-  }),
-  repeatIntervalMinutes: z.number().optional().meta({
-    title: 'Repeat (minutes)',
-    description: 'When kind="at": repeat every N minutes after first fire.',
+    title: t('EditAgent.ScheduleDailyTime'),
+    description: t('Schema.AlarmClock.WakeAtDescription'),
   }),
   cronExpression: z.string().optional().meta({
-    title: 'Cron expression',
-    description: 'Required when kind="cron". 5-field cron: min hour day month weekday',
+    title: t('EditAgent.ScheduleCronExpr'),
+    description: t('EditAgent.ScheduleCronHelp'),
   }),
   timezone: z.string().optional().meta({
-    title: 'Timezone',
-    description: 'IANA timezone for cron expressions, e.g. "Asia/Shanghai".',
+    title: t('EditAgent.ScheduleTimezone'),
+    description: t('Schema.AlarmClock.TimezoneDescription'),
   }),
   message: z.string().optional().meta({
-    title: 'Message',
-    description: 'Message sent to this agent when the schedule fires.',
+    title: t('EditAgent.ScheduleMessage'),
+    description: t('Schema.AlarmClock.MessageDescription'),
   }),
   activeHoursStart: z.string().optional().meta({
-    title: 'Active hours start',
-    description: 'HH:MM — skip runs before this time.',
+    title: t('EditAgent.ActiveHoursStart'),
+    description: t('Schema.AlarmClock.ActiveHoursStartDescription'),
   }),
   activeHoursEnd: z.string().optional().meta({
-    title: 'Active hours end',
-    description: 'HH:MM — skip runs after this time.',
+    title: t('EditAgent.ActiveHoursEnd'),
+    description: t('Schema.AlarmClock.ActiveHoursEndDescription'),
   }),
   name: z.string().optional().meta({
-    title: 'Task name',
-    description: 'Human-readable label for this schedule.',
+    title: t('Schema.AlarmClock.TaskNameTitle'),
+    description: t('Schema.AlarmClock.TaskNameDescription'),
   }),
 }).meta({
   title: 'schedule-task',
-  description: 'Create a new scheduled task that will periodically wake this agent.',
+  description: t('EditAgent.ScheduledWakeupDescription'),
 });
 
 const ListSchedulesToolSchema = z.object({}).meta({
   title: 'list-schedules',
-  description: 'List all active scheduled tasks for this agent.',
+  description: t('Schema.AlarmClock.ListDescription'),
 });
 
 const RemoveScheduleToolSchema = z.object({
   taskId: z.string().meta({
-    title: 'Task ID',
-    description: 'ID of the scheduled task to remove (from list-schedules).',
+    title: t('Schema.AlarmClock.TaskIdTitle'),
+    description: t('Schema.AlarmClock.TaskIdDescription'),
   }),
 }).meta({
   title: 'remove-schedule',
-  description: 'Remove an active scheduled task by ID.',
+  description: t('Schema.AlarmClock.RemoveDescription'),
 });
 
 const UpdateScheduleToolSchema = z.object({
   taskId: z.string().meta({
-    title: 'Task ID',
-    description: 'ID of the scheduled task to update (from list-schedules).',
+    title: t('Schema.AlarmClock.TaskIdTitle'),
+    description: t('Schema.AlarmClock.TaskIdDescription'),
   }),
   enabled: z.boolean().optional().meta({
-    title: 'Enabled',
-    description: 'Enable or disable the task without deleting it.',
+    title: t('Schema.AlarmClock.EnabledTitle'),
+    description: t('Schema.AlarmClock.EnabledDescription'),
   }),
   message: z.string().optional().meta({
-    title: 'Message',
-    description: 'New wake-up message.',
+    title: t('EditAgent.ScheduleMessage'),
+    description: t('Schema.AlarmClock.MessageDescription'),
   }),
-  activeHoursStart: z.string().optional().meta({ title: 'Active hours start', description: 'HH:MM' }),
-  activeHoursEnd: z.string().optional().meta({ title: 'Active hours end', description: 'HH:MM' }),
+  activeHoursStart: z.string().optional().meta({ title: t('EditAgent.ActiveHoursStart'), description: t('Schema.AlarmClock.ActiveHoursStartDescription') }),
+  activeHoursEnd: z.string().optional().meta({ title: t('EditAgent.ActiveHoursEnd'), description: t('Schema.AlarmClock.ActiveHoursEndDescription') }),
 }).meta({
   title: 'update-schedule',
-  description: 'Update an existing scheduled task — change enabled state, message, or active hours.',
+  description: t('Schema.AlarmClock.UpdateDescription'),
 });
 
 // ─── Tool definition ──────────────────────────────────────────────────────────
 
-const alarmClockDefinition = registerToolDefinition({
+export const alarmClockDefinition = defineDesktopTool({
   toolId: 'alarmClock',
-  displayName: 'Alarm Clock',
-  description: 'Schedule a self-wake at a future time and temporarily exit',
+  displayName: t('EditAgent.ScheduledWakeup'),
+  description: t('EditAgent.ScheduledWakeupDescription'),
   configSchema: AlarmClockParameterSchema,
   llmToolSchemas: {
     'alarm-clock': AlarmClockToolSchema,
@@ -191,16 +177,16 @@ const alarmClockDefinition = registerToolDefinition({
         const wakeAt = new Date(parameters.wakeAtISO);
         const now = new Date();
         const delayMs = Math.max(0, wakeAt.getTime() - now.getTime());
-        const repeatMs = parameters.repeatIntervalMinutes ? Math.max(parameters.repeatIntervalMinutes, 1) * 60_000 : 0;
-
-        await scheduleAlarmTimer(agentId, parameters.wakeAtISO, parameters.reminderMessage, parameters.repeatIntervalMinutes, {
+        await scheduleAlarmTimer(agentId, parameters.wakeAtISO, parameters.reminderMessage, {
           createdBy: 'agent-tool',
         });
 
-        const repeatInfo = repeatMs > 0 ? ` Repeats every ${parameters.repeatIntervalMinutes} minutes.` : '';
         return {
           success: true,
-          data: `Alarm set for ${parameters.wakeAtISO} (in ${Math.round(delayMs / 1000)}s).${repeatInfo} Exiting loop now. I will resume when the alarm fires.`,
+          data: i18n.t('Tool.AlarmClock.AlarmSet', {
+            wakeAtISO: parameters.wakeAtISO,
+            delaySeconds: Math.round(delayMs / 1000),
+          }),
         };
       });
       return;
@@ -209,10 +195,8 @@ const alarmClockDefinition = registerToolDefinition({
     // ── schedule-task ─────────────────────────────────────────────────────
     if (toolCall.toolId === 'schedule-task') {
       await executeToolCall('schedule-task', async (parameters) => {
-        const schedule = parameters.kind === 'interval'
-          ? { kind: 'interval' as const, intervalSeconds: Math.max(60, parameters.intervalSeconds ?? 300) }
-          : parameters.kind === 'at'
-          ? { kind: 'at' as const, wakeAtISO: parameters.wakeAtISO!, repeatIntervalMinutes: parameters.repeatIntervalMinutes }
+        const schedule = parameters.kind === 'at'
+          ? { kind: 'at' as const, wakeAtISO: parameters.wakeAtISO! }
           : { kind: 'cron' as const, expression: parameters.cronExpression!, timezone: parameters.timezone };
 
         const task = await addTask({
@@ -229,7 +213,10 @@ const alarmClockDefinition = registerToolDefinition({
 
         return {
           success: true,
-          data: `Scheduled task created (id: ${task.id}). Next run: ${task.nextRunAt ?? 'unknown'}.`,
+          data: i18n.t('Tool.AlarmClock.TaskCreated', {
+            taskId: task.id,
+            nextRun: task.nextRunAt ?? i18n.t('Tool.AlarmClock.Unknown'),
+          }),
         };
       });
       return;
@@ -238,12 +225,19 @@ const alarmClockDefinition = registerToolDefinition({
     // ── list-schedules ────────────────────────────────────────────────────
     if (toolCall.toolId === 'list-schedules') {
       await executeToolCall('list-schedules', async () => {
-        const tasks = getActiveTasksForAgent(agentId);
+        const tasks = await getActiveTasksForAgent(agentId);
         if (tasks.length === 0) {
-          return { success: true, data: 'No active scheduled tasks.' };
+          return { success: true, data: i18n.t('Tool.AlarmClock.NoActiveTasks') };
         }
-        const summary = tasks.map(t => `[${t.id}] ${t.name ?? t.scheduleKind} — next: ${t.nextRunAt ?? '?'} — runs: ${t.runCount}`).join('\n');
-        return { success: true, data: `Active scheduled tasks:\n${summary}` };
+        const summary = tasks.map(task =>
+          i18n.t('Tool.AlarmClock.TaskSummary', {
+            taskId: task.id,
+            name: task.name ?? task.scheduleKind,
+            nextRun: task.nextRunAt ?? i18n.t('Tool.AlarmClock.Unknown'),
+            runCount: task.runCount,
+          })
+        ).join('\n');
+        return { success: true, data: i18n.t('Tool.AlarmClock.ActiveTasks', { summary }) };
       });
       return;
     }
@@ -252,7 +246,7 @@ const alarmClockDefinition = registerToolDefinition({
     if (toolCall.toolId === 'remove-schedule') {
       await executeToolCall('remove-schedule', async (parameters) => {
         await removeTask(parameters.taskId);
-        return { success: true, data: `Scheduled task ${parameters.taskId} removed.` };
+        return { success: true, data: i18n.t('Tool.AlarmClock.TaskRemoved', { taskId: parameters.taskId }) };
       });
       return;
     }
@@ -267,10 +261,8 @@ const alarmClockDefinition = registerToolDefinition({
           activeHoursStart: parameters.activeHoursStart,
           activeHoursEnd: parameters.activeHoursEnd,
         });
-        return { success: true, data: `Scheduled task ${parameters.taskId} updated.` };
+        return { success: true, data: i18n.t('Tool.AlarmClock.TaskUpdated', { taskId: parameters.taskId }) };
       });
     }
   },
 });
-
-export const alarmClockTool = alarmClockDefinition.tool;

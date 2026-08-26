@@ -5,7 +5,7 @@
  */
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentDefinition } from 'memeloop';
@@ -13,6 +13,7 @@ import type { AgentInstance } from 'memeloop';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -34,6 +35,10 @@ describe('multi-turn tool-use conversation', () => {
   let mockWikiService: Partial<IWikiService>;
   let mockWorkspaceService: Partial<IWorkspaceService>;
 
+  beforeAll(async () => {
+    await container.get<IDatabaseService>(serviceIdentifier.Database).initializeForApp();
+  });
+
   beforeEach(async () => {
     vi.clearAllMocks();
     mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
@@ -41,65 +46,74 @@ describe('multi-turn tool-use conversation', () => {
     mockWorkspaceService = container.get(serviceIdentifier.Workspace);
 
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-    await agentInstanceService.initializeFrameworks();
+    const definition = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+    await definition.initialize();
+    await agentInstanceService.initialize();
 
     const defaultProfile = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:general-assistant');
+    const wikiProfile = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:frontend-ui-ux');
     if (!defaultProfile) throw new Error('Missing built-in general assistant profile');
-    const defaultAgent = toAgentDefinition(defaultProfile);
-    testAgentInstance = {
-      ...defaultAgent,
-      id: nanoid(),
-      agentDefId: defaultAgent.id,
-      name: 'Test Agent',
-      status: { state: 'working', modified: new Date() },
-      created: new Date(),
-      closed: false,
-      messages: [],
+    if (!wikiProfile) throw new Error('Missing built-in frontend assistant profile');
+    const defaultAgent = {
+      ...toAgentDefinition(defaultProfile),
+      tools: [],
+      plugins: [],
+      agentTools: (wikiProfile.agentTools ?? []).filter(tool => ['wikiSearch', 'wikiOperation'].includes(tool.toolId)),
     };
 
-    const definition = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     vi.spyOn(definition, 'getAgentDef').mockResolvedValue(defaultAgent);
-    vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
+    testAgentInstance = await agentInstanceService.createAgent(defaultAgent.id, { id: nanoid() });
 
     mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
       default: { provider: 'siliconflow', model: 'deepseek-ai/DeepSeek-V4-Pro' },
       modelParameters: { temperature: 0.7 },
     });
+    mockExternalAPIService.getAIProviders = vi.fn().mockResolvedValue([{
+      provider: 'siliconflow',
+      enabled: true,
+      models: [{ name: 'deepseek-ai/DeepSeek-V4-Pro' }],
+    }]);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
+  async function getPersistedMessages() {
+    const page = await agentInstanceService.getAgentMessagePage(testAgentInstance.id, {
+      limit: 80,
+      maxBytes: 4 * 1024 * 1024,
+      direction: 'forward',
+      mode: 'full-content',
+    });
+    if (page.reset) throw new Error('unexpected conversation page reset');
+    return page.items;
+  }
+
+  async function* portableText(content: string, id: string) {
+    yield { type: 'text-delta' as const, id, text: content };
+    yield { type: 'finish' as const, finishReason: 'stop' };
+  }
+
   it('runs a complete multi-turn: search wiki → add tiddler', async () => {
     // Turn 1: AI returns a wiki-search tool call
-    const aiTurn1 = function*() {
-      yield {
-        status: 'done' as const,
-        content: '<tool_use name="wiki-search">{"workspaceName":"test-wiki-1","searchType":"filter","filter":"[tag[test]]","limit":5}</tool_use>',
-        requestId: 'r1',
-      };
-    };
+    const aiTurn1 = () =>
+      portableText(
+        '<tool_use name="wiki-search">{"workspaceName":"test-wiki-1","searchType":"filter","filter":"[tag[test]]","limit":5}</tool_use>',
+        'r1',
+      );
 
     // Turn 2: AI returns a wiki-operation tool call
-    const aiTurn2 = function*() {
-      yield {
-        status: 'done' as const,
-        content: '<tool_use name="wiki-operation">{"workspaceName":"test-wiki-1","operation":"wiki-add-tiddler","title":"new-note","text":"hello world"}</tool_use>',
-        requestId: 'r2',
-      };
-    };
+    const aiTurn2 = () =>
+      portableText(
+        '<tool_use name="wiki-operation">{"workspaceName":"test-wiki-1","operation":"wiki-add-tiddler","title":"new-note","text":"hello world"}</tool_use>',
+        'r2',
+      );
 
     // Turn 3: AI returns final text
-    const aiTurn3 = function*() {
-      yield {
-        status: 'done' as const,
-        content: '已完成搜索和添加笔记。',
-        requestId: 'r3',
-      };
-    };
+    const aiTurn3 = () => portableText('已完成搜索和添加笔记。', 'r3');
 
-    mockExternalAPIService.generateFromAI = vi.fn()
+    mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(aiTurn1())
       .mockReturnValueOnce(aiTurn2())
       .mockReturnValueOnce(aiTurn3());
@@ -117,41 +131,30 @@ describe('multi-turn tool-use conversation', () => {
     });
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalled();
-    expect(mockExternalAPIService.generateFromAI).toHaveBeenCalledTimes(3);
+    expect(mockExternalAPIService.generatePortableLlm).toHaveBeenCalledTimes(3);
 
-    const agent = await agentInstanceService.getAgent(testAgentInstance.id);
-    const assistantMessages = agent!.messages.filter(m => m.role === 'assistant');
+    const assistantMessages = (await getPersistedMessages()).filter(m => m.role === 'assistant');
     expect(assistantMessages.length).toBeGreaterThanOrEqual(1);
     expect(assistantMessages[assistantMessages.length - 1].content).toBe('已完成搜索和添加笔记。');
   }, 30000);
 
   it('handles tool errors then self-corrects', async () => {
     // Turn 1: AI calls wiki-search for nonexistent workspace → error
-    const aiTurn1 = function*() {
-      yield {
-        status: 'done' as const,
-        content: '<tool_use name="wiki-search">{"workspaceName":"bad-workspace","searchType":"filter","filter":"[tag[x]]"}</tool_use>',
-        requestId: 'r1',
-      };
-    };
+    const aiTurn1 = () =>
+      portableText(
+        '<tool_use name="wiki-search">{"workspaceName":"bad-workspace","searchType":"filter","filter":"[tag[x]]"}</tool_use>',
+        'r1',
+      );
     // Turn 2: AI calls wiki-search for correct workspace
-    const aiTurn2 = function*() {
-      yield {
-        status: 'done' as const,
-        content: '<tool_use name="wiki-search">{"workspaceName":"test-wiki-1","searchType":"filter","filter":"[tag[x]]"}</tool_use>',
-        requestId: 'r2',
-      };
-    };
+    const aiTurn2 = () =>
+      portableText(
+        '<tool_use name="wiki-search">{"workspaceName":"test-wiki-1","searchType":"filter","filter":"[tag[x]]"}</tool_use>',
+        'r2',
+      );
     // Turn 3: final answer
-    const aiTurn3 = function*() {
-      yield {
-        status: 'done' as const,
-        content: '没有找到相关笔记。',
-        requestId: 'r3',
-      };
-    };
+    const aiTurn3 = () => portableText('没有找到相关笔记。', 'r3');
 
-    mockExternalAPIService.generateFromAI = vi.fn()
+    mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(aiTurn1())
       .mockReturnValueOnce(aiTurn2())
       .mockReturnValueOnce(aiTurn3());
@@ -170,35 +173,30 @@ describe('multi-turn tool-use conversation', () => {
 
     await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '找一下 tag x 的笔记' });
 
-    const agent = await agentInstanceService.getAgent(testAgentInstance.id);
-    const assistantMessages = agent!.messages.filter(m => m.role === 'assistant');
+    const assistantMessages = (await getPersistedMessages()).filter(m => m.role === 'assistant');
     expect(assistantMessages.length).toBeGreaterThanOrEqual(1);
     expect(assistantMessages[assistantMessages.length - 1].content).toBe('没有找到相关笔记。');
   }, 30000);
 
   it('sends the first turn as context in the second model request', async () => {
-    const firstResponse = function*() {
-      yield { status: 'done' as const, content: 'Paris is the capital.', requestId: 'context-1' };
-    };
-    const secondResponse = function*() {
-      yield { status: 'done' as const, content: 'You asked about France.', requestId: 'context-2' };
-    };
-    mockExternalAPIService.generateFromAI = vi.fn()
+    const firstResponse = () => portableText('Paris is the capital.', 'context-1');
+    const secondResponse = () => portableText('You asked about France.', 'context-2');
+    mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(firstResponse())
       .mockReturnValueOnce(secondResponse());
 
     await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: 'What is the capital of France?' });
     await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: 'Which country did I ask about?' });
 
-    expect(mockExternalAPIService.generateFromAI).toHaveBeenCalledTimes(2);
-    const secondRequest = vi.mocked(mockExternalAPIService.generateFromAI).mock.calls[1]?.[0];
-    expect(secondRequest).toEqual(expect.arrayContaining([
+    expect(mockExternalAPIService.generatePortableLlm).toHaveBeenCalledTimes(2);
+    const secondRequest = vi.mocked(mockExternalAPIService.generatePortableLlm).mock.calls[1]?.[0];
+    expect(secondRequest?.messages).toEqual(expect.arrayContaining([
       expect.objectContaining({ role: 'user', content: 'What is the capital of France?' }),
       expect.objectContaining({ role: 'assistant', content: 'Paris is the capital.' }),
       expect.objectContaining({ role: 'user', content: 'Which country did I ask about?' }),
     ]));
 
-    const history = secondRequest?.filter(message =>
+    const history = secondRequest?.messages.filter(message =>
       typeof message.content === 'string' && [
         'What is the capital of France?',
         'Paris is the capital.',

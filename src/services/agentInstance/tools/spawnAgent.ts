@@ -6,10 +6,10 @@ import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { registerToolDefinition } from 'memeloop';
 import type { AgentDefinition, ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import type { IAgentInstanceService } from '../interface';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const SpawnAgentParameterSchema = z.object({
   toolListPosition: z.object({
@@ -71,63 +71,43 @@ async function executeSpawnAgent(
       ? `${task}\n\n<context>\n${taskContext}\n</context>`
       : task;
 
-    // Send message and wait for completion with timeout
-    const resultPromise = new Promise<ToolExecutionResult>((resolve) => {
-      let resolved = false;
-      const subscription = agentInstanceService.subscribeToAgentUpdates(childAgent.id).subscribe({
-        next: (agent) => {
-          if (resolved || !agent) return;
-          const state = agent.status?.state;
-          if (state === 'completed' || state === 'failed' || state === 'canceled') {
-            resolved = true;
-            subscription.unsubscribe();
-
-            // Get the last assistant message as the result
-            const lastAssistant = [...(agent.messages || [])].reverse().find(m => m.role === 'assistant');
-            const resultText = lastAssistant?.content || agent.status?.message?.content || '(sub-agent completed with no output)';
-
-            resolve({
-              success: state === 'completed',
-              data: state === 'completed' ? resultText : undefined,
-              error: state !== 'completed' ? `Sub-agent ${state}: ${resultText}` : undefined,
-              metadata: { childAgentId: childAgent.id, state },
-            });
-          }
-        },
-        error: (error) => {
-          if (!resolved) {
-            resolved = true;
-            resolve({ success: false, error: `Sub-agent subscription error: ${error}` });
-          }
-        },
-      });
-
-      // Timeout
-      setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          subscription.unsubscribe();
-          // Cancel the sub-agent
-          void agentInstanceService.cancelAgent(childAgent.id);
-          resolve({
-            success: false,
-            error: `Sub-agent timed out after ${timeoutMs}ms. The sub-task may have been too complex.`,
-            metadata: { childAgentId: childAgent.id, timedOut: true },
-          });
-        }
-      }, timeoutMs);
+    const terminal = await agentInstanceService.executeLocalAgentMessage(childAgent.id, { text: fullMessage }, {
+      source: 'spawn-agent',
+      requestId: `spawn-agent:${parentAgentId}:${childAgent.id}:request`,
+      turnId: `spawn-agent:${parentAgentId}:${childAgent.id}:turn`,
+      timeoutMs,
+      provenance: {
+        parentConversationId: parentAgentId,
+        childConversationId: childAgent.id,
+      },
     });
-
-    // Send the task to sub-agent
-    await agentInstanceService.sendMsgToAgent(childAgent.id, { text: fullMessage });
-
-    return await resultPromise;
+    const page = await agentInstanceService.getAgentMessagePage(childAgent.id, {
+      limit: 50,
+      maxBytes: 256 * 1024,
+      direction: 'backward',
+      mode: 'full-content',
+    });
+    const resultText = page.reset
+      ? '(sub-agent completed with no output)'
+      : [...page.items].reverse().find(message => message.turnId === terminal.turnId && message.role === 'assistant')?.content ??
+        '(sub-agent completed with no output)';
+    return {
+      success: true,
+      data: resultText,
+      metadata: { childAgentId: childAgent.id, state: terminal.state, turnId: terminal.turnId },
+    };
   } catch (error) {
-    return { success: false, error: `Failed to spawn sub-agent: ${error instanceof Error ? error.message : String(error)}` };
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      error: message === 'durable_agent_run_timeout'
+        ? `Sub-agent timed out after ${timeoutMs}ms. The sub-task may have been too complex.`
+        : `Failed to spawn sub-agent: ${message}`,
+    };
   }
 }
 
-const spawnAgentDefinition = registerToolDefinition({
+export const spawnAgentDefinition = defineDesktopTool({
   toolId: 'spawnAgent',
   displayName: 'Spawn Sub-Agent',
   description: 'Delegate a sub-task to a new agent instance',
@@ -151,5 +131,3 @@ const spawnAgentDefinition = registerToolDefinition({
     );
   },
 });
-
-export const spawnAgentTool = spawnAgentDefinition.tool;

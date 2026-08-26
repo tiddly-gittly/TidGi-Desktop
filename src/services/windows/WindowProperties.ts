@@ -101,6 +101,10 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
 
 export interface IPreferenceWindowMeta {
   preferenceGotoTab?: PreferenceSections;
+  preferenceFocus?: {
+    providerId: string;
+    field: 'apiKey' | 'baseUrl' | 'model' | 'apiMode';
+  };
   preventClosingWindow?: boolean;
 }
 

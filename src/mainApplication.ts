@@ -29,6 +29,7 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
+import type { IAgentInstanceLifecycle, IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
@@ -88,6 +89,7 @@ bindServiceAndProxy();
 
 // Get services - DO NOT use them until commonInit() is called
 const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
+const agentInstanceService = container.get<IAgentInstanceService & IAgentInstanceLifecycle>(serviceIdentifier.AgentInstance);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
@@ -128,6 +130,8 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
     logger.info('App before-quit - all wiki workers stopped');
     await gitService.stopAllWorkers();
     logger.info('App before-quit - all git workers stopped');
+    await agentInstanceService.dispose();
+    logger.info('App before-quit - agent runtime registries disposed');
     // Then do remaining cleanup in parallel
     await Promise.all([
       databaseService.closeAllDatabases(),
@@ -192,12 +196,19 @@ const commonInit = async (): Promise<void> => {
   await initRendererI18NHandler();
   assertApplicationStartupActive();
 
-  // Initialize workspace menu after database is ready to avoid race condition
-  await workspaceService.initializeMenu();
+  // Service instances are constructed while this module is imported, before
+  // Electron is necessarily ready. Register every menu contribution explicitly
+  // here so no constructor timer can touch Electron APIs or database-backed
+  // menu state during a slow launch.
+  await Promise.all([
+    workspaceService.initializeMenu(),
+    workspaceViewService.initializeMenu(),
+    windowService.initializeMenu(),
+  ]);
   assertApplicationStartupActive();
-  // Service constructors can register menu items before the database is ready.
-  // Build them only now, so deferred checked/enabled/visible callbacks cannot
-  // read settings or workspaces during startup initialization.
+  // Build the menu only after all startup contributions are registered, so
+  // deferred checked/enabled/visible callbacks cannot read settings or
+  // workspaces during startup initialization.
   try {
     await menuService.initializeForApp();
   } catch (error) {

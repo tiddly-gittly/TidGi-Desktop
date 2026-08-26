@@ -60,9 +60,10 @@ describe('Preferences - All Sections Rendering', () => {
 
     Object.defineProperty(window.service.context, 'get', {
       value: vi.fn().mockImplementation(async (key: string) => {
-        const contextValues: Record<string, string | boolean> = {
+        const contextValues: Record<string, unknown> = {
           platform: 'win32',
           isTest: true,
+          supportedLanguagesMap: { 'zh-Hans': '简体中文' },
           LOG_FOLDER: 'C:\\logs',
           SETTINGS_FOLDER: 'C:\\settings',
           V8_CACHE_FOLDER: 'C:\\v8cache',

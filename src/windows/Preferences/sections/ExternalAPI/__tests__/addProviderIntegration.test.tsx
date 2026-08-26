@@ -4,10 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
-import type { AiAPIConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import { AIProviderConfig, type DesktopAIConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ExternalAPI } from '../index';
 
 // Mock data
@@ -99,21 +98,20 @@ describe('ExternalAPI Add Provider with Embedding Model', () => {
     });
 
     // Mock observables for externalAPI
-    const mockConfig: AiAPIConfig = {
+    const mockConfig: DesktopAIConfig = {
       default: {
         provider: 'existing-provider',
         model: 'gpt-4o',
       },
       modelParameters: {
         temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.',
         topP: 0.95,
       },
     };
 
     Object.defineProperty(window.observables, 'externalAPI', {
       value: {
-        defaultConfig$: new BehaviorSubject<AiAPIConfig>(mockConfig),
+        defaultConfig$: new BehaviorSubject<DesktopAIConfig>(mockConfig),
         providers$: new BehaviorSubject<AIProviderConfig[]>([mockProvider]),
       },
       writable: true,

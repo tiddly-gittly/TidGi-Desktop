@@ -19,4 +19,11 @@ describe('getNodeWikiExtraPlugins', () => {
     expect(plugins).not.toContain('plugins/tiddlywiki/filesystem');
     expect(plugins).not.toContain('plugins/tiddlywiki/tiddlyweb');
   });
+
+  it('loads the self-contained reusable MemeLoop widget', () => {
+    const plugins = getNodeWikiExtraPlugins(false, false);
+
+    expect(plugins).toContain('plugins/linonetwo/memeloop-agent-ui');
+    expect(plugins).not.toContain('plugins/linonetwo/tw-react');
+  });
 });

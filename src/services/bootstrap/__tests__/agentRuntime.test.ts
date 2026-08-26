@@ -8,13 +8,26 @@ import { initializeAgentServicesSafelyWithServices } from '../agentRuntime';
 import { REMOTE_AGENT_MESSAGE_MAX_BYTES } from '../remoteAgentRpcPolicy';
 
 function createOptions() {
+  const durableRuntime = {
+    createAgent: vi.fn().mockResolvedValue({ conversationId: 'conversation-1' }),
+    sendMessage: vi.fn().mockResolvedValue({ runId: 'run-1', conversationId: 'conversation-1' }),
+    getRunStatus: vi.fn().mockResolvedValue(undefined),
+    cancelRun: vi.fn().mockResolvedValue(false),
+    retryTurn: vi.fn().mockResolvedValue({ runId: 'retry-run-1', conversationId: 'conversation-1' }),
+  };
   return {
+    durableRuntime,
     agentDefinitionService: {
       initialize: vi.fn().mockResolvedValue(undefined),
+      getAgentDefs: vi.fn().mockResolvedValue([]),
     } as unknown as IAgentDefinitionService,
     agentInstanceService: {
       initialize: vi.fn().mockResolvedValue(undefined),
       sendMsgToAgent: vi.fn().mockResolvedValue(undefined),
+      ensureAgentConversation: vi.fn().mockImplementation(async (_definitionId: string, conversationId?: string) => ({
+        conversationId: conversationId ?? 'conversation-1',
+      })),
+      getDurableAgentRuntime: vi.fn().mockResolvedValue(durableRuntime),
     } as unknown as IAgentInstanceService,
     deviceNetworkService: {
       getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'test-peer' }),
@@ -45,6 +58,7 @@ describe('initializeAgentServicesSafely', () => {
     await expect(initializeAgentServicesSafelyWithServices(options)).resolves.toBe(true);
     expect(options.agentDefinitionService.initialize).toHaveBeenCalledOnce();
     expect(options.agentInstanceService.initialize).toHaveBeenCalledOnce();
+    expect(options.agentInstanceService.getDurableAgentRuntime).toHaveBeenCalledOnce();
     expect(options.deviceNetworkService.configureRuntime).toHaveBeenCalledOnce();
   });
 
@@ -63,6 +77,6 @@ describe('initializeAgentServicesSafely', () => {
         },
       }),
     ).rejects.toThrow(`remote_agent_message_too_large:${REMOTE_AGENT_MESSAGE_MAX_BYTES}`);
-    expect(options.agentInstanceService.sendMsgToAgent).not.toHaveBeenCalled();
+    expect(options.durableRuntime.sendMessage).not.toHaveBeenCalled();
   });
 });

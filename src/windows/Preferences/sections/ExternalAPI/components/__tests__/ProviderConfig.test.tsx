@@ -132,6 +132,7 @@ describe('ProviderConfig Component', () => {
     await waitFor(() => {
       expect(screen.getByTestId('provider-api-key-input')).toHaveValue('sk-decrypted-test');
     });
+    expect(screen.getByTestId('provider-api-key-input')).toHaveAttribute('type', 'text');
     expect(window.service.externalAPI.getProviderApiKey).toHaveBeenCalledWith('openai');
   });
 

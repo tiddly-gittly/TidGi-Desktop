@@ -1,4 +1,4 @@
-import { PromptConfigForm } from '@memeloop/react-ui/agent';
+import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
 import { Box, Button, CircularProgress, Container, Divider, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
@@ -414,7 +414,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
         <Divider sx={{ my: 3 }} />
 
-        <ScheduledWakeupEditor agentDefinition={agentDefinition} previewAgentId={previewAgentId} />
+        <ScheduledWakeupEditor agentDefinition={agentDefinition} />
 
         <Divider sx={{ my: 3 }} />
 

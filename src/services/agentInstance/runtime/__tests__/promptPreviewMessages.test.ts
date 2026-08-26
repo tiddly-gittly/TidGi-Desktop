@@ -6,8 +6,10 @@ import { includeConversationHistoryInPreview } from '../promptPreviewMessages';
 function message(role: ChatMessage['role'], content: string, index: number): ChatMessage {
   return {
     messageId: `message-${index}`,
+    turnId: `turn-${Math.ceil(index / 2)}`,
     conversationId: 'conversation',
     originNodeId: 'desktop',
+    originSequence: index,
     timestamp: index,
     lamportClock: index,
     role,

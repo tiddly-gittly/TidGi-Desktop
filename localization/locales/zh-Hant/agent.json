@@ -1,4 +1,31 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "本次執行已取消。",
+        "interrupted": "本次執行已中斷。",
+        "invalidRequest": "智慧代理請求無效。",
+        "modelNotFound": "{{providerId}} 中沒有可用的模型 {{modelId}}。",
+        "providerAuthMissing": "{{providerId}} 的驗證資訊缺失或無效。",
+        "providerConfigurationMissing": "{{providerId}} 缺少必要的 {{settingField}} 設定。",
+        "providerUnavailable": "{{providerId}} 暫時無法使用。",
+        "rateLimited": "{{providerId}} 正在限制請求頻率，請稍後重試。",
+        "runnerUnavailable": "目前沒有可用的智慧代理執行器。",
+        "storageUnavailable": "智慧代理儲存目前無法使用。",
+        "deviceAuthRequired": "執行智慧代理前需要先授權此裝置。",
+        "devicePermissionDenied": "此裝置無權執行該智慧代理。",
+        "networkUnavailable": "智慧代理網路目前無法使用。",
+        "userMessageTooLarge": "使用者訊息過大，無法開始本輪執行。請縮短內容，或將大量內容作為附件傳送。",
+        "userMessageTooLargeDetail": "請求大小為 {{requested}} 位元組，上限為 {{limit}} 位元組。",
+        "contextCompactionPending": "正在繼續壓縮這段長對話。進度已儲存，請稍後再試。",
+        "contextCompactionPendingProgress": "已處理 {{processedMessages}} 則訊息。",
+        "contextCompactionPendingProgressEstimate": "已處理 {{processedMessages}} 則訊息，預計還剩 {{remainingEstimate}} 則。",
+        "contextCompactionFailed": "無法安全壓縮這段長對話。",
+        "contextBudgetExceeded": "對話已超出模型的上下文預算。",
+        "internal": "智慧代理發生內部錯誤。"
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "顯示智慧體日誌: {{agentId}}",
     "Description": "此智慧體的外部介面調用除錯日誌。在偏好設置中啟用「外部介面除錯」以開始記錄。",
@@ -56,6 +83,15 @@
         "online": "上線"
       },
       "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "遠端執行暫不支援附件。請切換到此裝置，或只傳送文字。",
+      "RunOn": "執行於",
+      "Label": "執行目標",
+      "RunOnTarget": "在 {{target}} 上執行",
+      "ConfirmTitle": "切換執行目標？",
+      "ConfirmDescription": "目前輪次仍在執行。切換到 {{target}} 會先停止它，再在該裝置上重新執行最新的使用者輪次。",
+      "AnotherTarget": "其他目標",
+      "KeepRunning": "繼續執行",
+      "StopAndRestart": "停止並重新執行",
       "RunOnThisDesktop": "在此桌面端執行",
       "RunOnThisDesktopWithPeerId": "在此桌面端執行（{{peerId}}）",
       "ThisDevice": "此裝置"
@@ -77,7 +113,38 @@
       "TooLarge": "檔案大小 {{size}}MB 超過了限制（{{maxSize}}MB）。請選擇較小的檔案。"
     },
     "InputPlaceholder": "輸入消息，Ctrl+Enter 發送",
-    "Send": "發送"
+    "Send": "發送",
+    "Actions": {
+      "Retry": "重試",
+      "DeleteTurn": "刪除此輪",
+      "Copy": "複製",
+      "CopyAll": "複製全部",
+      "User": "使用者",
+      "Agent": "智慧代理"
+    },
+    "Message": {
+      "AttachmentAlt": "附件",
+      "NoDetails": "沒有可用的詳細內容。",
+      "LoadDetails": "載入詳細內容",
+      "HideDetails": "隱藏詳細內容",
+      "ShowDetails": "顯示詳細內容",
+      "DetailLine": "{{role}}：{{content}}",
+      "Error": "錯誤",
+      "ToolResult": "工具結果",
+      "ToolCall": "工具呼叫：{{toolName}}",
+      "Truncated": "訊息已縮短顯示（原文 {{count}} 個字元）。請使用對話匯出或訊息詳細內容查看完整文字。"
+    },
+    "Timeline": {
+      "Navigation": "對話時間軸",
+      "Turn": "第 {{index}} 輪，共 {{total}} 輪",
+      "Compacted": "已壓縮前面的 {{count}} 條訊息",
+      "LoadEarlier": "載入更早訊息",
+      "LoadLater": "載入更新訊息",
+      "Seek": "跳至對話輪次",
+      "Close": "關閉時間軸",
+      "NewMessages": "{{count}} 則新訊息 — 跳到最新",
+      "MoreResponses": "本輪還有 {{count}} 則回覆"
+    }
   },
   "Common": {
     "None": "未選擇"
@@ -133,6 +200,17 @@
     "ScheduleCronExpr": "Cron 表達式",
     "ScheduleCronHelp": "5 段 Cron：分鐘 小時 日期 月份 星期",
     "ScheduleCronPreview": "接下來執行：",
+    "ScheduleExecutionTarget": "執行裝置",
+    "ScheduleExecutionTargetUnavailable": "所選裝置目前無法使用。請先選擇可用裝置再修改此排程。",
+    "ScheduleIdentityLoading": "正在載入本機安全身分…",
+    "ScheduleIdentityError": "本機安全身分無法使用。裝置網路就緒前已停用排程。",
+    "ScheduleConversation": "排程所屬對話",
+    "ScheduleConversationRequired": "請先建立或開啟一個使用此智慧代理的持久對話，再設定排程。預覽對話是暫時的，不能擁有排程。",
+    "ScheduleDefaultTaskName": "{{agentName}} 的排程",
+    "ScheduleInvalidCron": "請輸入有效的 Cron 排程。",
+    "ScheduleInvalidTimezone": "請選擇支援的時區。",
+    "ScheduleNoPreview": "找不到即將執行的時間。",
+    "SchedulePreviewLoading": "正在檢查排程...",
     "ScheduleDaily": "每天（指定時間）",
     "ScheduleDailyTime": "喚醒時間",
     "ScheduledWakeup": "定時喚醒",
@@ -147,6 +225,14 @@
     "ScheduleSave": "儲存排程",
     "ScheduleSaveWait": "正在載入預覽智慧代理...",
     "ScheduleSaving": "儲存中...",
+    "ScheduleTaskSelection": "排程任務",
+    "ScheduleNewTask": "新增排程任務",
+    "ScheduleOperationFailed": "排程任務操作失敗。",
+    "ScheduleSourceIncomplete": "部分裝置未能提供完整的即時排程。所有來源恢復可用前已停用修改。",
+    "ScheduleSourceOnline": "{{executionTarget}} 在線上。",
+    "ScheduleSourceOffline": "{{executionTarget}} 離線。",
+    "ScheduleSourceDegraded": "{{executionTarget}} 狀態異常。",
+    "ScheduleSourceCached": "{{executionTarget}} 目前顯示快取的排程資料。",
     "ScheduleTimezone": "時區",
     "ScheduleUpdate": "更新排程",
     "Seconds": "秒",
@@ -289,8 +375,19 @@
     "WorkflowFilePath": "工作流檔案路徑"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "壓縮摘要",
+      "ConversationMessage": "對話訊息",
+      "PreviewInput": "目前輸入",
+      "Prompt": "提示詞",
+      "System": "系統提示詞",
+      "Tool": "工具訊息"
+    },
     "AutoRefresh": "預覽會隨輸入文本的變化自動刷新",
     "CodeEditor": "代碼編輯器",
+    "CompactionSummaryCount": "壓縮摘要數",
+    "ContextSegments": "有效上下文片段",
+    "ContextStats": "有效上下文統計",
     "Edit": "提示詞編輯",
     "Enabled": "啟用",
     "EnterEditSideBySide": "分屏顯示編輯",
@@ -302,6 +399,8 @@
     "FormEditor": "表單編輯器",
     "LastUpdated": "上次更新時間",
     "Loading": "載入預覽中...",
+    "MessageCount": "上下文消息數",
+    "ModelRequest": "實際模型請求",
     "NoMessages": "還沒有消息可以預覽",
     "Preview": "提示詞預覽",
     "SchemaNotProvided": "格式未提供",
@@ -328,6 +427,24 @@
     }
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM；略過此時間之後的執行。",
+      "ActiveHoursStartDescription": "HH:MM；略過此時間之前的執行。",
+      "AlarmDescription": "設定一次性喚醒並暫時退出對話循環。重複任務請使用 Cron 排程。",
+      "EnabledDescription": "啟用或停用任務，而不刪除任務。",
+      "EnabledTitle": "啟用",
+      "KindDescription": "「at」在 ISO 日期時間執行一次；「cron」定義重複排程。",
+      "ListDescription": "列出此智慧體的所有活躍排程任務。",
+      "MessageDescription": "排程觸發時傳送給此智慧體的訊息。",
+      "RemoveDescription": "按 ID 刪除活躍排程任務。",
+      "TaskIdDescription": "list-schedules 傳回的排程任務 ID。",
+      "TaskIdTitle": "任務 ID",
+      "TaskNameDescription": "此排程便於閱讀的名稱。",
+      "TaskNameTitle": "任務名稱",
+      "TimezoneDescription": "Cron 表達式使用的 IANA 時區，例如 Asia/Taipei。",
+      "UpdateDescription": "更新現有排程任務的狀態、訊息或活躍時段。",
+      "WakeAtDescription": "喚醒智慧體的 ISO 8601 日期時間。"
+    },
     "AIConfig": {
       "Default": "預設使用的對話模型",
       "DefaultTitle": "預設模型",
@@ -677,6 +794,16 @@
     }
   },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "活躍排程任務：\n{{summary}}",
+      "AlarmSet": "已設定在 {{wakeAtISO}}（{{delaySeconds}} 秒後）喚醒。現在退出循環，屆時繼續執行。",
+      "NoActiveTasks": "沒有活躍排程任務。",
+      "TaskCreated": "已建立排程任務（ID：{{taskId}}）。下次執行：{{nextRun}}。",
+      "TaskRemoved": "已刪除排程任務 {{taskId}}。",
+      "TaskSummary": "[{{taskId}}] {{name}} — 下次：{{nextRun}} — 已執行：{{runCount}} 次",
+      "TaskUpdated": "已更新排程任務 {{taskId}}。",
+      "Unknown": "未知"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceName}}\"不存在"

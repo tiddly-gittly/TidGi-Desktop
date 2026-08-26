@@ -1,11 +1,11 @@
 import { logger } from '@services/libs/log';
-import type { AiAPIConfig, ILLMProvider } from 'memeloop';
+import { assertPortableLlmRequest, assertPortableLlmStreamPart, type ILLMProvider, type PortableLlmMessage, type PortableLlmRequest, type PortableLlmStreamPart } from 'memeloop';
 
 import { createLLMProvider, type LLMProviderId } from 'memeloop/llm-providers';
 import type { ModelMessage } from './interface';
 
-import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
-import type { AIProviderConfig, ModelInfo, ReasoningEffort } from './interface';
+import { MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
+import type { AIProviderConfig, DesktopAIConfig, ModelInfo, ReasoningEffort } from './interface';
 import { isLoopbackOpenAIBaseURL, normalizeOpenAIBaseURL } from './openAIBaseURL';
 
 /**
@@ -59,7 +59,6 @@ interface ModelRequestParameters {
   reasoningEffort?: ReasoningEffort;
   temperature?: number;
   topP?: number;
-  [key: string]: unknown;
 }
 
 export function resolveModelRequestSettings(model: ModelInfo | undefined, parameters: ModelRequestParameters): {
@@ -81,7 +80,7 @@ export function resolveModelRequestSettings(model: ModelInfo | undefined, parame
 }
 
 export async function streamFromProvider(
-  config: AiAPIConfig,
+  config: DesktopAIConfig,
   messages: Array<ModelMessage>,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
@@ -107,42 +106,64 @@ export async function streamFromProvider(
     const llmProvider = await createProviderFromConfig(providerConfig, selectedModel);
     const { maxOutputTokens, providerOptions, temperature, topP } = resolveModelRequestSettings(selectedModel, modelParameters);
 
-    // Pass memeloop's messages directly. The core has already built the correct
-    // prompt structure (including agent-specific system prompts and tool
-    // descriptions); merging system messages here can leak tools such as
-    // wiki-operation into the first system prompt and break per-agent prompt
-    // isolation.
-    const chatResult = await llmProvider.chat({
-      model,
-      messages,
+    const request: PortableLlmRequest = {
+      providerId: provider,
+      modelId: model,
+      logicalModelId: model,
+      wireModelId: model,
+      apiMode: selectedModel?.apiMode ?? 'chat-completions',
+      messages: toPortableStandaloneMessages(messages),
       stream: true,
-      maxOutputTokens,
-      temperature,
-      topP,
-      providerOptions,
-      abortSignal: signal,
-    });
-
-    const isIterable = typeof chatResult === 'object' &&
-      chatResult !== null &&
-      (Symbol.asyncIterator in chatResult || Symbol.iterator in chatResult);
-    if (!isIterable) {
-      throw new Error(`${provider} provider did not return a stream`);
-    }
-
-    return chatResult as AsyncIterable<string>;
+      signal,
+      ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
+      ...(temperature === undefined ? {} : { temperature }),
+      ...(topP === undefined ? {} : { topP }),
+      ...(providerOptions === undefined ? {} : { providerOptions }),
+    };
+    assertPortableLlmRequest(request);
+    return portableTextStream(await llmProvider.chat(request), signal);
   } catch (error) {
-    if (!error) {
-      throw new Error(`${provider} error: Unknown error`);
-    } else if ((error as Error).message.includes('401')) {
-      throw new AuthenticationError(provider);
-    } else if ((error as Error).message.includes('404')) {
-      throw new Error(`${provider} error: Model "${model}" not found`);
-    } else if ((error as Error).message.includes('429')) {
-      throw new Error(`${provider} too many requests: Reduce request frequency or check API limits`);
-    } else {
-      logger.error(`${provider} streaming error:`, error);
-      throw parseProviderError(error as Error, provider);
-    }
+    logger.error(`${provider} streaming error:`, error);
+    throw parseProviderError(error, provider);
   }
+}
+
+function toPortableStandaloneMessages(messages: readonly ModelMessage[]): PortableLlmMessage[] {
+  return messages.map((message): PortableLlmMessage => {
+    const content = typeof message.content === 'string'
+      ? message.content
+      : message.content.map(part => part.text ?? part.content ?? '').join('\n');
+    // The standalone helper predates native tool-call messages. Preserve its
+    // textual tool result without forging a Core toolCallId/toolName pair.
+    if (message.role === 'tool') return { role: 'user', content: `Tool result:\n${content}` };
+    if (message.role === 'system') return { role: 'system', content };
+    if (message.role === 'assistant') return { role: 'assistant', content };
+    return { role: 'user', content };
+  });
+}
+
+async function* portableTextStream(
+  result: string | PortableLlmStreamPart | AsyncIterable<PortableLlmStreamPart>,
+  signal: AbortSignal,
+): AsyncGenerator<string, void, unknown> {
+  signal.throwIfAborted();
+  if (typeof result === 'string') {
+    yield result;
+    return;
+  }
+  if (isAsyncIterable(result)) {
+    for await (const part of result) {
+      signal.throwIfAborted();
+      assertPortableLlmStreamPart(part);
+      if (part.type === 'text-delta') yield part.text;
+    }
+    return;
+  }
+  assertPortableLlmStreamPart(result);
+  if (result.type === 'text-delta') yield result.text;
+}
+
+function isAsyncIterable(value: unknown): value is AsyncIterable<PortableLlmStreamPart> {
+  return value !== null && typeof value === 'object' &&
+    typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function';
 }

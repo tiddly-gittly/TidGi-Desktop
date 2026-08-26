@@ -8,6 +8,12 @@ import { lightTheme } from '@services/theme/defaultTheme';
 import type { AgentDefinition } from 'memeloop';
 import { CreateNewAgentContent } from '../CreateNewAgentContent';
 
+// This suite verifies the multi-step editor. Keep the preview step at its
+// component boundary; DesktopAgentChatTab has its own lifecycle coverage.
+vi.mock('@/pages/Agent/adapters', () => ({
+  DesktopAgentChatTab: () => <div data-testid='agent-chat-preview' />,
+}));
+
 // Mock agent definition service
 const mockCreateAgentDef = vi.fn();
 const mockUpdateAgentDef = vi.fn();

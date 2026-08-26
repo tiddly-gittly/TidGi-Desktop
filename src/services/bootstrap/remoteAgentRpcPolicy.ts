@@ -4,7 +4,14 @@ export const REMOTE_AGENT_MESSAGE_MAX_BYTES = 1024 * 1024;
 export const REMOTE_AGENT_RATE_LIMIT = 20;
 export const REMOTE_AGENT_RATE_WINDOW_MS = 60_000;
 
-const guardedMethods = new Set(['memeloop.agent.create', 'memeloop.agent.send', 'memeloop.agent.runTurn']);
+const guardedMethods = new Set([
+  'memeloop.agent.create',
+  'memeloop.agent.send',
+  'memeloop.agent.runTurn',
+  'memeloop.schedule.create',
+  'memeloop.schedule.update',
+  'memeloop.schedule.delete',
+]);
 
 /**
  * Applies host-side resource limits after device authorization but before an
@@ -53,7 +60,11 @@ function getMessage(parameters: unknown): string {
     throw new Error('invalid_rpc_params');
   }
   const record = parameters as Record<string, unknown>;
-  const message = record.message ?? record.initialMessage ?? '';
+  const message = record.message ?? record.initialMessage ??
+    (record.payload && typeof record.payload === 'object' && !Array.isArray(record.payload)
+      ? (record.payload as Record<string, unknown>).message
+      : undefined) ??
+    JSON.stringify(record);
   if (typeof message !== 'string') throw new Error('invalid_rpc_params');
   return message;
 }

@@ -17,8 +17,21 @@ import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
 import { ensureSettingFolderExist, fixSettingFileWhenError, readTidgiConfig } from './configSetting';
 import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from './schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, RemoteScheduledTaskProjectionEntity, ScheduledTaskEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
+import {
+  AgentRunStateEntity,
+  ConversationAttachmentReferenceEntity,
+  ConversationEventEntity,
+  ConversationEventSequenceEntity,
+  ConversationListStateEntity,
+  ConversationMessageDetailEntity,
+  ConversationMetadataFieldEntity,
+  ConversationTimelineEntryEntity,
+  ConversationTimelineRankCheckpointEntity,
+  ConversationTimelineStateEntity,
+  ConversationTurnTombstoneEntity,
+} from './schema/conversationEvent';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
 import { WikiTiddler } from './schema/wiki';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from './schema/wikiEmbedding';
@@ -103,6 +116,18 @@ export class DatabaseService implements IDatabaseService {
         AgentInstanceMessageEntity,
         AgentBrowserTabEntity,
         ScheduledTaskEntity,
+        RemoteScheduledTaskProjectionEntity,
+        ConversationAttachmentReferenceEntity,
+        AgentRunStateEntity,
+        ConversationMessageDetailEntity,
+        ConversationEventEntity,
+        ConversationEventSequenceEntity,
+        ConversationTurnTombstoneEntity,
+        ConversationMetadataFieldEntity,
+        ConversationListStateEntity,
+        ConversationTimelineStateEntity,
+        ConversationTimelineEntryEntity,
+        ConversationTimelineRankCheckpointEntity,
       ],
       synchronize: true,
       migrationsRun: false,

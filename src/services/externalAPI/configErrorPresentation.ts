@@ -41,22 +41,6 @@ function asStringRecord(value: unknown): Record<string, string> {
   );
 }
 
-function inferRawConfigurationError(message: string): { key: string; params: Record<string, string> } | undefined {
-  const apiKeyMatch = /API key for (.+?) not found/i.exec(message);
-  if (apiKeyMatch?.[1]) {
-    return { key: 'MissingAPIKeyError', params: { provider: apiKeyMatch[1] } };
-  }
-  const baseURLMatch = /^(.+?) provider requires baseURL/i.exec(message);
-  if (baseURLMatch?.[1]) {
-    return { key: 'MissingBaseURLError', params: { provider: baseURLMatch[1] } };
-  }
-  const authenticationMatch = /^(.+?) authentication failed/i.exec(message);
-  if (authenticationMatch?.[1]) {
-    return { key: 'AuthenticationError', params: { provider: authenticationMatch[1] } };
-  }
-  return undefined;
-}
-
 /** Convert all provider-error paths into one renderer presentation contract. */
 export function getConfigErrorPresentation(
   message: string,
@@ -83,14 +67,7 @@ export function getConfigErrorPresentation(
     return { fallbackMessage: message, key: detail.name, params: parameters };
   }
 
-  const inferred = inferRawConfigurationError(message);
-  return inferred
-    ? {
-      fallbackMessage: message,
-      key: inferred.key,
-      params: { ...inferred.params, ...parameters },
-    }
-    : undefined;
+  return undefined;
 }
 
 /** Preserve structured fields carried by an Error across persistence/IPC. */

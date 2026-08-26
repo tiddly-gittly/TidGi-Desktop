@@ -23,6 +23,10 @@ interface ProviderConfigProps {
   changeDefaultImageGenerationModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultTranscriptionsModel?: (provider: string, model: string) => Promise<void>;
   changeDefaultFreeModel?: (provider: string, model: string) => Promise<void>;
+  focusTarget?: {
+    providerId: string;
+    field: 'apiKey' | 'baseUrl' | 'model' | 'apiMode';
+  };
 }
 
 const EMPTY_CATALOG_PROVIDERS: AIProviderConfig[] = [];
@@ -72,6 +76,7 @@ export function ProviderConfig({
   changeDefaultImageGenerationModel: _changeDefaultImageGenerationModel,
   changeDefaultTranscriptionsModel: _changeDefaultTranscriptionsModel,
   changeDefaultFreeModel: _changeDefaultFreeModel,
+  focusTarget,
 }: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -96,6 +101,12 @@ export function ProviderConfig({
   const [selectedDefaultModel, setSelectedDefaultModel] = useState('');
   const [availableDefaultModels, setAvailableDefaultModels] = useState<ModelInfo[]>([]);
   const [refreshingProvider, setRefreshingProvider] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusTarget) return;
+    const index = providers.findIndex(provider => provider.provider === focusTarget.providerId);
+    if (index >= 0) setSelectedTabIndex(index);
+  }, [focusTarget, providers]);
 
   // Track if we're currently updating from user input to prevent Observable overwrite
   const isUserInputting = useRef<Record<string, boolean>>({});
@@ -780,6 +791,7 @@ export function ProviderConfig({
                 <ProviderPanel
                   provider={provider}
                   formState={formState}
+                  focusField={focusTarget?.providerId === provider.provider ? focusTarget.field : undefined}
                   onFormChange={(field, value) => handleFormChange(provider.provider, field as keyof AIProviderConfig, value)}
                   onEnabledChange={enabled => handleProviderEnabledChange(provider.provider, enabled)}
                   onRemoveModel={modelName => removeModel(provider.provider, modelName)}

@@ -4,17 +4,13 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { app } from 'electron';
-import * as fs from 'fs-extra';
 import { nanoid } from 'nanoid';
-import * as path from 'path';
 
-import type { ChatMessage } from 'memeloop';
-import { createChatMessage } from 'memeloop';
+import type { AgentCommittedAttachment, PendingLocalChatMessage } from 'memeloop';
 
 export type AgentUserContent = {
   text: string;
-  file?: File;
+  attachment?: AgentCommittedAttachment;
   wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>;
 };
 
@@ -24,14 +20,10 @@ export async function createMemeLoopUserMessage(input: {
   originNodeId: string;
   messageId?: string;
   beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
-}): Promise<ChatMessage> {
+  metadata?: Readonly<Record<string, unknown>>;
+}): Promise<PendingLocalChatMessage> {
   const messageId = input.messageId ?? nanoid();
-  const metadata: Record<string, unknown> = {};
-
-  const fileMetadata = await persistFileAttachment(input.agentId, messageId, input.content.file);
-  if (fileMetadata) {
-    metadata.file = fileMetadata;
-  }
+  const metadata: Record<string, unknown> = { ...input.metadata };
 
   const wikiTiddlersMetadata = await loadWikiTiddlerAttachments(messageId, input.content.wikiTiddlers);
   if (wikiTiddlersMetadata.length > 0) {
@@ -51,54 +43,16 @@ export async function createMemeLoopUserMessage(input: {
     messageContent = `${tiddlerBlocks.join('\n\n')}\n\n${messageContent}`;
   }
 
-  return createChatMessage({
+  return {
     messageId,
-    conversationId: input.agentId,
-    role: 'user',
+    turnId: messageId,
     content: messageContent,
     originNodeId: input.originNodeId,
+    timestamp: Date.now(),
     contentType: 'text/plain',
+    ...(input.content.attachment === undefined ? {} : { attachments: [input.content.attachment.reference] }),
     metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-    duration: undefined,
-  });
-}
-
-async function persistFileAttachment(agentId: string, messageId: string, file?: File): Promise<Record<string, unknown> | undefined> {
-  if (!file) return undefined;
-
-  const fileObject = file as unknown as { path?: string; name?: string; buffer?: ArrayBuffer };
-  try {
-    if ((fileObject.path || fileObject.buffer) && app) {
-      const storageDirectory = path.join(app.getPath('userData'), 'agent_attachments', agentId);
-      await fs.ensureDir(storageDirectory);
-
-      const extension = path.extname(fileObject.name || fileObject.path || '') || '.bin';
-      const newPath = path.join(storageDirectory, `${messageId}${extension}`);
-
-      if (fileObject.path) {
-        await fs.copy(fileObject.path, newPath);
-      } else if (fileObject.buffer) {
-        await fs.writeFile(newPath, Buffer.from(fileObject.buffer));
-      }
-
-      return {
-        path: newPath,
-        originalPath: fileObject.path,
-        name: fileObject.name,
-        savedAt: new Date(),
-      };
-    }
-  } catch (error) {
-    logger.error('Failed to persist MemeLoop attachment', { error, messageId });
-  }
-
-  if (fileObject.path || fileObject.name) {
-    return {
-      path: fileObject.path,
-      name: fileObject.name,
-    };
-  }
-  return undefined;
+  };
 }
 
 async function loadWikiTiddlerAttachments(

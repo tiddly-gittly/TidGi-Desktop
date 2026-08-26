@@ -1,8 +1,17 @@
-import type { ChatMessage, Device } from 'memeloop';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import type {
+  AgentAttachmentInput,
+  AgentRuntimeView,
+  ChatMessage,
+  Device,
+  RemoteAgentExecutionCoordinator,
+  RemoteAgentExecutionSnapshot,
+  RemoteAgentExecutionTarget,
+  WikiTiddlerAttachment,
+} from 'memeloop';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AgentWithoutMessages } from '../../store/agentChatStore/types';
+import { createDesktopAgentExecutionCoordinator } from '../DesktopAgentExecutionCoordinator';
 
 const LOCAL_EXECUTION_TARGET_ID = 'local';
 const REMOTE_EXECUTION_TARGET_PREFIX = 'peer:';
@@ -20,43 +29,50 @@ interface SetExecutionTargetOptions {
 }
 
 interface UseExecutionTargetsOptions {
-  agent: AgentWithoutMessages | null;
-  tabTitle: string;
-  orderedMessages: ChatMessage[];
-  cancelLocalAgent: () => Promise<void>;
-  deleteTurn: (userMessageId: string) => Promise<string | undefined>;
-  fetchAgent: (agentId: string) => Promise<void>;
-  sendLocalMessage: (content: string, file?: File, wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>) => Promise<void>;
+  agent: AgentRuntimeView | null;
+  orderedMessages: readonly ChatMessage[];
+}
+
+interface SendExecutionMessageOptions {
+  requestId?: string;
+  turnId?: string;
+  onAccepted?: () => void | Promise<void>;
 }
 
 function remoteExecutionTargetId(peerId: string): string {
   return `${REMOTE_EXECUTION_TARGET_PREFIX}${peerId}`;
 }
 
-function peerIdFromExecutionTarget(targetId: string): string | undefined {
-  return targetId.startsWith(REMOTE_EXECUTION_TARGET_PREFIX) ? targetId.slice(REMOTE_EXECUTION_TARGET_PREFIX.length) : undefined;
+function executionTargetFromId(targetId: string): RemoteAgentExecutionTarget {
+  if (targetId === LOCAL_EXECUTION_TARGET_ID) return { kind: 'local' };
+  if (targetId.startsWith(REMOTE_EXECUTION_TARGET_PREFIX)) {
+    const peerId = targetId.slice(REMOTE_EXECUTION_TARGET_PREFIX.length);
+    if (peerId.length > 0) return { kind: 'remote', peerId };
+  }
+  throw new TypeError('invalid agent execution target');
 }
 
-/** Owns device discovery and all local/remote execution-target transitions. */
-export function useExecutionTargets({
-  agent,
-  cancelLocalAgent,
-  deleteTurn,
-  fetchAgent,
-  orderedMessages,
-  sendLocalMessage,
-  tabTitle,
-}: UseExecutionTargetsOptions) {
+/** Owns device discovery and delegates every mutation to Core's coordinator. */
+export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTargetsOptions) {
   const { t } = useTranslation('agent');
   const [localPeerId, setLocalPeerId] = useState<string | undefined>();
   const [agentLoopDevices, setAgentLoopDevices] = useState<Device[]>([]);
   const [activeExecutionTargetId, setActiveExecutionTargetId] = useState(LOCAL_EXECUTION_TARGET_ID);
-  const [remoteRunning, setRemoteRunning] = useState(false);
-  const [remoteError, setRemoteError] = useState<Error | null>(null);
+  const [coordinator, setCoordinator] = useState<RemoteAgentExecutionCoordinator | null>(null);
+  const [executionSnapshot, setExecutionSnapshot] = useState<RemoteAgentExecutionSnapshot | null>(null);
+  const [discoveryError, setDiscoveryError] = useState<Error | null>(null);
+  const activeTargetIdReference = useRef(activeExecutionTargetId);
+  const agentIdReference = useRef(agent?.id);
+  const acceptedCallbacksReference = useRef(new Map<string, () => void | Promise<void>>());
+  const acceptedRequestIdsReference = useRef(new Set<string>());
+  activeTargetIdReference.current = activeExecutionTargetId;
+  agentIdReference.current = agent?.id;
 
   useEffect(() => {
     let disposed = false;
-    let unsubscribe: (() => void) | undefined;
+    let unsubscribeDevices: (() => void) | undefined;
+    let unsubscribeCoordinator: (() => void) | undefined;
+    let ownedCoordinator: RemoteAgentExecutionCoordinator | undefined;
 
     void (async () => {
       try {
@@ -67,24 +83,70 @@ export function useExecutionTargets({
         ]);
         if (disposed) return;
         const supportsAgentLoop = (device: Device) => device.peerId !== local.peerId && device.trusted && device.capabilities.agentLoop;
+        ownedCoordinator = createDesktopAgentExecutionCoordinator(local.peerId, {
+          onRunAccepted: async (provenance) => {
+            const callback = acceptedCallbacksReference.current.get(provenance.requestId);
+            if (!callback) return;
+            await callback();
+            acceptedRequestIdsReference.current.add(provenance.requestId);
+            acceptedCallbacksReference.current.delete(provenance.requestId);
+          },
+        });
+        unsubscribeCoordinator = ownedCoordinator.subscribe((snapshot) => {
+          if (!disposed && snapshot.conversationId === agentIdReference.current) setExecutionSnapshot(snapshot);
+        });
         setLocalPeerId(local.peerId);
         setAgentLoopDevices(devices.filter(supportsAgentLoop));
+        setCoordinator(ownedCoordinator);
+        const activeAgentId = agentIdReference.current;
+        if (activeAgentId) {
+          ownedCoordinator.switchTarget(activeAgentId, executionTargetFromId(activeTargetIdReference.current));
+          setExecutionSnapshot(ownedCoordinator.getSnapshot(activeAgentId));
+        }
         const subscription = window.observables.deviceNetwork.devices$.subscribe((nextDevices) => {
           if (!disposed) setAgentLoopDevices(nextDevices.filter(supportsAgentLoop));
         });
-        unsubscribe = () => {
+        unsubscribeDevices = () => {
           subscription.unsubscribe();
         };
       } catch (error) {
-        if (!disposed) setRemoteError(error instanceof Error ? error : new Error(String(error)));
+        if (!disposed) setDiscoveryError(error instanceof Error ? error : new Error(String(error)));
       }
     })();
 
     return () => {
       disposed = true;
-      unsubscribe?.();
+      unsubscribeDevices?.();
+      unsubscribeCoordinator?.();
+      const activeAgentId = agentIdReference.current;
+      if (ownedCoordinator && activeAgentId) {
+        try {
+          ownedCoordinator.stopConversation(activeAgentId);
+        } catch {
+          // Disposal below is the final fence.
+        }
+      }
+      void ownedCoordinator?.dispose();
+      acceptedCallbacksReference.current.clear();
+      acceptedRequestIdsReference.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    if (!coordinator || !agent?.id) {
+      setExecutionSnapshot(null);
+      return;
+    }
+    coordinator.switchTarget(agent.id, executionTargetFromId(activeTargetIdReference.current));
+    setExecutionSnapshot(coordinator.getSnapshot(agent.id));
+    return () => {
+      try {
+        coordinator.stopConversation(agent.id);
+      } catch {
+        // A concurrent hook disposal may already own the final fence.
+      }
+    };
+  }, [agent?.id, coordinator]);
 
   const executionTargets = useMemo<AgentExecutionTarget[]>(() => [
     {
@@ -107,108 +169,116 @@ export function useExecutionTargets({
     })),
   ], [agentLoopDevices, localPeerId, t]);
 
-  const sendRemoteMessage = useCallback(async (peerId: string, text: string) => {
-    if (!agent?.id) throw new Error(t('Chat.ExecutionTarget.NoActiveAgent'));
-    setRemoteRunning(true);
-    setRemoteError(null);
-    try {
-      await window.service.deviceNetwork.sendRpc(peerId, 'memeloop.agent.runTurn', {
-        conversationId: agent.id,
-        definitionId: agent.agentDefId,
-        message: text,
-        resumeSession: orderedMessages,
-        conversation: {
-          conversationId: agent.id,
-          title: agent.name || tabTitle,
-          lastMessagePreview: text,
-          lastMessageTimestamp: Date.now(),
-          messageCount: orderedMessages.length,
-          originNodeId: localPeerId ?? 'tidgi-desktop',
-          definitionId: agent.agentDefId,
-          isUserInitiated: true,
-        },
-      });
-      await window.service.deviceNetwork.syncWithDevice(peerId);
-      await fetchAgent(agent.id);
-    } catch (error) {
-      const nextError = error instanceof Error ? error : new Error(String(error));
-      setRemoteError(nextError);
-      throw nextError;
-    } finally {
-      setRemoteRunning(false);
-    }
-  }, [agent?.agentDefId, agent?.id, agent?.name, fetchAgent, localPeerId, orderedMessages, t, tabTitle]);
-
-  const cancelSelectedTarget = useCallback(async () => {
-    const peerId = peerIdFromExecutionTarget(activeExecutionTargetId);
-    if (peerId && agent?.id) {
-      await window.service.deviceNetwork.sendRpc(peerId, 'memeloop.agent.cancel', { conversationId: agent.id }).catch((error: unknown) => {
-        void window.service.native.log('warn', 'Remote agent cancel failed', { peerId, error });
-      });
-      setRemoteRunning(false);
-      return;
-    }
-    await cancelLocalAgent();
-  }, [activeExecutionTargetId, agent?.id, cancelLocalAgent]);
-
-  const setExecutionTarget = useCallback(async (targetId: string, options?: SetExecutionTargetOptions) => {
-    if (targetId === activeExecutionTargetId) return;
-    if (!options?.restartCurrentTurn) {
-      setActiveExecutionTargetId(targetId);
-      return;
-    }
-
-    const lastUserMessage = [...orderedMessages].reverse().find(message => message.role === 'user');
-    await cancelSelectedTarget();
-    setActiveExecutionTargetId(targetId);
-    if (!lastUserMessage) return;
-    await deleteTurn(lastUserMessage.messageId);
-    const peerId = peerIdFromExecutionTarget(targetId);
-    if (peerId) {
-      await sendRemoteMessage(peerId, lastUserMessage.content);
-      return;
-    }
-    await sendLocalMessage(lastUserMessage.content);
-  }, [activeExecutionTargetId, cancelSelectedTarget, deleteTurn, orderedMessages, sendLocalMessage, sendRemoteMessage]);
-
-  const loadMessageDetail = useCallback(async (message: ChatMessage) => {
-    if (!message.detailRef) return null;
-    const targetPeerId = message.detailRef.nodeId;
-    const targetConversationId = message.detailRef.conversationId ?? message.conversationId;
-    if (!targetPeerId || targetPeerId === localPeerId) {
-      return orderedMessages.filter(item => item.conversationId === targetConversationId);
-    }
-    const result = await window.service.deviceNetwork.sendRpc<{ messages: ChatMessage[] }>(targetPeerId, 'memeloop.chat.pullAgentRunLog', {
-      conversationId: targetConversationId,
-      knownMessageIds: orderedMessages.map(item => item.messageId),
-    });
-    await window.service.deviceNetwork.syncWithDevice(targetPeerId).catch((error: unknown) => {
-      void window.service.native.log('warn', 'DetailRef follow-up sync failed', { peerId: targetPeerId, error });
-    });
-    if (agent?.id) await fetchAgent(agent.id);
-    return result.messages;
-  }, [agent?.id, fetchAgent, localPeerId, orderedMessages]);
+  const requireExecutionContext = useCallback(() => {
+    if (!agent?.id || !agent.agentDefId) throw new Error(t('Chat.ExecutionTarget.NoActiveAgent'));
+    if (!coordinator) throw new Error(t('Chat.ExecutionTarget.NoActiveAgent'));
+    return { agent, coordinator };
+  }, [agent, coordinator, t]);
 
   const sendMessage = useCallback(async (
-    text: string,
-    file?: File,
-    wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>,
+    message: string,
+    attachment?: AgentAttachmentInput,
+    wikiTiddlers?: readonly WikiTiddlerAttachment[],
+    options?: SendExecutionMessageOptions,
   ) => {
-    const peerId = peerIdFromExecutionTarget(activeExecutionTargetId);
-    if (peerId) {
-      await sendRemoteMessage(peerId, text);
-    } else {
-      await sendLocalMessage(text, file, wikiTiddlers);
+    const context = requireExecutionContext();
+    const provenance = context.coordinator.prepareProvenance({
+      conversationId: context.agent.id,
+      definitionId: context.agent.agentDefId,
+      ...(options?.requestId === undefined ? {} : { requestId: options.requestId }),
+      ...(options?.turnId === undefined ? {} : { turnId: options.turnId }),
+    });
+    if (options?.onAccepted) acceptedCallbacksReference.current.set(provenance.requestId, options.onAccepted);
+    try {
+      await context.coordinator.execute({
+        target: executionTargetFromId(activeTargetIdReference.current),
+        provenance,
+        message,
+        ...(attachment === undefined ? {} : { attachment }),
+        ...(wikiTiddlers === undefined ? {} : { wikiTiddlers }),
+      });
+    } finally {
+      if (!acceptedRequestIdsReference.current.delete(provenance.requestId)) {
+        acceptedCallbacksReference.current.delete(provenance.requestId);
+      }
     }
-  }, [activeExecutionTargetId, sendLocalMessage, sendRemoteMessage]);
+  }, [requireExecutionContext]);
 
+  const cancelSelectedTarget = useCallback(async () => {
+    const context = requireExecutionContext();
+    const current = context.coordinator.getSnapshot(context.agent.id);
+    const provenance = current.provenance ?? context.coordinator.prepareProvenance({
+      conversationId: context.agent.id,
+      definitionId: context.agent.agentDefId,
+    });
+    await context.coordinator.cancel({
+      target: executionTargetFromId(activeTargetIdReference.current),
+      provenance,
+    });
+  }, [requireExecutionContext]);
+
+  const deleteTurn = useCallback(async (turnId: string) => {
+    const context = requireExecutionContext();
+    await context.coordinator.delete({
+      target: executionTargetFromId(activeTargetIdReference.current),
+      provenance: context.coordinator.prepareProvenance({
+        conversationId: context.agent.id,
+        definitionId: context.agent.agentDefId,
+        turnId,
+      }),
+    });
+  }, [requireExecutionContext]);
+
+  const retryTurn = useCallback(async (sourceTurnId: string) => {
+    const context = requireExecutionContext();
+    await context.coordinator.retry({
+      target: executionTargetFromId(activeTargetIdReference.current),
+      provenance: context.coordinator.prepareProvenance({
+        conversationId: context.agent.id,
+        definitionId: context.agent.agentDefId,
+      }),
+      sourceTurnId,
+    });
+  }, [requireExecutionContext]);
+
+  const setExecutionTarget = useCallback(async (targetId: string, options?: SetExecutionTargetOptions) => {
+    if (targetId === activeTargetIdReference.current) return;
+    const context = requireExecutionContext();
+    const target = executionTargetFromId(targetId);
+    const lastUserMessage = [...orderedMessages].reverse().find(message => message.role === 'user');
+    if (options?.restartCurrentTurn && lastUserMessage) {
+      const current = context.coordinator.getSnapshot(context.agent.id);
+      if (current.status === 'queued' || current.status === 'running' || current.status === 'cancelling') {
+        await cancelSelectedTarget();
+      }
+      context.coordinator.switchTarget(context.agent.id, target);
+      setActiveExecutionTargetId(targetId);
+      await context.coordinator.retry({
+        target,
+        provenance: context.coordinator.prepareProvenance({
+          conversationId: context.agent.id,
+          definitionId: context.agent.agentDefId,
+        }),
+        sourceTurnId: lastUserMessage.turnId,
+      });
+      return;
+    }
+    context.coordinator.switchTarget(context.agent.id, target);
+    setActiveExecutionTargetId(targetId);
+  }, [cancelSelectedTarget, orderedMessages, requireExecutionContext]);
+
+  const status = executionSnapshot?.status ?? 'idle';
   return {
     activeExecutionTargetId,
     cancelSelectedTarget,
+    deleteTurn,
+    error: executionSnapshot?.error ?? discoveryError,
+    executionSnapshot,
     executionTargets,
-    loadMessageDetail,
-    remoteError,
-    remoteRunning,
+    isRunning: status === 'queued' || status === 'running' || status === 'cancelling',
+    isReady: coordinator !== null && agent?.id !== undefined && agent.agentDefId !== undefined,
+    provenance: executionSnapshot?.provenance,
+    retryTurn,
     sendMessage,
     setExecutionTarget,
   };

@@ -11,12 +11,16 @@ import type { AgentInstanceClient, AgentRuntimeView } from 'memeloop';
  */
 export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
   createAgent: async (agentDefinitionId, options) => {
-    const agent = await window.service.agentInstance.createAgent(agentDefinitionId, options);
+    options?.signal?.throwIfAborted();
+    const agent = await window.service.agentInstance.createAgent(agentDefinitionId, { preview: options?.preview });
+    options?.signal?.throwIfAborted();
     return { id: agent.id };
   },
 
-  fetchAgent: async (agentId) => {
-    const agent = await window.service.agentInstance.getAgent(agentId);
+  fetchAgent: async (agentId, options) => {
+    options?.signal?.throwIfAborted();
+    const agent = await window.service.agentInstance.getAgentMetadata(agentId);
+    options?.signal?.throwIfAborted();
     if (!agent) throw new Error(`Agent not found: ${agentId}`);
     return {
       id: agent.id,
@@ -26,12 +30,14 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
         state: (agent.status?.state ?? 'idle') as AgentRuntimeView['status']['state'],
         progress: agent.status?.progress,
       },
-      aiApiConfig: agent.aiApiConfig,
+      modelConfig: agent.modelConfig,
     };
   },
 
-  updateAgent: async (agentId, data) => {
+  updateAgent: async (agentId, data, options) => {
+    options?.signal?.throwIfAborted();
     const updated = await window.service.agentInstance.updateAgent(agentId, data);
+    options?.signal?.throwIfAborted();
     return {
       id: updated.id,
       name: updated.name ?? '',
@@ -40,16 +46,20 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
         state: (updated.status?.state ?? 'idle') as AgentRuntimeView['status']['state'],
         progress: updated.status?.progress,
       },
-      aiApiConfig: updated.aiApiConfig,
+      modelConfig: updated.modelConfig,
     };
   },
 
-  cancelAgent: async (agentId) => {
+  cancelAgent: async (agentId, options) => {
+    options?.signal?.throwIfAborted();
     await window.service.agentInstance.cancelAgent(agentId);
+    options?.signal?.throwIfAborted();
   },
 
-  deleteAgent: async (agentId) => {
+  deleteAgent: async (agentId, options) => {
+    options?.signal?.throwIfAborted();
     await window.service.agentInstance.deleteAgent(agentId);
+    options?.signal?.throwIfAborted();
   },
 
   subscribeToUpdates: (agentId, listener) => {
@@ -69,13 +79,18 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
     };
   },
 
-  getAgentFrameworkId: async (agentId) => {
-    const agent = await window.service.agentInstance.getAgent(agentId);
+  getAgentFrameworkId: async (agentId, options) => {
+    options?.signal?.throwIfAborted();
+    const agent = await window.service.agentInstance.getAgentMetadata(agentId);
+    options?.signal?.throwIfAborted();
     if (!agent) throw new Error(`Agent not found: ${agentId}`);
     return agent.agentDefId ?? '';
   },
 
-  getFrameworkConfigSchema: async (frameworkId) => {
-    return window.service.agentInstance.getFrameworkConfigSchema(frameworkId);
+  getFrameworkConfigSchema: async (frameworkId, options) => {
+    options?.signal?.throwIfAborted();
+    const schema = await window.service.agentInstance.getFrameworkConfigSchema(frameworkId);
+    options?.signal?.throwIfAborted();
+    return schema;
   },
 });

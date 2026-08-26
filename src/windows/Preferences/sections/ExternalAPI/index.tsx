@@ -7,6 +7,7 @@ import { Button, List } from '@mui/material';
 import { ListItemText } from '@/components/ListItem';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import type { IPossibleWindowMeta, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
 import { AIModelParametersDialog } from './components/AIModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
@@ -30,6 +31,19 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
   const [catalogProviders, setCatalogProviders] = useState<AIProviderConfig[]>([]);
+  const [focusTarget, setFocusTarget] = useState(
+    () => (window.meta() as IPossibleWindowMeta<IPreferenceWindowMeta>).preferenceFocus,
+  );
+
+  useEffect(() => {
+    const handleWindowMetaUpdated = (_event: Electron.IpcRendererEvent, meta: IPossibleWindowMeta<IPreferenceWindowMeta>) => {
+      if (meta.preferenceFocus) setFocusTarget(meta.preferenceFocus);
+    };
+    window.remote.registerWindowMetaUpdated(handleWindowMetaUpdated);
+    return () => {
+      window.remote.unregisterWindowMetaUpdated(handleWindowMetaUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -286,6 +300,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                 changeDefaultTranscriptionsModel={handleTranscriptionsModelChange}
                 changeDefaultFreeModel={handleFreeModelChange}
                 setProviders={setProviders}
+                focusTarget={focusTarget}
               />
             </>
           )}

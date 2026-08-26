@@ -5,14 +5,16 @@ import type {
   Device,
   DeviceCapabilities,
   DeviceCloudConnectionSnapshot,
+  DeviceConnectionGrant,
   DeviceNetworkService as CoreDeviceNetworkService,
   DeviceRpcHandler,
   IAgentStorage,
   LocalDeviceIdentity,
+  MemeLoopDuplexStream,
+  MemeLoopProtocol,
   PairingSession,
   SyncResult,
   TrustedDeviceRecord,
-  VersionVector,
 } from 'memeloop';
 import type { BehaviorSubject } from 'rxjs';
 
@@ -36,9 +38,13 @@ export interface DeviceNetworkPersistedCloudConfiguration {
  * overwritten when DatabaseService flushes its in-memory settings object.
  */
 export interface DeviceNetworkPersistedSettings {
+  /** Generation metadata for the durable, all-or-nothing Cloud trust snapshot. */
+  cloudTrustSnapshotV1?: {
+    epoch: string;
+    generation: number;
+  };
   cloudConfigurationV1?: DeviceNetworkPersistedCloudConfiguration;
   identityV1?: DeviceNetworkPersistedIdentity;
-  syncVersionVectorV2?: VersionVector;
   trustedDevicesV1?: TrustedDeviceRecord[];
 }
 
@@ -60,7 +66,27 @@ export interface DeviceCloudConnectionStatus {
   state: DeviceCloudConnectionSnapshot['status'];
 }
 
-export interface IDeviceNetworkService extends CoreDeviceNetworkService {
+export interface DesktopDeviceSyncOptions {
+  presentedGrant?: DeviceConnectionGrant;
+  conversationIds?: string[];
+  signal?: AbortSignal;
+  /** Serializable renderer-to-main cancellation handle. */
+  operationId?: string;
+}
+
+export interface DesktopDeviceConnectionOptions {
+  presentedGrant?: DeviceConnectionGrant;
+  signal?: AbortSignal;
+  /** Serializable renderer-to-main cancellation handle. */
+  operationId?: string;
+}
+
+export interface IDeviceNetworkService extends Omit<CoreDeviceNetworkService, 'openStream' | 'sendRpc' | 'syncWithDevice'> {
+  openStream(peerId: string, protocol: MemeLoopProtocol, options?: DesktopDeviceConnectionOptions): Promise<MemeLoopDuplexStream>;
+  sendRpc<T>(peerId: string, method: string, parameters: unknown, options?: DesktopDeviceConnectionOptions): Promise<T>;
+  syncWithDevice(peerId: string, options?: DesktopDeviceSyncOptions): Promise<SyncResult>;
+  abortOperation(operationId: string): Promise<void>;
+  finishOperation(operationId: string): Promise<void>;
   getLocalIdentity(): Promise<LocalDeviceIdentity>;
   getCloudConnectionStatus(): Promise<DeviceCloudConnectionStatus>;
   createPairingInvite(): Promise<string>;
@@ -94,6 +120,8 @@ export const DeviceNetworkServiceIPCDescriptor = {
     syncCloudDevices: ProxyPropertyType.Function,
     sendRpc: ProxyPropertyType.Function,
     syncWithDevice: ProxyPropertyType.Function,
+    abortOperation: ProxyPropertyType.Function,
+    finishOperation: ProxyPropertyType.Function,
     cloudStatus$: ProxyPropertyType.Value$,
     devices$: ProxyPropertyType.Value$,
     pairingSessions$: ProxyPropertyType.Value$,

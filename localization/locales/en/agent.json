@@ -1,4 +1,31 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "The run was cancelled.",
+        "interrupted": "The run was interrupted.",
+        "invalidRequest": "The Agent request is invalid.",
+        "modelNotFound": "Model {{modelId}} is unavailable for {{providerId}}.",
+        "providerAuthMissing": "Authentication for {{providerId}} is missing or invalid.",
+        "providerConfigurationMissing": "{{providerId}} is missing the required {{settingField}} setting.",
+        "providerUnavailable": "{{providerId}} is temporarily unavailable.",
+        "rateLimited": "{{providerId}} is rate limiting requests. Try again later.",
+        "runnerUnavailable": "No Agent runner is available.",
+        "storageUnavailable": "Agent storage is unavailable.",
+        "deviceAuthRequired": "This device must be authorized before running the Agent.",
+        "devicePermissionDenied": "This device is not permitted to run this Agent.",
+        "networkUnavailable": "The Agent network is unavailable.",
+        "userMessageTooLarge": "The user message is too large for this run. Shorten it or send large content as an attachment.",
+        "userMessageTooLargeDetail": "Requested {{requested}} bytes; the limit is {{limit}} bytes.",
+        "contextCompactionPending": "The long conversation is still being compacted. Progress is saved; please try again shortly.",
+        "contextCompactionPendingProgress": "{{processedMessages}} messages have been processed.",
+        "contextCompactionPendingProgressEstimate": "{{processedMessages}} messages have been processed; about {{remainingEstimate}} remain.",
+        "contextCompactionFailed": "The long conversation could not be compacted safely.",
+        "contextBudgetExceeded": "The conversation exceeds the model context budget.",
+        "internal": "The Agent encountered an internal error."
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "Showing logs for agent: {{agentId}}",
     "Description": "Debug logs for external API calls made by this agent. Enable 'External API Debug' in preferences to start logging.",
@@ -57,6 +84,15 @@
         "online": "online"
       },
       "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "Attachments are not yet supported for remote execution. Switch to this device or send text only.",
+      "RunOn": "Run on",
+      "Label": "Execution target",
+      "RunOnTarget": "Run on {{target}}",
+      "ConfirmTitle": "Switch execution target?",
+      "ConfirmDescription": "The current turn is still running. Switching to {{target}} will stop it and restart the latest user turn there.",
+      "AnotherTarget": "another target",
+      "KeepRunning": "Keep running",
+      "StopAndRestart": "Stop and restart",
       "RunOnThisDesktop": "Run on this Desktop",
       "RunOnThisDesktopWithPeerId": "Run on this Desktop ({{peerId}})",
       "ThisDevice": "This device"
@@ -79,7 +115,38 @@
       "TooLarge": "File size {{size}}MB exceeds the limit ({{maxSize}}MB). Please select a smaller file."
     },
     "InputPlaceholder": "Type a message, Ctrl+Enter to send",
-    "Send": "Send"
+    "Send": "Send",
+    "Actions": {
+      "Retry": "Retry",
+      "DeleteTurn": "Delete turn",
+      "Copy": "Copy",
+      "CopyAll": "Copy all",
+      "User": "User",
+      "Agent": "Agent"
+    },
+    "Message": {
+      "AttachmentAlt": "Attachment",
+      "NoDetails": "No details available.",
+      "LoadDetails": "Load details",
+      "HideDetails": "Hide details",
+      "ShowDetails": "Show details",
+      "DetailLine": "{{role}}: {{content}}",
+      "Error": "Error",
+      "ToolResult": "Tool result",
+      "ToolCall": "Tool call: {{toolName}}",
+      "Truncated": "Message shortened for display ({{count}} characters). Use conversation export or message details for the complete content."
+    },
+    "Timeline": {
+      "Navigation": "Conversation timeline",
+      "Turn": "Turn {{index}} of {{total}}",
+      "Compacted": "{{count}} earlier messages compacted",
+      "LoadEarlier": "Load earlier messages",
+      "LoadLater": "Load later messages",
+      "Seek": "Jump to a conversation turn",
+      "Close": "Close timeline",
+      "NewMessages": "{{count}} new messages — jump to latest",
+      "MoreResponses": "{{count}} more responses in this turn"
+    }
   },
   "Common": {
     "None": "Not selected"
@@ -135,6 +202,17 @@
     "ScheduleCronExpr": "Cron expression",
     "ScheduleCronHelp": "5-field cron: minute hour day month weekday",
     "ScheduleCronPreview": "Next runs:",
+    "ScheduleExecutionTarget": "Runs on device",
+    "ScheduleExecutionTargetUnavailable": "The selected device is unavailable. Choose an available device before changing this schedule.",
+    "ScheduleIdentityLoading": "Loading this device’s secure identity…",
+    "ScheduleIdentityError": "This device’s secure identity is unavailable. Scheduling is disabled until the device network is ready.",
+    "ScheduleConversation": "Conversation to schedule",
+    "ScheduleConversationRequired": "Create or open a durable conversation with this agent before scheduling tasks. Preview conversations are temporary and cannot own schedules.",
+    "ScheduleDefaultTaskName": "{{agentName}} schedule",
+    "ScheduleInvalidCron": "Enter a valid Cron schedule.",
+    "ScheduleInvalidTimezone": "Choose a supported timezone.",
+    "ScheduleNoPreview": "No upcoming run times were found.",
+    "SchedulePreviewLoading": "Checking schedule...",
     "ScheduleDaily": "Daily (at a specific time)",
     "ScheduleDailyTime": "Wake time",
     "ScheduledWakeup": "Scheduled Wake-up",
@@ -149,6 +227,14 @@
     "ScheduleSave": "Save schedule",
     "ScheduleSaveWait": "Preview agent loading...",
     "ScheduleSaving": "Saving...",
+    "ScheduleTaskSelection": "Scheduled task",
+    "ScheduleNewTask": "New scheduled task",
+    "ScheduleOperationFailed": "The scheduled task operation failed.",
+    "ScheduleSourceIncomplete": "Some devices could not provide a complete live schedule. Changes are disabled until every source is available.",
+    "ScheduleSourceOnline": "{{executionTarget}} is online.",
+    "ScheduleSourceOffline": "{{executionTarget}} is offline.",
+    "ScheduleSourceDegraded": "{{executionTarget}} is degraded.",
+    "ScheduleSourceCached": "{{executionTarget}} is showing cached schedule data.",
     "ScheduleTimezone": "Timezone",
     "ScheduleUpdate": "Update schedule",
     "Seconds": "Seconds",
@@ -318,9 +404,20 @@
     "WorkflowFilePath": "Workflow File Path"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "Compaction summary",
+      "ConversationMessage": "Conversation message",
+      "PreviewInput": "Current input",
+      "Prompt": "Prompt",
+      "System": "System prompt",
+      "Tool": "Tool message"
+    },
     "AutoRefresh": "Preview auto-refreshes with input text changes",
     "CodeEditor": "Code Editor",
     "Close": "Close prompt preview",
+    "CompactionSummaryCount": "Compaction summaries",
+    "ContextSegments": "Effective context segments",
+    "ContextStats": "Effective context statistics",
     "Edit": "Edit",
     "EditorModeTabs": "Prompt editor mode tabs",
     "Enabled": "enable",
@@ -333,6 +430,8 @@
     "FormEditor": "Form Editor",
     "LastUpdated": "Last updated",
     "Loading": "Loading preview...",
+    "MessageCount": "Context messages",
+    "ModelRequest": "Exact model request",
     "NoMessages": "No message available for preview",
     "Progress": {
       "Complete": "Complete",
@@ -379,6 +478,24 @@
     }
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM; skip runs after this time.",
+      "ActiveHoursStartDescription": "HH:MM; skip runs before this time.",
+      "AlarmDescription": "Set a future one-shot wake-up and temporarily exit the conversation loop. Use a Cron schedule for recurring work.",
+      "EnabledDescription": "Enable or disable the task without deleting it.",
+      "EnabledTitle": "Enabled",
+      "KindDescription": "“at” runs once at an ISO datetime; “cron” defines a recurring schedule.",
+      "ListDescription": "List all active scheduled tasks for this agent.",
+      "MessageDescription": "Message sent to this agent when the schedule fires.",
+      "RemoveDescription": "Remove an active scheduled task by ID.",
+      "TaskIdDescription": "ID of the scheduled task returned by list-schedules.",
+      "TaskIdTitle": "Task ID",
+      "TaskNameDescription": "Human-readable label for this schedule.",
+      "TaskNameTitle": "Task name",
+      "TimezoneDescription": "IANA timezone for Cron expressions, for example Asia/Shanghai.",
+      "UpdateDescription": "Update an existing scheduled task's state, message, or active hours.",
+      "WakeAtDescription": "ISO 8601 datetime at which the agent should wake."
+    },
     "AIConfig": {
       "Default": "Default conversation model used",
       "DefaultTitle": "default model",
@@ -753,6 +870,16 @@
     "Tool": "Tool"
   },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "Active scheduled tasks:\n{{summary}}",
+      "AlarmSet": "Alarm set for {{wakeAtISO}} (in {{delaySeconds}} seconds). Exiting the loop now and resuming when the alarm fires.",
+      "NoActiveTasks": "No active scheduled tasks.",
+      "TaskCreated": "Scheduled task created (ID: {{taskId}}). Next run: {{nextRun}}.",
+      "TaskRemoved": "Scheduled task {{taskId}} removed.",
+      "TaskSummary": "[{{taskId}}] {{name}} — next: {{nextRun}} — runs: {{runCount}}",
+      "TaskUpdated": "Scheduled task {{taskId}} updated.",
+      "Unknown": "unknown"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "Workspace with name or ID \"{{workspaceName}}\" does not exist"

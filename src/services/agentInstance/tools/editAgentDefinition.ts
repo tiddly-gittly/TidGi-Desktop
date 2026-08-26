@@ -8,8 +8,8 @@ import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { AgentFrameworkConfig } from 'memeloop';
-import { registerToolDefinition } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const EditAgentDefinitionParameterSchema = z.object({
   toolListPosition: z.object({
@@ -64,7 +64,7 @@ const EditAgentPromptToolSchema = z.object({
   description: "Modify a field in this agent's framework configuration (e.g. system prompt customization). Requires user approval.",
 });
 
-const editAgentDefinitionDefinition = registerToolDefinition({
+export const editAgentDefinitionDefinition = defineDesktopTool({
   toolId: 'editAgentDefinition',
   displayName: 'Edit Agent Definition',
   description: 'Modify own heartbeat schedule and framework configuration',
@@ -111,7 +111,7 @@ const editAgentDefinitionDefinition = registerToolDefinition({
       await executeToolCall('edit-agent-prompt-config', async (parameters) => {
         const agentInstanceService = container.get<import('../interface').IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-        const agent = await agentInstanceService.getAgent(agentId);
+        const agent = await agentInstanceService.getAgentMetadata(agentId);
         if (!agent) throw new Error(`Agent not found: ${agentId}`);
 
         const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
@@ -136,5 +136,3 @@ const editAgentDefinitionDefinition = registerToolDefinition({
     }
   },
 });
-
-export const editAgentDefinitionTool = editAgentDefinitionDefinition.tool;

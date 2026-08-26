@@ -1,8 +1,7 @@
 import { logger } from '@services/libs/log';
 
-import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
-import type { AIProviderConfig, AISpeechResponse } from './interface';
+import type { AIProviderConfig, AISpeechResponse, DesktopAIConfig } from './interface';
 
 interface SpeechOptions {
   /** Response audio format (mp3, wav, opus, etc.) */
@@ -26,7 +25,7 @@ interface SpeechOptions {
  */
 export async function generateSpeechFromProvider(
   input: string,
-  config: AiAPIConfig,
+  config: DesktopAIConfig,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
   options: SpeechOptions = {},

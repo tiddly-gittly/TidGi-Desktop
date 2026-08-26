@@ -44,28 +44,18 @@ describe('default agent tools → prompt integration', () => {
 
     expect(mergedConfig.plugins).toBeDefined();
     const pluginToolIds = (mergedConfig.plugins as Array<{ toolId: string }>).map(p => p.toolId);
-    expect(pluginToolIds).toContain('wikiSearch');
-    expect(pluginToolIds).toContain('wikiOperation');
-    expect(pluginToolIds).toContain('modelContextProtocol');
-    expect(pluginToolIds).toContain('workspacesList');
+    for (const tool of defaultAgent.agentTools!) expect(pluginToolIds).toContain(tool.toolId);
 
     // Preserve non-tool prompt modifiers like fullReplacement
     expect(pluginToolIds).toContain('fullReplacement');
 
-    // Diagnostic: check plugin registry
-    const { pluginRegistry: pr } = await import('@services/agentInstance/tools/index');
-    const { getAllToolDefinitions: getGtd } = await import('memeloop');
-    const toolDefs = getGtd();
-    console.log('toolRegistry keys:', Array.from(toolDefs.keys()));
-    console.log('pluginRegistry keys:', Array.from(pr.keys()));
-    console.log('pluginRegistry size:', pr.size);
-    console.log('mergedConfig plugins:', JSON.stringify(mergedConfig.plugins).substring(0, 300));
-
     // Call concatPrompt and verify it produces output with tool descriptions
     const messages: ChatMessage[] = [{
       messageId: 'test-msg-1',
+      turnId: 'test-msg-1',
       conversationId: 'test-agent',
       originNodeId: 'tidgi-desktop',
+      originSequence: 1,
       timestamp: Date.now(),
       lamportClock: Date.now(),
       role: 'user',
@@ -100,9 +90,9 @@ describe('default agent tools → prompt integration', () => {
 
     // Tool descriptions injected via onProcessPrompts → injectToolList
     // The tool content is generated from zod LLM schemas; verify injection happened
-    expect(allContent).toContain('Available Wiki Workspaces');
-    expect(allContent).toContain('wiki-search');
+    expect(allContent).toContain('spawn-agent');
     expect(allContent).toContain('## ask-question');
+    expect(allContent).toContain('manage-todo');
     expect(allContent).toContain('**Description**');
   }, 30000);
 });

@@ -100,22 +100,39 @@ export function isProviderConfigError(error: unknown): error is ProviderConfigEr
 }
 
 /**
- * Try to parse a generic error into a ProviderConfigError if possible
+ * Extract the structured HTTP status exposed by AI SDK/provider errors.
+ * Provider response bodies and human-language messages are deliberately not
+ * parsed: they are untrusted, unstable and may contain secrets.
  */
-export function parseProviderError(error: Error, provider: string): Error {
-  const message = error.message.toLowerCase();
-
-  if (message.includes('api key') && message.includes('not found')) {
-    return new MissingAPIKeyError(provider);
+export function getProviderHttpStatus(error: unknown): number | undefined {
+  let value = error;
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (!value || typeof value !== 'object') return undefined;
+    const record = value as Record<string, unknown>;
+    const response = record.response && typeof record.response === 'object'
+      ? record.response as Record<string, unknown>
+      : undefined;
+    const status = record.statusCode ?? record.status ?? response?.status;
+    if (typeof status === 'number' && Number.isInteger(status) && status >= 100 && status <= 599) {
+      return status;
+    }
+    value = record.cause;
   }
+  return undefined;
+}
 
-  if (message.includes('requires baseurl')) {
-    return new MissingBaseURLError(provider);
-  }
-
-  if (message.includes('authentication failed') || message.includes('401')) {
+/** Normalize only stable provider error fields. */
+export function parseProviderError(error: unknown, provider: string): Error {
+  if (isProviderConfigError(error)) return error;
+  const status = getProviderHttpStatus(error);
+  if (status === 401 || status === 403) {
     return new AuthenticationError(provider);
   }
-
-  return error;
+  if (status === 404) {
+    return new ProviderConfigError('Chat.ConfigError.ModelNotFound', 'MODEL_NOT_FOUND', provider);
+  }
+  if (status === 429) {
+    return new ProviderConfigError('Chat.ConfigError.RateLimitExceeded', 'RATE_LIMIT_EXCEEDED', provider);
+  }
+  return error instanceof Error ? error : new Error('AI provider request failed');
 }

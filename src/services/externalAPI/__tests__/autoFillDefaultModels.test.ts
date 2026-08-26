@@ -1,5 +1,4 @@
-import { AIProviderConfig, IExternalAPIService, ModelInfo } from '@services/externalAPI/interface';
-import type { AiAPIConfig } from 'memeloop';
+import { AIProviderConfig, type DesktopAIConfig, IExternalAPIService, ModelInfo } from '@services/externalAPI/interface';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -32,7 +31,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
 
   describe('Observable exposure', () => {
     it('should expose defaultConfig$ observable to frontend', () => {
-      const mockConfig: AiAPIConfig = {
+      const mockConfig: DesktopAIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
         modelParameters: { temperature: 0.7, topP: 0.95 },
       };
@@ -46,7 +45,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       });
 
       // Frontend should be able to subscribe to config changes
-      const subscription = (window.service.externalAPI as unknown as IExternalAPIService).defaultConfig$.subscribe((config: AiAPIConfig) => {
+      const subscription = (window.service.externalAPI as unknown as IExternalAPIService).defaultConfig$.subscribe((config: DesktopAIConfig) => {
         expect(config.default?.provider).toBe('openai');
       });
 
@@ -84,7 +83,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
 
   describe('Auto-fill behavior', () => {
     it('should emit updated config when auto-fill happens', () => {
-      const initialConfig: AiAPIConfig = {
+      const initialConfig: DesktopAIConfig = {
         default: undefined,
         modelParameters: { temperature: 0.7, topP: 0.95 },
       };
@@ -97,12 +96,12 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       });
 
       // Simulate backend auto-filling language model after provider addition
-      const updatedConfig: AiAPIConfig = {
+      const updatedConfig: DesktopAIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
         modelParameters: initialConfig.modelParameters,
       };
 
-      const emittedConfigs: AiAPIConfig[] = [];
+      const emittedConfigs: DesktopAIConfig[] = [];
       const subscription = configSubject.subscribe(config => {
         emittedConfigs.push(config);
       });
@@ -119,7 +118,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
     });
 
     it('should NOT overwrite existing default values', () => {
-      const configWithExisting: AiAPIConfig = {
+      const configWithExisting: DesktopAIConfig = {
         default: { provider: 'anthropic', model: 'claude-3' },
         embedding: { provider: 'openai', model: 'existing-embedding-model' },
         modelParameters: { temperature: 0.7, topP: 0.95 },
@@ -129,12 +128,12 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
 
       // Simulate adding a new provider with embedding model
       // Backend should NOT overwrite existing embeddingModel
-      const afterAddingNewProvider: AiAPIConfig = {
+      const afterAddingNewProvider: DesktopAIConfig = {
         ...configWithExisting,
         // embeddingModel should remain unchanged
       };
 
-      const emittedConfigs: AiAPIConfig[] = [];
+      const emittedConfigs: DesktopAIConfig[] = [];
       const subscription = configSubject.subscribe(config => {
         emittedConfigs.push(config);
       });
@@ -148,7 +147,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
     });
 
     it('should only auto-fill when default is empty', () => {
-      const configWithoutEmbedding: AiAPIConfig = {
+      const configWithoutEmbedding: DesktopAIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
         modelParameters: { temperature: 0.7, topP: 0.95 },
       };
@@ -156,12 +155,12 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       const configSubject = new BehaviorSubject(configWithoutEmbedding);
 
       // Simulate backend auto-filling embedding model (empty before)
-      const configWithEmbedding: AiAPIConfig = {
+      const configWithEmbedding: DesktopAIConfig = {
         ...configWithoutEmbedding,
         embedding: { provider: 'openai', model: 'text-embedding-3-small' },
       };
 
-      const emittedConfigs: AiAPIConfig[] = [];
+      const emittedConfigs: DesktopAIConfig[] = [];
       const subscription = configSubject.subscribe(config => {
         emittedConfigs.push(config);
       });
@@ -177,7 +176,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
 
   describe('Multiple subscribers', () => {
     it('should support multiple subscribers to observable', () => {
-      const mockConfig: AiAPIConfig = {
+      const mockConfig: DesktopAIConfig = {
         default: { provider: 'openai', model: 'gpt-4' },
         modelParameters: { temperature: 0.7, topP: 0.95 },
       };
@@ -185,8 +184,8 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       const configSubject = new BehaviorSubject(mockConfig);
 
       // Multiple subscribers should all receive updates
-      const subscriber1Calls: AiAPIConfig[] = [];
-      const subscriber2Calls: AiAPIConfig[] = [];
+      const subscriber1Calls: DesktopAIConfig[] = [];
+      const subscriber2Calls: DesktopAIConfig[] = [];
 
       const sub1 = configSubject.subscribe(config => {
         subscriber1Calls.push(config);
@@ -200,7 +199,7 @@ describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
       expect(subscriber2Calls).toHaveLength(1);
 
       // Emit update
-      const updatedConfig: AiAPIConfig = {
+      const updatedConfig: DesktopAIConfig = {
         ...mockConfig,
         default: { ...mockConfig.default!, model: 'gpt-3.5-turbo' },
       };

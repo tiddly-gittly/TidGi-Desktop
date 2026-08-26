@@ -1,4 +1,4 @@
-import { PromptConfigForm } from '@memeloop/react-ui/agent';
+import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';

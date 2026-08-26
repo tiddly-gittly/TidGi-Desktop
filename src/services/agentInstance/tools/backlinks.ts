@@ -9,9 +9,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const BacklinksParameterSchema = z.object({
   toolListPosition: z.object({
@@ -59,7 +59,7 @@ async function executeBacklinks(parameters: z.infer<typeof BacklinksToolSchema>)
   };
 }
 
-const backlinksDefinition = registerToolDefinition({
+export const backlinksDefinition = defineDesktopTool({
   toolId: 'backlinks',
   displayName: 'Wiki Backlinks',
   description: 'Find tiddlers that link to a given tiddler',
@@ -78,5 +78,3 @@ const backlinksDefinition = registerToolDefinition({
     await executeToolCall('wiki-backlinks', executeBacklinks);
   },
 });
-
-export const backlinksTool = backlinksDefinition.tool;

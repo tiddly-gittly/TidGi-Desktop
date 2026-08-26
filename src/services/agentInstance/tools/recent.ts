@@ -8,9 +8,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const RecentParameterSchema = z.object({
   toolListPosition: z.object({
@@ -62,7 +62,7 @@ async function executeRecent(parameters: z.infer<typeof RecentToolSchema>): Prom
   };
 }
 
-const recentDefinition = registerToolDefinition({
+export const recentDefinition = defineDesktopTool({
   toolId: 'recent',
   displayName: 'Wiki Recent Changes',
   description: 'Get recently modified tiddlers sorted by modification time',
@@ -81,5 +81,3 @@ const recentDefinition = registerToolDefinition({
     await executeToolCall('wiki-recent', executeRecent);
   },
 });
-
-export const recentTool = recentDefinition.tool;

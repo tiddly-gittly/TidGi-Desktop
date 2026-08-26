@@ -8,8 +8,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { identity } from 'lodash';
-import { registerToolDefinition } from 'memeloop';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 const t = identity;
 
@@ -39,7 +39,7 @@ export function getWorkspacesListParameterSchema() {
 /**
  * Workspaces List Tool Definition
  */
-const workspacesListDefinition = registerToolDefinition({
+export const workspacesListDefinition = defineDesktopTool({
   toolId: 'workspacesList',
   displayName: t('Schema.WorkspacesList.Title'),
   description: t('Schema.WorkspacesList.Description'),
@@ -100,5 +100,3 @@ const workspacesListDefinition = registerToolDefinition({
     });
   },
 });
-
-export const workspacesListTool = workspacesListDefinition.tool;

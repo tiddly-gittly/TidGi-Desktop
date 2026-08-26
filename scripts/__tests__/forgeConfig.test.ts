@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import forgeConfig, { getLocalAdHocMacSigningPackagerConfig } from '../../forge.config';
+import { rendererAliases } from '../../vite.renderer.aliases';
 
 describe('getLocalAdHocMacSigningPackagerConfig', () => {
   it.each([undefined, '', '0', 'true'])('keeps signing absent unless the local-only switch is exactly 1 (%s)', value => {
@@ -36,5 +37,18 @@ describe('packaged utility process files', () => {
     expect(unpack).toEqual(expect.stringContaining('**/.vite/build/**/*.js'));
     expect(unpack).toEqual(expect.stringContaining('*.node'));
     expect(unpack).not.toEqual(expect.stringContaining('**/.webpack/main'));
+  });
+});
+
+describe('renderer package entry aliases', () => {
+  it('keeps MemeLoop agent subpath exports distinct from the agent root', () => {
+    const matchingAliases = (specifier: string) => rendererAliases.filter(alias => {
+      const matcher = alias.find;
+      return typeof matcher === 'string' ? matcher === specifier : matcher.test(specifier);
+    });
+
+    expect(matchingAliases('@memeloop/react-ui/agent')).toHaveLength(1);
+    expect(matchingAliases('@memeloop/react-ui/agent/prompts')).toHaveLength(1);
+    expect(matchingAliases('@memeloop/react-ui/agent/scheduling')).toHaveLength(1);
   });
 });

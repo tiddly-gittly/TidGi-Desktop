@@ -1,12 +1,23 @@
-import type { AgentFrameworkContext, AgentInstanceState, AgentLoopGenerator, AgentLoopInput, AgentLoopRuntime, BuiltinToolContext, ChatMessage, Device } from 'memeloop';
-import {
-  createAgentLoopRunner,
-  mergeAgentToolsIntoFrameworkConfig,
-  registerBuiltinLoops,
-  registerBuiltinPromptPlugins,
-  registerBuiltinToolPlugins,
-  runAgentToolLoopTurn,
+import type {
+  AgentFrameworkContext,
+  AgentInstanceState,
+  AgentLoopGenerator,
+  AgentLoopInput,
+  AgentLoopRuntime,
+  AgentModelConfig,
+  AgentRunStateStore,
+  BuiltinToolContext,
+  ChatMessage,
+  Device,
+  MemeLoopRuntime,
+  PromptConcatTool,
+  PromptPreviewAuditDetailChunk,
+  PromptPreviewAuditDetailRequest,
+  PromptPreviewAuditPage,
+  PromptPreviewAuditPageRequest,
+  PromptPreviewAuditReleaseRequest,
 } from 'memeloop';
+import { createAgentLoopRunner, createMemeLoopRuntime, mergeAgentToolsIntoFrameworkConfig, ProviderRegistry, registerBuiltinPromptPlugins, runAgentToolLoopTurn } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
@@ -14,6 +25,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import type { AgentInstance } from 'memeloop';
 import type { IAgentInstanceService } from '../interface';
+import { type DesktopPromptPreviewPreparedExecution, type DesktopPromptPreviewPrepareInput, DesktopPromptPreviewService } from '../promptPreview';
 import { MemeLoopDesktopLLMProvider } from './llmProvider';
 import { MemeLoopDesktopStorage } from './storage';
 import { MemeLoopDesktopToolRegistry } from './toolRegistry';
@@ -22,6 +34,8 @@ import { type AgentUserContent, createMemeLoopUserMessage } from './userMessage'
 export class MemeLoopDesktopRuntime {
   private readonly storage: MemeLoopDesktopStorage;
   private readonly toolRegistry = new MemeLoopDesktopToolRegistry();
+  private readonly promptPreviewService: DesktopPromptPreviewService;
+  private coreRuntimePromise: Promise<MemeLoopRuntime> | undefined;
 
   public constructor(
     private readonly options: {
@@ -30,6 +44,7 @@ export class MemeLoopDesktopRuntime {
       externalAPIService: IExternalAPIService;
       deviceNetworkService: IDeviceNetworkService;
       notifyAgentChanged: (agentId: string, agent: AgentInstance) => void;
+      notifyTransientMessage: (message: ChatMessage) => void | Promise<void>;
       isCancelled: (agentId: string) => boolean;
       loopScriptPolicy?: AgentFrameworkContext['loopScriptPolicy'];
     },
@@ -40,8 +55,9 @@ export class MemeLoopDesktopRuntime {
       getLocalNodeId: async () => (await options.deviceNetworkService.getLocalIdentity()).peerId,
       notifyAgentChanged: options.notifyAgentChanged,
     });
-    registerBuiltinLoops();
-    registerBuiltinToolPlugins();
+    this.promptPreviewService = new DesktopPromptPreviewService({
+      createContext: (conversationId, signal) => this.createContext(conversationId, undefined, undefined, signal),
+    });
     registerBuiltinPromptPlugins(this.toolRegistry.getPromptPlugins());
   }
 
@@ -49,9 +65,10 @@ export class MemeLoopDesktopRuntime {
     agentId: string;
     content: AgentUserContent;
     beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
+    persistedUserMessage?: ChatMessage;
   }): Promise<AgentInstanceState> {
     const localNodeId = (await this.options.deviceNetworkService.getLocalIdentity()).peerId;
-    const userMessage = await createMemeLoopUserMessage({
+    const userMessage = input.persistedUserMessage ?? await createMemeLoopUserMessage({
       agentId: input.agentId,
       content: input.content,
       originNodeId: localNodeId,
@@ -66,13 +83,17 @@ export class MemeLoopDesktopRuntime {
         conversationId: input.agentId,
         message: input.content.text,
         userMessage,
+        ...(input.persistedUserMessage ? { persistedUserMessage: input.persistedUserMessage } : {}),
       },
       {
         onProgress: async (status: string) => {
-          const agent = await this.options.agentInstanceService.getAgent(input.agentId).catch(() => undefined);
+          const agent = await this.options.agentInstanceService.getAgentMetadata(input.agentId).catch(() => undefined);
           if (!agent) return;
-          agent.status = { state: 'working', progress: status, modified: new Date() };
-          this.options.notifyAgentChanged(input.agentId, agent);
+          this.options.notifyAgentChanged(input.agentId, {
+            ...agent,
+            messages: [],
+            status: { state: 'working', progress: status, modified: new Date() },
+          });
         },
         agentToolLoop: runner ?? undefined,
       },
@@ -80,8 +101,60 @@ export class MemeLoopDesktopRuntime {
     return result.state;
   }
 
+  public getPromptPlugins(): Map<string, PromptConcatTool> {
+    return this.toolRegistry.getPromptPlugins();
+  }
+
+  /** One durable Core runtime shared by local UI and authenticated Device RPC. */
+  public getCoreRuntime(runStateStore: AgentRunStateStore): Promise<MemeLoopRuntime> {
+    if (this.coreRuntimePromise) return this.coreRuntimePromise;
+    const pending = (async () => {
+      const context = await this.createContext('__memeloop_runtime__');
+      return createMemeLoopRuntime(context, { runStateStore });
+    })();
+    this.coreRuntimePromise = pending;
+    void pending.catch(() => {
+      if (this.coreRuntimePromise === pending) this.coreRuntimePromise = undefined;
+    });
+    return pending;
+  }
+
+  public preparePromptPreviewExecutionModelRequest(
+    input: DesktopPromptPreviewPrepareInput,
+  ): Promise<DesktopPromptPreviewPreparedExecution> {
+    return this.promptPreviewService.prepare(input);
+  }
+
+  public cancelPromptPreview(requestId: string): void {
+    this.promptPreviewService.cancel(requestId);
+  }
+
+  public getPromptPreviewAuditPage(request: PromptPreviewAuditPageRequest): PromptPreviewAuditPage {
+    return this.promptPreviewService.getAuditPage(request);
+  }
+
+  public getPromptPreviewAuditDetail(request: PromptPreviewAuditDetailRequest): PromptPreviewAuditDetailChunk {
+    return this.promptPreviewService.getAuditDetail(request);
+  }
+
+  public releasePromptPreviewAuditSession(request: PromptPreviewAuditReleaseRequest): void {
+    this.promptPreviewService.release(request);
+  }
+
+  public getPromptPreviewMessagesForHost(sessionId: string, expectedRevision: string): readonly ChatMessage[] {
+    return this.promptPreviewService.getMessagesForHost(sessionId, expectedRevision);
+  }
+
+  public async dispose(): Promise<void> {
+    const runtime = this.coreRuntimePromise ? await this.coreRuntimePromise.catch(() => undefined) : undefined;
+    await runtime?.dispose();
+    this.coreRuntimePromise = undefined;
+    this.promptPreviewService.dispose();
+    this.toolRegistry.dispose();
+  }
+
   private async createProfileRunner(agentId: string, context: AgentFrameworkContext): Promise<((input: AgentLoopInput) => AgentLoopGenerator) | null> {
-    const agent = await this.options.agentInstanceService.getAgent(agentId);
+    const agent = await this.options.agentInstanceService.getAgentMetadata(agentId);
     if (!agent) return null;
 
     return createAgentLoopRunner(context, {
@@ -117,21 +190,26 @@ export class MemeLoopDesktopRuntime {
     agentId: string,
     parentAgentId?: string,
     knownLocalNodeId?: string,
+    signal?: AbortSignal,
   ): Promise<AgentFrameworkContext & DesktopRemoteAgentNetworkContext> {
+    signal?.throwIfAborted();
     const isCancelled = (targetAgentId: string): boolean => {
-      return this.options.isCancelled(targetAgentId) || (parentAgentId ? this.options.isCancelled(parentAgentId) : false);
+      return signal?.aborted === true || this.options.isCancelled(targetAgentId) || (parentAgentId ? this.options.isCancelled(parentAgentId) : false);
     };
 
     const remoteNetworkContext = await createDesktopRemoteAgentNetworkContext(this.options.deviceNetworkService);
+    signal?.throwIfAborted();
     const localNodeId = knownLocalNodeId ?? (await this.options.deviceNetworkService.getLocalIdentity()).peerId;
+    signal?.throwIfAborted();
+    const modelBindings = await this.createModelBindings();
+    signal?.throwIfAborted();
     return {
       storage: this.storage,
-      llmProvider: new MemeLoopDesktopLLMProvider({
-        agentInstanceService: this.options.agentInstanceService,
-        agentDefinitionService: this.options.agentDefinitionService,
-        externalAPIService: this.options.externalAPIService,
-        isCancelled,
-      }),
+      llmProvider: modelBindings.fallbackProvider,
+      modelProviderRegistry: modelBindings.registry,
+      ...(modelBindings.defaultModelConfig === undefined
+        ? {}
+        : { defaultModelConfig: modelBindings.defaultModelConfig }),
       tools: this.toolRegistry,
       syncAdapters: [],
       network: this.options.deviceNetworkService,
@@ -147,22 +225,13 @@ export class MemeLoopDesktopRuntime {
         return { ...message, originNodeId: message.originNodeId || localNodeId };
       },
       onTransientMessage: async (message) => {
-        const agent = await this.options.agentInstanceService.getAgent(agentId).catch(() => undefined);
-        if (!agent) return;
-
         // Streaming partials are deliberately UI-only. The MemeLoop core
         // persists one immutable message with the same ID after completion.
-        const messages = agent.messages.filter(item => item.messageId !== message.messageId);
-        this.options.notifyAgentChanged(agentId, {
-          ...agent,
-          messages: [...messages, message],
-        });
+        await this.options.notifyTransientMessage(message);
       },
       resolveAgentRuntimeView: async (agentId: string, messages: ChatMessage[]) => {
-        const agent = await this.options.agentInstanceService.getAgent(agentId);
+        const agent = await this.options.agentInstanceService.getAgentMetadata(agentId);
         const definition = agent ? await this.options.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
-        const globalAIConfig = await this.options.externalAPIService.getAIConfig();
-
         const frameworkConfig = mergeAgentToolsIntoFrameworkConfig(
           agent?.agentFrameworkConfig,
           agent?.agentTools ?? definition?.agentTools,
@@ -186,11 +255,7 @@ export class MemeLoopDesktopRuntime {
           status: agent?.status ?? { state: 'working' as const, modified: new Date() },
           created: agent?.created ?? new Date(),
           agentFrameworkConfig: frameworkConfig,
-          aiApiConfig: {
-            ...globalAIConfig,
-            ...definition?.aiApiConfig,
-            ...agent?.aiApiConfig,
-          },
+          modelConfig: agent?.modelConfig ?? definition?.modelConfig,
         };
       },
       agentToolLoop: {
@@ -212,6 +277,70 @@ export class MemeLoopDesktopRuntime {
       },
     };
   }
+
+  private createModelBindings(): Promise<DesktopModelBindings> {
+    return createDesktopModelBindings(this.options.externalAPIService);
+  }
+}
+
+export interface DesktopModelBindings {
+  registry: ProviderRegistry;
+  fallbackProvider: MemeLoopDesktopLLMProvider;
+  defaultModelConfig?: AgentModelConfig;
+}
+
+/** Build one immutable model-route snapshot for an execution context. */
+export async function createDesktopModelBindings(
+  externalAPIService: IExternalAPIService,
+): Promise<DesktopModelBindings> {
+  const providers = await externalAPIService.getAIProviders();
+  const registry = new ProviderRegistry();
+  const adapters = new Map<string, MemeLoopDesktopLLMProvider>();
+  for (const provider of providers) {
+    if (provider.enabled === false || provider.models.length === 0) continue;
+    const adapter = new MemeLoopDesktopLLMProvider({
+      providerId: provider.provider,
+      externalAPIService,
+    });
+    registry.register(
+      { ownerId: 'tidgi-desktop', kind: 'host' },
+      adapter,
+      {
+        capabilities: [...new Set(provider.models.flatMap(model => model.features ?? []))],
+        models: provider.models.map(model => ({
+          modelId: model.name,
+          wireModelId: model.name,
+          apiMode: model.apiMode ?? 'chat-completions',
+        })),
+      },
+    );
+    adapters.set(provider.provider, adapter);
+  }
+
+  const globalConfig = await externalAPIService.getAIConfig();
+  const selected = globalConfig.default;
+  const parameters = globalConfig.modelParameters;
+  const maxOutputTokens = parameters.maxOutputTokens ?? parameters.maxTokens;
+  const defaultModelConfig: AgentModelConfig | undefined = selected?.provider && selected.model
+    ? {
+      providerId: selected.provider,
+      modelId: selected.model,
+      parameters: {
+        ...(parameters.temperature === undefined ? {} : { temperature: parameters.temperature }),
+        ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
+        ...(parameters.topP === undefined ? {} : { topP: parameters.topP }),
+      },
+    }
+    : undefined;
+  const fallbackProvider = selected ? adapters.get(selected.provider) : undefined;
+  return {
+    registry,
+    fallbackProvider: fallbackProvider ?? new MemeLoopDesktopLLMProvider({
+      providerId: 'desktop-unconfigured',
+      externalAPIService,
+    }),
+    ...(defaultModelConfig === undefined ? {} : { defaultModelConfig }),
+  };
 }
 
 export type DesktopRemoteAgentNetworkContext = Pick<BuiltinToolContext, 'getPeers' | 'sendRpcToNode' | 'localNodeId'>;

@@ -8,6 +8,10 @@ const watchPluginOutput = path.resolve(
   projectRoot,
   'node_modules/tiddlywiki/plugins/linonetwo/watch-filesystem-adaptor/WatchFileSystemAdaptor.js',
 );
+const memeLoopPluginOutput = path.resolve(
+  projectRoot,
+  'node_modules/tiddlywiki/plugins/linonetwo/memeloop-agent-ui',
+);
 
 describe('compiled filesystem watcher native module loading', () => {
   it('passes the explicit nsfw binary env through the wiki worker factory', () => {
@@ -31,5 +35,17 @@ describe('compiled filesystem watcher native module loading', () => {
     const afterPackSource = readFileSync(path.resolve(projectRoot, 'scripts/afterPack.ts'), 'utf8');
 
     expect(afterPackSource).toContain("['nsfw', 'build', 'Release', 'nsfw.node']");
+  });
+
+  it('builds the MemeLoop widget as browser-guarded JavaScript without source files', () => {
+    const widgetSource = readFileSync(path.join(memeLoopPluginOutput, 'widget.js'), 'utf8');
+    const componentSource = readFileSync(path.join(memeLoopPluginOutput, 'components.js'), 'utf8');
+
+    expect(widgetSource.indexOf('if ($tw.browser)')).toBeLessThan(widgetSource.indexOf('require("$:/plugins/linonetwo/memeloop-agent-ui/components.js")'));
+    expect(componentSource).toContain('pluginExports.MemeLoopAgentChatWidget');
+    expect(componentSource).not.toMatch(/require\(["']\$:\/plugins\/linonetwo\/tw-react\/widget\.js["']\)/);
+    expect(componentSource).not.toMatch(/require\(["']react(?:-dom)?(?:\/[^"']+)?["']\)/);
+    expect(existsSync(path.join(memeLoopPluginOutput, 'components.tsx'))).toBe(false);
+    expect(existsSync(path.resolve(projectRoot, 'node_modules/tiddlywiki/plugins/linonetwo/tw-react'))).toBe(false);
   });
 });

@@ -1,8 +1,7 @@
 import { logger } from '@services/libs/log';
 
-import type { AiAPIConfig } from 'memeloop';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
-import type { AIProviderConfig, AITranscriptionResponse } from './interface';
+import type { AIProviderConfig, AITranscriptionResponse, DesktopAIConfig } from './interface';
 
 interface TranscriptionOptions {
   /** Language of the audio (ISO-639-1 format, e.g., 'en', 'zh') */
@@ -20,7 +19,7 @@ interface TranscriptionOptions {
  */
 export async function generateTranscriptionFromProvider(
   audioFile: File | Blob,
-  config: AiAPIConfig,
+  config: DesktopAIConfig,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
   options: TranscriptionOptions = {},

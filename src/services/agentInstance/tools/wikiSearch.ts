@@ -4,6 +4,7 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
+import type { DesktopAIConfig, IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
@@ -11,11 +12,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { AiAPIConfig } from 'memeloop';
-import { registerToolDefinition } from 'memeloop';
 import type { ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
+import { defineDesktopTool } from './defineToolDefinition';
 
 /**
  * Wiki Search Config Schema (user-configurable in UI)
@@ -126,7 +126,7 @@ type WikiUpdateEmbeddingsToolParameters = z.infer<typeof WikiUpdateEmbeddingsToo
  */
 export async function executeWikiSearch(
   parameters: WikiSearchToolParameters,
-  aiConfig?: AiAPIConfig,
+  aiConfig?: DesktopAIConfig,
 ): Promise<ToolExecutionResult> {
   const { workspaceName, searchType, filter, query, limit, threshold } = parameters;
 
@@ -271,7 +271,7 @@ export async function executeWikiSearch(
  */
 export async function executeWikiUpdateEmbeddings(
   parameters: WikiUpdateEmbeddingsToolParameters,
-  aiConfig?: AiAPIConfig,
+  aiConfig?: DesktopAIConfig,
 ): Promise<ToolExecutionResult> {
   const { workspaceName, forceUpdate } = parameters;
 
@@ -330,7 +330,7 @@ export async function executeWikiUpdateEmbeddings(
 /**
  * Wiki Search Tool Definition
  */
-const wikiSearchDefinition = registerToolDefinition({
+export const wikiSearchDefinition = defineDesktopTool({
   toolId: 'wikiSearch',
   displayName: t('Schema.WikiSearch.Title'),
   description: t('Schema.WikiSearch.Description'),
@@ -367,7 +367,7 @@ const wikiSearchDefinition = registerToolDefinition({
       return;
     }
 
-    const aiConfig = (agentFrameworkContext.agent as { aiApiConfig?: AiAPIConfig }).aiApiConfig;
+    const aiConfig = await container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI).getAIConfig();
 
     if (toolCall.toolId === 'wiki-search') {
       await executeToolCall('wiki-search', (parameters) => executeWikiSearch(parameters, aiConfig));
@@ -376,5 +376,3 @@ const wikiSearchDefinition = registerToolDefinition({
     }
   },
 });
-
-export const wikiSearchTool = wikiSearchDefinition.tool;

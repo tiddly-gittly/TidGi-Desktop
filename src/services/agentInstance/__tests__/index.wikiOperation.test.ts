@@ -2,6 +2,7 @@ import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -9,7 +10,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { AgentDefinition, AgentInstance } from 'memeloop';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
   return {
@@ -22,13 +23,16 @@ function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[nu
 
 // Follow structure of index.streaming.test.ts
 describe('AgentInstanceService Wiki Operation', () => {
-  const defaultAgents = getBuiltinLoopProfiles().map(toAgentDefinition);
   let agentInstanceService: IAgentInstanceService;
   let testAgentInstance: AgentInstance;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
   let mockExternalAPIService: Partial<IExternalAPIService>;
   let mockWikiService: Partial<IWikiService>;
   let mockWorkspaceService: Partial<IWorkspaceService>;
+
+  beforeAll(async () => {
+    await container.get<IDatabaseService>(serviceIdentifier.Database).initializeForApp();
+  });
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -39,7 +43,7 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-    // Initialize both database repositories and handlers
+    await mockAgentDefinitionService.initialize?.();
     await agentInstanceService.initialize();
 
     // The core loop relies on prompt plugins when fallbackRegistryTools is false.
@@ -48,30 +52,6 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     // Provide predictable workspace fixtures so the wikiOperation tool can resolve workspace names.
     mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([
-      {
-        id: 'default',
-        name: 'default',
-        wikiFolderLocation: '/path/to/default',
-        homeUrl: 'http://localhost:5212/',
-        port: 5212,
-        isSubWiki: false,
-        mainWikiToLink: null,
-        tagNames: [],
-        lastUrl: null,
-        active: true,
-        hibernated: false,
-        order: 0,
-        enableHTTPAPI: false,
-        gitUrl: null,
-        readOnlyMode: false,
-        storageService: 'local',
-        syncOnInterval: false,
-        syncOnStartup: false,
-        tokenAuth: false,
-        transparentBackground: false,
-        userName: '',
-        picturePath: null,
-      },
       {
         id: 'test-wiki-1',
         name: 'test-wiki-1',
@@ -98,49 +78,42 @@ describe('AgentInstanceService Wiki Operation', () => {
       },
     ]);
 
-    // Setup test agent instance using data from taskAgents.json
-    const exampleAgent = defaultAgents[0];
-    if (!exampleAgent) throw new Error('Missing built-in agent profile');
-    testAgentInstance = {
-      ...exampleAgent,
-      id: nanoid(),
-      agentDefId: exampleAgent.id,
-      name: 'Test Agent',
-      status: {
-        state: 'working',
-        modified: new Date(),
-      },
-      created: new Date(),
-      closed: false,
-      messages: [],
-    };
+    const generalProfile = getBuiltinLoopProfiles().find(profile => profile.id === 'memeloop:general-assistant');
+    const wikiProfile = getBuiltinLoopProfiles().find(profile => profile.id === 'memeloop:frontend-ui-ux');
+    if (!generalProfile || !wikiProfile) throw new Error('Missing built-in Agent profiles');
+    const exampleAgent = toAgentDefinition(generalProfile);
+    const wikiOperation = wikiProfile.agentTools?.find(tool => tool.toolId === 'wikiOperation');
+    if (!wikiOperation) throw new Error('Missing built-in wikiOperation tool configuration');
 
-    // Ensure the wiki-operation tool is configured for this agent so
-    // MemeLoop's taskAgent will pick it up when the LLM returns tool calls.
-    const baseConfig = exampleAgent.agentFrameworkConfig ?? { prompts: [], plugins: [] };
     const agentDefWithWikiPlugin = {
       ...exampleAgent,
       agentFrameworkID: 'agent-tool-loop',
-      agentFrameworkConfig: {
-        ...baseConfig,
-        plugins: [
-          ...baseConfig.plugins,
-          { toolId: 'wikiOperation' },
-        ],
-      },
+      tools: [],
+      plugins: [],
+      agentTools: [wikiOperation],
     };
 
-    // Mock agent definition service to return our test agent definition
     mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue(agentDefWithWikiPlugin);
-    vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
+    testAgentInstance = await agentInstanceService.createAgent(agentDefWithWikiPlugin.id, { id: nanoid() });
+
+    mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
+      default: { provider: 'mock', model: 'mock-model' },
+      modelParameters: { temperature: 0.7 },
+    });
+    mockExternalAPIService.getAIProviders = vi.fn().mockResolvedValue([{
+      provider: 'mock',
+      enabled: true,
+      models: [{ name: 'mock-model' }],
+    }]);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('should perform wiki add tiddler via tool calls (default -> error, then wiki -> success)', async () => {
-    // Simulate generateFromAI returning a sequence: first assistant suggests default workspace, then after tool error assistant suggests wiki workspace, then tool returns result
+  it('corrects a missing workspace and performs the wiki write only after resolution succeeds', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Simulate two portable model rounds: first a missing workspace, then the corrected workspace.
 
     const firstAssistant = {
       role: 'assistant',
@@ -153,22 +126,20 @@ describe('AgentInstanceService Wiki Operation', () => {
       content: '<tool_use name="wiki-operation">{"workspaceName":"test-wiki-1","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>',
     };
 
-    // Mock generateFromAI to yield AIStreamResponse-like objects.
-    // MemeLoop's core loop calls generateFromAI once per ReAct round and drains
-    // the returned AsyncGenerator. Return a fresh generator for each call.
+    // MemeLoop's core loop drains one structured portable stream per ReAct round.
     let callIndex = 0;
     const responses = [firstAssistant.content, assistantSecond.content];
-    mockExternalAPIService.generateFromAI = vi.fn(async function*(_messages, _config, _options) {
+    mockExternalAPIService.generatePortableLlm = vi.fn(async function*() {
       callIndex += 1;
       if (callIndex > responses.length) {
-        // Stop generating once the expected sequence is exhausted.
         return;
       }
       yield {
-        status: 'done' as const,
-        content: responses[callIndex - 1],
-        requestId: `r${callIndex}`,
+        type: 'text-delta' as const,
+        id: `r${callIndex}`,
+        text: responses[callIndex - 1],
       };
+      yield { type: 'finish' as const, finishReason: 'stop' };
     });
 
     // Spy on sendMsgToAgent to call the internal flow
@@ -176,14 +147,17 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     await sendPromise;
 
-    // The wikiOperation tool should have been called twice: first with the wrong workspace,
-    // then with the correct workspace after the tool error triggers a self-correction round.
-    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledTimes(2);
-    expect(mockWikiService.wikiOperationInServer).toHaveBeenNthCalledWith(
-      2,
+    // Workspace validation rejects the first tool call before it reaches the Wiki service.
+    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledTimes(1);
+    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.addTiddler,
       'test-wiki-1',
       ['test', '这是测试内容', '{}', '{"withDate":true}'],
+    );
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      '[memeloop.defineTool]',
+      'Tool execution failed: wiki-operation',
+      'Tool.WikiOperation.Error.WorkspaceNotFound',
     );
   });
 });

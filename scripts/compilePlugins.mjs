@@ -64,6 +64,22 @@ const nativeNodeModulesPlugin = {
 };
 
 /**
+ * tw-react's npm package contains its compiled widget implementation but not
+ * the plugin metadata or browser-side React modules from its release bundle.
+ * Bundle that implementation into our browser plugin so it shares the exact
+ * React instance used by @memeloop/react-ui and has no unresolved bare-module
+ * dependency inside TiddlyWiki.
+ */
+const bundledTwReactWidgetPlugin = {
+  name: 'bundled-tw-react-widget',
+  setup(build) {
+    build.onResolve({ filter: /^\$:\/plugins\/linonetwo\/tw-react\/widget\.js$/ }, () => ({
+      path: path.join(__dirname, '../node_modules/tw-react/dist/plugins/linonetwo/tw-react/widget.js'),
+    }));
+  },
+};
+
+/**
  * Configuration for all plugins to build
  */
 const PLUGINS = [
@@ -92,6 +108,16 @@ const PLUGINS = [
       'routingUtilities.ts',
     ],
   },
+  {
+    name: 'memeloop-agent-ui',
+    sourceFolder: '../src/services/wiki/plugin/memeloopAgentUI',
+    entryPoints: ['components.tsx', 'widget.ts'],
+    buildOptions: {
+      platform: 'browser',
+      format: 'cjs',
+      plugins: [bundledTwReactWidgetPlugin, nativeNodeModulesPlugin],
+    },
+  },
 ];
 
 /**
@@ -111,7 +137,7 @@ const ESBUILD_CONFIG = {
 /**
  * Filter function to exclude TypeScript files when copying
  */
-const filterNonTsFiles = (src) => !src.endsWith('.ts');
+const filterNonTsFiles = (src) => !/\.tsx?$/.test(src);
 
 /**
  * Get all possible output directories for a plugin
@@ -170,6 +196,7 @@ async function buildEntryPoints(plugin, outDirs) {
       plugin.entryPoints.map(entryPoint =>
         esbuild.build({
           ...ESBUILD_CONFIG,
+          ...plugin.buildOptions,
           entryPoints: [path.join(sourcePath, entryPoint)],
           outdir: outDir,
           // Preserve subdirectory structure (e.g., Startup/) in output
@@ -218,6 +245,11 @@ async function buildPlugin(plugin) {
  */
 async function main() {
   console.log('Starting plugin compilation...\n');
+
+  // Older builds copied an incomplete tw-react npm folder into TiddlyWiki's
+  // plugin path. It is now bundled into memeloop-agent-ui and must not remain
+  // as a discoverable-but-unloadable sibling plugin.
+  await Promise.all(getPluginOutputDirs('tw-react').map(async outputDirectory => await rimraf(outputDirectory)));
 
   for (const plugin of PLUGINS) {
     await buildPlugin(plugin);

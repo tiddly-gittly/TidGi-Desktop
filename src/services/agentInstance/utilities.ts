@@ -12,6 +12,8 @@ export const MESSAGE_FIELDS = [
   'messageId',
   'conversationId',
   'originNodeId',
+  'originSequence',
+  'turnId',
   'timestamp',
   'lamportClock',
   'role',
@@ -31,11 +33,26 @@ export const MESSAGE_FIELDS = [
  * Convert ChatMessage to database-compatible format
  * Handles null duration values by converting them to undefined
  */
-export function toDatabaseCompatibleMessage(message: ChatMessage): Omit<ChatMessage, 'duration'> & { duration?: number } {
+export function toDatabaseCompatibleMessage(
+  message: ChatMessage,
+): Omit<ChatMessage, 'duration'> & {
+  duration?: number;
+  isContextCompaction: boolean;
+  originSequence: number;
+  turnId: string;
+} {
   const { duration, ...rest } = message;
+  const coordinates = message as ChatMessage & { originSequence?: number; turnId?: string };
+  if (!Number.isSafeInteger(coordinates.originSequence) || (coordinates.originSequence ?? 0) <= 0) {
+    throw new Error('conversation_event_origin_sequence_required');
+  }
+  if (!coordinates.turnId) throw new Error('conversation_event_turn_id_required');
   return {
     ...rest,
+    originSequence: coordinates.originSequence,
+    turnId: coordinates.turnId,
     duration: duration === null ? undefined : duration,
+    isContextCompaction: message.metadata?.contextCompaction !== undefined,
   };
 }
 
@@ -45,7 +62,16 @@ export function toDatabaseCompatibleMessage(message: ChatMessage): Omit<ChatMess
  */
 export function toDatabaseCompatibleInstance(
   instance: Omit<AgentInstance, 'created' | 'modified'>,
-): Omit<AgentInstance, 'created' | 'modified' | 'messages'> & { messages: Array<Omit<ChatMessage, 'duration'> & { duration?: number }> } {
+): Omit<AgentInstance, 'created' | 'modified' | 'messages'> & {
+  messages: Array<
+    Omit<ChatMessage, 'duration'> & {
+      duration?: number;
+      isContextCompaction: boolean;
+      originSequence: number;
+      turnId: string;
+    }
+  >;
+} {
   return {
     ...instance,
     messages: instance.messages.map(toDatabaseCompatibleMessage),
@@ -63,7 +89,7 @@ export const AGENT_INSTANCE_FIELDS = [
   'created',
   'modified',
   'avatarUrl',
-  'aiApiConfig',
+  'modelConfig',
   'agentFrameworkConfig',
   'closed',
   'volatile',

@@ -3,12 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { getConfigErrorPresentation, serializeAIError } from '../configErrorPresentation';
 
 describe('configuration error presentation', () => {
-  it('normalizes a raw missing-key error and infers its provider', () => {
-    expect(getConfigErrorPresentation('API key for siliconflow not found')).toEqual({
-      fallbackMessage: 'API key for siliconflow not found',
-      key: 'MissingAPIKeyError',
-      params: { provider: 'siliconflow' },
-    });
+  it('does not infer configuration state from raw human-language messages', () => {
+    expect(getConfigErrorPresentation('API key for siliconflow not found')).toBeUndefined();
   });
 
   it('preserves structured provider parameters and stores a canonical i18n key', () => {

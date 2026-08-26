@@ -9,7 +9,9 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { createAgentRuntimeDeviceRpcHandler, type DeviceCapabilities } from 'memeloop';
+import { createDesktopAgentRuntimeProjectionStore } from './agentRuntimeProjectionStore';
 import { protectRemoteAgentRpcHandler } from './remoteAgentRpcPolicy';
+import { createDesktopScheduledTaskRpcHandler } from './scheduledTaskRpcStore';
 
 const emptyCapabilities: DeviceCapabilities = {
   tools: [],
@@ -41,28 +43,29 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
     getLocalNodeId: async () => identity.peerId,
     notifyAgentChanged: () => {},
   });
+  const durableRuntime = await agentInstanceService.getDurableAgentRuntime();
 
+  const agentRpcHandler = createAgentRuntimeDeviceRpcHandler({
+    runtime: {
+      createAgent: async input => {
+        const materialized = await agentInstanceService.ensureAgentConversation(input.definitionId, input.conversationId);
+        return durableRuntime.createAgent({ ...input, conversationId: materialized.conversationId });
+      },
+      sendMessage: input => durableRuntime.sendMessage(input),
+      getRunStatus: runId => durableRuntime.getRunStatus(runId),
+      cancelRun: runId => durableRuntime.cancelRun(runId),
+    },
+    storage,
+    projections: createDesktopAgentRuntimeProjectionStore(agentInstanceService, identity.peerId),
+    scheduledTaskHandler: createDesktopScheduledTaskRpcHandler(agentInstanceService, identity.peerId),
+    retryTurn: (request, requestPeerId) => durableRuntime.retryTurn({ ...request, requestPeerId }),
+    getAgentDefinitions: () => agentDefinitionService.getAgentDefs(),
+    localNodeId: identity.peerId,
+  });
   deviceNetworkService.configureRuntime({
     buildCapabilities: async () => buildDeviceNetworkCapabilities(workspaceService),
     syncStorage: storage,
-    rpcHandler: protectRemoteAgentRpcHandler(createAgentRuntimeDeviceRpcHandler({
-      runtime: {
-        createAgent: async ({ definitionId, initialMessage }) => {
-          const agent = await agentInstanceService.createAgent(definitionId);
-          if (initialMessage) await agentInstanceService.sendMsgToAgent(agent.id, { text: initialMessage });
-          return { conversationId: agent.id };
-        },
-        sendMessage: async ({ conversationId, message }) => {
-          await agentInstanceService.sendMsgToAgent(conversationId, { text: message });
-        },
-        cancelAgent: async (conversationId) => {
-          await agentInstanceService.cancelAgent(conversationId);
-        },
-      },
-      storage,
-      getAgentDefinitions: () => agentDefinitionService.getAgentDefs(),
-      localNodeId: identity.peerId,
-    })),
+    rpcHandler: protectRemoteAgentRpcHandler(agentRpcHandler),
   });
 
   await initializeTemplateBackends(agentDefinitionService, wikiService, workspaceService);

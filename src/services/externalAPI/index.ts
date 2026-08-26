@@ -11,12 +11,12 @@ import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMet
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { AiAPIConfig } from 'memeloop';
+import { assertPortableLlmRequest, assertPortableLlmStreamPart, type PortableLlmRequest, type PortableLlmStreamPart } from 'memeloop';
 
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { generateImageFromProvider } from './callImageGenerationAPI';
-import { streamFromProvider } from './callProviderAPI';
+import { createProviderFromConfig, streamFromProvider } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
@@ -29,6 +29,7 @@ import type {
   AISpeechResponse,
   AIStreamResponse,
   AITranscriptionResponse,
+  DesktopAIConfig,
   IExternalAPIService,
   ModelInfo,
   OfficialModelDiscoveryResult,
@@ -76,7 +77,7 @@ export class ExternalAPIService implements IExternalAPIService {
   };
 
   // Observable to emit config changes - will be updated when settings are loaded
-  public defaultConfig$ = new BehaviorSubject<AiAPIConfig>(this.userSettings.defaultConfig);
+  public defaultConfig$ = new BehaviorSubject<DesktopAIConfig>(this.userSettings.defaultConfig);
   public providers$ = new BehaviorSubject<AIProviderConfig[]>(this.userSettings.providers);
 
   /**
@@ -370,7 +371,7 @@ export class ExternalAPIService implements IExternalAPIService {
     };
   }
 
-  async getAIConfig(): Promise<AiAPIConfig> {
+  async getAIConfig(): Promise<DesktopAIConfig> {
     this.ensureSettingsLoaded();
     return cloneDeep(this.userSettings.defaultConfig);
   }
@@ -463,7 +464,7 @@ export class ExternalAPIService implements IExternalAPIService {
     }
   }
 
-  async updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void> {
+  async updateDefaultAIConfig(config: Partial<DesktopAIConfig>): Promise<void> {
     this.ensureSettingsLoaded();
 
     // Deep merge with custom strategy: ignore undefined values to prevent clearing existing fields
@@ -491,28 +492,18 @@ export class ExternalAPIService implements IExternalAPIService {
   async deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void> {
     this.ensureSettingsLoaded();
 
-    // Support field deletion like 'embedding', 'speech', 'default'
-    const pathParts = fieldPath.split('.');
-    let current: Record<string, unknown> = this.userSettings.defaultConfig;
-
-    // Navigate to the parent object
-    for (let index = 0; index < pathParts.length - 1; index++) {
-      const part = pathParts[index];
-      if (current && typeof current === 'object' && part in current) {
-        current = current[part] as Record<string, unknown>;
-      } else {
-        // Path doesn't exist, nothing to delete
-        return;
-      }
-    }
-
-    // Delete the final field
-    const finalField = pathParts[pathParts.length - 1];
-    if (current && typeof current === 'object' && finalField in current) {
-      // Use Reflect.deleteProperty for safe dynamic property deletion
-      Reflect.deleteProperty(current, finalField);
-      this.saveSettingsToDatabase();
-    }
+    const selectionKeys = [
+      'default',
+      'embedding',
+      'speech',
+      'imageGeneration',
+      'transcriptions',
+      'free',
+    ] as const;
+    const selectionKey = selectionKeys.find(key => key === fieldPath);
+    if (selectionKey === undefined) return;
+    delete this.userSettings.defaultConfig[selectionKey];
+    this.saveSettingsToDatabase();
   }
 
   /**
@@ -534,7 +525,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   streamFromAI(
     messages: Array<ModelMessage>,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): Observable<AIStreamResponse> {
     // Use defer to create a new observable stream for each subscription
@@ -563,7 +554,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async *generateFromAI(
     messages: Array<ModelMessage>,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
   ): AsyncGenerator<AIStreamResponse, void, unknown> {
     // Prepare request with minimal context
@@ -825,6 +816,87 @@ export class ExternalAPIService implements IExternalAPIService {
     }
   }
 
+  async *generatePortableLlm(
+    request: PortableLlmRequest,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
+  ): AsyncGenerator<PortableLlmStreamPart, void, unknown> {
+    assertPortableLlmRequest(request);
+    const { requestId, controller } = this.prepareAIRequest();
+    const timeoutSignal = options?.requestTimeoutMs && options.requestTimeoutMs > 0
+      ? AbortSignal.timeout(options.requestTimeoutMs)
+      : undefined;
+    const signal = AbortSignal.any(
+      [request.signal, controller.signal, timeoutSignal]
+        .filter((candidate): candidate is AbortSignal => candidate !== undefined),
+    );
+    const providerConfig = await this.getProviderConfig(request.providerId);
+    if (!providerConfig) {
+      this.cleanupAIRequest(requestId);
+      throw new Error(`Provider configuration not found: ${request.providerId}`);
+    }
+    const selectedModel = providerConfig.models.find(model => model.name === request.logicalModelId);
+    if (!selectedModel || selectedModel.name !== request.wireModelId) {
+      this.cleanupAIRequest(requestId);
+      throw new Error(`Model route not found: ${request.providerId}/${request.logicalModelId}`);
+    }
+    if ((selectedModel.apiMode ?? 'chat-completions') !== request.apiMode) {
+      this.cleanupAIRequest(requestId);
+      throw new Error(`Model API mode mismatch: ${request.providerId}/${request.logicalModelId}`);
+    }
+
+    const loggedRequest = {
+      providerId: request.providerId,
+      logicalModelId: request.logicalModelId,
+      wireModelId: request.wireModelId,
+      apiMode: request.apiMode,
+      messageCount: request.messages.length,
+    };
+    const logStart = this.logAPICall(requestId, 'streaming', 'start', {
+      agentInstanceId: options?.agentInstanceId,
+      requestMetadata: {
+        provider: request.providerId,
+        model: request.logicalModelId,
+        messageCount: request.messages.length,
+      },
+      requestPayload: loggedRequest,
+    });
+    if (options?.awaitLogs) await logStart;
+    else void logStart;
+
+    let responseText = '';
+    try {
+      signal.throwIfAborted();
+      const provider = await createProviderFromConfig(providerConfig, selectedModel);
+      const result = await provider.chat({ ...request, signal });
+      if (!isPortableStream(result)) {
+        throw new TypeError('Desktop provider returned a non-portable LLM stream');
+      }
+      for await (const part of result) {
+        signal.throwIfAborted();
+        assertPortableLlmStreamPart(part);
+        if (part.type === 'text-delta') responseText += part.text;
+        yield part;
+      }
+      const logDone = this.logAPICall(requestId, 'streaming', 'done', {
+        responseContent: responseText,
+      });
+      if (options?.awaitLogs) await logDone;
+      else void logDone;
+    } catch (error) {
+      const detail = extractErrorDetails(error, request.providerId);
+      const logError = this.logAPICall(requestId, 'streaming', signal.aborted ? 'cancel' : 'error', {
+        errorDetail: detail,
+        responseContent: responseText,
+      });
+      if (options?.awaitLogs) await logError;
+      else void logError;
+      throw error;
+    } finally {
+      if (!controller.signal.aborted) controller.abort();
+      this.cleanupAIRequest(requestId);
+    }
+  }
+
   async cancelAIRequest(requestId: string): Promise<void> {
     const controller = this.activeRequests.get(requestId);
     if (controller) {
@@ -835,7 +907,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateEmbeddings(
     inputs: string[],
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       dimensions?: number;
       encoding_format?: 'float' | 'base64';
@@ -910,7 +982,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateSpeech(
     input: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       responseFormat?: string;
       sampleRate?: number;
@@ -990,7 +1062,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateTranscription(
     audioFile: File | Blob,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       language?: string;
       responseFormat?: string;
@@ -1064,7 +1136,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateImage(
     prompt: string,
-    config: AiAPIConfig,
+    config: DesktopAIConfig,
     options?: {
       numImages?: number;
       width?: number;
@@ -1177,4 +1249,9 @@ export class ExternalAPIService implements IExternalAPIService {
       return [];
     }
   }
+}
+
+function isPortableStream(value: unknown): value is AsyncIterable<PortableLlmStreamPart> {
+  return value !== null && typeof value === 'object' &&
+    typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function';
 }

@@ -1,5 +1,4 @@
-import type { ModelMessage } from '@services/externalAPI/interface';
-import type { AiAPIConfig } from 'memeloop';
+import type { DesktopAIConfig, ModelMessage } from '@services/externalAPI/interface';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
 import type { AIProviderConfig } from '../../src/services/externalAPI/interface';
@@ -270,7 +269,7 @@ describe('Mock OpenAI Server', () => {
     ];
 
     // streamFromProvider returns an AsyncIterable; call it and iterate
-    const aiConfig: AiAPIConfig = { default: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} };
+    const aiConfig: DesktopAIConfig = { default: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} };
     const stream = await streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
 
     // We'll collect chunks as they arrive and assert intermediate states are streaming

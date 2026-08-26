@@ -1,4 +1,31 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "L’exécution a été annulée.",
+        "interrupted": "L’exécution a été interrompue.",
+        "invalidRequest": "La requête de l’agent est invalide.",
+        "modelNotFound": "Le modèle {{modelId}} n’est pas disponible chez {{providerId}}.",
+        "providerAuthMissing": "L’authentification de {{providerId}} est absente ou invalide.",
+        "providerConfigurationMissing": "Le paramètre requis {{settingField}} manque pour {{providerId}}.",
+        "providerUnavailable": "{{providerId}} est temporairement indisponible.",
+        "rateLimited": "{{providerId}} limite les requêtes. Réessayez plus tard.",
+        "runnerUnavailable": "Aucun moteur d’agent n’est disponible.",
+        "storageUnavailable": "Le stockage de l’agent est indisponible.",
+        "deviceAuthRequired": "Cet appareil doit être autorisé avant d’exécuter l’agent.",
+        "devicePermissionDenied": "Cet appareil n’est pas autorisé à exécuter cet agent.",
+        "networkUnavailable": "Le réseau d’agents est indisponible.",
+        "userMessageTooLarge": "Le message utilisateur est trop volumineux pour cette exécution. Raccourcissez-le ou envoyez le contenu volumineux en pièce jointe.",
+        "userMessageTooLargeDetail": "Taille demandée : {{requested}} octets ; limite : {{limit}} octets.",
+        "contextCompactionPending": "La longue conversation est toujours en cours de compactage. La progression est enregistrée ; réessayez dans un instant.",
+        "contextCompactionPendingProgress": "{{processedMessages}} messages ont été traités.",
+        "contextCompactionPendingProgressEstimate": "{{processedMessages}} messages ont été traités ; environ {{remainingEstimate}} restent à traiter.",
+        "contextCompactionFailed": "Cette longue conversation n’a pas pu être compactée en toute sécurité.",
+        "contextBudgetExceeded": "La conversation dépasse la capacité de contexte du modèle.",
+        "internal": "L’agent a rencontré une erreur interne."
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "Afficher les journaux de l'agent intelligent : {{agentId}}",
     "Description": "Journal de débogage des appels API externes pour cet agent. Activez le 'Débogage des API externes' dans les préférences pour commencer l'enregistrement.",
@@ -56,6 +83,15 @@
         "online": "en ligne"
       },
       "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "Les pièces jointes ne sont pas encore prises en charge pour l’exécution distante. Utilisez cet appareil ou envoyez uniquement du texte.",
+      "RunOn": "Exécuter sur",
+      "Label": "Cible d’exécution",
+      "RunOnTarget": "Exécuter sur {{target}}",
+      "ConfirmTitle": "Changer de cible d’exécution ?",
+      "ConfirmDescription": "Le tour actuel est toujours en cours. Passer à {{target}} l’arrêtera et y relancera le dernier tour utilisateur.",
+      "AnotherTarget": "une autre cible",
+      "KeepRunning": "Continuer l’exécution",
+      "StopAndRestart": "Arrêter et relancer",
       "RunOnThisDesktop": "Exécuter sur cet ordinateur",
       "RunOnThisDesktopWithPeerId": "Exécuter sur cet ordinateur ({{peerId}})",
       "ThisDevice": "Cet appareil"
@@ -78,7 +114,38 @@
       "TooLarge": "La taille du fichier {{size}}MB dépasse la limite ({{maxSize}}MB). Veuillez sélectionner un fichier plus petit."
     },
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
-    "Send": "Envoyer"
+    "Send": "Envoyer",
+    "Actions": {
+      "Retry": "Réessayer",
+      "DeleteTurn": "Supprimer le tour",
+      "Copy": "Copier",
+      "CopyAll": "Tout copier",
+      "User": "Utilisateur",
+      "Agent": "Agent"
+    },
+    "Message": {
+      "AttachmentAlt": "Pièce jointe",
+      "NoDetails": "Aucun détail disponible.",
+      "LoadDetails": "Charger les détails",
+      "HideDetails": "Masquer les détails",
+      "ShowDetails": "Afficher les détails",
+      "DetailLine": "{{role}} : {{content}}",
+      "Error": "Erreur",
+      "ToolResult": "Résultat de l’outil",
+      "ToolCall": "Appel d’outil : {{toolName}}",
+      "Truncated": "Message raccourci pour l’affichage ({{count}} caractères). Utilisez l’export de la conversation ou les détails du message pour consulter le contenu complet."
+    },
+    "Timeline": {
+      "Navigation": "Chronologie de la conversation",
+      "Turn": "Tour {{index}} sur {{total}}",
+      "Compacted": "{{count}} messages précédents compactés",
+      "LoadEarlier": "Charger les messages précédents",
+      "LoadLater": "Charger les messages suivants",
+      "Seek": "Aller à un tour de conversation",
+      "Close": "Fermer la chronologie",
+      "NewMessages": "{{count}} nouveaux messages — aller aux plus récents",
+      "MoreResponses": "{{count}} réponses supplémentaires dans ce tour"
+    }
   },
   "Common": {
     "None": "non sélectionné"
@@ -134,6 +201,17 @@
     "ScheduleCronExpr": "Expression Cron",
     "ScheduleCronHelp": "Cron à 5 champs : minute heure jour mois jour-semaine",
     "ScheduleCronPreview": "Prochaines exécutions :",
+    "ScheduleExecutionTarget": "Exécuter sur l’appareil",
+    "ScheduleExecutionTargetUnavailable": "L’appareil sélectionné est indisponible. Choisissez un appareil disponible avant de modifier cette planification.",
+    "ScheduleIdentityLoading": "Chargement de l’identité sécurisée de cet appareil…",
+    "ScheduleIdentityError": "L’identité sécurisée de cet appareil est indisponible. La planification reste désactivée jusqu’à ce que le réseau d’appareils soit prêt.",
+    "ScheduleConversation": "Conversation à planifier",
+    "ScheduleConversationRequired": "Créez ou ouvrez une conversation durable avec cet agent avant de planifier des tâches. Les conversations d’aperçu sont temporaires et ne peuvent pas posséder de planification.",
+    "ScheduleDefaultTaskName": "Planification de {{agentName}}",
+    "ScheduleInvalidCron": "Saisissez une planification Cron valide.",
+    "ScheduleInvalidTimezone": "Choisissez un fuseau horaire pris en charge.",
+    "ScheduleNoPreview": "Aucune prochaine exécution n’a été trouvée.",
+    "SchedulePreviewLoading": "Vérification de la planification...",
     "ScheduleDaily": "Quotidien (à une heure précise)",
     "ScheduleDailyTime": "Heure de réveil",
     "ScheduledWakeup": "Réveil planifié",
@@ -148,6 +226,14 @@
     "ScheduleSave": "Enregistrer la planification",
     "ScheduleSaveWait": "Chargement de l’agent d’aperçu...",
     "ScheduleSaving": "Enregistrement...",
+    "ScheduleTaskSelection": "Tâche planifiée",
+    "ScheduleNewTask": "Nouvelle tâche planifiée",
+    "ScheduleOperationFailed": "L’opération sur la tâche planifiée a échoué.",
+    "ScheduleSourceIncomplete": "Certains appareils n’ont pas fourni un planning en direct complet. Les modifications sont désactivées jusqu’à ce que toutes les sources soient disponibles.",
+    "ScheduleSourceOnline": "{{executionTarget}} est en ligne.",
+    "ScheduleSourceOffline": "{{executionTarget}} est hors ligne.",
+    "ScheduleSourceDegraded": "{{executionTarget}} est dégradé.",
+    "ScheduleSourceCached": "{{executionTarget}} affiche des données de planning en cache.",
     "ScheduleTimezone": "Fuseau horaire",
     "ScheduleUpdate": "Mettre à jour la planification",
     "Seconds": "Secondes",
@@ -306,8 +392,19 @@
     "WorkflowFilePath": "chemin du fichier de flux de travail"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "Résumé de compactage",
+      "ConversationMessage": "Message de conversation",
+      "PreviewInput": "Saisie actuelle",
+      "Prompt": "Invite",
+      "System": "Invite système",
+      "Tool": "Message d’outil"
+    },
     "AutoRefresh": "L'aperçu se rafraîchit automatiquement en fonction des modifications du texte saisi.",
     "CodeEditor": "Éditeur de code",
+    "CompactionSummaryCount": "Résumés de compactage",
+    "ContextSegments": "Segments de contexte effectifs",
+    "ContextStats": "Statistiques du contexte effectif",
     "Edit": "Édition des mots-clés",
     "Enabled": "activer",
     "EnterEditSideBySide": "Édition en affichage partagé",
@@ -319,6 +416,8 @@
     "FormEditor": "Éditeur de formulaire",
     "LastUpdated": "Dernière mise à jour",
     "Loading": "Chargement de l'aperçu en cours...",
+    "MessageCount": "Messages du contexte",
+    "ModelRequest": "Requête exacte du modèle",
     "NoMessages": "Aucun message à prévisualiser pour le moment.",
     "Preview": "Aperçu des mots-clés",
     "SchemaNotProvided": "Format non fourni",
@@ -345,6 +444,24 @@
     }
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM ; ignorer les exécutions après cette heure.",
+      "ActiveHoursStartDescription": "HH:MM ; ignorer les exécutions avant cette heure.",
+      "AlarmDescription": "Définir un réveil unique et quitter temporairement la boucle de conversation. Utilisez Cron pour les tâches récurrentes.",
+      "EnabledDescription": "Activer ou désactiver la tâche sans la supprimer.",
+      "EnabledTitle": "Activée",
+      "KindDescription": "« at » s’exécute une fois à une date ISO ; « cron » définit une planification récurrente.",
+      "ListDescription": "Lister toutes les tâches planifiées actives de cet agent.",
+      "MessageDescription": "Message envoyé à l’agent lors de l’exécution.",
+      "RemoveDescription": "Supprimer une tâche planifiée active par son ID.",
+      "TaskIdDescription": "ID de la tâche renvoyé par list-schedules.",
+      "TaskIdTitle": "ID de tâche",
+      "TaskNameDescription": "Libellé lisible de cette planification.",
+      "TaskNameTitle": "Nom de la tâche",
+      "TimezoneDescription": "Fuseau horaire IANA pour Cron, par exemple Europe/Paris.",
+      "UpdateDescription": "Modifier l’état, le message ou les heures actives d’une tâche planifiée.",
+      "WakeAtDescription": "Date et heure ISO 8601 auxquelles réveiller l’agent."
+    },
     "AIConfig": {
       "Default": "modèle de dialogue utilisé par défaut",
       "DefaultTitle": "modèle par défaut",
@@ -694,6 +811,16 @@
     }
   },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "Tâches planifiées actives :\n{{summary}}",
+      "AlarmSet": "Alarme définie pour {{wakeAtISO}} (dans {{delaySeconds}} secondes). La boucle s’arrête et reprendra au déclenchement.",
+      "NoActiveTasks": "Aucune tâche planifiée active.",
+      "TaskCreated": "Tâche planifiée créée (ID : {{taskId}}). Prochaine exécution : {{nextRun}}.",
+      "TaskRemoved": "Tâche planifiée {{taskId}} supprimée.",
+      "TaskSummary": "[{{taskId}}] {{name}} — prochaine : {{nextRun}} — exécutions : {{runCount}}",
+      "TaskUpdated": "Tâche planifiée {{taskId}} mise à jour.",
+      "Unknown": "inconnue"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas."

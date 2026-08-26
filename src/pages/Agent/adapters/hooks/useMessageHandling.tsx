@@ -1,4 +1,5 @@
 // Attachment and dialog state hook for chat interface
+import type { WebSelectedAttachmentBatch } from '@memeloop/react-ui/chat';
 import type { WikiTiddlerAttachment } from 'memeloop';
 import { useCallback, useState } from 'react';
 
@@ -32,6 +33,11 @@ export function useMessageHandling() {
     setSelectedWikiTiddlers(previous => previous.filter((_, index_) => index_ !== index));
   }, []);
 
+  const handleAttachmentsSelect = useCallback((batch: WebSelectedAttachmentBatch) => {
+    setSelectedFile(batch.file);
+    setSelectedWikiTiddlers([...batch.wikiTiddlers]);
+  }, []);
+
   const clearAttachments = useCallback(() => {
     setSelectedFile(undefined);
     setSelectedWikiTiddlers([]);
@@ -47,6 +53,7 @@ export function useMessageHandling() {
     selectedWikiTiddlers,
     handleWikiTiddlerSelect,
     handleRemoveWikiTiddler,
+    handleAttachmentsSelect,
     clearAttachments,
   };
 }

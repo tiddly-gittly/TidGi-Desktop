@@ -1,4 +1,31 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "本次运行已取消。",
+        "interrupted": "本次运行已中断。",
+        "invalidRequest": "智能体请求无效。",
+        "modelNotFound": "{{providerId}} 中没有可用的模型 {{modelId}}。",
+        "providerAuthMissing": "{{providerId}} 的认证信息缺失或无效。",
+        "providerConfigurationMissing": "{{providerId}} 缺少必需的 {{settingField}} 设置。",
+        "providerUnavailable": "{{providerId}} 暂时不可用。",
+        "rateLimited": "{{providerId}} 正在限制请求频率，请稍后重试。",
+        "runnerUnavailable": "当前没有可用的智能体运行器。",
+        "storageUnavailable": "智能体存储当前不可用。",
+        "deviceAuthRequired": "运行智能体前需要先授权此设备。",
+        "devicePermissionDenied": "此设备无权运行该智能体。",
+        "networkUnavailable": "智能体网络当前不可用。",
+        "userMessageTooLarge": "用户消息过大，无法开始本轮运行。请缩短内容，或将大段内容作为附件发送。",
+        "userMessageTooLargeDetail": "请求大小为 {{requested}} 字节，上限为 {{limit}} 字节。",
+        "contextCompactionPending": "正在继续压缩这段长对话。进度已经保存，请稍后重试。",
+        "contextCompactionPendingProgress": "已处理 {{processedMessages}} 条消息。",
+        "contextCompactionPendingProgressEstimate": "已处理 {{processedMessages}} 条消息，预计还剩 {{remainingEstimate}} 条。",
+        "contextCompactionFailed": "无法安全压缩这段长对话。",
+        "contextBudgetExceeded": "对话已超出模型的上下文预算。",
+        "internal": "智能体遇到了内部错误。"
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "显示智能体日志: {{agentId}}",
     "Description": "此智能体的外部接口调用调试日志。在偏好设置中启用「外部接口调试」以开始记录。",
@@ -57,6 +84,15 @@
         "online": "在线"
       },
       "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "远程执行暂不支持附件。请切换到此设备，或只发送文本。",
+      "RunOn": "运行于",
+      "Label": "执行目标",
+      "RunOnTarget": "在 {{target}} 上运行",
+      "ConfirmTitle": "切换执行目标？",
+      "ConfirmDescription": "当前轮次仍在运行。切换到 {{target}} 会先停止它，再在该设备上重新运行最新的用户轮次。",
+      "AnotherTarget": "其他目标",
+      "KeepRunning": "继续运行",
+      "StopAndRestart": "停止并重新运行",
       "RunOnThisDesktop": "在此桌面端运行",
       "RunOnThisDesktopWithPeerId": "在此桌面端运行（{{peerId}}）",
       "ThisDevice": "此设备"
@@ -80,7 +116,38 @@
       "TooLarge": "文件大小 {{size}}MB 超过了限制（{{maxSize}}MB）。请选择较小的文件。"
     },
     "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
-    "Send": "发送"
+    "Send": "发送",
+    "Actions": {
+      "Retry": "重试",
+      "DeleteTurn": "删除此轮",
+      "Copy": "复制",
+      "CopyAll": "复制全部",
+      "User": "用户",
+      "Agent": "智能体"
+    },
+    "Message": {
+      "AttachmentAlt": "附件",
+      "NoDetails": "没有可用的详细内容。",
+      "LoadDetails": "加载详细内容",
+      "HideDetails": "隐藏详细内容",
+      "ShowDetails": "显示详细内容",
+      "DetailLine": "{{role}}：{{content}}",
+      "Error": "错误",
+      "ToolResult": "工具结果",
+      "ToolCall": "工具调用：{{toolName}}",
+      "Truncated": "消息已缩短显示（原文 {{count}} 个字符）。请使用对话导出或消息详细内容查看完整文本。"
+    },
+    "Timeline": {
+      "Navigation": "对话时间轴",
+      "Turn": "第 {{index}} 轮，共 {{total}} 轮",
+      "Compacted": "已压缩前面的 {{count}} 条消息",
+      "LoadEarlier": "加载更早消息",
+      "LoadLater": "加载更新消息",
+      "Seek": "跳转到对话轮次",
+      "Close": "关闭时间轴",
+      "NewMessages": "{{count}} 条新消息 — 跳到最新",
+      "MoreResponses": "本轮还有 {{count}} 条回复"
+    }
   },
   "Common": {
     "None": "未选择"
@@ -136,6 +203,17 @@
     "ScheduleCronExpr": "Cron 表达式",
     "ScheduleCronHelp": "5 段 Cron：分钟 小时 日期 月份 星期",
     "ScheduleCronPreview": "接下来运行：",
+    "ScheduleExecutionTarget": "运行设备",
+    "ScheduleExecutionTargetUnavailable": "所选设备当前不可用。请先选择可用设备再修改此计划。",
+    "ScheduleIdentityLoading": "正在加载本机安全身份…",
+    "ScheduleIdentityError": "本机安全身份不可用。设备网络就绪前已禁用定时任务。",
+    "ScheduleConversation": "计划任务所属对话",
+    "ScheduleConversationRequired": "请先创建或打开一个使用此智能体的持久对话，再配置定时任务。预览对话是临时的，不能拥有定时任务。",
+    "ScheduleDefaultTaskName": "{{agentName}} 的定时任务",
+    "ScheduleInvalidCron": "请输入有效的 Cron 计划。",
+    "ScheduleInvalidTimezone": "请选择受支持的时区。",
+    "ScheduleNoPreview": "没有找到即将运行的时间。",
+    "SchedulePreviewLoading": "正在检查计划...",
     "ScheduleDaily": "每天（指定时间）",
     "ScheduleDailyTime": "唤醒时间",
     "ScheduledWakeup": "定时唤醒",
@@ -150,6 +228,14 @@
     "ScheduleSave": "保存计划",
     "ScheduleSaveWait": "正在加载预览智能体...",
     "ScheduleSaving": "保存中...",
+    "ScheduleTaskSelection": "定时任务",
+    "ScheduleNewTask": "新建定时任务",
+    "ScheduleOperationFailed": "定时任务操作失败。",
+    "ScheduleSourceIncomplete": "部分设备未能提供完整的实时计划。所有来源恢复可用前已禁用修改。",
+    "ScheduleSourceOnline": "{{executionTarget}} 在线。",
+    "ScheduleSourceOffline": "{{executionTarget}} 离线。",
+    "ScheduleSourceDegraded": "{{executionTarget}} 状态异常。",
+    "ScheduleSourceCached": "{{executionTarget}} 当前显示缓存的计划数据。",
     "ScheduleTimezone": "时区",
     "ScheduleUpdate": "更新计划",
     "Seconds": "秒",
@@ -319,9 +405,20 @@
     "WorkflowFilePath": "工作流文件路径"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "压缩摘要",
+      "ConversationMessage": "对话消息",
+      "PreviewInput": "当前输入",
+      "Prompt": "提示词",
+      "System": "系统提示词",
+      "Tool": "工具消息"
+    },
     "AutoRefresh": "预览会随输入文本的变化自动刷新",
     "CodeEditor": "代码编辑器",
     "Close": "关闭提示词预览",
+    "CompactionSummaryCount": "压缩摘要数",
+    "ContextSegments": "有效上下文片段",
+    "ContextStats": "有效上下文统计",
     "Edit": "提示词编辑",
     "EditorModeTabs": "提示词编辑模式标签页",
     "Enabled": "启用",
@@ -334,6 +431,8 @@
     "FormEditor": "表单编辑器",
     "LastUpdated": "上次更新时间",
     "Loading": "加载预览中...",
+    "MessageCount": "上下文消息数",
+    "ModelRequest": "实际模型请求",
     "NoMessages": "还没有消息可以预览",
     "Progress": {
       "Complete": "已完成",
@@ -380,6 +479,24 @@
     }
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM；跳过此时间之后的运行。",
+      "ActiveHoursStartDescription": "HH:MM；跳过此时间之前的运行。",
+      "AlarmDescription": "设置一次性唤醒并暂时退出对话循环。重复任务请使用 Cron 计划。",
+      "EnabledDescription": "启用或停用任务，而不删除任务。",
+      "EnabledTitle": "启用",
+      "KindDescription": "“at”在 ISO 日期时间运行一次；“cron”定义重复计划。",
+      "ListDescription": "列出此智能体的所有活跃计划任务。",
+      "MessageDescription": "计划触发时发送给此智能体的消息。",
+      "RemoveDescription": "按 ID 删除活跃计划任务。",
+      "TaskIdDescription": "list-schedules 返回的计划任务 ID。",
+      "TaskIdTitle": "任务 ID",
+      "TaskNameDescription": "此计划便于阅读的名称。",
+      "TaskNameTitle": "任务名称",
+      "TimezoneDescription": "Cron 表达式使用的 IANA 时区，例如 Asia/Shanghai。",
+      "UpdateDescription": "更新现有计划任务的状态、消息或活跃时段。",
+      "WakeAtDescription": "唤醒智能体的 ISO 8601 日期时间。"
+    },
     "AIConfig": {
       "Default": "默认使用的对话模型",
       "DefaultTitle": "默认模型",
@@ -744,6 +861,16 @@
     "Tool": "工具"
   },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "活跃计划任务：\n{{summary}}",
+      "AlarmSet": "已设置在 {{wakeAtISO}}（{{delaySeconds}} 秒后）唤醒。现在退出循环，届时继续运行。",
+      "NoActiveTasks": "没有活跃计划任务。",
+      "TaskCreated": "已创建计划任务（ID：{{taskId}}）。下次运行：{{nextRun}}。",
+      "TaskRemoved": "已删除计划任务 {{taskId}}。",
+      "TaskSummary": "[{{taskId}}] {{name}} — 下次：{{nextRun}} — 已运行：{{runCount}} 次",
+      "TaskUpdated": "已更新计划任务 {{taskId}}。",
+      "Unknown": "未知"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "工作区名称或ID\"{{workspaceName}}\"不存在"

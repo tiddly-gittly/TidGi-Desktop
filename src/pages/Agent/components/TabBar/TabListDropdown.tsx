@@ -22,7 +22,6 @@ interface TabBackgroundTask {
   wakeAtISO?: string;
   nextWakeAtISO?: string;
   message?: string;
-  repeatIntervalMinutes?: number;
 }
 
 const DropdownPaper = styled(Paper)(({ theme }) => ({
@@ -83,7 +82,6 @@ const normalizeBackgroundTasks = (raw: unknown): TabBackgroundTask[] => {
       wakeAtISO: typeof record.wakeAtISO === 'string' ? record.wakeAtISO : undefined,
       nextWakeAtISO: typeof record.nextWakeAtISO === 'string' ? record.nextWakeAtISO : undefined,
       message: typeof record.message === 'string' ? record.message : undefined,
-      repeatIntervalMinutes: typeof record.repeatIntervalMinutes === 'number' ? record.repeatIntervalMinutes : undefined,
     }];
   });
 };

@@ -1,91 +1,108 @@
-import type { AiAPIConfig, ILLMProvider } from 'memeloop';
+import {
+  AGENT_RUN_ERROR_MESSAGE_KEYS,
+  AgentRunFailure,
+  assertPortableLlmRequest,
+  createAgentRunError,
+  createMissingApiKeyAgentRunError,
+  createMissingProviderSettingAgentRunError,
+  type ILLMProvider,
+  type PortableLlmRequest,
+  type PortableLlmStreamPart,
+} from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { extractErrorDetails } from '@services/externalAPI/errorHandlers';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
-import { merge } from 'lodash';
-
-import type { ModelMessage } from '@services/externalAPI/interface';
-
-import type { IAgentInstanceService } from '../interface';
 
 export class MemeLoopDesktopLLMProvider implements ILLMProvider {
-  public readonly name = 'tidgi-desktop';
+  public readonly name: string;
 
-  public readonly chat = (request: unknown): AsyncGenerator<string, void, unknown> => this.chatImpl(request);
+  public readonly chat = (request: PortableLlmRequest): AsyncGenerator<PortableLlmStreamPart, void, unknown> => this.chatImpl(request);
 
   public constructor(
     private readonly options: {
-      agentInstanceService: IAgentInstanceService;
-      agentDefinitionService: IAgentDefinitionService;
+      providerId: string;
       externalAPIService: IExternalAPIService;
-      isCancelled: (agentId: string) => boolean;
     },
-  ) {}
+  ) {
+    this.name = options.providerId;
+  }
 
-  private async *chatImpl(request: unknown): AsyncGenerator<string, void, unknown> {
-    const { conversationId, messages } = request as { conversationId?: string; messages?: ModelMessage[] };
-    if (!conversationId || !messages) {
-      throw new Error('MemeLoopDesktopLLMProvider requires conversationId and messages');
-    }
-
-    const agent = await this.options.agentInstanceService.getAgent(conversationId);
-    if (!agent) {
-      throw new Error(`Agent instance not found: ${conversationId}`);
-    }
-    const definition = await this.options.agentDefinitionService.getAgentDef(agent.agentDefId);
-    if (!definition) {
-      throw new Error(`Agent definition not found: ${agent.agentDefId}`);
-    }
-
-    const aiApiConfig: AiAPIConfig = merge(
-      {},
-      await this.options.externalAPIService.getAIConfig(),
-      definition.aiApiConfig,
-      agent.aiApiConfig,
-    );
-
-    let currentRequestId: string | undefined;
-    let previousContent = '';
+  private async *chatImpl(request: PortableLlmRequest): AsyncGenerator<PortableLlmStreamPart, void, unknown> {
+    assertPortableLlmRequest(request);
+    const { conversationId } = request;
+    if (!conversationId) throw typedRuntimeError('INVALID_REQUEST', false);
+    if (request.providerId !== this.name) throw typedRuntimeError('INVALID_REQUEST', false);
     let chunkCount = 0;
-
-    for await (
-      const response of this.options.externalAPIService.generateFromAI(messages, aiApiConfig, {
-        agentInstanceId: conversationId,
-        awaitLogs: true,
-        requestTimeoutMs: 120_000,
-      })
-    ) {
-      if (!currentRequestId && response.requestId) {
-        currentRequestId = response.requestId;
+    try {
+      for await (
+        const part of this.options.externalAPIService.generatePortableLlm(request, {
+          agentInstanceId: conversationId,
+          awaitLogs: true,
+          requestTimeoutMs: 120_000,
+        })
+      ) {
+        request.signal?.throwIfAborted();
+        chunkCount++;
+        yield part;
       }
-
-      if (this.options.isCancelled(conversationId)) {
-        if (currentRequestId) {
-          await this.options.externalAPIService.cancelAIRequest(currentRequestId);
-        }
-        return;
-      }
-
-      if (response.status === 'error') {
-        const message = response.errorDetail?.message || 'Unknown AI provider error';
-        const error = Object.assign(new Error(message), response.errorDetail ?? {});
-        logger.error('MemeLoop LLM provider error', { errorDetail: response.errorDetail, requestId: currentRequestId });
-        // Let the host turn boundary persist the canonical error message and
-        // terminate the turn as failed.
-        throw error;
-      }
-
-      if ((response.status === 'update' || response.status === 'done') && response.content) {
-        const nextContent = response.content;
-        const delta = nextContent.startsWith(previousContent) ? nextContent.slice(previousContent.length) : nextContent;
-        previousContent = nextContent;
-        if (delta.length > 0) {
-          chunkCount++;
-          yield delta;
-        }
-      }
+    } catch (error) {
+      request.signal?.throwIfAborted();
+      const detail = extractErrorDetails(error, request.providerId);
+      logger.error('MemeLoop LLM provider error', { code: detail.code, provider: request.providerId });
+      throw providerRunFailure(detail, request);
     }
-    logger.debug('MemeLoop LLM stream complete', { conversationId, chunkCount, contentLength: previousContent.length });
+    logger.debug('MemeLoop LLM stream complete', { conversationId, chunkCount });
+  }
+}
+
+function typedRuntimeError(
+  code: 'INVALID_REQUEST' | 'PROVIDER_UNAVAILABLE' | 'RATE_LIMITED',
+  retryable: boolean,
+): AgentRunFailure {
+  return new AgentRunFailure(createAgentRunError({
+    code,
+    messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS[code],
+    retryable,
+  }));
+}
+
+function providerRunFailure(
+  detail: import('@services/externalAPI/interface').AIErrorDetail | undefined,
+  request: PortableLlmRequest,
+): AgentRunFailure {
+  const providerId = request.providerId;
+  const modelId = request.logicalModelId;
+  switch (detail?.code) {
+    case 'MISSING_API_KEY':
+      return new AgentRunFailure(createMissingApiKeyAgentRunError({ providerId, modelId }));
+    case 'MISSING_BASE_URL':
+      return new AgentRunFailure(createMissingProviderSettingAgentRunError({ providerId, modelId, field: 'baseUrl' }));
+    case 'NO_DEFAULT_MODEL':
+      return new AgentRunFailure(createMissingProviderSettingAgentRunError({ providerId, modelId, field: 'model' }));
+    case 'AUTHENTICATION_FAILED':
+      return new AgentRunFailure(createAgentRunError({
+        code: 'PROVIDER_AUTH_MISSING',
+        messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_AUTH_MISSING,
+        retryable: false,
+        providerId,
+        modelId,
+        localizedParams: { providerId, modelId, settingField: 'apiKey' },
+        settingTarget: { kind: 'provider', providerId, field: 'apiKey' },
+      }));
+    case 'MODEL_NOT_FOUND':
+      return new AgentRunFailure(createAgentRunError({
+        code: 'MODEL_NOT_FOUND',
+        messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.MODEL_NOT_FOUND,
+        retryable: false,
+        providerId,
+        modelId,
+        localizedParams: { providerId, modelId },
+        settingTarget: { kind: 'model', providerId, modelId },
+      }));
+    case 'RATE_LIMIT_EXCEEDED':
+      return typedRuntimeError('RATE_LIMITED', true);
+    default:
+      return typedRuntimeError('PROVIDER_UNAVAILABLE', true);
   }
 }

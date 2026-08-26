@@ -1,7 +1,6 @@
 // Downward-expanding model picker with name preview, placed in the bottom toolbar.
 // Uses MUI Popper so the menu automatically flips when bottom space is insufficient.
 
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore';
 import { useAIConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAIConfigManagement';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
@@ -38,18 +37,17 @@ const DropdownPaper = styled(Paper)(({ theme }) => ({
 }));
 
 interface ModelSelectorProps {
+  agentId?: string;
   agentDefId?: string;
 }
 
-export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentDefId }) => {
+export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, agentDefId }) => {
   const { t } = useTranslation('agent');
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorElement);
   const searchInputReference = useRef<HTMLInputElement>(null);
-  const agent = useAgentChatStore((state) => state.agent);
-
   const { config, providers, handleModelChange } = useAIConfigManagement({
-    agentId: agent?.id,
+    agentId,
     agentDefId,
   });
 

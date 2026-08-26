@@ -6,11 +6,9 @@ import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
 import React, { FC, lazy, Suspense, SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useShallow } from 'zustand/react/shallow';
 
-import { useAgentChatStore } from '@/pages/Agent/store/agentChatStore/index';
-import { PromptConfigForm } from '@memeloop/react-ui/agent';
-import type { AgentFrameworkConfig } from 'memeloop';
+import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
+import type { AgentFrameworkConfig, PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
 
 // Lazy load Monaco Editor only when needed
 const MonacoEditor = lazy(async () => await import('@monaco-editor/react'));
@@ -23,23 +21,24 @@ const EditorTabs = styled(Tabs)`
 interface EditViewProps {
   isFullScreen: boolean;
   inputText: string;
+  agentId: string;
+  agentDefinitionId: string;
+  state: PromptPreviewDialogState;
+  controller: PromptPreviewController;
 }
 
 export const EditView: FC<EditViewProps> = ({
   isFullScreen,
   inputText,
+  agentId,
+  agentDefinitionId,
+  state,
+  controller,
 }) => {
   const { t } = useTranslation('agent');
-  const agent = useAgentChatStore(state => state.agent);
   const [editorMode, setEditorMode] = useState<'form' | 'code'>('form');
   const [monacoInitialized, setMonacoInitialized] = useState(false);
-
-  const { formFieldsToScrollTo, setFormFieldsToScrollTo } = useAgentChatStore(
-    useShallow((state) => ({
-      formFieldsToScrollTo: state.formFieldsToScrollTo,
-      setFormFieldsToScrollTo: state.setFormFieldsToScrollTo,
-    })),
-  );
+  const { formFieldsToScrollTo } = state;
 
   const {
     loading: agentFrameworkConfigLoading,
@@ -48,8 +47,8 @@ export const EditView: FC<EditViewProps> = ({
     schema: handlerSchema,
     persistConfig: persistAgentFrameworkConfig,
   } = useAgentFrameworkConfigManagement({
-    agentDefId: agent?.agentDefId,
-    agentId: agent?.id,
+    agentDefId: agentDefinitionId,
+    agentId,
   });
 
   // Use a ref to track if we're currently processing a scroll request
@@ -74,7 +73,7 @@ export const EditView: FC<EditViewProps> = ({
 
       // Step 1: Wait for the shared RootObjectFieldTemplate to switch tabs.
       setTimeout(() => {
-        setFormFieldsToScrollTo([]);
+        controller.setFormFieldsToScrollTo([]);
       }, 100);
 
       // Step 2: Scroll to the target element after the target tab has rendered.
@@ -102,13 +101,7 @@ export const EditView: FC<EditViewProps> = ({
         isProcessingScrollReference.current = false;
       }, scrollDelay);
     }
-  }, [formFieldsToScrollTo, editorMode, agentFrameworkConfig, setFormFieldsToScrollTo]);
-
-  const { getPreviewPromptResult } = useAgentChatStore(
-    useShallow((state) => ({
-      getPreviewPromptResult: state.getPreviewPromptResult,
-    })),
-  );
+  }, [agentFrameworkConfig, controller, editorMode, formFieldsToScrollTo]);
 
   // Keep local ref to track if preview should be updated
   const isUserEditingReference = React.useRef(false);
@@ -117,14 +110,18 @@ export const EditView: FC<EditViewProps> = ({
     async (updatedConfig: AgentFrameworkConfig) => {
       try {
         await persistAgentFrameworkConfig(updatedConfig);
-        if (isUserEditingReference.current && agent?.agentDefId) {
-          void getPreviewPromptResult(inputText, updatedConfig);
+        if (isUserEditingReference.current) {
+          void controller.generate(
+            updatedConfig,
+            agentId,
+            inputText.trim().length === 0 ? undefined : inputText,
+          );
         }
       } catch (error) {
         await window.service.native.log('error', 'EditView: Error auto-saving config:', { error });
       }
     },
-    [persistAgentFrameworkConfig, agent?.agentDefId, getPreviewPromptResult, inputText],
+    [agentId, controller, inputText, persistAgentFrameworkConfig],
     500,
     { leading: false, maxWait: 2000 },
   );
@@ -159,9 +156,11 @@ export const EditView: FC<EditViewProps> = ({
   return (
     <Box
       sx={{
-        borderLeft: 1,
+        borderLeft: { xs: 0, md: 1 },
+        borderTop: { xs: 1, md: 0 },
         borderColor: 'divider',
-        pl: 2,
+        pl: { xs: 0, md: 2 },
+        pt: { xs: 2, md: 0 },
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
