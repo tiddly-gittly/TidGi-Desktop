@@ -6,6 +6,7 @@ import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentDefinition } from 'memeloop';
 import type { AgentInstance } from 'memeloop';
+import path from 'node:path';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
@@ -78,7 +79,12 @@ describe('all tools integration', () => {
     }]);
 
     mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([
-      { name: 'wiki', id: 'CJXwbR91GJmElyURHiGA1', wikiFolderLocation: '/home/chenshuangfeng/Github/TidGi-Desktop/wiki-dev/wiki', isWiki: true } as never,
+      {
+        name: 'wiki',
+        id: 'CJXwbR91GJmElyURHiGA1',
+        wikiFolderLocation: path.resolve('test-artifacts', 'all-tools-integration', 'wiki'),
+        isWiki: true,
+      } as never,
     ]);
   });
 
