@@ -567,7 +567,7 @@ function buildTargets(
   }
   const seen = new Set(targets.map(target => target.executionNodeId));
   for (const device of [...devices].sort((left, right) => left.peerId.localeCompare(right.peerId))) {
-    if (seen.has(device.peerId) || (requested && !requested.has(device.peerId))) continue;
+    if (!device.trusted || seen.has(device.peerId) || (requested && !requested.has(device.peerId))) continue;
     seen.add(device.peerId);
     targets.push({
       executionNodeId: device.peerId,

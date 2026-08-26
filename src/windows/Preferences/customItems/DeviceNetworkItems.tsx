@@ -299,6 +299,7 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
             <ListItem key={device.peerId} alignItems='flex-start'>
               <ListItemText
                 primary={device.displayName}
+                slotProps={{ secondary: { component: 'div' } }}
                 secondary={
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 0.5 }}>
                     <Typography variant='body2' component='span'>{shortPeerId(device.peerId)}</Typography>

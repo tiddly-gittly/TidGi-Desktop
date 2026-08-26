@@ -62,7 +62,7 @@ export function ScheduledWakeupEditor({ agentDefinition }: ScheduledWakeupEditor
       const targets: ScheduledTaskExecutionTarget[] = [
         { id: identity.peerId, label: t('Chat.ExecutionTarget.ThisDevice') },
         ...devices
-          .filter(device => device.peerId !== identity.peerId)
+          .filter(device => device.peerId !== identity.peerId && device.trusted)
           .map(device => ({
             id: device.peerId,
             label: device.reachability.state === 'offline'

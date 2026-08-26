@@ -116,6 +116,30 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
     }));
   });
 
+  it('ignores discovered devices until they are trusted', async () => {
+    const listLocal = vi.fn().mockResolvedValue({ items: [], revision: 'local-r1' });
+    const listCached = vi.fn();
+    const sendRpc = vi.fn();
+    mutableService.agentInstance = createAgentInstanceService({
+      listScheduledTasksPageForAgent: listLocal,
+      listRemoteScheduledTaskProjectionPageForAgent: listCached,
+    });
+    mutableService.deviceNetwork = createDeviceNetworkService([{
+      ...remoteDevice('peer-unpaired'),
+      trusted: false,
+    }], { sendRpc });
+
+    await expect(createDesktopScheduledTaskClient().listScheduledTasksForAgent('agent-1')).resolves.toEqual({
+      items: [],
+      hasMoreAfter: false,
+      partial: false,
+      sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
+    });
+    expect(listLocal).toHaveBeenCalledOnce();
+    expect(listCached).not.toHaveBeenCalled();
+    expect(sendRpc).not.toHaveBeenCalled();
+  });
+
   it('keeps an offline remote schedule visible with provenance and blocks stale mutation', async () => {
     const sendRpc = vi.fn();
     mutableService.agentInstance = createAgentInstanceService({

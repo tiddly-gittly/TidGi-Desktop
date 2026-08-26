@@ -95,6 +95,11 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
         peerId: 'peer-remote',
         reachability: { state: 'online' },
         trusted: true,
+      }, {
+        displayName: 'Unpaired CLI',
+        peerId: 'peer-unpaired',
+        reachability: { state: 'online' },
+        trusted: false,
       }]),
     };
     mutableService.agentInstance = {
