@@ -1,7 +1,7 @@
 import type { HostAgentToolConfig } from 'memeloop';
 import { describe, expect, it } from 'vitest';
 
-import { mergeDesktopGeneralAssistantTools, shouldRefreshBuiltinDefinition } from '../index';
+import { mergeDesktopGeneralAssistantTools, resolveAgentToolsOverride, shouldRefreshBuiltinDefinition } from '../index';
 
 function legacyEntity(created: string, updated: string) {
   return {
@@ -27,8 +27,18 @@ describe('bundled Agent definition refresh', () => {
       ] as HostAgentToolConfig[],
     );
 
-    expect(result.map(tool => tool.toolId)).toEqual(['wikiSearch', 'workspacesList', 'wikiOperation']);
-    expect(result[0]).toBe(configuredWikiSearch);
+    expect(result.map(tool => tool.toolId)).toEqual(['workspacesList', 'wikiSearch', 'wikiOperation']);
+    expect(result[1]).toBe(configuredWikiSearch);
+  });
+
+  it('treats an empty tool override as explicit instead of falling back to bundled tools', () => {
+    const bundled = [{ toolId: 'wikiSearch' }] as HostAgentToolConfig[];
+    const customized = [{ toolId: 'customTool', enabled: false }] as HostAgentToolConfig[];
+
+    expect(resolveAgentToolsOverride(undefined, bundled)).toBe(bundled);
+    expect(resolveAgentToolsOverride(null, bundled)).toBe(bundled);
+    expect(resolveAgentToolsOverride([], bundled)).toEqual([]);
+    expect(resolveAgentToolsOverride(customized, bundled)).toBe(customized);
   });
 
   it('refreshes an explicitly uncustomized bundled definition', () => {

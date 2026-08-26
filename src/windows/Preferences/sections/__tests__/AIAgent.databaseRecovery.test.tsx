@@ -1,6 +1,6 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AIAgent, clearAgentDatabase } from '../AIAgent';
@@ -34,6 +34,26 @@ describe('AIAgent database recovery', () => {
       value: vi.fn().mockResolvedValue([]),
       configurable: true,
     });
+    if (!('agentDefinition' in window.service)) {
+      (window.service as Record<string, unknown>).agentDefinition = {};
+    }
+    Object.defineProperty(window.service.agentDefinition, 'getAgentDefs', {
+      value: vi.fn().mockResolvedValue([]),
+      configurable: true,
+    });
+  });
+
+  it('keeps the shared scheduled-task editor reachable through stable controls', async () => {
+    render(
+      <ThemeProvider theme={lightTheme}>
+        <AIAgent sectionRef={React.createRef()} onNeedsRestart={vi.fn()} />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(await screen.findByTestId('scheduled-task-add-button'));
+
+    expect(await screen.findByTestId('scheduled-task-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('scheduled-task-cancel-button')).toBeInTheDocument();
   });
 
   it('keeps the Agent cache cleanup control available while Agent services are unavailable', async () => {

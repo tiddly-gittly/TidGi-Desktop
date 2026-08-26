@@ -3,12 +3,12 @@ import { Box, Button, CircularProgress, Container, Divider, TextField, Typograph
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
 import { type AgentDefinition, type AgentFrameworkConfig } from 'memeloop';
-import { mergeAgentToolsIntoFrameworkConfig } from 'memeloop/tools';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DesktopAgentChatTab } from '../../adapters';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
+import { applyEditedAgentFrameworkConfig, createEditableAgentFrameworkConfig } from './agentDefinitionFrameworkConfig';
 import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
 import { ScheduledWakeupEditor } from './ScheduledWakeupEditor';
 
@@ -85,7 +85,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   }, [agentDefinitionSaveQueue]);
 
   const editableAgentFrameworkConfig = useMemo(
-    () => agentDefinition ? mergeAgentToolsIntoFrameworkConfig(agentDefinition.agentFrameworkConfig, agentDefinition.agentTools) : undefined,
+    () => agentDefinition ? createEditableAgentFrameworkConfig(agentDefinition) : undefined,
     [agentDefinition],
   );
 
@@ -243,11 +243,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       previous => {
         if (!previous) return null;
 
-        return {
-          ...previous,
-          agentFrameworkConfig: formData as AgentFrameworkConfig,
-          agentTools: [],
-        };
+        return applyEditedAgentFrameworkConfig(previous, formData as AgentFrameworkConfig);
       },
     );
 

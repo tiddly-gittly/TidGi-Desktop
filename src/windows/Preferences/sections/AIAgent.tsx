@@ -8,6 +8,7 @@ import { ListItem, ListItemText } from '@/components/ListItem';
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
+import { ScheduledTasksPreferences } from './components/ScheduledTasksPreferences';
 import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 
 interface AgentDatabaseRecoveryService {
@@ -108,6 +109,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
             <ChevronRightIcon color='action' />
           </ListItemButton>
         </List>
+        <ScheduledTasksPreferences />
       </Paper>
       <ToolApprovalSettingsDialog
         open={toolApprovalDialogOpen}

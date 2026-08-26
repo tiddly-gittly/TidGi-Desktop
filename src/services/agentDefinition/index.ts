@@ -26,14 +26,27 @@ export function mergeDesktopGeneralAssistantTools(
   tools: readonly HostAgentToolConfig[] | undefined,
   desktopTools: readonly HostAgentToolConfig[],
 ): HostAgentToolConfig[] {
-  const merged = [...(tools ?? [])];
-  const configuredToolIds = new Set(merged.map(tool => tool.toolId));
-  for (const tool of desktopTools) {
-    if (configuredToolIds.has(tool.toolId)) continue;
-    merged.push(tool);
-    configuredToolIds.add(tool.toolId);
+  const merged: HostAgentToolConfig[] = [];
+  const toolIndex = new Map<string, number>();
+  for (const tool of [...desktopTools, ...(tools ?? [])]) {
+    const configuredIndex = toolIndex.get(tool.toolId);
+    if (configuredIndex === undefined) {
+      toolIndex.set(tool.toolId, merged.length);
+      merged.push(tool);
+    } else {
+      // A host/user configured declaration wins without changing the stable
+      // Desktop overlay order used by the prompt editor.
+      merged[configuredIndex] = tool;
+    }
   }
   return merged;
+}
+
+export function resolveAgentToolsOverride(
+  entityTools: HostAgentToolConfig[] | null | undefined,
+  bundledTools: HostAgentToolConfig[] | undefined,
+): HostAgentToolConfig[] | undefined {
+  return entityTools === null || entityTools === undefined ? bundledTools : entityTools;
 }
 
 function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
@@ -77,7 +90,7 @@ function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
     agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || AGENT_TOOL_LOOP_ID,
     agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? { prompts: [], plugins: [] },
     modelConfig: entity.modelConfig ?? defaultAgent?.modelConfig,
-    agentTools: entity.agentTools ?? defaultAgent?.agentTools,
+    agentTools: resolveAgentToolsOverride(entity.agentTools, defaultAgent?.agentTools),
     heartbeat: entity.heartbeat ?? defaultAgent?.heartbeat,
   };
 }
