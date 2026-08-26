@@ -2,6 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Alert, Box, Button, Snackbar } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { debounce } from 'lodash';
+import { isProviderId, PROVIDER_ID_MAX_UTF8_BYTES } from 'memeloop';
 import { Dispatch, SetStateAction, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -528,7 +529,13 @@ export function ProviderConfig({
         return;
       }
 
-      if (providers.some(p => p.provider === newProviderForm.provider)) {
+      const providerId = newProviderForm.provider;
+      if (!isProviderId(providerId)) {
+        showMessage(t('Preference.ProviderIdInvalid', { maxBytes: PROVIDER_ID_MAX_UTF8_BYTES }), 'error');
+        return;
+      }
+
+      if (providers.some(p => p.provider === providerId)) {
         showMessage(t('Preference.ProviderAlreadyExists'), 'error');
         return;
       }
@@ -564,14 +571,14 @@ export function ProviderConfig({
       if (selectedPresetProvider && selectedPresetProvider.models.length > 0) {
         // Clone the first model from the similar provider
         const baseModel = selectedPresetProvider.models[0];
-        defaultModel = cloneModelForProvider(baseModel, newProviderForm.provider);
+        defaultModel = cloneModelForProvider(baseModel, providerId);
 
         // Look for an embedding model in the same provider
         const baseEmbeddingModel = selectedPresetProvider.models.find(
           model => Array.isArray(model.features) && model.features.includes('embedding'),
         );
         if (baseEmbeddingModel) {
-          embeddingModel = cloneModelForProvider(baseEmbeddingModel, newProviderForm.provider);
+          embeddingModel = cloneModelForProvider(baseEmbeddingModel, providerId);
         }
 
         // Look for a speech model in the same provider
@@ -579,7 +586,7 @@ export function ProviderConfig({
           model => Array.isArray(model.features) && model.features.includes('speech'),
         );
         if (baseSpeechModel) {
-          speechModel = cloneModelForProvider(baseSpeechModel, newProviderForm.provider);
+          speechModel = cloneModelForProvider(baseSpeechModel, providerId);
         }
 
         // Look for an image generation model in the same provider
@@ -587,7 +594,7 @@ export function ProviderConfig({
           model => Array.isArray(model.features) && model.features.includes('imageGeneration'),
         );
         if (baseImageGenerationModel) {
-          imageGenerationModel = cloneModelForProvider(baseImageGenerationModel, newProviderForm.provider);
+          imageGenerationModel = cloneModelForProvider(baseImageGenerationModel, providerId);
         }
 
         // Look for a transcriptions model in the same provider
@@ -595,7 +602,7 @@ export function ProviderConfig({
           model => Array.isArray(model.features) && model.features.includes('transcriptions'),
         );
         if (baseTranscriptionsModel) {
-          transcriptionsModel = cloneModelForProvider(baseTranscriptionsModel, newProviderForm.provider);
+          transcriptionsModel = cloneModelForProvider(baseTranscriptionsModel, providerId);
         }
       }
       // If no similar provider found, don't create default models
@@ -628,7 +635,7 @@ export function ProviderConfig({
       }
 
       const newProvider = {
-        provider: newProviderForm.provider,
+        provider: providerId,
         providerClass: newProviderForm.providerClass,
         baseURL: newProviderForm.baseURL,
         models: modelsToAdd, // Add both default and embedding models if available
@@ -637,7 +644,7 @@ export function ProviderConfig({
         enabled: true,
       } satisfies AIProviderConfig;
 
-      await window.service.externalAPI.updateProvider(newProviderForm.provider, newProvider);
+      await window.service.externalAPI.updateProvider(providerId, newProvider);
       const updatedProviders = [...providers, newProvider];
       setProviders(updatedProviders);
       setProviderForms(previous => ({
@@ -743,6 +750,18 @@ export function ProviderConfig({
       )}
     </>
   );
+  const feedbackSnackbar = (
+    <Snackbar
+      open={snackbarOpen}
+      autoHideDuration={2000}
+      onClose={handleSnackbarClose}
+      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+        {snackbarMessage}
+      </Alert>
+    </Snackbar>
+  );
 
   if (providers.length === 0) {
     return (
@@ -752,6 +771,7 @@ export function ProviderConfig({
           secondary={t('Preference.NoProvidersAvailable')}
         />
         {addProviderSection}
+        {feedbackSnackbar}
       </ListItemVertical>
     );
   }
@@ -834,16 +854,7 @@ export function ProviderConfig({
         }}
         editMode={!!editingModelName}
       />
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={2000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      {feedbackSnackbar}
     </ListItemVertical>
   );
 }

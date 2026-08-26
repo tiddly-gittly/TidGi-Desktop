@@ -197,6 +197,19 @@ describe('ProviderConfig Component', () => {
     expect(addButton).toHaveTextContent('Preference.CancelAddProvider');
   });
 
+  it('rejects a non-canonical provider id before calling the persistence service', async () => {
+    const user = userEvent.setup();
+    renderProviderConfig([]);
+
+    await user.click(screen.getByTestId('add-new-provider-button'));
+    await user.type(screen.getByTestId('new-provider-name-input'), 'TestProvider');
+    await user.type(screen.getByTestId('new-provider-base-url-input'), 'https://models.example.test/v1');
+    await user.click(screen.getByTestId('add-provider-submit-button'));
+
+    expect(await screen.findByText('Preference.ProviderIdInvalid')).toBeInTheDocument();
+    expect(window.service.externalAPI.updateProvider).not.toHaveBeenCalled();
+  });
+
   it('round-trips advanced model metadata through the edit dialog and IPC persistence helper', async () => {
     const user = userEvent.setup();
     const advancedModel: ModelInfo = {

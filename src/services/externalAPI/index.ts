@@ -11,7 +11,7 @@ import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMet
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { assertPortableLlmRequest, assertPortableLlmStreamPart, type PortableLlmRequest, type PortableLlmStreamPart } from 'memeloop';
+import { assertPortableLlmRequest, assertPortableLlmStreamPart, assertProviderId, type PortableLlmRequest, type PortableLlmStreamPart } from 'memeloop';
 
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
@@ -413,6 +413,11 @@ export class ExternalAPIService implements IExternalAPIService {
   }
 
   async updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void> {
+    assertProviderId(provider, 'provider id');
+    if (config.provider !== undefined) {
+      assertProviderId(config.provider, 'provider config id');
+      if (config.provider !== provider) throw new TypeError('provider config id must match provider id');
+    }
     this.ensureSettingsLoaded();
     const existingProvider = this.userSettings.providers.find(p => p.provider === provider);
 

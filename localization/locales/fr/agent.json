@@ -360,6 +360,7 @@
     "ProviderEnabled": "Fournisseur activé",
     "ProviderName": "Nom du fournisseur",
     "ProviderNameRequired": "Le nom du fournisseur est requis",
+    "ProviderIdInvalid": "L’identifiant du fournisseur doit commencer par une lettre minuscule et ne contenir que des lettres minuscules, des chiffres, des points, des traits de soulignement ou des tirets ({{maxBytes}} caractères maximum).",
     "RefreshOfficialModels": "Actualiser les modèles",
     "Search": "recherche et intégration",
     "SearchEmbeddingDelete": "supprimer",

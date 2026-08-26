@@ -361,6 +361,7 @@
     "ProviderEnabled": "プロバイダーが有効になりました",
     "ProviderName": "プロバイダー名",
     "ProviderNameRequired": "プロバイダー名は必須です",
+    "ProviderIdInvalid": "プロバイダー ID は小文字で始め、小文字、数字、ピリオド、アンダースコア、ハイフンのみを使用してください（最大 {{maxBytes}} 文字）。",
     "RefreshOfficialModels": "モデルを更新",
     "Search": "検索と埋め込み",
     "SearchEmbeddingDelete": "削除",

@@ -381,6 +381,7 @@
     "ProviderEnabled": "提供方已启用",
     "ProviderName": "提供商名称",
     "ProviderNameRequired": "提供商名称为必填项",
+    "ProviderIdInvalid": "提供商 ID 必须以小写字母开头，且只能使用小写字母、数字、点、下划线或连字符（最多 {{maxBytes}} 个字符）。",
     "ReasoningEffortFormat": "推理强度格式",
     "RefreshOfficialModels": "刷新模型列表",
     "RefreshingOfficialModels": "正在刷新…",

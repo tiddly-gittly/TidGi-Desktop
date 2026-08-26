@@ -19,13 +19,13 @@ Feature: TidGi Preference
       | external services section | [data-testid='preference-section-externalAPI'] |
       | add provider button       | [data-testid='add-new-provider-button']        |
     # Step 4: Fill provider form with mock server details (interface type already selected as openAICompatible)
-    When I type "TestProvider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
+    When I type "test-provider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
     And I type "http://127.0.0.1:15121/v1" in "API endpoint input" element with selector "[data-testid='new-provider-base-url-input']"
     When I click on an "add provider submit" element with selector "[data-testid='add-provider-submit-button']"
     # Step 5: Select the new provider and add a model
     When I click on "provider tab and add model button" elements with selectors:
       | element description       | selector                                    |
-      | provider tab TestProvider | button[role='tab']:has-text('TestProvider') |
+      | provider tab test-provider | button[role='tab']:has-text('test-provider') |
       | add model button          | [data-testid='add-new-model-button']        |
     # Step 6: Add language model (will auto-fill as default language model)
     When I type "test-model" in "model name input" element with selector "[data-testid='new-model-name-input']"

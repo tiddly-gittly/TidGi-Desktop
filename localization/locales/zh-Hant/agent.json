@@ -357,6 +357,7 @@
     "ProviderEnabled": "提供方已啟用",
     "ProviderName": "提供商名稱",
     "ProviderNameRequired": "提供商名稱為必填項",
+    "ProviderIdInvalid": "提供商 ID 必須以小寫字母開頭，且只能使用小寫字母、數字、點、底線或連字號（最多 {{maxBytes}} 個字元）。",
     "RefreshOfficialModels": "重新整理模型列表",
     "SearchEmbeddingNoEmbeddingModelError": "請先在外部API部分配置默認嵌入模型設置。",
     "SelectDefaultProvider": "選擇默認提供商",

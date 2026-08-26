@@ -143,6 +143,19 @@ describe('ExternalAPIService logging', () => {
     expect(JSON.stringify(await svc.getAPILogs())).not.toContain(plaintext);
   });
 
+  it('rejects a non-canonical provider id before changing persisted settings', async () => {
+    const svc = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    const db = container.get<IDatabaseService>(serviceIdentifier.Database);
+    const before = JSON.stringify(db.getSetting('aiSettings'));
+
+    await expect(svc.updateProvider('TestProvider', {
+      models: [{ name: 'test-model' }],
+      providerClass: 'openAICompatible',
+    })).rejects.toThrow(/canonical lowercase provider-id grammar/);
+
+    expect(JSON.stringify(db.getSetting('aiSettings'))).toBe(before);
+  });
+
   it('allows a loopback OpenAI-compatible provider without a key but rejects a remote one', async () => {
     const svc = container.get<import('../interface').IExternalAPIService>(serviceIdentifier.ExternalAPI);
 

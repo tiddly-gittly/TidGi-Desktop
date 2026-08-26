@@ -380,6 +380,7 @@
     "ProviderEnabled": "Provider enabled",
     "ProviderName": "Provider Name",
     "ProviderNameRequired": "Provider name is required",
+    "ProviderIdInvalid": "Provider ID must start with a lowercase letter and use only lowercase letters, numbers, dots, underscores, or hyphens (maximum {{maxBytes}} characters).",
     "ReasoningEffortFormat": "Reasoning effort format",
     "RefreshOfficialModels": "Refresh models",
     "RefreshingOfficialModels": "Refreshing…",

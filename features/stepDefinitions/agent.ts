@@ -365,7 +365,7 @@ Then('the last AI request user message should not contain {string}', async funct
 // Returns a new object each time to avoid state pollution between scenarios
 function createProviderConfig(): AIProviderConfig {
   return {
-    provider: 'TestProvider',
+    provider: 'test-provider',
     baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
     models: [
       { name: 'test-model', features: ['language'], apiMode: 'chat-completions' },
@@ -405,7 +405,7 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   // If providerConfig is set (from mock server), use it; otherwise create expected config
   // and use actual baseURL from settings (for UI-configured scenarios)
   let providerConfig: AIProviderConfig;
-  const providerName = 'TestProvider';
+  const providerName = 'test-provider';
   const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
 
   if (this.providerConfig) {
@@ -423,18 +423,18 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   const modelsArray = providerConfig.models;
   const modelName = modelsArray[0]?.name;
 
-  // Check TestProvider exists
+  // Check test-provider exists
   const testProvider = actualProviders.find(p => p.provider === providerName);
   if (!testProvider) {
-    console.error('TestProvider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
-    throw new Error('TestProvider not found in aiSettings');
+    console.error('test-provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
+    throw new Error('test-provider not found in aiSettings');
   }
 
-  // Verify TestProvider configuration
+  // Verify test-provider configuration
   if (!isEqual(testProvider, providerConfig)) {
-    console.error('TestProvider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
-    console.error('TestProvider config actual:', JSON.stringify(testProvider, null, 2));
-    throw new Error('TestProvider configuration does not match expected');
+    console.error('test-provider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
+    console.error('test-provider config actual:', JSON.stringify(testProvider, null, 2));
+    throw new Error('test-provider configuration does not match expected');
   }
 
   // Check ComfyUI provider exists

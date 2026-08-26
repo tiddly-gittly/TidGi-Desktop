@@ -256,7 +256,7 @@ describe('Mock OpenAI Server', () => {
 
     // Build provider config that points to our mock server as openAICompatible
     const providerConfig: AIProviderConfig = {
-      provider: 'TestProvider',
+      provider: 'test-provider',
       providerClass: 'openAICompatible',
       baseURL: `${server.baseUrl}/v1`,
       apiKey: 'test-key',
@@ -269,7 +269,7 @@ describe('Mock OpenAI Server', () => {
     ];
 
     // streamFromProvider returns an AsyncIterable; call it and iterate
-    const aiConfig: DesktopAIConfig = { default: { provider: 'TestProvider', model: 'test-model' }, modelParameters: {} };
+    const aiConfig: DesktopAIConfig = { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: {} };
     const stream = await streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
 
     // We'll collect chunks as they arrive and assert intermediate states are streaming

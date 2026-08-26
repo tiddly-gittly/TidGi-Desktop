@@ -98,4 +98,13 @@ describe('Simplified Chinese locale parity', () => {
       expect(messageKeys.filter(key => !(key in (agentLocale.Chat?.Message ?? {}))), locale).toEqual([]);
     }
   });
+
+  it('contains the provider identifier validation message in every supported locale', () => {
+    for (const locale of ['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant']) {
+      const agentLocale = JSON.parse(
+        fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
+      ) as { Preference?: Record<string, unknown> };
+      expect(agentLocale.Preference?.ProviderIdInvalid, locale).toEqual(expect.stringContaining('{{maxBytes}}'));
+    }
+  });
 });
