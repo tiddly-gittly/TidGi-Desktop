@@ -41,7 +41,7 @@ export class Preference implements IPreferenceService {
   private readonly getInitPreferencesForCache = (): IPreferences => {
     let preferencesFromDisk = this.databaseService.getSetting(`preferences`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
-    preferencesFromDisk = this.migrateLegacyAnalyticsDefault(preferencesFromDisk, databaseService);
+    preferencesFromDisk = this.migrateLegacyAnalyticsDefault(preferencesFromDisk, this.databaseService);
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
   };
 
