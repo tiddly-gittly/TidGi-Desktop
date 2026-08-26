@@ -12,6 +12,7 @@ import type {
   AgentInstance,
   AgentInstanceLatestStatus,
   AgentPromptDescription,
+  AgentRunError,
   AttachmentReference,
   ChatMessage,
   CompactionCandidatePage,
@@ -101,6 +102,11 @@ export interface SetBackgroundHeartbeatInput {
 
 export type LocalAgentExecutionSource = 'agent-browser' | 'ask-question' | 'heartbeat' | 'scheduled-task' | 'spawn-agent';
 
+/** Plain discriminated IPC payload; expected rejections never rely on Error serialization. */
+export type DesktopAgentExecuteRunResult =
+  | { ok: true; handle: MemeLoopRunHandle }
+  | { ok: false; error: AgentRunError };
+
 /** Main-process-only durable execution input used by background and host services. */
 export interface ExecuteLocalAgentMessageOptions {
   /** Stable keys make a retried host operation an idempotent replay. */
@@ -157,7 +163,7 @@ export interface IAgentInstanceService {
   }, options: ExecuteLocalAgentMessageOptions): Promise<MemeLoopRunStatus>;
 
   /** Accept one exact-identity durable local run for the shared execution coordinator. */
-  executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<MemeLoopRunHandle>;
+  executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<DesktopAgentExecuteRunResult>;
   /** Read the restart-safe terminal/progress state of one durable local run. */
   getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined>;
   /** Cancel one exact durable run without cancelling unrelated conversation work. */

@@ -1,3 +1,4 @@
+import type { DesktopAgentExecuteRunResult } from '@/services/agentInstance/interface';
 import type {
   AgentAttachmentInput,
   AgentCommittedAttachment,
@@ -6,6 +7,7 @@ import type {
   AgentConversationMessageWindowResult,
   ChatMessage,
   ConversationMessageCursor,
+  MemeLoopRunHandle,
 } from 'memeloop';
 
 const DESKTOP_MESSAGE_PAGE_LIMIT = 50;
@@ -62,6 +64,13 @@ async function waitForLocalRun(runId: string, signal?: AbortSignal): Promise<voi
 
 function abortError(reason: unknown): Error {
   return reason instanceof Error ? reason : new DOMException('Aborted', 'AbortError');
+}
+
+function unwrapExecuteRunResult(result: DesktopAgentExecuteRunResult): MemeLoopRunHandle {
+  if (result.ok) return result.handle;
+  const error = new Error(result.error.code);
+  Object.defineProperty(error, 'agentRunError', { value: result.error, enumerable: false });
+  throw error;
 }
 
 function utf8Bytes(value: unknown): number {
@@ -245,15 +254,17 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
     if (!agent) throw new Error('agent_conversation_not_found');
     const requestId = `conversation-client:request:${crypto.randomUUID()}`;
     const turnId = `conversation-client:turn:${crypto.randomUUID()}`;
-    const handle = await window.service.agentInstance.executeAgentRun({
-      conversationId,
-      definitionId: agent.agentDefId,
-      message: content,
-      requestId,
-      turnId,
-      ...(attachment === undefined ? {} : { attachment }),
-      ...(wikiTiddlers === undefined ? {} : { wikiTiddlers }),
-    });
+    const handle = unwrapExecuteRunResult(
+      await window.service.agentInstance.executeAgentRun({
+        conversationId,
+        definitionId: agent.agentDefId,
+        message: content,
+        requestId,
+        turnId,
+        ...(attachment === undefined ? {} : { attachment }),
+        ...(wikiTiddlers === undefined ? {} : { wikiTiddlers }),
+      }),
+    );
     if (handle.conversationId !== conversationId || handle.requestId !== requestId || handle.turnId !== turnId) {
       await window.service.agentInstance.cancelAgentRun(handle.runId);
       throw new Error('durable_agent_run_identity_mismatch');

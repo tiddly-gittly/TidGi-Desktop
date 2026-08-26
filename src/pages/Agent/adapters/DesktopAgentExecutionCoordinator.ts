@@ -16,15 +16,7 @@ import type {
   RemoteAgentExecutionTarget,
   RemoteAgentRetryRequest,
 } from 'memeloop';
-import {
-  AGENT_RUN_ERROR_MESSAGE_KEYS,
-  ATTACHMENT_UPLOAD_LIMITS,
-  buildAttachmentUploadChunkRequest,
-  createAgentDeviceRpcClient,
-  createAgentRunError,
-  RemoteAgentExecutionCoordinator,
-  RemoteAgentExecutionError,
-} from 'memeloop';
+import { ATTACHMENT_UPLOAD_LIMITS, buildAttachmentUploadChunkRequest, createAgentDeviceRpcClient, RemoteAgentExecutionCoordinator, RemoteAgentExecutionError } from 'memeloop';
 
 import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/services/agentInstance/attachmentUploadProtocol';
 import type {
@@ -33,7 +25,7 @@ import type {
   DesktopPreparedAgentUserMessage,
   ReadDesktopAgentAttachmentChunkInput,
 } from '@/services/agentInstance/attachmentUploadProtocol';
-import { extractDesktopAgentExecutionPortErrorCode } from '@/services/agentInstance/executionPortErrors';
+import type { DesktopAgentExecuteRunResult } from '@/services/agentInstance/interface';
 
 const DEFAULT_RUN_POLL_INTERVAL_MS = 500;
 
@@ -53,7 +45,7 @@ interface DesktopAgentInstanceExecutionPort {
     turnId: string;
     requestId: string;
   }): Promise<{ ok: true }>;
-  executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<MemeLoopRunHandle>;
+  executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<DesktopAgentExecuteRunResult>;
   getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined>;
   prepareRemoteAgentUserMessage(request: DesktopAgentExecuteRunRequest): Promise<DesktopPreparedAgentUserMessage>;
   readAgentAttachmentChunk(input: ReadDesktopAgentAttachmentChunkInput): Promise<Uint8Array | null>;
@@ -147,7 +139,7 @@ export function createDesktopAgentExecutionCoordinator(
   ): Promise<RemoteAgentExecutionResult> => {
     const staged = await stageAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
     try {
-      const handle = await services.agentInstance.executeAgentRun({
+      const result = await services.agentInstance.executeAgentRun({
         conversationId: request.provenance.conversationId,
         definitionId: request.provenance.definitionId,
         message: request.message,
@@ -156,6 +148,10 @@ export function createDesktopAgentExecutionCoordinator(
         ...(staged === undefined ? {} : { attachment: staged.attachment }),
         ...(request.wikiTiddlers === undefined ? {} : { wikiTiddlers: request.wikiTiddlers }),
       });
+      if (!result.ok) {
+        throw createRemoteExecutionFailure('PORT_FAILURE', result.error.retryable, result.error);
+      }
+      const handle = result.handle;
       assertRunHandleCorrelation(handle, request.provenance);
       await notifyRunAccepted(options, request.provenance, handle, services);
       await waitForAcceptedRun({
@@ -175,7 +171,7 @@ export function createDesktopAgentExecutionCoordinator(
         requestId: request.provenance.requestId,
         error,
       });
-      throw normalizeDesktopExecutionPortError(error);
+      throw error;
     } finally {
       await releaseStagedAttachment(staged, services);
     }
@@ -269,7 +265,7 @@ export function createDesktopAgentExecutionCoordinator(
         sourceTurnId: request.sourceTurnId,
         error,
       });
-      throw normalizeDesktopExecutionPortError(error);
+      throw error;
     }
   };
 
@@ -540,23 +536,6 @@ function createRemoteExecutionFailure(
     });
   }
   return error;
-}
-
-/** Convert only stable Desktop IPC codes; unknown host errors remain opaque. */
-export function normalizeDesktopExecutionPortError(error: unknown): unknown {
-  if (error instanceof RemoteAgentExecutionError) return error;
-  if (extractDesktopAgentExecutionPortErrorCode(error) !== 'MODEL_SELECTION_NOT_CONFIGURED') return error;
-  return createRemoteExecutionFailure(
-    'PORT_FAILURE',
-    false,
-    createAgentRunError({
-      code: 'PROVIDER_CONFIGURATION_MISSING',
-      messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
-      retryable: false,
-      localizedParams: { settingField: 'model' },
-      settingTarget: { kind: 'runtime', section: 'agent' },
-    }),
-  );
 }
 
 async function cancelTrackedRun(

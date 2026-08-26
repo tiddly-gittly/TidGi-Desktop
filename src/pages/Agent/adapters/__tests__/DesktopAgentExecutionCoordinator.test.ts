@@ -1,8 +1,7 @@
 import { AGENT_RUN_ERROR_MESSAGE_KEYS, createAgentRunError, extractAgentRunError } from 'memeloop';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DesktopAgentExecutionPortError } from '@/services/agentInstance/executionPortErrors';
-import { createDesktopAgentExecutionCoordinator, type DesktopAgentExecutionCoordinatorServices, normalizeDesktopExecutionPortError } from '../DesktopAgentExecutionCoordinator';
+import { createDesktopAgentExecutionCoordinator, type DesktopAgentExecutionCoordinatorServices } from '../DesktopAgentExecutionCoordinator';
 
 describe('DesktopAgentExecutionCoordinator', () => {
   afterEach(() => {
@@ -84,17 +83,38 @@ describe('DesktopAgentExecutionCoordinator', () => {
     await coordinator.dispose();
   });
 
-  it('maps the stable no-model IPC code to an actionable runtime setting target', () => {
-    const error = normalizeDesktopExecutionPortError(
-      new DesktopAgentExecutionPortError('MODEL_SELECTION_NOT_CONFIGURED'),
-    );
-
-    expect(extractAgentRunError(error)).toEqual(expect.objectContaining({
+  it('maps a structured no-model result after a clone-safe service boundary', async () => {
+    const services = createServices();
+    const runError = createAgentRunError({
       code: 'PROVIDER_CONFIGURATION_MISSING',
+      messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
       retryable: false,
       localizedParams: { settingField: 'model' },
       settingTarget: { kind: 'runtime', section: 'agent' },
-    }));
+    });
+    services.agentInstance.executeAgentRun = vi.fn().mockResolvedValue(
+      structuredClone({ ok: false as const, error: runError }),
+    );
+    const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
+      createId: sequentialIds(),
+      pollIntervalMs: 1,
+      services,
+    });
+
+    let received: unknown;
+    try {
+      await coordinator.execute({
+        target: { kind: 'local' },
+        provenance: provenanceOf('turn-1', 'request-1'),
+        message: 'hello',
+      });
+    } catch (error) {
+      received = error;
+    }
+
+    expect(extractAgentRunError(received)).toEqual(runError);
+    expect(services.agentInstance.getAgentRunStatus).not.toHaveBeenCalled();
+    await coordinator.dispose();
   });
 
   it('uses the typed remote RPC client, polls to terminal, then synchronizes once', async () => {
@@ -357,7 +377,7 @@ function createServices(): DesktopAgentExecutionCoordinatorServices {
       cancelAgentRun: vi.fn().mockResolvedValue(true),
       commitAgentAttachmentUpload: vi.fn().mockResolvedValue({ kind: 'committed', reference }),
       deleteConversationTurn: vi.fn().mockResolvedValue({ ok: true }),
-      executeAgentRun: vi.fn(async request => handle('run-1', request.turnId, request.requestId)),
+      executeAgentRun: vi.fn(async request => ({ ok: true as const, handle: handle('run-1', request.turnId, request.requestId) })),
       getAgentRunStatus: vi.fn().mockResolvedValue(runStatus('completed')),
       prepareRemoteAgentUserMessage: vi.fn(async request => ({
         message: `rendered:${request.message}`,

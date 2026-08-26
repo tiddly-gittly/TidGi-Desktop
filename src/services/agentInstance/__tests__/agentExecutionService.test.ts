@@ -32,7 +32,7 @@ describe('AgentInstanceService durable execution IPC', () => {
       message: 'hello',
       requestId: 'request-1',
       turnId: 'turn-1',
-    })).resolves.toEqual(expect.objectContaining({ runId: 'run-1' }));
+    })).resolves.toEqual({ ok: true, handle: expect.objectContaining({ runId: 'run-1' }) });
 
     expect(sendMessage).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
@@ -66,7 +66,7 @@ describe('AgentInstanceService durable execution IPC', () => {
     })).rejects.toThrow('agent conversation definition mismatch');
   });
 
-  it('rejects a missing model selection with one stable IPC-safe code before accepting a run', async () => {
+  it('returns a plain structured rejection for a nullable missing model before accepting a run', async () => {
     const sendMessage = vi.fn();
     const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
     const mutable = service as unknown as Record<string, unknown>;
@@ -80,16 +80,22 @@ describe('AgentInstanceService durable execution IPC', () => {
     });
     mutable.getDurableAgentRuntime = vi.fn().mockResolvedValue({ sendMessage });
 
-    await expect(service.executeAgentRun({
+    const result = await service.executeAgentRun({
       conversationId: 'conversation-1',
       definitionId: 'definition-1',
       message: 'hello',
       requestId: 'request-1',
       turnId: 'turn-1',
-    })).rejects.toEqual(expect.objectContaining({
-      code: 'MODEL_SELECTION_NOT_CONFIGURED',
-      name: 'DesktopAgentExecutionPortError',
-    }));
+    });
+    expect(structuredClone(result)).toEqual({
+      ok: false,
+      error: expect.objectContaining({
+        code: 'PROVIDER_CONFIGURATION_MISSING',
+        retryable: false,
+        localizedParams: { settingField: 'model' },
+        settingTarget: { kind: 'runtime', section: 'agent' },
+      }),
+    });
     expect(sendMessage).not.toHaveBeenCalled();
   });
 

@@ -18,6 +18,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import {
+  AGENT_RUN_ERROR_MESSAGE_KEYS,
   AGENT_TOOL_LOOP_ID,
   type AgentCommittedAttachment,
   type AgentConversationMessageProjection,
@@ -47,6 +48,7 @@ import {
   type ConversationMessagePage,
   type ConversationMessageWindowResult,
   type ConversationTimelinePage,
+  createAgentRunError,
   extractAgentRunError,
   type GetCompactionCandidatePageOptions,
   type GetConversationEventPageOptions,
@@ -79,13 +81,19 @@ import {
   DesktopAttachmentUploadStore,
   type WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadStore';
-import { DesktopAgentExecutionPortError } from './executionPortErrors';
 import type { DesktopPromptPreviewPreparedExecution, DesktopPromptPreviewPrepareInput } from './promptPreview';
 import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
 import { includeConversationHistoryInPreview } from './runtime/promptPreviewMessages';
 
 import * as repo from './agentRepository';
-import type { AgentBackgroundTask, ExecuteLocalAgentMessageOptions, IAgentInstanceService, SetBackgroundAlarmInput, SetBackgroundHeartbeatInput } from './interface';
+import type {
+  AgentBackgroundTask,
+  DesktopAgentExecuteRunResult,
+  ExecuteLocalAgentMessageOptions,
+  IAgentInstanceService,
+  SetBackgroundAlarmInput,
+  SetBackgroundHeartbeatInput,
+} from './interface';
 import { MemeLoopDesktopRuntime } from './runtime/runtime';
 import { createMemeLoopUserMessage } from './runtime/userMessage';
 import { cancelAlarm, scheduleAlarmTimer } from './tools/alarmClock';
@@ -1070,7 +1078,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (runIds?.size === 0) this.activeDurableRunIds.delete(conversationId);
   }
 
-  public async executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<MemeLoopRunHandle> {
+  public async executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<DesktopAgentExecuteRunResult> {
     const agent = await this.getAgentMetadata(request.conversationId);
     if (!agent || agent.agentDefId !== request.definitionId) {
       throw new Error('agent conversation definition mismatch');
@@ -1085,7 +1093,16 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (instanceModel == null && definition.modelConfig == null) {
       const globalModel = (await this.externalAPIService.getAIConfig()).default;
       if (!globalModel?.provider || !globalModel.model) {
-        throw new DesktopAgentExecutionPortError('MODEL_SELECTION_NOT_CONFIGURED');
+        return {
+          ok: false,
+          error: createAgentRunError({
+            code: 'PROVIDER_CONFIGURATION_MISSING',
+            messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
+            retryable: false,
+            localizedParams: { settingField: 'model' },
+            settingTarget: { kind: 'runtime', section: 'agent' },
+          }),
+        };
       }
     }
     const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
@@ -1110,7 +1127,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (request.attachment) {
       this.getAttachmentUploadStore().consumeCommittedScope(request.conversationId, request.attachment.reference);
     }
-    return handle;
+    return { ok: true, handle };
   }
 
   public async prepareRemoteAgentUserMessage(request: DesktopAgentExecuteRunRequest): Promise<DesktopPreparedAgentUserMessage> {
