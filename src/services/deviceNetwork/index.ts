@@ -496,12 +496,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   public async createPairingInvite(): Promise<string> {
     await this.ensureIdentity();
     if (!this.core) throw new Error('device_network_not_started');
-    const multiaddrs = pairingInviteMultiaddrs(this.core.getMultiaddrs(), this.identity!.peerId);
-    const invite = await createSignedDevicePairingInvite({
-      identity: this.identity!,
-      multiaddrs,
-    });
-    return encodeDevicePairingInvite(invite);
+    return createDesktopSignedPairingInvitePayload(this.identity!, this.core.getMultiaddrs());
   }
 
   public async requestPairingFromInvite(serialized: string): Promise<PairingSession> {
@@ -954,6 +949,25 @@ export function pairingInviteMultiaddrs(addresses: readonly string[], peerId: st
   const unique = [...new Set(result)];
   if (unique.length === 0) throw new Error('no_dialable_websocket_address');
   return unique;
+}
+
+/**
+ * Builds the exact identity-bound payload displayed by the Desktop QR producer.
+ * Keeping address selection and signing in one seam prevents UI callers and tests
+ * from accidentally constructing a weaker, unsigned pairing payload.
+ */
+export async function createDesktopSignedPairingInvitePayload(
+  identity: LocalDeviceIdentity,
+  addresses: readonly string[],
+  options: { now?: number; ttlMs?: number } = {},
+): Promise<string> {
+  const multiaddrs = pairingInviteMultiaddrs(addresses, identity.peerId);
+  const invite = await createSignedDevicePairingInvite({
+    identity,
+    multiaddrs,
+    ...options,
+  });
+  return encodeDevicePairingInvite(invite);
 }
 
 export function classifyCloudConnectionError(error: unknown): 'offline' | 'error' {
