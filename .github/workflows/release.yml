@@ -128,6 +128,29 @@ jobs:
           ANALYZE: ${{ matrix.platform == 'linux' && matrix.arch == 'x64' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Launch the exact .app produced above on each native macOS runner. This
+      # is deliberately separate from Linux/Windows Playwright E2E: macOS has a
+      # real WindowServer and must never be routed through Xvfb. The smoke waits
+      # for the main ready boundary, a booted Wiki UtilityProcess, and the
+      # MemeLoop/libp2p peer, then observes a stability window for early exits.
+      - name: Smoke packaged macOS app (${{ matrix.arch }})
+        if: matrix.platform == 'mac'
+        run: pnpm exec tsx scripts/macOSPackagedSmoke.ts --arch=${{ matrix.arch }}
+        env:
+          CI: true
+        timeout-minutes: 3
+
+      - name: Upload macOS packaged smoke diagnostics
+        if: always() && matrix.platform == 'mac'
+        uses: actions/upload-artifact@v7
+        with:
+          name: mac-packaged-smoke-${{ matrix.arch }}
+          path: |
+            test-artifacts/mac-packaged-smoke-${{ matrix.arch }}/mac-packaged-smoke-output.log
+            test-artifacts/mac-packaged-smoke-${{ matrix.arch }}/userData-test/logs/**
+          if-no-files-found: warn
+          retention-days: 7
+
       # Repackage macOS ZIP using ditto to preserve symlinks (cross-zip doesn't preserve symlinks properly on CI) To prevent dugite git binary symlink dereference issues
       - name: Repackage macOS ZIP with ditto
         if: matrix.platform == 'mac'
