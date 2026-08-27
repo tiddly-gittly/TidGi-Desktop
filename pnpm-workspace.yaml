@@ -53,6 +53,7 @@ allowBuilds:
 blockExoticSubdeps: false
 
 minimumReleaseAgeExclude:
+  - '@memeloop/react-ui@0.1.6'
   - '@typescript-eslint/eslint-plugin@8.61.0'
   - '@typescript-eslint/parser@8.61.0'
   - '@typescript-eslint/project-service@8.61.0'
@@ -66,6 +67,7 @@ minimumReleaseAgeExclude:
   - eslint-config-tidgi@3.1.0
   - eslint-plugin-unicorn@65.0.1
   - git-sync-js@2.4.0
+  - memeloop@0.2.8
   - typescript-eslint@8.61.0
   - tidgi-shared@0.1.6
   - electron-ipc-cat@2.6.0
