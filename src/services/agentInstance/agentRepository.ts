@@ -3543,6 +3543,10 @@ export async function getRetainedCompactionControls(
          SELECT 1 FROM valid_summaries AS other
          WHERE other.conversationId = candidate.conversationId
            AND other.eventId <> candidate.eventId
+           AND (
+             json_extract(candidate.eventJson, '$.mode') = 'coverage-only'
+             OR json_extract(other.eventJson, '$.mode') = 'summary'
+           )
            AND NOT EXISTS (
              SELECT 1 FROM json_each(candidate.eventJson, '$.boundary.coveredVersion') AS covered
              WHERE NOT EXISTS (

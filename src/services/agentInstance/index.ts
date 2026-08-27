@@ -5,6 +5,7 @@ import { DataSource, In, Repository } from 'typeorm';
 
 import { USER_DATA_FOLDER } from '@/constants/appPaths';
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
+import { isTest } from '@/constants/environment';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
@@ -723,6 +724,148 @@ export class AgentInstanceService implements IAgentInstanceService {
   ): Promise<RetainedCompactionControlPage> {
     this.ensureRepositories();
     return repo.getRetainedCompactionControls(this.dataSource!, agentId, options);
+  }
+
+  /**
+   * Seed a realistically large durable transcript for packaged renderer E2E.
+   *
+   * This intentionally uses the same canonical remote-merge path as device
+   * sync. It therefore creates raw events, message/detail projections, sparse
+   * timeline checkpoints and revision invalidations exactly as production
+   * would. Only the small fixture request crosses IPC; transcript bytes are
+   * constructed and retained in the main process.
+   */
+  public async seedLongConversationForE2E(input: {
+    conversationId: string;
+    turnCount: number;
+  }): Promise<{
+    conversationId: string;
+    turnCount: number;
+    messageCount: number;
+    compactionCount: number;
+  }> {
+    if (!isTest || process.env.E2E_TEST !== 'true') {
+      throw new Error('seedLongConversationForE2E is available only in packaged E2E');
+    }
+    if (
+      typeof input?.conversationId !== 'string' || input.conversationId.length === 0 || input.conversationId.length > 512 ||
+      !Number.isSafeInteger(input.turnCount) || input.turnCount < 1 || input.turnCount > 20_000
+    ) {
+      throw new TypeError('invalid long-conversation E2E seed request');
+    }
+    this.ensureRepositories();
+    const owner = await this.agentInstanceRepository!.findOne({ where: { id: input.conversationId } });
+    if (!owner) throw new Error('long-conversation E2E seed owner was not found');
+
+    const previousState = await this.getConversationState(input.conversationId);
+    const baseTimestamp = 1_700_000_000_000;
+    const messageOrigins = Array.from(
+      { length: 3 },
+      (_, index) => `e2e-long-messages-${index + 1}:${input.conversationId}`,
+    );
+    const messageOriginSequences = [0, 0, 0];
+    const messageOriginTurnCounts = [0, 0, 0];
+    const compactionOrigin = `e2e-long-compactions:${input.conversationId}`;
+    const summaryTurnIndexes = [
+      ...new Set([
+        Math.min(input.turnCount - 1, Math.max(0, Math.ceil(input.turnCount / 3) - 1)),
+        Math.min(input.turnCount - 1, Math.max(0, Math.ceil(input.turnCount * 2 / 3) - 1)),
+        // Leave exactly the default 32-turn recent tail uncovered. This
+        // proves the model-request path combines retained semantic summaries
+        // with recent history without making an unrelated provider call.
+        Math.max(0, input.turnCount - 33),
+      ]),
+    ];
+    const summaryAt = new Map(summaryTurnIndexes.map((turnIndex, index) => [turnIndex, index]));
+    const events: ConversationEvent[] = [];
+
+    for (let turnIndex = 0; turnIndex < input.turnCount; turnIndex++) {
+      const originIndex = Math.min(2, Math.floor(turnIndex * 3 / input.turnCount));
+      const messageOrigin = messageOrigins[originIndex];
+      const number = turnIndex.toString().padStart(5, '0');
+      const turnId = `e2e-long-user:${input.conversationId}:${number}`;
+      const userSequence = messageOriginSequences[originIndex] + 1;
+      const assistantSequence = userSequence + 1;
+      messageOriginSequences[originIndex] = assistantSequence;
+      messageOriginTurnCounts[originIndex] += 1;
+      const timestamp = baseTimestamp + turnIndex * 4;
+      events.push(
+        {
+          kind: 'message',
+          eventId: `e2e-long-user:${input.conversationId}:${number}`,
+          conversationId: input.conversationId,
+          originNodeId: messageOrigin,
+          originSequence: userSequence,
+          lamportClock: turnIndex * 4 + 1,
+          timestamp,
+          message: {
+            messageId: `e2e-long-user:${input.conversationId}:${number}`,
+            turnId,
+            role: 'user',
+            content: `E2E long question ${number}`,
+          },
+        },
+        {
+          kind: 'message',
+          eventId: `e2e-long-assistant:${input.conversationId}:${number}`,
+          conversationId: input.conversationId,
+          originNodeId: messageOrigin,
+          originSequence: assistantSequence,
+          lamportClock: turnIndex * 4 + 2,
+          timestamp: timestamp + 1,
+          message: {
+            messageId: `e2e-long-assistant:${input.conversationId}:${number}`,
+            turnId,
+            role: 'assistant',
+            content: `E2E long answer ${number}`,
+          },
+        },
+      );
+
+      const summaryIndex = summaryAt.get(turnIndex);
+      if (summaryIndex !== undefined) {
+        // Keep the three summaries causally incomparable (one origin each),
+        // exactly like concurrent compaction on independent devices. Core
+        // must retain and merge all three until a later semantic summary
+        // explicitly dominates them.
+        const coveredVersion = { [messageOrigin]: messageOriginSequences[originIndex] };
+        const coveredMessageCountByOrigin = { ...coveredVersion };
+        const coveredUserTurnCountByOrigin = { [messageOrigin]: messageOriginTurnCounts[originIndex] };
+        const droppedMessageCount = coveredMessageCountByOrigin[messageOrigin];
+        const droppedTurnCount = coveredUserTurnCountByOrigin[messageOrigin];
+        events.push({
+          kind: 'compaction',
+          mode: 'summary',
+          eventId: `e2e-long-compaction-event:${input.conversationId}:${summaryIndex + 1}`,
+          conversationId: input.conversationId,
+          originNodeId: compactionOrigin,
+          originSequence: summaryIndex + 1,
+          lamportClock: turnIndex * 4 + 3,
+          timestamp: timestamp + 2,
+          boundary: {
+            version: 2,
+            coveredVersion,
+            coveredMessageCountByOrigin,
+            coveredUserTurnCountByOrigin,
+            droppedMessageCount,
+            droppedTurnCount,
+          },
+          summary: {
+            turnId: `e2e-long-compaction-turn:${input.conversationId}:${summaryIndex + 1}`,
+            content: `E2E durable compaction summary ${summaryIndex + 1}`,
+          },
+        });
+      }
+    }
+
+    await repo.insertConversationEventsIfAbsent(this.dataSource!, events);
+    await this.publishConversationInvalidation(input.conversationId, previousState, 'reset');
+    return {
+      conversationId: input.conversationId,
+      turnCount: input.turnCount,
+      messageCount: input.turnCount * 2,
+      compactionCount: summaryTurnIndexes.length,
+    };
   }
 
   public async appendLocalConversationEvent(draft: ConversationEventDraft): Promise<ConversationEvent> {

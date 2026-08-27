@@ -31,6 +31,7 @@ import {
   getMessageIdentity,
   getMessagePage,
   getMessageWindowAround,
+  getRetainedCompactionControls,
   getTurnDetail,
   insertConversationEventsIfAbsent,
   readMessageDetailRange,
@@ -160,6 +161,84 @@ describe('Desktop canonical conversation event store', () => {
     await expect(getEventVersionFrontiers(dataSource, ['conversation'])).resolves.toEqual([
       { conversationId: 'conversation', originNodeId: 'desktop', maxContiguousOriginSequence: 2 },
     ]);
+  });
+
+  it('does not let a coverage-only checkpoint discard retained semantic summaries', async () => {
+    await insertConversationEventsIfAbsent(dataSource, [
+      {
+        kind: 'compaction',
+        mode: 'summary',
+        eventId: 'summary-a',
+        conversationId: 'conversation',
+        originNodeId: 'summary-device-a',
+        originSequence: 1,
+        lamportClock: 10,
+        timestamp: 10,
+        boundary: {
+          version: 2,
+          coveredVersion: { 'messages-a': 10 },
+          coveredMessageCountByOrigin: { 'messages-a': 10 },
+          coveredUserTurnCountByOrigin: { 'messages-a': 5 },
+          droppedMessageCount: 10,
+          droppedTurnCount: 5,
+        },
+        summary: { turnId: 'summary-turn-a', content: 'semantic summary from device A' },
+      },
+      {
+        kind: 'compaction',
+        mode: 'summary',
+        eventId: 'summary-b',
+        conversationId: 'conversation',
+        originNodeId: 'summary-device-b',
+        originSequence: 1,
+        lamportClock: 11,
+        timestamp: 11,
+        boundary: {
+          version: 2,
+          coveredVersion: { 'messages-b': 12 },
+          coveredMessageCountByOrigin: { 'messages-b': 12 },
+          coveredUserTurnCountByOrigin: { 'messages-b': 6 },
+          droppedMessageCount: 12,
+          droppedTurnCount: 6,
+        },
+        summary: { turnId: 'summary-turn-b', content: 'semantic summary from device B' },
+      },
+      {
+        kind: 'compaction',
+        mode: 'coverage-only',
+        eventId: 'coverage-checkpoint',
+        conversationId: 'conversation',
+        originNodeId: 'checkpoint-device',
+        originSequence: 1,
+        lamportClock: 12,
+        timestamp: 12,
+        boundary: {
+          version: 2,
+          coveredVersion: { 'messages-a': 10, 'messages-b': 12 },
+          coveredMessageCountByOrigin: { 'messages-a': 10, 'messages-b': 12 },
+          coveredUserTurnCountByOrigin: { 'messages-a': 5, 'messages-b': 6 },
+          droppedMessageCount: 22,
+          droppedTurnCount: 11,
+        },
+        summary: null,
+      },
+    ]);
+
+    const retained = await getRetainedCompactionControls(dataSource, 'conversation', {
+      limit: 32,
+      maxBytes: 256 * 1024,
+    });
+    expect(retained.items.map(event => event.eventId).sort()).toEqual([
+      'coverage-checkpoint',
+      'summary-a',
+      'summary-b',
+    ]);
+    expect(
+      retained.items
+        .filter(event => event.mode === 'summary')
+        .map(event => event.summary.content)
+        .sort(),
+    ).toEqual(['semantic summary from device A', 'semantic summary from device B']);
   });
 
   it('authorizes only attachment hashes referenced by the requested conversation', async () => {

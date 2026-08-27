@@ -253,6 +253,20 @@ export interface IAgentInstanceService {
   conversationReferencesAttachment(agentId: string, contentHash: string): Promise<boolean>;
   getAgentCompactionCandidatePage(agentId: string, options: GetCompactionCandidatePageOptions): Promise<CompactionCandidatePage>;
   getAgentRetainedCompactionControls(agentId: string, options: GetRetainedCompactionControlsOptions): Promise<RetainedCompactionControlPage>;
+  /**
+   * Packaged-E2E-only fixture entry point. The implementation is fail-closed
+   * outside an Electron E2E process and writes through the canonical event
+   * store so renderer tests exercise real SQLite projections and IPC paging.
+   */
+  seedLongConversationForE2E(input: {
+    conversationId: string;
+    turnCount: number;
+  }): Promise<{
+    conversationId: string;
+    turnCount: number;
+    messageCount: number;
+    compactionCount: number;
+  }>;
   appendLocalConversationEvent(draft: ConversationEventDraft): Promise<ConversationEvent>;
   appendLocalConversationEventsAtomic(drafts: readonly ConversationEventDraft[]): Promise<ConversationEvent[]>;
   insertConversationEventsIfAbsent(events: readonly ConversationEvent[]): Promise<void>;
@@ -494,6 +508,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     deleteConversationTurn: ProxyPropertyType.Function,
     retryConversationTurn: ProxyPropertyType.Function,
     getLatestContextCompactionSummary: ProxyPropertyType.Function,
+    seedLongConversationForE2E: ProxyPropertyType.Function,
     deleteAgentTurn: ProxyPropertyType.Function,
     getAgents: ProxyPropertyType.Function,
     getFrameworkConfigSchema: ProxyPropertyType.Function,

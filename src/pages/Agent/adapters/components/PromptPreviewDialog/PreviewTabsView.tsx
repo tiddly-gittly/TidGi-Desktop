@@ -200,6 +200,7 @@ function AuditContent({
       </Typography>
       <Button
         size='small'
+        data-testid='prompt-preview-model-request-detail'
         onClick={() => {
           void loadDetail({ kind: 'request' });
         }}
@@ -255,6 +256,7 @@ function AuditContent({
             <Button
               size='small'
               disabled={loading}
+              data-testid='prompt-preview-audit-detail-next'
               onClick={() => {
                 void loadDetail(detail.target, detail.nextCursor);
               }}
