@@ -2,10 +2,10 @@
 
 import { createDeviceIdentity, parseVerifiedDevicePairingInvite } from '@memeloop/libp2p';
 import { BrowserQRCodeSvgWriter } from '@zxing/browser';
-import { BinaryBitmap, HybridBinarizer, QRCodeReader, RGBLuminanceSource } from '@zxing/library';
 import { createRequire } from 'node:module';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { decodeDevicePairingQrPixels } from '../../../windows/Preferences/customItems/devicePairingQrScanner';
 import { createDesktopSignedPairingInvitePayload } from '../index';
 
 const CREATED_AT = Date.UTC(2026, 7, 27, 8, 0, 0);
@@ -25,7 +25,7 @@ afterAll(() => {
 
 /**
  * Rasterizes the SVG emitted by Desktop's production QR writer and runs it
- * through ZXing's QR detector/decoder. Reading DOM text or retaining the input
+ * through Desktop's production jsQR decoder. Reading DOM text or retaining the input
  * payload here would allow a broken QR image to pass this integration test.
  */
 function decodePairingInviteQr(svg: SVGSVGElement): string {
@@ -35,21 +35,26 @@ function decodePairingInviteQr(svg: SVGSVGElement): string {
     throw new Error('invalid QR SVG dimensions');
   }
 
-  const luminance = new Uint8ClampedArray(width * height);
-  luminance.fill(255);
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  rgba.fill(255);
   for (const rect of svg.querySelectorAll('rect')) {
     const left = Number.parseInt(rect.getAttribute('x') ?? '', 10);
     const top = Number.parseInt(rect.getAttribute('y') ?? '', 10);
     const rectWidth = Number.parseInt(rect.getAttribute('width') ?? '', 10);
     const rectHeight = Number.parseInt(rect.getAttribute('height') ?? '', 10);
     for (let y = top; y < top + rectHeight; y++) {
-      luminance.fill(0, y * width + left, y * width + left + rectWidth);
+      for (let x = left; x < left + rectWidth; x++) {
+        const offset = (y * width + x) * 4;
+        rgba[offset] = 0;
+        rgba[offset + 1] = 0;
+        rgba[offset + 2] = 0;
+      }
     }
   }
 
-  const source = new RGBLuminanceSource(luminance, width, height);
-  const bitmap = new BinaryBitmap(new HybridBinarizer(source));
-  return new QRCodeReader().decode(bitmap).getText();
+  const decoded = decodeDevicePairingQrPixels(rgba, width, height);
+  if (!decoded) throw new Error('Desktop production QR decoder could not read the generated image');
+  return decoded;
 }
 
 function qrRoundTrip(payload: string): string {

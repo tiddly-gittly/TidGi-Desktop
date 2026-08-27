@@ -2,12 +2,18 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ImageSearchIcon from '@mui/icons-material/ImageSearch';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from '@mui/material';
-import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+import { decodeDevicePairingQrFile, DevicePairingQrCameraScanner, DevicePairingQrScannerError } from './devicePairingQrScanner';
+
+type ScannerErrorKey = 'DeviceNetwork.CameraScanFailed' | 'DeviceNetwork.ImageScanFailed' | 'DeviceNetwork.ScanImageTooLarge';
+
+function imageScannerErrorKey(error: unknown): ScannerErrorKey {
+  if (error instanceof DevicePairingQrScannerError && error.code === 'image-too-large') {
+    return 'DeviceNetwork.ScanImageTooLarge';
+  }
+  return 'DeviceNetwork.ImageScanFailed';
 }
 
 export function normalizePairingInvitePayload(payload: string): string {
@@ -70,55 +76,62 @@ export function DevicePairingScannerDialog(props: {
 }): React.JSX.Element {
   const { t } = useTranslation();
   const [payload, setPayload] = useState('');
-  const [scannerError, setScannerError] = useState<string>();
+  const [scannerError, setScannerError] = useState<ScannerErrorKey>();
   const [cameraActive, setCameraActive] = useState(false);
-  const controls = useRef<IScannerControls | undefined>(undefined);
+  const cameraScanner = useRef<DevicePairingQrCameraScanner | undefined>(undefined);
+  const imageGeneration = useRef(0);
   const video = useRef<HTMLVideoElement>(null);
 
-  const stopCamera = () => {
-    controls.current?.stop();
-    controls.current = undefined;
+  const stopCamera = useCallback(() => {
+    cameraScanner.current?.dispose();
+    cameraScanner.current = undefined;
     setCameraActive(false);
-  };
+  }, []);
 
   useEffect(() => {
     if (!props.open) {
       stopCamera();
+      imageGeneration.current += 1;
       setPayload('');
       setScannerError(undefined);
     }
-    return stopCamera;
-  }, [props.open]);
+    return () => {
+      cameraScanner.current?.dispose();
+      cameraScanner.current = undefined;
+      imageGeneration.current += 1;
+    };
+  }, [props.open, stopCamera]);
 
   const startCamera = async () => {
     setScannerError(undefined);
+    imageGeneration.current += 1;
     stopCamera();
     if (!video.current) return;
-    try {
-      const reader = new BrowserQRCodeReader(undefined, { delayBetweenScanAttempts: 250 });
-      controls.current = await reader.decodeFromVideoDevice(undefined, video.current, result => {
-        if (!result) return;
-        setPayload(result.getText());
-        stopCamera();
-      });
-      setCameraActive(true);
-    } catch (error) {
-      setScannerError(message(error));
-      stopCamera();
-    }
+    const scanner = new DevicePairingQrCameraScanner(video.current, {
+      onActiveChange: active => {
+        if (cameraScanner.current === scanner) setCameraActive(active);
+      },
+      onError: () => {
+        if (cameraScanner.current === scanner) setScannerError('DeviceNetwork.CameraScanFailed');
+      },
+      onPayload: value => {
+        if (cameraScanner.current === scanner) setPayload(value);
+      },
+    });
+    cameraScanner.current = scanner;
+    await scanner.start();
   };
 
   const scanImage = async (file: File | undefined) => {
     if (!file) return;
     setScannerError(undefined);
-    const url = URL.createObjectURL(file);
+    stopCamera();
+    const generation = ++imageGeneration.current;
     try {
-      const result = await new BrowserQRCodeReader().decodeFromImageUrl(url);
-      setPayload(result.getText());
+      const result = await decodeDevicePairingQrFile(file);
+      if (imageGeneration.current === generation) setPayload(result);
     } catch (error) {
-      setScannerError(message(error));
-    } finally {
-      URL.revokeObjectURL(url);
+      if (imageGeneration.current === generation) setScannerError(imageScannerErrorKey(error));
     }
   };
 
@@ -127,7 +140,7 @@ export function DevicePairingScannerDialog(props: {
       <DialogTitle>{t('DeviceNetwork.ScanInviteTitle')}</DialogTitle>
       <DialogContent>
         <Typography variant='body2' sx={{ mb: 2 }}>{t('DeviceNetwork.ScanInviteDescription')}</Typography>
-        {scannerError && <Alert severity='error' sx={{ mb: 2 }}>{scannerError}</Alert>}
+        {scannerError && <Alert severity='error' sx={{ mb: 2 }}>{t(scannerError)}</Alert>}
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           <Button startIcon={<CameraAltIcon />} onClick={() => void startCamera()}>
             {cameraActive ? t('DeviceNetwork.RestartCamera') : t('DeviceNetwork.StartCamera')}
@@ -138,7 +151,11 @@ export function DevicePairingScannerDialog(props: {
               hidden
               type='file'
               accept='image/*'
-              onChange={event => void scanImage(event.currentTarget.files?.[0])}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = '';
+                void scanImage(file);
+              }}
             />
           </Button>
         </Box>

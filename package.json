@@ -97,6 +97,7 @@
     "inversify": "8.2.3",
     "jimp": "1.6.1",
     "json5": "^2.2.3",
+    "jsqr": "1.4.0",
     "lodash": "4.18.1",
     "material-ui-popup-state": "^5.3.7",
     "material-ui-cron": "2.0.1",
