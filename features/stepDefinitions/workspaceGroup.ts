@@ -349,13 +349,34 @@ async function waitForDragIntent(
       }
     }
 
-    // Moving to the same coordinate does not necessarily emit another pointer
-    // event. Jitter within the target's center zone, then return to the exact
-    // target coordinate on the next iteration so dnd-kit recomputes intent
-    // after layout changes caused by the previous drag.
-    const jitterY = latestCoordinates.targetY + (attempts % 2 === 0 ? -2 : 2);
-    await world.currentWindow.mouse.move(latestCoordinates.targetX, jitterY);
-    await waitForTwoAnimationFrames(world);
+    // Moving a few pixels inside the same zone can be coalesced by Electron,
+    // leaving dnd-kit with the intent from an intermediate smooth-move point.
+    // Cross the target boundary and wait for its rendered intent to clear
+    // before entering the exact requested zone again. This mirrors a real
+    // pointer entering a drop target and keeps the exact-intent assertion: a
+    // stale reorder intent must never be accepted as a successful group drop.
+    await movePointerOutsideSortableTarget(world, targetWorkspaceId);
+    let targetIntentCleared = false;
+    for (let clearanceCheck = 0; clearanceCheck < maxStateSettlementChecks; clearanceCheck++) {
+      await waitForTwoAnimationFrames(world);
+      const staleTargetIntentCount = await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId)).count();
+      if (staleTargetIntentCount === 0) {
+        targetIntentCleared = true;
+        break;
+      }
+    }
+    if (!targetIntentCleared) {
+      throw await buildDragIntentError(
+        world,
+        sourceSelector,
+        targetWorkspaceId,
+        expectedIntent,
+        latestCoordinates,
+        mode,
+        attempts,
+        `Target intent did not clear after the pointer exited and ${maxStateSettlementChecks} settlement checks.`,
+      );
+    }
   }
 
   throw await buildDragIntentError(
@@ -367,6 +388,45 @@ async function waitForDragIntent(
     mode,
     attempts,
   );
+}
+
+async function movePointerOutsideSortableTarget(world: ApplicationWorld, targetId: string): Promise<void> {
+  if (!world.currentWindow) {
+    throw new Error('Current window not set');
+  }
+
+  const targetSelector = getSortableTargetSelector(targetId);
+  const targetRect = await world.currentWindow.locator(targetSelector).boundingBox();
+  if (!targetRect) {
+    throw new Error(`Could not read bounding box for ${targetSelector} while refreshing drag intent`);
+  }
+
+  const viewport = await world.currentWindow.evaluate(() => ({
+    height: window.innerHeight,
+    width: window.innerWidth,
+  }));
+  const margin = 8;
+  const targetCenterY = targetRect.y + targetRect.height / 2;
+  const candidatePoints = [
+    { x: targetRect.x + targetRect.width + margin, y: targetCenterY },
+    { x: targetRect.x - margin, y: targetCenterY },
+    { x: targetRect.x + targetRect.width / 2, y: targetRect.y + targetRect.height + margin },
+    { x: targetRect.x + targetRect.width / 2, y: targetRect.y - margin },
+  ];
+  const exitPoint = candidatePoints.find(({ x, y }) =>
+    x >= 1 && x <= viewport.width - 2 &&
+    y >= 1 && y <= viewport.height - 2 &&
+    (x < targetRect.x || x > targetRect.x + targetRect.width || y < targetRect.y || y > targetRect.y + targetRect.height)
+  );
+
+  if (!exitPoint) {
+    throw new Error(
+      `Could not resolve an in-viewport exit point for ${targetSelector}. ` +
+        `Target rect: ${JSON.stringify(targetRect)}, viewport: ${JSON.stringify(viewport)}`,
+    );
+  }
+
+  await world.currentWindow.mouse.move(exitPoint.x, exitPoint.y, { steps: 3 });
 }
 
 async function waitForTwoAnimationFrames(world: ApplicationWorld): Promise<void> {
@@ -393,6 +453,7 @@ async function buildDragIntentError(
   coordinates: ITargetCoordinates,
   mode: TDragIntentWaitMode,
   attempts: number,
+  diagnostic?: string,
 ): Promise<Error> {
   if (!world.currentWindow) {
     return new Error('Current window not set');
@@ -447,7 +508,8 @@ async function buildDragIntentError(
         sourceRect ? JSON.stringify({ x: Math.round(sourceRect.x), y: Math.round(sourceRect.y), w: Math.round(sourceRect.width), h: Math.round(sourceRect.height) }) : 'null'
       }. ` +
       `DragOverlay visible: ${String(hasOverlay)}. ` +
-      `Pointer refresh attempts: ${attempts}.`,
+      `Pointer refresh attempts: ${attempts}.` +
+      (diagnostic ? ` Diagnostic: ${diagnostic}` : ''),
   );
 }
 
