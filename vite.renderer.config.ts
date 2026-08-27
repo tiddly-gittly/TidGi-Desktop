@@ -3,7 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
 import monacoEditorPlugin from 'vite-plugin-monaco-editor';
-import { rendererAliases } from './vite.renderer.aliases';
+import { rendererAliases, rendererDedupe } from './vite.renderer.aliases';
 
 export default defineConfig({
   plugins: [
@@ -15,6 +15,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: rendererAliases,
+    dedupe: rendererDedupe,
   },
   optimizeDeps: {
     include: ['monaco-editor'],

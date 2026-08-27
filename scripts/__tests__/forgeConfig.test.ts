@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import forgeConfig, { getLocalAdHocMacSigningPackagerConfig } from '../../forge.config';
-import { rendererAliases } from '../../vite.renderer.aliases';
+import { rendererAliases, rendererDedupe } from '../../vite.renderer.aliases';
 
 describe('getLocalAdHocMacSigningPackagerConfig', () => {
   it.each([undefined, '', '0', 'true'])('keeps signing absent unless the local-only switch is exactly 1 (%s)', value => {
@@ -51,5 +51,16 @@ describe('renderer package entry aliases', () => {
     expect(matchingAliases('@memeloop/react-ui/agent')).toHaveLength(1);
     expect(matchingAliases('@memeloop/react-ui/agent/prompts')).toHaveLength(1);
     expect(matchingAliases('@memeloop/react-ui/agent/scheduling')).toHaveLength(1);
+  });
+
+  it('forces the cron editor through ESM and a single React dispatcher', () => {
+    const cronAliases = rendererAliases.filter(alias => {
+      const matcher = alias.find;
+      return typeof matcher === 'string' ? matcher === 'material-ui-cron' : matcher.test('material-ui-cron');
+    });
+
+    expect(cronAliases).toHaveLength(1);
+    expect(cronAliases[0]?.replacement).toMatch(/material-ui-cron\/dist\/index\.esm\.js$/u);
+    expect(rendererDedupe).toEqual(['react', 'react-dom']);
   });
 });

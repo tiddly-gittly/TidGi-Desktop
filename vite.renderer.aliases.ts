@@ -3,6 +3,10 @@ import path from 'path';
 export const rendererAliases = [
   { find: '@', replacement: path.resolve(__dirname, './src') },
   { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+  // material-ui-cron publishes both ESM and CommonJS builds. Rolldown can pick
+  // the CommonJS entry while following @memeloop/react-ui's scheduling entry,
+  // which inlines a second React runtime and breaks hooks in packaged builds.
+  { find: /^material-ui-cron$/, replacement: path.resolve(__dirname, './node_modules/material-ui-cron/dist/index.esm.js') },
   // Use exact public-entry aliases. A string alias for `/agent` also rewrites
   // `/agent/prompts` to `index.js/prompts`, which only fails in Rolldown's
   // production resolver after type-check and unit gates pass.
@@ -17,3 +21,6 @@ export const rendererAliases = [
   { find: 'react-transition-group/cjs/TransitionGroupContext.js', replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js') },
   { find: 'react-transition-group/esm/TransitionGroupContext.js', replacement: path.resolve(__dirname, './node_modules/react-transition-group/esm/TransitionGroupContext.js') },
 ];
+
+/** Keep every renderer dependency on the same React dispatcher. */
+export const rendererDedupe = ['react', 'react-dom'];
