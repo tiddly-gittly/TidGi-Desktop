@@ -5,10 +5,9 @@ import type {
   DeviceConnectionGrant,
   DeviceRelayReservationToken,
   LocalDeviceIdentity,
-  StandardDeviceCloudConnectionAdapter,
   TrustedDeviceRecord,
 } from 'memeloop/device-network';
-import { CloudDeviceFetchClient } from 'memeloop/device-network';
+import { CloudDeviceFetchClient, CloudDeviceFetchError, DeviceCloudConnectionCoordinator, StandardDeviceCloudConnectionAdapter } from 'memeloop/device-network';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { IDatabaseService } from '@services/database/interface';
@@ -81,6 +80,119 @@ function reservation(expiresAt: number): DeviceRelayReservationToken {
     signature: 'signature',
   };
 }
+
+function deferred<T>(): {
+  promise: Promise<T>;
+  reject: (reason?: unknown) => void;
+  resolve: (value: T) => void;
+} {
+  let reject!: (reason?: unknown) => void;
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    reject = rejectPromise;
+    resolve = resolvePromise;
+  });
+  return { promise, reject, resolve };
+}
+
+function createCloudHostHarness(options: {
+  cloudUrl?: string;
+  createRelayReservation?: CloudDeviceClient['createRelayReservation'];
+  heartbeat?: CloudDeviceClient['heartbeat'];
+  multiaddrs?: string[];
+} = {}) {
+  let persisted: DeviceNetworkPersistedSettings | undefined;
+  const database = {
+    getSetting: vi.fn(() => persisted),
+    setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings) => {
+      persisted = value;
+    }),
+    immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
+  } as unknown as IDatabaseService;
+  const identity: LocalDeviceIdentity = {
+    peerId: 'local-peer',
+    publicKeyMultibase: 'zLocalKey',
+    privateKeyRef: 'test',
+    deviceName: 'Desktop',
+    platform: 'desktop',
+    createdAt: 1,
+  };
+  const client = {
+    createBindingNonce: vi.fn(async () => ({
+      accountId: 'account-1',
+      expiresAt: 'later',
+      nonce: 'binding-nonce',
+    })),
+    createConnectionGrant: vi.fn(),
+    createRelayReservation: vi.fn(options.createRelayReservation ?? (async () => reservation(Date.now() + 600_000))),
+    getConnectionGrantPublicKey: vi.fn(async () => ({
+      issuer: 'memeloop-cloud' as const,
+      publicKeyMultibase: 'zCloudSigningKey',
+    })),
+    heartbeat: vi.fn(options.heartbeat ?? (async () => ({ ok: true }))),
+    listDevices: vi.fn(async () => []),
+    registerDevice: vi.fn(async () => ({ ok: true, peerId: identity.peerId })),
+  } as unknown as CloudDeviceClient;
+  const core = {
+    clearRelayReservation: vi.fn(async () => undefined),
+    configureRelayReservation: vi.fn(async () => undefined),
+    getMultiaddrs: vi.fn(() => options.multiaddrs ?? []),
+    getTrustedDevice: vi.fn(() => undefined),
+    listCloudDeviceAddressPeerIds: vi.fn(() => []),
+    removeCloudDeviceAddresses: vi.fn(),
+    removeCloudDiscoveredDevice: vi.fn(),
+    removeCloudTrustedDevice: vi.fn(async () => undefined),
+    setCloudDeviceAddresses: vi.fn(),
+    upsertCloudDiscoveredDevice: vi.fn(),
+    upsertCloudTrustedDevice: vi.fn(),
+  };
+  const service = new DeviceNetworkService({} as never, database);
+  const cloudUrl = options.cloudUrl ?? 'https://cloud.example.test';
+  Object.assign(service as unknown as Record<string, unknown>, {
+    cloudClient: client,
+    cloudConfig: { accessToken: 'token', client, cloudUrl },
+    core,
+    identity,
+    mutableAuthorizer: {
+      resetDelegate: vi.fn(),
+      setDelegate: vi.fn(() => true),
+    },
+    runtimeOptions: {
+      buildCapabilities: async () => ({
+        tools: [],
+        mcpServers: [],
+        hasWiki: false,
+        agentLoop: true,
+        imChannels: [],
+        wikis: [],
+      }),
+    },
+  });
+  const adapter = (service as unknown as {
+    createStandardCloudAdapter(): StandardDeviceCloudConnectionAdapter;
+  }).createStandardCloudAdapter();
+  Object.assign(service as unknown as Record<string, unknown>, { standardCloudAdapter: adapter });
+  (service as unknown as { ensureCloudCoordinator(): void }).ensureCloudCoordinator();
+  const coordinator = (service as unknown as {
+    cloudCoordinator: DeviceCloudConnectionCoordinator<CloudDeviceClient>;
+  }).cloudCoordinator;
+
+  return { adapter, client, coordinator, core, readPersisted: () => persisted, service };
+}
+
+const registrationInvalidError = new CloudDeviceFetchError('cloud_http_error', {
+  responseBody: '{"error":"device_not_found"}',
+  status: 404,
+});
+// memeloop@0.2.8 exposes the coordinator classification but its standard
+// adapter still collapses this Cloud response to `error`. This capability
+// probe turns the host regression on automatically when the Core adapter fix
+// is consumed, without copying Cloud response classification into Desktop.
+const coreSupportsRegistrationInvalid = (
+  StandardDeviceCloudConnectionAdapter.prototype as unknown as {
+    classifyError(error: unknown): string;
+  }
+).classifyError(registrationInvalidError) === 'registration-invalid';
 
 describe('DeviceNetwork Cloud configuration', () => {
   it('accepts HTTPS and normalizes the service origin', () => {
@@ -261,7 +373,58 @@ describe('DeviceNetwork Cloud configuration', () => {
     releaseOlder();
 
     await olderRejection;
-    expect(persisted?.cloudConfigurationV1?.cloudUrl).toBe('https://latest.example.test');
+    expect(persisted?.cloudConfigurationV1).toEqual({
+      cloudUrl: 'https://latest.example.test',
+      encryptedAccessToken: Buffer.from('encrypted:latest-token', 'utf8').toString('base64'),
+    });
+    expect(service.cloudStatus$.value).toMatchObject({
+      cloudUrl: 'https://latest.example.test',
+      configured: true,
+      state: 'offline',
+    });
+  });
+
+  it('lets clearing configuration fence a validation that is still in flight', async () => {
+    let persisted: DeviceNetworkPersistedSettings | undefined;
+    const database = {
+      getSetting: vi.fn(() => persisted),
+      setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings) => {
+        persisted = value;
+      }),
+      immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
+    } as unknown as IDatabaseService;
+    const service = new DeviceNetworkService({} as never, database);
+    const listStarted = deferred<undefined>();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = requestUrl(input);
+        if (url.endsWith('/api/devices')) {
+          listStarted.resolve(undefined);
+          return await new Promise<Response>((_resolve, reject) => {
+            const signal = init?.signal;
+            const rejectAbort = () => {
+              reject(signal?.reason instanceof Error ? signal.reason : new Error('aborted'));
+            };
+            signal?.addEventListener('abort', rejectAbort, { once: true });
+            if (signal?.aborted) rejectAbort();
+          });
+        }
+        return cloudResponse(url);
+      }),
+    );
+
+    const staleConfiguration = service.configureCloud({
+      cloudUrl: 'https://stale.example.test',
+      accessToken: 'stale-token',
+    });
+    const staleRejection = expect(staleConfiguration).rejects.toThrow('configuration cleared');
+    await listStarted.promise;
+    await service.clearCloudConfiguration();
+    await staleRejection;
+
+    expect(persisted?.cloudConfigurationV1).toBeUndefined();
+    expect(service.cloudStatus$.value).toEqual({ configured: false, state: 'not-configured' });
   });
 
   it('merges a large Cloud directory from one consistent trust-store snapshot', async () => {
@@ -481,6 +644,101 @@ describe('DeviceNetwork Cloud configuration', () => {
     expect(removeCloudDiscoveredDevice).toHaveBeenCalledWith('cloud-peer');
     expect(clearCachedTokens).toHaveBeenCalledOnce();
   });
+
+  it('renews the Desktop relay token at the host safety-margin boundary', async () => {
+    vi.useFakeTimers();
+    try {
+      const baseTime = Date.UTC(2026, 7, 27, 0, 0, 0);
+      vi.setSystemTime(baseTime);
+      const createRelayReservation = vi.fn()
+        .mockResolvedValueOnce(reservation(baseTime + 180_000))
+        .mockImplementationOnce(async () => reservation(baseTime + 660_000));
+      const { client, coordinator, core, service } = createCloudHostHarness({ createRelayReservation });
+
+      await coordinator.setConfiguration(client);
+      await coordinator.start();
+      expect(createRelayReservation).toHaveBeenCalledOnce();
+      expect(core.configureRelayReservation).toHaveBeenCalledOnce();
+      expect(coordinator.snapshot.status).toBe('online');
+
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(createRelayReservation).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(createRelayReservation).toHaveBeenCalledTimes(2);
+      expect(core.configureRelayReservation).toHaveBeenLastCalledWith(
+        expect.objectContaining({ expiresAt: baseTime + 660_000 }),
+        expect.any(AbortSignal),
+        expect.objectContaining({ generation: 1 }),
+      );
+      expect(coordinator.snapshot.status).toBe('online');
+      await vi.advanceTimersByTimeAsync(0);
+      expect(service.cloudStatus$.value).toMatchObject({ configured: true, state: 'online' });
+      await coordinator.stop();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('publishes offline and recovers without re-registering a valid Desktop generation', async () => {
+    vi.useFakeTimers();
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    try {
+      const baseTime = Date.UTC(2026, 7, 27, 1, 0, 0);
+      vi.setSystemTime(baseTime);
+      const heartbeat = vi.fn()
+        .mockRejectedValueOnce(new TypeError('fetch failed'))
+        .mockResolvedValue({ ok: true });
+      const { client, coordinator, service } = createCloudHostHarness({ heartbeat });
+
+      await coordinator.setConfiguration(client);
+      await expect(coordinator.start()).rejects.toThrow('fetch failed');
+      expect(coordinator.snapshot).toMatchObject({
+        generation: 1,
+        status: 'offline',
+        lastError: { classification: 'offline', component: 'heartbeat' },
+        nextRetryAt: baseTime + 1_000,
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(service.cloudStatus$.value).toMatchObject({ configured: true, state: 'offline' });
+
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(coordinator.snapshot.status).toBe('online');
+      expect(client.registerDevice).toHaveBeenCalledOnce();
+      expect(heartbeat).toHaveBeenCalledTimes(2);
+      expect(service.cloudStatus$.value).toMatchObject({ configured: true, state: 'online' });
+      await coordinator.stop();
+    } finally {
+      random.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it.skipIf(!coreSupportsRegistrationInvalid)(
+    'invalidates a missing Cloud registration and re-registers on the next Desktop maintenance pass',
+    async () => {
+      const heartbeat = vi.fn()
+        .mockRejectedValueOnce(registrationInvalidError)
+        .mockResolvedValue({ ok: true });
+      const { client, coordinator, service } = createCloudHostHarness({ heartbeat });
+
+      await coordinator.setConfiguration(client);
+      await expect(coordinator.start()).rejects.toThrow('cloud_http_error');
+      expect(coordinator.snapshot).toMatchObject({
+        status: 'offline',
+        components: { registration: 'not-run' },
+        lastError: { classification: 'registration-invalid', component: 'heartbeat' },
+      });
+
+      await coordinator.runNow();
+      expect(client.registerDevice).toHaveBeenCalledTimes(2);
+      expect(coordinator.snapshot.status).toBe('online');
+      await vi.waitFor(() => {
+        expect(service.cloudStatus$.value.state).toBe('online');
+      });
+      await coordinator.stop();
+    },
+  );
 });
 
 describe('DeviceNetwork settings persistence', () => {
