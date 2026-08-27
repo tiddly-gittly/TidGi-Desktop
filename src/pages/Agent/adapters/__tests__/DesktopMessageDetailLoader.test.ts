@@ -127,6 +127,29 @@ describe('DesktopMessageDetailLoader', () => {
       .rejects.toMatchObject({ name: 'AbortError' });
   });
 
+  it.each(
+    [
+      ['turnId', 'replacement-turn'],
+      ['originSequence', 99],
+    ] as const,
+  )('rejects canonical %s drift that the lightweight database identity cannot represent', async (field, value) => {
+    const resident = fullMessage();
+    const canonical = { ...resident, [field]: value };
+    const bytes = new TextEncoder().encode(JSON.stringify(canonical));
+    mutableService.agentInstance = {
+      getAgentMessageIdentity: vi.fn(async () => identity(canonical)),
+      readAgentMessageDetailRange: vi.fn(async (_conversationId: string, _messageId: string, offset: number, maxBytes: number) => ({
+        found: true as const,
+        offset,
+        totalBytes: bytes.byteLength,
+        bytes: bytes.slice(offset, offset + maxBytes),
+      })),
+    };
+
+    await expect(createDesktopMessageDetailLoader()(projection(resident), request()))
+      .rejects.toThrow('message detail hydration identity does not match its projection');
+  });
+
   it('does not request canonical detail for an ordinary untruncated message', async () => {
     mutableService.agentInstance = {
       getAgentMessageIdentity: vi.fn(),

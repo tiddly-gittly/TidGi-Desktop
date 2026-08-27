@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { AgentInstanceService } from '../index';
 
 describe('AgentInstanceService durable execution IPC', () => {
+  const attachmentReference = {
+    contentHash: `sha256:${'a'.repeat(64)}`,
+    filename: 'authorized.png',
+    mimeType: 'image/png',
+    size: 4,
+  } as const;
+
   it('preserves caller provenance and materializes the exact local user-root message', async () => {
     const sendMessage = vi.fn().mockResolvedValue({
       runId: 'run-1',
@@ -64,6 +71,63 @@ describe('AgentInstanceService durable execution IPC', () => {
       requestId: 'request-1',
       turnId: 'turn-1',
     })).rejects.toThrow('agent conversation definition mismatch');
+  });
+
+  it('rejects attachment range reads when another conversation does not reference the blob', async () => {
+    const readRange = vi.fn();
+    const query = vi.fn().mockResolvedValue([{ found: 0 }]);
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    Object.assign(service as unknown as Record<string, unknown>, {
+      agentInstanceRepository: {},
+      agentMessageRepository: {},
+      remoteScheduledTaskProjectionRepository: {},
+      dataSource: { query },
+      attachmentUploadStore: {
+        getReference: vi.fn().mockResolvedValue(attachmentReference),
+        hasCommittedScope: vi.fn().mockReturnValue(false),
+        readRange,
+      },
+    });
+
+    await expect(service.readAgentAttachmentChunk({
+      conversationId: 'unrelated-conversation',
+      reference: attachmentReference,
+      offset: 0,
+      maxBytes: 4,
+    })).rejects.toThrow('attachment is not authorized for this conversation');
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('conversation_attachment_references'),
+      ['unrelated-conversation', attachmentReference.contentHash, attachmentReference.filename, attachmentReference.mimeType, attachmentReference.size],
+    );
+    expect(readRange).not.toHaveBeenCalled();
+  });
+
+  it('rejects attachment range reads when renderer metadata differs from the stored reference', async () => {
+    const query = vi.fn();
+    const readRange = vi.fn();
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    Object.assign(service as unknown as Record<string, unknown>, {
+      agentInstanceRepository: {},
+      agentMessageRepository: {},
+      remoteScheduledTaskProjectionRepository: {},
+      dataSource: { query },
+      attachmentUploadStore: {
+        getReference: vi.fn().mockResolvedValue(attachmentReference),
+        hasCommittedScope: vi.fn(),
+        readRange,
+      },
+    });
+
+    await expect(service.readAgentAttachmentChunk({
+      conversationId: 'conversation-1',
+      reference: { ...attachmentReference, filename: 'substituted.png' },
+      offset: 0,
+      maxBytes: 4,
+    })).rejects.toThrow('attachment blob does not match its event-scoped reference');
+
+    expect(query).not.toHaveBeenCalled();
+    expect(readRange).not.toHaveBeenCalled();
   });
 
   it('returns a plain structured rejection for a nullable missing model before accepting a run', async () => {

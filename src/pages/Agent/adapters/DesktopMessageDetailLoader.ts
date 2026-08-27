@@ -3,7 +3,9 @@ import {
   getDisplayTruncation,
   type MemeLoopMessageDetailPage,
   type MemeLoopMessageDetailRequest,
+  type MemeLoopMessageHydrationIdentity,
   type MessageDetailLoader,
+  messageHydrationIdentity,
   validateMessageDetailPage,
 } from '@memeloop/react-ui/chat';
 import { assertCanonicalChatMessageProjection, type ChatMessage, type ConversationMessageIdentity } from 'memeloop';
@@ -103,6 +105,7 @@ export async function loadDesktopCanonicalMessage(
   }
   assertCanonicalChatMessageProjection(canonical, projection.conversationId);
   assertDesktopMessageIdentity(canonical, firstIdentity);
+  assertDesktopMessageHydrationIdentity(canonical, messageHydrationIdentity(projection));
   const finalIdentity = await window.service.agentInstance.getAgentMessageIdentity(
     projection.conversationId,
     projection.messageId,
@@ -186,6 +189,23 @@ export function assertDesktopMessageIdentity(message: ChatMessage, identity: Con
     message.messageId !== identity.messageId || message.timestamp !== identity.timestamp ||
     message.lamportClock !== identity.lamportClock || message.originNodeId !== identity.originNodeId
   ) throw new Error('message detail identity does not match its projection');
+}
+
+/**
+ * The lightweight database identity intentionally omits conversation/turn
+ * fields. Hydration must additionally bind the authoritative payload to the
+ * exact resident projection so a same-message-id replacement cannot be shown.
+ */
+export function assertDesktopMessageHydrationIdentity(
+  message: ChatMessage,
+  identity: MemeLoopMessageHydrationIdentity,
+): void {
+  if (
+    message.conversationId !== identity.conversationId || message.messageId !== identity.messageId ||
+    message.turnId !== identity.turnId || message.originNodeId !== identity.originNodeId ||
+    message.originSequence !== identity.originSequence || message.timestamp !== identity.timestamp ||
+    message.lamportClock !== identity.lamportClock
+  ) throw new Error('message detail hydration identity does not match its projection');
 }
 
 function sameIdentity(left: ConversationMessageIdentity, right: ConversationMessageIdentity): boolean {
