@@ -10,6 +10,8 @@ import type {
   MemeLoopRunHandle,
 } from 'memeloop';
 
+import { createSecureBrowserUuid } from './createSecureBrowserUuid';
+
 const DESKTOP_MESSAGE_PAGE_LIMIT = 50;
 const DESKTOP_MESSAGE_PAGE_MAX_BYTES = 256 * 1024;
 const CURSOR_VERSION = 1;
@@ -252,8 +254,8 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
     const agent = await window.service.agentInstance.getAgentMetadata(conversationId);
     throwIfAborted(options?.signal);
     if (!agent) throw new Error('agent_conversation_not_found');
-    const requestId = `conversation-client:request:${crypto.randomUUID()}`;
-    const turnId = `conversation-client:turn:${crypto.randomUUID()}`;
+    const requestId = `conversation-client:request:${createSecureBrowserUuid()}`;
+    const turnId = `conversation-client:turn:${createSecureBrowserUuid()}`;
     const handle = unwrapExecuteRunResult(
       await window.service.agentInstance.executeAgentRun({
         conversationId,

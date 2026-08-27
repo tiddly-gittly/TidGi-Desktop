@@ -202,10 +202,6 @@
     "SetupAgentDescription": "あなたのエージェントに名前を付け、テンプレートを出発点として選択してください",
     "Title": "新しいインテリジェントエージェントを作成する"
   },
-  "WikiEmbed": {
-    "Error": "Wiki の埋め込みに失敗しました",
-    "Loading": "Wiki を読み込んでいます..."
-  },
   "EditAgent": {
     "ActiveHoursEnd": "アクティブ時間の終了（任意）",
     "ActiveHoursStart": "アクティブ時間の開始（任意）",

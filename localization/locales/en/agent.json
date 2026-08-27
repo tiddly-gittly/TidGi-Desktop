@@ -202,10 +202,6 @@
     "SetupAgentDescription": "Configure your new agent by choosing a name and template",
     "Title": "Create New Agent"
   },
-  "WikiEmbed": {
-    "Error": "Failed to embed wiki",
-    "Loading": "Loading wiki..."
-  },
   "EditAgent": {
     "ActiveHoursEnd": "Active hours end (optional)",
     "ActiveHoursStart": "Active hours start (optional)",

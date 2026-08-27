@@ -25,6 +25,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { AgentSwitcher } from './components/AgentSwitcher';
 import { CompactModelSelector } from './components/CompactModelSelector';
 import { PromptPreviewButtonWithMenu } from './components/PromptPreviewButtonWithMenu';
+import { createSecureBrowserUuid } from './createSecureBrowserUuid';
 import { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
 import { createDesktopFileAttachmentSource } from './DesktopAgentExecutionCoordinator';
 import { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
@@ -42,7 +43,7 @@ interface DesktopAgentChatTabProps {
   isSplitView?: boolean;
 }
 
-const createId = (): string => crypto.randomUUID();
+const createId = createSecureBrowserUuid;
 
 /** Keeps every shared message capability on the host locale instead of silently using Core's English defaults. */
 export function createDesktopMessageLabels(t: TFunction<'agent'>): MemeLoopMessageLabels {

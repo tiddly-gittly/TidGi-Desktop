@@ -203,10 +203,6 @@
     "SetupAgentDescription": "为您的智能体命名并选择一个模板作为起点",
     "Title": "创建新智能体"
   },
-  "WikiEmbed": {
-    "Error": "嵌入 Wiki 失败",
-    "Loading": "正在加载 Wiki..."
-  },
   "EditAgent": {
     "ActiveHoursEnd": "活跃时段结束（可选）",
     "ActiveHoursStart": "活跃时段开始（可选）",

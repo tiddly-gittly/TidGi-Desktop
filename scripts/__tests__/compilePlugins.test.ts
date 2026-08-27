@@ -43,6 +43,7 @@ describe('compiled filesystem watcher native module loading', () => {
 
     expect(widgetSource.indexOf('if ($tw.browser)')).toBeLessThan(widgetSource.indexOf('require("$:/plugins/linonetwo/memeloop-agent-ui/components.js")'));
     expect(componentSource).toContain('pluginExports.MemeLoopAgentChatWidget');
+    expect(componentSource).toContain('node_modules/react-dom/client.js');
     expect(componentSource).not.toMatch(/require\(["']\$:\/plugins\/linonetwo\/tw-react\/widget\.js["']\)/);
     expect(componentSource).not.toMatch(/require\(["']react(?:-dom)?(?:\/[^"']+)?["']\)/);
     expect(existsSync(path.join(memeLoopPluginOutput, 'components.tsx'))).toBe(false);

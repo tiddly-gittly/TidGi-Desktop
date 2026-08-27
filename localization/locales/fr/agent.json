@@ -202,10 +202,6 @@
     "SetupAgentDescription": "Nommez votre agent et choisissez un modèle comme point de départ",
     "Title": "Créer un nouvel agent intelligent"
   },
-  "WikiEmbed": {
-    "Error": "Échec de l’intégration du wiki",
-    "Loading": "Chargement du wiki..."
-  },
   "EditAgent": {
     "ActiveHoursEnd": "Fin des heures actives (facultatif)",
     "ActiveHoursStart": "Début des heures actives (facultatif)",

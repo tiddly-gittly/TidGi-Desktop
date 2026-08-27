@@ -27,6 +27,8 @@ import type {
 } from '@/services/agentInstance/attachmentUploadProtocol';
 import type { DesktopAgentExecuteRunResult } from '@/services/agentInstance/interface';
 
+import { createSecureBrowserUuid } from './createSecureBrowserUuid';
+
 const DEFAULT_RUN_POLL_INTERVAL_MS = 500;
 
 interface DesktopAgentInstanceExecutionPort {
@@ -122,7 +124,7 @@ export function createDesktopAgentExecutionCoordinator(
   options: DesktopAgentExecutionCoordinatorFactoryOptions = {},
 ): RemoteAgentExecutionCoordinator {
   const services = options.services ?? browserServices();
-  const createId = options.createId ?? (() => crypto.randomUUID());
+  const createId = options.createId ?? createSecureBrowserUuid;
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_RUN_POLL_INTERVAL_MS;
   const activeRuns = new Map<string, ActiveRun>();
 

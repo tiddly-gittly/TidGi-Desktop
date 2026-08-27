@@ -1,6 +1,7 @@
 import type { PromptPreviewClient, PromptPreviewPreparedExecution } from 'memeloop';
 import { PromptPreviewController } from 'memeloop';
 
+import { createSecureBrowserUuid } from './createSecureBrowserUuid';
 import { createDesktopPromptPreviewClient } from './DesktopPromptPreviewClient';
 
 export interface DesktopPromptPreviewBridge {
@@ -23,7 +24,7 @@ export function createDesktopPromptPreviewController(
   options: CreateDesktopPromptPreviewControllerOptions = {},
 ): PromptPreviewController {
   const bridge = options.bridge ?? defaultBridge();
-  const createRequestId = options.createRequestId ?? (() => globalThis.crypto.randomUUID());
+  const createRequestId = options.createRequestId ?? createSecureBrowserUuid;
   const previewClient = options.previewClient ?? createDesktopPromptPreviewClient();
 
   return new PromptPreviewController({

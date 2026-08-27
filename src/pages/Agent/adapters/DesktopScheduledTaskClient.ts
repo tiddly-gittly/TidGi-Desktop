@@ -20,6 +20,8 @@ import {
 } from 'memeloop';
 import { createAgentDeviceRpcClient, createScheduledTaskClientFromRpc } from 'memeloop/device-network';
 
+import { createSecureBrowserUuid } from './createSecureBrowserUuid';
+
 const DEFAULT_PAGE_SIZE = 64;
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_BYTES = 256 * 1024;
@@ -515,7 +517,7 @@ async function sendRemoteRpc<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   signal?.throwIfAborted();
-  const operationId = crypto.randomUUID();
+  const operationId = createSecureBrowserUuid();
   const abort = () => {
     void window.service.deviceNetwork.abortOperation(operationId);
   };

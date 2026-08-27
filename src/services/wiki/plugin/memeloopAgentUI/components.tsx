@@ -1,4 +1,5 @@
 import { widget as Widget } from '$:/plugins/linonetwo/tw-react/widget.js';
+import { createSecureBrowserUuid } from '@/pages/Agent/adapters/createSecureBrowserUuid';
 import { createDesktopAgentConversationClient } from '@/pages/Agent/adapters/DesktopAgentConversationClient';
 import { createDesktopFileAttachmentSource } from '@/pages/Agent/adapters/DesktopAgentExecutionCoordinator';
 import { createDesktopAgentInstanceClient } from '@/pages/Agent/adapters/DesktopAgentInstanceClient';
@@ -23,12 +24,13 @@ import {
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { type AgentDefinition, AgentSessionController, type ChatMessage, extractAgentRunError, type PromptNode } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
 import type { Widget as TiddlyWikiWidget } from 'tiddlywiki';
 import { type AttachmentSelection, clearAttachmentSelectionAtRevision, EMPTY_ATTACHMENTS, nextAttachmentSelection } from './attachmentSelection';
 import { resolveTiddlyWikiDrop } from './dropPayload';
 import { createDesktopWikiAgentHostAdapter, type WikiAgentDefinitionOption, type WikiAgentHostAdapter, type WikiAgentModelOption } from './hostAdapter';
 import { formatTimelineTurn, getWikiAgentLabels, resolveWikiAgentLocale } from './labels';
+import { wikiAgentI18n } from './localization';
 import { resolveWikiAgentColorScheme, resolveWikiAgentDirection, type WikiAgentColorScheme } from './presentation';
 
 /**
@@ -44,11 +46,6 @@ interface MemeLoopAgentChatProps {
   language?: string;
   mode?: 'full' | 'sidebar';
   parentWidget?: TiddlyWikiWidget;
-}
-
-function browserRequestId(): string {
-  if (typeof crypto.randomUUID !== 'function') throw new Error('secure_request_id_unavailable');
-  return crypto.randomUUID();
 }
 
 function useWikiAgentTarget(
@@ -410,15 +407,14 @@ function BoundMemeLoopWikiChat({
   const [attachments, setAttachments] = useState<AttachmentSelection>(EMPTY_ATTACHMENTS);
   const workspaceName = $tw.wiki.getTiddlerText('$:/info/tidgi/workspaceName', '') || $tw.wiki.getTiddlerText('$:/SiteTitle', 'Wiki');
   const locale = resolveWikiAgentLocale(language);
-  const { i18n } = useTranslation('agent');
-  const translateAgentError = useMemo(() => i18n.getFixedT(locale, 'agent'), [i18n, locale]);
+  const translateAgentError = useMemo(() => wikiAgentI18n.getFixedT(locale, 'agent'), [locale]);
   const labels = getWikiAgentLabels(language);
   const loadMessageDetail = useMemo(() => createDesktopMessageDetailLoader(), []);
   const loadVisibleAttachments = useMemo(() => createDesktopVisibleAttachmentLoader(), []);
   const adapterOptions = useMemo(() => ({
     conversationId,
     timelineController,
-    createId: browserRequestId,
+    createId: createSecureBrowserUuid,
     loadMessageDetail,
     onError: (error: Error, operation: string) => {
       hostAdapter.logError(`MemeLoop Wiki chat operation failed: ${operation}`, error);
@@ -729,16 +725,19 @@ function MemeLoopWikiChat({
   })();
 
   return (
-    <ThemeProvider theme={theme}>
-      <div
-        className='memeloop-tw-host'
-        data-color-scheme={colorScheme}
-        dir={direction}
-        lang={localeLanguageTag(language)}
-      >
-        {content}
-      </div>
-    </ThemeProvider>
+    <I18nextProvider i18n={wikiAgentI18n}>
+      <ThemeProvider theme={theme}>
+        <div
+          className='memeloop-tw-host'
+          data-color-scheme={colorScheme}
+          data-testid={`memeloop-wiki-agent-${mode}`}
+          dir={direction}
+          lang={localeLanguageTag(language)}
+        >
+          {content}
+        </div>
+      </ThemeProvider>
+    </I18nextProvider>
   );
 }
 

@@ -80,6 +80,23 @@ const bundledTwReactWidgetPlugin = {
 };
 
 /**
+ * tw-react 0.6.4 still imports `react-dom` and calls `createRoot` on it. React
+ * 19 exposes that API only from `react-dom/client`, so keep the compatibility
+ * seam local to the bundled third-party widget instead of patching React or
+ * leaking a second React root implementation into the Wiki at runtime.
+ */
+const twReactReact19Plugin = {
+  name: 'tw-react-react-19-client-entry',
+  setup(build) {
+    build.onResolve({ filter: /^react-dom$/ }, args => {
+      const normalizedImporter = args.importer.replaceAll('\\', '/');
+      if (!normalizedImporter.endsWith('/tw-react/dist/plugins/linonetwo/tw-react/widget.js')) return undefined;
+      return { path: path.join(__dirname, '../node_modules/react-dom/client.js') };
+    });
+  },
+};
+
+/**
  * Configuration for all plugins to build
  */
 const PLUGINS = [
@@ -115,7 +132,7 @@ const PLUGINS = [
     buildOptions: {
       platform: 'browser',
       format: 'cjs',
-      plugins: [bundledTwReactWidgetPlugin, nativeNodeModulesPlugin],
+      plugins: [bundledTwReactWidgetPlugin, twReactReact19Plugin, nativeNodeModulesPlugin],
     },
   },
 ];
@@ -126,6 +143,11 @@ const PLUGINS = [
 const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const ESBUILD_CONFIG = {
   logLevel: 'info',
+  logOverride: {
+    // Locale resources are bundled as JSON. Duplicate keys silently shadow
+    // earlier translations at runtime, so treat them as a build failure.
+    'duplicate-object-key': 'error',
+  },
   bundle: true,
   platform: 'node', // Use node so we have `exports`, otherwise `module.adaptorClass` will be undefined
   minify: process.env.NODE_ENV === 'production',
