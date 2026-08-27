@@ -103,8 +103,8 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
           >
             <SecurityIcon sx={{ mr: 1 }} color='action' />
             <ListItemText
-              primary='Tool Approval & Timeout Settings'
-              secondary='Configure per-tool approval rules, timeout limits, regex patterns, and API retry settings'
+              primary={t('ToolApproval.Title')}
+              secondary={`${t('ToolApproval.PerToolRules')} · ${t('ToolApproval.GlobalTimeout')} · ${t('ToolApproval.APIRetry')}`}
             />
             <ChevronRightIcon color='action' />
           </ListItemButton>

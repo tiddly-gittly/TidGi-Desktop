@@ -67,6 +67,17 @@ describe('AIAgent database recovery', () => {
     expect(await screen.findByText('Preference.DeleteAgentDatabase')).toBeInTheDocument();
   });
 
+  it('renders the tool approval entry through localized labels', async () => {
+    render(
+      <ThemeProvider theme={lightTheme}>
+        <AIAgent sectionRef={React.createRef()} onNeedsRestart={vi.fn()} />
+      </ThemeProvider>,
+    );
+
+    expect(await screen.findByText('ToolApproval.Title')).toBeInTheDocument();
+    expect(screen.getByText('ToolApproval.PerToolRules · ToolApproval.GlobalTimeout · ToolApproval.APIRetry')).toBeInTheDocument();
+  });
+
   it('requests a restart after deleting the Agent cache', async () => {
     const onNeedsRestart = vi.fn();
 

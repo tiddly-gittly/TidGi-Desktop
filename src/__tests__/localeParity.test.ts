@@ -2,23 +2,62 @@ import fs from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 
+const LOCALES_DIRECTORY = path.join(process.cwd(), 'localization', 'locales');
+const SUPPORTED_LOCALES = fs.readdirSync(LOCALES_DIRECTORY, { withFileTypes: true })
+  .filter(entry => entry.isDirectory())
+  .map(entry => entry.name)
+  .sort();
+
+const readLocale = (locale: string, namespace: 'agent' | 'translation'): unknown => JSON.parse(fs.readFileSync(path.join(LOCALES_DIRECTORY, locale, `${namespace}.json`), 'utf8'));
+
 function flattenKeys(value: unknown, prefix = ''): string[] {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [prefix];
   return Object.entries(value).flatMap(([key, child]) => flattenKeys(child, prefix ? `${prefix}.${key}` : key));
 }
 
-describe('Simplified Chinese locale parity', () => {
-  for (const namespace of ['agent', 'translation']) {
-    it(`contains every English ${namespace} key`, () => {
-      const readLocale = (locale: string): unknown =>
-        JSON.parse(
-          fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, `${namespace}.json`), 'utf8'),
-        );
-      const englishKeys = flattenKeys(readLocale('en'));
-      const chineseKeys = new Set(flattenKeys(readLocale('zh-Hans')));
-      expect(englishKeys.filter(key => !chineseKeys.has(key))).toEqual([]);
-    });
+function flattenValues(value: unknown, prefix = '', values: Record<string, string> = {}): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    values[prefix] = String(value);
+    return values;
   }
+  for (const [key, child] of Object.entries(value)) {
+    flattenValues(child, prefix ? `${prefix}.${key}` : key, values);
+  }
+  return values;
+}
+
+function interpolationVariables(value: string): string[] {
+  return [...value.matchAll(/{{\s*([^}\s]+)\s*}}/g)].map(match => match[1]).sort();
+}
+
+describe('locale parity', () => {
+  it('discovers every supported Desktop locale', () => {
+    expect(SUPPORTED_LOCALES).toEqual(['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant']);
+  });
+
+  it('contains every English Agent key in every supported locale', () => {
+    const englishKeys = flattenKeys(readLocale('en', 'agent'));
+    for (const locale of SUPPORTED_LOCALES) {
+      const localeKeys = new Set(flattenKeys(readLocale(locale, 'agent')));
+      expect(englishKeys.filter(key => !localeKeys.has(key)), locale).toEqual([]);
+    }
+  });
+
+  it('preserves every English Agent interpolation variable in every supported locale', () => {
+    const englishValues = flattenValues(readLocale('en', 'agent'));
+    for (const locale of SUPPORTED_LOCALES) {
+      const localeValues = flattenValues(readLocale(locale, 'agent'));
+      for (const [key, englishValue] of Object.entries(englishValues)) {
+        expect(interpolationVariables(localeValues[key]), `${locale}: ${key}`).toEqual(interpolationVariables(englishValue));
+      }
+    }
+  });
+
+  it('contains every English application key in Simplified Chinese', () => {
+    const englishKeys = flattenKeys(readLocale('en', 'translation'));
+    const chineseKeys = new Set(flattenKeys(readLocale('zh-Hans', 'translation')));
+    expect(englishKeys.filter(key => !chineseKeys.has(key))).toEqual([]);
+  });
 
   it('contains the scheduled wake-up editor keys in every supported locale', () => {
     const scheduledWakeupKeys = [
@@ -58,10 +97,8 @@ describe('Simplified Chinese locale parity', () => {
       'ScheduleUpdate',
     ];
 
-    for (const locale of ['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant']) {
-      const agentLocale = JSON.parse(
-        fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
-      ) as { EditAgent?: Record<string, unknown> };
+    for (const locale of SUPPORTED_LOCALES) {
+      const agentLocale = readLocale(locale, 'agent') as { EditAgent?: Record<string, unknown> };
       expect(scheduledWakeupKeys.filter(key => !(key in (agentLocale.EditAgent ?? {}))), locale).toEqual([]);
     }
   });
@@ -95,7 +132,6 @@ describe('Simplified Chinese locale parity', () => {
       'Truncated',
     ];
     const askQuestionKeys = ['AnswerPlaceholder', 'Submit', 'ConfirmSelection', 'Answered'];
-    const locales = ['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant'];
     type ChatLocale = {
       Chat?: {
         AskQuestion?: Record<string, unknown>;
@@ -103,15 +139,12 @@ describe('Simplified Chinese locale parity', () => {
         Message?: Record<string, unknown>;
       };
     };
-    const readAgentLocale = (locale: string): ChatLocale =>
-      JSON.parse(
-        fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
-      ) as ChatLocale;
+    const readAgentLocale = (locale: string): ChatLocale => readLocale(locale, 'agent') as ChatLocale;
     const english = readAgentLocale('en');
     const englishMessageKeys = Object.keys(english.Chat?.Message ?? {}).sort();
     const englishAskQuestionKeys = Object.keys(english.Chat?.AskQuestion ?? {}).sort();
 
-    for (const locale of locales) {
+    for (const locale of SUPPORTED_LOCALES) {
       const agentLocale = readAgentLocale(locale);
       expect(executionTargetKeys.filter(key => !(key in (agentLocale.Chat?.ExecutionTarget ?? {}))), locale).toEqual([]);
       expect(messageKeys.filter(key => !(key in (agentLocale.Chat?.Message ?? {}))), locale).toEqual([]);
@@ -127,7 +160,7 @@ describe('Simplified Chinese locale parity', () => {
       'DetailLoadFailed',
       'ExportFullMessage',
     ];
-    for (const locale of locales.filter(locale => locale !== 'en')) {
+    for (const locale of SUPPORTED_LOCALES.filter(locale => locale !== 'en')) {
       const localized = readAgentLocale(locale);
       for (const key of labelsThatMustBeLocalized) {
         expect(localized.Chat?.Message?.[key], `${locale}: Chat.Message.${key}`).not.toBe(english.Chat?.Message?.[key]);
@@ -167,10 +200,8 @@ describe('Simplified Chinese locale parity', () => {
   });
 
   it('contains the provider identifier validation message in every supported locale', () => {
-    for (const locale of ['en', 'fr', 'ja', 'ru', 'zh-Hans', 'zh-Hant']) {
-      const agentLocale = JSON.parse(
-        fs.readFileSync(path.join(process.cwd(), 'localization', 'locales', locale, 'agent.json'), 'utf8'),
-      ) as { Preference?: Record<string, unknown> };
+    for (const locale of SUPPORTED_LOCALES) {
+      const agentLocale = readLocale(locale, 'agent') as { Preference?: Record<string, unknown> };
       expect(agentLocale.Preference?.ProviderIdInvalid, locale).toEqual(expect.stringContaining('{{maxBytes}}'));
     }
   });
