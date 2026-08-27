@@ -13,9 +13,10 @@ import {
   useAgentSessionChatAdapter,
   type WikiAttachmentOption,
 } from '@memeloop/react-ui/agent';
-import { ConversationTimelineWindowController, type WebMemeLoopChatAdapter } from '@memeloop/react-ui/chat';
+import { ConversationTimelineWindowController, type MemeLoopMessageLabels, type WebMemeLoopChatAdapter } from '@memeloop/react-ui/chat';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import type { TFunction } from 'i18next';
 import { AgentSessionController, type ChatMessage, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,32 @@ interface DesktopAgentChatTabProps {
 }
 
 const createId = (): string => crypto.randomUUID();
+
+/** Keeps every shared message capability on the host locale instead of silently using Core's English defaults. */
+export function createDesktopMessageLabels(t: TFunction<'agent'>): MemeLoopMessageLabels {
+  return {
+    attachmentAlt: t('Chat.Message.AttachmentAlt'),
+    attachmentLoadFailed: t('Chat.Message.AttachmentLoadFailed'),
+    noDetails: t('Chat.Message.NoDetails'),
+    loadDetails: t('Chat.Message.LoadDetails'),
+    reloadDetails: t('Chat.Message.ReloadDetails'),
+    hideDetails: t('Chat.Message.HideDetails'),
+    showDetails: t('Chat.Message.ShowDetails'),
+    detailTruncated: t('Chat.Message.DetailTruncated'),
+    detailLoadFailed: t('Chat.Message.DetailLoadFailed'),
+    exportFullMessage: t('Chat.Message.ExportFullMessage'),
+    error: t('Chat.Message.Error'),
+    toolResult: t('Chat.Message.ToolResult'),
+    toolCall: name => t('Chat.Message.ToolCall', { toolName: name }),
+    truncated: count => t('Chat.Message.Truncated', { count }),
+    askQuestion: {
+      answerPlaceholder: t('Chat.AskQuestion.AnswerPlaceholder'),
+      submit: t('Chat.AskQuestion.Submit'),
+      confirmSelection: t('Chat.AskQuestion.ConfirmSelection'),
+      answered: t('Chat.AskQuestion.Answered'),
+    },
+  };
+}
 
 function dataIsTiddlerArray(value: unknown): value is Array<{ title?: string }> {
   return Array.isArray(value);
@@ -390,18 +417,7 @@ function DesktopAgentChatView({
         removeFile: name => t('Chat.Attachment.RemoveFile', { name }),
         removeTiddler: (workspaceName, title) => t('Chat.Attachment.RemoveTiddler', { workspaceName, title }),
       }}
-      messageLabels={{
-        attachmentAlt: t('Chat.Message.AttachmentAlt'),
-        attachmentLoadFailed: t('Chat.Message.AttachmentLoadFailed'),
-        noDetails: t('Chat.Message.NoDetails'),
-        loadDetails: t('Chat.Message.LoadDetails'),
-        hideDetails: t('Chat.Message.HideDetails'),
-        showDetails: t('Chat.Message.ShowDetails'),
-        error: t('Chat.Message.Error'),
-        toolResult: t('Chat.Message.ToolResult'),
-        toolCall: name => t('Chat.Message.ToolCall', { toolName: name }),
-        truncated: count => t('Chat.Message.Truncated', { count }),
-      }}
+      messageLabels={createDesktopMessageLabels(t)}
     />
   );
 }

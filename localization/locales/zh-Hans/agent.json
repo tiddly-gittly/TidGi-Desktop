@@ -132,13 +132,23 @@
       "AttachmentLoadFailed": "无法加载附件预览。",
       "NoDetails": "没有可用的详细内容。",
       "LoadDetails": "加载详细内容",
+      "ReloadDetails": "重新加载详细内容",
       "HideDetails": "隐藏详细内容",
       "ShowDetails": "显示详细内容",
+      "DetailTruncated": "这里只显示有界的详情片段。请导出对话以获取完整内容。",
+      "DetailLoadFailed": "无法加载详细内容。",
+      "ExportFullMessage": "导出完整消息",
       "DetailLine": "{{role}}：{{content}}",
       "Error": "错误",
       "ToolResult": "工具结果",
       "ToolCall": "工具调用：{{toolName}}",
       "Truncated": "消息已缩短显示（原文 {{count}} 个字符）。请使用对话导出或消息详细内容查看完整文本。"
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "输入回答…",
+      "Submit": "提交",
+      "ConfirmSelection": "确认选择",
+      "Answered": "已回答"
     },
     "Timeline": {
       "Navigation": "对话时间轴",

@@ -130,13 +130,23 @@
       "AttachmentLoadFailed": "Impossible de charger l’aperçu de la pièce jointe.",
       "NoDetails": "Aucun détail disponible.",
       "LoadDetails": "Charger les détails",
+      "ReloadDetails": "Recharger les détails",
       "HideDetails": "Masquer les détails",
       "ShowDetails": "Afficher les détails",
+      "DetailTruncated": "Seul un extrait limité est affiché. Exportez la conversation pour obtenir le contenu complet.",
+      "DetailLoadFailed": "Impossible de charger les détails.",
+      "ExportFullMessage": "Exporter le message complet",
       "DetailLine": "{{role}} : {{content}}",
       "Error": "Erreur",
       "ToolResult": "Résultat de l’outil",
       "ToolCall": "Appel d’outil : {{toolName}}",
       "Truncated": "Message raccourci pour l’affichage ({{count}} caractères). Utilisez l’export de la conversation ou les détails du message pour consulter le contenu complet."
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "Votre réponse…",
+      "Submit": "Envoyer",
+      "ConfirmSelection": "Confirmer la sélection",
+      "Answered": "Répondu"
     },
     "Timeline": {
       "Navigation": "Chronologie de la conversation",

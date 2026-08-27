@@ -30,6 +30,11 @@ describe('formatTimelineTurn', () => {
     expect(getWikiAgentLabels('ru').moreResponses(12)).toContain('12 ответов ');
     expect(getWikiAgentLabels('en').attachmentLoadFailed).toBe('Attachment preview could not be loaded.');
     expect(getWikiAgentLabels('zh-Hans').attachmentLoadFailed).toBe('无法加载附件预览。');
+    expect(getWikiAgentLabels('en').exportFullMessage).toBe('Export full message');
+    expect(getWikiAgentLabels('zh-Hans').exportFullMessage).toBe('导出完整消息');
+    for (const locale of supportedWikiAgentLocales.filter(locale => locale !== 'en')) {
+      expect(getWikiAgentLabels(locale).exportFullMessage, locale).not.toBe(getWikiAgentLabels('en').exportFullMessage);
+    }
     expect(resolveWikiAgentLocale('$:/languages/zh-Hant')).toBe('zh-Hant');
     expect(resolveWikiAgentLocale('unknown')).toBe('en');
   });

@@ -606,6 +606,7 @@ function BoundMemeLoopWikiChat({
         showDetails: labels.showDetails,
         detailTruncated: labels.detailTruncated,
         detailLoadFailed: labels.detailLoadFailed,
+        exportFullMessage: labels.exportFullMessage,
         error: labels.error,
         toolResult: labels.toolResult,
         toolCall: labels.toolCall,

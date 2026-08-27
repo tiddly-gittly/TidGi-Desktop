@@ -65,6 +65,7 @@ export interface WikiAgentLabels {
   showDetails: string;
   detailTruncated: string;
   detailLoadFailed: string;
+  exportFullMessage: string;
   error: string;
   toolResult: string;
   toolCall: (toolName: string) => string;
@@ -161,6 +162,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     showDetails: 'Show details',
     detailTruncated: 'Only a bounded detail fragment is shown. Export the conversation for complete content.',
     detailLoadFailed: 'Details could not be loaded.',
+    exportFullMessage: 'Export full message',
     error: 'Error',
     toolResult: 'Tool result',
     toolCall: tool => `Tool call: ${tool}`,
@@ -237,6 +239,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     showDetails: 'Afficher les détails',
     detailTruncated: 'Seul un extrait limité est affiché. Exportez la conversation pour obtenir le contenu complet.',
     detailLoadFailed: 'Impossible de charger les détails.',
+    exportFullMessage: 'Exporter le message complet',
     error: 'Erreur',
     toolResult: 'Résultat de l’outil',
     toolCall: tool => `Appel d’outil : ${tool}`,
@@ -313,6 +316,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     showDetails: '詳細を表示',
     detailTruncated: '制限された詳細のみ表示しています。完全な内容は会話をエクスポートしてください。',
     detailLoadFailed: '詳細を読み込めませんでした。',
+    exportFullMessage: '完全なメッセージをエクスポート',
     error: 'エラー',
     toolResult: 'ツールの結果',
     toolCall: tool => `ツール呼び出し: ${tool}`,
@@ -389,6 +393,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     showDetails: 'Показать подробности',
     detailTruncated: 'Показан только ограниченный фрагмент. Экспортируйте диалог, чтобы получить полное содержимое.',
     detailLoadFailed: 'Не удалось загрузить подробности.',
+    exportFullMessage: 'Экспортировать сообщение полностью',
     error: 'Ошибка',
     toolResult: 'Результат инструмента',
     toolCall: tool => `Вызов инструмента: ${tool}`,
@@ -465,6 +470,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     showDetails: '显示详情',
     detailTruncated: '这里只显示有界的详情片段。请导出对话以获取完整内容。',
     detailLoadFailed: '无法加载详情。',
+    exportFullMessage: '导出完整消息',
     error: '错误',
     toolResult: '工具结果',
     toolCall: tool => `工具调用：${tool}`,
@@ -541,6 +547,7 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     showDetails: '顯示詳情',
     detailTruncated: '這裡只顯示有界的詳情片段。請匯出對話以取得完整內容。',
     detailLoadFailed: '無法載入詳情。',
+    exportFullMessage: '匯出完整訊息',
     error: '錯誤',
     toolResult: '工具結果',
     toolCall: tool => `工具呼叫：${tool}`,

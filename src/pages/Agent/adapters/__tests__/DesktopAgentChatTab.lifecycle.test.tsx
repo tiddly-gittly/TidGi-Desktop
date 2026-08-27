@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { type IChatTab, TabState, TabType } from '@/pages/Agent/types/tab';
-import { DesktopAgentChatTab, resolveDesktopAskQuestion } from '../DesktopAgentChatTab';
+import { createDesktopMessageLabels, DesktopAgentChatTab, resolveDesktopAskQuestion } from '../DesktopAgentChatTab';
 
 const lifecycle = vi.hoisted(() => ({
   sessions: [] as Array<{ start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }>,
@@ -42,6 +42,27 @@ vi.mock('../DesktopPromptPreviewController', () => ({
 }));
 
 describe('DesktopAgentChatTab lifecycle', () => {
+  it('forwards every shared message capability to the Desktop locale namespace', () => {
+    const t = vi.fn((key: string, values?: Record<string, unknown>) => `${key}${values ? `:${JSON.stringify(values)}` : ''}`);
+    const labels = createDesktopMessageLabels(t as never);
+
+    expect(labels).toMatchObject({
+      attachmentLoadFailed: 'Chat.Message.AttachmentLoadFailed',
+      reloadDetails: 'Chat.Message.ReloadDetails',
+      detailTruncated: 'Chat.Message.DetailTruncated',
+      detailLoadFailed: 'Chat.Message.DetailLoadFailed',
+      exportFullMessage: 'Chat.Message.ExportFullMessage',
+      askQuestion: {
+        answerPlaceholder: 'Chat.AskQuestion.AnswerPlaceholder',
+        submit: 'Chat.AskQuestion.Submit',
+        confirmSelection: 'Chat.AskQuestion.ConfirmSelection',
+        answered: 'Chat.AskQuestion.Answered',
+      },
+    });
+    expect(labels.toolCall('search')).toContain('Chat.Message.ToolCall');
+    expect(labels.truncated(42, 'detail')).toContain('Chat.Message.Truncated');
+  });
+
   it('awaits the Desktop ask-question IPC port with the exact question identity', async () => {
     const resolveAskQuestion = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(window.service, 'agentInstance', {

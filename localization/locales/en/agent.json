@@ -131,13 +131,23 @@
       "AttachmentLoadFailed": "Attachment preview could not be loaded.",
       "NoDetails": "No details available.",
       "LoadDetails": "Load details",
+      "ReloadDetails": "Reload details",
       "HideDetails": "Hide details",
       "ShowDetails": "Show details",
+      "DetailTruncated": "Only a bounded detail fragment is shown. Export the conversation for complete content.",
+      "DetailLoadFailed": "Details could not be loaded.",
+      "ExportFullMessage": "Export full message",
       "DetailLine": "{{role}}: {{content}}",
       "Error": "Error",
       "ToolResult": "Tool result",
       "ToolCall": "Tool call: {{toolName}}",
       "Truncated": "Message shortened for display ({{count}} characters). Use conversation export or message details for the complete content."
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "Your answer…",
+      "Submit": "Submit",
+      "ConfirmSelection": "Confirm selection",
+      "Answered": "Answered"
     },
     "Timeline": {
       "Navigation": "Conversation timeline",

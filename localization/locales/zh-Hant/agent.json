@@ -129,13 +129,23 @@
       "AttachmentLoadFailed": "無法載入附件預覽。",
       "NoDetails": "沒有可用的詳細內容。",
       "LoadDetails": "載入詳細內容",
+      "ReloadDetails": "重新載入詳細內容",
       "HideDetails": "隱藏詳細內容",
       "ShowDetails": "顯示詳細內容",
+      "DetailTruncated": "這裡只顯示有界的詳情片段。請匯出對話以取得完整內容。",
+      "DetailLoadFailed": "無法載入詳細內容。",
+      "ExportFullMessage": "匯出完整訊息",
       "DetailLine": "{{role}}：{{content}}",
       "Error": "錯誤",
       "ToolResult": "工具結果",
       "ToolCall": "工具呼叫：{{toolName}}",
       "Truncated": "訊息已縮短顯示（原文 {{count}} 個字元）。請使用對話匯出或訊息詳細內容查看完整文字。"
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "輸入回答…",
+      "Submit": "提交",
+      "ConfirmSelection": "確認選擇",
+      "Answered": "已回答"
     },
     "Timeline": {
       "Navigation": "對話時間軸",

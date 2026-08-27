@@ -130,13 +130,23 @@
       "AttachmentLoadFailed": "添付ファイルのプレビューを読み込めませんでした。",
       "NoDetails": "詳細はありません。",
       "LoadDetails": "詳細を読み込む",
+      "ReloadDetails": "詳細を再読み込み",
       "HideDetails": "詳細を隠す",
       "ShowDetails": "詳細を表示",
+      "DetailTruncated": "制限された詳細のみ表示しています。完全な内容は会話をエクスポートしてください。",
+      "DetailLoadFailed": "詳細を読み込めませんでした。",
+      "ExportFullMessage": "完全なメッセージをエクスポート",
       "DetailLine": "{{role}}: {{content}}",
       "Error": "エラー",
       "ToolResult": "ツール結果",
       "ToolCall": "ツール呼び出し: {{toolName}}",
       "Truncated": "表示のためメッセージを短縮しました（{{count}} 文字）。完全な内容は会話のエクスポートまたはメッセージ詳細で確認できます。"
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "回答を入力…",
+      "Submit": "送信",
+      "ConfirmSelection": "選択を確定",
+      "Answered": "回答済み"
     },
     "Timeline": {
       "Navigation": "会話タイムライン",
