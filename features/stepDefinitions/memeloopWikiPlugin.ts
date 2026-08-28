@@ -118,12 +118,14 @@ Then('both MemeLoop wiki entries should use the shared chat UI and the sidebar s
       }
       const sidebarSelectors = sidebar.querySelector('.memeloop-tw-chat__selectors');
       if (!(sidebarSelectors instanceof HTMLElement)) return { error: 'Sidebar selectors are not rendered' };
+      const sidebarChat = sidebarSelectors.closest('.memeloop-tw-chat--sidebar');
+      if (!(sidebarChat instanceof HTMLElement)) return { error: 'Sidebar shared chat surface is not rendered' };
       const agents = await window.service.agentInstance.getAgents(1, 10, { closed: false });
       return {
         agentCount: agents.length,
         fullWidth: full.getBoundingClientRect().width,
         sidebarFlexDirection: getComputedStyle(sidebarSelectors).flexDirection,
-        sidebarWidth: sidebar.getBoundingClientRect().width
+        sidebarWidth: sidebarChat.getBoundingClientRect().width
       };
     })()`,
   );

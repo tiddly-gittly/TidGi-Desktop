@@ -188,6 +188,7 @@ type: text/css
 
 .memeloop-tw-chat--sidebar {
   height: min(68vh, 720px);
+  max-width: 30rem;
   min-height: 24rem;
 }
 

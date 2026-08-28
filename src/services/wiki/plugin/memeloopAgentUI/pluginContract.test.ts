@@ -38,6 +38,7 @@ describe('MemeLoop TiddlyWiki plugin integration contract', () => {
     const styles = read('styles.tid');
     expect(styles).toContain('container-type: inline-size');
     expect(styles).toContain('@container memeloop-chat');
+    expect(styles).toMatch(/\.memeloop-tw-chat--sidebar\s*{[^}]*max-width:\s*30rem/s);
     expect(styles).toContain('@media (pointer: coarse)');
     expect(styles).toContain('[dir="rtl"]');
     expect(read('components.tsx')).toContain('onAttachmentsSelect={selectAttachments}');
