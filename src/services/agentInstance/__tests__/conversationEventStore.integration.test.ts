@@ -224,10 +224,22 @@ describe('Desktop canonical conversation event store', () => {
       },
     ]);
 
+    const querySpy = vi.spyOn(dataSource, 'query');
     const retained = await getRetainedCompactionControls(dataSource, 'conversation', {
       limit: 32,
       maxBytes: 256 * 1024,
     });
+    const retainedQueryCall = querySpy.mock.calls.find(
+      ([query]) => typeof query === 'string' && query.startsWith('WITH summary_candidates'),
+    );
+    querySpy.mockRestore();
+    expect(retainedQueryCall).toBeDefined();
+    const [retainedQuery, retainedQueryParameters] = retainedQueryCall!;
+    const plan = await dataSource.query<Array<{ detail: string }>>(
+      `EXPLAIN QUERY PLAN ${retainedQuery}`,
+      retainedQueryParameters as unknown[],
+    );
+    expect(plan.map(row => row.detail)).toContainEqual(expect.stringContaining('MATERIALIZE summary_candidates'));
     expect(retained.items.map(event => event.eventId).sort()).toEqual([
       'coverage-checkpoint',
       'summary-a',

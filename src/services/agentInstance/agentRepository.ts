@@ -3600,7 +3600,12 @@ export async function getRetainedCompactionControls(
     parameters.push(options.after.originNodeId, options.after.originSequence, options.after.eventId);
   }
   const rows = await dataSource.query<Array<{ eventJson: string; invalidated: number }>>(
-    `WITH summary_candidates AS (
+    `WITH summary_candidates AS MATERIALIZED (
+       -- This CTE is referenced both by the retained-control dominance scan
+       -- and by the invalidation aggregate below. SQLite otherwise inlines
+       -- the correlated JSON/tombstone predicate for every reference. A long
+       -- conversation with only a handful of controls can then take seconds
+       -- instead of milliseconds even though the result remains bounded.
        SELECT candidate.*,
          EXISTS (
            SELECT 1
