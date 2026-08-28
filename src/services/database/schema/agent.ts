@@ -251,6 +251,10 @@ export class AgentInstanceEntity {
   @Column({ default: false })
   volatile: boolean = false;
 
+  /** Renderer-created preview marker. Volatile sub-agents are not previews and cannot use the destructive preview purge path. */
+  @Column({ default: false })
+  preview: boolean = false;
+
   // Relation to AgentDefinition
   @ManyToOne(() => AgentDefinitionEntity, definition => definition.instances)
   @JoinColumn({ name: 'agentDefId' })

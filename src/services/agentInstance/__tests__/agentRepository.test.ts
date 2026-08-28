@@ -49,6 +49,7 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).toBe(true);
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: false }));
     expect(created.modelConfig).toEqual(mockDefinition.modelConfig);
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
@@ -66,6 +67,7 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).toBe(true);
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: true }));
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
   });
@@ -81,6 +83,7 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).not.toBe(true);
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: false }));
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
   });

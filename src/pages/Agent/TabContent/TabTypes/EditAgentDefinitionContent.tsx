@@ -178,7 +178,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
 
         // Delete existing preview agent first to ensure we use fresh config
         if (previewAgentId) {
-          await window.service.agentInstance.deleteAgent(previewAgentId);
+          await window.service.agentInstance.discardVolatileAgentPreview({ agentId: previewAgentId });
           setPreviewAgentId(null);
         }
 
@@ -224,7 +224,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   useEffect(() => {
     return () => {
       if (previewAgentId) {
-        void window.service.agentInstance.deleteAgent(previewAgentId);
+        void window.service.agentInstance.discardVolatileAgentPreview({ agentId: previewAgentId });
       }
     };
   }, [previewAgentId]);

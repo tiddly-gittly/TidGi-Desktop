@@ -30,6 +30,7 @@ const mockAddTab = vi.fn();
 const mockCloseTab = vi.fn();
 const mockCreateAgent = vi.fn();
 const mockDeleteAgent = vi.fn();
+const mockDiscardVolatileAgentPreview = vi.fn();
 const mockGetAgentDef = vi.fn();
 const mockUpdateAgentDef = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
@@ -50,6 +51,7 @@ Object.defineProperty(window, 'service', {
     agentInstance: {
       createAgent: mockCreateAgent,
       deleteAgent: mockDeleteAgent,
+      discardVolatileAgentPreview: mockDiscardVolatileAgentPreview,
       getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
       listScheduledTasksForAgent: mockListScheduledTasksForAgent,
       getCronPreviewDates: mockGetCronPreviewDates,
@@ -102,6 +104,7 @@ describe('EditAgentDefinitionContent', () => {
     mockUpdateAgentDef.mockResolvedValue(mockAgentDefinition);
     mockListScheduledTasksForAgent.mockResolvedValue([]);
     mockGetCronPreviewDates.mockResolvedValue([]);
+    mockDiscardVolatileAgentPreview.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -312,6 +315,20 @@ describe('EditAgentDefinitionContent', () => {
     await waitFor(() => {
       expect(mockCreateAgent).toHaveBeenCalledWith('test-agent-def-id', { preview: true });
     });
+  });
+
+  it('discards its volatile preview without deleting the permanent definition', async () => {
+    const { unmount } = await renderComponent();
+    await waitFor(() => {
+      expect(mockCreateAgent).toHaveBeenCalledWith('test-agent-def-id', { preview: true });
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(mockDiscardVolatileAgentPreview).toHaveBeenCalledWith({ agentId: 'test-agent-id' });
+    });
+    expect(mockDeleteAgent).not.toHaveBeenCalled();
   });
 
   it('should handle save action', async () => {

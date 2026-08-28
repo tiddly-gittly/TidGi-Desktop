@@ -229,11 +229,14 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   public async deleteAgentDef(id: string): Promise<void> {
     this.ensureRepositories();
     if (!id.startsWith('temp-')) throw new Error(`Refusing to delete non-temporary agent definition: ${id}`);
-    const instanceRepo = this.dataSource!.getRepository(AgentInstanceEntity);
-    const stRepo = this.dataSource!.getRepository(ScheduledTaskEntity);
-    for (const inst of await instanceRepo.find({ where: { agentDefId: id } })) await instanceRepo.delete(inst.id);
-    await stRepo.delete({ agentDefinitionId: id });
-    await this.agentDefRepository!.delete(id);
+    await this.dataSource!.transaction(async manager => {
+      const instanceCount = await manager.getRepository(AgentInstanceEntity).count({ where: { agentDefId: id } });
+      if (instanceCount > 0) {
+        throw new Error(`Refusing to delete referenced temporary agent definition: ${id}`);
+      }
+      await manager.getRepository(ScheduledTaskEntity).delete({ agentDefinitionId: id });
+      await manager.getRepository(AgentDefinitionEntity).delete(id);
+    });
   }
 
   public async getAgentTemplates(): Promise<AgentDefinition[]> {

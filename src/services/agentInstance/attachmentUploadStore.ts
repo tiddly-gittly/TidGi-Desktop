@@ -179,6 +179,20 @@ export class DesktopAttachmentUploadStore {
     await unlink(upload.temporaryPath).catch(() => undefined);
   }
 
+  /**
+   * Revoke all ephemeral upload capabilities owned by one conversation. The
+   * content-addressed blobs are deliberately retained because another synced
+   * conversation may reference the same hash.
+   */
+  public async releaseConversationScope(conversationId: string): Promise<void> {
+    assertIdentifier(conversationId, 'conversationId');
+    const activeUploads = [...this.active.values()].filter(upload => upload.conversationId === conversationId);
+    await Promise.all(activeUploads.map(upload => this.abort({ uploadId: upload.uploadId, conversationId })));
+    for (const [uploadId, committed] of this.committedUploads) {
+      if (committed.conversationId === conversationId) this.committedUploads.delete(uploadId);
+    }
+  }
+
   /** One-shot authorization for attaching a newly committed upload to its scoped conversation. */
   public consumeCommittedScope(conversationId: string, reference: AttachmentReference): boolean {
     for (const [uploadId, committed] of this.committedUploads) {

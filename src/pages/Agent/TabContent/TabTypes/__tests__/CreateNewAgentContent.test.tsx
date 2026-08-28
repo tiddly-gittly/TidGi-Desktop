@@ -26,6 +26,7 @@ const mockGetActiveTabId = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
 const mockCreateAgent = vi.fn();
 const mockDeleteAgent = vi.fn();
+const mockDiscardVolatileAgentPreview = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -41,6 +42,7 @@ Object.defineProperty(window, 'service', {
       getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
       createAgent: mockCreateAgent,
       deleteAgent: mockDeleteAgent,
+      discardVolatileAgentPreview: mockDiscardVolatileAgentPreview,
     },
     agentBrowser: {
       updateTab: mockUpdateTab,
@@ -144,6 +146,7 @@ describe('CreateNewAgentContent', () => {
     mockUpdateAgentDef.mockResolvedValue({ id: 'saved-agent-definition' });
     mockCreateAgent.mockResolvedValue({ id: 'preview-agent' });
     mockDeleteAgent.mockResolvedValue(undefined);
+    mockDiscardVolatileAgentPreview.mockResolvedValue(undefined);
   });
 
   it('should render the first step (setup agent)', () => {
@@ -333,6 +336,32 @@ describe('CreateNewAgentContent', () => {
     await waitFor(() => {
       expect(mockGetFrameworkConfigSchema).toHaveBeenCalledWith('test-handler');
     }, { timeout: 2000 });
+  });
+
+  it('atomically discards the preview conversation and temporary definition on unmount', async () => {
+    mockGetAgentDef.mockResolvedValue({
+      id: 'temp-123',
+      name: 'Preview Agent',
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Preview prompt' }] },
+    });
+    const { unmount } = render(
+      <TestComponent tab={{ ...mockTab, currentStep: 2, agentDefId: 'temp-123' }} />,
+    );
+    await waitFor(() => {
+      expect(mockCreateAgent).toHaveBeenCalledWith('temp-123', { preview: true });
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(mockDiscardVolatileAgentPreview).toHaveBeenCalledWith({
+        agentId: 'preview-agent',
+        temporaryDefinitionId: 'temp-123',
+      });
+    });
+    expect(mockDeleteAgent).not.toHaveBeenCalled();
+    expect(mockDeleteAgentDef).not.toHaveBeenCalled();
   });
 
   it('should handle PromptConfigForm rendering in step 2', async () => {

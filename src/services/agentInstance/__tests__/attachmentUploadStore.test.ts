@@ -148,6 +148,42 @@ describe('DesktopAttachmentUploadStore', () => {
     expect(store.consumeCommittedScope('conversation-1', reference)).toBe(false);
   });
 
+  it('releases only one conversation upload scope without deleting shared blobs', async () => {
+    const activeScope = {
+      ...(await store.begin({
+        conversationId: 'conversation-1',
+        filename: 'active.bin',
+        mimeType: 'application/octet-stream',
+        totalBytes: 2,
+      })),
+      conversationId: 'conversation-1',
+    };
+    await store.write({ ...activeScope, offset: 0, data: bytes(1) });
+
+    const commitFor = async (conversationId: string, value: number) => {
+      const scope = {
+        ...(await store.begin({
+          conversationId,
+          filename: `${conversationId}.bin`,
+          mimeType: 'application/octet-stream',
+          totalBytes: 1,
+        })),
+        conversationId,
+      };
+      await store.write({ ...scope, offset: 0, data: bytes(value) });
+      return { scope, reference: await store.commit(scope) };
+    };
+    const discarded = await commitFor('conversation-1', 2);
+    const retained = await commitFor('conversation-2', 3);
+
+    await store.releaseConversationScope('conversation-1');
+
+    await expect(store.write({ ...activeScope, offset: 1, data: bytes(4) })).rejects.toThrow('unavailable');
+    expect(store.consumeCommittedScope('conversation-1', discarded.reference)).toBe(false);
+    expect(store.consumeCommittedScope('conversation-2', retained.reference)).toBe(true);
+    await expect(store.getReference(discarded.reference.contentHash)).resolves.toEqual(discarded.reference);
+  });
+
   it('does not consume a grant when the renderer tampers with reference metadata', async () => {
     const scope = {
       ...(await store.begin({

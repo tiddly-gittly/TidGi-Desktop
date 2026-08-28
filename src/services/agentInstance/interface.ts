@@ -294,6 +294,17 @@ export interface IAgentInstanceService {
   deleteAgent(agentId: string): Promise<void>;
 
   /**
+   * Irreversibly discard one renderer preview and its disposable conversation
+   * rows. The main process validates that the instance is volatile before any
+   * data is removed. A temporary definition is deleted only when its exact ID
+   * is supplied and it is no longer referenced by another instance.
+   */
+  discardVolatileAgentPreview(input: {
+    agentId?: string;
+    temporaryDefinitionId?: string;
+  }): Promise<void>;
+
+  /**
    * Cancel current operations for agent instance
    * @param agentId Agent instance ID
    */
@@ -491,6 +502,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     createAgent: ProxyPropertyType.Function,
     debounceUpdateMessage: ProxyPropertyType.Function,
     deleteAgent: ProxyPropertyType.Function,
+    discardVolatileAgentPreview: ProxyPropertyType.Function,
     deleteMessages: ProxyPropertyType.Function,
     commitAgentAttachmentUpload: ProxyPropertyType.Function,
     getAgentMetadata: ProxyPropertyType.Function,

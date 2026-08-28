@@ -189,18 +189,16 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
         const currentPreviewAgentId = previewAgentIdReference.current;
         const currentTemporaryAgentDefinitionId = temporaryAgentDefinitionIdReference.current;
 
-        if (currentPreviewAgentId) {
+        if (currentPreviewAgentId || currentTemporaryAgentDefinitionId?.startsWith('temp-')) {
           try {
-            await window.service.agentInstance.deleteAgent(currentPreviewAgentId);
+            await window.service.agentInstance.discardVolatileAgentPreview({
+              ...(currentPreviewAgentId ? { agentId: currentPreviewAgentId } : {}),
+              ...(currentTemporaryAgentDefinitionId?.startsWith('temp-')
+                ? { temporaryDefinitionId: currentTemporaryAgentDefinitionId }
+                : {}),
+            });
           } catch (error) {
-            console.error('Failed to cleanup preview agent:', error);
-          }
-        }
-        if (currentTemporaryAgentDefinitionId?.startsWith('temp-')) {
-          try {
-            await window.service.agentDefinition.deleteAgentDef(currentTemporaryAgentDefinitionId);
-          } catch (error) {
-            console.error('Failed to cleanup temporary agent definition:', error);
+            console.error('Failed to cleanup volatile agent preview:', error);
           }
         }
       };

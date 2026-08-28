@@ -10,8 +10,9 @@ import { createHash } from 'node:crypto';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, RemoteScheduledTaskProjectionEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import {
+  AgentRunStateEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
   ConversationEventSequenceEntity,
@@ -132,6 +133,7 @@ export async function createAgent(
 
   const { created: _created, modified: _modified, ...instanceForPersistence } = instanceData;
   const instanceEntity = agentInstanceRepo.create(toDatabaseCompatibleInstance(instanceForPersistence));
+  instanceEntity.preview = options?.preview === true;
 
   // Add timeout to database save operation
   const savePromise = agentInstanceRepo.save(instanceEntity);
@@ -1534,6 +1536,98 @@ export async function deleteAgent(
   await agentInstanceRepo.update(agentId, { closed: true, modified: new Date() });
   await bumpConversationListRevision(agentInstanceRepo.manager);
   logger.info(`Archived agent instance: ${agentId}`);
+}
+
+export interface DiscardVolatileAgentPreviewInput {
+  agentId?: string;
+  temporaryDefinitionId?: string;
+}
+
+/**
+ * Irreversible cleanup is intentionally separate from deleteAgent(), whose
+ * public contract is archival. Every destructive predicate is re-checked in
+ * the same transaction as the deletes so a stale renderer cannot erase a
+ * durable conversation or definition.
+ */
+export async function discardVolatileAgentPreview(
+  dataSource: DataSource,
+  input: DiscardVolatileAgentPreviewInput,
+): Promise<void> {
+  const agentId = input.agentId?.trim();
+  const temporaryDefinitionId = input.temporaryDefinitionId?.trim();
+  if (!agentId && !temporaryDefinitionId) {
+    throw new Error('discarding a volatile preview requires an agent or temporary definition id');
+  }
+  if (temporaryDefinitionId && !temporaryDefinitionId.startsWith('temp-')) {
+    throw new Error(`Refusing to discard non-temporary agent definition: ${temporaryDefinitionId}`);
+  }
+
+  await dataSource.transaction(async manager => {
+    const instanceRepository = manager.getRepository(AgentInstanceEntity);
+    const definitionRepository = manager.getRepository(AgentDefinitionEntity);
+    const instance = agentId ? await instanceRepository.findOne({ where: { id: agentId } }) : null;
+    const definition = temporaryDefinitionId
+      ? await definitionRepository.findOne({ where: { id: temporaryDefinitionId } })
+      : null;
+
+    // A repeated cleanup after a committed transaction is harmless. Partial
+    // absence is not: it can indicate a stale or confused-deputy request.
+    if (!instance && !definition) return;
+    if (agentId && !instance && !temporaryDefinitionId) return;
+    if (instance && temporaryDefinitionId && !definition) {
+      throw new Error(`Temporary agent definition not found: ${temporaryDefinitionId}`);
+    }
+    if (instance && (!instance.volatile || !instance.preview)) {
+      throw new Error(`Refusing to discard non-preview or non-volatile agent instance: ${agentId}`);
+    }
+    if (instance && temporaryDefinitionId && instance.agentDefId !== temporaryDefinitionId) {
+      throw new Error('Volatile preview does not belong to the supplied temporary definition');
+    }
+
+    if (temporaryDefinitionId) {
+      const linkedInstances = await instanceRepository.find({ where: { agentDefId: temporaryDefinitionId } });
+      const unexpectedInstance = linkedInstances.find(linked => !agentId || linked.id !== agentId || !linked.volatile || !linked.preview);
+      if (unexpectedInstance) {
+        throw new Error(`Refusing to discard referenced temporary agent definition: ${temporaryDefinitionId}`);
+      }
+      if (agentId && !instance && linkedInstances.length > 0) {
+        throw new Error(`Volatile preview identity mismatch for temporary definition: ${temporaryDefinitionId}`);
+      }
+    }
+
+    if (instance) {
+      const conversationId = instance.id;
+
+      // Scheduling and run state can keep live work associated with the
+      // conversation. Their in-memory counterparts are released by the
+      // service before entering this transaction.
+      await manager.getRepository(RemoteScheduledTaskProjectionEntity).delete({ agentInstanceId: conversationId });
+      await manager.getRepository(ScheduledTaskEntity).delete({ agentInstanceId: conversationId });
+      await manager.getRepository(AgentRunStateEntity).delete({ conversationId });
+
+      // Derived projections first, canonical events and allocators next, then
+      // the message/instance FK parents. Keep this list explicit when adding a
+      // new conversation-scoped table: silent cascades would make omissions
+      // invisible in review and tests.
+      await manager.getRepository(ConversationTimelineRankCheckpointEntity).delete({ conversationId });
+      await manager.getRepository(ConversationTimelineEntryEntity).delete({ conversationId });
+      await manager.getRepository(ConversationTimelineStateEntity).delete({ conversationId });
+      await manager.getRepository(ConversationTurnTombstoneEntity).delete({ conversationId });
+      await manager.getRepository(ConversationMetadataFieldEntity).delete({ conversationId });
+      await manager.getRepository(ConversationMessageDetailEntity).delete({ conversationId });
+      await manager.getRepository(ConversationAttachmentReferenceEntity).delete({ conversationId });
+      await manager.getRepository(AgentInstanceMessageEntity).delete({ conversationId });
+      await manager.getRepository(ConversationEventEntity).delete({ conversationId });
+      await manager.getRepository(ConversationEventSequenceEntity).delete({ conversationId });
+      await instanceRepository.delete(conversationId);
+    }
+
+    if (temporaryDefinitionId) {
+      await manager.getRepository(ScheduledTaskEntity).delete({ agentDefinitionId: temporaryDefinitionId });
+      await definitionRepository.delete(temporaryDefinitionId);
+    }
+    await bumpConversationListRevision(manager);
+  });
 }
 
 export async function getAgents(

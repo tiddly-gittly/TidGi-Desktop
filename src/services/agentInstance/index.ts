@@ -1001,6 +1001,46 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
+  public async discardVolatileAgentPreview(input: repo.DiscardVolatileAgentPreviewInput): Promise<void> {
+    this.ensureRepositories();
+    const agentId = input.agentId?.trim();
+    const temporaryDefinitionId = input.temporaryDefinitionId?.trim();
+    try {
+      if (temporaryDefinitionId && !temporaryDefinitionId.startsWith('temp-')) {
+        throw new Error(`Refusing to discard non-temporary agent definition: ${temporaryDefinitionId}`);
+      }
+      // Fail before mutating runtime state when the renderer points at a
+      // durable conversation. The repository repeats this check atomically.
+      if (agentId) {
+        const instance = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
+        if (instance && (!instance.volatile || !instance.preview)) {
+          throw new Error(`Refusing to discard non-preview or non-volatile agent instance: ${agentId}`);
+        }
+        if (instance && temporaryDefinitionId && instance.agentDefId !== temporaryDefinitionId) {
+          throw new Error('Volatile preview does not belong to the supplied temporary definition');
+        }
+        if (instance) {
+          stopHeartbeat(agentId);
+          await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
+          cancelAlarm(agentId);
+          await cancelTasksForAgent(agentId);
+          await cleanupMCPClient(agentId);
+          await this.attachmentUploadStore?.releaseConversationScope(agentId);
+        }
+      }
+
+      await repo.discardVolatileAgentPreview(this.dataSource!, input);
+      if (agentId) {
+        this.cancelTokenMap.delete(agentId);
+        this.activeDurableRunIds.delete(agentId);
+        this.cleanupAgentSubscriptions(agentId);
+      }
+    } catch (error) {
+      logger.error('Failed to discard volatile agent preview', { error, ...input });
+      throw error;
+    }
+  }
+
   public async getAgents(
     page: number,
     pageSize: number,
