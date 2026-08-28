@@ -115,6 +115,19 @@ export async function resolvePackagedMacExecutable(projectRoot: string, architec
   throw new Error(`No executable file was found in ${executableDirectory}`);
 }
 
+export async function prepareMacSmokeScenarioRoot(projectRoot: string, architecture: MacArchitecture): Promise<string> {
+  const artifactsRoot = path.resolve(projectRoot, 'test-artifacts');
+  const scenarioRoot = path.join(artifactsRoot, `mac-packaged-smoke-${architecture}`);
+  if (path.dirname(scenarioRoot) !== artifactsRoot) throw new Error('Refusing to reset a smoke directory outside test-artifacts');
+  await rm(scenarioRoot, { force: true, recursive: true });
+  // The packaged app creates the default wiki inside this container, but its
+  // createWiki contract deliberately requires the selected parent to exist.
+  // Playwright's scenario fixture normally prepares it; this standalone smoke
+  // must provide the same filesystem precondition itself.
+  await mkdir(path.join(scenarioRoot, 'wiki-test'), { recursive: true });
+  return scenarioRoot;
+}
+
 function assertExecutableArchitecture(executable: string, architecture: MacArchitecture): void {
   const result = spawnSync('/usr/bin/lipo', ['-archs', executable], { encoding: 'utf8' });
   if (result.status !== 0) {
@@ -197,11 +210,7 @@ export async function runMacOSPackagedSmoke(
   assertExecutableArchitecture(executable, architecture);
 
   const scenarioSlug = `mac-packaged-smoke-${architecture}`;
-  const artifactsRoot = path.resolve(projectRoot, 'test-artifacts');
-  const scenarioRoot = path.join(artifactsRoot, scenarioSlug);
-  if (path.dirname(scenarioRoot) !== artifactsRoot) throw new Error('Refusing to reset a smoke directory outside test-artifacts');
-  await rm(scenarioRoot, { force: true, recursive: true });
-  await mkdir(scenarioRoot, { recursive: true });
+  const scenarioRoot = await prepareMacSmokeScenarioRoot(projectRoot, architecture);
   const outputPath = path.join(scenarioRoot, 'mac-packaged-smoke-output.log');
   const output = createWriteStream(outputPath, { flags: 'w' });
   let outputError: Error | undefined;

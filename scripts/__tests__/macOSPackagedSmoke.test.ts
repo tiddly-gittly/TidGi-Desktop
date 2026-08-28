@@ -1,8 +1,8 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { MacSmokeOutputTracker, parseMacArchitecture, removeSensitiveEnvironmentVariables, resolvePackagedMacExecutable } from '../macOSPackagedSmoke';
+import { MacSmokeOutputTracker, parseMacArchitecture, prepareMacSmokeScenarioRoot, removeSensitiveEnvironmentVariables, resolvePackagedMacExecutable } from '../macOSPackagedSmoke';
 
 const temporaryDirectories: string[] = [];
 
@@ -49,6 +49,17 @@ describe('resolvePackagedMacExecutable', () => {
     await chmod(executable, 0o755);
 
     await expect(resolvePackagedMacExecutable(projectRoot, 'x64')).resolves.toBe(executable);
+  });
+});
+
+describe('prepareMacSmokeScenarioRoot', () => {
+  it('creates the parent directory required by packaged default-wiki creation', async () => {
+    const projectRoot = await mkdtemp(path.join(os.tmpdir(), 'tidgi-mac-smoke-scenario-'));
+    temporaryDirectories.push(projectRoot);
+
+    const scenarioRoot = await prepareMacSmokeScenarioRoot(projectRoot, 'arm64');
+
+    await expect(access(path.join(scenarioRoot, 'wiki-test'))).resolves.toBeUndefined();
   });
 });
 
