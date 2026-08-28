@@ -5,6 +5,7 @@ import fs from 'fs';
 import nsfw from 'nsfw';
 import path from 'path';
 import type { IFileInfo, Syncer, Wiki } from 'tiddlywiki';
+import { notifyGitFileChangeBestEffort } from './gitNotification';
 import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
 
 /**
@@ -810,11 +811,7 @@ export class FileSystemWatcher {
 
     this.gitNotificationTimer = setTimeout(() => {
       const wikiFolderLocation = this.useWikiFolderAsTiddlersPath ? this.watchPathBase : path.dirname(this.watchPathBase);
-      try {
-        void git.notifyFileChange(wikiFolderLocation, { onlyWhenGitLogOpened: true });
-      } catch (error) {
-        this.logger.alert('FileSystemWatcher Failed to notify git service:', error);
-      }
+      void notifyGitFileChangeBestEffort(git, wikiFolderLocation);
       this.gitNotificationTimer = undefined;
     }, GIT_NOTIFICATION_DELAY_MS);
   }

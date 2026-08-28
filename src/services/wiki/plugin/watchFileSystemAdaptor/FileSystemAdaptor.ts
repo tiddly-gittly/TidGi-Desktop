@@ -8,6 +8,7 @@ import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { moveExternalAttachmentIfNeeded } from './externalAttachmentUtilities';
+import { notifyGitFileChangeBestEffort } from './gitNotification';
 import type { ExtendedUtilities } from './routingUtilities.type';
 import type { ITiddlerRoutingInfo } from './tiddlerRoutingInfo';
 import { isFileLockError } from './utilities';
@@ -386,7 +387,7 @@ export class FileSystemAdaptor {
       // Notify git log window to refresh (only if it's open). This covers the case where
       // enableFileSystemWatch is false and the watcher is not running.
       const wikiFolderLocation = this.useWikiFolderAsTiddlersPath ? this.watchPathBase : path.dirname(this.watchPathBase);
-      void git.notifyFileChange(wikiFolderLocation, { onlyWhenGitLogOpened: true });
+      void notifyGitFileChangeBestEffort(git, wikiFolderLocation);
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
       callback?.(errorObject);
