@@ -46,12 +46,17 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [previewInputText, setPreviewInputText] = useState('');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPress = useRef(false);
   const [previewState, setPreviewState] = useState<PromptPreviewDialogState>(() => controller.getState());
 
   useEffect(() => {
     const unsubscribe = controller.subscribe(setPreviewState);
     return () => {
+      if (previewOpenTimer.current) {
+        clearTimeout(previewOpenTimer.current);
+        previewOpenTimer.current = null;
+      }
       unsubscribe();
       controller.close();
     };
@@ -59,16 +64,28 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
 
   const { addTab, createSplitViewFromTabs, addTabToSplitView, tabs } = useTabStore();
 
-  const handleOpenPreview = useCallback(() => {
-    setPreviewInputText(aui.composer.getState().text);
-    controller.open();
+  const schedulePreviewOpen = useCallback((baseMode?: 'preview' | 'edit') => {
+    if (previewOpenTimer.current) clearTimeout(previewOpenTimer.current);
+    // A long, repeatedly compacted conversation can make both assistant-ui's
+    // composer snapshot and the MUI dialog mount expensive. Yield the click
+    // task first so the toolbar stays responsive and automation observes the
+    // same immediate feedback as a user instead of timing out while dispatching
+    // the click itself.
+    previewOpenTimer.current = setTimeout(() => {
+      previewOpenTimer.current = null;
+      setPreviewInputText(aui.composer.getState().text);
+      controller.open(baseMode);
+    }, 0);
   }, [aui, controller]);
 
+  const handleOpenPreview = useCallback(() => {
+    schedulePreviewOpen();
+  }, [schedulePreviewOpen]);
+
   const handleOpenEdit = useCallback(() => {
-    setPreviewInputText(aui.composer.getState().text);
-    controller.open('edit');
     setMenuAnchor(null);
-  }, [aui, controller]);
+    schedulePreviewOpen('edit');
+  }, [schedulePreviewOpen]);
 
   const handleOpenEditInSplitView = useCallback(async () => {
     setMenuAnchor(null);

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -31,7 +31,7 @@ vi.mock('../PromptPreviewDialog', () => ({
 }));
 
 describe('PromptPreviewButtonWithMenu', () => {
-  it('opens from the chat toolbar and closes through the cancelling controller boundary', () => {
+  it('yields the click task before opening and closes through the cancelling controller boundary', async () => {
     let state = previewState();
     let listener: ((next: PromptPreviewDialogState) => void) | undefined;
     const controller = {
@@ -61,9 +61,36 @@ describe('PromptPreviewButtonWithMenu', () => {
       />,
     );
     fireEvent.click(screen.getByTestId('prompt-preview-button'));
-    expect(controller.open).toHaveBeenCalledOnce();
+    expect(controller.open).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(controller.open).toHaveBeenCalledOnce();
+    });
     expect(screen.getByText('unsent input')).toBeInTheDocument();
     fireEvent.click(screen.getByText('close-preview'));
+    expect(controller.close).toHaveBeenCalledOnce();
+  });
+
+  it('cancels a deferred preview open when the toolbar unmounts', async () => {
+    const controller = {
+      getState: () => previewState(),
+      subscribe: vi.fn(() => () => undefined),
+      open: vi.fn(),
+      close: vi.fn(),
+    } as unknown as PromptPreviewController;
+    const rendered = render(
+      <PromptPreviewButtonWithMenu
+        tabId='tab-1'
+        agentId='conversation-1'
+        agentDefinitionId='definition-1'
+        controller={controller}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('prompt-preview-button'));
+    rendered.unmount();
+    await new Promise(resolve => setTimeout(resolve, 5));
+
+    expect(controller.open).not.toHaveBeenCalled();
     expect(controller.close).toHaveBeenCalledOnce();
   });
 });

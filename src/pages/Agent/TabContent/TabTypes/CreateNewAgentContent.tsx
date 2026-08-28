@@ -127,6 +127,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
 
   // Create preview agent when entering step 3
   useEffect(() => {
+    let cancelled = false;
     const createPreviewAgent = async () => {
       const latestTemporaryAgentDefinition = latestTemporaryAgentDefinitionReference.current;
       if (currentStep === 2 && latestTemporaryAgentDefinition && !previewAgentId) {
@@ -135,21 +136,38 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
           // Save the definition from this render before creating the preview.
           // The background auto-save is only a fallback and may still be pending.
           await agentDefinitionSaveQueue.save(latestTemporaryAgentDefinition);
+          if (cancelled) return;
           const previewAgent = await window.service.agentInstance.createAgent(
             latestTemporaryAgentDefinition.id,
             { preview: true },
           );
+          // Keep the cleanup identity synchronous with the backend result. A
+          // tab can unmount before React commits the state update below.
+          previewAgentIdReference.current = previewAgent.id;
+          if (cancelled) {
+            await window.service.agentInstance.discardVolatileAgentPreview({
+              agentId: previewAgent.id,
+              ...(latestTemporaryAgentDefinition.id.startsWith('temp-')
+                ? { temporaryDefinitionId: latestTemporaryAgentDefinition.id }
+                : {}),
+            });
+            return;
+          }
           setPreviewAgentId(previewAgent.id);
         } catch (error) {
+          if (cancelled) return;
           console.error('Failed to create preview agent:', error);
           void window.service.native.log('error', 'CreateNewAgentContent: Failed to create preview agent', { error });
         } finally {
-          setIsLoading(false);
+          if (!cancelled) setIsLoading(false);
         }
       }
     };
 
     void createPreviewAgent();
+    return () => {
+      cancelled = true;
+    };
   }, [agentDefinitionSaveQueue, currentStep, temporaryAgentDefinition, previewAgentId]);
 
   // Auto-save to the backend after edits settle. Cancelling the previous timer

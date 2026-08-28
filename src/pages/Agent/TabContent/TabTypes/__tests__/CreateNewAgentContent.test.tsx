@@ -364,6 +364,37 @@ describe('CreateNewAgentContent', () => {
     expect(mockDeleteAgentDef).not.toHaveBeenCalled();
   });
 
+  it('discards a preview whose backend creation completes after the tab unmounts', async () => {
+    mockGetAgentDef.mockResolvedValue({
+      id: 'temp-123',
+      name: 'Late Preview Agent',
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Preview prompt' }] },
+    });
+    let resolveCreate: ((value: { id: string }) => void) | undefined;
+    mockCreateAgent.mockReturnValueOnce(
+      new Promise(resolve => {
+        resolveCreate = resolve;
+      }),
+    );
+    const { unmount } = render(
+      <TestComponent tab={{ ...mockTab, currentStep: 2, agentDefId: 'temp-123' }} />,
+    );
+    await waitFor(() => {
+      expect(mockCreateAgent).toHaveBeenCalledWith('temp-123', { preview: true });
+    });
+
+    unmount();
+    resolveCreate?.({ id: 'late-preview-agent' });
+
+    await waitFor(() => {
+      expect(mockDiscardVolatileAgentPreview).toHaveBeenCalledWith({
+        agentId: 'late-preview-agent',
+        temporaryDefinitionId: 'temp-123',
+      });
+    });
+  });
+
   it('should handle PromptConfigForm rendering in step 2', async () => {
     // Simple test to verify PromptConfigForm can render
     const tabStep2: ICreateNewAgentTab = {
