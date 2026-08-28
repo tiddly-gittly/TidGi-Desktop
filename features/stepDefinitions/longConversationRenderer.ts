@@ -236,7 +236,11 @@ Then(
 
 When('I open the generated model-request prompt audit', async function(this: ApplicationWorld) {
   const page = currentPage(this);
-  await page.locator('[data-testid="prompt-preview-button"]').click();
+  // This toolbar button cannot navigate. On Windows, a still-settling Wiki
+  // navigation can otherwise make Playwright wait after the click even though
+  // the button event has completed. The dialog and every audit surface are
+  // asserted explicitly below, so navigation waiting would add no coverage.
+  await page.locator('[data-testid="prompt-preview-button"]').click({ noWaitAfter: true });
   const dialog = page.getByRole('dialog');
   await dialog.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
   const tabs = dialog.getByRole('tab');
