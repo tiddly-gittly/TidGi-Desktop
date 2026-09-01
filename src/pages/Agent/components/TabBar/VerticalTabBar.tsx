@@ -1,11 +1,12 @@
 import { Box, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import type { ScheduledTask } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AgentBackgroundTask } from '@services/agentInstance/interface';
 import { useTabStore } from '../../store/tabStore';
 import { TabType } from '../../types/tab';
+import { groupScheduledTasksByAgentInstanceId } from './scheduledTaskPresentation';
 import { TabContextMenu } from './TabContextMenu';
 import { TabItem } from './TabItem';
 
@@ -40,42 +41,37 @@ const StyledDivider = styled(Divider)`
 export const VerticalTabBar = () => {
   const { t } = useTranslation('agent');
   const { tabs, activeTabId, setActiveTab } = useTabStore();
-  const [backgroundTasks, setBackgroundTasks] = useState<AgentBackgroundTask[]>([]);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
 
-  const refreshBackgroundTasks = useCallback(async () => {
+  const refreshScheduledTasks = useCallback(async () => {
     try {
-      const tasks = await window.service.agentInstance.getBackgroundTasks();
-      setBackgroundTasks(tasks);
+      const tasks = await window.service.agentInstance.listScheduledTasks({ states: ['active', 'paused'] });
+      setScheduledTasks(tasks);
     } catch {
       // Ignore transient IPC failures while the app is booting.
     }
   }, []);
 
   useEffect(() => {
-    void refreshBackgroundTasks();
+    void refreshScheduledTasks();
     const timer = window.setInterval(() => {
-      void refreshBackgroundTasks();
+      void refreshScheduledTasks();
     }, 1_500);
     return () => {
       window.clearInterval(timer);
     };
-  }, [refreshBackgroundTasks]);
+  }, [refreshScheduledTasks]);
 
-  const backgroundTasksByAgent = useMemo(() => {
-    const map = new Map<string, AgentBackgroundTask[]>();
-    for (const task of backgroundTasks) {
-      const existing = map.get(task.agentId) ?? [];
-      existing.push(task);
-      map.set(task.agentId, existing);
-    }
-    return map;
-  }, [backgroundTasks]);
+  const scheduledTasksByAgent = useMemo(
+    () => groupScheduledTasksByAgentInstanceId(scheduledTasks),
+    [scheduledTasks],
+  );
 
-  const getTabBackgroundTasks = (tab: typeof tabs[number]): AgentBackgroundTask[] => {
+  const getTabScheduledTasks = (tab: typeof tabs[number]): readonly ScheduledTask[] => {
     if (tab.type !== TabType.CHAT) return [];
     const chatTab = tab;
     if (!chatTab.agentId) return [];
-    return backgroundTasksByAgent.get(chatTab.agentId) ?? [];
+    return scheduledTasksByAgent.get(chatTab.agentId) ?? [];
   };
 
   // Divide tabs into pinned and unpinned groups
@@ -96,7 +92,7 @@ export const VerticalTabBar = () => {
                   <TabItem
                     tab={tab}
                     isActive={tab.id === activeTabId}
-                    backgroundTasks={getTabBackgroundTasks(tab)}
+                    scheduledTasks={getTabScheduledTasks(tab)}
                     onClick={() => {
                       setActiveTab(tab.id);
                     }}
@@ -125,7 +121,7 @@ export const VerticalTabBar = () => {
               <TabItem
                 tab={tab}
                 isActive={tab.id === activeTabId}
-                backgroundTasks={getTabBackgroundTasks(tab)}
+                scheduledTasks={getTabScheduledTasks(tab)}
                 onClick={() => {
                   setActiveTab(tab.id);
                 }}

@@ -36,14 +36,8 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
           if (agentInstance?.agentDefId) {
             agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
           }
-          // Use instance config if available, otherwise fallback to definition config
-          if (agentInstance?.agentFrameworkConfig && Object.keys(agentInstance.agentFrameworkConfig).length > 0) {
-            finalConfig = agentInstance.agentFrameworkConfig;
-          } else if (agentDefinition?.agentFrameworkConfig) {
-            finalConfig = agentDefinition.agentFrameworkConfig;
-          }
-          // Use agentFrameworkID from instance, fallback to definition
-          agentFrameworkID = agentInstance?.agentFrameworkID || agentDefinition?.agentFrameworkID;
+          finalConfig = agentInstance?.agentFrameworkConfig ?? agentDefinition?.agentFrameworkConfig;
+          agentFrameworkID = agentDefinition?.agentFrameworkID;
         } else if (agentDefId) {
           const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
           if (agentDefinition?.agentFrameworkConfig) {
@@ -93,6 +87,7 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
       }
     } catch (error) {
       void window.service.native.log('error', 'Failed to update framework configuration', { function: 'useAgentFrameworkConfigManagement.persistConfig', error });
+      throw error;
     }
   }, [agentId, agentDefId]);
 

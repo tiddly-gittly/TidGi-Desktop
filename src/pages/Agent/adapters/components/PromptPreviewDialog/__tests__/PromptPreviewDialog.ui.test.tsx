@@ -6,12 +6,13 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
 import { getBuiltinLoopProfiles, PromptPreviewAuditSessionStore } from 'memeloop';
 import type { PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
 
-import { PromptPreviewDialog } from '../index';
+import { PromptPreviewDialog, togglePromptPreviewPane } from '../index';
 import { PreviewTabsView } from '../PreviewTabsView';
 
 const defaultAgents = getBuiltinLoopProfiles();
@@ -38,37 +39,131 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
   beforeEach(async () => {
     // Clear all mock calls
     vi.clearAllMocks();
+    vi.mocked(useAgentFrameworkConfigManagement).mockImplementation(() => ({
+      loading: false,
+      config: defaultAgents[0].agentFrameworkConfig,
+      setConfig: vi.fn(),
+      persistConfig: vi.fn(),
+      handleConfigChange: vi.fn(),
+    }));
 
     // Initialize real AgentInstance observables for testing actual plugin execution
   });
 
-  it('should render dialog when open=true', async () => {
-    render(
+  it('keeps one preview generation alive across long-lived renderer state updates', async () => {
+    vi.mocked(useAgentFrameworkConfigManagement).mockImplementation(() => ({
+      loading: false,
+      config: {
+        prompts: [...(defaultAgents[0].agentFrameworkConfig?.prompts ?? [])],
+        plugins: [...(defaultAgents[0].agentFrameworkConfig?.plugins ?? [])],
+        ...(defaultAgents[0].agentFrameworkConfig?.response === undefined
+          ? {}
+          : { response: defaultAgents[0].agentFrameworkConfig.response }),
+      },
+      setConfig: vi.fn(),
+      persistConfig: vi.fn(),
+      handleConfigChange: vi.fn(),
+    }));
+    const controller = previewController();
+    const { rerender } = render(
       <TestWrapper>
         <PromptPreviewDialog
           agentId='conversation'
           agentDefinitionId='definition'
-          state={previewState({
-            result: {
-              flatPrompts: [],
-              processedPrompts: [],
-              audit: auditExecution(),
-            },
-          })}
-          controller={previewController()}
-          open={true}
+          state={previewState()}
+          controller={controller}
+          open
           onClose={vi.fn()}
+        />
+      </TestWrapper>,
+    );
+    await waitFor(() => {
+      expect(controller.generate).toHaveBeenCalledOnce();
+    });
+
+    rerender(
+      <TestWrapper>
+        <PromptPreviewDialog
+          agentId='conversation'
+          agentDefinitionId='definition'
+          state={previewState({ loading: true, progress: 0.5, currentStep: 'flatten' })}
+          controller={controller}
+          open
+          onClose={vi.fn()}
+        />
+      </TestWrapper>,
+    );
+    await Promise.resolve();
+    expect(controller.generate).toHaveBeenCalledOnce();
+  });
+
+  it('should render dialog when open=true', async () => {
+    const controller = previewController();
+    const onClose = vi.fn();
+    const result = {
+      flatPrompts: [],
+      processedPrompts: [],
+      audit: auditExecution(),
+    };
+    const { rerender } = render(
+      <TestWrapper>
+        <PromptPreviewDialog
+          agentId='conversation'
+          agentDefinitionId='definition'
+          state={previewState({ result })}
+          controller={controller}
+          open={true}
+          onClose={onClose}
           inputText='test input'
         />
       </TestWrapper>,
     );
 
     // Check dialog title is visible
-    expect(screen.getByText(/Prompt.*Preview/)).toBeInTheDocument();
+    expect(screen.getByText('Prompt.Preview')).toBeInTheDocument();
+
+    let previewSwitch = screen.getByRole('switch', { name: 'Prompt.ShowPreview' });
+    let editorSwitch = screen.getByRole('switch', { name: 'Prompt.ShowEditor' });
+    expect(previewSwitch).toBeChecked();
+    expect(editorSwitch).not.toBeChecked();
+
+    // A selected tree node reveals the editor without hiding preview, which is
+    // the split-pane state used for prompt inspection and editing.
+    rerender(
+      <TestWrapper>
+        <PromptPreviewDialog
+          agentId='conversation'
+          agentDefinitionId='definition'
+          state={previewState({ formFieldsToScrollTo: ['plugins', 'search-plugin'], result })}
+          controller={controller}
+          open
+          onClose={onClose}
+          inputText='test input'
+        />
+      </TestWrapper>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('switch', { name: 'Prompt.ShowEditor' })).toBeChecked();
+    });
+    previewSwitch = screen.getByRole('switch', { name: 'Prompt.ShowPreview' });
+    editorSwitch = screen.getByRole('switch', { name: 'Prompt.ShowEditor' });
+    expect(previewSwitch).toBeChecked();
+    expect(editorSwitch).toBeChecked();
 
     // Check that tabs are visible (labels come from translation keys)
     expect(screen.getByRole('tab', { name: /Tree/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Flat/ })).toBeInTheDocument();
+
+    // Either pane may be hidden independently, but the last visible pane is
+    // never allowed to disappear and leave an empty workspace.
+    expect(togglePromptPreviewPane({ preview: true, edit: true }, 'preview')).toEqual({
+      preview: false,
+      edit: true,
+    });
+    expect(togglePromptPreviewPane({ preview: false, edit: true }, 'edit')).toEqual({
+      preview: false,
+      edit: true,
+    });
   });
 
   // IMPROVED: Example of testing with state changes using real store
@@ -162,6 +257,35 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
     expect(exactRequest).toHaveTextContent('wire-exact');
     expect(exactRequest).toHaveTextContent('responses');
   });
+
+  it('groups generated tool prompts in an expandable tree and forwards the selected editor path', async () => {
+    const user = userEvent.setup();
+    const controller = previewController();
+    const state = previewState({
+      result: {
+        flatPrompts: [],
+        processedPrompts: [
+          { id: 'system', caption: 'System prompt', role: 'system', text: 'system' },
+          { id: 'search-tools', caption: 'Search tools', text: 'search', source: ['plugins', 'search-plugin'] },
+          { id: 'wiki-tools', caption: 'Wiki tools', text: 'wiki', source: ['plugins', 'wiki-plugin'] },
+        ],
+        audit: auditExecution(),
+      },
+    });
+    render(
+      <TestWrapper>
+        <PreviewTabsView isFullScreen={false} state={state} controller={controller} />
+      </TestWrapper>,
+    );
+
+    expect(screen.getByText('Search tools')).toBeInTheDocument();
+    expect(screen.getByText('Wiki tools')).toBeInTheDocument();
+    await user.click(screen.getByText('Prompt.GeneratedTools'));
+    expect(screen.queryByText('Search tools')).not.toBeInTheDocument();
+    await user.click(screen.getByText('Prompt.GeneratedTools'));
+    await user.click(screen.getByText('Search tools'));
+    expect(controller.setFormFieldsToScrollTo).toHaveBeenLastCalledWith(['plugins', 'search-plugin']);
+  });
 });
 
 function previewState(overrides: Partial<PromptPreviewDialogState> = {}): PromptPreviewDialogState {
@@ -207,7 +331,6 @@ function auditExecution() {
   const execution = store.createSession({
     request: {
       providerId: 'provider-exact',
-      modelId: 'wire-exact',
       logicalModelId: 'logical-exact',
       wireModelId: 'wire-exact',
       apiMode: 'responses',

@@ -4,7 +4,7 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
-import type { DesktopAIConfig, IExternalAPIService } from '@services/externalAPI/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
@@ -12,7 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { ToolExecutionResult } from 'memeloop';
+import type { ModelAssignments, ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
@@ -126,7 +126,7 @@ type WikiUpdateEmbeddingsToolParameters = z.infer<typeof WikiUpdateEmbeddingsToo
  */
 export async function executeWikiSearch(
   parameters: WikiSearchToolParameters,
-  aiConfig?: DesktopAIConfig,
+  aiConfig?: ModelAssignments,
 ): Promise<ToolExecutionResult> {
   const { workspaceName, searchType, filter, query, limit, threshold } = parameters;
 
@@ -271,7 +271,7 @@ export async function executeWikiSearch(
  */
 export async function executeWikiUpdateEmbeddings(
   parameters: WikiUpdateEmbeddingsToolParameters,
-  aiConfig?: DesktopAIConfig,
+  aiConfig?: ModelAssignments,
 ): Promise<ToolExecutionResult> {
   const { workspaceName, forceUpdate } = parameters;
 

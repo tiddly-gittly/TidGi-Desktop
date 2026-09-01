@@ -8,16 +8,16 @@ import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentDefinition } from 'memeloop';
-import type { AgentInstance } from 'memeloop';
+import type { AgentDefinition, AgentRuntimeView } from 'memeloop';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 
 function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
   return {
@@ -28,9 +28,36 @@ function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[nu
   };
 }
 
+function testWorkspace(): IWorkspace {
+  return {
+    id: 'test-wiki-1',
+    name: 'test-wiki-1',
+    wikiFolderLocation: '/tmp/wiki',
+    homeUrl: 'http://localhost:5213/',
+    port: 5213,
+    isSubWiki: false,
+    mainWikiToLink: null,
+    tagNames: [],
+    lastUrl: null,
+    active: true,
+    hibernated: false,
+    order: 1,
+    enableHTTPAPI: false,
+    gitUrl: null,
+    readOnlyMode: false,
+    storageService: SupportedStorageServices.local,
+    syncOnInterval: false,
+    syncOnStartup: false,
+    tokenAuth: false,
+    transparentBackground: false,
+    userName: '',
+    picturePath: null,
+  };
+}
+
 describe('multi-turn tool-use conversation', () => {
   let agentInstanceService: IAgentInstanceService;
-  let testAgentInstance: AgentInstance;
+  let testAgentInstance: AgentRuntimeView;
   let mockExternalAPIService: Partial<IExternalAPIService>;
   let mockWikiService: Partial<IWikiService>;
   let mockWorkspaceService: Partial<IWorkspaceService>;
@@ -65,13 +92,17 @@ describe('multi-turn tool-use conversation', () => {
     testAgentInstance = await agentInstanceService.createAgent(defaultAgent.id, { id: nanoid() });
 
     mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
-      default: { provider: 'siliconflow', model: 'deepseek-ai/DeepSeek-V4-Pro' },
-      modelParameters: { temperature: 0.7 },
+      default: { providerId: 'siliconflow', modelId: 'deepseek-ai/DeepSeek-V4-Pro', parameters: { temperature: 0.7 } },
     });
-    mockExternalAPIService.getAIProviders = vi.fn().mockResolvedValue([{
-      provider: 'siliconflow',
+    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'siliconflow',
+      providerType: 'openai-compatible',
       enabled: true,
-      models: [{ name: 'deepseek-ai/DeepSeek-V4-Pro' }],
+      models: [{
+        modelId: 'deepseek-ai/DeepSeek-V4-Pro',
+        wireModelId: 'deepseek-ai/DeepSeek-V4-Pro',
+        apiMode: 'chat-completions',
+      }],
     }]);
   });
 
@@ -84,7 +115,6 @@ describe('multi-turn tool-use conversation', () => {
       limit: 80,
       maxBytes: 4 * 1024 * 1024,
       direction: 'forward',
-      mode: 'full-content',
     });
     if (page.reset) throw new Error('unexpected conversation page reset');
     return page.items;
@@ -93,6 +123,19 @@ describe('multi-turn tool-use conversation', () => {
   async function* portableText(content: string, id: string) {
     yield { type: 'text-delta' as const, id, text: content };
     yield { type: 'finish' as const, finishReason: 'stop' };
+  }
+
+  async function executeMessage(text: string) {
+    return agentInstanceService.executeLocalAgentMessage({
+      target: { kind: 'local' },
+      provenance: {
+        conversationId: testAgentInstance.id,
+        definitionId: testAgentInstance.agentDefId,
+        requestId: `multi-turn:request:${nanoid()}`,
+        turnId: `multi-turn:turn:${nanoid()}`,
+      },
+      message: text,
+    });
   }
 
   it('runs a complete multi-turn: search wiki → add tiddler', async () => {
@@ -122,13 +165,9 @@ describe('multi-turn tool-use conversation', () => {
       .mockResolvedValueOnce([{ title: 'existing', text: 'content' }]) // search result
       .mockResolvedValueOnce(undefined); // add result
 
-    mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([
-      { name: 'test-wiki-1', id: 'test-wiki-1', wikiFolderLocation: '/tmp/wiki', isWiki: true } as never,
-    ]);
+    mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([testWorkspace()]);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
-      text: '帮我搜索 test 标签的笔记，然后创建一个新笔记',
-    });
+    await executeMessage('帮我搜索 test 标签的笔记，然后创建一个新笔记');
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalled();
     expect(mockExternalAPIService.generatePortableLlm).toHaveBeenCalledTimes(3);
@@ -164,14 +203,10 @@ describe('multi-turn tool-use conversation', () => {
       .mockResolvedValueOnce([]); // bad workspace search (will throw via workspace resolution)
 
     mockWorkspaceService.getWorkspacesAsList = vi.fn()
-      .mockResolvedValueOnce([
-        { name: 'test-wiki-1', id: 'test-wiki-1', wikiFolderLocation: '/tmp/wiki', isWiki: true } as never,
-      ])
-      .mockResolvedValueOnce([
-        { name: 'test-wiki-1', id: 'test-wiki-1', wikiFolderLocation: '/tmp/wiki', isWiki: true } as never,
-      ]);
+      .mockResolvedValueOnce([testWorkspace()])
+      .mockResolvedValueOnce([testWorkspace()]);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '找一下 tag x 的笔记' });
+    await executeMessage('找一下 tag x 的笔记');
 
     const assistantMessages = (await getPersistedMessages()).filter(m => m.role === 'assistant');
     expect(assistantMessages.length).toBeGreaterThanOrEqual(1);
@@ -185,8 +220,8 @@ describe('multi-turn tool-use conversation', () => {
       .mockReturnValueOnce(firstResponse())
       .mockReturnValueOnce(secondResponse());
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: 'What is the capital of France?' });
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: 'Which country did I ask about?' });
+    await executeMessage('What is the capital of France?');
+    await executeMessage('Which country did I ask about?');
 
     expect(mockExternalAPIService.generatePortableLlm).toHaveBeenCalledTimes(2);
     const secondRequest = vi.mocked(mockExternalAPIService.generatePortableLlm).mock.calls[1]?.[0];

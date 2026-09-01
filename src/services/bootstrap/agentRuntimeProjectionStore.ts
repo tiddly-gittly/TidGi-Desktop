@@ -103,7 +103,6 @@ export function createDesktopAgentRuntimeProjectionStore(
           budget: { bytes: 0, renderLines: turnRenderLines(items), truncated },
         };
         response.budget.bytes = jsonBytes(response);
-        response.budget.bytes = jsonBytes(response);
         return response;
       };
       for (;;) {
@@ -125,16 +124,24 @@ export function createDesktopAgentRuntimeProjectionStore(
 }
 
 function toTurnSummary(entry: ConversationTimelineEntry): AgentDeviceRpcTurnSummary {
-  if (entry.kind === 'turn') {
+  if (entry.kind === 'message') {
+    const participantPreviews = entry.role === 'user'
+      ? []
+      : [{
+        actorId: entry.actorId,
+        actorLabel: entry.actorLabel,
+        role: entry.role,
+        preview: entry.preview,
+      }];
     return {
       turnId: entry.turnId,
       conversationId: entry.conversationId,
       cursor: entry.cursor,
       startedAt: entry.timestamp,
       updatedAt: entry.timestamp,
-      userPreview: entry.userPreview,
-      participantPreviews: entry.participantPreviews,
-      responseCount: entry.responseCount,
+      userPreview: entry.role === 'user' ? entry.preview : '',
+      participantPreviews,
+      responseCount: participantPreviews.length,
       isCompaction: false,
       isTombstone: false,
       detailState: 'notLoaded',

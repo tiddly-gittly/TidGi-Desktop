@@ -773,11 +773,20 @@ export class AgentBrowserService implements IAgentBrowserService {
             if (chatChild?.agentId) {
               // Send the new message with wiki tiddler attachment to existing agent
               const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-              await agentInstanceService.executeLocalAgentMessage(chatChild.agentId, {
-                text: selectionText,
+              const agent = await agentInstanceService.getAgentMetadata(chatChild.agentId);
+              if (!agent) throw new Error(`Agent instance not found: ${chatChild.agentId}`);
+              const requestId = `agent-browser:request:${crypto.randomUUID()}`;
+              const turnId = `agent-browser:turn:${crypto.randomUUID()}`;
+              await agentInstanceService.executeLocalAgentMessage({
+                target: { kind: 'local' },
+                provenance: {
+                  conversationId: chatChild.agentId,
+                  definitionId: agent.agentDefId,
+                  requestId,
+                  turnId,
+                },
+                message: selectionText,
                 wikiTiddlers,
-              }, {
-                source: 'agent-browser',
               });
             }
 

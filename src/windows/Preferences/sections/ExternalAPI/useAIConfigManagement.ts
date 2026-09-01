@@ -1,6 +1,5 @@
-import { AIProviderConfig, type DesktopAIConfig } from '@services/externalAPI/interface';
 import { cloneDeep } from 'lodash';
-import type { AgentModelConfig } from 'memeloop';
+import type { AgentModelConfig, ModelAssignments, ProviderAccountConfig } from 'memeloop';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseAIConfigManagementProps {
@@ -10,22 +9,22 @@ interface UseAIConfigManagementProps {
 
 interface UseAIConfigManagementResult {
   loading: boolean;
-  config: DesktopAIConfig | null;
-  providers: AIProviderConfig[];
-  setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
-  handleModelChange: (provider: string, model: string) => Promise<void>;
-  handleEmbeddingModelChange: (provider: string, model: string) => Promise<void>;
-  handleSpeechModelChange: (provider: string, model: string) => Promise<void>;
-  handleImageGenerationModelChange: (provider: string, model: string) => Promise<void>;
-  handleTranscriptionsModelChange: (provider: string, model: string) => Promise<void>;
-  handleFreeModelChange: (provider: string, model: string) => Promise<void>;
-  handleConfigChange: (newConfig: DesktopAIConfig) => Promise<void>;
+  config: ModelAssignments | null;
+  accounts: ProviderAccountConfig[];
+  setAccounts: React.Dispatch<React.SetStateAction<ProviderAccountConfig[]>>;
+  handleModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleEmbeddingModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleSpeechModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleImageGenerationModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleTranscriptionsModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleFreeModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleConfigChange: (newConfig: ModelAssignments) => Promise<void>;
 }
 
 export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<DesktopAIConfig | null>(null);
-  const [providers, setProviders] = useState<AIProviderConfig[]>([]);
+  const [config, setConfig] = useState<ModelAssignments | null>(null);
+  const [accounts, setAccounts] = useState<ProviderAccountConfig[]>([]);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -53,10 +52,10 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
           agentModelConfig = agentDefinition?.modelConfig;
         }
 
-        setConfig(toDesktopConfig(globalConfig, agentModelConfig));
+        setConfig(agentModelConfig === undefined ? globalConfig : { ...globalConfig, default: agentModelConfig });
 
-        const providersData = await window.service.externalAPI.getAIProviders();
-        setProviders(providersData);
+        const providerAccounts = await window.service.externalAPI.getProviderAccounts();
+        setAccounts(providerAccounts);
 
         setLoading(false);
       } catch (error) {
@@ -75,23 +74,25 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       }
     });
 
-    const providersSubscription = window.observables.externalAPI.providers$.subscribe(updatedProviders => {
-      setProviders(updatedProviders);
+    const providerAccountsSubscription = window.observables.externalAPI.providerAccounts$.subscribe(updatedAccounts => {
+      setAccounts(updatedAccounts);
     });
 
     return () => {
       configSubscription.unsubscribe();
-      providersSubscription.unsubscribe();
+      providerAccountsSubscription.unsubscribe();
     };
   }, [agentDefId, agentId]);
 
-  const updateConfig = useCallback(async (updatedConfig: DesktopAIConfig) => {
+  const updateConfig = useCallback(async (updatedConfig: ModelAssignments) => {
     if (agentId) {
-      await window.service.agentInstance.updateAgent(agentId, { modelConfig: toAgentModelConfig(updatedConfig) });
+      if (!updatedConfig.default) throw new Error('Agent model selection is required');
+      await window.service.agentInstance.updateAgent(agentId, { modelConfig: updatedConfig.default });
     } else if (agentDefId) {
+      if (!updatedConfig.default) throw new Error('Agent model selection is required');
       await window.service.agentDefinition.updateAgentDef({
         id: agentDefId,
-        modelConfig: toAgentModelConfig(updatedConfig),
+        modelConfig: updatedConfig.default,
       });
     } else {
       // Update global config
@@ -99,106 +100,55 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     }
   }, [agentId, agentDefId]);
 
-  const handleModelChange = useCallback(async (provider: string, model: string) => {
+  const updateSelection = useCallback(async (
+    key: keyof ModelAssignments,
+    selection: AgentModelConfig,
+  ) => {
     if (!config) return;
-
     try {
       const updatedConfig = cloneDeep(config);
-      updatedConfig.default = { provider, model };
-
+      updatedConfig[key] = selection;
       setConfig(updatedConfig);
       await updateConfig(updatedConfig);
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update model configuration', { function: 'useAIConfigManagement.handleModelChange', error });
-    }
-  }, [config, updateConfig]);
-
-  const handleEmbeddingModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.embedding = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update embedding model configuration', {
-        function: 'useAIConfigManagement.handleEmbeddingModelChange',
+      void window.service.native.log('error', 'Failed to update model assignment', {
+        function: 'useAIConfigManagement.updateSelection',
+        key,
         error,
       });
     }
   }, [config, updateConfig]);
 
-  const handleSpeechModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
+  const handleModelChange = useCallback(async (selection: AgentModelConfig) => {
+    await updateSelection('default', {
+      ...selection,
+      ...(config?.default?.parameters === undefined
+        ? {}
+        : { parameters: config.default.parameters }),
+    });
+  }, [config?.default?.parameters, updateSelection]);
+  const handleEmbeddingModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('embedding', selection),
+    [updateSelection],
+  );
+  const handleSpeechModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('speech', selection),
+    [updateSelection],
+  );
+  const handleImageGenerationModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('imageGeneration', selection),
+    [updateSelection],
+  );
+  const handleTranscriptionsModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('transcriptions', selection),
+    [updateSelection],
+  );
+  const handleFreeModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('free', selection),
+    [updateSelection],
+  );
 
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.speech = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update speech model configuration', {
-        function: 'useAIConfigManagement.handleSpeechModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleImageGenerationModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.imageGeneration = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update image generation model configuration', {
-        function: 'useAIConfigManagement.handleImageGenerationModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleTranscriptionsModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.transcriptions = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update transcriptions model configuration', {
-        function: 'useAIConfigManagement.handleTranscriptionsModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleFreeModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.free = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update free model configuration', {
-        function: 'useAIConfigManagement.handleFreeModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleConfigChange = useCallback(async (newConfig: DesktopAIConfig) => {
+  const handleConfigChange = useCallback(async (newConfig: ModelAssignments) => {
     try {
       setConfig(newConfig);
       await updateConfig(newConfig);
@@ -210,8 +160,8 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
   return {
     loading,
     config,
-    providers,
-    setProviders,
+    accounts,
+    setAccounts,
     handleModelChange,
     handleEmbeddingModelChange,
     handleSpeechModelChange,
@@ -221,37 +171,3 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     handleConfigChange,
   };
 };
-
-function toDesktopConfig(
-  globalConfig: DesktopAIConfig,
-  modelConfig: AgentModelConfig | undefined,
-): DesktopAIConfig {
-  const result = cloneDeep(globalConfig);
-  if (!modelConfig) return result;
-  result.default = { provider: modelConfig.providerId, model: modelConfig.modelId };
-  result.modelParameters = {
-    ...result.modelParameters,
-    ...modelConfig.parameters,
-    ...(modelConfig.parameters?.maxOutputTokens === undefined
-      ? {}
-      : { maxTokens: modelConfig.parameters.maxOutputTokens }),
-  };
-  return result;
-}
-
-function toAgentModelConfig(config: DesktopAIConfig): AgentModelConfig {
-  const selected = config.default;
-  if (!selected?.provider || !selected.model) throw new Error('Agent model selection is required');
-  const maxOutputTokens = config.modelParameters.maxOutputTokens ?? config.modelParameters.maxTokens;
-  return {
-    providerId: selected.provider,
-    modelId: selected.model,
-    parameters: {
-      ...(config.modelParameters.temperature === undefined
-        ? {}
-        : { temperature: config.modelParameters.temperature }),
-      ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
-      ...(config.modelParameters.topP === undefined ? {} : { topP: config.modelParameters.topP }),
-    },
-  };
-}

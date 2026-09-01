@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import path from 'node:path';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { USER_DATA_FOLDER } from '@/constants/appPaths';
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
@@ -10,9 +10,9 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
 import type { IDatabaseService } from '@services/database/interface';
-import { AgentInstanceEntity, AgentInstanceMessageEntity, RemoteScheduledTaskProjectionEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { ConversationTimelineStateEntity } from '@services/database/schema/conversationEvent';
-import type { IExternalAPIService, ModelMessage } from '@services/externalAPI/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -22,19 +22,31 @@ import {
   AGENT_RUN_ERROR_MESSAGE_KEYS,
   AGENT_TOOL_LOOP_ID,
   type AgentCommittedAttachment,
+  type AgentConversationMessagePage,
+  type AgentConversationMessagePageOptions,
   type AgentConversationMessageProjection,
+  type AgentConversationMessageWindowRequest,
+  type AgentConversationMessageWindowResult,
+  agentConversationPageOptionsToStorage,
   type AgentConversationUpdate,
+  agentConversationWindowRequestToStorage,
   type AgentDeviceRpcDeleteTurnRequest,
   type AgentDeviceRpcDeleteTurnResponse,
   type AgentDeviceRpcGetTurnDetailRequest,
   type AgentDeviceRpcGetTurnDetailResponse,
+  agentDeviceRpcPendingUserMessageFromChatMessage,
   type AgentDeviceRpcRetryTurnRequest,
   type AgentDeviceRpcRetryTurnResponse,
+  type AgentDeviceRpcRunTurnRequest,
   type AgentFrameworkConfig,
   type AgentHeartbeatConfig,
-  type AgentInstance,
   type AgentInstanceLatestStatus,
-  type AgentPromptDescription,
+  type AgentInstanceMetadata,
+  type AgentInstanceMetadataUpdate,
+  type AgentManagementCallOptions,
+  type AgentRunError,
+  AgentRunFailure,
+  type AgentRuntimeView,
   assertPromptPreviewGeneratedResult,
   type AttachmentReference,
   type ChatMessage,
@@ -43,6 +55,7 @@ import {
   type ConversationEventDraft,
   type ConversationEventPage,
   conversationEventToMessage,
+  type ConversationFullContentMessagePage,
   type ConversationListPage,
   type ConversationMessageDetailRange,
   type ConversationMessageIdentity,
@@ -50,14 +63,16 @@ import {
   type ConversationMessageWindowResult,
   type ConversationTimelinePage,
   createAgentRunError,
-  extractAgentRunError,
+  type CreateScheduledTaskInput,
   type GetCompactionCandidatePageOptions,
   type GetConversationEventPageOptions,
   type GetConversationListPageOptions,
   type GetConversationMessageWindowAroundOptions,
   type GetConversationTimelinePageOptions,
+  type GetFullContentMessagePageOptions,
   type GetMessagePageOptions,
   type GetRetainedCompactionControlsOptions,
+  type ListScheduledTasksOptions,
   type MemeLoopRunHandle,
   type MemeLoopRunStatus,
   type MemeLoopRuntime,
@@ -66,53 +81,46 @@ import {
   type MessageVersionFrontierCursor,
   type MessageVersionFrontierPage,
   projectConversationMessageForList,
-  promptConcatStream,
+  projectTransientConversationMessageForList,
   type PromptConcatStreamState,
   type PromptPreviewAuditDetailChunk,
   type PromptPreviewAuditDetailRequest,
   type PromptPreviewAuditPage,
   type PromptPreviewAuditPageRequest,
   type PromptPreviewAuditReleaseRequest,
+  type PromptPreviewPreparedExecution,
+  type PromptPreviewPrepareRequest,
+  type RemoteAgentExecuteRequest,
   type RetainedCompactionControlPage,
+  type ScheduledTask,
+  type ScheduledTaskPage,
+  type ScheduledTaskRpcScopedTaskRequest,
+  type ScheduledTaskRpcUpdatePatch,
+  storagePageToAgentConversationPage,
+  storageWindowToAgentConversationWindow,
+  type ToolApprovalResolution,
 } from 'memeloop';
-import type { DesktopAgentExecuteRunRequest, DesktopPreparedAgentUserMessage, ReadDesktopAgentAttachmentChunkInput } from './attachmentUploadProtocol';
+import type { ReadDesktopAgentAttachmentChunkInput } from './attachmentUploadProtocol';
 import {
   type BeginDesktopAttachmentUploadInput,
   type DesktopAttachmentUploadScope,
   DesktopAttachmentUploadStore,
   type WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadStore';
-import type { DesktopPromptPreviewPreparedExecution, DesktopPromptPreviewPrepareInput } from './promptPreview';
 import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
-import { includeConversationHistoryInPreview } from './runtime/promptPreviewMessages';
 
 import * as repo from './agentRepository';
-import type {
-  AgentBackgroundTask,
-  DesktopAgentExecuteRunResult,
-  ExecuteLocalAgentMessageOptions,
-  IAgentInstanceService,
-  SetBackgroundAlarmInput,
-  SetBackgroundHeartbeatInput,
-} from './interface';
+import type { IAgentInstanceService } from './interface';
 import { MemeLoopDesktopRuntime } from './runtime/runtime';
-import { createMemeLoopUserMessage } from './runtime/userMessage';
-import { cancelAlarm, scheduleAlarmTimer } from './tools/alarmClock';
+import { createAgentDeviceRpcPendingUserMessage } from './runtime/userMessage';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
-import {
-  deleteRemoteScheduledTaskProjection as deleteRemoteProjection,
-  getRemoteScheduledTaskProjectionPage,
-  replaceRemoteScheduledTaskProjections as replaceRemoteProjections,
-  upsertRemoteScheduledTaskProjection as upsertRemoteProjection,
-} from './tools/remoteScheduledTaskProjectionStore';
-import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
+import { startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
   getActiveTasks as stmGetActiveTasks,
-  getActiveTasksForAgent as stmGetActiveTasksForAgent,
   getCronPreviewDates as stmGetCronPreviewDates,
-  getScheduledTasksPageForAgent as stmGetScheduledTasksPageForAgent,
+  getScheduledTaskPageForAgent as stmGetScheduledTaskPageForAgent,
   getTaskByScope as stmGetTaskByScope,
   initScheduledTaskManager,
   removeTask as stmRemoveTask,
@@ -121,18 +129,32 @@ import {
   updateTask as stmUpdateTask,
   updateTaskScoped as stmUpdateTaskScoped,
 } from './tools/scheduledTaskManager';
-import type {
-  CreateScheduledTaskInput,
-  ListRemoteScheduledTaskProjectionPageInput,
-  ListScheduledTasksOptions,
-  ListScheduledTasksPageForAgentInput,
-  RemoteScheduledTaskProjectionPage,
-  ScheduledTask,
-  ScheduledTaskCallOptions,
-  ScheduledTaskPage,
-  ScheduledTaskScope,
-  UpdateScheduledTaskInput,
-} from './tools/scheduledTaskTypes';
+
+/**
+ * Enforce Core's metadata-only renderer contract at runtime.
+ *
+ * TypeScript structural types are erased, so an AgentInstanceModel can reach
+ * this private boundary with an extra, unbounded `messages` property even
+ * though the declared input is AgentRuntimeView. Explicit selection keeps the
+ * subscription payload exact without mutating the caller's object.
+ */
+function projectAgentRuntimeView(agent: AgentRuntimeView): AgentRuntimeView {
+  return {
+    id: agent.id,
+    agentDefId: agent.agentDefId,
+    ...(agent.name === undefined ? {} : { name: agent.name }),
+    status: agent.status,
+    created: agent.created,
+    ...(agent.modified === undefined ? {} : { modified: agent.modified }),
+    ...(agent.modelConfig === undefined ? {} : { modelConfig: agent.modelConfig }),
+    ...(agent.avatarUrl === undefined ? {} : { avatarUrl: agent.avatarUrl }),
+    ...(agent.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: agent.agentFrameworkConfig }),
+    closed: agent.closed,
+    volatile: agent.volatile,
+    preview: agent.preview,
+    ...(agent.definition === undefined ? {} : { definition: agent.definition }),
+  };
+}
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -157,11 +179,10 @@ export class AgentInstanceService implements IAgentInstanceService {
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
   private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
-  private remoteScheduledTaskProjectionRepository: Repository<RemoteScheduledTaskProjectionEntity> | null = null;
   private scheduledTaskRepositoryReady = false;
   private attachmentUploadStore: DesktopAttachmentUploadStore | null = null;
 
-  private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
+  private agentInstanceSubjects: Map<string, BehaviorSubject<AgentRuntimeView | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
   private conversationSubjects = new Map<string, Subject<AgentConversationUpdate>>();
   private conversationInvalidationWatermarks = new Map<string, { revision: string; totalMessages: number }>();
@@ -169,7 +190,6 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
   private memeLoopRuntime: MemeLoopDesktopRuntime | null = null;
-  private cancelTokenMap: Map<string, { value: boolean }> = new Map();
   private activeDurableRunIds = new Map<string, Set<string>>();
   private durableErrorPersistence = new Map<string, Promise<void>>();
 
@@ -177,7 +197,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.initializeDatabase();
       await this.initializeFrameworks();
-      // Restore legacy heartbeat timers and alarms for active agents after DB + frameworks are ready
+      // Restore definition-owned heartbeat timers after DB + frameworks are ready.
       await this.restoreBackgroundTasks();
       // Restore unified ScheduledTaskManager tasks
       await this.restoreScheduledTaskManagerTasks();
@@ -193,7 +213,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
-      this.remoteScheduledTaskProjectionRepository = this.dataSource.getRepository(RemoteScheduledTaskProjectionEntity);
       this.attachmentUploadStore = new DesktopAttachmentUploadStore(path.join(USER_DATA_FOLDER, 'meme-loop-attachments'));
       await this.attachmentUploadStore.initialize();
 
@@ -323,7 +342,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         // Restore heartbeat from definition
         const heartbeatConfig = instance.agentDefinition?.heartbeat;
         if (heartbeatConfig?.enabled) {
-          startHeartbeat(instance.id, heartbeatConfig, this, { createdBy: 'agent-definition' });
+          startHeartbeat(instance.id, instance.agentDefId, heartbeatConfig, this, { createdBy: 'agent-definition' });
           heartbeatsRestored++;
         }
       }
@@ -359,7 +378,7 @@ export class AgentInstanceService implements IAgentInstanceService {
    * Ensure repositories are initialized
    */
   private ensureRepositories(): void {
-    if (!this.agentInstanceRepository || !this.agentMessageRepository || !this.remoteScheduledTaskProjectionRepository) {
+    if (!this.agentInstanceRepository || !this.agentMessageRepository) {
       throw new Error('Agent instance repositories not initialized');
     }
   }
@@ -391,8 +410,8 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public preparePromptPreviewExecutionModelRequest(
-    input: DesktopPromptPreviewPrepareInput,
-  ): Promise<DesktopPromptPreviewPreparedExecution> {
+    input: PromptPreviewPrepareRequest,
+  ): Promise<PromptPreviewPreparedExecution> {
     return this.getMemeLoopRuntime().preparePromptPreviewExecutionModelRequest(input);
   }
 
@@ -436,11 +455,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         agentDefinitionService: this.agentDefinitionService,
         externalAPIService: this.externalAPIService,
         deviceNetworkService: this.deviceNetworkService,
-        notifyAgentChanged: (agentId, agent) => {
-          this.notifyAgentUpdate(agentId, agent);
-        },
         notifyTransientMessage: (message) => this.publishConversationMessage(message, true),
-        isCancelled: (agentId) => this.cancelTokenMap.get(agentId)?.value ?? false,
+        dataSource: this.dataSource!,
       });
     }
     return this.memeLoopRuntime;
@@ -540,7 +556,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async createAgent(agentDefinitionID?: string, options?: { id?: string; preview?: boolean; volatile?: boolean }): Promise<AgentInstance> {
+  public async createAgent(agentDefinitionID?: string, options?: { id?: string; preview?: boolean; volatile?: boolean }): Promise<AgentRuntimeView> {
     this.ensureRepositories();
     try {
       const agent = await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
@@ -564,25 +580,30 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async getAgent(agentId: string): Promise<AgentInstance | undefined> {
-    this.ensureRepositories();
-    try {
-      const agent = await this.getAgentMetadata(agentId);
-      return agent ? { ...agent, messages: [] } : undefined;
-    } catch (error) {
-      logger.error('Failed to get agent instance', { error });
-      throw error;
-    }
-  }
-
-  public async getAgentMetadata(agentId: string): Promise<AgentInstance | undefined> {
+  public async getAgentMetadata(agentId: string): Promise<AgentRuntimeView | undefined> {
     this.ensureRepositories();
     return repo.getAgentMetadata(this.agentInstanceRepository!, agentId);
   }
 
-  public async getAgentMessagePage(agentId: string, options: GetMessagePageOptions): Promise<ConversationMessagePage> {
+  public async getAgentMessagePage(
+    agentId: string,
+    options: AgentConversationMessagePageOptions,
+  ): Promise<AgentConversationMessagePage> {
+    const page = await this.getAgentStorageMessagePage(agentId, agentConversationPageOptionsToStorage(options));
+    return storagePageToAgentConversationPage(agentId, page, options);
+  }
+
+  public async getAgentStorageMessagePage(agentId: string, options: GetMessagePageOptions): Promise<ConversationMessagePage> {
     this.ensureRepositories();
     return repo.getMessagePage(this.agentMessageRepository!, agentId, options);
+  }
+
+  public async getAgentStorageFullContentMessagePage(
+    agentId: string,
+    options: GetFullContentMessagePageOptions,
+  ): Promise<ConversationFullContentMessagePage> {
+    this.ensureRepositories();
+    return repo.getFullContentMessagePage(this.agentMessageRepository!, agentId, options);
   }
 
   public async getAgentMessageIdentity(
@@ -603,7 +624,27 @@ export class AgentInstanceService implements IAgentInstanceService {
     return repo.readMessageDetailRange(this.dataSource!, agentId, messageId, offset, maxBytes);
   }
 
+  public async readAgentMessageReasoningRange(
+    agentId: string,
+    messageId: string,
+    offset: number,
+    maxBytes: number,
+  ): Promise<ConversationMessageDetailRange> {
+    this.ensureRepositories();
+    return repo.readMessageReasoningRange(this.dataSource!, agentId, messageId, offset, maxBytes);
+  }
+
   public async getAgentMessageWindowAround(
+    request: AgentConversationMessageWindowRequest,
+  ): Promise<AgentConversationMessageWindowResult> {
+    const result = await this.getAgentStorageMessageWindowAround(
+      request.conversationId,
+      agentConversationWindowRequestToStorage(request),
+    );
+    return storageWindowToAgentConversationWindow(request, result);
+  }
+
+  public async getAgentStorageMessageWindowAround(
     agentId: string,
     options: GetConversationMessageWindowAroundOptions,
   ): Promise<ConversationMessageWindowResult> {
@@ -622,6 +663,11 @@ export class AgentInstanceService implements IAgentInstanceService {
   ): Promise<ConversationListPage> {
     this.ensureRepositories();
     return repo.getConversationListPage(this.dataSource!, localNodeId, options);
+  }
+
+  public async getAgentConversationMeta(localNodeId: string, conversationId: string): Promise<import('memeloop').ConversationMeta | null> {
+    this.ensureRepositories();
+    return repo.getConversationMeta(this.dataSource!, localNodeId, conversationId);
   }
 
   public async getAgentConversationListPageScoped(
@@ -956,24 +1002,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     return repo.getEventVersionFrontiersForKeys(this.dataSource!, keys);
   }
 
-  public async deleteAgentTurn(agentId: string, userMessageId: string): Promise<{ messageIds: string[]; userMessage: ChatMessage } | undefined> {
-    this.ensureRepositories();
-    const turn = await repo.deleteConversationTurn(this.agentMessageRepository!, agentId, userMessageId);
-    if (!turn) return undefined;
-    const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    await this.appendLocalConversationEvent({
-      kind: 'tombstone',
-      eventId: `tombstone:${crypto.randomUUID()}`,
-      conversationId: agentId,
-      originNodeId,
-      timestamp: Date.now(),
-      targetTurnId: turn.userMessage.turnId,
-      reason: 'user-delete',
-    });
-    return turn;
-  }
-
-  public async updateAgent(agentId: string, data: Partial<AgentInstance>): Promise<AgentInstance> {
+  public async updateAgent(agentId: string, data: AgentInstanceMetadataUpdate): Promise<AgentRuntimeView> {
     this.ensureRepositories();
     try {
       const updatedAgent = await repo.updateAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId, data);
@@ -990,7 +1019,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       stopHeartbeat(agentId);
       await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
-      cancelAlarm(agentId);
       await cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
       await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
@@ -1022,7 +1050,6 @@ export class AgentInstanceService implements IAgentInstanceService {
         if (instance) {
           stopHeartbeat(agentId);
           await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
-          cancelAlarm(agentId);
           await cancelTasksForAgent(agentId);
           await cleanupMCPClient(agentId);
           await this.attachmentUploadStore?.releaseConversationScope(agentId);
@@ -1031,7 +1058,6 @@ export class AgentInstanceService implements IAgentInstanceService {
 
       await repo.discardVolatileAgentPreview(this.dataSource!, input);
       if (agentId) {
-        this.cancelTokenMap.delete(agentId);
         this.activeDurableRunIds.delete(agentId);
         this.cleanupAgentSubscriptions(agentId);
       }
@@ -1045,7 +1071,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     page: number,
     pageSize: number,
     options?: { closed?: boolean; searchName?: string },
-  ): Promise<Omit<AgentInstance, 'messages'>[]> {
+  ): Promise<AgentInstanceMetadata[]> {
     this.ensureRepositories();
     try {
       return await repo.getAgents(this.agentInstanceRepository!, page, pageSize, options);
@@ -1055,58 +1081,34 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async sendMsgToAgent(
-    agentId: string,
-    content: { text: string; attachment?: AgentCommittedAttachment; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> },
-  ): Promise<void> {
-    try {
-      await this.executeLocalAgentMessage(agentId, content, { source: 'agent-browser' });
-    } catch (error) {
-      // Keep the old main-process-only helper's fire-and-project contract for
-      // the few compatibility tests that still call it. New callers use
-      // executeLocalAgentMessage and receive the terminal failure directly.
-      if (extractAgentRunError(error) || (error instanceof Error && error.message === 'agent_run_cancelled')) return;
-      throw error;
-    }
-  }
-
   public async executeLocalAgentMessage(
-    agentId: string,
-    content: { text: string; attachment?: AgentCommittedAttachment; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> },
-    options: ExecuteLocalAgentMessageOptions,
+    remoteRequest: RemoteAgentExecuteRequest,
+    options?: AgentManagementCallOptions,
   ): Promise<MemeLoopRunStatus> {
+    if (remoteRequest.target.kind !== 'local') throw new Error('local agent execution requires a local target');
+    const { conversationId: agentId, definitionId, requestId, turnId } = remoteRequest.provenance;
     const agent = await this.getAgentMetadata(agentId);
     if (!agent) throw new Error(`Agent instance not found: ${agentId}`);
+    if (agent.agentDefId !== definitionId) throw new Error('agent conversation definition mismatch');
     const definition = await this.agentDefinitionService.getAgentDef(agent.agentDefId);
     if (!definition) throw new Error(`Agent definition not found: ${agent.agentDefId}`);
-    if (content.attachment) await this.assertAgentAttachmentAuthorized(agentId, content.attachment.reference, false);
+    if (remoteRequest.attachment?.kind === 'committed') {
+      await this.assertAgentAttachmentAuthorized(agentId, remoteRequest.attachment.reference, false);
+    }
 
     const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    const requestId = options.requestId ?? `${options.source}:request:${crypto.randomUUID()}`;
-    const turnId = options.turnId ?? `${options.source}:turn:${crypto.randomUUID()}`;
     const existingUserRoot = await this.getAgentMessage(turnId).catch(() => undefined);
     const prepared = existingUserRoot?.conversationId === agentId && existingUserRoot.role === 'user'
-      ? this.preparedMessageFromPersistedUserRoot(existingUserRoot)
-      : await this.createPreparedAgentUserMessage(
-        {
-          conversationId: agentId,
-          definitionId: agent.agentDefId,
-          message: content.text,
-          requestId,
-          turnId,
-          ...(content.attachment === undefined ? {} : { attachment: content.attachment }),
-          ...(content.wikiTiddlers === undefined ? {} : { wikiTiddlers: content.wikiTiddlers }),
-        },
-        requestPeerId,
+      ? this.runTurnRequestFromPersistedUserRoot({
+        conversationId: agentId,
+        definitionId: agent.agentDefId,
+        message: remoteRequest.message,
+        requestId,
+        turnId,
+      }, existingUserRoot)
+      : await this.createAgentDeviceRpcRunTurn(
+        remoteRequest,
         await this.captureBeforeTurnCommitMap(agentId),
-        {
-          desktopExecution: {
-            source: options.source,
-            requestId,
-            turnId,
-            ...(options.provenance ?? {}),
-          },
-        },
       );
 
     await this.updateAgentStatusBestEffort(agentId, { state: 'working', modified: new Date() });
@@ -1123,22 +1125,22 @@ export class AgentInstanceService implements IAgentInstanceService {
     });
     try {
       handle = await durableRuntime.sendMessage({
-        conversationId: agentId,
-        definitionId: agent.agentDefId,
-        message: prepared.message,
-        requestId,
-        turnId,
+        ...prepared,
         requestPeerId,
-        userMessage: {
-          ...prepared.userMessage,
-          messageId: turnId,
-          turnId,
-          originNodeId: requestPeerId,
-        },
+        ...(prepared.userMessage === undefined ? {} : {
+          userMessage: {
+            ...prepared.userMessage,
+            messageId: turnId,
+            turnId,
+            originNodeId: requestPeerId,
+          },
+        }),
       });
       this.trackDurableRun(agentId, handle.runId);
-      if (content.attachment) this.getAttachmentUploadStore().consumeCommittedScope(agentId, content.attachment.reference);
-      const terminal = await this.waitForDurableRun(handle.runId, options.signal, options.timeoutMs);
+      if (remoteRequest.attachment?.kind === 'committed') {
+        this.getAttachmentUploadStore().consumeCommittedScope(agentId, remoteRequest.attachment.reference);
+      }
+      const terminal = await this.waitForDurableRun(handle.runId, options?.signal);
       if (terminal.state === 'failed') {
         await this.updateAgentStatusBestEffort(agentId, { state: 'failed', modified: new Date() });
         terminalStatusPersisted = true;
@@ -1154,12 +1156,19 @@ export class AgentInstanceService implements IAgentInstanceService {
       // exact run instead of inferring it from mutable conversation data.
       const completedState = inputRequiredRunIds.has(handle.runId) ? 'input-required' : 'completed';
       await this.updateAgentStatusBestEffort(agentId, { state: completedState, modified: new Date() });
-      if ((options.restartHeartbeat ?? options.source !== 'heartbeat') && definition.heartbeat?.enabled && !agent.volatile) {
-        startHeartbeat(agentId, definition.heartbeat, this, { createdBy: 'agent-definition' });
+      if (definition.heartbeat?.enabled && !agent.volatile) {
+        startHeartbeat(agentId, definition.id, definition.heartbeat, this, { createdBy: 'agent-definition' });
       }
       return terminal;
     } catch (error) {
-      if (!terminalStatusPersisted) await this.updateAgentStatusBestEffort(agentId, { state: 'failed', modified: new Date() });
+      if (!terminalStatusPersisted) {
+        if (options?.signal?.aborted) {
+          if (handle) await durableRuntime.cancelRun(handle.runId);
+          await this.updateAgentStatusBestEffort(agentId, { state: 'canceled', modified: new Date() });
+        } else {
+          await this.updateAgentStatusBestEffort(agentId, { state: 'failed', modified: new Date() });
+        }
+      }
       throw error;
     } finally {
       unsubscribeRuntime();
@@ -1186,9 +1195,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     return beforeCommitMap;
   }
 
-  private async waitForDurableRun(runId: string, signal?: AbortSignal, timeoutMs?: number): Promise<MemeLoopRunStatus> {
+  private async waitForDurableRun(runId: string, signal?: AbortSignal): Promise<MemeLoopRunStatus> {
     const runtime = await this.getDurableAgentRuntime();
-    const deadline = timeoutMs === undefined ? undefined : Date.now() + timeoutMs;
     let cancellationRequested = false;
     const cancel = () => {
       if (cancellationRequested) return;
@@ -1199,10 +1207,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       for (;;) {
         signal?.throwIfAborted();
-        if (deadline !== undefined && Date.now() >= deadline) {
-          cancel();
-          throw new Error('durable_agent_run_timeout');
-        }
         const status = await runtime.getRunStatus(runId);
         signal?.throwIfAborted();
         if (!status) throw new Error('durable_agent_run_disappeared');
@@ -1225,28 +1229,29 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  private preparedMessageFromPersistedUserRoot(message: ChatMessage): DesktopPreparedAgentUserMessage {
+  private runTurnRequestFromPersistedUserRoot(
+    request: Omit<AgentDeviceRpcRunTurnRequest, 'userMessage'>,
+    message: ChatMessage,
+  ): AgentDeviceRpcRunTurnRequest {
     return {
+      ...request,
       message: message.content,
-      userMessage: {
-        content: message.content,
-        ...(message.parts === undefined ? {} : { parts: message.parts }),
-        ...(message.toolCalls === undefined ? {} : { toolCalls: message.toolCalls }),
-        ...(message.attachments === undefined ? {} : { attachments: message.attachments }),
-        ...(message.detailRef === undefined ? {} : { detailRef: message.detailRef }),
-        ...(message.reasoning_content === undefined ? {} : { reasoning_content: message.reasoning_content }),
-        ...(message.contentType === undefined ? {} : { contentType: message.contentType }),
-        ...(message.hidden === undefined ? {} : { hidden: message.hidden }),
-        ...(message.duration === undefined ? {} : { duration: message.duration }),
-        ...(message.metadata === undefined ? {} : { metadata: message.metadata }),
-      },
+      userMessage: agentDeviceRpcPendingUserMessageFromChatMessage(message),
     };
   }
 
-  private createDurableRunFailure(status: MemeLoopRunStatus): Error {
-    const error = new Error(status.error?.code ?? 'agent_run_failed');
-    if (status.error) Object.defineProperty(error, 'agentRunError', { value: status.error, enumerable: false });
-    return error;
+  private createDurableRunFailure(status: MemeLoopRunStatus): AgentRunFailure {
+    return new AgentRunFailure(
+      status.error ?? createAgentRunError({
+        code: 'INTERNAL',
+        messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.INTERNAL,
+        retryable: false,
+      }),
+    );
+  }
+
+  private agentRunError(detail: AgentRunError): AgentRunFailure {
+    return new AgentRunFailure(detail);
   }
 
   private trackDurableRun(conversationId: string, runId: string): void {
@@ -1261,7 +1266,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (runIds?.size === 0) this.activeDurableRunIds.delete(conversationId);
   }
 
-  public async executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<DesktopAgentExecuteRunResult> {
+  public async executeAgentRun(request: AgentDeviceRpcRunTurnRequest): Promise<MemeLoopRunHandle> {
     const agent = await this.getAgentMetadata(request.conversationId);
     if (!agent || agent.agentDefId !== request.definitionId) {
       throw new Error('agent conversation definition mismatch');
@@ -1269,60 +1274,55 @@ export class AgentInstanceService implements IAgentInstanceService {
     const definition = await this.agentDefinitionService.getAgentDef(request.definitionId);
     if (!definition) throw new Error('agent definition not found');
     const instanceModel = agent.modelConfig;
-    // TypeORM may hydrate an absent JSON model override as `null` even though
-    // the portable contract exposes it as optional. Treat both nullish forms
-    // as absent so Core never becomes the first layer to discover the missing
-    // selection with an untyped error after crossing IPC.
-    if (instanceModel == null && definition.modelConfig == null) {
+    if (instanceModel === undefined && definition.modelConfig === undefined) {
       const globalModel = (await this.externalAPIService.getAIConfig()).default;
-      if (!globalModel?.provider || !globalModel.model) {
-        return {
-          ok: false,
-          error: createAgentRunError({
-            code: 'PROVIDER_CONFIGURATION_MISSING',
-            messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
-            retryable: false,
-            localizedParams: { settingField: 'model' },
-            settingTarget: { kind: 'runtime', section: 'agent' },
-          }),
-        };
+      if (!globalModel?.providerId || !globalModel.modelId) {
+        throw this.agentRunError(createAgentRunError({
+          code: 'PROVIDER_CONFIGURATION_MISSING',
+          messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
+          retryable: false,
+          localizedParams: { settingField: 'model' },
+          settingTarget: { kind: 'runtime', section: 'agent' },
+        }));
       }
     }
     const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    if (request.attachment) {
-      await this.assertAgentAttachmentAuthorized(request.conversationId, request.attachment.reference, false);
+    for (const reference of request.userMessage?.attachments ?? []) {
+      await this.assertAgentAttachmentAuthorized(request.conversationId, reference, false);
     }
-    const prepared = await this.createPreparedAgentUserMessage(request, requestPeerId);
     const handle = await (await this.getDurableAgentRuntime()).sendMessage({
-      conversationId: request.conversationId,
-      definitionId: request.definitionId,
-      message: prepared.message,
-      requestId: request.requestId,
-      turnId: request.turnId,
+      ...request,
       requestPeerId,
-      userMessage: {
-        ...prepared.userMessage,
-        messageId: request.turnId,
-        turnId: request.turnId,
-        originNodeId: requestPeerId,
-      },
+      ...(request.userMessage === undefined
+        ? {}
+        : {
+          userMessage: {
+            ...request.userMessage,
+            messageId: request.turnId,
+            turnId: request.turnId,
+            originNodeId: requestPeerId,
+          },
+        }),
     });
-    if (request.attachment) {
-      this.getAttachmentUploadStore().consumeCommittedScope(request.conversationId, request.attachment.reference);
+    for (const reference of request.userMessage?.attachments ?? []) {
+      this.getAttachmentUploadStore().consumeCommittedScope(request.conversationId, reference);
     }
-    return { ok: true, handle };
+    return handle;
   }
 
-  public async prepareRemoteAgentUserMessage(request: DesktopAgentExecuteRunRequest): Promise<DesktopPreparedAgentUserMessage> {
-    const agent = await this.getAgentMetadata(request.conversationId);
-    if (!agent || agent.agentDefId !== request.definitionId) {
+  public async prepareAgentDeviceRpcRunTurn(request: RemoteAgentExecuteRequest): Promise<AgentDeviceRpcRunTurnRequest> {
+    const { provenance } = request;
+    const agent = await this.getAgentMetadata(provenance.conversationId);
+    if (!agent || agent.agentDefId !== provenance.definitionId) {
       throw new Error('agent conversation definition mismatch');
     }
-    if (request.attachment) {
-      await this.assertAgentAttachmentAuthorized(request.conversationId, request.attachment.reference, false);
+    if (request.attachment?.kind === 'source') {
+      throw new TypeError('attachment source must be committed before crossing the Desktop host boundary');
     }
-    const localPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    return this.createPreparedAgentUserMessage(request, localPeerId);
+    if (request.attachment?.kind === 'committed') {
+      await this.assertAgentAttachmentAuthorized(provenance.conversationId, request.attachment.reference, false);
+    }
+    return this.createAgentDeviceRpcRunTurn(request);
   }
 
   public async getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined> {
@@ -1358,97 +1358,39 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  private async createPreparedAgentUserMessage(
-    request: DesktopAgentExecuteRunRequest,
-    localPeerId: string,
+  private async createAgentDeviceRpcRunTurn(
+    request: RemoteAgentExecuteRequest,
     beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>,
     metadata?: Readonly<Record<string, unknown>>,
-  ): Promise<DesktopPreparedAgentUserMessage> {
-    const userMessage = await createMemeLoopUserMessage({
-      agentId: request.conversationId,
-      content: {
-        text: request.message,
-        attachment: request.attachment,
-        wikiTiddlers: request.wikiTiddlers ? [...request.wikiTiddlers] : undefined,
-      },
-      originNodeId: localPeerId,
-      messageId: request.turnId,
+  ): Promise<AgentDeviceRpcRunTurnRequest> {
+    const { provenance } = request;
+    const userMessage = await createAgentDeviceRpcPendingUserMessage({
+      request,
       beforeCommitMap,
       metadata,
     });
-    const {
-      messageId: _messageId,
-      originNodeId: _originNodeId,
-      timestamp: _timestamp,
-      turnId: _turnId,
-      ...pending
-    } = userMessage;
     return {
+      conversationId: provenance.conversationId,
+      definitionId: provenance.definitionId,
+      requestId: provenance.requestId,
+      turnId: provenance.turnId,
       message: userMessage.content ?? request.message,
-      userMessage: pending,
+      userMessage,
     };
   }
 
   public async cancelAgent(agentId: string): Promise<void> {
-    // Stop heartbeat on cancel
     stopHeartbeat(agentId);
-
     const durableRunIds = [...(this.activeDurableRunIds.get(agentId) ?? [])];
     await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
-
-    // Keep the compatibility token until the last legacy in-process caller is removed.
-    const cancelToken = this.cancelTokenMap.get(agentId);
-
-    if (cancelToken || durableRunIds.length > 0) {
-      // Set cancel flag
-      if (cancelToken) cancelToken.value = true;
-
+    if (durableRunIds.length > 0) {
       try {
-        // Update agent status to canceled
-        logger.debug(`cancelAgent called for ${agentId} - updating agent status to canceled`);
         await this.updateAgent(agentId, {
           status: {
             state: 'canceled',
             modified: new Date(),
           },
         });
-        logger.debug(`updateAgent returned for cancelAgent ${agentId}`);
-
-        // Propagate canceled status to any message-specific subscriptions so UI can react
-        try {
-          logger.debug('propagating canceled status to message-specific subscriptions', { function: 'cancelAgent', agentId });
-          for (const key of Array.from(this.statusSubjects.keys())) {
-            if (key.startsWith(`${agentId}:`)) {
-              const messageId = key.slice(agentId.length + 1);
-              const subject = this.statusSubjects.get(key);
-              const message = await this.getAgentMessage(messageId);
-              if (subject) {
-                try {
-                  logger.debug('propagate canceled to subscription', { function: 'cancelAgent', subscriptionKey: key });
-                  subject.next({
-                    state: 'canceled',
-                    message: message || ({} as ChatMessage),
-                    modified: new Date(),
-                  });
-                } catch {
-                  // ignore
-                }
-                try {
-                  subject.complete();
-                } catch {
-                  // ignore
-                }
-                this.statusSubjects.delete(key);
-              }
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to propagate cancel status to message subscriptions', { function: 'cancelAgent', error });
-        }
-
-        // Remove cancel token from map
-        this.cancelTokenMap.delete(agentId);
-
         logger.info('Canceled agent instance', {
           function: 'cancelAgent',
           agentId,
@@ -1472,7 +1414,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       stopHeartbeat(agentId);
       await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
-      cancelAlarm(agentId);
       await cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
 
@@ -1488,15 +1429,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Mark as closed
       instanceEntity.closed = true;
       await this.agentInstanceRepository!.save(instanceEntity);
-
-      // Cancel any ongoing operations
-      if (this.cancelTokenMap.has(agentId)) {
-        const token = this.cancelTokenMap.get(agentId);
-        if (token) {
-          token.value = true;
-        }
-        this.cancelTokenMap.delete(agentId);
-      }
 
       // Clean up subscriptions
       this.cleanupAgentSubscriptions(agentId);
@@ -1515,44 +1447,28 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void> {
-    const { resolveApproval } = await import('./tools/approval');
-    resolveApproval(approvalId, decision);
+  public async resolveToolApproval(resolution: ToolApprovalResolution): Promise<boolean> {
+    return this.getMemeLoopRuntime().resolveToolApproval(resolution);
   }
 
   public async resolveAskQuestion(agentId: string, questionId: string, answer: string): Promise<void> {
     try {
-      await this.executeLocalAgentMessage(agentId, { text: answer }, {
-        source: 'ask-question',
-        requestId: `ask-question:${questionId}:request`,
-        turnId: `ask-question:${questionId}:turn`,
-        provenance: { questionId },
+      const agent = await this.getAgentMetadata(agentId);
+      if (!agent) throw new Error(`Agent instance not found: ${agentId}`);
+      await this.executeLocalAgentMessage({
+        target: { kind: 'local' },
+        provenance: {
+          conversationId: agentId,
+          definitionId: agent.agentDefId,
+          requestId: `ask-question:${questionId}:request`,
+          turnId: `ask-question:${questionId}:turn`,
+        },
+        message: answer,
       });
       logger.debug('Ask-question resolved via durable local run', { questionId, agentId });
     } catch (error) {
       logger.error('Failed to resolve ask-question', { questionId, error });
       throw error;
-    }
-  }
-
-  public async deleteMessages(agentId: string, messageIds: string[]): Promise<void> {
-    if (!this.agentMessageRepository || !this.agentInstanceRepository) {
-      throw new Error('Database not initialized');
-    }
-    if (messageIds.length === 0) return;
-
-    const messages = await this.agentMessageRepository.findBy({ messageId: In(messageIds), conversationId: agentId });
-    const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    for (const turnId of new Set(messages.map(message => message.turnId))) {
-      await this.appendLocalConversationEvent({
-        kind: 'tombstone',
-        eventId: `tombstone:${crypto.randomUUID()}`,
-        conversationId: agentId,
-        originNodeId,
-        timestamp: Date.now(),
-        targetTurnId: turnId,
-        reason: 'user-delete',
-      });
     }
   }
 
@@ -1629,87 +1545,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     return { rolledBack, errors };
   }
 
-  public async getBackgroundTasks(): Promise<AgentBackgroundTask[]> {
-    const tasks: AgentBackgroundTask[] = [];
-
-    // Collect heartbeats from in-memory registry
-    const heartbeatEntries = getActiveHeartbeatEntries();
-    for (const heartbeatEntry of heartbeatEntries) {
-      const agentId = heartbeatEntry.agentId;
-      const agent = await this.getAgentMetadata(agentId);
-      const agentDefinition = agent?.agentDefId ? await this.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
-      const heartbeatConfig = agentDefinition?.heartbeat;
-      tasks.push({
-        agentId,
-        agentName: agent?.name ?? agentDefinition?.name,
-        type: 'heartbeat',
-        intervalSeconds: heartbeatConfig?.intervalSeconds,
-        activeHoursStart: heartbeatConfig?.activeHoursStart,
-        activeHoursEnd: heartbeatConfig?.activeHoursEnd,
-        nextWakeAtISO: heartbeatEntry.nextWakeAtISO,
-        message: heartbeatConfig?.message,
-        createdBy: heartbeatEntry.createdBy,
-        lastRunAtISO: heartbeatEntry.lastRunAtISO,
-        runCount: heartbeatEntry.runCount,
-      });
-    }
-
-    // Collect alarms from unified ScheduledTaskManager
-    for (const task of (await stmGetActiveTasks()).filter(t => t.scheduleKind === 'at')) {
-      const agent = await this.getAgentMetadata(task.agentInstanceId);
-      const atSchedule = task.schedule as Extract<typeof task.schedule, { kind: 'at' }>;
-      tasks.push({
-        agentId: task.agentInstanceId,
-        agentName: agent?.name,
-        type: 'alarm',
-        wakeAtISO: atSchedule.wakeAtISO,
-        nextWakeAtISO: task.nextRunAt,
-        message: task.payload?.message,
-        createdBy: task.createdBy,
-        lastRunAtISO: task.lastRunAt,
-        runCount: task.runCount,
-      });
-    }
-
-    return tasks;
-  }
-
-  public async cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void> {
-    if (type === 'heartbeat') {
-      stopHeartbeat(agentId);
-    } else if (type === 'alarm') {
-      cancelAlarm(agentId);
-    }
-    logger.info('Background task cancelled from UI', { agentId, type });
-  }
-
-  public async setBackgroundAlarm(agentId: string, alarm: SetBackgroundAlarmInput): Promise<void> {
-    this.ensureRepositories();
-
-    const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
-    if (!entity) {
-      throw new Error(`Agent instance not found: ${agentId}`);
-    }
-
-    const parsedWakeAt = new Date(alarm.wakeAtISO);
-    if (Number.isNaN(parsedWakeAt.getTime())) {
-      throw new Error(`Invalid wakeAtISO: ${alarm.wakeAtISO}`);
-    }
-
-    const wakeAtISO = parsedWakeAt.toISOString();
-
-    await scheduleAlarmTimer(agentId, wakeAtISO, alarm.message, {
-      createdBy: 'settings-ui',
-      runCount: 0,
-    });
-
-    logger.info('Background alarm upserted from UI', {
-      agentId,
-      wakeAtISO,
-    });
-  }
-
-  public async setBackgroundHeartbeat(agentId: string, heartbeat: SetBackgroundHeartbeatInput): Promise<void> {
+  public async setAgentHeartbeat(agentId: string, heartbeat: AgentHeartbeatConfig): Promise<void> {
     this.ensureRepositories();
 
     const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
@@ -1725,61 +1561,57 @@ export class AgentInstanceService implements IAgentInstanceService {
       throw new Error(`Agent definition not found: ${entity.agentDefId}`);
     }
 
-    const normalizedHeartbeat: AgentHeartbeatConfig = {
-      enabled: heartbeat.enabled,
-      intervalSeconds: Math.max(60, Math.round(heartbeat.intervalSeconds || 60)),
-      message: heartbeat.message?.trim() || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.',
-      activeHoursStart: heartbeat.activeHoursStart || undefined,
-      activeHoursEnd: heartbeat.activeHoursEnd || undefined,
-    };
+    if (!Number.isSafeInteger(heartbeat.intervalSeconds) || heartbeat.intervalSeconds < 60 || heartbeat.message.trim().length === 0) {
+      throw new TypeError('invalid agent heartbeat configuration');
+    }
 
     await this.agentDefinitionService.updateAgentDef({
       id: agentDefinition.id,
-      heartbeat: normalizedHeartbeat,
+      heartbeat,
     });
 
-    if (normalizedHeartbeat.enabled && !entity.volatile) {
-      startHeartbeat(agentId, normalizedHeartbeat, this, { createdBy: 'settings-ui' });
+    if (heartbeat.enabled && !entity.volatile) {
+      startHeartbeat(agentId, agentDefinition.id, heartbeat, this, { createdBy: 'settings-ui' });
     } else {
       stopHeartbeat(agentId);
     }
 
     logger.info('Background heartbeat upserted from UI', {
       agentId,
-      enabled: normalizedHeartbeat.enabled,
-      intervalSeconds: normalizedHeartbeat.intervalSeconds,
-      activeHoursStart: normalizedHeartbeat.activeHoursStart,
-      activeHoursEnd: normalizedHeartbeat.activeHoursEnd,
+      enabled: heartbeat.enabled,
+      intervalSeconds: heartbeat.intervalSeconds,
+      activeHoursStart: heartbeat.activeHoursStart,
+      activeHoursEnd: heartbeat.activeHoursEnd,
     });
   }
 
   // ── ScheduledTask CRUD ────────────────────────────────────────────────────
 
-  public async createScheduledTask(input: CreateScheduledTaskInput, options?: ScheduledTaskCallOptions): Promise<ScheduledTask> {
+  public async createScheduledTask(input: CreateScheduledTaskInput, options?: AgentManagementCallOptions): Promise<ScheduledTask> {
     return stmAddTask(input, options);
   }
 
-  public async updateScheduledTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask> {
-    return stmUpdateTask(input);
+  public async updateScheduledTask(taskId: string, patch: ScheduledTaskRpcUpdatePatch, options?: AgentManagementCallOptions): Promise<ScheduledTask> {
+    return stmUpdateTask(taskId, patch, options);
   }
 
   public async updateScheduledTaskScoped(
-    scope: ScheduledTaskScope,
-    input: UpdateScheduledTaskInput,
-    options?: ScheduledTaskCallOptions,
+    scope: ScheduledTaskRpcScopedTaskRequest,
+    patch: ScheduledTaskRpcUpdatePatch,
+    options?: AgentManagementCallOptions,
   ): Promise<ScheduledTask> {
-    return stmUpdateTaskScoped(scope, input, options);
+    return stmUpdateTaskScoped(scope, patch, options);
   }
 
   public async deleteScheduledTask(taskId: string): Promise<void> {
     return stmRemoveTask(taskId);
   }
 
-  public async deleteScheduledTaskScoped(scope: ScheduledTaskScope, options?: ScheduledTaskCallOptions): Promise<void> {
+  public async deleteScheduledTaskScoped(scope: ScheduledTaskRpcScopedTaskRequest, options?: AgentManagementCallOptions): Promise<void> {
     return stmRemoveTaskScoped(scope, options);
   }
 
-  public async getScheduledTaskByScope(scope: ScheduledTaskScope, options?: ScheduledTaskCallOptions): Promise<ScheduledTask | undefined> {
+  public async getScheduledTaskByScope(scope: ScheduledTaskRpcScopedTaskRequest, options?: AgentManagementCallOptions): Promise<ScheduledTask | undefined> {
     return stmGetTaskByScope(scope, options);
   }
 
@@ -1787,57 +1619,20 @@ export class AgentInstanceService implements IAgentInstanceService {
     return stmGetActiveTasks(options);
   }
 
-  public async listScheduledTasksForAgent(agentInstanceId: string, options?: ListScheduledTasksOptions): Promise<ScheduledTask[]> {
-    return stmGetActiveTasksForAgent(agentInstanceId, options);
-  }
-
-  public async listScheduledTasksPageForAgent(input: ListScheduledTasksPageForAgentInput): Promise<ScheduledTaskPage> {
-    return stmGetScheduledTasksPageForAgent(input);
-  }
-
-  public async listRemoteScheduledTaskProjectionPageForAgent(
-    input: ListRemoteScheduledTaskProjectionPageInput,
-  ): Promise<RemoteScheduledTaskProjectionPage> {
-    this.ensureRepositories();
-    return getRemoteScheduledTaskProjectionPage(this.remoteScheduledTaskProjectionRepository!, input);
-  }
-
-  public async replaceRemoteScheduledTaskProjections(
-    agentInstanceId: string,
-    executionNodeId: string,
-    tasks: ScheduledTask[],
-    observedAt: number,
-  ): Promise<void> {
-    this.ensureRepositories();
-    await replaceRemoteProjections(
-      this.remoteScheduledTaskProjectionRepository!,
-      agentInstanceId,
-      executionNodeId,
-      tasks,
-      observedAt,
-    );
-  }
-
-  public async upsertRemoteScheduledTaskProjection(task: ScheduledTask, observedAt: number): Promise<void> {
-    this.ensureRepositories();
-    await upsertRemoteProjection(this.remoteScheduledTaskProjectionRepository!, task, observedAt);
-  }
-
-  public async deleteRemoteScheduledTaskProjection(taskId: string, executionNodeId: string): Promise<void> {
-    this.ensureRepositories();
-    await deleteRemoteProjection(this.remoteScheduledTaskProjectionRepository!, taskId, executionNodeId);
+  public async listScheduledTasksForAgent(agentInstanceId: string, options?: ListScheduledTasksOptions): Promise<ScheduledTaskPage> {
+    return stmGetScheduledTaskPageForAgent(agentInstanceId, options);
   }
 
   public async getCronPreviewDates(expression: string, timezone?: string, count = 3): Promise<string[]> {
     return stmGetCronPreviewDates(expression, timezone, count);
   }
 
-  public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;
+  public subscribeToAgentUpdates(agentId: string): Observable<AgentRuntimeView | undefined>;
   /**
    * Subscribe to agent instance message status updates
    */
   public subscribeToAgentUpdates(agentId: string, messageId: string): Observable<AgentInstanceLatestStatus | undefined>;
-  public subscribeToAgentUpdates(agentId: string, messageId?: string): Observable<AgentInstance | AgentInstanceLatestStatus | undefined> {
+  public subscribeToAgentUpdates(agentId: string, messageId?: string): Observable<AgentRuntimeView | AgentInstanceLatestStatus | undefined> {
     // If messageId provided, subscribe to specific message status updates
     if (messageId) {
       const statusKey = `${agentId}:${messageId}`;
@@ -1866,11 +1661,11 @@ export class AgentInstanceService implements IAgentInstanceService {
     // renderer loads its initial bounded page explicitly; an observable must
     // never replay a complete or 200-message snapshot on every token update.
     if (!this.agentInstanceSubjects.has(agentId)) {
-      this.agentInstanceSubjects.set(agentId, new BehaviorSubject<AgentInstance | undefined>(undefined));
+      this.agentInstanceSubjects.set(agentId, new BehaviorSubject<AgentRuntimeView | undefined>(undefined));
 
       // Try to get initial data
       this.getAgentMetadata(agentId).then(agent => {
-        this.agentInstanceSubjects.get(agentId)?.next(agent ? { ...agent, messages: [] } : undefined);
+        this.agentInstanceSubjects.get(agentId)?.next(agent);
       }).catch((error: unknown) => {
         logger.error('Failed to get initial agent data', { function: 'subscribeToAgentUpdates', error });
       });
@@ -1901,8 +1696,10 @@ export class AgentInstanceService implements IAgentInstanceService {
     return (await this.getConversationState(conversationId)).revision;
   }
 
-  private toConversationProjection(message: ChatMessage): AgentConversationMessageProjection {
-    return projectConversationMessageForList(message, 256 * 1024);
+  private toConversationProjection(message: ChatMessage, streaming = false): AgentConversationMessageProjection {
+    return streaming
+      ? projectTransientConversationMessageForList(message, 256 * 1024)
+      : projectConversationMessageForList(message, 256 * 1024);
   }
 
   private async serializeConversationPublication(
@@ -1927,7 +1724,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     previousState?: { revision: string; totalMessages: number },
   ): Promise<void> {
     if (!this.conversationSubjects.has(message.conversationId)) return;
-    const projection = this.toConversationProjection(message);
+    const projection = this.toConversationProjection(message, streaming);
     if (streaming) {
       const subject = this.conversationSubjects.get(message.conversationId);
       if (!subject) return;
@@ -2034,16 +1831,16 @@ export class AgentInstanceService implements IAgentInstanceService {
    * @param agentId Agent ID
    * @param agentData Agent data to use for notification
    */
-  private notifyAgentUpdate(agentId: string, agentData: AgentInstance): void {
+  private notifyAgentUpdate(agentId: string, agentData: AgentRuntimeView): void {
     try {
       // Only notify if there are active subscriptions
       if (this.agentInstanceSubjects.has(agentId)) {
         // Metadata subscriptions never carry transcript content. Conversation
         // projections use subscribeToConversationUpdates with revision fences.
-        this.agentInstanceSubjects.get(agentId)?.next({
-          ...agentData,
-          messages: [],
-        });
+        // Select the exact Core view instead of trusting TypeScript's erased
+        // structural type: callers can otherwise leak an AgentInstanceModel's
+        // unbounded `messages` array through this renderer IPC boundary.
+        this.agentInstanceSubjects.get(agentId)?.next(projectAgentRuntimeView(agentData));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -2092,110 +1889,38 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: ChatMessage[]): Observable<PromptConcatStreamState> {
-    logger.debug('AgentInstanceService.concatPrompt called', {
-      hasPromptConfig: !!promptDescription.agentFrameworkConfig,
-      promptConfigKeys: Object.keys(promptDescription.agentFrameworkConfig ?? {}),
-      messagesCount: messages.length,
-    });
-
-    return new Observable<PromptConcatStreamState>((observer) => {
-      const processStream = async () => {
-        try {
-          const emptyConfig: AgentFrameworkConfig = { prompts: [], plugins: [] };
-          // Include Desktop tool registry so that concatPrompt can find defineTool plugins
-          const frameworkContext = {
-            agent: {
-              id: 'temp',
-              messages,
-              agentDefId: 'temp',
-              status: { state: 'working' as const, modified: new Date() },
-              created: new Date(),
-              agentFrameworkConfig: emptyConfig,
-            },
-            agentDef: { id: 'temp', name: 'temp', agentFrameworkConfig: promptDescription.agentFrameworkConfig ?? emptyConfig },
-            tools: { getPromptPlugins: () => this.getMemeLoopRuntime().getPromptPlugins() },
-            isCancelled: () => false,
-          };
-
-          const streamGenerator = promptConcatStream(promptDescription, messages, frameworkContext as never);
-          for await (const state of streamGenerator) {
-            observer.next({
-              ...state,
-              flatPrompts: includeConversationHistoryInPreview(state.flatPrompts as ModelMessage[], messages),
-            });
-            if (state.isComplete) {
-              observer.complete();
-              break;
-            }
-          }
-        } catch (error) {
-          logger.error('Error in AgentInstanceService.concatPrompt', {
-            error,
-            messagesCount: messages.length,
-          });
-          observer.error(error);
-        }
-      };
-      void processStream();
-    });
-  }
-
   public concatPromptPreview(input: {
     sessionId: string;
     expectedRevision: string;
     agentFrameworkConfig: AgentFrameworkConfig;
   }): Observable<PromptConcatStreamState> {
     return new Observable<PromptConcatStreamState>(observer => {
-      let cancelled = false;
+      const abortController = new AbortController();
       const processStream = async () => {
         try {
-          const messages = this.getMemeLoopRuntime().getPromptPreviewMessagesForHost(
-            input.sessionId,
-            input.expectedRevision,
-          );
-          const emptyConfig: AgentFrameworkConfig = { prompts: [], plugins: [] };
-          const frameworkContext = {
-            agent: {
-              id: 'prompt-preview',
-              messages,
-              agentDefId: 'prompt-preview',
-              status: { state: 'working' as const, modified: new Date() },
-              created: new Date(),
-              agentFrameworkConfig: emptyConfig,
-            },
-            agentDef: {
-              id: 'prompt-preview',
-              name: 'prompt-preview',
-              agentFrameworkConfig: input.agentFrameworkConfig,
-            },
-            tools: { getPromptPlugins: () => this.getMemeLoopRuntime().getPromptPlugins() },
-            isCancelled: () => cancelled,
-          };
-          const generator = promptConcatStream(
-            { agentFrameworkConfig: input.agentFrameworkConfig },
-            [...messages],
-            frameworkContext as never,
-          );
+          const generator = this.getMemeLoopRuntime().concatPromptPreview({
+            ...input,
+            signal: abortController.signal,
+          });
           for await (const state of generator) {
-            if (cancelled || observer.closed) return;
-            const flatPrompts = state.flatPrompts.at(-1)?.role === 'user'
-              ? state.flatPrompts.slice(0, -1)
-              : state.flatPrompts;
-            assertPromptPreviewGeneratedResult({ flatPrompts, processedPrompts: state.processedPrompts });
-            observer.next({ ...state, flatPrompts });
+            if (abortController.signal.aborted || observer.closed) return;
+            assertPromptPreviewGeneratedResult({
+              flatPrompts: state.flatPrompts,
+              processedPrompts: state.processedPrompts,
+            });
+            observer.next(state);
             if (state.isComplete) {
               observer.complete();
               return;
             }
           }
         } catch (error) {
-          if (!cancelled && !observer.closed) observer.error(error);
+          if (!abortController.signal.aborted && !observer.closed) observer.error(error);
         }
       };
       void processStream();
       return () => {
-        cancelled = true;
+        abortController.abort(new DOMException('Prompt preview closed', 'AbortError'));
       };
     });
   }

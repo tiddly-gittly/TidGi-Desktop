@@ -1,3 +1,4 @@
+import type { AgentExecutionTarget, SetExecutionTargetOptions } from '@memeloop/react-ui/chat';
 import type {
   AgentAttachmentInput,
   AgentRuntimeView,
@@ -13,20 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { createDesktopAgentExecutionCoordinator } from '../DesktopAgentExecutionCoordinator';
 
-const LOCAL_EXECUTION_TARGET_ID = 'local';
-const REMOTE_EXECUTION_TARGET_PREFIX = 'peer:';
-
-export interface AgentExecutionTarget {
-  id: string;
-  label: string;
-  description?: string;
-  kind?: 'local' | 'remote';
-  disabled?: boolean;
-}
-
-interface SetExecutionTargetOptions {
-  restartCurrentTurn?: boolean;
-}
+const LOCAL_EXECUTION_TARGET = Object.freeze({ kind: 'local' } as const satisfies RemoteAgentExecutionTarget);
 
 interface UseExecutionTargetsOptions {
   agent: AgentRuntimeView | null;
@@ -39,33 +27,20 @@ interface SendExecutionMessageOptions {
   onAccepted?: () => void | Promise<void>;
 }
 
-function remoteExecutionTargetId(peerId: string): string {
-  return `${REMOTE_EXECUTION_TARGET_PREFIX}${peerId}`;
-}
-
-function executionTargetFromId(targetId: string): RemoteAgentExecutionTarget {
-  if (targetId === LOCAL_EXECUTION_TARGET_ID) return { kind: 'local' };
-  if (targetId.startsWith(REMOTE_EXECUTION_TARGET_PREFIX)) {
-    const peerId = targetId.slice(REMOTE_EXECUTION_TARGET_PREFIX.length);
-    if (peerId.length > 0) return { kind: 'remote', peerId };
-  }
-  throw new TypeError('invalid agent execution target');
-}
-
 /** Owns device discovery and delegates every mutation to Core's coordinator. */
 export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTargetsOptions) {
   const { t } = useTranslation('agent');
   const [localPeerId, setLocalPeerId] = useState<string | undefined>();
   const [agentLoopDevices, setAgentLoopDevices] = useState<Device[]>([]);
-  const [activeExecutionTargetId, setActiveExecutionTargetId] = useState(LOCAL_EXECUTION_TARGET_ID);
+  const [activeExecutionTarget, setActiveExecutionTarget] = useState<RemoteAgentExecutionTarget>(LOCAL_EXECUTION_TARGET);
   const [coordinator, setCoordinator] = useState<RemoteAgentExecutionCoordinator | null>(null);
   const [executionSnapshot, setExecutionSnapshot] = useState<RemoteAgentExecutionSnapshot | null>(null);
   const [discoveryError, setDiscoveryError] = useState<Error | null>(null);
-  const activeTargetIdReference = useRef(activeExecutionTargetId);
+  const activeTargetReference = useRef(activeExecutionTarget);
   const agentIdReference = useRef(agent?.id);
   const acceptedCallbacksReference = useRef(new Map<string, () => void | Promise<void>>());
   const acceptedRequestIdsReference = useRef(new Set<string>());
-  activeTargetIdReference.current = activeExecutionTargetId;
+  activeTargetReference.current = activeExecutionTarget;
   agentIdReference.current = agent?.id;
 
   useEffect(() => {
@@ -100,7 +75,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
         setCoordinator(ownedCoordinator);
         const activeAgentId = agentIdReference.current;
         if (activeAgentId) {
-          ownedCoordinator.switchTarget(activeAgentId, executionTargetFromId(activeTargetIdReference.current));
+          ownedCoordinator.switchTarget(activeAgentId, activeTargetReference.current);
           setExecutionSnapshot(ownedCoordinator.getSnapshot(activeAgentId));
         }
         const subscription = window.observables.deviceNetwork.devices$.subscribe((nextDevices) => {
@@ -137,7 +112,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
       setExecutionSnapshot(null);
       return;
     }
-    coordinator.switchTarget(agent.id, executionTargetFromId(activeTargetIdReference.current));
+    coordinator.switchTarget(agent.id, activeTargetReference.current);
     setExecutionSnapshot(coordinator.getSnapshot(agent.id));
     return () => {
       try {
@@ -150,21 +125,19 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
 
   const executionTargets = useMemo<AgentExecutionTarget[]>(() => [
     {
-      id: LOCAL_EXECUTION_TARGET_ID,
+      value: LOCAL_EXECUTION_TARGET,
       label: t('Chat.ExecutionTarget.ThisDevice'),
       description: localPeerId
         ? t('Chat.ExecutionTarget.RunOnThisDesktopWithPeerId', { peerId: localPeerId })
         : t('Chat.ExecutionTarget.RunOnThisDesktop'),
-      kind: 'local',
     },
     ...agentLoopDevices.map(device => ({
-      id: remoteExecutionTargetId(device.peerId),
+      value: { kind: 'remote' as const, peerId: device.peerId },
       label: device.displayName,
       description: t('Chat.ExecutionTarget.RemoteDeviceDescription', {
         platform: t(`Chat.ExecutionTarget.Platform.${device.platform}`),
         reachability: t(`Chat.ExecutionTarget.Reachability.${device.reachability.state}`),
       }),
-      kind: 'remote' as const,
       disabled: !device.trusted,
     })),
   ], [agentLoopDevices, localPeerId, t]);
@@ -191,7 +164,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
     if (options?.onAccepted) acceptedCallbacksReference.current.set(provenance.requestId, options.onAccepted);
     try {
       await context.coordinator.execute({
-        target: executionTargetFromId(activeTargetIdReference.current),
+        target: activeTargetReference.current,
         provenance,
         message,
         ...(attachment === undefined ? {} : { attachment }),
@@ -212,7 +185,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
       definitionId: context.agent.agentDefId,
     });
     await context.coordinator.cancel({
-      target: executionTargetFromId(activeTargetIdReference.current),
+      target: activeTargetReference.current,
       provenance,
     });
   }, [requireExecutionContext]);
@@ -220,7 +193,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
   const deleteTurn = useCallback(async (turnId: string) => {
     const context = requireExecutionContext();
     await context.coordinator.delete({
-      target: executionTargetFromId(activeTargetIdReference.current),
+      target: activeTargetReference.current,
       provenance: context.coordinator.prepareProvenance({
         conversationId: context.agent.id,
         definitionId: context.agent.agentDefId,
@@ -232,7 +205,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
   const retryTurn = useCallback(async (sourceTurnId: string) => {
     const context = requireExecutionContext();
     await context.coordinator.retry({
-      target: executionTargetFromId(activeTargetIdReference.current),
+      target: activeTargetReference.current,
       provenance: context.coordinator.prepareProvenance({
         conversationId: context.agent.id,
         definitionId: context.agent.agentDefId,
@@ -241,10 +214,9 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
     });
   }, [requireExecutionContext]);
 
-  const setExecutionTarget = useCallback(async (targetId: string, options?: SetExecutionTargetOptions) => {
-    if (targetId === activeTargetIdReference.current) return;
+  const setExecutionTarget = useCallback(async (target: RemoteAgentExecutionTarget, options?: SetExecutionTargetOptions) => {
+    if (executionTargetsEqual(target, activeTargetReference.current)) return;
     const context = requireExecutionContext();
-    const target = executionTargetFromId(targetId);
     const lastUserMessage = [...orderedMessages].reverse().find(message => message.role === 'user');
     if (options?.restartCurrentTurn && lastUserMessage) {
       const current = context.coordinator.getSnapshot(context.agent.id);
@@ -252,7 +224,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
         await cancelSelectedTarget();
       }
       context.coordinator.switchTarget(context.agent.id, target);
-      setActiveExecutionTargetId(targetId);
+      setActiveExecutionTarget(target);
       await context.coordinator.retry({
         target,
         provenance: context.coordinator.prepareProvenance({
@@ -264,12 +236,12 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
       return;
     }
     context.coordinator.switchTarget(context.agent.id, target);
-    setActiveExecutionTargetId(targetId);
+    setActiveExecutionTarget(target);
   }, [cancelSelectedTarget, orderedMessages, requireExecutionContext]);
 
   const status = executionSnapshot?.status ?? 'idle';
   return {
-    activeExecutionTargetId,
+    activeExecutionTarget,
     cancelSelectedTarget,
     deleteTurn,
     error: executionSnapshot?.error ?? discoveryError,
@@ -282,4 +254,9 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
     sendMessage,
     setExecutionTarget,
   };
+}
+
+function executionTargetsEqual(left: RemoteAgentExecutionTarget, right: RemoteAgentExecutionTarget): boolean {
+  if (left.kind !== right.kind) return false;
+  return left.kind === 'local' || (right.kind === 'remote' && left.peerId === right.peerId);
 }

@@ -19,57 +19,6 @@ export const AlarmClockParameterSchema = z.object({
 
 export type AlarmClockParameter = z.infer<typeof AlarmClockParameterSchema>;
 
-const AlarmClockToolSchema = z.object({
-  wakeAtISO: z.string().meta({
-    title: t('EditAgent.ScheduleDailyTime'),
-    description: t('Schema.AlarmClock.WakeAtDescription'),
-  }),
-  reminderMessage: z.string().optional().meta({
-    title: t('EditAgent.ScheduleMessage'),
-    description: t('Schema.AlarmClock.MessageDescription'),
-  }),
-}).meta({
-  title: 'alarm-clock',
-  description: t('Schema.AlarmClock.AlarmDescription'),
-  examples: [
-    { wakeAtISO: '2025-12-01T09:00:00Z', reminderMessage: 'Check if the daily note was created successfully.' },
-  ],
-});
-
-/**
- * Delegate alarm timer management to scheduledTaskManager.
- * Kept as a separate export so AgentInstanceService can still call them without import changes.
- */
-export async function scheduleAlarmTimer(
-  agentId: string,
-  wakeAtISO: string,
-  reminderMessage?: string,
-  options?: {
-    createdBy?: string;
-    runCount?: number;
-    lastRunAtISO?: string;
-  },
-): Promise<void> {
-  await addTask({
-    agentInstanceId: agentId,
-    name: `alarm-${wakeAtISO.slice(0, 10)}`,
-    scheduleKind: 'at',
-    schedule: { kind: 'at', wakeAtISO },
-    payload: reminderMessage ? { message: reminderMessage } : undefined,
-    createdBy: options?.createdBy ?? 'agent-tool',
-    enabled: true,
-  });
-}
-
-/** Cancel all alarm tasks for an agent. */
-export function cancelAlarm(agentId: string): void {
-  void getActiveTasksForAgent(agentId).then(tasks =>
-    Promise.all(
-      tasks.filter(task => task.scheduleKind === 'at').map(task => removeTask(task.id)),
-    )
-  );
-}
-
 // ─── schedule-task / list-schedules / remove-schedule / update-schedule ──────
 
 const ScheduleTaskToolSchema = z.object({
@@ -153,7 +102,6 @@ export const alarmClockDefinition = defineDesktopTool({
   description: t('EditAgent.ScheduledWakeupDescription'),
   configSchema: AlarmClockParameterSchema,
   llmToolSchemas: {
-    'alarm-clock': AlarmClockToolSchema,
     'schedule-task': ScheduleTaskToolSchema,
     'list-schedules': ListSchedulesToolSchema,
     'remove-schedule': RemoveScheduleToolSchema,
@@ -170,27 +118,9 @@ export const alarmClockDefinition = defineDesktopTool({
     if (!toolCall) return;
     if (!toolCall.found) return;
     const agentId = agentFrameworkContext.agent.id;
-
-    // ── legacy alarm-clock ────────────────────────────────────────────────
-    if (toolCall.toolId === 'alarm-clock') {
-      await executeToolCall('alarm-clock', async (parameters) => {
-        const wakeAt = new Date(parameters.wakeAtISO);
-        const now = new Date();
-        const delayMs = Math.max(0, wakeAt.getTime() - now.getTime());
-        await scheduleAlarmTimer(agentId, parameters.wakeAtISO, parameters.reminderMessage, {
-          createdBy: 'agent-tool',
-        });
-
-        return {
-          success: true,
-          data: i18n.t('Tool.AlarmClock.AlarmSet', {
-            wakeAtISO: parameters.wakeAtISO,
-            delaySeconds: Math.round(delayMs / 1000),
-          }),
-        };
-      });
-      return;
-    }
+    const agentDefinitionId = agentFrameworkContext.agent.agentDefId;
+    const localNodeId = agentFrameworkContext.localNodeId;
+    if (!localNodeId) throw new Error('local device identity is unavailable');
 
     // ── schedule-task ─────────────────────────────────────────────────────
     if (toolCall.toolId === 'schedule-task') {
@@ -201,7 +131,8 @@ export const alarmClockDefinition = defineDesktopTool({
 
         const task = await addTask({
           agentInstanceId: agentId,
-          name: parameters.name,
+          agentDefinitionId,
+          name: parameters.name ?? i18n.t('EditAgent.ScheduledWakeup'),
           scheduleKind: parameters.kind,
           schedule,
           payload: parameters.message ? { message: parameters.message } : undefined,
@@ -209,6 +140,8 @@ export const alarmClockDefinition = defineDesktopTool({
           activeHoursEnd: parameters.activeHoursEnd,
           createdBy: 'agent-tool',
           enabled: true,
+          executionNodeId: localNodeId,
+          originNodeId: localNodeId,
         });
 
         return {
@@ -232,7 +165,7 @@ export const alarmClockDefinition = defineDesktopTool({
         const summary = tasks.map(task =>
           i18n.t('Tool.AlarmClock.TaskSummary', {
             taskId: task.id,
-            name: task.name ?? task.scheduleKind,
+            name: task.name,
             nextRun: task.nextRunAt ?? i18n.t('Tool.AlarmClock.Unknown'),
             runCount: task.runCount,
           })
@@ -254,8 +187,7 @@ export const alarmClockDefinition = defineDesktopTool({
     // ── update-schedule ───────────────────────────────────────────────────
     if (toolCall.toolId === 'update-schedule') {
       await executeToolCall('update-schedule', async (parameters) => {
-        await updateTask({
-          id: parameters.taskId,
+        await updateTask(parameters.taskId, {
           enabled: parameters.enabled,
           payload: parameters.message ? { message: parameters.message } : undefined,
           activeHoursStart: parameters.activeHoursStart,

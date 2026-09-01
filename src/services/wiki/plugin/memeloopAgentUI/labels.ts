@@ -1,3 +1,5 @@
+import type { ConversationTimelineMessageRole } from 'memeloop';
+
 export interface WikiAgentLabels {
   agent: string;
   agentControls: string;
@@ -50,7 +52,6 @@ export interface WikiAgentLabels {
   seek: string;
   close: string;
   newMessages: (count: number) => string;
-  moreResponses: (count: number) => string;
   retry: string;
   deleteTurn: string;
   copy: string;
@@ -66,6 +67,12 @@ export interface WikiAgentLabels {
   detailTruncated: string;
   detailLoadFailed: string;
   exportFullMessage: string;
+  reasoning: string;
+  thinking: string;
+  showReasoning: string;
+  hideReasoning: string;
+  loadMoreReasoning: string;
+  reasoningLoadFailed: string;
   error: string;
   toolResult: string;
   toolCall: (toolName: string) => string;
@@ -77,22 +84,6 @@ export interface WikiAgentLabels {
 }
 
 type SupportedLocale = 'en' | 'fr' | 'ja' | 'ru' | 'zh-Hans' | 'zh-Hant';
-
-const russianResponsePluralRules = new Intl.PluralRules('ru');
-
-function formatRussianMoreResponses(count: number): string {
-  const noun = (() => {
-    switch (russianResponsePluralRules.select(count)) {
-      case 'one':
-        return 'ответ';
-      case 'few':
-        return 'ответа';
-      default:
-        return 'ответов';
-    }
-  })();
-  return `Ещё ${count} ${noun} в этом ходе`;
-}
 
 const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
   en: {
@@ -147,7 +138,6 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     seek: 'Seek in conversation',
     close: 'Close timeline',
     newMessages: count => `${count} new messages — jump to latest`,
-    moreResponses: count => `${count} more response${count === 1 ? '' : 's'} in this turn`,
     retry: 'Retry',
     deleteTurn: 'Delete turn',
     copy: 'Copy',
@@ -163,6 +153,12 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     detailTruncated: 'Only a bounded detail fragment is shown. Export the conversation for complete content.',
     detailLoadFailed: 'Details could not be loaded.',
     exportFullMessage: 'Export full message',
+    reasoning: 'Reasoning',
+    thinking: 'Thinking…',
+    showReasoning: 'Show reasoning',
+    hideReasoning: 'Hide reasoning',
+    loadMoreReasoning: 'Load more reasoning',
+    reasoningLoadFailed: 'Reasoning could not be loaded.',
     error: 'Error',
     toolResult: 'Tool result',
     toolCall: tool => `Tool call: ${tool}`,
@@ -224,7 +220,6 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     seek: 'Parcourir la conversation',
     close: 'Fermer la chronologie',
     newMessages: count => `${count} nouveaux messages — aller aux plus récents`,
-    moreResponses: count => `${count} réponse${count === 1 ? '' : 's'} supplémentaire${count === 1 ? '' : 's'} dans ce tour`,
     retry: 'Réessayer',
     deleteTurn: 'Supprimer ce tour',
     copy: 'Copier',
@@ -240,6 +235,12 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     detailTruncated: 'Seul un extrait limité est affiché. Exportez la conversation pour obtenir le contenu complet.',
     detailLoadFailed: 'Impossible de charger les détails.',
     exportFullMessage: 'Exporter le message complet',
+    reasoning: 'Raisonnement',
+    thinking: 'Réflexion…',
+    showReasoning: 'Afficher le raisonnement',
+    hideReasoning: 'Masquer le raisonnement',
+    loadMoreReasoning: 'Charger davantage de raisonnement',
+    reasoningLoadFailed: 'Impossible de charger le raisonnement.',
     error: 'Erreur',
     toolResult: 'Résultat de l’outil',
     toolCall: tool => `Appel d’outil : ${tool}`,
@@ -301,7 +302,6 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     seek: '会話内を移動',
     close: 'タイムラインを閉じる',
     newMessages: count => `新着メッセージ ${count} 件 — 最新へ移動`,
-    moreResponses: count => `このターンには他に ${count} 件の応答があります`,
     retry: '再試行',
     deleteTurn: 'このターンを削除',
     copy: 'コピー',
@@ -317,6 +317,12 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     detailTruncated: '制限された詳細のみ表示しています。完全な内容は会話をエクスポートしてください。',
     detailLoadFailed: '詳細を読み込めませんでした。',
     exportFullMessage: '完全なメッセージをエクスポート',
+    reasoning: '推論過程',
+    thinking: '思考中…',
+    showReasoning: '推論過程を表示',
+    hideReasoning: '推論過程を隠す',
+    loadMoreReasoning: '推論過程をさらに読み込む',
+    reasoningLoadFailed: '推論過程を読み込めませんでした。',
     error: 'エラー',
     toolResult: 'ツールの結果',
     toolCall: tool => `ツール呼び出し: ${tool}`,
@@ -378,7 +384,6 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     seek: 'Перейти в диалоге',
     close: 'Закрыть хронологию',
     newMessages: count => `Новых сообщений: ${count} — перейти к последним`,
-    moreResponses: formatRussianMoreResponses,
     retry: 'Повторить',
     deleteTurn: 'Удалить ход',
     copy: 'Копировать',
@@ -394,6 +399,12 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     detailTruncated: 'Показан только ограниченный фрагмент. Экспортируйте диалог, чтобы получить полное содержимое.',
     detailLoadFailed: 'Не удалось загрузить подробности.',
     exportFullMessage: 'Экспортировать сообщение полностью',
+    reasoning: 'Рассуждение',
+    thinking: 'Размышление…',
+    showReasoning: 'Показать рассуждение',
+    hideReasoning: 'Скрыть рассуждение',
+    loadMoreReasoning: 'Загрузить ещё',
+    reasoningLoadFailed: 'Не удалось загрузить рассуждение.',
     error: 'Ошибка',
     toolResult: 'Результат инструмента',
     toolCall: tool => `Вызов инструмента: ${tool}`,
@@ -455,7 +466,6 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     seek: '在对话中定位',
     close: '关闭时间轴',
     newMessages: count => `${count} 条新消息 — 跳到最新`,
-    moreResponses: count => `本轮还有 ${count} 条回复`,
     retry: '重试',
     deleteTurn: '删除此轮',
     copy: '复制',
@@ -471,6 +481,12 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     detailTruncated: '这里只显示有界的详情片段。请导出对话以获取完整内容。',
     detailLoadFailed: '无法加载详情。',
     exportFullMessage: '导出完整消息',
+    reasoning: '推理过程',
+    thinking: '正在思考…',
+    showReasoning: '展开推理过程',
+    hideReasoning: '收起推理过程',
+    loadMoreReasoning: '加载更多推理过程',
+    reasoningLoadFailed: '无法加载推理过程。',
     error: '错误',
     toolResult: '工具结果',
     toolCall: tool => `工具调用：${tool}`,
@@ -532,7 +548,6 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     seek: '在對話中定位',
     close: '關閉時間軸',
     newMessages: count => `${count} 則新訊息 — 跳到最新`,
-    moreResponses: count => `本輪還有 ${count} 則回覆`,
     retry: '重試',
     deleteTurn: '刪除此輪',
     copy: '複製',
@@ -548,6 +563,12 @@ const labelsByLocale: Record<SupportedLocale, WikiAgentLabels> = {
     detailTruncated: '這裡只顯示有界的詳情片段。請匯出對話以取得完整內容。',
     detailLoadFailed: '無法載入詳情。',
     exportFullMessage: '匯出完整訊息',
+    reasoning: '推理過程',
+    thinking: '正在思考…',
+    showReasoning: '展開推理過程',
+    hideReasoning: '收起推理過程',
+    loadMoreReasoning: '載入更多推理過程',
+    reasoningLoadFailed: '無法載入推理過程。',
     error: '錯誤',
     toolResult: '工具結果',
     toolCall: tool => `工具呼叫：${tool}`,
@@ -573,14 +594,20 @@ export function getWikiAgentLabels(language: string): WikiAgentLabels {
   return labelsByLocale[resolveWikiAgentLocale(language)];
 }
 
-/** The shared rail already supplies a one-based index. */
-export function formatTimelineTurn(index: number, total: number, locale: SupportedLocale): string {
-  if (locale === 'zh-Hans') return `第 ${index} / ${total} 轮`;
-  if (locale === 'zh-Hant') return `第 ${index} / ${total} 輪`;
-  if (locale === 'ja') return `${index} / ${total} ターン`;
-  if (locale === 'fr') return `Tour ${index} sur ${total}`;
-  if (locale === 'ru') return `Ход ${index} из ${total}`;
-  return `Turn ${index} of ${total}`;
+/** The shared rail already supplies a one-based message index. */
+export function formatTimelineMessage(
+  index: number,
+  total: number,
+  role: ConversationTimelineMessageRole,
+  locale: SupportedLocale,
+): string {
+  const roleLabel = labelsByLocale[locale][role === 'user' ? 'user' : 'agent'];
+  if (locale === 'zh-Hans') return `第 ${index} / ${total} 条消息 · ${roleLabel}`;
+  if (locale === 'zh-Hant') return `第 ${index} / ${total} 則訊息 · ${roleLabel}`;
+  if (locale === 'ja') return `${total} 件中 ${index} 番目のメッセージ · ${roleLabel}`;
+  if (locale === 'fr') return `Message ${index} sur ${total} · ${roleLabel}`;
+  if (locale === 'ru') return `Сообщение ${index} из ${total} · ${roleLabel}`;
+  return `${roleLabel} message ${index} of ${total}`;
 }
 
 export const supportedWikiAgentLocales = Object.keys(labelsByLocale) as SupportedLocale[];

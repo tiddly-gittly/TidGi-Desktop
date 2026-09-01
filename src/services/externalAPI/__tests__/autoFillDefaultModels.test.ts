@@ -1,217 +1,105 @@
-import { AIProviderConfig, type DesktopAIConfig, IExternalAPIService, ModelInfo } from '@services/externalAPI/interface';
-import { BehaviorSubject } from 'rxjs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { container } from '@services/container';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { ModelAssignments, ProviderAccountConfig } from 'memeloop';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-/**
- * Tests for auto-fill default models logic in the backend
- * The backend's ExternalAPIService.updateProvider method should automatically
- * fill in default models when new models are added to a provider
- *
- * Key principles:
- * 1. NEVER overwrite existing default model values
- * 2. Only fill when default is empty/undefined
- * 3. Only process NEW models (not existing ones)
- */
-describe('ExternalAPIService - Auto-fill Default Models (Backend)', () => {
-  const mockLanguageModel: ModelInfo = {
-    name: 'gpt-4',
-    caption: 'GPT-4 Language Model',
-    features: ['language'],
-  };
+const providerId = 'canonical-autofill-test';
+const existingProviderId = 'canonical-existing-test';
+const account: ProviderAccountConfig = {
+  providerId,
+  providerType: 'openai-compatible',
+  baseUrl: 'http://127.0.0.1:15121/v1',
+  models: [
+    { modelId: 'assistant', wireModelId: 'vendor/assistant-v2', apiMode: 'chat-completions' },
+    { modelId: 'embedding', wireModelId: 'vendor/embedding-v1', apiMode: 'chat-completions' },
+  ],
+  catalogProvider: {
+    id: providerId,
+    name: 'Canonical test provider',
+    env: [],
+    models: [
+      {
+        id: 'assistant',
+        name: 'Assistant',
+        attachment: false,
+        reasoning: true,
+        toolCall: true,
+        modalities: { input: ['text'], output: ['text'] },
+      },
+      {
+        id: 'embedding',
+        name: 'Embedding',
+        attachment: false,
+        reasoning: false,
+        toolCall: false,
+        modalities: { input: ['text'], output: ['text'] },
+      },
+    ],
+  },
+};
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe('ExternalAPIService canonical model auto-fill', () => {
+  let service: IExternalAPIService;
 
-    // Mock window.service.native.log
-    Object.defineProperty(window.service.native, 'log', {
-      value: vi.fn(),
-      writable: true,
-    });
+  beforeEach(async () => {
+    service = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    await service.deleteProviderAccount(providerId);
+    await service.deleteProviderAccount(existingProviderId);
+    await service.updateDefaultAIConfig({});
   });
 
-  describe('Observable exposure', () => {
-    it('should expose defaultConfig$ observable to frontend', () => {
-      const mockConfig: DesktopAIConfig = {
-        default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, topP: 0.95 },
-      };
+  it('publishes exact provider accounts on providerAccounts$', async () => {
+    const emitted: ProviderAccountConfig[][] = [];
+    const subscription = service.providerAccounts$.subscribe(accounts => emitted.push(accounts));
 
-      const configSubject = new BehaviorSubject(mockConfig);
+    await service.setProviderAccount(account);
 
-      // Use type assertion to access Observable properties in tests
-      Object.defineProperty(window.service.externalAPI, 'defaultConfig$', {
-        value: configSubject,
-        writable: true,
-      });
-
-      // Frontend should be able to subscribe to config changes
-      const subscription = (window.service.externalAPI as unknown as IExternalAPIService).defaultConfig$.subscribe((config: DesktopAIConfig) => {
-        expect(config.default?.provider).toBe('openai');
-      });
-
-      expect(subscription).toBeDefined();
-      subscription.unsubscribe();
-    });
-
-    it('should expose providers$ observable to frontend', () => {
-      const mockProviders: AIProviderConfig[] = [
-        {
-          provider: 'openai',
-          models: [mockLanguageModel],
-          apiKey: 'sk-test',
-        },
-      ];
-
-      const providersSubject = new BehaviorSubject(mockProviders);
-
-      // Use type assertion to access Observable properties in tests
-      Object.defineProperty(window.service.externalAPI, 'providers$', {
-        value: providersSubject,
-        writable: true,
-      });
-
-      // Frontend should be able to subscribe to provider changes
-      const subscription = (window.service.externalAPI as unknown as IExternalAPIService).providers$.subscribe((providers: AIProviderConfig[]) => {
-        expect(providers).toHaveLength(1);
-        expect(providers[0].provider).toBe('openai');
-      });
-
-      expect(subscription).toBeDefined();
-      subscription.unsubscribe();
-    });
+    expect(emitted.at(-1)).toEqual([expect.objectContaining({
+      providerId,
+      providerType: 'openai-compatible',
+      models: account.models,
+    })]);
+    subscription.unsubscribe();
   });
 
-  describe('Auto-fill behavior', () => {
-    it('should emit updated config when auto-fill happens', () => {
-      const initialConfig: DesktopAIConfig = {
-        default: undefined,
-        modelParameters: { temperature: 0.7, topP: 0.95 },
-      };
+  it('fills empty language and embedding assignments from catalog capabilities', async () => {
+    const emitted: ModelAssignments[] = [];
+    const subscription = service.defaultConfig$.subscribe(assignments => emitted.push(assignments));
 
-      const configSubject = new BehaviorSubject(initialConfig);
+    await service.setProviderAccount(account);
 
-      Object.defineProperty(window.service.externalAPI, 'defaultConfig$', {
-        value: configSubject,
-        writable: true,
-      });
-
-      // Simulate backend auto-filling language model after provider addition
-      const updatedConfig: DesktopAIConfig = {
-        default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: initialConfig.modelParameters,
-      };
-
-      const emittedConfigs: DesktopAIConfig[] = [];
-      const subscription = configSubject.subscribe(config => {
-        emittedConfigs.push(config);
-      });
-
-      // Simulate backend emitting updated config
-      configSubject.next(updatedConfig);
-
-      // Frontend should receive both initial and updated configs
-      expect(emittedConfigs).toHaveLength(2);
-      expect(emittedConfigs[0].default).toBeUndefined();
-      expect(emittedConfigs[1].default?.provider).toBe('openai');
-
-      subscription.unsubscribe();
+    expect(emitted.at(-1)).toMatchObject({
+      default: { providerId, modelId: 'assistant' },
+      free: { providerId, modelId: 'assistant' },
+      embedding: { providerId, modelId: 'embedding' },
     });
-
-    it('should NOT overwrite existing default values', () => {
-      const configWithExisting: DesktopAIConfig = {
-        default: { provider: 'anthropic', model: 'claude-3' },
-        embedding: { provider: 'openai', model: 'existing-embedding-model' },
-        modelParameters: { temperature: 0.7, topP: 0.95 },
-      };
-
-      const configSubject = new BehaviorSubject(configWithExisting);
-
-      // Simulate adding a new provider with embedding model
-      // Backend should NOT overwrite existing embeddingModel
-      const afterAddingNewProvider: DesktopAIConfig = {
-        ...configWithExisting,
-        // embeddingModel should remain unchanged
-      };
-
-      const emittedConfigs: DesktopAIConfig[] = [];
-      const subscription = configSubject.subscribe(config => {
-        emittedConfigs.push(config);
-      });
-
-      configSubject.next(afterAddingNewProvider);
-
-      // Existing embedding model should NOT be changed
-      expect(emittedConfigs[1].embedding?.model).toBe('existing-embedding-model');
-
-      subscription.unsubscribe();
-    });
-
-    it('should only auto-fill when default is empty', () => {
-      const configWithoutEmbedding: DesktopAIConfig = {
-        default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, topP: 0.95 },
-      };
-
-      const configSubject = new BehaviorSubject(configWithoutEmbedding);
-
-      // Simulate backend auto-filling embedding model (empty before)
-      const configWithEmbedding: DesktopAIConfig = {
-        ...configWithoutEmbedding,
-        embedding: { provider: 'openai', model: 'text-embedding-3-small' },
-      };
-
-      const emittedConfigs: DesktopAIConfig[] = [];
-      const subscription = configSubject.subscribe(config => {
-        emittedConfigs.push(config);
-      });
-
-      configSubject.next(configWithEmbedding);
-
-      // Embedding model should be filled
-      expect(emittedConfigs[1].embedding?.model).toBe('text-embedding-3-small');
-
-      subscription.unsubscribe();
-    });
+    subscription.unsubscribe();
   });
 
-  describe('Multiple subscribers', () => {
-    it('should support multiple subscribers to observable', () => {
-      const mockConfig: DesktopAIConfig = {
-        default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, topP: 0.95 },
-      };
+  it('does not overwrite an explicit canonical assignment', async () => {
+    await service.setProviderAccount({
+      providerId: existingProviderId,
+      providerType: 'openai-compatible',
+      baseUrl: 'http://127.0.0.1:15122/v1',
+      models: [{ modelId: 'existing-model', wireModelId: 'vendor/existing', apiMode: 'chat-completions' }],
+    });
+    await service.updateDefaultAIConfig({
+      default: {
+        providerId: existingProviderId,
+        modelId: 'existing-model',
+        parameters: { temperature: 0.2, reasoningEffort: 'medium' },
+      },
+    });
 
-      const configSubject = new BehaviorSubject(mockConfig);
+    await service.setProviderAccount(account);
 
-      // Multiple subscribers should all receive updates
-      const subscriber1Calls: DesktopAIConfig[] = [];
-      const subscriber2Calls: DesktopAIConfig[] = [];
-
-      const sub1 = configSubject.subscribe(config => {
-        subscriber1Calls.push(config);
-      });
-
-      const sub2 = configSubject.subscribe(config => {
-        subscriber2Calls.push(config);
-      });
-
-      expect(subscriber1Calls).toHaveLength(1);
-      expect(subscriber2Calls).toHaveLength(1);
-
-      // Emit update
-      const updatedConfig: DesktopAIConfig = {
-        ...mockConfig,
-        default: { ...mockConfig.default!, model: 'gpt-3.5-turbo' },
-      };
-
-      configSubject.next(updatedConfig);
-
-      // Both subscribers should receive the update
-      expect(subscriber1Calls).toHaveLength(2);
-      expect(subscriber2Calls).toHaveLength(2);
-
-      sub1.unsubscribe();
-      sub2.unsubscribe();
+    expect(await service.getAIConfig()).toMatchObject({
+      default: {
+        providerId: existingProviderId,
+        modelId: 'existing-model',
+        parameters: { temperature: 0.2, reasoningEffort: 'medium' },
+      },
     });
   });
 });

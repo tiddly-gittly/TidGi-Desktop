@@ -1,5 +1,5 @@
 import { MEMELOOP_MESSAGE_DETAIL_LIMIT, MEMELOOP_MESSAGE_DETAIL_MAX_BYTES } from '@memeloop/react-ui/chat';
-import type { ChatMessage, ConversationMessageIdentity } from 'memeloop';
+import { type ChatMessage, type ConversationMessageIdentity, type ConversationMessageListProjection, projectConversationMessageForList } from 'memeloop';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDesktopMessageDetailLoader } from '../DesktopMessageDetailLoader';
@@ -31,12 +31,13 @@ function fullMessage(content = 'complete 🙂 response'): ChatMessage {
   };
 }
 
-function projection(message: ChatMessage): ChatMessage {
+function projection(message: ChatMessage): ConversationMessageListProjection {
+  const projected = projectConversationMessageForList(message, 2_048);
   return {
-    ...message,
+    ...projected,
     content: 'complete…',
-    reasoning_content: undefined,
     metadata: {
+      ...projected.metadata,
       displayTruncation: {
         truncated: true,
         originalCharacterCount: Array.from(message.content).length,
@@ -155,7 +156,7 @@ describe('DesktopMessageDetailLoader', () => {
       getAgentMessageIdentity: vi.fn(),
       readAgentMessageDetailRange: vi.fn(),
     };
-    await expect(createDesktopMessageDetailLoader()(fullMessage(), request())).resolves.toBeNull();
+    await expect(createDesktopMessageDetailLoader()(projectConversationMessageForList(fullMessage(), 2_048), request())).resolves.toBeNull();
   });
 });
 

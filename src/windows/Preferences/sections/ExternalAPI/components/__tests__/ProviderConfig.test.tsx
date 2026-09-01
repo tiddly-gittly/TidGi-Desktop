@@ -1,293 +1,183 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import '@testing-library/jest-dom/vitest';
+import type { DialogProps } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { ModelCatalogProvider, ProviderAccountConfig } from 'memeloop';
+import type { SetStateAction } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
-import { persistProviderModels, ProviderConfig } from '../ProviderConfig';
+import { ProviderConfig } from '../ProviderConfig';
 
-// Mock data
-const mockLanguageModel: ModelInfo = {
-  name: 'gpt-4',
-  caption: 'GPT-4 Language Model',
-  features: ['language'],
+vi.mock('@mui/material', async importOriginal => {
+  const material = await importOriginal<typeof import('@mui/material')>();
+  return {
+    ...material,
+    Dialog: ({ children, open }: Pick<DialogProps, 'children' | 'open'>) => open ? <div role='dialog'>{children}</div> : null,
+  };
+});
+
+const catalogProvider: ModelCatalogProvider = {
+  id: 'openai-main',
+  name: 'OpenAI Main',
+  npm: '@ai-sdk/openai',
+  api: 'https://api.openai.com/v1',
+  env: ['OPENAI_API_KEY'],
+  models: [{
+    id: 'reasoning',
+    name: 'Reasoning model',
+    attachment: true,
+    reasoning: true,
+    toolCall: true,
+    modalities: { input: ['text', 'image'], output: ['text'] },
+  }],
 };
 
-const mockEmbeddingModel: ModelInfo = {
-  name: 'text-embedding-3-small',
-  caption: 'OpenAI Embedding Model',
-  features: ['embedding'],
-};
-
-const mockProvider: AIProviderConfig = {
-  provider: 'openai',
-  apiKey: 'sk-test',
-  baseURL: 'https://api.openai.com/v1',
-  models: [mockLanguageModel, mockEmbeddingModel],
-  providerClass: 'openai',
-  isPreset: false,
+const account: ProviderAccountConfig = {
+  providerId: 'openai-main',
+  providerType: 'openai',
+  secretRef: 'desktop-keychain:openai-main',
   enabled: true,
+  models: [{ modelId: 'reasoning', wireModelId: 'gpt-5.6', apiMode: 'responses' }],
+  catalogProvider,
 };
 
-const mockCompatibleProvider: AIProviderConfig = {
-  provider: 'compatible',
-  baseURL: 'https://api.example.com/v1',
-  models: [mockLanguageModel],
-  providerClass: 'openAICompatible',
-  isPreset: true,
-  enabled: false,
-};
+function renderProviderConfig(
+  accounts: ProviderAccountConfig[],
+  setAccounts: (value: SetStateAction<ProviderAccountConfig[]>) => void,
+  catalogProviders: ModelCatalogProvider[] = [],
+  focusTarget?: { providerId: string; modelId?: string; field: 'apiKey' | 'baseUrl' | 'model' | 'apiMode' },
+) {
+  return render(
+    <ThemeProvider theme={lightTheme}>
+      <ProviderConfig
+        accounts={accounts}
+        catalogProviders={catalogProviders}
+        setAccounts={setAccounts}
+        focusTarget={focusTarget}
+      />
+    </ThemeProvider>,
+  );
+}
 
-// Test wrapper component
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider theme={lightTheme}>
-    {children}
-  </ThemeProvider>
-);
-
-describe('ProviderConfig Component', () => {
-  const mockSetProviders = vi.fn();
-  const mockChangeDefaultModel = vi.fn();
-  const mockChangeDefaultEmbeddingModel = vi.fn();
-  const mockChangeDefaultSpeechModel = vi.fn();
-  const mockChangeDefaultImageGenerationModel = vi.fn();
-  const mockChangeDefaultTranscriptionsModel = vi.fn();
+describe('ProviderConfig', () => {
+  let setAccounts: ReturnType<typeof vi.fn<(value: SetStateAction<ProviderAccountConfig[]>) => void>>;
+  let setProviderAccount: ReturnType<typeof vi.fn<(value: ProviderAccountConfig) => Promise<void>>>;
+  let deleteProviderAccount: ReturnType<typeof vi.fn<(providerId: string) => Promise<void>>>;
+  let getProviderApiKey: ReturnType<typeof vi.fn<(providerId: string) => Promise<string>>>;
+  let setProviderApiKey: ReturnType<typeof vi.fn<(providerId: string, apiKey: string) => Promise<void>>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Mock ExternalAPI service methods
-    Object.defineProperty(window.service.externalAPI, 'updateProvider', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'deleteProvider', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
-      value: vi.fn().mockResolvedValue({
-        default: {
-          provider: 'openai',
-          model: 'gpt-4',
-        },
-        modelParameters: {
-          temperature: 0.7,
-        },
-      }),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'getProviderApiKey', {
-      value: vi.fn().mockResolvedValue('sk-decrypted-test'),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'updateDefaultAIConfig', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    // Mock window.confirm
-    Object.defineProperty(window, 'confirm', {
-      value: vi.fn().mockReturnValue(true),
-      writable: true,
+    setAccounts = vi.fn();
+    setProviderAccount = vi.fn().mockResolvedValue(undefined);
+    deleteProviderAccount = vi.fn().mockResolvedValue(undefined);
+    getProviderApiKey = vi.fn().mockResolvedValue('sk-decrypted-test');
+    setProviderApiKey = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperties(window.service.externalAPI, {
+      setProviderAccount: { value: setProviderAccount, writable: true },
+      deleteProviderAccount: { value: deleteProviderAccount, writable: true },
+      getProviderApiKey: { value: getProviderApiKey, writable: true },
+      setProviderApiKey: { value: setProviderApiKey, writable: true },
+      refreshProviderAccountModels: { value: vi.fn().mockResolvedValue(account), writable: true },
     });
   });
 
-  const renderProviderConfig = (providers: AIProviderConfig[] = [mockProvider]) => {
-    return render(
-      <TestWrapper>
-        <ProviderConfig
-          providers={providers}
-          catalogProviders={[mockProvider, mockCompatibleProvider]}
-          setProviders={mockSetProviders}
-          changeDefaultModel={mockChangeDefaultModel}
-          changeDefaultEmbeddingModel={mockChangeDefaultEmbeddingModel}
-          changeDefaultSpeechModel={mockChangeDefaultSpeechModel}
-          changeDefaultImageGenerationModel={mockChangeDefaultImageGenerationModel}
-          changeDefaultTranscriptionsModel={mockChangeDefaultTranscriptionsModel}
-        />
-      </TestWrapper>,
-    );
-  };
+  it('renders exact account routes and reveals the separately stored credential', async () => {
+    renderProviderConfig([account], setAccounts);
 
-  it('should render provider configuration with delete button for providers', () => {
-    renderProviderConfig();
-
-    // Should show provider tab
-    expect(screen.getByText('openai')).toBeInTheDocument();
-
-    // Should show delete provider button (since mockProvider is not preset)
-    expect(screen.getByTestId('delete-provider-button')).toBeInTheDocument();
-  });
-
-  it('loads the encrypted credential into the settings field for reveal and copy', async () => {
-    renderProviderConfig([{ ...mockProvider, apiKey: undefined, hasApiKey: true }]);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('provider-api-key-input')).toHaveValue('sk-decrypted-test');
-    });
+    expect(screen.getByText('OpenAI Main')).toBeInTheDocument();
+    expect(screen.getByTestId('model-chip-reasoning')).toHaveTextContent('Reasoning model');
+    await waitFor(() => expect(screen.getByTestId('provider-api-key-input')).toHaveValue('sk-decrypted-test'));
     expect(screen.getByTestId('provider-api-key-input')).toHaveAttribute('type', 'text');
-    expect(window.service.externalAPI.getProviderApiKey).toHaveBeenCalledWith('openai');
+    expect(getProviderApiKey).toHaveBeenCalledWith('openai-main');
   });
 
-  it('should call deleteProvider API when delete button is clicked', async () => {
+  it('focuses the exact missing API key control selected by the deep-link metadata', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: vi.fn() });
+    renderProviderConfig([account], setAccounts, [], { providerId: 'openai-main', field: 'apiKey' });
+
+    const apiKeyInput = await screen.findByTestId('provider-api-key-input');
+    await waitFor(() => expect(apiKeyInput).toHaveFocus());
+  });
+
+  it('persists a credential through the credential API without adding it to the account', async () => {
     const user = userEvent.setup();
-    renderProviderConfig();
+    renderProviderConfig([account], setAccounts);
+    const input = await screen.findByTestId('provider-api-key-input');
 
-    // Find and click the delete provider button
-    const deleteButton = screen.getByTestId('delete-provider-button');
-    await user.click(deleteButton);
+    await user.clear(input);
+    await user.type(input, 'sk-replacement');
+    await user.tab();
 
-    // Verify confirmation was shown
-    expect(window.confirm).toHaveBeenCalled();
-
-    // Verify the delete API was called
     await waitFor(() => {
-      expect(window.service.externalAPI.deleteProvider).toHaveBeenCalledWith('openai');
+      expect(setProviderApiKey).toHaveBeenCalledWith('openai-main', 'sk-replacement');
     });
-
-    // Verify local state was updated
-    expect(mockSetProviders).toHaveBeenCalledWith([]);
+    expect(setProviderAccount).not.toHaveBeenCalled();
   });
 
-  it('should not delete provider if user cancels confirmation', async () => {
+  it('deletes by canonical providerId and updates local account state', async () => {
     const user = userEvent.setup();
+    renderProviderConfig([account], setAccounts);
+    await user.click(screen.getByTestId('delete-provider-button'));
 
-    // Mock window.confirm to return false (user cancels)
-    Object.defineProperty(window, 'confirm', {
-      value: vi.fn().mockReturnValue(false),
-      writable: true,
+    await waitFor(() => {
+      expect(deleteProviderAccount).toHaveBeenCalledWith('openai-main');
     });
-
-    renderProviderConfig();
-
-    // Find and click the delete provider button
-    const deleteButton = screen.getByTestId('delete-provider-button');
-    await user.click(deleteButton);
-
-    // Verify confirmation was shown
-    expect(window.confirm).toHaveBeenCalled();
-
-    // Verify the delete API was NOT called
-    expect(window.service.externalAPI.deleteProvider).not.toHaveBeenCalled();
-
-    // Verify local state was NOT updated
-    expect(mockSetProviders).not.toHaveBeenCalled();
+    const updater = setAccounts.mock.calls.at(-1)?.[0];
+    expect(typeof updater).toBe('function');
+    if (typeof updater === 'function') expect(updater([account])).toEqual([]);
   });
 
-  it('should render add provider form when add button is clicked', async () => {
+  it.each(['0提供方', '提供方'])('adds a valid canonical provider id: %s', async providerId => {
     const user = userEvent.setup();
-    renderProviderConfig();
+    renderProviderConfig([], setAccounts);
 
-    // Find and click the add provider button
-    const addButton = screen.getByTestId('add-new-provider-button');
-    await user.click(addButton);
-
-    // Should show new provider form
-    expect(screen.getByText('Preference.CancelAddProvider')).toBeInTheDocument();
-
-    // Should show form fields (these are likely in NewProviderForm component)
-    // We'll verify the button text change for now
-    expect(addButton).toHaveTextContent('Preference.CancelAddProvider');
-  });
-
-  it('rejects a non-canonical provider id before calling the persistence service', async () => {
-    const user = userEvent.setup();
-    renderProviderConfig([]);
-
-    await user.click(screen.getByTestId('add-new-provider-button'));
-    await user.type(screen.getByTestId('new-provider-name-input'), 'TestProvider');
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    await user.type(screen.getByTestId('new-provider-name-input'), providerId);
     await user.type(screen.getByTestId('new-provider-base-url-input'), 'https://models.example.test/v1');
     await user.click(screen.getByTestId('add-provider-submit-button'));
 
-    expect(await screen.findByText('Preference.ProviderIdInvalid')).toBeInTheDocument();
-    expect(window.service.externalAPI.updateProvider).not.toHaveBeenCalled();
-  });
-
-  it('round-trips advanced model metadata through the edit dialog and IPC persistence helper', async () => {
-    const user = userEvent.setup();
-    const advancedModel: ModelInfo = {
-      name: 'deepseek-reasoning',
-      caption: 'DeepSeek reasoning',
-      features: ['language', 'toolCalling', 'reasoning'],
-      apiMode: 'chat-completions',
-      contextWindowSize: 1_000_000,
-      maxOutputTokens: 32_768,
-      modelOptions: { top_p: 0.95 },
-      supportsReasoningEffort: ['minimal', 'low', 'medium', 'high'],
-      reasoningEffortFormat: 'chat-completions',
-    };
-    renderProviderConfig([{ ...mockProvider, models: [advancedModel] }]);
-
-    await user.click(screen.getByTestId('model-chip-deepseek-reasoning'));
-    expect(await screen.findByTestId('model-context-window-input')).toHaveValue(1_000_000);
-    expect(screen.getByTestId('model-max-output-input')).toHaveValue(32_768);
-    expect(screen.getByTestId('model-top-p-input')).toHaveValue(0.95);
-    expect(screen.getByRole('checkbox', { name: 'minimal' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'high' })).toBeChecked();
-
-    const saveButton = screen.getByTestId('save-model-button');
-    expect(saveButton).toBeEnabled();
-    await persistProviderModels('openai', [advancedModel]);
     await waitFor(() => {
-      expect(window.service.externalAPI.updateProvider).toHaveBeenCalledWith('openai', {
-        models: [expect.objectContaining(advancedModel)],
+      expect(setProviderAccount).toHaveBeenCalledWith({
+        providerId,
+        providerType: 'openai-compatible',
+        baseUrl: 'https://models.example.test/v1',
+        enabled: true,
+        models: [],
       });
     });
   });
 
-  // NOTE: embedding-model defaulting when enabling a provider is handled during provider addition
-  // (handleAddProvider) and not on enable toggle. Removed the old enable-toggle test.
-  it('should automatically add embedding model when selecting preset provider with embedding model', async () => {
+  it('persists Unicode logical and wire model ids without exchanging them', async () => {
     const user = userEvent.setup();
+    renderProviderConfig([account], setAccounts);
+    await user.click(screen.getByTestId('add-new-model-button'));
 
-    // Start with no providers to show the add provider form
-    renderProviderConfig([]);
+    const logicalInput = await screen.findByTestId('new-model-name-input');
+    await user.click(logicalInput);
+    await user.type(logicalInput, '模型2');
+    await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型2:latest');
+    await user.type(screen.getByLabelText('Preference.ModelCaption'), '模型 2');
+    await user.click(screen.getByTestId('save-new-model-button'));
 
-    // Click add provider button to show form
-    const addButton = screen.getByTestId('add-new-provider-button');
-    await user.click(addButton);
-
-    // Mock the provider creation API calls
-    const mockUpdateProvider = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(window.service.externalAPI, 'updateProvider', {
-      value: mockUpdateProvider,
-      writable: true,
+    await waitFor(() => {
+      expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
+        providerId: 'openai-main',
+        models: expect.arrayContaining([
+          { modelId: '模型2', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' },
+        ]),
+      }));
     });
+  });
 
-    // Mock AI config to simulate no existing embedding model
-    Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
-      value: vi.fn().mockResolvedValue({
-        default: {
-          provider: '',
-          model: '',
-        },
-        modelParameters: {},
-      }),
-      writable: true,
-    });
+  it('offers exact catalog providers without a local provider projection', async () => {
+    const user = userEvent.setup();
+    renderProviderConfig([], setAccounts, [catalogProvider]);
 
-    const mockUpdateDefaultAIConfig = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(window.service.externalAPI, 'updateDefaultAIConfig', {
-      value: mockUpdateDefaultAIConfig,
-      writable: true,
-    });
-
-    // Note: The actual form interaction would require the NewProviderForm component to be rendered
-    // For now, we'll test the logic by calling the handler directly through the component's internal state
-    // This is a limitation of testing complex forms - ideally we'd have integration tests
-
-    // The test structure shows what should happen when siliconflow is selected:
-    // 1. Language model "Qwen/Qwen2.5-7B-Instruct" should be added
-    // 2. Embedding model "BAAI/bge-m3" should be added
-    // 3. Embedding model should be set as default if no existing embedding model
-
-    expect(true).toBe(true); // Placeholder - real test would interact with form
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    await user.click(within(screen.getByTestId('new-provider-preset-select')).getByRole('combobox'));
+    expect(await screen.findByRole('option', { name: 'OpenAI Main' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'OpenAI Main' })).toHaveAttribute('data-value', 'openai-main');
   });
 });

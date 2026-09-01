@@ -4,8 +4,9 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, RemoteScheduledTaskProjectionEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import {
+  AgentLoopCheckpointEntity,
   AgentRunStateEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
@@ -25,7 +26,6 @@ const entities = [
   AgentInstanceEntity,
   AgentInstanceMessageEntity,
   ScheduledTaskEntity,
-  RemoteScheduledTaskProjectionEntity,
   ConversationAttachmentReferenceEntity,
   AgentRunStateEntity,
   ConversationMessageDetailEntity,
@@ -37,6 +37,7 @@ const entities = [
   ConversationTimelineStateEntity,
   ConversationTimelineEntryEntity,
   ConversationTimelineRankCheckpointEntity,
+  AgentLoopCheckpointEntity,
 ];
 
 const PREVIEW_ID = 'preview-conversation';
@@ -57,9 +58,30 @@ describe('volatile Agent preview purge', () => {
     });
     await dataSource.initialize();
     await dataSource.getRepository(AgentDefinitionEntity).insert([
-      { id: TEMPORARY_DEFINITION_ID, name: 'Disposable preview' },
-      { id: UNRELATED_TEMPORARY_DEFINITION_ID, name: 'Unrelated temporary definition' },
-      { id: DURABLE_DEFINITION_ID, name: 'Durable agent' },
+      {
+        id: TEMPORARY_DEFINITION_ID,
+        name: 'Disposable preview',
+        description: '',
+        systemPrompt: '',
+        tools: [],
+        version: '1.0.0',
+      },
+      {
+        id: UNRELATED_TEMPORARY_DEFINITION_ID,
+        name: 'Unrelated temporary definition',
+        description: '',
+        systemPrompt: '',
+        tools: [],
+        version: '1.0.0',
+      },
+      {
+        id: DURABLE_DEFINITION_ID,
+        name: 'Durable agent',
+        description: '',
+        systemPrompt: '',
+        tools: [],
+        version: '1.0.0',
+      },
     ]);
     await dataSource.getRepository(AgentInstanceEntity).insert([
       {
@@ -145,31 +167,6 @@ describe('volatile Agent preview purge', () => {
       executionNodeId: 'desktop',
       originNodeId: 'desktop',
     });
-    await dataSource.getRepository(RemoteScheduledTaskProjectionEntity).insert({
-      id: 'desktop:preview-task',
-      taskId: 'preview-task',
-      agentInstanceId: PREVIEW_ID,
-      executionNodeId: 'desktop',
-      state: 'active',
-      task: {
-        id: 'preview-task',
-        agentInstanceId: PREVIEW_ID,
-        agentDefinitionId: TEMPORARY_DEFINITION_ID,
-        name: 'Disposable task',
-        scheduleKind: 'cron',
-        schedule: { kind: 'cron', expression: '* * * * *' },
-        enabled: true,
-        state: 'active',
-        executionNodeId: 'desktop',
-        originNodeId: 'desktop',
-        deleteAfterRun: false,
-        runCount: 0,
-        createdBy: 'settings-ui',
-        created: new Date().toISOString(),
-        updated: new Date().toISOString(),
-      },
-      observedAt: 1,
-    });
   });
 
   afterEach(async () => {
@@ -202,13 +199,13 @@ describe('volatile Agent preview purge', () => {
         ConversationTimelineStateEntity,
         ConversationTimelineEntryEntity,
         ConversationTimelineRankCheckpointEntity,
+        AgentLoopCheckpointEntity,
         AgentRunStateEntity,
       ]
     ) {
       expect(await dataSource.getRepository(entity).countBy({ conversationId: PREVIEW_ID })).toBe(0);
     }
     expect(await dataSource.getRepository(ScheduledTaskEntity).countBy({ agentInstanceId: PREVIEW_ID })).toBe(0);
-    expect(await dataSource.getRepository(RemoteScheduledTaskProjectionEntity).countBy({ agentInstanceId: PREVIEW_ID })).toBe(0);
     expect(await dataSource.getRepository(AgentInstanceEntity).findOneBy({ id: PREVIEW_ID })).toBeNull();
     expect(await dataSource.getRepository(AgentDefinitionEntity).findOneBy({ id: TEMPORARY_DEFINITION_ID })).toBeNull();
 

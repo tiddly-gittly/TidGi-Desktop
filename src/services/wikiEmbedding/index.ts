@@ -5,11 +5,12 @@ import { DataSource, Repository } from 'typeorm';
 import { WikiChannel } from '@/constants/channels';
 import type { IDatabaseService } from '@services/database/interface';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from '@services/database/schema/wikiEmbedding';
-import type { DesktopAIConfig, IExternalAPIService } from '@services/externalAPI/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { ModelAssignments } from 'memeloop';
 
 import type { ITiddlerFields } from 'tiddlywiki';
 import type { EmbeddingStatus, IWikiEmbeddingService, SearchResult } from './interface';
@@ -335,7 +336,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
 
   public async generateEmbeddings(
     workspaceId: string,
-    config: DesktopAIConfig,
+    config: ModelAssignments,
     forceUpdate = false,
   ): Promise<void> {
     try {
@@ -387,8 +388,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
             where: {
               workspaceId,
               tiddlerTitle: noteTitle,
-              model: embeddingConfig.model,
-              provider: embeddingConfig.provider,
+              modelId: embeddingConfig.modelId,
+              providerId: embeddingConfig.providerId,
             },
           });
 
@@ -408,8 +409,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         await this.embeddingRepository!.delete({
           workspaceId,
           tiddlerTitle: noteTitle,
-          model: embeddingConfig.model,
-          provider: embeddingConfig.provider,
+          modelId: embeddingConfig.modelId,
+          providerId: embeddingConfig.providerId,
         });
 
         // Chunk content if necessary
@@ -443,8 +444,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
               totalChunks: chunks.length > 1 ? chunks.length : undefined,
               created: new Date(),
               modified: new Date(),
-              model: embeddingConfig.model,
-              provider: embeddingConfig.provider,
+              modelId: embeddingConfig.modelId,
+              providerId: embeddingConfig.providerId,
               dimensions,
             };
 
@@ -601,7 +602,7 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
   public async searchSimilar(
     workspaceId: string,
     query: string,
-    config: DesktopAIConfig,
+    config: ModelAssignments,
     limit = 10,
     threshold = 0.7,
   ): Promise<SearchResult[]> {
@@ -636,8 +637,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
       const metadataRecords = await this.embeddingRepository!.find({
         where: {
           workspaceId,
-          model: embeddingConfig.model,
-          provider: embeddingConfig.provider,
+          modelId: embeddingConfig.modelId,
+          providerId: embeddingConfig.providerId,
           dimensions,
         },
       });
@@ -687,8 +688,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
                 totalChunks: metadataRecord.totalChunks,
                 created: metadataRecord.created,
                 modified: metadataRecord.modified,
-                model: metadataRecord.model,
-                provider: metadataRecord.provider,
+                modelId: metadataRecord.modelId,
+                providerId: metadataRecord.providerId,
                 dimensions: metadataRecord.dimensions,
               },
               similarity,
@@ -841,8 +842,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
     totalEmbeddings: number;
     totalNotes: number;
     lastUpdated?: Date;
-    modelUsed?: string;
-    providerUsed?: string;
+    modelId?: string;
+    providerId?: string;
   }> {
     try {
       this.ensureRepositories();
@@ -869,8 +870,8 @@ export class WikiEmbeddingService implements IWikiEmbeddingService {
         totalEmbeddings,
         totalNotes: uniqueNotes,
         lastUpdated: latestEmbedding?.modified,
-        modelUsed: latestEmbedding?.model,
-        providerUsed: latestEmbedding?.provider,
+        modelId: latestEmbedding?.modelId,
+        providerId: latestEmbedding?.providerId,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

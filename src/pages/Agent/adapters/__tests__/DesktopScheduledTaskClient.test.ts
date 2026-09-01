@@ -13,40 +13,25 @@ const remoteTask = {
   agentInstanceId: 'agent-1',
   agentDefinitionId: 'definition-1',
   name: 'Remote schedule',
-  scheduleKind: 'cron' as const,
   schedule: { kind: 'cron' as const, expression: '0 9 * * *' },
   payload: { message: 'wake' },
   enabled: true,
-  deleteAfterRun: false,
-  consecutiveFailures: 0,
-  runCount: 0,
   createdBy: 'settings-ui',
-  created: new Date(0).toISOString(),
-  updated: new Date(0).toISOString(),
+  updatedAt: '2026-08-31T00:00:00.000Z',
   state: 'active' as const,
   executionNodeId: 'peer-remote',
   executionNodeLabel: 'Remote Mac',
   originNodeId: 'peer-local',
-};
-
-const remoteWireTask = {
-  id: remoteTask.id,
-  agentInstanceId: remoteTask.agentInstanceId,
-  agentDefinitionId: remoteTask.agentDefinitionId,
-  name: remoteTask.name,
-  schedule: remoteTask.schedule,
-  payload: remoteTask.payload,
-  enabled: remoteTask.enabled,
-  createdBy: remoteTask.createdBy,
-  state: remoteTask.state,
-  executionNodeId: remoteTask.executionNodeId,
-  executionNodeLabel: remoteTask.executionNodeLabel,
-  originNodeId: remoteTask.originNodeId,
-  updatedAt: remoteTask.updated,
+  runCount: 4,
+  consecutiveFailures: 1,
+  executionRevision: 7,
+  occurrenceId: 'occurrence-7',
+  occurrenceScheduledFor: '2026-09-01T01:00:00.000Z',
+  occurrenceAttempt: 2,
 };
 
 const localWireTask = {
-  ...remoteWireTask,
+  ...remoteTask,
   id: 'task-local',
   name: 'Local schedule',
   executionNodeId: 'peer-local',
@@ -54,17 +39,12 @@ const localWireTask = {
 
 function createAgentInstanceService(overrides: Record<string, unknown> = {}) {
   return {
-    listScheduledTasksPageForAgent: vi.fn().mockResolvedValue({
+    listScheduledTasksForAgent: vi.fn().mockResolvedValue({
       items: [],
-      revision: 'local-r1',
+      hasMoreAfter: false,
+      partial: false,
+      sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
     }),
-    listRemoteScheduledTaskProjectionPageForAgent: vi.fn().mockResolvedValue({
-      items: [],
-      revision: 'cache-r1',
-    }),
-    replaceRemoteScheduledTaskProjections: vi.fn().mockResolvedValue(undefined),
-    upsertRemoteScheduledTaskProjection: vi.fn().mockResolvedValue(undefined),
-    deleteRemoteScheduledTaskProjection: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -99,9 +79,14 @@ afterEach(() => {
 
 describe('DesktopScheduledTaskClient bounded aggregation', () => {
   it('filters cancelled and archived tasks in the backend query by default', async () => {
-    const listLocal = vi.fn().mockResolvedValue({ items: [], revision: 'local-r1' });
+    const listLocal = vi.fn().mockResolvedValue({
+      items: [],
+      hasMoreAfter: false,
+      partial: false,
+      sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
+    });
     mutableService.agentInstance = createAgentInstanceService({
-      listScheduledTasksPageForAgent: listLocal,
+      listScheduledTasksForAgent: listLocal,
     });
     mutableService.deviceNetwork = createDeviceNetworkService([]);
 
@@ -109,20 +94,24 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
       executionNodeIds: ['peer-local'],
     });
 
-    expect(listLocal).toHaveBeenCalledWith(expect.objectContaining({
-      agentInstanceId: 'agent-1',
-      executionNodeId: 'peer-local',
+    expect(listLocal).toHaveBeenCalledWith('agent-1', {
+      executionNodeIds: ['peer-local'],
+      limit: 64,
+      maxBytes: 245_760,
       states: ['active', 'paused'],
-    }));
+    });
   });
 
   it('ignores discovered devices until they are trusted', async () => {
-    const listLocal = vi.fn().mockResolvedValue({ items: [], revision: 'local-r1' });
-    const listCached = vi.fn();
+    const listLocal = vi.fn().mockResolvedValue({
+      items: [],
+      hasMoreAfter: false,
+      partial: false,
+      sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
+    });
     const sendRpc = vi.fn();
     mutableService.agentInstance = createAgentInstanceService({
-      listScheduledTasksPageForAgent: listLocal,
-      listRemoteScheduledTaskProjectionPageForAgent: listCached,
+      listScheduledTasksForAgent: listLocal,
     });
     mutableService.deviceNetwork = createDeviceNetworkService([{
       ...remoteDevice('peer-unpaired'),
@@ -136,42 +125,33 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
       sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
     });
     expect(listLocal).toHaveBeenCalledOnce();
-    expect(listCached).not.toHaveBeenCalled();
     expect(sendRpc).not.toHaveBeenCalled();
   });
 
-  it('keeps an offline remote schedule visible with provenance and blocks stale mutation', async () => {
+  it('reports an offline remote source without exposing a renderer-owned cache DTO', async () => {
     const sendRpc = vi.fn();
-    mutableService.agentInstance = createAgentInstanceService({
-      listRemoteScheduledTaskProjectionPageForAgent: vi.fn().mockResolvedValue({
-        items: [{ task: remoteTask, observedAt: 123 }],
-        revision: 'cache-r1',
-      }),
-    });
+    mutableService.agentInstance = createAgentInstanceService();
     mutableService.deviceNetwork = createDeviceNetworkService([remoteDevice('peer-remote', 'offline')], { sendRpc });
 
     const client = createDesktopScheduledTaskClient();
     await expect(client.listScheduledTasksForAgent('agent-1', {
       executionNodeIds: ['peer-remote'],
     })).resolves.toEqual({
-      items: [expect.objectContaining({ id: 'task-remote', executionNodeId: 'peer-remote' })],
+      items: [],
       hasMoreAfter: false,
       partial: true,
-      sources: [{ executionNodeId: 'peer-remote', state: 'offline', fromCache: true }],
+      sources: [{ executionNodeId: 'peer-remote', state: 'offline', fromCache: false }],
     });
-    await expect(client.updateScheduledTask('task-remote', { payload: { message: 'changed' } }))
-      .rejects.toThrow('scheduled_task_remote_snapshot_offline');
     expect(sendRpc).not.toHaveBeenCalled();
   });
 
-  it('uses the typed scoped RPC contract and replaces a complete durable projection', async () => {
-    const replace = vi.fn().mockResolvedValue(undefined);
+  it('uses the typed scoped RPC contract and returns every Core execution field unchanged', async () => {
     const finishOperation = vi.fn().mockResolvedValue(undefined);
     const sendRpc = vi.fn().mockResolvedValue({
-      items: [remoteWireTask],
+      items: [remoteTask],
       hasMoreAfter: false,
     });
-    mutableService.agentInstance = createAgentInstanceService({ replaceRemoteScheduledTaskProjections: replace });
+    mutableService.agentInstance = createAgentInstanceService();
     mutableService.deviceNetwork = createDeviceNetworkService([remoteDevice()], { sendRpc, finishOperation });
 
     const client = createDesktopScheduledTaskClient();
@@ -182,7 +162,7 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
     });
 
     expect(page).toEqual({
-      items: [expect.objectContaining({ id: 'task-remote' })],
+      items: [remoteTask],
       hasMoreAfter: false,
       partial: false,
       sources: [{ executionNodeId: 'peer-remote', state: 'online', fromCache: false }],
@@ -200,28 +180,26 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
       { operationId: expect.any(String) },
     );
     expect(finishOperation).toHaveBeenCalledOnce();
-    expect(replace).toHaveBeenCalledWith(
-      'agent-1',
-      'peer-remote',
-      [expect.objectContaining({ id: 'task-remote', scheduleKind: 'cron' })],
-      expect.any(Number),
-    );
     await expect(client.updateScheduledTask('task-remote', { executionNodeId: 'peer-other' }))
       .rejects.toThrow('scheduled_task_execution_transfer_unsupported');
   });
 
   it('retains each source keyset cursor without walking an extra remote page', async () => {
     const localList = vi.fn()
-      .mockResolvedValueOnce({ items: [localWireTask], revision: 'local-r1' })
-      .mockResolvedValueOnce({ items: [], revision: 'local-r1' });
-    const sendRpc = vi.fn()
-      .mockResolvedValueOnce({ items: [remoteWireTask], nextCursor: 'remote-next', hasMoreAfter: true })
       .mockResolvedValueOnce({
-        items: [{ ...remoteWireTask, id: 'task-remote-2' }],
+        items: [localWireTask],
+        hasMoreAfter: false,
+        partial: false,
+        sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
+      });
+    const sendRpc = vi.fn()
+      .mockResolvedValueOnce({ items: [remoteTask], nextCursor: 'remote-next', hasMoreAfter: true })
+      .mockResolvedValueOnce({
+        items: [{ ...remoteTask, id: 'task-remote-2' }],
         hasMoreAfter: false,
       });
     mutableService.agentInstance = createAgentInstanceService({
-      listScheduledTasksPageForAgent: localList,
+      listScheduledTasksForAgent: localList,
     });
     mutableService.deviceNetwork = createDeviceNetworkService([remoteDevice()], { sendRpc });
     const client = createDesktopScheduledTaskClient();
@@ -241,6 +219,41 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
     expect(sendRpc).toHaveBeenCalledTimes(2);
     expect(sendRpc.mock.calls[1]?.[2]).toMatchObject({ cursor: 'remote-next', limit: 2 });
     expect(localList).toHaveBeenCalledOnce();
+  });
+
+  it('forwards the local Core page cursor opaquely without interpreting storage fields', async () => {
+    const localList = vi.fn()
+      .mockResolvedValueOnce({
+        items: [localWireTask],
+        nextCursor: 'opaque-local-cursor',
+        hasMoreAfter: true,
+        partial: false,
+        sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
+      })
+      .mockResolvedValueOnce({
+        items: [{ ...localWireTask, id: 'task-local-2' }],
+        hasMoreAfter: false,
+        partial: false,
+        sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
+      });
+    mutableService.agentInstance = createAgentInstanceService({
+      listScheduledTasksForAgent: localList,
+    });
+    mutableService.deviceNetwork = createDeviceNetworkService([]);
+    const client = createDesktopScheduledTaskClient();
+
+    const first = await client.listScheduledTasksForAgent('agent-1', {
+      executionNodeIds: ['peer-local'],
+      limit: 1,
+    });
+    const second = await client.listScheduledTasksForAgent('agent-1', {
+      cursor: first.nextCursor,
+      executionNodeIds: ['peer-local'],
+      limit: 1,
+    });
+
+    expect(second.items).toEqual([{ ...localWireTask, id: 'task-local-2' }]);
+    expect(localList.mock.calls[1]?.[1]).toMatchObject({ cursor: 'opaque-local-cursor' });
   });
 
   it('limits simultaneous remote reads to four across a bounded eight-source page', async () => {
@@ -313,7 +326,7 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
   it('rejects an opaque continuation after device reachability changes', async () => {
     const listDevices = vi.fn().mockResolvedValue([remoteDevice()]);
     const sendRpc = vi.fn().mockResolvedValue({
-      items: [remoteWireTask],
+      items: [remoteTask],
       nextCursor: 'remote-next',
       hasMoreAfter: true,
     });
@@ -336,9 +349,11 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
 
   it('fails closed when a local source exceeds the requested page limit', async () => {
     mutableService.agentInstance = createAgentInstanceService({
-      listScheduledTasksPageForAgent: vi.fn().mockResolvedValue({
+      listScheduledTasksForAgent: vi.fn().mockResolvedValue({
         items: [localWireTask, { ...localWireTask, id: 'task-local-2' }],
-        revision: 'local-r1',
+        hasMoreAfter: false,
+        partial: false,
+        sources: [{ executionNodeId: 'peer-local', state: 'online', fromCache: false }],
       }),
     });
     mutableService.deviceNetwork = createDeviceNetworkService([]);

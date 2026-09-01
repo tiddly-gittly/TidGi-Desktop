@@ -1,12 +1,12 @@
 import {
-  imageAttachmentReferences,
+  imageAttachmentReferencesFromFullMessage,
   MEMELOOP_VISIBLE_ATTACHMENT_CHUNK_BYTES,
   type MemeLoopVisibleAttachment,
   type MemeLoopVisibleAttachmentLoader,
   messageHydrationIdentity,
 } from '@memeloop/react-ui/chat';
 
-import { assertDesktopMessageHydrationIdentity, assertDesktopMessageIdentity, loadDesktopCanonicalMessage } from './DesktopMessageDetailLoader';
+import { assertDesktopMessageHydrationIdentity, assertDesktopMessageIdentity, canonicalMessageHydrationIdentity, loadDesktopCanonicalMessage } from './DesktopMessageDetailLoader';
 
 /**
  * Renderer-side bounded loader. Main process re-authorizes every range against
@@ -15,15 +15,15 @@ import { assertDesktopMessageHydrationIdentity, assertDesktopMessageIdentity, lo
 export function createDesktopVisibleAttachmentLoader(): MemeLoopVisibleAttachmentLoader {
   return async request => {
     request.signal.throwIfAborted();
-    assertDesktopMessageHydrationIdentity(request.message, request.identity);
+    assertDesktopMessageHydrationIdentity(messageHydrationIdentity(request.message), request.identity);
     const canonical = await loadDesktopCanonicalMessage(request.message, request.signal);
     if (!canonical) return null;
-    const canonicalIdentity = messageHydrationIdentity(canonical);
-    assertDesktopMessageHydrationIdentity(canonical, request.identity);
+    const canonicalIdentity = canonicalMessageHydrationIdentity(canonical);
+    assertDesktopMessageHydrationIdentity(canonicalIdentity, request.identity);
 
     const attachments: MemeLoopVisibleAttachment[] = [];
     let totalBytes = 0;
-    for (const reference of imageAttachmentReferences(canonical)) {
+    for (const reference of imageAttachmentReferencesFromFullMessage(canonical)) {
       request.signal.throwIfAborted();
       if (attachments.length >= request.maxCount || totalBytes + reference.size > request.maxBytes) break;
       const data = new Uint8Array(reference.size);
@@ -55,8 +55,8 @@ export function createDesktopVisibleAttachmentLoader(): MemeLoopVisibleAttachmen
     );
     request.signal.throwIfAborted();
     if (!finalIdentity) throw new Error('visible attachment message was removed while loading');
-    assertDesktopMessageIdentity(canonical, finalIdentity);
-    assertDesktopMessageHydrationIdentity(request.message, canonicalIdentity);
+    assertDesktopMessageIdentity(canonicalIdentity, finalIdentity);
+    assertDesktopMessageHydrationIdentity(messageHydrationIdentity(request.message), canonicalIdentity);
     return { identity: canonicalIdentity, revision: request.revision, attachments };
   };
 }

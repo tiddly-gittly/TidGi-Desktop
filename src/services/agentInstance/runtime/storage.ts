@@ -7,6 +7,7 @@ import type {
   ConversationEvent,
   ConversationEventDraft,
   ConversationEventPage,
+  ConversationFullContentMessagePage,
   ConversationListPage,
   ConversationListPageCallOptions,
   ConversationMessageCursor,
@@ -22,6 +23,7 @@ import type {
   GetConversationListPageOptions,
   GetConversationMessageWindowAroundOptions,
   GetConversationTimelinePageOptions,
+  GetFullContentMessagePageOptions,
   GetMessagePageOptions,
   GetMessagesOptions,
   GetRetainedCompactionControlsOptions,
@@ -34,9 +36,7 @@ import type {
 import { assertCanonicalChatMessageProjection, PORTABLE_LLM_REQUEST_LIMITS } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentInstance } from 'memeloop';
 import type { IAgentInstanceService } from '../interface';
-import { toConversationMeta } from './messageMapping';
 
 /**
  * TypeORM point reads are class instances. Core's canonical retry contract
@@ -74,7 +74,6 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
       agentInstanceService: IAgentInstanceService;
       agentDefinitionService: IAgentDefinitionService;
       getLocalNodeId: () => Promise<string>;
-      notifyAgentChanged: (agentId: string, agent: AgentInstance) => void;
     },
   ) {}
 
@@ -91,22 +90,15 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
   }
 
   public async getMessages(conversationId: string, options?: GetMessagesOptions): Promise<ChatMessage[]> {
-    // Core's hierarchical compactor uses bounded storage-native candidate pages.
-    // This compatibility read is bounded by default; an explicit full-content
-    // request is the only path allowed to enumerate the entire projection.
-    if (options?.mode !== 'full-content') {
-      const page = await this.options.agentInstanceService.getAgentMessagePage(conversationId, { limit: 80, maxBytes: 512 * 1024 });
-      return page.reset ? [] : page.items;
-    }
     const messages: ChatMessage[] = [];
     let after: ConversationMessageCursor | undefined;
     let expectedRevision: string | undefined;
     do {
-      const page = await this.options.agentInstanceService.getAgentMessagePage(conversationId, {
+      const page = await this.options.agentInstanceService.getAgentStorageMessagePage(conversationId, {
         limit: 80,
         maxBytes: 4 * 1024 * 1024,
         direction: 'forward',
-        mode: 'full-content',
+        ...(options?.mode === undefined ? {} : { mode: options.mode }),
         ...(after ? { after, expectedRevision } : {}),
       });
       if (page.reset) throw new Error('conversation_message_page_invalidated');
@@ -123,7 +115,18 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     callOptions?: { signal?: AbortSignal },
   ): Promise<ConversationMessagePage> {
     callOptions?.signal?.throwIfAborted();
-    const page = await this.options.agentInstanceService.getAgentMessagePage(conversationId, options);
+    const page = await this.options.agentInstanceService.getAgentStorageMessagePage(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return page;
+  }
+
+  public async getFullContentMessagePage(
+    conversationId: string,
+    options: GetFullContentMessagePageOptions,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationFullContentMessagePage> {
+    callOptions?.signal?.throwIfAborted();
+    const page = await this.options.agentInstanceService.getAgentStorageFullContentMessagePage(conversationId, options);
     callOptions?.signal?.throwIfAborted();
     return page;
   }
@@ -174,7 +177,7 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     callOptions?: { signal?: AbortSignal },
   ): Promise<ConversationMessageWindowResult> {
     callOptions?.signal?.throwIfAborted();
-    const result = await this.options.agentInstanceService.getAgentMessageWindowAround(conversationId, options);
+    const result = await this.options.agentInstanceService.getAgentStorageMessageWindowAround(conversationId, options);
     callOptions?.signal?.throwIfAborted();
     return result;
   }
@@ -207,15 +210,11 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
   }
 
   public async appendLocalEvent(draft: ConversationEventDraft): Promise<ConversationEvent> {
-    const event = await this.options.agentInstanceService.appendLocalConversationEvent(draft);
-    await this.notifyEvent(event);
-    return event;
+    return this.options.agentInstanceService.appendLocalConversationEvent(draft);
   }
 
   public async appendLocalEventsAtomic(drafts: readonly ConversationEventDraft[]): Promise<ConversationEvent[]> {
-    const events = await this.options.agentInstanceService.appendLocalConversationEventsAtomic(drafts);
-    for (const event of events) await this.notifyEvent(event);
-    return events;
+    return this.options.agentInstanceService.appendLocalConversationEventsAtomic(drafts);
   }
 
   public async upsertConversationMetadata(_meta: ConversationMeta): Promise<void> {
@@ -224,7 +223,6 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
 
   public async insertEventsIfAbsent(events: readonly ConversationEvent[]): Promise<void> {
     await this.options.agentInstanceService.insertConversationEventsIfAbsent(events);
-    for (const event of events) await this.notifyEvent(event);
   }
 
   public getConversationEventPage(
@@ -333,32 +331,7 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
   }
 
   public async getConversationMeta(conversationId: string): Promise<ConversationMeta | null> {
-    const agent = await this.options.agentInstanceService.getAgentMetadata(conversationId);
-    if (!agent) return null;
-    const [tail, timeline, localNodeId, originClock] = await Promise.all([
-      this.options.agentInstanceService.getAgentMessagePage(conversationId, { limit: 1, maxBytes: 64 * 1024 }),
-      this.options.agentInstanceService.getAgentConversationTimelinePage(conversationId, { limit: 1, maxBytes: 16 * 1024 }),
-      this.options.getLocalNodeId(),
-      this.options.agentInstanceService.getMaxAgentLamportClock(conversationId),
-    ]);
-    return {
-      ...toConversationMeta({ ...agent, messages: tail.reset ? [] : tail.items }, localNodeId),
-      messageCount: timeline.reset ? 0 : timeline.totalMessages,
-      originClock,
-    };
-  }
-
-  private async notify(agentId: string): Promise<void> {
-    const agent = await this.options.agentInstanceService.getAgentMetadata(agentId);
-    if (agent) this.options.notifyAgentChanged(agentId, { ...agent, messages: [] });
-  }
-
-  private async notifyEvent(event: ConversationEvent): Promise<void> {
-    const agent = await this.options.agentInstanceService.getAgentMetadata(event.conversationId);
-    if (!agent) return;
-    this.options.notifyAgentChanged(event.conversationId, {
-      ...agent,
-      messages: [],
-    });
+    const localNodeId = await this.options.getLocalNodeId();
+    return this.options.agentInstanceService.getAgentConversationMeta(localNodeId, conversationId);
   }
 }

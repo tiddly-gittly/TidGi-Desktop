@@ -129,7 +129,6 @@ function auditExecution(label = 'default'): PromptPreviewPreparedExecution {
   return store.createSession({
     request: {
       providerId: 'provider-exact',
-      modelId: 'wire-exact',
       logicalModelId: 'logical-exact',
       wireModelId: 'wire-exact',
       apiMode: 'responses',

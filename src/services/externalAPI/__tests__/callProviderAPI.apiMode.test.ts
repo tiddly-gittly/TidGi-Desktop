@@ -1,70 +1,81 @@
+import type { ModelCatalogModel, ProviderAccountConfig } from 'memeloop';
 import { describe, expect, it } from 'vitest';
 
-import { resolveModelRequestSettings, toCoreProviderConfig } from '../callProviderAPI';
-import type { ModelInfo } from '../interface';
+import { resolveModelRequestSettings, resolveProviderCatalogModel, resolveProviderModelRoute } from '../callProviderAPI';
 
-describe('OpenAI-compatible model API mode', () => {
-  it.each(['chat-completions', 'responses'] as const)(
-    'passes model-level %s mode and the explicit base URL to core',
-    (apiMode) => {
-      const coreConfig = toCoreProviderConfig(
-        {
-          provider: 'cpa-test',
-          providerClass: 'openAICompatible',
-          baseURL: 'https://models.example.test',
-          apiKey: 'unit-test-secret',
-          models: [
-            { name: 'chat-model', apiMode: 'chat-completions' },
-            { name: 'responses-model', apiMode: 'responses' },
-          ],
-        },
-        { name: `${apiMode}-model`, apiMode },
-      );
+const catalogModel: ModelCatalogModel = {
+  id: 'reasoning',
+  name: 'Reasoning model',
+  attachment: true,
+  reasoning: true,
+  toolCall: true,
+  limit: { context: 1_050_000, output: 32_768 },
+  modalities: { input: ['text', 'image'], output: ['text'] },
+};
 
-      expect(coreConfig).toEqual(expect.objectContaining({
-        provider: 'openai',
-        baseUrl: 'https://models.example.test',
-        openAIApiMode: apiMode,
-      }));
-    },
-  );
+const account: ProviderAccountConfig = {
+  providerId: 'cpa-test',
+  providerType: 'openai-compatible',
+  baseUrl: 'https://models.example.test/v1',
+  models: [
+    { modelId: 'fast', wireModelId: 'vendor/fast-v3', apiMode: 'chat-completions' },
+    { modelId: 'reasoning', wireModelId: 'vendor/reasoning-v7', apiMode: 'responses' },
+  ],
+  catalogProvider: {
+    id: 'cpa-test',
+    name: 'CPA test',
+    env: [],
+    models: [catalogModel],
+  },
+};
 
-  it('supplies an SDK-only placeholder for an unauthenticated loopback server', () => {
-    const coreConfig = toCoreProviderConfig({
-      provider: 'local-test',
-      providerClass: 'openAICompatible',
-      baseURL: 'http://127.0.0.1:15121/v1',
-      models: [{ name: 'local-model', apiMode: 'chat-completions' }],
+describe('canonical provider route request settings', () => {
+  it('keeps logical and wire model IDs separate and preserves route API mode', () => {
+    expect(resolveProviderModelRoute(account, 'reasoning')).toEqual({
+      modelId: 'reasoning',
+      wireModelId: 'vendor/reasoning-v7',
+      apiMode: 'responses',
     });
-
-    expect(coreConfig.apiKey).toBe('local-no-auth');
+    expect(() => resolveProviderModelRoute(account, 'vendor/reasoning-v7')).toThrow(
+      'Model route not found',
+    );
   });
 
-  it('uses model generation defaults only when the request has no explicit override', () => {
-    const model: ModelInfo = {
-      name: 'reasoning-model',
-      maxOutputTokens: 32_768,
-      modelOptions: { top_p: 0.95 },
-      supportsReasoningEffort: ['minimal', 'high'],
-      reasoningEffortFormat: 'chat-completions',
-    };
+  it('resolves exact Core catalog metadata for a route', () => {
+    const route = resolveProviderModelRoute(account, 'reasoning');
+    expect(resolveProviderCatalogModel(account, route)).toBe(catalogModel);
+  });
 
-    expect(resolveModelRequestSettings(model, { reasoningEffort: 'high' })).toEqual({
+  it('uses catalog output limit and explicit canonical agent parameters', () => {
+    expect(resolveModelRequestSettings(account, catalogModel, {
+      reasoningEffort: 'high',
+      topP: 0.95,
+    })).toEqual({
       maxOutputTokens: 32_768,
       providerOptions: { openai: { reasoningEffort: 'high' } },
       temperature: 0.7,
       topP: 0.95,
     });
-    expect(resolveModelRequestSettings(model, {
+    expect(resolveModelRequestSettings(account, catalogModel, {
       maxOutputTokens: 4096,
       reasoningEffort: 'medium',
       temperature: 0.2,
       topP: 0.4,
     })).toEqual({
       maxOutputTokens: 4096,
-      providerOptions: undefined,
+      providerOptions: { openai: { reasoningEffort: 'medium' } },
       temperature: 0.2,
       topP: 0.4,
     });
+  });
+
+  it('does not emit OpenAI reasoning options for a non-OpenAI provider', () => {
+    expect(
+      resolveModelRequestSettings(
+        { ...account, providerType: 'anthropic' },
+        catalogModel,
+        { reasoningEffort: 'high' },
+      ).providerOptions,
+    ).toBeUndefined();
   });
 });

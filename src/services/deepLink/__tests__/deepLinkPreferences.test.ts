@@ -85,6 +85,19 @@ describe('DeepLinkService – preferences URL routing', () => {
     );
   });
 
+  it('forwards an exact provider and model focus target to External API settings', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://preferences/externalAPI?provider=0%E6%8F%90%E4%BE%9B%E6%96%B9&model=%E6%A8%A1%E5%9E%8B%2Fv2&field=model');
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      WindowNames.preferences,
+      {
+        preferenceGotoTab: PreferenceSections.externalAPI,
+        preferenceFocus: { providerId: '0提供方', modelId: '模型/v2', field: 'model' },
+      },
+    );
+  });
+
   it('drops invalid provider focus fields instead of forwarding arbitrary metadata', async () => {
     const service = makeService();
     await service.openDeepLink('tidgi://preferences/externalAPI?provider=siliconflow&field=secret');

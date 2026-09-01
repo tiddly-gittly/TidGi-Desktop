@@ -13,7 +13,7 @@ describe('structured provider errors', () => {
     ] as const,
   )('normalizes HTTP %i without parsing response text', (status, code) => {
     expect(extractErrorDetails({ response: { status }, message: 'untrusted upstream body' }, 'provider-a'))
-      .toMatchObject({ code, provider: 'provider-a' });
+      .toMatchObject({ code, providerId: 'provider-a' });
   });
 
   it('finds a bounded structured status through an SDK cause chain', () => {
@@ -26,7 +26,7 @@ describe('structured provider errors', () => {
     expect(extractErrorDetails(raw, 'provider-a')).toEqual({
       name: 'AIProviderError',
       code: 'UNKNOWN_ERROR',
-      provider: 'provider-a',
+      providerId: 'provider-a',
       message: 'Chat.ConfigError.ProviderUnavailable',
     });
   });

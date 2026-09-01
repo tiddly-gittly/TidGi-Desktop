@@ -30,12 +30,18 @@ describe('DesktopAgentExecutionCoordinator', () => {
       message: 'hello',
     })).resolves.toEqual({ runId: 'run-1', synchronization: 'not-required' });
 
+    expect(services.agentInstance.prepareAgentDeviceRpcRunTurn).toHaveBeenCalledWith({
+      target: { kind: 'local' },
+      provenance,
+      message: 'hello',
+    });
     expect(services.agentInstance.executeAgentRun).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
       definitionId: 'definition-1',
-      message: 'hello',
+      message: 'rendered:hello',
       requestId: 'request-1',
       turnId: 'turn-1',
+      userMessage: { content: 'rendered:hello' },
     });
     expect(services.agentInstance.getAgentRunStatus).toHaveBeenCalledTimes(2);
     expect(onRunAccepted).toHaveBeenCalledWith(provenance, expect.objectContaining({ runId: 'run-1' }));
@@ -83,7 +89,7 @@ describe('DesktopAgentExecutionCoordinator', () => {
     await coordinator.dispose();
   });
 
-  it('maps a structured no-model result after a clone-safe service boundary', async () => {
+  it('maps a structured no-model rejection after a clone-safe service boundary', async () => {
     const services = createServices();
     const runError = createAgentRunError({
       code: 'PROVIDER_CONFIGURATION_MISSING',
@@ -92,9 +98,9 @@ describe('DesktopAgentExecutionCoordinator', () => {
       localizedParams: { settingField: 'model' },
       settingTarget: { kind: 'runtime', section: 'agent' },
     });
-    services.agentInstance.executeAgentRun = vi.fn().mockResolvedValue(
-      structuredClone({ ok: false as const, error: runError }),
-    );
+    const serviceError = new Error(runError.code);
+    Object.defineProperty(serviceError, 'agentRunError', { value: structuredClone(runError) });
+    services.agentInstance.executeAgentRun = vi.fn().mockRejectedValue(serviceError);
     const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
       createId: sequentialIds(),
       pollIntervalMs: 1,
@@ -197,7 +203,8 @@ describe('DesktopAgentExecutionCoordinator', () => {
       'memeloop.agent.runTurn',
       'memeloop.agent.getRunStatus',
     ]);
-    expect(services.agentInstance.prepareRemoteAgentUserMessage).toHaveBeenCalledWith(expect.objectContaining({
+    expect(services.agentInstance.prepareAgentDeviceRpcRunTurn).toHaveBeenCalledWith(expect.objectContaining({
+      target: { kind: 'remote', peerId: 'peer-remote' },
       attachment: { kind: 'committed', reference: attachmentReference() },
     }));
     expect(services.agentInstance.abortAgentAttachmentUpload).toHaveBeenCalledWith({
@@ -352,7 +359,14 @@ function createServices(): DesktopAgentExecutionCoordinatorServices {
           turnId: method === 'memeloop.chat.retryTurn' ? request.newTurnId : request.turnId,
           conversationId: request.conversationId,
           state: 'accepted',
-          ...(method === 'memeloop.chat.retryTurn' ? retryEvents(request) : {}),
+          ...(method === 'memeloop.chat.retryTurn'
+            ? retryEvents({
+              conversationId: request.conversationId,
+              newTurnId: request.newTurnId,
+              requestId: request.requestId,
+              turnId: request.turnId,
+            })
+            : {}),
         };
       case 'memeloop.agent.getRunStatus':
         return { status: runStatus('completed', 'remote-run', remoteTurnId, remoteRequestId) };
@@ -362,7 +376,11 @@ function createServices(): DesktopAgentExecutionCoordinatorServices {
           conversationId: request.conversationId,
           turnId: request.turnId,
           requestId: request.requestId,
-          tombstone: tombstone(request),
+          tombstone: tombstone({
+            conversationId: request.conversationId,
+            requestId: request.requestId,
+            turnId: request.turnId,
+          }),
         };
       case 'memeloop.agent.cancel':
         return { ok: true, status: runStatus('cancelled', String(request.runId)) };
@@ -377,17 +395,25 @@ function createServices(): DesktopAgentExecutionCoordinatorServices {
       cancelAgentRun: vi.fn().mockResolvedValue(true),
       commitAgentAttachmentUpload: vi.fn().mockResolvedValue({ kind: 'committed', reference }),
       deleteConversationTurn: vi.fn().mockResolvedValue({ ok: true }),
-      executeAgentRun: vi.fn(async request => ({ ok: true as const, handle: handle('run-1', request.turnId, request.requestId) })),
+      executeAgentRun: vi.fn(async request => handle('run-1', request.turnId, request.requestId)),
       getAgentRunStatus: vi.fn().mockResolvedValue(runStatus('completed')),
-      prepareRemoteAgentUserMessage: vi.fn(async request => ({
+      prepareAgentDeviceRpcRunTurn: vi.fn(async request => ({
+        conversationId: request.provenance.conversationId,
+        definitionId: request.provenance.definitionId,
         message: `rendered:${request.message}`,
+        requestId: request.provenance.requestId,
+        turnId: request.provenance.turnId,
         userMessage: {
           content: `rendered:${request.message}`,
           ...(request.attachment === undefined ? {} : { attachments: [request.attachment.reference] }),
         },
       })),
       readAgentAttachmentChunk: vi.fn().mockResolvedValue(new TextEncoder().encode('hello attachment')),
-      retryConversationTurn: vi.fn(async request => ({ ok: true as const, ...handle('run-retry', request.newTurnId, request.requestId) })),
+      retryConversationTurn: vi.fn(async request => ({
+        ok: true as const,
+        ...handle('run-retry', request.newTurnId, request.requestId),
+        ...retryEvents(request),
+      })),
       writeAgentAttachmentChunk: vi.fn(async (input: { offset: number; data: Uint8Array }) => ({ nextOffset: input.offset + input.data.byteLength })),
     },
     deviceNetwork: {
@@ -454,7 +480,7 @@ function sequentialIds() {
   return () => `desktop-operation-${++id}`;
 }
 
-function tombstone(request: Record<string, unknown>) {
+function tombstone(request: { conversationId: unknown; requestId: unknown; turnId: unknown }) {
   return {
     eventId: `delete:${String(request.requestId)}`,
     conversationId: String(request.conversationId),
@@ -468,7 +494,12 @@ function tombstone(request: Record<string, unknown>) {
   };
 }
 
-function retryEvents(request: Record<string, unknown>) {
+function retryEvents(request: {
+  conversationId: unknown;
+  newTurnId: unknown;
+  requestId: unknown;
+  turnId: unknown;
+}) {
   return {
     tombstone: tombstone(request),
     userEvent: {

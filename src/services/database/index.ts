@@ -17,9 +17,10 @@ import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions.js';
 import { ensureSettingFolderExist, fixSettingFileWhenError, readTidgiConfig } from './configSetting';
 import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, RemoteScheduledTaskProjectionEntity, ScheduledTaskEntity } from './schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
 import {
+  AgentLoopCheckpointEntity,
   AgentRunStateEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
@@ -116,7 +117,6 @@ export class DatabaseService implements IDatabaseService {
         AgentInstanceMessageEntity,
         AgentBrowserTabEntity,
         ScheduledTaskEntity,
-        RemoteScheduledTaskProjectionEntity,
         ConversationAttachmentReferenceEntity,
         AgentRunStateEntity,
         ConversationMessageDetailEntity,
@@ -128,6 +128,7 @@ export class DatabaseService implements IDatabaseService {
         ConversationTimelineStateEntity,
         ConversationTimelineEntryEntity,
         ConversationTimelineRankCheckpointEntity,
+        AgentLoopCheckpointEntity,
       ],
       synchronize: true,
       migrationsRun: false,

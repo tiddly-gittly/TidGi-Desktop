@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentInstanceService } from '../index';
-import * as alarmClock from '../tools/alarmClock';
 import * as heartbeatManager from '../tools/scheduledTaskManager';
 
 describe('AgentInstanceService background task settings APIs', () => {
@@ -10,7 +9,6 @@ describe('AgentInstanceService background task settings APIs', () => {
   const updateMock = vi.fn();
   const getAgentDefMock = vi.fn();
   const updateAgentDefMock = vi.fn();
-  let scheduleAlarmTimerSpy: ReturnType<typeof vi.spyOn>;
   let startHeartbeatSpy: ReturnType<typeof vi.spyOn>;
   let stopHeartbeatSpy: ReturnType<typeof vi.spyOn>;
 
@@ -47,7 +45,6 @@ describe('AgentInstanceService background task settings APIs', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    scheduleAlarmTimerSpy = vi.spyOn(alarmClock, 'scheduleAlarmTimer').mockResolvedValue();
     startHeartbeatSpy = vi.spyOn(heartbeatManager, 'startHeartbeat').mockImplementation(() => {
       // Avoid creating real timers in unit tests.
     });
@@ -58,25 +55,6 @@ describe('AgentInstanceService background task settings APIs', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  it('upserts alarm task from settings UI with metadata', async () => {
-    findOneMock.mockResolvedValue({ id: 'agent-1', agentDefId: 'task-agent', volatile: false });
-    updateMock.mockResolvedValue(undefined);
-    const service = createService();
-
-    await service.setBackgroundAlarm('agent-1', {
-      wakeAtISO: '2026-03-06T10:00:00.000Z',
-      message: 'Run follow-up check',
-    });
-
-    expect(scheduleAlarmTimerSpy).toHaveBeenCalledWith(
-      'agent-1',
-      '2026-03-06T10:00:00.000Z',
-      'Run follow-up check',
-      { createdBy: 'settings-ui', runCount: 0 },
-    );
-    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it('enables heartbeat from settings UI and starts runtime heartbeat', async () => {
@@ -90,9 +68,9 @@ describe('AgentInstanceService background task settings APIs', () => {
 
     const service = createService();
 
-    await service.setBackgroundHeartbeat('agent-1', {
+    await service.setAgentHeartbeat('agent-1', {
       enabled: true,
-      intervalSeconds: 10,
+      intervalSeconds: 60,
       message: 'Heartbeat from settings',
       activeHoursStart: '09:00',
       activeHoursEnd: '18:00',
@@ -110,6 +88,7 @@ describe('AgentInstanceService background task settings APIs', () => {
     });
     expect(startHeartbeatSpy).toHaveBeenCalledWith(
       'agent-1',
+      'task-agent',
       {
         enabled: true,
         intervalSeconds: 60,
@@ -134,7 +113,7 @@ describe('AgentInstanceService background task settings APIs', () => {
 
     const service = createService();
 
-    await service.setBackgroundHeartbeat('agent-1', {
+    await service.setAgentHeartbeat('agent-1', {
       enabled: false,
       intervalSeconds: 300,
       message: 'Disable heartbeat',
@@ -148,6 +127,7 @@ describe('AgentInstanceService background task settings APIs', () => {
     findMock.mockResolvedValue([
       {
         id: 'agent-1',
+        agentDefId: 'task-agent',
         closed: false,
         volatile: false,
         agentDefinition: {
@@ -166,6 +146,7 @@ describe('AgentInstanceService background task settings APIs', () => {
 
     expect(startHeartbeatSpy).toHaveBeenCalledWith(
       'agent-1',
+      'task-agent',
       {
         enabled: true,
         intervalSeconds: 120,
@@ -174,6 +155,5 @@ describe('AgentInstanceService background task settings APIs', () => {
       service,
       { createdBy: 'agent-definition' },
     );
-    expect(scheduleAlarmTimerSpy).not.toHaveBeenCalled();
   });
 });

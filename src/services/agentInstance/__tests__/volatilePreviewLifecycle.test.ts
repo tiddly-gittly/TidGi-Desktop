@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as repository from '../agentRepository';
 import { AgentInstanceService } from '../index';
-import * as alarmClock from '../tools/alarmClock';
 import * as modelContextProtocol from '../tools/modelContextProtocol';
 import * as scheduledTaskManager from '../tools/scheduledTaskManager';
 
@@ -12,7 +11,6 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
   const releaseConversationScope = vi.fn();
   let discardRepository: ReturnType<typeof vi.spyOn>;
   let stopHeartbeat: ReturnType<typeof vi.spyOn>;
-  let cancelAlarm: ReturnType<typeof vi.spyOn>;
   let cancelTasks: ReturnType<typeof vi.spyOn>;
   let cleanupMCP: ReturnType<typeof vi.spyOn>;
 
@@ -22,7 +20,6 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
     mutable.dataSource = {};
     mutable.agentInstanceRepository = { findOne };
     mutable.agentMessageRepository = {};
-    mutable.remoteScheduledTaskProjectionRepository = {};
     mutable.attachmentUploadStore = { releaseConversationScope };
     vi.spyOn(service, 'getDurableAgentRuntime').mockResolvedValue({ cancelAgent: cancelRuntime } as never);
     return service;
@@ -32,7 +29,6 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
     vi.clearAllMocks();
     discardRepository = vi.spyOn(repository, 'discardVolatileAgentPreview').mockResolvedValue();
     stopHeartbeat = vi.spyOn(scheduledTaskManager, 'stopHeartbeat').mockImplementation(() => undefined);
-    cancelAlarm = vi.spyOn(alarmClock, 'cancelAlarm').mockImplementation(() => undefined);
     cancelTasks = vi.spyOn(scheduledTaskManager, 'cancelTasksForAgent').mockResolvedValue();
     cleanupMCP = vi.spyOn(modelContextProtocol, 'cleanupMCPClient').mockResolvedValue();
     releaseConversationScope.mockResolvedValue(undefined);
@@ -56,7 +52,6 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
     expect(stopHeartbeat).toHaveBeenCalledTimes(1);
     expect(cancelRuntime).toHaveBeenCalledTimes(1);
     expect(cancelRuntime).toHaveBeenCalledWith('preview');
-    expect(cancelAlarm).toHaveBeenCalledTimes(1);
     expect(cancelTasks).toHaveBeenCalledTimes(1);
     expect(cleanupMCP).toHaveBeenCalledTimes(1);
     expect(releaseConversationScope).toHaveBeenCalledTimes(1);
@@ -65,7 +60,7 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
     expect(discardRepository).toHaveBeenNthCalledWith(1, expect.anything(), input);
 
     const purgeCall = discardRepository.mock.invocationCallOrder[0]!;
-    for (const runtimeRelease of [stopHeartbeat, cancelRuntime, cancelAlarm, cancelTasks, cleanupMCP, releaseConversationScope]) {
+    for (const runtimeRelease of [stopHeartbeat, cancelRuntime, cancelTasks, cleanupMCP, releaseConversationScope]) {
       expect(runtimeRelease.mock.invocationCallOrder[0]).toBeLessThan(purgeCall);
     }
   });
@@ -85,7 +80,6 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
 
     expect(stopHeartbeat).not.toHaveBeenCalled();
     expect(cancelRuntime).not.toHaveBeenCalled();
-    expect(cancelAlarm).not.toHaveBeenCalled();
     expect(cancelTasks).not.toHaveBeenCalled();
     expect(cleanupMCP).not.toHaveBeenCalled();
     expect(releaseConversationScope).not.toHaveBeenCalled();

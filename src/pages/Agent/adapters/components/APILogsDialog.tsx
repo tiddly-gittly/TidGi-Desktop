@@ -203,7 +203,7 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
                             fontWeight: 'bold',
                           }}
                         >
-                          {log.requestMetadata.provider} / {log.requestMetadata.model}
+                          {log.requestMetadata.providerId} / {log.requestMetadata.logicalModelId}
                         </Typography>
                         <Typography variant='caption' color='textSecondary'>
                           {formatTime(log.createdAt)}

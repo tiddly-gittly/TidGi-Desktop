@@ -22,14 +22,14 @@ import {
   type WebSelectedAttachmentBatch,
 } from '@memeloop/react-ui/chat';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { type AgentDefinition, AgentSessionController, type ChatMessage, extractAgentRunError, type PromptNode } from 'memeloop';
+import { type AgentDefinition, type AgentModelConfig, AgentSessionController, type AgentSessionTarget, type ChatMessage, extractAgentRunError } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import type { Widget as TiddlyWikiWidget } from 'tiddlywiki';
 import { type AttachmentSelection, clearAttachmentSelectionAtRevision, EMPTY_ATTACHMENTS, nextAttachmentSelection } from './attachmentSelection';
 import { resolveTiddlyWikiDrop } from './dropPayload';
 import { createDesktopWikiAgentHostAdapter, type WikiAgentDefinitionOption, type WikiAgentHostAdapter, type WikiAgentModelOption } from './hostAdapter';
-import { formatTimelineTurn, getWikiAgentLabels, resolveWikiAgentLocale } from './labels';
+import { formatTimelineMessage, getWikiAgentLabels, resolveWikiAgentLocale } from './labels';
 import { wikiAgentI18n } from './localization';
 import { resolveWikiAgentColorScheme, resolveWikiAgentDirection, type WikiAgentColorScheme } from './presentation';
 
@@ -53,7 +53,7 @@ function useWikiAgentTarget(
   controller: AgentSessionController,
   hostAdapter: WikiAgentHostAdapter,
 ) {
-  const [conversationId, setConversationId] = useState<string>();
+  const [target, setTarget] = useState<AgentSessionTarget>();
   const [discoveryFailed, setDiscoveryFailed] = useState(false);
   const generationReference = useRef(0);
 
@@ -61,19 +61,19 @@ function useWikiAgentTarget(
     const generation = generationReference.current + 1;
     generationReference.current = generation;
     const abortController = new AbortController();
-    setConversationId(undefined);
+    setTarget(undefined);
     setDiscoveryFailed(false);
     controller.stop();
 
     void (async () => {
-      const resolvedAgentId = await hostAdapter.resolveAgentId(requestedAgentId, { signal: abortController.signal });
+      const resolvedTarget = await hostAdapter.resolveAgentTarget(requestedAgentId, { signal: abortController.signal });
       if (generation !== generationReference.current || abortController.signal.aborted) return;
-      await controller.start({ agentId: resolvedAgentId, conversationId: resolvedAgentId });
-      if (generation === generationReference.current && !abortController.signal.aborted) setConversationId(resolvedAgentId);
+      await controller.start(resolvedTarget);
+      if (generation === generationReference.current && !abortController.signal.aborted) setTarget(resolvedTarget);
     })().catch((error: unknown) => {
       if (generation !== generationReference.current || abortController.signal.aborted) return;
       controller.stop();
-      setConversationId(undefined);
+      setTarget(undefined);
       setDiscoveryFailed(true);
       hostAdapter.logError('MemeLoop Wiki agent discovery failed', error);
     });
@@ -85,7 +85,7 @@ function useWikiAgentTarget(
     };
   }, [controller, hostAdapter, requestedAgentId]);
 
-  return { conversationId, discoveryFailed };
+  return { target, discoveryFailed };
 }
 
 function WikiAgentSelectors({
@@ -105,7 +105,7 @@ function WikiAgentSelectors({
 }) {
   const [definitions, setDefinitions] = useState<readonly WikiAgentDefinitionOption[]>([]);
   const [models, setModels] = useState<readonly WikiAgentModelOption[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState('');
+  const [selectedModel, setSelectedModel] = useState<AgentModelConfig>();
   const [loading, setLoading] = useState(true);
   const [operationError, setOperationError] = useState<string>();
   const operationReference = useRef<AbortController | undefined>(undefined);
@@ -121,12 +121,12 @@ function WikiAgentSelectors({
       if (controller.signal.aborted) return;
       setDefinitions(nextDefinitions);
       setModels(modelSelection.options);
-      setSelectedModelId(modelSelection.selectedId ?? '');
+      setSelectedModel(modelSelection.selected);
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       setDefinitions([]);
       setModels([]);
-      setSelectedModelId('');
+      setSelectedModel(undefined);
       setOperationError(labels.controlsUnavailable);
       hostAdapter.logError('MemeLoop Wiki controls failed to load', error);
     }).finally(() => {
@@ -141,13 +141,13 @@ function WikiAgentSelectors({
     operationReference.current?.abort();
   }, []);
 
-  const switchAgent = useCallback((definitionId: string) => {
+  const switchAgent = useCallback((definition: AgentDefinition) => {
     operationReference.current?.abort();
     const controller = new AbortController();
     operationReference.current = controller;
     setLoading(true);
     setOperationError(undefined);
-    void hostAdapter.createAgent(definitionId, { signal: controller.signal }).then(agent => {
+    void hostAdapter.createAgent(definition, { signal: controller.signal }).then(agent => {
       if (!controller.signal.aborted) onAgentChange(agent.id);
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
@@ -158,16 +158,16 @@ function WikiAgentSelectors({
     });
   }, [hostAdapter, labels.agentSwitchFailed, onAgentChange]);
 
-  const selectModel = useCallback((modelId: string) => {
-    const option = models.find(candidate => candidate.id === modelId);
+  const selectModel = useCallback((optionKey: string) => {
+    const option = models.find(candidate => modelOptionKey(candidate) === optionKey);
     if (!option) return;
     operationReference.current?.abort();
     const controller = new AbortController();
     operationReference.current = controller;
     setLoading(true);
     setOperationError(undefined);
-    void hostAdapter.selectModel(agentId, option, { signal: controller.signal }).then(() => {
-      if (!controller.signal.aborted) setSelectedModelId(option.id);
+    void hostAdapter.selectModel(agentId, option.selection, { signal: controller.signal }).then(() => {
+      if (!controller.signal.aborted) setSelectedModel(option.selection);
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       setOperationError(labels.modelUpdateFailed);
@@ -184,13 +184,18 @@ function WikiAgentSelectors({
         <select
           aria-label={labels.selectAgent}
           disabled={disabled || loading || definitions.length === 0}
-          value={definitions.some(option => option.id === currentDefinitionId) ? currentDefinitionId : ''}
+          value={definitions.some(option => option.definition.id === currentDefinitionId) ? currentDefinitionId : ''}
           onChange={event => {
-            switchAgent(event.target.value);
+            const option = definitions.find(candidate => candidate.definition.id === event.target.value);
+            if (option) switchAgent(option.definition);
           }}
         >
           <option value='' disabled>{labels.noOptions}</option>
-          {definitions.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+          {definitions.map(option => (
+            <option key={option.definition.id} value={option.definition.id} title={option.definition.description}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </label>
       <label className='memeloop-tw-chat__selector'>
@@ -198,19 +203,30 @@ function WikiAgentSelectors({
         <select
           aria-label={labels.selectModel}
           disabled={disabled || loading || models.length === 0}
-          value={models.some(option => option.id === selectedModelId) ? selectedModelId : ''}
+          value={modelSelectionKey(selectedModel)}
           onChange={event => {
             selectModel(event.target.value);
           }}
         >
           <option value='' disabled>{labels.noOptions}</option>
-          {models.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+          {models.map(option => {
+            const key = modelOptionKey(option);
+            return <option key={key} value={key}>{option.label}</option>;
+          })}
         </select>
       </label>
       {loading && <span className='memeloop-tw-chat__control-status' role='status'>{labels.loadingOptions}</span>}
       {operationError && <span className='memeloop-tw-chat__control-error' role='alert'>{operationError}</span>}
     </div>
   );
+}
+
+function modelSelectionKey(selection: AgentModelConfig | undefined): string {
+  return selection === undefined ? '' : JSON.stringify([selection.providerId, selection.modelId]);
+}
+
+function modelOptionKey(option: WikiAgentModelOption): string {
+  return modelSelectionKey(option.selection);
 }
 
 function WikiPromptPreview({
@@ -321,7 +337,7 @@ function WikiPromptPreview({
             {!state.loading && !previewError && !state.result && <p>{labels.previewUnavailable}</p>}
             {state.result && (
               <div className='memeloop-tw-chat__preview-content'>
-                <PromptTree prompts={state.result.processedPrompts as PromptNode[]} />
+                <PromptTree prompts={state.result.processedPrompts} />
                 {audit && (
                   <section className='memeloop-tw-chat__preview-context' aria-label={labels.previewContext}>
                     <h3>{labels.previewContext}</h3>
@@ -440,7 +456,7 @@ function BoundMemeLoopWikiChat({
   const adapter = useMemo((): WebMemeLoopChatAdapter => ({
     ...baseAdapter,
     loadVisibleAttachments,
-    activeExecutionTargetId: targets.activeExecutionTargetId,
+    activeExecutionTarget: targets.activeExecutionTarget,
     error: targets.error ?? baseAdapter.error,
     executionTargets: targets.executionTargets,
     isRunning: targets.isRunning,
@@ -524,7 +540,7 @@ function BoundMemeLoopWikiChat({
       resolveErrorPresentation={resolveErrorPresentation}
       genericErrorPresentation={{ title: labels.configErrorTitle, message: labels.genericError }}
       onErrorAction={async presentation => {
-        if (presentation.settingTarget) await hostAdapter.openSettings();
+        if (presentation.settingTarget) await hostAdapter.openSettings(presentation.settingTarget);
       }}
       onShellError={(error, operation) => {
         hostAdapter.logError(`MemeLoop Wiki shell operation failed: ${operation}`, error);
@@ -574,14 +590,13 @@ function BoundMemeLoopWikiChat({
       }}
       timelineLabels={{
         navigation: labels.timelineNavigation,
-        turn: (index, total) => formatTimelineTurn(index, total, locale),
+        message: (index, total, role) => formatTimelineMessage(index, total, role, locale),
         compacted: labels.compacted,
         loadEarlier: labels.loadEarlier,
         loadLater: labels.loadLater,
         seek: labels.seek,
         close: labels.close,
         newMessages: labels.newMessages,
-        moreResponses: labels.moreResponses,
       }}
       formatTimelineTimestamp={formatTimelineTimestamp}
       actionLabels={{
@@ -603,6 +618,12 @@ function BoundMemeLoopWikiChat({
         detailTruncated: labels.detailTruncated,
         detailLoadFailed: labels.detailLoadFailed,
         exportFullMessage: labels.exportFullMessage,
+        reasoning: labels.reasoning,
+        thinking: labels.thinking,
+        showReasoning: labels.showReasoning,
+        hideReasoning: labels.hideReasoning,
+        loadMoreReasoning: labels.loadMoreReasoning,
+        reasoningLoadFailed: labels.reasoningLoadFailed,
         error: labels.error,
         toolResult: labels.toolResult,
         toolCall: labels.toolCall,
@@ -683,7 +704,7 @@ function MemeLoopWikiChat({
     () => new ConversationTimelineWindowController(createDesktopConversationTimelineClient()),
     [],
   );
-  const { conversationId, discoveryFailed } = useWikiAgentTarget(selectedAgentId, controller, hostAdapter);
+  const { target, discoveryFailed } = useWikiAgentTarget(selectedAgentId, controller, hostAdapter);
 
   useEffect(() => () => {
     timelineController.dispose();
@@ -691,7 +712,7 @@ function MemeLoopWikiChat({
 
   const content = (() => {
     if (!hostAdapter.isReady()) return <HostUnavailable hostAdapter={hostAdapter} labels={labels} mode={mode} />;
-    if (!conversationId) {
+    if (!target) {
       return (
         <div className={`memeloop-tw-chat memeloop-tw-chat--${mode} memeloop-tw-chat--loading`}>
           {discoveryFailed
@@ -711,8 +732,8 @@ function MemeLoopWikiChat({
       <div className={`memeloop-tw-chat memeloop-tw-chat--${mode}`}>
         <AgentSessionProvider controller={controller}>
           <BoundMemeLoopWikiChat
-            key={conversationId}
-            conversationId={conversationId}
+            key={target.conversationId}
+            conversationId={target.conversationId}
             hostAdapter={hostAdapter}
             language={language}
             onAgentChange={setSelectedAgentId}

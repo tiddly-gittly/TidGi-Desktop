@@ -5,9 +5,10 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { AgentDefinition, AgentInstance } from 'memeloop';
+import type { AgentDefinition, AgentRuntimeView } from 'memeloop';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -24,7 +25,7 @@ function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[nu
 // Follow structure of index.streaming.test.ts
 describe('AgentInstanceService Wiki Operation', () => {
   let agentInstanceService: IAgentInstanceService;
-  let testAgentInstance: AgentInstance;
+  let testAgentInstance: AgentRuntimeView;
   let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
   let mockExternalAPIService: Partial<IExternalAPIService>;
   let mockWikiService: Partial<IWikiService>;
@@ -68,7 +69,7 @@ describe('AgentInstanceService Wiki Operation', () => {
         enableHTTPAPI: false,
         gitUrl: null,
         readOnlyMode: false,
-        storageService: 'local',
+        storageService: SupportedStorageServices.local,
         syncOnInterval: false,
         syncOnStartup: false,
         tokenAuth: false,
@@ -97,13 +98,13 @@ describe('AgentInstanceService Wiki Operation', () => {
     testAgentInstance = await agentInstanceService.createAgent(agentDefWithWikiPlugin.id, { id: nanoid() });
 
     mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
-      default: { provider: 'mock', model: 'mock-model' },
-      modelParameters: { temperature: 0.7 },
+      default: { providerId: 'mock', modelId: 'mock-model', parameters: { temperature: 0.7 } },
     });
-    mockExternalAPIService.getAIProviders = vi.fn().mockResolvedValue([{
-      provider: 'mock',
+    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'mock',
+      providerType: 'openai-compatible',
       enabled: true,
-      models: [{ name: 'mock-model' }],
+      models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
     }]);
   });
 
@@ -128,7 +129,7 @@ describe('AgentInstanceService Wiki Operation', () => {
 
     // MemeLoop's core loop drains one structured portable stream per ReAct round.
     let callIndex = 0;
-    const responses = [firstAssistant.content, assistantSecond.content];
+    const responses = [firstAssistant.content, assistantSecond.content, '已创建笔记。'];
     mockExternalAPIService.generatePortableLlm = vi.fn(async function*() {
       callIndex += 1;
       if (callIndex > responses.length) {
@@ -142,10 +143,16 @@ describe('AgentInstanceService Wiki Operation', () => {
       yield { type: 'finish' as const, finishReason: 'stop' };
     });
 
-    // Spy on sendMsgToAgent to call the internal flow
-    const sendPromise = agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '在 wiki 里创建一个新笔记，内容为 test' });
-
-    await sendPromise;
+    await agentInstanceService.executeLocalAgentMessage({
+      target: { kind: 'local' },
+      provenance: {
+        conversationId: testAgentInstance.id,
+        definitionId: testAgentInstance.agentDefId,
+        requestId: `wiki-operation:request:${nanoid()}`,
+        turnId: `wiki-operation:turn:${nanoid()}`,
+      },
+      message: '在 wiki 里创建一个新笔记，内容为 test',
+    });
 
     // Workspace validation rejects the first tool call before it reaches the Wiki service.
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledTimes(1);

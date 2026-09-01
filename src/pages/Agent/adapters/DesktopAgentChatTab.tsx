@@ -2,10 +2,8 @@ import { WikiChannel } from '@/constants/channels';
 import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import type { IChatTab, TabItem } from '@/pages/Agent/types/tab';
-import { PreferenceSections } from '@/services/preferences/interface';
 import { parseTiddlyWikiDrop } from '@/services/wiki/plugin/memeloopAgentUI/dropPayload';
 import {
-  AgentChatConfigError,
   type AgentChatErrorPresentation,
   AgentChatShell,
   AgentSessionProvider,
@@ -31,11 +29,12 @@ import { createDesktopFileAttachmentSource } from './DesktopAgentExecutionCoordi
 import { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
 import { createDesktopConversationTimelineClient } from './DesktopConversationTimelineClient';
 import { createDesktopMessageDetailLoader } from './DesktopMessageDetailLoader';
-import { createDesktopPromptPreviewController } from './DesktopPromptPreviewController';
+import { createDesktopMessageReasoningLoader } from './DesktopMessageReasoningLoader';
 import { createDesktopVisibleAttachmentLoader } from './DesktopVisibleAttachmentLoader';
 import { useExecutionTargets } from './hooks/useExecutionTargets';
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { localizeAgentRunError } from './localizeAgentRunError';
+import { handleDesktopAgentErrorAction, openAgentRunErrorSettings } from './openAgentRunErrorSettings';
 import { isChatTab } from './utils/tabTypeGuards';
 
 interface DesktopAgentChatTabProps {
@@ -58,6 +57,12 @@ export function createDesktopMessageLabels(t: TFunction<'agent'>): MemeLoopMessa
     detailTruncated: t('Chat.Message.DetailTruncated'),
     detailLoadFailed: t('Chat.Message.DetailLoadFailed'),
     exportFullMessage: t('Chat.Message.ExportFullMessage'),
+    reasoning: t('Chat.Message.Reasoning'),
+    thinking: t('Chat.Message.Thinking'),
+    showReasoning: t('Chat.Message.ShowReasoning'),
+    hideReasoning: t('Chat.Message.HideReasoning'),
+    loadMoreReasoning: t('Chat.Message.LoadMoreReasoning'),
+    reasoningLoadFailed: t('Chat.Message.ReasoningLoadFailed'),
     error: t('Chat.Message.Error'),
     toolResult: t('Chat.Message.ToolResult'),
     toolCall: name => t('Chat.Message.ToolCall', { toolName: name }),
@@ -103,34 +108,6 @@ async function loadWikiAttachmentOptions(signal: AbortSignal): Promise<readonly 
     }
   }
   return options;
-}
-
-/** Kept as a small compatibility export for existing focused rendering tests. */
-export function ConfigErrorMessage({
-  fallbackMessage,
-  translationKey,
-  params,
-}: {
-  fallbackMessage: string;
-  translationKey: string;
-  params: Record<string, string>;
-}) {
-  const { t } = useTranslation('agent');
-  return (
-    <AgentChatConfigError
-      title={t('Chat.ConfigError.Title')}
-      message={t(`Chat.ConfigError.${translationKey}`, { defaultValue: fallbackMessage, ...params })}
-      actionLabel={t('Chat.ConfigError.GoToSettings')}
-      actionId='open-external-api-settings'
-      onAction={openExternalApiSettings}
-    />
-  );
-}
-
-async function openExternalApiSettings(): Promise<void> {
-  const isTestMode = await window.service.context.get('isTest');
-  const scheme = isTestMode ? 'tidgi-test' : 'tidgi';
-  await window.service.deepLink.openDeepLink(`${scheme}://preferences/${PreferenceSections.externalAPI}`);
 }
 
 /** Host bridge used by the shared ask-question content renderer. */
@@ -197,13 +174,14 @@ function DesktopAgentChatView({
     });
   }, [snapshot.error, tab.agentId]);
   const detailLoader = useMemo(createDesktopMessageDetailLoader, []);
+  const reasoningLoader = useMemo(createDesktopMessageReasoningLoader, []);
   const visibleAttachmentLoader = useMemo(createDesktopVisibleAttachmentLoader, []);
-  const promptPreviewController = useMemo(createDesktopPromptPreviewController, [tab.agentId]);
   const baseAdapter = useAgentSessionChatAdapter({
     conversationId: tab.agentId,
     timelineController,
     createId,
     loadMessageDetail: detailLoader,
+    loadMessageReasoning: reasoningLoader,
     onError: (error, operation) => {
       void window.service.native.log('error', 'MemeLoop chat operation failed', { operation, error });
     },
@@ -253,7 +231,7 @@ function DesktopAgentChatView({
     ...baseAdapter,
     loadVisibleAttachments: visibleAttachmentLoader,
     executionTargets: targets.executionTargets,
-    activeExecutionTargetId: targets.activeExecutionTargetId,
+    activeExecutionTarget: targets.activeExecutionTarget,
     setExecutionTarget: targets.setExecutionTarget,
     isRunning: targets.isRunning,
     error: targets.error ?? baseAdapter.error,
@@ -339,15 +317,11 @@ function DesktopAgentChatView({
           <>
             <CompactModelSelector agentId={tab.agentId} agentDefId={activeAgentDefinitionId} />
             <PromptPreviewButtonWithMenu
-              tabId={tab.id}
-              isSplitView={isSplitView}
               agentId={tab.agentId}
               agentDefinitionId={activeAgentDefinitionId}
-              controller={promptPreviewController}
-              disabled={adapter.isRunning}
             />
             <Tooltip title={t('Preference.ModelParameters')}>
-              <IconButton size='small' onClick={() => void openExternalApiSettings()}>
+              <IconButton size='small' onClick={() => void openAgentRunErrorSettings()}>
                 <TuneIcon />
               </IconButton>
             </Tooltip>
@@ -372,9 +346,7 @@ function DesktopAgentChatView({
         title: t('Chat.Message.Error'),
         message: t('Chat.GenericError'),
       }}
-      onErrorAction={async presentation => {
-        if (presentation.settingTarget) await openExternalApiSettings();
-      }}
+      onErrorAction={handleDesktopAgentErrorAction}
       selectedFile={selectedFile}
       selectedWikiTiddlers={selectedWikiTiddlers}
       onFileSelect={handleFileSelect}
@@ -392,14 +364,18 @@ function DesktopAgentChatView({
       operationErrorMessage={t('Chat.OperationError')}
       timelineLabels={{
         navigation: t('Chat.Timeline.Navigation'),
-        turn: (index, total) => t('Chat.Timeline.Turn', { index, total }),
+        message: (index, total, role) =>
+          t('Chat.Timeline.Message', {
+            index,
+            total,
+            role: role === 'user' ? t('Chat.Actions.User') : t('Chat.Actions.Agent'),
+          }),
         compacted: count => t('Chat.Timeline.Compacted', { count }),
         loadEarlier: t('Chat.Timeline.LoadEarlier'),
         loadLater: t('Chat.Timeline.LoadLater'),
         seek: t('Chat.Timeline.Seek'),
         close: t('Chat.Timeline.Close'),
         newMessages: count => t('Chat.Timeline.NewMessages', { count }),
-        moreResponses: count => t('Chat.Timeline.MoreResponses', { count }),
       }}
       formatTimelineTimestamp={timestamp => timeFormatter.format(new Date(timestamp))}
       actionLabels={{

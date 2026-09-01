@@ -8,7 +8,7 @@ import {
   messageHydrationIdentity,
   validateMessageDetailPage,
 } from '@memeloop/react-ui/chat';
-import { assertCanonicalChatMessageProjection, type ChatMessage, type ConversationMessageIdentity } from 'memeloop';
+import { assertCanonicalChatMessageProjection, type ChatMessage, type ConversationMessageIdentity, type ConversationMessageListProjection } from 'memeloop';
 
 import { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
 
@@ -44,7 +44,7 @@ export function createDesktopMessageDetailLoader(): MessageDetailLoader {
 }
 
 async function loadCanonicalMessageDetail(
-  projection: ChatMessage,
+  projection: ConversationMessageListProjection,
   request: MemeLoopMessageDetailRequest,
 ): Promise<MemeLoopMessageDetailPage | null> {
   const canonical = await loadDesktopCanonicalMessage(projection, request.signal);
@@ -54,7 +54,7 @@ async function loadCanonicalMessageDetail(
 
 /** Recover one exact authoritative message without retaining it in the resident list. */
 export async function loadDesktopCanonicalMessage(
-  projection: ChatMessage,
+  projection: ConversationMessageListProjection,
   signal: AbortSignal,
 ): Promise<ChatMessage | null> {
   signal.throwIfAborted();
@@ -64,7 +64,7 @@ export async function loadDesktopCanonicalMessage(
   );
   signal.throwIfAborted();
   if (!firstIdentity) return null;
-  assertDesktopMessageIdentity(projection, firstIdentity);
+  assertDesktopMessageIdentity(messageHydrationIdentity(projection), firstIdentity);
 
   const decoder = new TextDecoder('utf-8', { fatal: true });
   let json = '';
@@ -104,8 +104,9 @@ export async function loadDesktopCanonicalMessage(
     throw new Error('invalid canonical message detail JSON', { cause: error });
   }
   assertCanonicalChatMessageProjection(canonical, projection.conversationId);
-  assertDesktopMessageIdentity(canonical, firstIdentity);
-  assertDesktopMessageHydrationIdentity(canonical, messageHydrationIdentity(projection));
+  const canonicalIdentity = canonicalMessageHydrationIdentity(canonical);
+  assertDesktopMessageIdentity(canonicalIdentity, firstIdentity);
+  assertDesktopMessageHydrationIdentity(canonicalIdentity, messageHydrationIdentity(projection));
   const finalIdentity = await window.service.agentInstance.getAgentMessageIdentity(
     projection.conversationId,
     projection.messageId,
@@ -118,9 +119,22 @@ export async function loadDesktopCanonicalMessage(
   return canonical;
 }
 
+/** Derive only the identity fence from a trusted full-content detail payload. */
+export function canonicalMessageHydrationIdentity(message: ChatMessage): MemeLoopMessageHydrationIdentity {
+  return {
+    conversationId: message.conversationId,
+    messageId: message.messageId,
+    turnId: message.turnId,
+    originNodeId: message.originNodeId,
+    originSequence: message.originSequence,
+    timestamp: message.timestamp,
+    lamportClock: message.lamportClock,
+  };
+}
+
 function boundedCanonicalDetailPage(
   canonical: ChatMessage,
-  projection: ChatMessage,
+  projection: ConversationMessageListProjection,
   maxBytes: number,
 ): MemeLoopMessageDetailPage {
   const omittedFields = getDisplayTruncation(projection)?.omittedFields ?? [];
@@ -184,7 +198,7 @@ function isUint8ArrayView(value: unknown): value is Uint8Array {
   return ArrayBuffer.isView(value) && Object.prototype.toString.call(value) === '[object Uint8Array]';
 }
 
-export function assertDesktopMessageIdentity(message: ChatMessage, identity: ConversationMessageIdentity): void {
+export function assertDesktopMessageIdentity(message: MemeLoopMessageHydrationIdentity, identity: ConversationMessageIdentity): void {
   if (
     message.messageId !== identity.messageId || message.timestamp !== identity.timestamp ||
     message.lamportClock !== identity.lamportClock || message.originNodeId !== identity.originNodeId
@@ -197,7 +211,7 @@ export function assertDesktopMessageIdentity(message: ChatMessage, identity: Con
  * exact resident projection so a same-message-id replacement cannot be shown.
  */
 export function assertDesktopMessageHydrationIdentity(
-  message: ChatMessage,
+  message: MemeLoopMessageHydrationIdentity,
   identity: MemeLoopMessageHydrationIdentity,
 ): void {
   if (

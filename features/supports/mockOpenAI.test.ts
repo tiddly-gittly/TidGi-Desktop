@@ -1,7 +1,6 @@
-import type { DesktopAIConfig, ModelMessage } from '@services/externalAPI/interface';
+import { collectPortableLlmTextResponse, type PortableLlmRequest, type ProviderAccountConfig } from 'memeloop';
+import { createLLMProviderFromAccountRoute } from 'memeloop/llm-providers';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { streamFromProvider } from '../../src/services/externalAPI/callProviderAPI';
-import type { AIProviderConfig } from '../../src/services/externalAPI/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 
 describe('Mock OpenAI Server', () => {
@@ -249,64 +248,38 @@ describe('Mock OpenAI Server', () => {
     );
   });
 
-  it('should integrate with streamFromProvider (SDK) for streaming responses', async () => {
+  it('integrates the mock server with the exact canonical account route', async () => {
     // Reuse the existing server and update its rules to a single streaming rule
     const streamingRule = [{ response: 'chunkA<stream_split>chunkB<stream_split>chunkC', stream: true }];
     server.setRules(streamingRule);
 
-    // Build provider config that points to our mock server as openAICompatible
-    const providerConfig: AIProviderConfig = {
-      provider: 'test-provider',
-      providerClass: 'openAICompatible',
-      baseURL: `${server.baseUrl}/v1`,
-      apiKey: 'test-key',
-      models: [{ name: 'test-model' }],
+    const route = {
+      modelId: 'logical-test-model',
+      wireModelId: 'test-model',
+      apiMode: 'chat-completions' as const,
+    };
+    const account: ProviderAccountConfig = {
+      providerId: 'test-provider',
+      providerType: 'openai-compatible',
+      baseUrl: `${server.baseUrl}/v1`,
+      models: [route],
       enabled: true,
     };
+    const provider = await createLLMProviderFromAccountRoute({
+      account,
+      route,
+      apiKey: 'test-key',
+    });
+    const request: PortableLlmRequest = {
+      providerId: account.providerId,
+      logicalModelId: route.modelId,
+      wireModelId: route.wireModelId,
+      apiMode: route.apiMode,
+      messages: [{ role: 'user', content: 'Start streaming' }],
+      stream: true,
+    };
 
-    const messages: ModelMessage[] = [
-      { role: 'user', content: 'Start streaming' },
-    ];
-
-    // streamFromProvider returns an AsyncIterable; call it and iterate
-    const aiConfig: DesktopAIConfig = { default: { provider: 'test-provider', model: 'test-model' }, modelParameters: {} };
-    const stream = await streamFromProvider(aiConfig, messages, new AbortController().signal, providerConfig);
-
-    // We'll collect chunks as they arrive and assert intermediate states are streaming
-    const receivedChunks: string[] = [];
-
-    for await (const chunk of stream) {
-      if (!chunk) continue;
-      let contentPiece: string | undefined;
-      if (typeof chunk === 'string') contentPiece = chunk;
-      else if (typeof chunk === 'object' && chunk !== null && 'content' in (chunk as Record<string, unknown>)) {
-        const c = (chunk as Record<string, unknown>).content;
-        if (typeof c === 'string') contentPiece = c;
-      }
-
-      if (contentPiece) {
-        // Append to receivedChunks and assert intermediate streaming behavior
-        receivedChunks.push(contentPiece);
-
-        // Intermediate assertions:
-        // - After first chunk: should contain only chunkA and not yet contain chunkC
-        if (receivedChunks.length === 1) {
-          expect(receivedChunks.join('')).toContain('chunkA');
-          expect(receivedChunks.join('')).not.toContain('chunkC');
-        }
-
-        // - After second chunk: should contain chunkA and chunkB, but not chunkC
-        if (receivedChunks.length === 2) {
-          expect(receivedChunks.join('')).toContain('chunkA');
-          expect(receivedChunks.join('')).toContain('chunkB');
-          expect(receivedChunks.join('')).not.toContain('chunkC');
-        }
-      }
-    }
-
-    // After stream completion, assemble chunks using the same '<stream_split>' separator used by rules
-    const assembled = receivedChunks.join('<stream_split>');
-    // streamingRule[0].response uses '<stream_split>' as separator, verify equality
-    expect(assembled).toBe(streamingRule[0].response);
+    const response = await provider.chat(request);
+    expect(await collectPortableLlmTextResponse(response)).toBe('chunkAchunkBchunkC');
   });
 });

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import { MEMELOOP_VISIBLE_ATTACHMENT_MAX_BYTES, MEMELOOP_VISIBLE_ATTACHMENT_MAX_COUNT, messageHydrationIdentity, messageHydrationRevision } from '@memeloop/react-ui/chat';
-import type { ChatMessage, ConversationMessageIdentity } from 'memeloop';
+import { type ChatMessage, type ConversationMessageIdentity, type ConversationMessageListProjection, projectConversationMessageForList } from 'memeloop';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDesktopVisibleAttachmentLoader } from '../DesktopVisibleAttachmentLoader';
@@ -36,11 +36,12 @@ function canonicalMessage(references = [imageReference(imageBytes)]): ChatMessag
   };
 }
 
-function projectedMessage(canonical = canonicalMessage()): ChatMessage {
-  const { attachments: _attachments, parts: _parts, ...projection } = canonical;
+function projectedMessage(canonical = canonicalMessage()): ConversationMessageListProjection {
+  const projection = projectConversationMessageForList(canonical, 2_048);
   return {
     ...projection,
     metadata: {
+      ...projection.metadata,
       displayTruncation: {
         truncated: true,
         originalCharacterCount: projection.content.length,

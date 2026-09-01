@@ -7,7 +7,6 @@
  * Connections are managed per-instance and cleaned up when the agent closes.
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { t } from '@services/libs/i18n/placeholder';
@@ -31,10 +30,10 @@ export const ModelContextProtocolParameterSchema = z.object({
     title: 'Command arguments',
     description: 'Arguments to pass to the MCP server command',
   }),
-  /** URL for Streamable HTTP (preferred) or legacy SSE transport */
+  /** URL for Streamable HTTP transport. */
   serverUrl: z.string().optional().meta({
     title: 'Server URL (HTTP)',
-    description: 'URL for an MCP Streamable HTTP endpoint (for example http://localhost:3001/mcp) or legacy SSE endpoint ending in /sse',
+    description: 'URL for an MCP Streamable HTTP endpoint (for example http://localhost:3001/mcp)',
   }),
   /** Timeout for MCP operations in seconds */
   timeoutSecond: z.number().optional().default(30).meta({
@@ -82,11 +81,6 @@ interface MCPClientState {
 
 const clientStates = new Map<string, MCPClientState>();
 
-export function getMCPURLTransportKind(serverUrl: string): 'sse' | 'streamable-http' {
-  const pathname = new URL(serverUrl).pathname.replace(/\/+$/, '');
-  return pathname.endsWith('/sse') ? 'sse' : 'streamable-http';
-}
-
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -119,11 +113,7 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
       transport = new StdioClientTransport({ command: config.command, args: config.args ?? [] });
     } else if (config.serverUrl) {
       const serverURL = new URL(config.serverUrl);
-      if (getMCPURLTransportKind(config.serverUrl) === 'sse') {
-        transport = new SSEClientTransport(serverURL);
-      } else {
-        transport = new StreamableHTTPClientTransport(serverURL);
-      }
+      transport = new StreamableHTTPClientTransport(serverURL);
     } else {
       logger.warn('MCP: No command or serverUrl configured', { agentId });
       return [];

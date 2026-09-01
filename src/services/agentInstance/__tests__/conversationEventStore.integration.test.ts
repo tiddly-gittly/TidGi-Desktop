@@ -2,12 +2,13 @@
 import 'reflect-metadata';
 
 import { assertConversationTimelinePage, canonicalJsonBytes, MAX_CONVERSATION_EVENT_BYTES } from 'memeloop';
-import type { ConversationEvent, ConversationEventDraft } from 'memeloop';
+import type { ConversationEvent, ConversationEventDraft, ConversationTimelineMessageEntry } from 'memeloop';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import {
+  AgentLoopCheckpointEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
   ConversationEventSequenceEntity,
@@ -27,6 +28,7 @@ import {
   getConversationEventPage,
   getConversationTimelinePage,
   getEventVersionFrontiers,
+  getFullContentMessagePage,
   getMessage,
   getMessageIdentity,
   getMessagePage,
@@ -35,6 +37,7 @@ import {
   getTurnDetail,
   insertConversationEventsIfAbsent,
   readMessageDetailRange,
+  readMessageReasoningRange,
   rebuildConversationEventProjection,
 } from '../agentRepository';
 
@@ -42,6 +45,7 @@ const entities = [
   AgentDefinitionEntity,
   AgentInstanceEntity,
   AgentInstanceMessageEntity,
+  AgentLoopCheckpointEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
   ConversationEventSequenceEntity,
@@ -97,6 +101,10 @@ describe('Desktop canonical conversation event store', () => {
     await dataSource.getRepository(AgentDefinitionEntity).save({
       id: 'definition',
       name: 'Definition',
+      description: 'Conversation event store fixture',
+      systemPrompt: 'Assist the test.',
+      tools: [],
+      version: '1.0.0',
       createdAt: new Date(0),
       updatedAt: new Date(0),
     });
@@ -308,7 +316,7 @@ describe('Desktop canonical conversation event store', () => {
     ]);
     expect(events.map(event => [event.originSequence, event.lamportClock])).toEqual([[2, 2], [3, 3]]);
     expect(await dataSource.getRepository(ConversationTimelineStateEntity).findOneByOrFail({ conversationId: 'conversation' }))
-      .toMatchObject({ revision: 2, totalMessages: 2, totalTurns: 1, totalEntries: 1 });
+      .toMatchObject({ revision: 2, totalMessages: 2, totalTurns: 1, totalEntries: 2 });
 
     const valid: ConversationEventDraft = {
       kind: 'message',
@@ -377,6 +385,7 @@ describe('Desktop canonical conversation event store', () => {
 
   it('opens and seeks a one-megabyte message through the shared on-demand projection', async () => {
     const largeContent = `prefix-${'界🙂'.repeat(160_000)}`;
+    const reasoningContent = '推🙂理'.repeat(10);
     await appendLocalConversationEvent(dataSource, {
       kind: 'message',
       eventId: 'large-turn',
@@ -396,7 +405,7 @@ describe('Desktop canonical conversation event store', () => {
           mimeType: 'text/plain',
           size: Buffer.byteLength(largeContent, 'utf8'),
         }],
-        reasoning_content: 'heavy reasoning',
+        reasoning_content: reasoningContent,
         detailRef: { type: 'file', fileUri: 'memeloop://local/file/large-turn' },
         metadata: { agentRunError: { code: 'INTERRUPTED' } },
       },
@@ -404,7 +413,6 @@ describe('Desktop canonical conversation event store', () => {
     const options = {
       limit: 8,
       maxBytes: 256 * 1024,
-      mode: 'on-demand' as const,
     };
     const pageQuerySpy = vi.spyOn(dataSource, 'query');
     const page = await getMessagePage(
@@ -422,13 +430,18 @@ describe('Desktop canonical conversation event store', () => {
     expect(projection).not.toHaveProperty('toolCalls');
     expect(projection).not.toHaveProperty('attachments');
     expect(projection).not.toHaveProperty('reasoning_content');
+    expect(projection).toHaveProperty('reasoning', {
+      text: '',
+      totalBytes: Buffer.byteLength(reasoningContent, 'utf8'),
+      hasMore: true,
+    });
     expect(projection.detailRef).toEqual({ type: 'file', fileUri: 'memeloop://local/file/large-turn' });
     expect(projection.metadata).toMatchObject({
       agentRunError: { code: 'INTERRUPTED' },
       displayTruncation: {
         contentTruncated: true,
         capability: 'detail',
-        omittedFields: ['parts', 'toolCalls', 'attachments', 'reasoning_content'],
+        omittedFields: ['toolCalls', 'attachments'],
       },
     });
     const pageSql = pageQuerySpy.mock.calls.map(([sql]) => sql).join('\n');
@@ -456,8 +469,8 @@ describe('Desktop canonical conversation event store', () => {
       { limit: 8, maxBytes: 16 * 1024 },
     );
     if (timeline.reset) throw new Error('unexpected reset');
-    const entry = timeline.items.find(item => item.kind === 'turn' && item.turnId === 'large-turn');
-    if (!entry) throw new Error('large turn timeline entry missing');
+    const entry = timeline.items.find(item => item.kind === 'message' && item.messageId === 'large-turn');
+    if (!entry || entry.kind !== 'message') throw new Error('large message timeline entry missing');
     const windowQuerySpy = vi.spyOn(dataSource, 'query');
     const window = await getMessageWindowAround(dataSource, 'conversation', {
       focus: { kind: 'timeline-entry', entryId: entry.entryId, cursor: entry.cursor },
@@ -470,7 +483,7 @@ describe('Desktop canonical conversation event store', () => {
     expect(window.items[0]?.metadata).toHaveProperty('displayTruncation.contentTruncated', true);
     const windowSql = windowQuerySpy.mock.calls.map(([sql]) => sql).join('\n');
     expect(windowSql).toContain('detail.listProjectionJson');
-    expect(windowSql).not.toContain('message.*');
+    expect(windowSql).not.toMatch(/SELECT\s+message\.\*\s+FROM agent_instance_messages/u);
     windowQuerySpy.mockRestore();
 
     const identity = await getMessageIdentity(dataSource, 'conversation', 'large-turn');
@@ -513,6 +526,24 @@ describe('Desktop canonical conversation event store', () => {
     expect(querySpy.mock.calls.some(([sql]) => /substr\(detail\.canonicalJson/u.test(sql))).toBe(true);
     querySpy.mockRestore();
 
+    const reasoningChunks: Uint8Array[] = [];
+    let reasoningOffset = 0;
+    const reasoningBytes = Buffer.byteLength(reasoningContent, 'utf8');
+    while (reasoningOffset < reasoningBytes) {
+      const page = await readMessageReasoningRange(
+        dataSource,
+        'conversation',
+        'large-turn',
+        reasoningOffset,
+        7,
+      );
+      if (!page.found) throw new Error('message reasoning missing');
+      expect(() => new TextDecoder('utf-8', { fatal: true }).decode(page.bytes)).not.toThrow();
+      reasoningChunks.push(page.bytes);
+      reasoningOffset += page.bytes.byteLength;
+    }
+    expect(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(reasoningChunks))).toBe(reasoningContent);
+
     const terminal = await readMessageDetailRange(
       dataSource,
       'conversation',
@@ -548,10 +579,10 @@ describe('Desktop canonical conversation event store', () => {
       { signal: cancelled.signal },
     )).rejects.toThrow('detail read cancelled');
 
-    await expect(getMessagePage(
+    await expect(getFullContentMessagePage(
       dataSource.getRepository(AgentInstanceMessageEntity),
       'conversation',
-      { ...options, mode: 'full-content' },
+      options,
     )).rejects.toMatchObject({ reason: 'message_page_item_oversize' });
 
     await appendLocalConversationEvent(dataSource, {
@@ -570,6 +601,13 @@ describe('Desktop canonical conversation event store', () => {
       'large-turn',
       0,
       1,
+    )).resolves.toEqual({ found: false });
+    await expect(readMessageReasoningRange(
+      dataSource,
+      'conversation',
+      'large-turn',
+      0,
+      64,
     )).resolves.toEqual({ found: false });
   });
 
@@ -684,7 +722,8 @@ describe('Desktop canonical conversation event store', () => {
              ORDER BY entry.timestamp, entry.lamportClock,
                entry.originNodeId, entry.messageId
            ) - 1 AS entryIndex,
-           COALESCE(SUM(CASE WHEN entry.kind = 'turn' THEN 1 ELSE 0 END) OVER (
+           COALESCE(SUM(CASE WHEN entry.kind = 'message' AND entry.role = 'user'
+             AND entry.messageId = entry.turnId THEN 1 ELSE 0 END) OVER (
              ORDER BY entry.timestamp, entry.lamportClock,
                entry.originNodeId, entry.messageId
              ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
@@ -1006,10 +1045,18 @@ describe('Desktop canonical conversation event store', () => {
     const incremental = await read();
     expect(incremental.items).toEqual([
       expect.objectContaining({
-        kind: 'turn',
-        userPreview: '😀😀😀…',
-        participantPreviews: [expect.objectContaining({ preview: '答😀😀…' })],
-        responseCount: 1,
+        kind: 'message',
+        messageId: 'preview-user',
+        role: 'user',
+        preview: '😀😀😀…',
+        turnIndex: 0,
+      }),
+      expect.objectContaining({
+        kind: 'message',
+        messageId: 'preview-assistant',
+        role: 'assistant',
+        preview: '答😀😀…',
+        turnIndex: 0,
       }),
       expect.objectContaining({ kind: 'compaction', summaryPreview: '🧠🧠🧠…' }),
     ]);
@@ -1019,10 +1066,10 @@ describe('Desktop canonical conversation event store', () => {
     });
     expect(
       Array.from(
-        new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(incrementalStored.userPreview ?? ''),
+        new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(incrementalStored.preview ?? ''),
       ),
     ).toHaveLength(240);
-    expect(incrementalStored.userPreview?.endsWith('…')).toBe(true);
+    expect(incrementalStored.preview?.endsWith('…')).toBe(true);
 
     await rebuildConversationEventProjection(dataSource, 'conversation');
     const rebuilt = await read();
@@ -1032,12 +1079,12 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       messageId: 'preview-user',
     });
-    expect(rebuiltStored.userPreview).toBe(incrementalStored.userPreview);
-    expect(rebuiltStored.participantPreviewsJson).toBe(incrementalStored.participantPreviewsJson);
-    expect(rebuiltStored.responseCount).toBe(incrementalStored.responseCount);
+    expect(rebuiltStored.preview).toBe(incrementalStored.preview);
+    expect(rebuiltStored.actorId).toBe(incrementalStored.actorId);
+    expect(rebuiltStored.actorLabel).toBe(incrementalStored.actorLabel);
   });
 
-  it('persists bounded first/last participant previews for a multi-agent turn', async () => {
+  it('persists one bounded exact marker for every visible multi-agent message', async () => {
     await appendLocalConversationEventsAtomic(dataSource, [
       {
         kind: 'message',
@@ -1071,17 +1118,24 @@ describe('Desktop canonical conversation event store', () => {
       );
       assertConversationTimelinePage(page, 'conversation', options);
       if (page.reset) throw new Error('unexpected reset');
-      const entry = page.items.find(item => item.kind === 'turn' && item.turnId === 'multi-turn');
-      if (!entry || entry.kind !== 'turn') throw new Error('multi-agent timeline entry missing');
-      return entry;
+      return page.items.filter((item): item is ConversationTimelineMessageEntry => item.kind === 'message' && item.turnId === 'multi-turn');
     };
     const incremental = await read();
-    expect(incremental.responseCount).toBe(6);
-    expect(incremental.participantPreviews.map(preview => preview.actorId))
-      .toEqual(['agent-1', 'agent-2', 'agent-5', 'agent-6']);
-    expect(incremental.participantPreviews).toHaveLength(4);
-    expect(incremental.participantPreviews.every(preview => preview.preview.length <= 160)).toBe(true);
-    expect(Buffer.byteLength(JSON.stringify(incremental), 'utf8')).toBeLessThanOrEqual(1024);
+    expect(incremental).toHaveLength(7);
+    expect(incremental.map(entry => entry.messageId)).toEqual([
+      'multi-turn',
+      'multi-response-1',
+      'multi-response-2',
+      'multi-response-3',
+      'multi-response-4',
+      'multi-response-5',
+      'multi-response-6',
+    ]);
+    expect(incremental.slice(1).map(entry => entry.actorId))
+      .toEqual(['agent-1', 'agent-2', 'agent-3', 'agent-4', 'agent-5', 'agent-6']);
+    expect(incremental.every(entry => entry.turnIndex === 0)).toBe(true);
+    expect(incremental.every(entry => entry.preview.length <= 160)).toBe(true);
+    expect(incremental.every(entry => Buffer.byteLength(JSON.stringify(entry), 'utf8') <= 1024)).toBe(true);
 
     await rebuildConversationEventProjection(dataSource, 'conversation');
     expect(await read()).toEqual(incremental);
@@ -1136,7 +1190,7 @@ describe('Desktop canonical conversation event store', () => {
     expect((await dataSource.getRepository(AgentInstanceEntity).findOneByOrFail({ id: 'conversation' })).name).toBe('high');
   });
 
-  it('does not wedge remote chat sync while a custom definition is still unavailable', async () => {
+  it('fails closed without fabricating a compatibility definition during remote sync', async () => {
     const metadata: ConversationEvent = {
       kind: 'metadataPatch',
       eventId: 'remote-metadata',
@@ -1147,7 +1201,7 @@ describe('Desktop canonical conversation event store', () => {
       timestamp: 1,
       patch: { definitionId: 'remote-custom-profile', title: 'Remote chat' },
     };
-    await insertConversationEventsIfAbsent(dataSource, [
+    await expect(insertConversationEventsIfAbsent(dataSource, [
       metadata,
       messageEvent({
         eventId: 'remote-user',
@@ -1156,17 +1210,8 @@ describe('Desktop canonical conversation event store', () => {
         originSequence: 2,
         lamportClock: 2,
       }),
-    ]);
-    expect(await dataSource.getRepository(AgentDefinitionEntity).findOneBy({ id: 'remote-custom-profile' })).toMatchObject({
-      builtinVersion: 'remote-placeholder',
-      isCustomized: false,
-    });
-    const remotePage = await getMessagePage(
-      dataSource.getRepository(AgentInstanceMessageEntity),
-      'remote-conversation',
-      { limit: 20, maxBytes: 64 * 1024 },
-    );
-    if (remotePage.reset) throw new Error('unexpected reset');
-    expect(remotePage.items).toHaveLength(1);
+    ])).rejects.toThrow(/metadata must arrive before messages/);
+    expect(await dataSource.getRepository(AgentDefinitionEntity).findOneBy({ id: 'remote-custom-profile' })).toBeNull();
+    expect(await dataSource.getRepository(ConversationEventEntity).countBy({ conversationId: 'remote-conversation' })).toBe(0);
   });
 });

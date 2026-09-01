@@ -52,6 +52,12 @@ describe('DesktopAgentChatTab lifecycle', () => {
       detailTruncated: 'Chat.Message.DetailTruncated',
       detailLoadFailed: 'Chat.Message.DetailLoadFailed',
       exportFullMessage: 'Chat.Message.ExportFullMessage',
+      reasoning: 'Chat.Message.Reasoning',
+      thinking: 'Chat.Message.Thinking',
+      showReasoning: 'Chat.Message.ShowReasoning',
+      hideReasoning: 'Chat.Message.HideReasoning',
+      loadMoreReasoning: 'Chat.Message.LoadMoreReasoning',
+      reasoningLoadFailed: 'Chat.Message.ReasoningLoadFailed',
       askQuestion: {
         answerPlaceholder: 'Chat.AskQuestion.AnswerPlaceholder',
         submit: 'Chat.AskQuestion.Submit',

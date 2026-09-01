@@ -1,25 +1,15 @@
 import { useAui } from '@memeloop/react-ui/chat';
 import ArticleIcon from '@mui/icons-material/Article';
 import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
-import type { PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
+import { WindowNames } from '@services/windows/WindowProperties';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useTabStore } from '@/pages/Agent/store/tabStore';
-import { TabType } from '@/pages/Agent/types/tab';
-import { PromptPreviewDialog } from './PromptPreviewDialog';
-
 export interface PromptPreviewButtonWithMenuProps {
-  /** ID of the current tab (used to build a split view). */
-  tabId: string;
-  /** Whether the current tab is already inside a split view. */
-  isSplitView?: boolean;
   /** Durable conversation identity used for execution-equivalent context. */
   agentId: string;
-  /** ID of the agent definition to edit in split view. */
+  /** ID of the agent definition whose prompt configuration is editable. */
   agentDefinitionId: string;
-  /** Runtime-owned headless controller; no legacy chat-store coupling. */
-  controller: PromptPreviewController;
   /** Whether the button is disabled. */
   disabled?: boolean;
 }
@@ -29,42 +19,33 @@ const LONG_PRESS_DURATION = 600;
 /**
  * Prompt preview button.
  *
- * - Left click: open the prompt preview dialog.
+ * - Left click: open the independent prompt workspace window.
  * - Right click (desktop): open a context menu with edit options.
  * - Long press (mobile): open the same context menu.
  */
 export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuProps> = ({
-  tabId,
-  isSplitView,
   agentId,
   agentDefinitionId,
-  controller,
   disabled,
 }) => {
   const { t } = useTranslation('agent');
   const aui = useAui();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-  const [previewInputText, setPreviewInputText] = useState('');
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPress = useRef(false);
-  const [previewState, setPreviewState] = useState<PromptPreviewDialogState>(() => controller.getState());
 
   useEffect(() => {
-    const unsubscribe = controller.subscribe(setPreviewState);
     return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
       if (previewOpenTimer.current) {
         clearTimeout(previewOpenTimer.current);
         previewOpenTimer.current = null;
       }
-      unsubscribe();
-      controller.close();
     };
-  }, [controller]);
+  }, []);
 
-  const { addTab, createSplitViewFromTabs, addTabToSplitView, tabs } = useTabStore();
-
-  const schedulePreviewOpen = useCallback((baseMode?: 'preview' | 'edit') => {
+  const schedulePreviewOpen = useCallback((initialBaseMode: 'preview' | 'edit' = 'preview') => {
     if (previewOpenTimer.current) clearTimeout(previewOpenTimer.current);
     // A long, repeatedly compacted conversation can make both assistant-ui's
     // composer snapshot and the MUI dialog mount expensive. Yield the click
@@ -73,10 +54,16 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
     // the click itself.
     previewOpenTimer.current = setTimeout(() => {
       previewOpenTimer.current = null;
-      setPreviewInputText(aui.composer.getState().text);
-      controller.open(baseMode);
+      void Promise.resolve(window.service.window.open(WindowNames.promptPreview, {
+        agentId,
+        agentDefinitionId,
+        inputText: aui.composer.getState().text,
+        initialBaseMode,
+      })).catch((error: unknown) => {
+        void window.service.native.log('error', 'Failed to open prompt workspace window', { error });
+      });
     }, 0);
-  }, [aui, controller]);
+  }, [agentDefinitionId, agentId, aui]);
 
   const handleOpenPreview = useCallback(() => {
     schedulePreviewOpen();
@@ -86,27 +73,6 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
     setMenuAnchor(null);
     schedulePreviewOpen('edit');
   }, [schedulePreviewOpen]);
-
-  const handleOpenEditInSplitView = useCallback(async () => {
-    setMenuAnchor(null);
-    try {
-      const editTab = await addTab(TabType.EDIT_AGENT_DEFINITION, { agentDefId: agentDefinitionId });
-
-      if (isSplitView) {
-        const splitViewTab = tabs.find(
-          (tab) => tab.type === TabType.SPLIT_VIEW && tab.childTabs.some((child) => child.id === tabId),
-        );
-        if (splitViewTab) {
-          await addTabToSplitView(splitViewTab.id, editTab.id);
-          return;
-        }
-      }
-
-      await createSplitViewFromTabs(editTab.id);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to open edit in split view', { error });
-    }
-  }, [addTab, addTabToSplitView, agentDefinitionId, createSplitViewFromTabs, isSplitView, tabId, tabs]);
 
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
     event.preventDefault();
@@ -160,22 +126,7 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
         <MenuItem onClick={handleOpenEdit} dense>
           {t('Prompt.Edit')}
         </MenuItem>
-        <MenuItem onClick={handleOpenEditInSplitView} dense>
-          {t('Prompt.EnterEditSideBySide')}
-        </MenuItem>
       </Menu>
-      <PromptPreviewDialog
-        agentId={agentId}
-        agentDefinitionId={agentDefinitionId}
-        state={previewState}
-        controller={controller}
-        open={previewState.open}
-        onClose={() => {
-          controller.close();
-        }}
-        inputText={previewInputText}
-        initialBaseMode={previewState.baseMode}
-      />
     </>
   );
 };

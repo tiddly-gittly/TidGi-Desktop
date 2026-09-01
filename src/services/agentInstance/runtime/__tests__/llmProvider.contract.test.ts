@@ -8,7 +8,6 @@ import { MemeLoopDesktopLLMProvider } from '../llmProvider';
 function request(overrides: Partial<PortableLlmRequest> = {}): PortableLlmRequest {
   return {
     providerId: 'cpa',
-    modelId: 'wire-model',
     logicalModelId: 'logical-model',
     wireModelId: 'wire-model',
     apiMode: 'responses',

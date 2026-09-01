@@ -6,7 +6,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
 import { Autocomplete, Box, ClickAwayListener, Paper, Popper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
+import type { AgentModelConfig, ProviderAccountConfig, ProviderModelRoute } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -41,35 +41,53 @@ interface ModelSelectorProps {
   agentDefId?: string;
 }
 
+interface ModelOption {
+  /** Canonical value persisted unchanged when this option is selected. */
+  value: AgentModelConfig;
+  account: ProviderAccountConfig;
+  route: ProviderModelRoute;
+}
+
+function modelDisplayName(option: ModelOption): string {
+  const providerName = option.account.catalogProvider?.name ?? option.account.providerId;
+  const modelName = option.account.catalogProvider?.models.find(model => model.id === option.route.modelId)?.name ?? option.route.modelId;
+  return `${providerName} - ${modelName}`;
+}
+
 export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, agentDefId }) => {
   const { t } = useTranslation('agent');
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorElement);
   const searchInputReference = useRef<HTMLInputElement>(null);
-  const { config, providers, handleModelChange } = useAIConfigManagement({
+  const { accounts, config, handleModelChange } = useAIConfigManagement({
     agentId,
     agentDefId,
   });
 
-  const modelOptions: Array<[AIProviderConfig, ModelInfo]> = [];
-  for (const provider of providers) {
-    if (provider.models) {
-      for (const model of provider.models) {
-        if ('name' in model) {
-          modelOptions.push([provider, model]);
-        }
-      }
+  const modelOptions: ModelOption[] = [];
+  for (const account of accounts) {
+    if (account.enabled === false) continue;
+    for (const route of account.models) {
+      modelOptions.push({
+        account,
+        route,
+        value: {
+          providerId: account.providerId,
+          modelId: route.modelId,
+          ...(config?.default?.parameters === undefined ? {} : { parameters: config.default.parameters }),
+        },
+      });
     }
   }
 
   const selectedModel = config?.default
-    ? modelOptions.find((m) => m[0].provider === config.default?.provider && m[1].name === config.default?.model)
+    ? modelOptions.find(option => option.value.providerId === config.default?.providerId && option.value.modelId === config.default?.modelId)
     : undefined;
 
   const displayName = selectedModel
-    ? `${selectedModel[0].provider} - ${selectedModel[1].name}`
+    ? modelDisplayName(selectedModel)
     : (config?.default
-      ? `${config.default.provider} - ${config.default.model}`
+      ? `${config.default.providerId} - ${config.default.modelId}`
       : t('ModelSelector.NoModelSelected'));
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -81,9 +99,9 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
   }, []);
 
   const handleSelect = useCallback(
-    async (option: [AIProviderConfig, ModelInfo] | null) => {
+    async (option: ModelOption | null) => {
       if (!option) return;
-      await handleModelChange(option[0].provider, option[1].name);
+      await handleModelChange(option.value);
       handleClose();
     },
     [handleModelChange, handleClose],
@@ -123,12 +141,12 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
       >
         <ClickAwayListener onClickAway={handleClose}>
           <DropdownPaper data-testid='model-selector-dropdown'>
-            <Autocomplete<[AIProviderConfig, ModelInfo], false, true>
+            <Autocomplete<ModelOption, false, true>
               open
               autoHighlight
               size='small'
               options={modelOptions}
-              getOptionLabel={(option) => `${option[0].provider} - ${option[1].name}`}
+              getOptionLabel={modelDisplayName}
               value={selectedModel ?? (modelOptions[0]) ?? null}
               onChange={(_event, value) => {
                 void handleSelect(value);
@@ -136,13 +154,17 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
               filterOptions={(options, state) => {
                 const query = state.inputValue.toLowerCase();
                 if (!query) return options;
-                return options.filter((o) =>
-                  o[0].provider.toLowerCase().includes(query) ||
-                  o[1].name.toLowerCase().includes(query) ||
-                  (o[1].caption ?? '').toLowerCase().includes(query)
+                return options.filter(option =>
+                  [
+                    option.account.providerId,
+                    option.account.catalogProvider?.name,
+                    option.route.modelId,
+                    option.route.wireModelId,
+                    option.account.catalogProvider?.models.find(model => model.id === option.route.modelId)?.name,
+                  ].some(value => value?.toLowerCase().includes(query))
                 );
               }}
-              isOptionEqualToValue={(option, value) => option[0].provider === value[0].provider && option[1].name === value[1].name}
+              isOptionEqualToValue={(option, value) => option.value.providerId === value.value.providerId && option.value.modelId === value.value.modelId}
               renderInput={(parameters) => (
                 <TextField
                   {...parameters}
@@ -157,16 +179,16 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
                 <Box
                   component='li'
                   {...props}
-                  key={`${option[0].provider}-${option[1].name}`}
-                  data-testid={`model-selector-option-${option[0].provider}-${option[1].name}`}
+                  key={`${option.value.providerId}-${option.value.modelId}`}
+                  data-testid={`model-selector-option-${option.value.providerId}-${option.value.modelId}`}
                   sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start !important', py: 0.5 }}
                 >
                   <Typography variant='body2' sx={{ fontWeight: option === selectedModel ? 600 : 400 }}>
-                    {option[0].provider} - {option[1].name}
+                    {modelDisplayName(option)}
                   </Typography>
-                  {option[1].caption && (
+                  {option.route.wireModelId !== option.route.modelId && (
                     <Typography variant='caption' noWrap sx={{ color: 'text.secondary', maxWidth: '100%' }}>
-                      {option[1].caption}
+                      {option.route.wireModelId}
                     </Typography>
                   )}
                 </Box>

@@ -1,11 +1,9 @@
-import { type AgentInstance, canonicalJsonBytes, type ChatMessage, createAtomicAgentRetryReplacementPayload } from 'memeloop';
+import { type AgentInstance, canonicalJsonBytes, type ChatMessage, createAtomicAgentRetryReplacementPayload, createChatMessage } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '../../interface';
-import { toConversationMeta } from '../messageMapping';
 import { MemeLoopDesktopStorage } from '../storage';
-import { createMemeLoopUserMessage } from '../userMessage';
 
 function agent(): AgentInstance {
   return {
@@ -46,7 +44,6 @@ describe('Desktop message origin identity', () => {
         getAgentMessage: vi.fn(async () => entity as unknown as ChatMessage),
       } as unknown as IAgentInstanceService,
       getLocalNodeId: vi.fn(async () => 'desktop'),
-      notifyAgentChanged: vi.fn(),
     });
 
     const source = await storage.getMessageById('conversation-1', 'turn-source');
@@ -61,15 +58,21 @@ describe('Desktop message origin identity', () => {
   });
 
   it('uses the local libp2p PeerId for newly created user messages', async () => {
-    const message = await createMemeLoopUserMessage({
-      agentId: 'conversation-1',
-      content: { text: 'hello' },
+    const message = createChatMessage({
+      messageId: 'user-message-1',
+      turnId: 'user-message-1',
+      conversationId: 'conversation-1',
+      role: 'user',
+      content: 'hello',
       originNodeId: '12D3KooWDesktopPeer',
+      originSequence: 1,
+      timestamp: 1,
+      lamportClock: 1,
     });
 
     expect(message.originNodeId).toBe('12D3KooWDesktopPeer');
-    expect(Reflect.ownKeys(message)).not.toContain('metadata');
-    expect(JSON.parse(JSON.stringify(message))).toStrictEqual(message);
+    expect(message.conversationId).toBe('conversation-1');
+    expect(message.content).toBe('hello');
   });
 
   it('assembles model attachment bytes from bounded host range reads', async () => {
@@ -87,7 +90,6 @@ describe('Desktop message origin identity', () => {
         readAgentAttachmentRange,
       } as unknown as IAgentInstanceService,
       getLocalNodeId: vi.fn(async () => 'desktop'),
-      notifyAgentChanged: vi.fn(),
     });
 
     await expect(storage.readAttachmentData(`sha256:${'a'.repeat(64)}`)).resolves.toEqual(bytes);
@@ -115,7 +117,6 @@ describe('Desktop message origin identity', () => {
         readAgentAttachmentRange,
       } as unknown as IAgentInstanceService,
       getLocalNodeId: vi.fn(async () => 'desktop'),
-      notifyAgentChanged: vi.fn(),
     });
 
     await expect(storage.readAttachmentData(reference.contentHash, { signal: controller.signal })).rejects.toThrow(
@@ -125,65 +126,35 @@ describe('Desktop message origin identity', () => {
   });
 
   it('uses the local libp2p PeerId for conversation metadata', async () => {
-    const currentAgent = {
-      ...agent(),
-      messages: [
-        {
-          messageId: 'local-message',
-          turnId: 'local-message',
-          conversationId: 'conversation-1',
-          originNodeId: '12D3KooWDesktopPeer',
-          originSequence: 1,
-          timestamp: 2,
-          lamportClock: 3,
-          role: 'user' as const,
-          content: 'local',
-        },
-        {
-          messageId: 'remote-message',
-          turnId: 'local-message',
-          conversationId: 'conversation-1',
-          originNodeId: '12D3KooWRemotePeer',
-          originSequence: 1,
-          timestamp: 3,
-          lamportClock: 99,
-          role: 'assistant' as const,
-          content: 'remote',
-        },
-      ],
+    const currentAgent = agent();
+    const canonicalMeta = {
+      conversationId: currentAgent.id,
+      title: currentAgent.name!,
+      lastMessagePreview: 'remote',
+      lastMessageTimestamp: 3,
+      messageCount: 2,
+      originNodeId: '12D3KooWDesktopPeer',
+      originClock: 3,
+      definitionId: currentAgent.agentDefId,
+      isUserInitiated: true,
     };
     const getLocalNodeId = vi.fn(async () => '12D3KooWDesktopPeer');
+    const getAgentConversationMeta = vi.fn(async () => canonicalMeta);
     const storage = new MemeLoopDesktopStorage({
       agentDefinitionService: {
         getAgentDef: vi.fn(async () => undefined),
       } as unknown as IAgentDefinitionService,
       agentInstanceService: {
-        getAgent: vi.fn(async () => currentAgent),
-        getAgentMetadata: vi.fn(async () => ({ ...currentAgent, messages: [] })),
-        getAgentMessagePage: vi.fn(async () => ({
-          items: [currentAgent.messages.at(-1)!],
-          hasMoreBefore: true,
-          hasMoreAfter: false,
-        })),
-        getAgentConversationTimelinePage: vi.fn(async () => ({
-          items: [],
-          totalMessages: currentAgent.messages.length,
-          totalTurns: 1,
-        })),
-        getMaxAgentLamportClock: vi.fn(async () => 3),
+        getAgentConversationMeta,
       } as unknown as IAgentInstanceService,
       getLocalNodeId,
-      notifyAgentChanged: vi.fn(),
     });
 
     await expect(storage.getConversationMeta(currentAgent.id)).resolves.toMatchObject({
       originNodeId: '12D3KooWDesktopPeer',
       originClock: 3,
     });
-    expect(toConversationMeta(currentAgent, '12D3KooWDesktopPeer')).toMatchObject({
-      originNodeId: '12D3KooWDesktopPeer',
-      originClock: 3,
-    });
+    expect(getAgentConversationMeta).toHaveBeenCalledWith('12D3KooWDesktopPeer', currentAgent.id);
     expect(getLocalNodeId).toHaveBeenCalledOnce();
   });
 
@@ -221,7 +192,7 @@ describe('Desktop message origin identity', () => {
       content: 'continue here',
     };
     const getAgent = vi.fn(async () => agent());
-    const getAgentMessagePage = vi.fn(async () => ({
+    const getAgentStorageMessagePage = vi.fn(async () => ({
       reset: false as const,
       conversationId: 'conversation-1',
       revision: '2',
@@ -233,21 +204,18 @@ describe('Desktop message origin identity', () => {
       agentDefinitionService: { getAgentDef: vi.fn() } as unknown as IAgentDefinitionService,
       agentInstanceService: {
         getAgent,
-        getAgentMessagePage,
+        getAgentStorageMessagePage,
       } as unknown as IAgentInstanceService,
       getLocalNodeId: vi.fn(async () => 'desktop'),
-      notifyAgentChanged: vi.fn(),
     });
 
     await expect(storage.getMessages('conversation-1')).resolves.toEqual([summary, tail]);
-    await expect(storage.getMessages('conversation-1', { mode: 'full-content' })).resolves.toEqual([summary, tail]);
     expect(getAgent).not.toHaveBeenCalled();
-    expect(getAgentMessagePage).toHaveBeenNthCalledWith(1, 'conversation-1', { limit: 80, maxBytes: 512 * 1024 });
-    expect(getAgentMessagePage).toHaveBeenNthCalledWith(2, 'conversation-1', {
+    expect(getAgentStorageMessagePage).toHaveBeenCalledOnce();
+    expect(getAgentStorageMessagePage).toHaveBeenCalledWith('conversation-1', {
       limit: 80,
       maxBytes: 4 * 1024 * 1024,
       direction: 'forward',
-      mode: 'full-content',
     });
   });
 });

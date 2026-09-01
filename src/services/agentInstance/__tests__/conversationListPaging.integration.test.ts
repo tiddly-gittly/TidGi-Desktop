@@ -66,6 +66,10 @@ describe('revisioned conversation directory paging', () => {
     await dataSource.getRepository(AgentDefinitionEntity).insert({
       id: 'definition',
       name: 'Directory test',
+      description: '',
+      systemPrompt: '',
+      tools: [],
+      version: '1.0.0',
       createdAt: new Date(0),
       updatedAt: new Date(0),
     });

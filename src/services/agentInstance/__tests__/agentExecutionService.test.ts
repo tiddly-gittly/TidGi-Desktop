@@ -39,7 +39,8 @@ describe('AgentInstanceService durable execution IPC', () => {
       message: 'hello',
       requestId: 'request-1',
       turnId: 'turn-1',
-    })).resolves.toEqual({ ok: true, handle: expect.objectContaining({ runId: 'run-1' }) });
+      userMessage: { content: 'hello' },
+    })).resolves.toEqual(expect.objectContaining({ runId: 'run-1' }));
 
     expect(sendMessage).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
@@ -130,7 +131,7 @@ describe('AgentInstanceService durable execution IPC', () => {
     expect(readRange).not.toHaveBeenCalled();
   });
 
-  it('returns a plain structured rejection for a nullable missing model before accepting a run', async () => {
+  it('throws the exact typed Core run error for a missing model before accepting a run', async () => {
     const sendMessage = vi.fn();
     const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
     const mutable = service as unknown as Record<string, unknown>;
@@ -139,21 +140,18 @@ describe('AgentInstanceService durable execution IPC', () => {
     mutable.getAgentMetadata = vi.fn().mockResolvedValue({
       id: 'conversation-1',
       agentDefId: 'definition-1',
-      // TypeORM's nullable JSON column is hydrated as null for a new agent.
-      modelConfig: null,
     });
     mutable.getDurableAgentRuntime = vi.fn().mockResolvedValue({ sendMessage });
 
-    const result = await service.executeAgentRun({
+    await expect(service.executeAgentRun({
       conversationId: 'conversation-1',
       definitionId: 'definition-1',
       message: 'hello',
       requestId: 'request-1',
       turnId: 'turn-1',
-    });
-    expect(structuredClone(result)).toEqual({
-      ok: false,
-      error: expect.objectContaining({
+    })).rejects.toMatchObject({
+      name: 'AgentRunFailure',
+      agentRunError: expect.objectContaining({
         code: 'PROVIDER_CONFIGURATION_MISSING',
         retryable: false,
         localizedParams: { settingField: 'model' },
@@ -167,17 +165,25 @@ describe('AgentInstanceService durable execution IPC', () => {
     const terminalFailure = new Error('answer run failed');
     const executeLocalAgentMessage = vi.fn().mockRejectedValue(terminalFailure);
     const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
-    Object.assign(service as unknown as Record<string, unknown>, { executeLocalAgentMessage });
+    Object.assign(service as unknown as Record<string, unknown>, {
+      executeLocalAgentMessage,
+      getAgentMetadata: vi.fn().mockResolvedValue({
+        id: 'conversation-1',
+        agentDefId: 'definition-1',
+      }),
+    });
 
     await expect(service.resolveAskQuestion('conversation-1', 'question-1', 'Approach A')).rejects.toBe(terminalFailure);
     expect(executeLocalAgentMessage).toHaveBeenCalledWith(
-      'conversation-1',
-      { text: 'Approach A' },
       {
-        source: 'ask-question',
-        requestId: 'ask-question:question-1:request',
-        turnId: 'ask-question:question-1:turn',
-        provenance: { questionId: 'question-1' },
+        target: { kind: 'local' },
+        provenance: {
+          conversationId: 'conversation-1',
+          definitionId: 'definition-1',
+          requestId: 'ask-question:question-1:request',
+          turnId: 'ask-question:question-1:turn',
+        },
+        message: 'Approach A',
       },
     );
   });
@@ -261,13 +267,18 @@ describe('AgentInstanceService durable execution IPC', () => {
     mutable.updateAgentStatusBestEffort = vi.fn().mockResolvedValue(undefined);
     mutable.activeDurableRunIds = new Map();
 
-    const input = {
-      source: 'scheduled-task' as const,
-      requestId: 'scheduled:request',
-      turnId: 'scheduled:turn',
+    const request = {
+      target: { kind: 'local' as const },
+      provenance: {
+        conversationId: 'conversation-1',
+        definitionId: 'definition-1',
+        requestId: 'scheduled:request',
+        turnId: 'scheduled:turn',
+      },
+      message: 'wake',
     };
-    await service.executeLocalAgentMessage('conversation-1', { text: 'wake' }, input);
-    await service.executeLocalAgentMessage('conversation-1', { text: 'wake' }, input);
+    await service.executeLocalAgentMessage(request);
+    await service.executeLocalAgentMessage(request);
 
     expect(sent).toHaveLength(2);
     expect(sent[0]).toEqual(sent[1]);

@@ -10,8 +10,9 @@ import { createHash } from 'node:crypto';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, RemoteScheduledTaskProjectionEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import {
+  AgentLoopCheckpointEntity,
   AgentRunStateEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
@@ -29,28 +30,32 @@ import type {
   AgentDeviceRpcDeleteTurnRequest,
   AgentDeviceRpcGetTurnDetailRequest,
   AgentDeviceRpcGetTurnDetailResponse,
-  AgentInstance,
+  AgentInstanceMetadata,
+  AgentInstanceMetadataUpdate,
   AttachmentReference,
   ChatMessage,
   CompactionCandidatePage,
   ConversationEvent,
   ConversationEventDraft,
   ConversationEventPage,
+  ConversationFullContentMessagePage,
   ConversationListPage,
   ConversationMessageCursor,
   ConversationMessageDetailRange,
   ConversationMessageIdentity,
+  ConversationMessageListProjection,
   ConversationMessagePage,
   ConversationMessageWindowResult,
   ConversationTimelineEntry,
+  ConversationTimelineMessageEntry,
   ConversationTimelinePage,
-  ConversationTimelineParticipantPreview,
   ConversationTombstoneEvent,
   GetCompactionCandidatePageOptions,
   GetConversationEventPageOptions,
   GetConversationListPageOptions,
   GetConversationMessageWindowAroundOptions,
   GetConversationTimelinePageOptions,
+  GetFullContentMessagePageOptions,
   GetMessagePageOptions,
   GetRetainedCompactionControlsOptions,
   MessageVersionFrontier,
@@ -60,12 +65,13 @@ import type {
 } from 'memeloop';
 import type { ConversationMeta } from 'memeloop';
 import {
-  assertCanonicalChatMessageProjection,
   assertCanonicalConversationEvent,
   assertCanonicalConversationEventDraft,
   assertCanonicalConversationEventDrafts,
   assertCanonicalConversationEvents,
+  assertConversationMessageProjection,
   canonicalConversationEventBytes,
+  compareConversationLoopCheckpointEvents,
   conversationEventAttachmentReferences,
   conversationEventToMessage,
   createAgentInstanceFromDefinition,
@@ -73,7 +79,7 @@ import {
   OrchestrationError,
   projectConversationMessageForList,
 } from 'memeloop';
-import { AGENT_INSTANCE_FIELDS, MESSAGE_FIELDS, toDatabaseCompatibleInstance, toDatabaseCompatibleMessage } from './utilities';
+import { CANONICAL_MESSAGE_FIELDS, projectChatMessageEntity } from './messageEntityProjection';
 
 function visibleMessagePredicate(alias = 'message'): string {
   return `NOT EXISTS (
@@ -100,7 +106,7 @@ export async function createAgent(
   agentDefinitionService: IAgentDefinitionService,
   agentDefinitionID?: string,
   options?: { id?: string; preview?: boolean; volatile?: boolean },
-): Promise<AgentInstance> {
+): Promise<AgentInstanceMetadata> {
   // Get agent definition with exponential backoff to handle initialization race conditions
   const agentDefinition = await backOff(
     async () => {
@@ -131,9 +137,20 @@ export async function createAgent(
     volatile: options?.preview || options?.volatile || false,
   });
 
-  const { created: _created, modified: _modified, ...instanceForPersistence } = instanceData;
-  const instanceEntity = agentInstanceRepo.create(toDatabaseCompatibleInstance(instanceForPersistence));
-  instanceEntity.preview = options?.preview === true;
+  const instanceEntity = agentInstanceRepo.create({
+    id: instanceData.id,
+    agentDefId: instanceData.agentDefId,
+    name: instanceData.name,
+    status: instanceData.status,
+    created: now,
+    modified: now,
+    modelConfig: instanceData.modelConfig,
+    avatarUrl: instanceData.avatarUrl,
+    agentFrameworkConfig: instanceData.agentFrameworkConfig,
+    closed: instanceData.closed ?? false,
+    volatile: instanceData.volatile ?? false,
+    preview: options?.preview === true,
+  });
 
   // Add timeout to database save operation
   const savePromise = agentInstanceRepo.save(instanceEntity);
@@ -151,32 +168,32 @@ export async function createAgent(
     volatile: !!options?.volatile || !!options?.preview,
   });
 
-  return { ...instanceData, created: now, modified: now };
-}
-
-export async function getAgent(
-  agentInstanceRepo: Repository<AgentInstanceEntity>,
-  agentId: string,
-): Promise<AgentInstance | undefined> {
-  // Compatibility name only: an unqualified read must never materialize an
-  // unbounded transcript. Callers that need content use getMessagePage.
-  return getAgentMetadata(agentInstanceRepo, agentId);
+  return projectAgentInstanceMetadata(instanceEntity);
 }
 
 export async function getAgentMetadata(
   agentInstanceRepo: Repository<AgentInstanceEntity>,
   agentId: string,
-): Promise<AgentInstance | undefined> {
+): Promise<AgentInstanceMetadata | undefined> {
   const instanceEntity = await agentInstanceRepo.findOne({ where: { id: agentId } });
   if (!instanceEntity) return undefined;
+  return projectAgentInstanceMetadata(instanceEntity);
+}
+
+function projectAgentInstanceMetadata(entity: AgentInstanceEntity): AgentInstanceMetadata {
   return {
-    ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
-    modelConfig: instanceEntity.modelConfig,
-    systemPrompt: '',
-    tools: [] as string[],
-    description: '',
-    version: '1',
-    messages: [],
+    id: entity.id,
+    agentDefId: entity.agentDefId,
+    ...(entity.name === undefined ? {} : { name: entity.name }),
+    status: entity.status,
+    created: entity.created,
+    ...(entity.modified === undefined ? {} : { modified: entity.modified }),
+    ...(entity.modelConfig === undefined ? {} : { modelConfig: entity.modelConfig }),
+    ...(entity.avatarUrl === undefined ? {} : { avatarUrl: entity.avatarUrl }),
+    ...(entity.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
+    closed: entity.closed,
+    volatile: entity.volatile,
+    preview: entity.preview,
   };
 }
 
@@ -293,11 +310,118 @@ export async function readMessageDetailRange(
   };
 }
 
+/** Read one UTF-8-aligned reasoning page without materializing message JSON or answer text. */
+export async function readMessageReasoningRange(
+  dataSource: DataSource,
+  conversationId: string,
+  messageId: string,
+  offset: number,
+  maxBytes: number,
+  options?: { signal?: AbortSignal },
+): Promise<ConversationMessageDetailRange> {
+  if (!Number.isSafeInteger(offset) || offset < 0) {
+    throw eventStoreError('VALIDATION_ERROR', 'message reasoning offset must be a non-negative safe integer');
+  }
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 4 || maxBytes > 256 * 1024) {
+    throw eventStoreError('VALIDATION_ERROR', 'message reasoning range must be between 4 bytes and 256 KiB');
+  }
+  options?.signal?.throwIfAborted();
+  const [row] = await dataSource.query<Array<{ totalBytes: number; bytes: Buffer | null }>>(
+    `SELECT length(CAST(message.reasoning_content AS BLOB)) AS totalBytes,
+       CASE WHEN ? <= length(CAST(message.reasoning_content AS BLOB))
+         THEN substr(CAST(message.reasoning_content AS BLOB), ? + 1, ?)
+         ELSE NULL END AS bytes
+     FROM agent_instance_messages AS message
+     WHERE message.conversationId = ? AND message.messageId = ?
+       AND message.reasoning_content IS NOT NULL
+       AND ${visibleMessagePredicate('message')}
+     LIMIT 1`,
+    [offset, offset, maxBytes, conversationId, messageId],
+  );
+  options?.signal?.throwIfAborted();
+  if (!row) return { found: false };
+  if (row.bytes === null) {
+    throw eventStoreError('VALIDATION_ERROR', 'message reasoning offset exceeds total bytes');
+  }
+  const source = new Uint8Array(row.bytes.buffer, row.bytes.byteOffset, row.bytes.byteLength);
+  const bytes = utf8AlignedReasoningPage(source, offset + source.byteLength === row.totalBytes);
+  if (offset < row.totalBytes && bytes.byteLength === 0) {
+    throw eventStoreError('CONFLICT', 'message reasoning range did not make UTF-8 progress');
+  }
+  return { found: true, offset, totalBytes: row.totalBytes, bytes };
+}
+
+function utf8AlignedReasoningPage(bytes: Uint8Array, finalPage: boolean): Uint8Array {
+  const decoder = new TextDecoder('utf-8', { fatal: true });
+  const minimum = Math.max(0, bytes.byteLength - 3);
+  for (let end = bytes.byteLength; end >= minimum; end -= 1) {
+    let valid = false;
+    try {
+      decoder.decode(bytes.subarray(0, end));
+      valid = true;
+    } catch {
+      // Try the next shorter suffix; a UTF-8 code point is at most four bytes.
+    }
+    if (!valid) continue;
+    if (finalPage && end !== bytes.byteLength) {
+      throw eventStoreError('CONFLICT', 'stored message reasoning is not valid UTF-8');
+    }
+    return bytes.slice(0, end);
+  }
+  return new Uint8Array();
+}
+
 export async function getMessagePage(
   repository: Repository<AgentInstanceMessageEntity>,
   conversationId: string,
   options: GetMessagePageOptions,
 ): Promise<ConversationMessagePage> {
+  return readBoundedMessagePage(
+    repository,
+    conversationId,
+    options,
+    true,
+    messageProjectionFromSqlRow,
+  );
+}
+
+/** Trusted full-content paging used by model context/export paths only. */
+export async function getFullContentMessagePage(
+  repository: Repository<AgentInstanceMessageEntity>,
+  conversationId: string,
+  options: GetFullContentMessagePageOptions,
+): Promise<ConversationFullContentMessagePage> {
+  return readBoundedMessagePage(
+    repository,
+    conversationId,
+    options,
+    false,
+    messageFromSqlRow,
+  );
+}
+
+type MessagePageReadOptions = GetMessagePageOptions | GetFullContentMessagePageOptions;
+
+type BoundedMessagePage<T extends ChatMessage> =
+  | {
+    reset: false;
+    conversationId: string;
+    revision: string;
+    items: T[];
+    hasMoreBefore: boolean;
+    hasMoreAfter: boolean;
+    startCursor?: ConversationMessageCursor;
+    endCursor?: ConversationMessageCursor;
+  }
+  | { reset: true; conversationId: string; revision: string };
+
+async function readBoundedMessagePage<T extends ChatMessage>(
+  repository: Repository<AgentInstanceMessageEntity>,
+  conversationId: string,
+  options: MessagePageReadOptions,
+  useStoredProjection: boolean,
+  decodeRow: (row: RawMessageSqlRow) => T | undefined,
+): Promise<BoundedMessagePage<T>> {
   if (!Number.isSafeInteger(options.limit) || options.limit < 1 || options.limit > 80) {
     throw eventStoreError('VALIDATION_ERROR', 'message page limit must be between 1 and 80');
   }
@@ -337,7 +461,6 @@ export async function getMessagePage(
     : '';
   const readingForward = options.direction === 'forward';
   const direction = readingForward ? 'ASC' : 'DESC';
-  const useStoredProjection = options.mode !== 'full-content';
   const parameters: unknown[] = [conversationId];
   if (coverage) parameters.push(coverage);
   parameters.push(options.expectedRevision === undefined ? 0 : 1, options.expectedRevision ?? '');
@@ -417,18 +540,11 @@ export async function getMessagePage(
     }
     return reset;
   }
-  const queried = rows.map(messageFromSqlRow).filter((message): message is ChatMessage => message !== undefined);
-  const itemProjectionBudget = Math.max(
-    1,
-    options.maxBytes - Math.min(16 * 1024, Math.floor(options.maxBytes / 4)),
-  );
-  const projected = options.mode === 'full-content'
-    ? queried
-    : queried.map(message => projectConversationMessageForList(message, itemProjectionBudget));
-  const selected: ChatMessage[] = [];
+  const queried = rows.map(decodeRow).filter((message): message is T => message !== undefined);
+  const selected: T[] = [];
   let bytes = 0;
   let byteStopped = false;
-  const scanOrder = readingForward ? projected : [...projected].reverse();
+  const scanOrder = readingForward ? queried : [...queried].reverse();
   for (const message of scanOrder) {
     const messageBytes = Buffer.byteLength(canonicalJson(message), 'utf8');
     if (messageBytes > options.maxBytes && selected.length === 0) {
@@ -449,7 +565,7 @@ export async function getMessagePage(
   let items = readingForward ? selected : selected.reverse();
   let hasMoreBefore = first.hasMoreBefore === 1 || (!readingForward && byteStopped);
   let hasMoreAfter = first.hasMoreAfter === 1 || (readingForward && byteStopped);
-  const build = (): ConversationMessagePage => {
+  const build = (): BoundedMessagePage<T> => {
     const startCursor = items[0] ? messageCursor(items[0]) : undefined;
     const endCursor = items.at(-1) ? messageCursor(items.at(-1)!) : undefined;
     return {
@@ -672,7 +788,7 @@ export async function getTurnDetail(
 
 interface MessageWindowSqlRow extends RawMessageSqlRow {
   revision: number;
-  focusKind: 'turn' | 'compaction' | null;
+  focusKind: 'message' | 'compaction' | null;
   focusEntryId: string | null;
   focusCursor: string | null;
   focusTurnId: string | null;
@@ -685,6 +801,7 @@ interface MessageWindowSqlRow extends RawMessageSqlRow {
   focusEntryIndex: number | null;
   focusTurnIndex: number | null;
   nearestPosition: 'before' | 'after' | 'none' | null;
+  nearestMessageId: string | null;
   nearestTurnId: string | null;
   hasMoreBefore: number;
   hasMoreAfter: number;
@@ -704,7 +821,7 @@ function messageFromSqlRow(row: RawMessageSqlRow): ChatMessage | undefined {
       ? row.projectionJson
       : new TextDecoder('utf-8', { fatal: true }).decode(row.projectionJson);
     const projection: unknown = JSON.parse(projectionJson);
-    assertCanonicalChatMessageProjection(projection, row.conversationId ?? undefined);
+    assertConversationMessageProjection(projection, row.conversationId ?? undefined);
     if (canonicalJson(projection) !== projectionJson) {
       throw eventStoreError('CONFLICT', `message projection ${row.messageId} is not canonical`);
     }
@@ -737,6 +854,22 @@ function messageFromSqlRow(row: RawMessageSqlRow): ChatMessage | undefined {
   };
 }
 
+function messageProjectionFromSqlRow(row: RawMessageSqlRow): ConversationMessageListProjection | undefined {
+  if (row.messageId === null) return undefined;
+  if (row.projectionExpected !== 1 || row.projectionJson === null || row.projectionJson === undefined) {
+    throw eventStoreError('CONFLICT', `message projection ${row.messageId} is missing its bounded payload`);
+  }
+  const projectionJson = typeof row.projectionJson === 'string'
+    ? row.projectionJson
+    : new TextDecoder('utf-8', { fatal: true }).decode(row.projectionJson);
+  const projection: unknown = JSON.parse(projectionJson);
+  assertConversationMessageProjection(projection, row.conversationId ?? undefined);
+  if (canonicalJson(projection) !== projectionJson) {
+    throw eventStoreError('CONFLICT', `message projection ${row.messageId} is not canonical`);
+  }
+  return projection;
+}
+
 function validateMessageWindowOptions(options: GetConversationMessageWindowAroundOptions): void {
   if (
     !Number.isSafeInteger(options.maxMessages) || options.maxMessages < 1 || options.maxMessages > 80 ||
@@ -745,8 +878,12 @@ function validateMessageWindowOptions(options: GetConversationMessageWindowAroun
     options.expectedRevision.length > 2048
   ) throw eventStoreError('VALIDATION_ERROR', 'invalid conversation message window bounds');
   const focus = options.focus;
-  if (focus.kind === 'turn') {
-    if (!focus.turnId || Buffer.byteLength(focus.turnId, 'utf8') > 512 || (focus.cursor?.length ?? 0) > 2048) {
+  if (focus.kind === 'message') {
+    if (
+      !focus.messageId || Buffer.byteLength(focus.messageId, 'utf8') > 512 ||
+      !focus.turnId || Buffer.byteLength(focus.turnId, 'utf8') > 512 ||
+      (focus.cursor?.length ?? 0) > 2048
+    ) {
       throw eventStoreError('VALIDATION_ERROR', 'invalid conversation message window focus');
     }
   } else if (
@@ -766,11 +903,11 @@ export async function getMessageWindowAround(
   options: GetConversationMessageWindowAroundOptions,
 ): Promise<ConversationMessageWindowResult> {
   validateMessageWindowOptions(options);
-  const focusPredicate = options.focus.kind === 'turn'
-    ? `entry.kind = 'turn' AND entry.turnId = ? ${options.focus.cursor ? 'AND entry.cursor = ?' : ''}`
+  const focusPredicate = options.focus.kind === 'message'
+    ? `entry.kind = 'message' AND entry.messageId = ? AND entry.turnId = ? ${options.focus.cursor ? 'AND entry.cursor = ?' : ''}`
     : 'entry.messageId = ? AND entry.cursor = ?';
-  const focusParameters = options.focus.kind === 'turn'
-    ? [options.focus.turnId, ...(options.focus.cursor ? [options.focus.cursor] : [])]
+  const focusParameters = options.focus.kind === 'message'
+    ? [options.focus.messageId, options.focus.turnId, ...(options.focus.cursor ? [options.focus.cursor] : [])]
     : [options.focus.entryId, options.focus.cursor];
   const rows = await dataSource.query<MessageWindowSqlRow[]>(
     `WITH state AS (
@@ -783,26 +920,26 @@ export async function getMessageWindowAround(
            AND CAST(state.revision AS TEXT) = ?
          ORDER BY entry.timestamp, entry.lamportClock, entry.originNodeId, entry.messageId
          LIMIT 1
-       ), before_turn AS (
+       ), before_message AS (
          SELECT candidate.* FROM conversation_timeline_entries AS candidate, requested
          WHERE requested.kind = 'compaction' AND candidate.conversationId = requested.conversationId
-           AND candidate.kind = 'turn'
+           AND candidate.kind = 'message'
            AND (candidate.timestamp, candidate.lamportClock, candidate.originNodeId, candidate.messageId) <
              (requested.timestamp, requested.lamportClock, requested.originNodeId, requested.messageId)
          ORDER BY candidate.timestamp DESC, candidate.lamportClock DESC,
            candidate.originNodeId DESC, candidate.messageId DESC LIMIT 1
-       ), after_turn AS (
+       ), after_message AS (
          SELECT candidate.* FROM conversation_timeline_entries AS candidate, requested
          WHERE requested.kind = 'compaction' AND candidate.conversationId = requested.conversationId
-           AND candidate.kind = 'turn'
+           AND candidate.kind = 'message'
            AND (candidate.timestamp, candidate.lamportClock, candidate.originNodeId, candidate.messageId) >
              (requested.timestamp, requested.lamportClock, requested.originNodeId, requested.messageId)
          ORDER BY candidate.timestamp, candidate.lamportClock,
            candidate.originNodeId, candidate.messageId LIMIT 1
        ), rank_targets AS (
          SELECT 'requested' AS target, requested.* FROM requested
-         UNION ALL SELECT 'before', before_turn.* FROM before_turn
-         UNION ALL SELECT 'after', after_turn.* FROM after_turn
+         UNION ALL SELECT 'before', before_message.* FROM before_message
+         UNION ALL SELECT 'after', after_message.* FROM after_message
        ), target_checkpoints AS (
          SELECT target.target, target.messageId AS targetMessageId,
            target.timestamp AS targetTimestamp, target.lamportClock AS targetLamportClock,
@@ -831,14 +968,7 @@ export async function getMessageWindowAround(
              ORDER BY entry.timestamp, entry.lamportClock,
                entry.originNodeId, entry.messageId
            ) - 1 AS entryIndex,
-           checkpoint.checkpointTurnIndex + COALESCE(SUM(
-             CASE WHEN entry.kind = 'turn' THEN 1 ELSE 0 END
-           ) OVER (
-             PARTITION BY checkpoint.target
-             ORDER BY entry.timestamp, entry.lamportClock,
-               entry.originNodeId, entry.messageId
-             ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
-           ), 0) AS turnIndex
+           entry.turnIndex AS turnIndex
          FROM target_checkpoints AS checkpoint
          JOIN conversation_timeline_entries AS entry
            ON entry.conversationId = ? AND
@@ -853,35 +983,47 @@ export async function getMessageWindowAround(
          WHERE messageId = targetMessageId
        ), focus AS (
          SELECT requested.*,
-           CASE WHEN requested.kind = 'turn' THEN requested.turnId
-             WHEN before_turn.turnId IS NULL THEN after_turn.turnId
-             WHEN after_turn.turnId IS NULL THEN before_turn.turnId
+           CASE WHEN requested.kind = 'message' THEN requested.messageId
+             WHEN before_message.messageId IS NULL THEN after_message.messageId
+             WHEN after_message.messageId IS NULL THEN before_message.messageId
              WHEN after_rank.entryIndex - requested_rank.entryIndex <=
                requested_rank.entryIndex - before_rank.entryIndex
-             THEN after_turn.turnId ELSE before_turn.turnId END AS anchorTurnId,
-           CASE WHEN requested.kind = 'turn' THEN NULL
-             WHEN before_turn.turnId IS NULL AND after_turn.turnId IS NULL THEN 'none'
-             WHEN before_turn.turnId IS NULL THEN 'after'
-             WHEN after_turn.turnId IS NULL THEN 'before'
+             THEN after_message.messageId ELSE before_message.messageId END AS anchorMessageId,
+           CASE WHEN requested.kind = 'message' THEN requested.turnId
+             WHEN before_message.turnId IS NULL THEN after_message.turnId
+             WHEN after_message.turnId IS NULL THEN before_message.turnId
+             WHEN after_rank.entryIndex - requested_rank.entryIndex <=
+               requested_rank.entryIndex - before_rank.entryIndex
+             THEN after_message.turnId ELSE before_message.turnId END AS anchorTurnId,
+           CASE WHEN requested.kind = 'message' THEN NULL
+             WHEN before_message.messageId IS NULL AND after_message.messageId IS NULL THEN 'none'
+             WHEN before_message.messageId IS NULL THEN 'after'
+             WHEN after_message.messageId IS NULL THEN 'before'
              WHEN after_rank.entryIndex - requested_rank.entryIndex <=
                requested_rank.entryIndex - before_rank.entryIndex
              THEN 'after' ELSE 'before' END AS nearestPosition,
-           CASE WHEN requested.kind = 'turn' THEN NULL
-             WHEN before_turn.turnId IS NULL THEN after_turn.turnId
-             WHEN after_turn.turnId IS NULL THEN before_turn.turnId
+           CASE WHEN requested.kind = 'message' THEN NULL
+             WHEN before_message.messageId IS NULL THEN after_message.messageId
+             WHEN after_message.messageId IS NULL THEN before_message.messageId
              WHEN after_rank.entryIndex - requested_rank.entryIndex <=
                requested_rank.entryIndex - before_rank.entryIndex
-             THEN after_turn.turnId ELSE before_turn.turnId END AS nearestTurnId,
+             THEN after_message.messageId ELSE before_message.messageId END AS nearestMessageId,
+           CASE WHEN requested.kind = 'message' THEN NULL
+             WHEN before_message.turnId IS NULL THEN after_message.turnId
+             WHEN after_message.turnId IS NULL THEN before_message.turnId
+             WHEN after_rank.entryIndex - requested_rank.entryIndex <=
+               requested_rank.entryIndex - before_rank.entryIndex
+             THEN after_message.turnId ELSE before_message.turnId END AS nearestTurnId,
            requested_rank.entryIndex AS focusEntryIndex,
            requested_rank.turnIndex AS focusTurnIndex
-         FROM requested LEFT JOIN before_turn ON 1 = 1 LEFT JOIN after_turn ON 1 = 1
+         FROM requested LEFT JOIN before_message ON 1 = 1 LEFT JOIN after_message ON 1 = 1
          LEFT JOIN target_ranks AS requested_rank ON requested_rank.target = 'requested'
          LEFT JOIN target_ranks AS before_rank ON before_rank.target = 'before'
          LEFT JOIN target_ranks AS after_rank ON after_rank.target = 'after'
        ), anchor AS (
          SELECT message.timestamp, message.lamportClock, message.originNodeId, message.messageId
          FROM agent_instance_messages AS message, focus
-         WHERE message.conversationId = ? AND message.turnId = focus.anchorTurnId
+         WHERE message.conversationId = ? AND message.messageId = focus.anchorMessageId
            AND ${visibleMessagePredicate('message')}
          ORDER BY message.timestamp, message.lamportClock, message.originNodeId, message.messageId LIMIT 1
        ), before_messages AS (
@@ -938,7 +1080,7 @@ export async function getMessageWindowAround(
          focus.compactedMessageCount AS focusCompactedMessageCount,
          focus.compactedTurnCount AS focusCompactedTurnCount,
          focus.focusEntryIndex, focus.focusTurnIndex,
-         focus.nearestPosition, focus.nearestTurnId,
+         focus.nearestPosition, focus.nearestMessageId, focus.nearestTurnId,
          ${messageSqlColumns('page', 'detail')},
          CASE WHEN first_page.messageId IS NULL THEN 0 ELSE EXISTS (
            SELECT 1 FROM agent_instance_messages AS older
@@ -986,18 +1128,14 @@ export async function getMessageWindowAround(
     }
     return result;
   }
-  const itemProjectionBudget = Math.max(
-    1,
-    options.maxBytes - Math.min(16 * 1024, Math.floor(options.maxBytes / 4)),
-  );
-  let items = rows.map(messageFromSqlRow)
-    .filter((message): message is ChatMessage => message !== undefined)
-    .map(message => projectConversationMessageForList(message, itemProjectionBudget));
+  let items = rows.map(messageProjectionFromSqlRow)
+    .filter((message): message is ConversationMessageListProjection => message !== undefined);
   let hasMoreBefore = first.hasMoreBefore === 1;
   let hasMoreAfter = first.hasMoreAfter === 1;
-  const focus = first.focusKind === 'turn'
+  const focus = first.focusKind === 'message'
     ? {
-      kind: 'turn' as const,
+      kind: 'message' as const,
+      messageId: first.focusEntryId!,
       turnId: first.focusTurnId!,
       ...(options.focus.kind === 'timeline-entry'
         ? { entryId: first.focusEntryId!, cursor: first.focusCursor! }
@@ -1025,9 +1163,15 @@ export async function getMessageWindowAround(
         ? { nearestPosition: 'none' as const }
         : {
           nearestPosition: first.nearestPosition!,
+          nearestMessageId: first.nearestMessageId!,
           nearestTurnId: first.nearestTurnId!,
         }),
     };
+  const recenterAnchor = first.focusKind === 'message'
+    ? { messageId: first.focusEntryId!, turnId: first.focusTurnId! }
+    : first.nearestPosition === 'none'
+    ? undefined
+    : { messageId: first.nearestMessageId!, turnId: first.nearestTurnId! };
   const build = (): ConversationMessageWindowResult => {
     const start = items[0];
     const end = items.at(-1);
@@ -1036,6 +1180,7 @@ export async function getMessageWindowAround(
       conversationId,
       revision,
       focus,
+      ...(recenterAnchor === undefined ? {} : { recenterAnchor }),
       items,
       hasMoreBefore,
       hasMoreAfter,
@@ -1045,7 +1190,7 @@ export async function getMessageWindowAround(
   };
   while (Buffer.byteLength(canonicalJson(build()), 'utf8') > options.maxBytes) {
     if (items.length <= 1) throw new Error('conversation_message_window_focus_exceeds_byte_budget');
-    const anchorIndex = items.findIndex(message => message.turnId === first.nearestTurnId || message.turnId === first.focusTurnId);
+    const anchorIndex = items.findIndex(message => message.messageId === recenterAnchor?.messageId);
     const distanceBefore = anchorIndex < 0 ? 0 : anchorIndex;
     const distanceAfter = anchorIndex < 0 ? items.length : items.length - anchorIndex - 1;
     if (distanceAfter > distanceBefore) {
@@ -1110,14 +1255,16 @@ interface TimelinePageSqlRow {
   emptyHasMoreAfter: number;
   messageId: string | null;
   cursor: string | null;
-  kind: 'turn' | 'compaction' | null;
+  kind: 'message' | 'compaction' | null;
   turnId: string | null;
   timestamp: number | null;
   lamportClock: number | null;
   originNodeId: string | null;
-  userPreview: string | null;
-  participantPreviewsJson: string | null;
-  responseCount: number | null;
+  projectedTurnIndex: number | null;
+  role: 'user' | 'assistant' | 'agent' | null;
+  actorId: string | null;
+  actorLabel: string | null;
+  preview: string | null;
   summaryPreview: string | null;
   compactedMessageCount: number | null;
   compactedTurnCount: number | null;
@@ -1247,11 +1394,7 @@ export async function getConversationTimelinePage(
          checkpointEntryIndex + ROW_NUMBER() OVER (
            ORDER BY candidate.timestamp, candidate.lamportClock,
              candidate.originNodeId, candidate.messageId
-         ) - 1 AS entryIndex,
-         checkpointTurnIndex + COALESCE(SUM(CASE WHEN candidate.kind = 'turn' THEN 1 ELSE 0 END) OVER (
-           ORDER BY candidate.timestamp, candidate.lamportClock, candidate.originNodeId, candidate.messageId
-           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
-         ), 0) AS turnIndex
+         ) - 1 AS entryIndex
        FROM candidate
      ), selected AS (
        SELECT ranked.* FROM ranked CROSS JOIN target
@@ -1267,7 +1410,8 @@ export async function getConversationTimelinePage(
          ELSE (SELECT MAX(entryIndex) FROM selected) + 1 < state.totalEntries END AS emptyHasMoreAfter,
        selected.messageId, selected.cursor, selected.kind, selected.turnId,
        selected.timestamp, selected.lamportClock, selected.originNodeId,
-       selected.userPreview, selected.participantPreviewsJson, selected.responseCount,
+       selected.turnIndex AS projectedTurnIndex,
+       selected.role, selected.actorId, selected.actorLabel, selected.preview,
        selected.summaryPreview,
        selected.compactedMessageCount, selected.compactedTurnCount,
        selected.entryIndex, selected.turnIndex
@@ -1296,22 +1440,12 @@ export async function getConversationTimelinePage(
     if (
       row.messageId === null || row.cursor === null || row.kind === null || row.turnId === null ||
       row.timestamp === null || row.lamportClock === null || row.originNodeId === null ||
-      row.entryIndex === null || row.turnIndex === null
+      row.entryIndex === null
     ) return [];
-    if (row.kind === 'turn') {
-      let participantPreviews: ConversationTimelineParticipantPreview[] = [];
-      try {
-        const parsed = JSON.parse(row.participantPreviewsJson ?? '[]') as unknown;
-        if (Array.isArray(parsed)) participantPreviews = parsed as ConversationTimelineParticipantPreview[];
-      } catch {
-        // Disposable projection corruption degrades to the count-only marker.
-      }
-      participantPreviews = participantPreviews.slice(0, TIMELINE_PARTICIPANT_SAMPLE_LIMIT).map(participant => ({
-        ...participant,
-        preview: timelinePreview(participant.preview, Math.min(previewLength, TIMELINE_PARTICIPANT_PREVIEW_LENGTH)),
-      }));
-      const entry = {
-        kind: 'turn' as const,
+    if (row.kind === 'message') {
+      if (row.role === null || row.actorId === null || row.actorLabel === null) return [];
+      const entry: ConversationTimelineMessageEntry = {
+        kind: 'message',
         entryId: row.messageId,
         messageId: row.messageId,
         conversationId,
@@ -1320,20 +1454,18 @@ export async function getConversationTimelinePage(
         originNodeId: row.originNodeId,
         cursor: row.cursor,
         entryIndex: row.entryIndex,
-        turnIndex: row.turnIndex,
         turnId: row.turnId,
-        userPreview: timelinePreview(row.userPreview ?? '', previewLength),
-        participantPreviews,
-        responseCount: Math.max(row.responseCount ?? participantPreviews.length, participantPreviews.length),
+        ...(row.projectedTurnIndex === null ? {} : { turnIndex: row.projectedTurnIndex }),
+        role: row.role,
+        actorId: timelinePreview(row.actorId, 160) || row.originNodeId,
+        actorLabel: timelinePreview(row.actorLabel, 160) || row.actorId,
+        preview: timelinePreview(row.preview ?? '', previewLength),
       };
-      while (Buffer.byteLength(canonicalJson(entry), 'utf8') > 1024 && entry.participantPreviews.length > 0) {
-        entry.participantPreviews.splice(Math.floor((entry.participantPreviews.length - 1) / 2), 1);
-      }
-      while (Buffer.byteLength(canonicalJson(entry), 'utf8') > 1024 && entry.userPreview.length > 1) {
-        entry.userPreview = timelinePreview(entry.userPreview, Math.max(1, Math.floor(entry.userPreview.length / 2)));
+      while (Buffer.byteLength(canonicalJson(entry), 'utf8') > 1024 && entry.preview.length > 1) {
+        entry.preview = timelinePreview(entry.preview, Math.max(1, Math.floor(entry.preview.length / 2)));
       }
       if (Buffer.byteLength(canonicalJson(entry), 'utf8') > 1024) {
-        throw eventStoreError('CONFLICT', `timeline turn ${entry.turnId} exceeds projection budget`);
+        throw eventStoreError('CONFLICT', `timeline message ${entry.messageId} exceeds projection budget`);
       }
       return [entry];
     }
@@ -1347,7 +1479,7 @@ export async function getConversationTimelinePage(
         originNodeId: row.originNodeId,
         cursor: row.cursor,
         entryIndex: row.entryIndex,
-        turnIndex: row.turnIndex,
+        turnIndex: row.projectedTurnIndex ?? 0,
         summaryPreview: timelinePreview(row.summaryPreview ?? '', previewLength),
         compactedMessageCount: row.compactedMessageCount ?? 0,
         compactedTurnCount: row.compactedTurnCount ?? 0,
@@ -1495,12 +1627,8 @@ export async function updateAgent(
   agentInstanceRepo: Repository<AgentInstanceEntity>,
   _agentMessageRepo: Repository<AgentInstanceMessageEntity>,
   agentId: string,
-  data: Partial<AgentInstance>,
-): Promise<AgentInstance> {
-  const updatesMessages = Boolean(data.messages?.length);
-  if (updatesMessages) {
-    throw eventStoreError('VALIDATION_ERROR', 'conversation messages are immutable; append a conversation event');
-  }
+  data: AgentInstanceMetadataUpdate,
+): Promise<AgentInstanceMetadata> {
   const instanceEntity = await agentInstanceRepo.findOne({ where: { id: agentId } });
 
   if (!instanceEntity) {
@@ -1512,17 +1640,7 @@ export async function updateAgent(
   await agentInstanceRepo.save(instanceEntity);
   await bumpConversationListRevision(agentInstanceRepo.manager);
 
-  return {
-    ...pick(instanceEntity, AGENT_INSTANCE_FIELDS),
-    modelConfig: instanceEntity.modelConfig,
-    systemPrompt: '',
-    tools: [] as string[],
-    description: '',
-    version: '1',
-    // Metadata-only updates must stay O(1) for arbitrarily long conversations.
-    // Callers that need a visible window use getMessagePage separately.
-    messages: [],
-  };
+  return projectAgentInstanceMetadata(instanceEntity);
 }
 
 export async function deleteAgent(
@@ -1601,7 +1719,6 @@ export async function discardVolatileAgentPreview(
       // Scheduling and run state can keep live work associated with the
       // conversation. Their in-memory counterparts are released by the
       // service before entering this transaction.
-      await manager.getRepository(RemoteScheduledTaskProjectionEntity).delete({ agentInstanceId: conversationId });
       await manager.getRepository(ScheduledTaskEntity).delete({ agentInstanceId: conversationId });
       await manager.getRepository(AgentRunStateEntity).delete({ conversationId });
 
@@ -1613,6 +1730,7 @@ export async function discardVolatileAgentPreview(
       await manager.getRepository(ConversationTimelineEntryEntity).delete({ conversationId });
       await manager.getRepository(ConversationTimelineStateEntity).delete({ conversationId });
       await manager.getRepository(ConversationTurnTombstoneEntity).delete({ conversationId });
+      await manager.getRepository(AgentLoopCheckpointEntity).delete({ conversationId });
       await manager.getRepository(ConversationMetadataFieldEntity).delete({ conversationId });
       await manager.getRepository(ConversationMessageDetailEntity).delete({ conversationId });
       await manager.getRepository(ConversationAttachmentReferenceEntity).delete({ conversationId });
@@ -1635,7 +1753,7 @@ export async function getAgents(
   page: number,
   pageSize: number,
   options?: { closed?: boolean; searchName?: string },
-): Promise<Omit<AgentInstance, 'messages'>[]> {
+): Promise<AgentInstanceMetadata[]> {
   const skip = (page - 1) * pageSize;
   const take = pageSize;
 
@@ -1656,7 +1774,7 @@ export async function getAgents(
     order: { created: 'DESC' },
   });
 
-  return instances.map(entity => pick(entity, AGENT_INSTANCE_FIELDS)) as unknown as Array<Omit<AgentInstance, 'messages'>>;
+  return instances.map(projectAgentInstanceMetadata);
 }
 
 interface ConversationListCursorPayload {
@@ -1729,6 +1847,70 @@ type ConversationListConcreteRow = ConversationListRow & {
   originClock: number;
   definitionId: string;
 };
+
+function conversationMetaFromRow(row: ConversationListConcreteRow, localNodeId: string): ConversationMeta {
+  return {
+    conversationId: row.conversationId,
+    title: row.title,
+    lastMessagePreview: row.lastMessagePreview,
+    lastMessageTimestamp: row.lastMessageTimestamp,
+    messageCount: row.messageCount,
+    originNodeId: localNodeId,
+    originClock: row.originClock,
+    definitionId: row.definitionId,
+    ...(row.instanceDeltaJson
+      ? { instanceDelta: { agentFrameworkConfig: JSON.parse(row.instanceDeltaJson) as unknown } }
+      : {}),
+    isUserInitiated: Boolean(row.isUserInitiated),
+    ...(row.sourceChannelJson
+      ? { sourceChannel: JSON.parse(row.sourceChannelJson) as ConversationMeta['sourceChannel'] }
+      : {}),
+  };
+}
+
+/** Exact canonical metadata point read; runtime hosts consume no local DTO. */
+export async function getConversationMeta(
+  dataSource: DataSource,
+  localNodeId: string,
+  conversationId: string,
+): Promise<ConversationMeta | null> {
+  if (
+    !localNodeId || Buffer.byteLength(localNodeId, 'utf8') > 512 ||
+    !conversationId || Buffer.byteLength(conversationId, 'utf8') > 512
+  ) {
+    throw eventStoreError('VALIDATION_ERROR', 'invalid conversation metadata identity');
+  }
+  const rows = await dataSource.query<ConversationListConcreteRow[]>(
+    `SELECT instance.id AS conversationId,
+       COALESCE(instance.name, instance.agentDefId) AS title,
+       COALESCE(timeline.lastMessagePreview, '') AS lastMessagePreview,
+       COALESCE(timeline.lastMessageTimestamp, 0) AS lastMessageTimestamp,
+       COALESCE(timeline.totalMessages, 0) AS messageCount,
+       COALESCE((
+         SELECT MAX(event.lamportClock) FROM conversation_events AS event
+         WHERE event.conversationId = instance.id AND event.originNodeId = ?
+       ), 1) AS originClock,
+       instance.agentDefId AS definitionId,
+       instance.agentFrameworkConfig AS instanceDeltaJson,
+       COALESCE((
+         SELECT CAST(json_extract(initiated.valueJson, '$') AS INTEGER)
+         FROM conversation_metadata_fields AS initiated
+         WHERE initiated.conversationId = instance.id AND initiated.field = 'isUserInitiated'
+       ), 1) AS isUserInitiated,
+       (
+         SELECT source.valueJson FROM conversation_metadata_fields AS source
+         WHERE source.conversationId = instance.id AND source.field = 'sourceChannel'
+       ) AS sourceChannelJson,
+       1 AS total
+     FROM agent_instances AS instance
+     LEFT JOIN conversation_timeline_states AS timeline
+       ON timeline.conversationId = instance.id
+     WHERE instance.id = ?
+     LIMIT 1`,
+    [localNodeId, conversationId],
+  );
+  return rows[0] ? conversationMetaFromRow(rows[0], localNodeId) : null;
+}
 
 /** Constant-query-count, revisioned conversation directory page. */
 export async function getConversationListPage(
@@ -1863,24 +2045,7 @@ export async function getConversationListPage(
   const availableRows = rows.filter((row): row is ConversationListConcreteRow => row.conversationId !== null);
   const hasExtra = availableRows.length > options.limit;
   let ordered = descending ? availableRows.slice(0, options.limit) : availableRows.slice(0, options.limit).reverse();
-  const mapRow = (row: ConversationListConcreteRow): ConversationMeta => ({
-    conversationId: row.conversationId,
-    title: row.title,
-    lastMessagePreview: row.lastMessagePreview,
-    lastMessageTimestamp: row.lastMessageTimestamp,
-    messageCount: row.messageCount,
-    originNodeId: localNodeId,
-    originClock: row.originClock,
-    definitionId: row.definitionId,
-    ...(row.instanceDeltaJson
-      ? { instanceDelta: { agentFrameworkConfig: JSON.parse(row.instanceDeltaJson) as unknown } }
-      : {}),
-    isUserInitiated: Boolean(row.isUserInitiated),
-    ...(row.sourceChannelJson
-      ? { sourceChannel: JSON.parse(row.sourceChannelJson) as ConversationMeta['sourceChannel'] }
-      : {}),
-  });
-  let items = ordered.map(mapRow);
+  let items = ordered.map(row => conversationMetaFromRow(row, localNodeId));
   const cursorFor = (row: ConversationListConcreteRow) =>
     encodeConversationListCursor({
       v: 1,
@@ -2066,18 +2231,8 @@ async function ensureMetadataConversationProjection(
   if (!instance) {
     if (typeof definitionId !== 'string' || definitionId.length === 0) return;
     const definitionRepository = manager.getRepository(AgentDefinitionEntity);
-    let definition = await definitionRepository.findOne({ where: { id: definitionId } });
-    if (!definition) {
-      // Conversation sync must not wedge when a custom profile has not been
-      // fetched yet. This row is an explicitly incomplete read projection;
-      // installing the real profile replaces its nullable fields later.
-      definition = await definitionRepository.save(definitionRepository.create({
-        id: definitionId,
-        name: typeof title === 'string' ? title : definitionId,
-        builtinVersion: 'remote-placeholder',
-        isCustomized: false,
-      }));
-    }
+    const definition = await definitionRepository.findOne({ where: { id: definitionId } });
+    if (!definition) return;
     instance = instanceRepository.create({
       id: event.conversationId,
       agentDefId: definitionId,
@@ -2097,77 +2252,31 @@ async function ensureMetadataConversationProjection(
 }
 
 const TIMELINE_STORED_PREVIEW_LENGTH = 240;
-const TIMELINE_PARTICIPANT_PREVIEW_LENGTH = 160;
-const TIMELINE_PARTICIPANT_SAMPLE_LIMIT = 4;
-const TIMELINE_PARTICIPANT_SAMPLE_BYTES = 768;
+const TIMELINE_ACTOR_LENGTH = 160;
 const timelinePreviewDatabases = new WeakSet<object>();
 
 function storedTimelinePreview(content: string): string {
   return timelinePreview(content, TIMELINE_STORED_PREVIEW_LENGTH);
 }
 
-interface TimelineParticipantSource {
-  content: string;
-  role: 'assistant' | 'agent';
-  originNodeId: string;
-  metadataJson?: string | null;
-  timestamp?: number;
-  lamportClock?: number;
-  messageId?: string;
-}
-
-function timelineParticipantIdentity(value: unknown, fallback: string): string {
+function timelineActorIdentity(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.length > 0
-    ? timelinePreview(value, 64) || fallback
+    ? timelinePreview(value, TIMELINE_ACTOR_LENGTH) || fallback
     : fallback;
 }
 
-function timelineParticipantPreviewFromSource(source: TimelineParticipantSource): ConversationTimelineParticipantPreview {
-  let metadata: Record<string, unknown> | undefined;
-  try {
-    const parsed = source.metadataJson ? JSON.parse(source.metadataJson) as unknown : undefined;
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) metadata = parsed as Record<string, unknown>;
-  } catch {
-    // Canonical message validation prevents this in normal operation. A
-    // disposable projection still degrades safely if a row was corrupted.
-  }
-  const actorId = timelineParticipantIdentity(metadata?.actorId ?? metadata?.agentId, source.originNodeId);
-  const actorLabel = timelineParticipantIdentity(metadata?.actorLabel ?? metadata?.agentName, actorId);
+function timelineMessageActor(
+  role: 'user' | 'assistant' | 'agent',
+  originNodeId: string,
+  metadata: Readonly<Record<string, unknown>> | undefined,
+): { actorId: string; actorLabel: string } {
+  const identity = role === 'user' ? metadata?.userId : metadata?.agentId;
+  const label = role === 'user' ? metadata?.userName : metadata?.agentName;
+  const actorId = timelineActorIdentity(metadata?.actorId ?? identity, originNodeId);
   return {
     actorId,
-    actorLabel,
-    role: source.role,
-    preview: timelinePreview(source.content, TIMELINE_PARTICIPANT_PREVIEW_LENGTH),
+    actorLabel: timelineActorIdentity(metadata?.actorLabel ?? label, actorId),
   };
-}
-
-function boundTimelineParticipantSample(
-  sources: readonly TimelineParticipantSource[],
-): ConversationTimelineParticipantPreview[] {
-  const ordered = [...sources].sort((left, right) =>
-    (left.timestamp ?? 0) - (right.timestamp ?? 0) ||
-    (left.lamportClock ?? 0) - (right.lamportClock ?? 0) ||
-    compareCodeUnits(left.originNodeId, right.originNodeId) ||
-    compareCodeUnits(left.messageId ?? '', right.messageId ?? '')
-  );
-  let previews = ordered.slice(0, TIMELINE_PARTICIPANT_SAMPLE_LIMIT).map(timelineParticipantPreviewFromSource);
-  const fits = () => Buffer.byteLength(canonicalJson(previews), 'utf8') <= TIMELINE_PARTICIPANT_SAMPLE_BYTES;
-  while (!fits() && previews.some(preview => preview.preview.length > 1)) {
-    previews = previews.map(preview => ({
-      ...preview,
-      preview: timelinePreview(preview.preview, Math.max(1, Math.floor(preview.preview.length / 2))),
-    }));
-  }
-  while (!fits() && previews.some(preview => preview.actorId.length > 16 || preview.actorLabel.length > 16)) {
-    previews = previews.map(preview => ({
-      ...preview,
-      actorId: timelinePreview(preview.actorId, Math.max(16, Math.floor(preview.actorId.length / 2))),
-      actorLabel: timelinePreview(preview.actorLabel, Math.max(16, Math.floor(preview.actorLabel.length / 2))),
-    }));
-  }
-  while (!fits() && previews.length > 2) previews.splice(Math.floor((previews.length - 1) / 2), 1);
-  while (!fits() && previews.length > 0) previews.shift();
-  return previews;
 }
 
 function registerTimelinePreviewSqlFunction(manager: EntityManager): void {
@@ -2186,14 +2295,6 @@ function registerTimelinePreviewSqlFunction(manager: EntityManager): void {
   database.function('memeloop_timeline_preview', { deterministic: true }, (content, maximum) => {
     if (typeof content !== 'string' || typeof maximum !== 'number' || !Number.isSafeInteger(maximum)) return '';
     return timelinePreview(content, Math.max(1, Math.min(maximum, TIMELINE_STORED_PREVIEW_LENGTH)));
-  });
-  database.function('memeloop_timeline_participants', { deterministic: true }, sourceJson => {
-    try {
-      const sources = JSON.parse(typeof sourceJson === 'string' ? sourceJson : '[]') as TimelineParticipantSource[];
-      return canonicalJson(boundTimelineParticipantSample(Array.isArray(sources) ? sources : []));
-    } catch {
-      return '[]';
-    }
   });
   timelinePreviewDatabases.add(database);
 }
@@ -2258,46 +2359,52 @@ async function isTurnTombstoned(manager: EntityManager, conversationId: string, 
   }) !== null;
 }
 
-interface TimelineParticipantRow extends TimelineParticipantSource {
-  responseCount: number;
-}
-
-async function refreshTimelineParticipants(
+async function resolveTimelineMessageTurnIndex(
   manager: EntityManager,
   conversationId: string,
   turnId: string,
-): Promise<void> {
-  const rows = await manager.query<TimelineParticipantRow[]>(
-    `WITH ranked AS (
-       SELECT message.content, message.role, message.originNodeId,
-         message.meta_data AS metadataJson,
-         COUNT(*) OVER () AS responseCount,
-         ROW_NUMBER() OVER (
-           ORDER BY message.timestamp, message.lamportClock,
-             message.originNodeId, message.messageId
-         ) AS firstRank,
-         ROW_NUMBER() OVER (
-           ORDER BY message.timestamp DESC, message.lamportClock DESC,
-             message.originNodeId DESC, message.messageId DESC
-         ) AS lastRank,
-         message.timestamp, message.lamportClock, message.messageId
-       FROM agent_instance_messages AS message
-       WHERE message.conversationId = ? AND message.turnId = ?
-         AND message.role IN ('assistant', 'agent')
-         AND message.hidden = 0 AND message.isContextCompaction = 0
-         AND ${visibleMessagePredicate('message')}
-     )
-     SELECT content, role, originNodeId, metadataJson, responseCount,
-       timestamp, lamportClock, messageId
-     FROM ranked WHERE firstRank <= 2 OR lastRank <= 2
-     ORDER BY timestamp, lamportClock, originNodeId, messageId`,
-    [conversationId, turnId],
+): Promise<number | undefined> {
+  const [row] = await manager.query<Array<{ turnIndex: number | null }>>(
+    `SELECT CASE WHEN root.messageId IS NULL THEN NULL ELSE (
+       SELECT COUNT(*) FROM conversation_timeline_entries AS earlier
+       WHERE earlier.conversationId = ? AND earlier.kind = 'message'
+         AND earlier.role = 'user' AND earlier.messageId = earlier.turnId
+         AND (earlier.timestamp, earlier.lamportClock, earlier.originNodeId, earlier.messageId) <
+           (root.timestamp, root.lamportClock, root.originNodeId, root.messageId)
+     ) END AS turnIndex
+     FROM (SELECT 1) AS singleton
+     LEFT JOIN conversation_timeline_entries AS root
+       ON root.conversationId = ? AND root.kind = 'message'
+      AND root.role = 'user' AND root.messageId = ? AND root.turnId = ?`,
+    [conversationId, conversationId, turnId, turnId],
   );
+  return row?.turnIndex ?? undefined;
+}
+
+async function countTimelineRootsBefore(
+  manager: EntityManager,
+  event: Pick<ConversationEvent, 'conversationId' | 'timestamp' | 'lamportClock' | 'originNodeId' | 'eventId'>,
+): Promise<number> {
+  const [row] = await manager.query<Array<{ count: number }>>(
+    `SELECT COUNT(*) AS count FROM conversation_timeline_entries AS root
+     WHERE root.conversationId = ? AND root.kind = 'message'
+       AND root.role = 'user' AND root.messageId = root.turnId
+       AND (root.timestamp, root.lamportClock, root.originNodeId, root.messageId) < (?, ?, ?, ?)`,
+    [event.conversationId, event.timestamp, event.lamportClock, event.originNodeId, event.eventId],
+  );
+  return row?.count ?? 0;
+}
+
+async function refreshOrphanTimelineMessageTurnIndices(
+  manager: EntityManager,
+  conversationId: string,
+  turnId: string,
+  turnIndex: number,
+): Promise<void> {
   await manager.query(
-    `UPDATE conversation_timeline_entries
-     SET participantPreviewsJson = ?, responseCount = ?
-     WHERE conversationId = ? AND turnId = ? AND kind = 'turn'`,
-    [canonicalJson(boundTimelineParticipantSample(rows)), rows[0]?.responseCount ?? 0, conversationId, turnId],
+    `UPDATE conversation_timeline_entries SET turnIndex = ?
+     WHERE conversationId = ? AND kind = 'message' AND turnId = ?`,
+    [turnIndex, conversationId, turnId],
   );
 }
 
@@ -2310,6 +2417,31 @@ function markTimelineRankCheckpointsDirty(manager: EntityManager, conversationId
 }
 
 export async function rebuildTimelineRankCheckpoints(manager: EntityManager, conversationId: string): Promise<void> {
+  await manager.query(
+    `WITH ranked AS MATERIALIZED (
+       SELECT entry.messageId, entry.turnId,
+         COALESCE(SUM(CASE WHEN entry.kind = 'message' AND entry.role = 'user'
+           AND entry.messageId = entry.turnId THEN 1 ELSE 0 END) OVER (
+           ORDER BY entry.timestamp, entry.lamportClock,
+             entry.originNodeId, entry.messageId
+           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+         ), 0) AS rootsBefore
+       FROM conversation_timeline_entries AS entry
+       WHERE entry.conversationId = ?
+     ), roots AS MATERIALIZED (
+       SELECT entry.turnId, ranked.rootsBefore AS turnIndex
+       FROM conversation_timeline_entries AS entry
+       JOIN ranked ON ranked.messageId = entry.messageId
+       WHERE entry.conversationId = ? AND entry.kind = 'message'
+         AND entry.role = 'user' AND entry.messageId = entry.turnId
+     )
+     UPDATE conversation_timeline_entries AS entry
+     SET turnIndex = CASE WHEN entry.kind = 'message'
+       THEN roots.turnIndex ELSE ranked.rootsBefore END
+     FROM ranked LEFT JOIN roots ON roots.turnId = ranked.turnId
+     WHERE entry.conversationId = ? AND ranked.messageId = entry.messageId`,
+    [conversationId, conversationId, conversationId],
+  );
   await manager.getRepository(ConversationTimelineRankCheckpointEntity).delete({ conversationId });
   await manager.query(
     `INSERT INTO conversation_timeline_rank_checkpoints (
@@ -2325,7 +2457,8 @@ export async function rebuildTimelineRankCheckpoints(manager: EntityManager, con
            ORDER BY entry.timestamp, entry.lamportClock,
              entry.originNodeId, entry.messageId
          ) - 1 AS entryIndex,
-         COALESCE(SUM(CASE WHEN entry.kind = 'turn' THEN 1 ELSE 0 END) OVER (
+         COALESCE(SUM(CASE WHEN entry.kind = 'message' AND entry.role = 'user'
+           AND entry.messageId = entry.turnId THEN 1 ELSE 0 END) OVER (
            ORDER BY entry.timestamp, entry.lamportClock,
              entry.originNodeId, entry.messageId
            ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
@@ -2355,7 +2488,11 @@ async function insertTimelineEntry(
     & Partial<
       Pick<
         ConversationTimelineEntryEntity,
-        | 'userPreview'
+        | 'turnIndex'
+        | 'role'
+        | 'actorId'
+        | 'actorLabel'
+        | 'preview'
         | 'summaryPreview'
         | 'compactedMessageCount'
         | 'compactedTurnCount'
@@ -2414,21 +2551,27 @@ async function projectTimelineMessage(
 ): Promise<void> {
   const message = event.message;
   if (message.hidden === true || await isTurnTombstoned(manager, event.conversationId, message.turnId)) return;
-  let turnDelta = 0;
-  let entryDelta = 0;
-  if (message.role === 'user' && message.messageId === message.turnId) {
+  const userRoot = message.role === 'user' && message.messageId === message.turnId;
+  const navigable = message.role === 'user' || message.role === 'assistant' || message.role === 'agent';
+  if (message.role === 'user' || message.role === 'assistant' || message.role === 'agent') {
+    const actor = timelineMessageActor(message.role, event.originNodeId, message.metadata);
     await insertTimelineEntry(manager, event, {
-      kind: 'turn',
+      kind: 'message',
       turnId: message.turnId,
-      userPreview: storedTimelinePreview(message.content),
+      role: message.role,
+      ...actor,
+      preview: storedTimelinePreview(message.content),
     });
-    await refreshTimelineParticipants(manager, event.conversationId, message.turnId);
-    turnDelta = 1;
-    entryDelta = 1;
-  } else if (message.role === 'assistant' || message.role === 'agent') {
-    await refreshTimelineParticipants(manager, event.conversationId, message.turnId);
+    const turnIndex = await resolveTimelineMessageTurnIndex(manager, event.conversationId, message.turnId);
+    if (turnIndex !== undefined) {
+      await refreshOrphanTimelineMessageTurnIndices(manager, event.conversationId, message.turnId, turnIndex);
+    }
   }
-  await updateTimelineState(manager, event.conversationId, { messages: 1, turns: turnDelta, entries: entryDelta });
+  await updateTimelineState(manager, event.conversationId, {
+    messages: 1,
+    turns: userRoot ? 1 : 0,
+    entries: navigable ? 1 : 0,
+  });
   await refreshTimelineLastMessage(manager, event.conversationId);
 }
 
@@ -2439,9 +2582,11 @@ async function projectTimelineCompaction(
   if (await isTurnTombstoned(manager, event.conversationId, event.summary.turnId)) return;
   const summaryPreview = storedTimelinePreview(event.summary.content);
   if (summaryPreview.length === 0) return;
+  const turnIndex = await countTimelineRootsBefore(manager, event);
   await insertTimelineEntry(manager, event, {
     kind: 'compaction',
     turnId: event.summary.turnId,
+    turnIndex,
     summaryPreview,
     compactedMessageCount: event.boundary.droppedMessageCount,
     compactedTurnCount: event.boundary.droppedTurnCount,
@@ -2467,7 +2612,7 @@ async function projectTimelineTombstone(
     await manager.getRepository(ConversationTimelineEntryEntity).delete({ conversationId, messageId: entry.messageId });
   }
   const removedMessages = messageCount?.count ?? 0;
-  const removedTurns = entries.filter(entry => entry.kind === 'turn').length;
+  const removedTurns = entries.filter(entry => entry.kind === 'message' && entry.role === 'user' && entry.messageId === entry.turnId).length;
   if (removedMessages > 0 || entries.length > 0) {
     if (entries.length > 0) markTimelineRankCheckpointsDirty(manager, conversationId);
     await updateTimelineState(manager, conversationId, {
@@ -2584,6 +2729,25 @@ async function projectConversationEvent(
     return;
   }
 
+  if (event.kind === 'loopCheckpoint') {
+    const repository = manager.getRepository(AgentLoopCheckpointEntity);
+    const existing = await repository.findOne({
+      where: { conversationId: event.conversationId, key: event.checkpoint.key },
+    });
+    if (existing && compareConversationLoopCheckpointEvents(existing, event) >= 0) return;
+    await repository.save(repository.create({
+      conversationId: event.conversationId,
+      key: event.checkpoint.key,
+      result: event.checkpoint.result,
+      eventId: event.eventId,
+      originNodeId: event.originNodeId,
+      originSequence: event.originSequence,
+      lamportClock: event.lamportClock,
+      timestamp: event.timestamp,
+    }));
+    return;
+  }
+
   if (event.kind === 'compaction' && event.mode === 'coverage-only') return;
 
   const instance = await manager.getRepository(AgentInstanceEntity).findOne({
@@ -2610,14 +2774,14 @@ async function projectConversationEvent(
   const messageRepository = manager.getRepository(AgentInstanceMessageEntity);
   const existing = await messageRepository.findOne({ where: { messageId: message.messageId } });
   if (existing) {
-    if (canonicalJson(pick(existing, MESSAGE_FIELDS)) !== canonicalJson(pick(message, MESSAGE_FIELDS))) {
+    if (canonicalJson(pick(existing, CANONICAL_MESSAGE_FIELDS)) !== canonicalJson(pick(message, CANONICAL_MESSAGE_FIELDS))) {
       throw eventStoreError('CONFLICT', `message projection ${message.messageId} conflicts with canonical event`);
     }
     await insertMessageDetailProjection(manager, message);
     return;
   }
   await insertMessageDetailProjection(manager, message);
-  await messageRepository.save(messageRepository.create(toDatabaseCompatibleMessage(message)));
+  await messageRepository.save(messageRepository.create(projectChatMessageEntity(message)));
   if (projectTimeline) {
     if (event.kind === 'message') await projectTimelineMessage(manager, event);
     else await projectTimelineCompaction(manager, event);
@@ -2632,70 +2796,39 @@ async function rebuildConversationTimelineProjection(
   registerTimelinePreviewSqlFunction(manager);
   await manager.getRepository(ConversationTimelineEntryEntity).delete({ conversationId });
   await manager.query(
-    `CREATE TEMP TABLE IF NOT EXISTS memeloop_timeline_participants (
-       conversationId TEXT NOT NULL,
-       turnId TEXT NOT NULL,
-       participantPreviewsJson TEXT NOT NULL,
-       responseCount INTEGER NOT NULL,
-       PRIMARY KEY (conversationId, turnId)
-     ) WITHOUT ROWID`,
-  );
-  await manager.query('DELETE FROM memeloop_timeline_participants');
-  await manager.query(
-    `WITH ranked AS (
-       SELECT message.conversationId, message.turnId, message.content,
-         message.role, message.originNodeId, message.meta_data AS metadataJson,
-         message.timestamp, message.lamportClock, message.messageId,
-         COUNT(*) OVER (PARTITION BY message.conversationId, message.turnId) AS responseCount,
-         ROW_NUMBER() OVER (
-           PARTITION BY message.conversationId, message.turnId
-           ORDER BY message.timestamp, message.lamportClock,
-             message.originNodeId, message.messageId
-         ) AS firstRank,
-         ROW_NUMBER() OVER (
-           PARTITION BY message.conversationId, message.turnId
-           ORDER BY message.timestamp DESC, message.lamportClock DESC,
-             message.originNodeId DESC, message.messageId DESC
-         ) AS lastRank
-       FROM agent_instance_messages AS message
-       WHERE message.conversationId = ?
-         AND message.role IN ('assistant', 'agent')
-         AND message.hidden = 0 AND message.isContextCompaction = 0
-         AND ${visibleMessagePredicate('message')}
-     ), sampled AS (
-       SELECT * FROM ranked WHERE firstRank <= 2 OR lastRank <= 2
-     )
-     INSERT INTO memeloop_timeline_participants (
-       conversationId, turnId, participantPreviewsJson, responseCount
-     )
-     SELECT conversationId, turnId,
-       memeloop_timeline_participants(json_group_array(json_object(
-         'content', content, 'role', role, 'originNodeId', originNodeId,
-         'metadataJson', metadataJson, 'timestamp', timestamp,
-         'lamportClock', lamportClock, 'messageId', messageId
-       ))), MAX(responseCount)
-     FROM sampled GROUP BY conversationId, turnId`,
-    [conversationId],
-  );
-  await manager.query(
     `INSERT INTO conversation_timeline_entries (
        conversationId, messageId, cursor, kind, turnId,
-       timestamp, lamportClock, originNodeId, userPreview,
-       participantPreviewsJson, responseCount
+       timestamp, lamportClock, originNodeId, turnIndex,
+       role, actorId, actorLabel, preview
      )
-     SELECT user.conversationId, user.messageId, user.messageId, 'turn', user.turnId,
-       user.timestamp, user.lamportClock, user.originNodeId,
-       memeloop_timeline_preview(user.content, ?),
-       COALESCE(participant.participantPreviewsJson, '[]'),
-       COALESCE(participant.responseCount, 0)
-     FROM agent_instance_messages AS user
-     LEFT JOIN memeloop_timeline_participants AS participant
-       ON participant.conversationId = user.conversationId
-      AND participant.turnId = user.turnId
-     WHERE user.conversationId = ? AND user.role = 'user'
-       AND user.messageId = user.turnId AND user.hidden = 0
-       AND ${visibleMessagePredicate('user')}`,
-    [TIMELINE_STORED_PREVIEW_LENGTH, conversationId],
+     SELECT message.conversationId, message.messageId, message.messageId,
+       'message', message.turnId, message.timestamp, message.lamportClock,
+       message.originNodeId, NULL, message.role,
+       memeloop_timeline_preview(COALESCE(
+         NULLIF(json_extract(message.meta_data, '$.actorId'), ''),
+         CASE WHEN message.role = 'user'
+           THEN NULLIF(json_extract(message.meta_data, '$.userId'), '')
+           ELSE NULLIF(json_extract(message.meta_data, '$.agentId'), '') END,
+         message.originNodeId
+       ), ?),
+       memeloop_timeline_preview(COALESCE(
+         NULLIF(json_extract(message.meta_data, '$.actorLabel'), ''),
+         CASE WHEN message.role = 'user'
+           THEN NULLIF(json_extract(message.meta_data, '$.userName'), '')
+           ELSE NULLIF(json_extract(message.meta_data, '$.agentName'), '') END,
+         NULLIF(json_extract(message.meta_data, '$.actorId'), ''),
+         CASE WHEN message.role = 'user'
+           THEN NULLIF(json_extract(message.meta_data, '$.userId'), '')
+           ELSE NULLIF(json_extract(message.meta_data, '$.agentId'), '') END,
+         message.originNodeId
+       ), ?),
+       memeloop_timeline_preview(message.content, ?)
+     FROM agent_instance_messages AS message
+     WHERE message.conversationId = ?
+       AND message.role IN ('user', 'assistant', 'agent')
+       AND message.hidden = 0 AND message.isContextCompaction = 0
+       AND ${visibleMessagePredicate('message')}`,
+    [TIMELINE_ACTOR_LENGTH, TIMELINE_ACTOR_LENGTH, TIMELINE_STORED_PREVIEW_LENGTH, conversationId],
   );
   await manager.query(
     `INSERT INTO conversation_timeline_entries (
@@ -2730,7 +2863,8 @@ async function rebuildConversationTimelineProjection(
           AND message.isContextCompaction = 0
           AND ${visibleMessagePredicate('message')}),
        (SELECT COUNT(*) FROM conversation_timeline_entries
-        WHERE conversationId = ? AND kind = 'turn'),
+        WHERE conversationId = ? AND kind = 'message'
+          AND role = 'user' AND messageId = turnId),
        (SELECT COUNT(*) FROM conversation_timeline_entries WHERE conversationId = ?),
        COALESCE((
          SELECT memeloop_timeline_preview(message.content, 240)
@@ -2839,7 +2973,7 @@ async function insertMessageProjectionsBatch(
 /** Explicit SQLite DTO: JSON columns are serialized before crossing TypeORM's DeepPartial boundary. */
 async function insertMessageProjectionRows(manager: EntityManager, messages: readonly ChatMessage[]): Promise<void> {
   const rows = messages.map(message => {
-    const value = toDatabaseCompatibleMessage(message);
+    const value = projectChatMessageEntity(message);
     return {
       messageId: value.messageId,
       conversationId: value.conversationId,
@@ -2886,8 +3020,7 @@ async function insertMessageProjectionRows(manager: EntityManager, messages: rea
 
 /**
  * Authorize a blob read only when an immutable event in this conversation
- * actually references the hash. Both legacy attachment arrays and structured
- * attachment parts are checked in one bounded, parameterized SQLite query.
+ * actually references the hash in the canonical attachment-reference table.
  */
 export async function conversationReferencesAttachment(
   dataSource: DataSource,
@@ -3321,7 +3454,7 @@ export async function insertConversationEventsIfAbsent(
       // project individually. The high-cardinality message path is bulk-only.
       await insertConversationAttachmentReferences(manager, inserted);
       for (const event of inserted) {
-        if (event.kind === 'metadataPatch' || event.kind === 'tombstone') {
+        if (event.kind === 'metadataPatch' || event.kind === 'tombstone' || event.kind === 'loopCheckpoint') {
           await projectConversationEvent(manager, event, { attachments: false, timeline: false, list: false });
         }
       }
@@ -3719,6 +3852,7 @@ export async function rebuildConversationEventProjection(dataSource: DataSource,
     await manager.getRepository(AgentInstanceMessageEntity).delete({ conversationId });
     await manager.getRepository(ConversationMessageDetailEntity).delete({ conversationId });
     await manager.getRepository(ConversationTurnTombstoneEntity).delete({ conversationId });
+    await manager.getRepository(AgentLoopCheckpointEntity).delete({ conversationId });
     await manager.getRepository(ConversationMetadataFieldEntity).delete({ conversationId });
     await manager.getRepository(ConversationAttachmentReferenceEntity).delete({ conversationId });
     await manager.getRepository(ConversationTimelineEntryEntity).delete({ conversationId });

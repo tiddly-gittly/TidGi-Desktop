@@ -111,7 +111,7 @@ export function extractLatestTodoText(messages: ChatMessage[]): string | undefin
         return parsed.text;
       }
     } catch {
-      // Ignore malformed or unrelated legacy tool result messages.
+      // Ignore malformed or unrelated tool result messages.
     }
   }
   return undefined;

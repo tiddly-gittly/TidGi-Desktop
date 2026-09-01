@@ -1,6 +1,7 @@
 import type {
+  AgentDefinition,
+  AgentFrameworkConfig,
   AgentFrameworkContext,
-  AgentInstanceState,
   AgentLoopGenerator,
   AgentLoopInput,
   AgentLoopRuntime,
@@ -10,31 +11,91 @@ import type {
   ChatMessage,
   Device,
   MemeLoopRuntime,
-  PromptConcatTool,
+  PromptConcatStreamState,
   PromptPreviewAuditDetailChunk,
   PromptPreviewAuditDetailRequest,
   PromptPreviewAuditPage,
   PromptPreviewAuditPageRequest,
   PromptPreviewAuditReleaseRequest,
+  PromptPreviewPreparedExecution,
+  PromptPreviewPrepareRequest,
+  ToolApprovalResolution,
 } from 'memeloop';
-import { createAgentLoopRunner, createMemeLoopRuntime, mergeAgentToolsIntoFrameworkConfig, ProviderRegistry, registerBuiltinPromptPlugins, runAgentToolLoopTurn } from 'memeloop';
+import {
+  createAgentLoopRunner,
+  createMemeLoopRuntime,
+  materializeAgentInstanceModel,
+  mergeAgentToolsIntoFrameworkConfig,
+  promptConcatStream,
+  ProviderRegistry,
+  registerBuiltinPromptPlugins,
+  ToolApprovalBroker,
+} from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
-import type { AgentInstance } from 'memeloop';
+import type { DataSource } from 'typeorm';
 import type { IAgentInstanceService } from '../interface';
-import { type DesktopPromptPreviewPreparedExecution, type DesktopPromptPreviewPrepareInput, DesktopPromptPreviewService } from '../promptPreview';
+import { DesktopPromptPreviewService } from '../promptPreview';
 import { MemeLoopDesktopLLMProvider } from './llmProvider';
+import { DesktopLoopCheckpointStore } from './loopCheckpointStore';
 import { MemeLoopDesktopStorage } from './storage';
 import { MemeLoopDesktopToolRegistry } from './toolRegistry';
-import { type AgentUserContent, createMemeLoopUserMessage } from './userMessage';
+
+/**
+ * Resolve one fresh execution definition for a Desktop conversation.
+ *
+ * Core invokes this port at every user-turn boundary. Definition data remains
+ * the base, while the conversation's persisted instance prompt/model overrides
+ * are deliberately read on every invocation so an editor save affects the next
+ * turn without rebuilding the runtime or teaching loop scripts about host JSON.
+ */
+export async function resolveDesktopAgentDefinition(options: {
+  agentId: string;
+  definitionId: string;
+  agentInstanceService: IAgentInstanceService;
+  agentDefinitionService: IAgentDefinitionService;
+}): Promise<AgentDefinition | null> {
+  const definition = await options.agentDefinitionService.getAgentDef(options.definitionId);
+  if (!definition) return null;
+  const instance = await options.agentInstanceService.getAgentMetadata(options.agentId);
+  const isMatchingInstance = instance?.agentDefId === options.definitionId;
+  const frameworkConfig = isMatchingInstance
+    ? instance.agentFrameworkConfig ?? definition.agentFrameworkConfig
+    : definition.agentFrameworkConfig;
+  const modelConfig = isMatchingInstance
+    ? instance.modelConfig ?? definition.modelConfig
+    : definition.modelConfig;
+
+  return {
+    ...definition,
+    agentFrameworkConfig: mergeAgentToolsIntoFrameworkConfig(frameworkConfig, definition.agentTools),
+    ...(modelConfig === undefined ? {} : { modelConfig }),
+  };
+}
+
+/** Bind Desktop services while keeping Core's per-turn conversation identity authoritative. */
+export function createDesktopAgentDefinitionResolver(options: {
+  fallbackAgentId: string;
+  agentInstanceService: IAgentInstanceService;
+  agentDefinitionService: IAgentDefinitionService;
+}): NonNullable<AgentFrameworkContext['resolveAgentDefinition']> {
+  return (definitionId, resolutionOptions) =>
+    resolveDesktopAgentDefinition({
+      agentId: resolutionOptions?.conversationId ?? options.fallbackAgentId,
+      definitionId,
+      agentInstanceService: options.agentInstanceService,
+      agentDefinitionService: options.agentDefinitionService,
+    });
+}
 
 export class MemeLoopDesktopRuntime {
   private readonly storage: MemeLoopDesktopStorage;
   private readonly toolRegistry = new MemeLoopDesktopToolRegistry();
   private readonly promptPreviewService: DesktopPromptPreviewService;
+  private readonly toolApprovals = new ToolApprovalBroker({ runtimeId: crypto.randomUUID() });
   private coreRuntimePromise: Promise<MemeLoopRuntime> | undefined;
 
   public constructor(
@@ -43,66 +104,20 @@ export class MemeLoopDesktopRuntime {
       agentDefinitionService: IAgentDefinitionService;
       externalAPIService: IExternalAPIService;
       deviceNetworkService: IDeviceNetworkService;
-      notifyAgentChanged: (agentId: string, agent: AgentInstance) => void;
       notifyTransientMessage: (message: ChatMessage) => void | Promise<void>;
-      isCancelled: (agentId: string) => boolean;
       loopScriptPolicy?: AgentFrameworkContext['loopScriptPolicy'];
+      dataSource: DataSource;
     },
   ) {
     this.storage = new MemeLoopDesktopStorage({
       agentInstanceService: options.agentInstanceService,
       agentDefinitionService: options.agentDefinitionService,
       getLocalNodeId: async () => (await options.deviceNetworkService.getLocalIdentity()).peerId,
-      notifyAgentChanged: options.notifyAgentChanged,
     });
     this.promptPreviewService = new DesktopPromptPreviewService({
-      createContext: (conversationId, signal) => this.createContext(conversationId, undefined, undefined, signal),
+      createContext: (conversationId, signal) => this.createContext(conversationId, undefined, signal),
     });
     registerBuiltinPromptPlugins(this.toolRegistry.getPromptPlugins());
-  }
-
-  public async runTurn(input: {
-    agentId: string;
-    content: AgentUserContent;
-    beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
-    persistedUserMessage?: ChatMessage;
-  }): Promise<AgentInstanceState> {
-    const localNodeId = (await this.options.deviceNetworkService.getLocalIdentity()).peerId;
-    const userMessage = input.persistedUserMessage ?? await createMemeLoopUserMessage({
-      agentId: input.agentId,
-      content: input.content,
-      originNodeId: localNodeId,
-      beforeCommitMap: input.beforeCommitMap,
-    });
-    const context = await this.createContext(input.agentId, undefined, localNodeId);
-    const runner = await this.createProfileRunner(input.agentId, context);
-
-    const result = await runAgentToolLoopTurn(
-      context,
-      {
-        conversationId: input.agentId,
-        message: input.content.text,
-        userMessage,
-        ...(input.persistedUserMessage ? { persistedUserMessage: input.persistedUserMessage } : {}),
-      },
-      {
-        onProgress: async (status: string) => {
-          const agent = await this.options.agentInstanceService.getAgentMetadata(input.agentId).catch(() => undefined);
-          if (!agent) return;
-          this.options.notifyAgentChanged(input.agentId, {
-            ...agent,
-            messages: [],
-            status: { state: 'working', progress: status, modified: new Date() },
-          });
-        },
-        agentToolLoop: runner ?? undefined,
-      },
-    );
-    return result.state;
-  }
-
-  public getPromptPlugins(): Map<string, PromptConcatTool> {
-    return this.toolRegistry.getPromptPlugins();
   }
 
   /** One durable Core runtime shared by local UI and authenticated Device RPC. */
@@ -120,8 +135,8 @@ export class MemeLoopDesktopRuntime {
   }
 
   public preparePromptPreviewExecutionModelRequest(
-    input: DesktopPromptPreviewPrepareInput,
-  ): Promise<DesktopPromptPreviewPreparedExecution> {
+    input: PromptPreviewPrepareRequest,
+  ): Promise<PromptPreviewPreparedExecution> {
     return this.promptPreviewService.prepare(input);
   }
 
@@ -141,8 +156,28 @@ export class MemeLoopDesktopRuntime {
     this.promptPreviewService.release(request);
   }
 
-  public getPromptPreviewMessagesForHost(sessionId: string, expectedRevision: string): readonly ChatMessage[] {
-    return this.promptPreviewService.getMessagesForHost(sessionId, expectedRevision);
+  public resolveToolApproval(resolution: ToolApprovalResolution): boolean {
+    return this.toolApprovals.resolveApproval(resolution);
+  }
+
+  public async *concatPromptPreview(input: {
+    sessionId: string;
+    expectedRevision: string;
+    agentFrameworkConfig: AgentFrameworkConfig;
+    signal: AbortSignal;
+  }): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
+    const retained = this.promptPreviewService.getContextForHost(input.sessionId, input.expectedRevision);
+    const context = await this.createContext(retained.conversationId, undefined, input.signal);
+    const agent = context.resolveAgentRuntimeView
+      ? await context.resolveAgentRuntimeView(retained.conversationId, [...retained.messages])
+      : undefined;
+    if (!agent) throw new Error('prompt preview agent runtime view is unavailable');
+    input.signal.throwIfAborted();
+    return yield* promptConcatStream(
+      { agentFrameworkConfig: input.agentFrameworkConfig },
+      [...retained.messages],
+      { ...context, agent, operationSignal: input.signal },
+    );
   }
 
   public async dispose(): Promise<void> {
@@ -151,6 +186,7 @@ export class MemeLoopDesktopRuntime {
     this.coreRuntimePromise = undefined;
     this.promptPreviewService.dispose();
     this.toolRegistry.dispose();
+    this.toolApprovals.dispose();
   }
 
   private async createProfileRunner(agentId: string, context: AgentFrameworkContext): Promise<((input: AgentLoopInput) => AgentLoopGenerator) | null> {
@@ -188,18 +224,11 @@ export class MemeLoopDesktopRuntime {
 
   private async createContext(
     agentId: string,
-    parentAgentId?: string,
-    knownLocalNodeId?: string,
+    _parentAgentId?: string,
     signal?: AbortSignal,
   ): Promise<AgentFrameworkContext & DesktopRemoteAgentNetworkContext> {
     signal?.throwIfAborted();
-    const isCancelled = (targetAgentId: string): boolean => {
-      return signal?.aborted === true || this.options.isCancelled(targetAgentId) || (parentAgentId ? this.options.isCancelled(parentAgentId) : false);
-    };
-
     const remoteNetworkContext = await createDesktopRemoteAgentNetworkContext(this.options.deviceNetworkService);
-    signal?.throwIfAborted();
-    const localNodeId = knownLocalNodeId ?? (await this.options.deviceNetworkService.getLocalIdentity()).peerId;
     signal?.throwIfAborted();
     const modelBindings = await this.createModelBindings();
     signal?.throwIfAborted();
@@ -211,6 +240,7 @@ export class MemeLoopDesktopRuntime {
         ? {}
         : { defaultModelConfig: modelBindings.defaultModelConfig }),
       tools: this.toolRegistry,
+      toolApprovals: this.toolApprovals,
       syncAdapters: [],
       network: this.options.deviceNetworkService,
       ...remoteNetworkContext,
@@ -218,63 +248,38 @@ export class MemeLoopDesktopRuntime {
       // owns a fleet-aware target selector, direct trusted RPC is the explicit
       // fallback and orchestration remains unsupported rather than misrouted.
       logger,
+      loopCheckpoints: new DesktopLoopCheckpointStore(
+        this.options.dataSource,
+        async () => (await this.options.deviceNetworkService.getLocalIdentity()).peerId,
+      ),
       loopScriptPolicy: this.options.loopScriptPolicy,
-      isCancelled: () => isCancelled(agentId),
       runChildAgent: this.createRunChildAgent(agentId),
-      normalizeMessage: message => {
-        return { ...message, originNodeId: message.originNodeId || localNodeId };
-      },
       onTransientMessage: async (message) => {
         // Streaming partials are deliberately UI-only. The MemeLoop core
         // persists one immutable message with the same ID after completion.
         await this.options.notifyTransientMessage(message);
       },
       resolveAgentRuntimeView: async (agentId: string, messages: ChatMessage[]) => {
-        const agent = await this.options.agentInstanceService.getAgentMetadata(agentId);
-        const definition = agent ? await this.options.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
-        const frameworkConfig = mergeAgentToolsIntoFrameworkConfig(
-          agent?.agentFrameworkConfig,
-          agent?.agentTools ?? definition?.agentTools,
-        );
-        const defaultAgent = {
-          id: agentId,
-          agentDefId: agent?.agentDefId ?? definition?.id ?? agentId,
-          status: { state: 'working' as const, modified: new Date() },
-          created: new Date(),
-          messages: [],
-          description: '',
-          systemPrompt: '',
-          tools: [],
-          version: '1',
-        };
-        return {
-          ...(agent ?? defaultAgent),
-          id: agentId,
-          messages,
-          agentDefId: agent?.agentDefId ?? definition?.id ?? agentId,
-          status: agent?.status ?? { state: 'working' as const, modified: new Date() },
-          created: agent?.created ?? new Date(),
-          agentFrameworkConfig: frameworkConfig,
-          modelConfig: agent?.modelConfig ?? definition?.modelConfig,
-        };
+        const metadata = await this.options.agentInstanceService.getAgentMetadata(agentId);
+        if (!metadata) throw new Error(`agent instance not found: ${agentId}`);
+        const definition = await resolveDesktopAgentDefinition({
+          agentId,
+          definitionId: metadata.agentDefId,
+          agentInstanceService: this.options.agentInstanceService,
+          agentDefinitionService: this.options.agentDefinitionService,
+        });
+        if (!definition) throw new Error(`agent definition not found: ${metadata.agentDefId}`);
+        return materializeAgentInstanceModel(metadata, definition, messages);
       },
       agentToolLoop: {
         maxIterations: 32,
-        isCancelled,
         fallbackRegistryTools: false,
       },
-      resolveAgentDefinition: async definitionId => {
-        const definition = await this.options.agentDefinitionService.getAgentDef(definitionId);
-        if (!definition) return null;
-
-        return {
-          ...definition,
-          agentFrameworkConfig: mergeAgentToolsIntoFrameworkConfig(
-            definition.agentFrameworkConfig,
-            definition.agentTools,
-          ),
-        };
-      },
+      resolveAgentDefinition: createDesktopAgentDefinitionResolver({
+        fallbackAgentId: agentId,
+        agentInstanceService: this.options.agentInstanceService,
+        agentDefinitionService: this.options.agentDefinitionService,
+      }),
     };
   }
 
@@ -293,46 +298,28 @@ export interface DesktopModelBindings {
 export async function createDesktopModelBindings(
   externalAPIService: IExternalAPIService,
 ): Promise<DesktopModelBindings> {
-  const providers = await externalAPIService.getAIProviders();
+  const accounts = await externalAPIService.getProviderAccounts();
   const registry = new ProviderRegistry();
   const adapters = new Map<string, MemeLoopDesktopLLMProvider>();
-  for (const provider of providers) {
-    if (provider.enabled === false || provider.models.length === 0) continue;
+  for (const account of accounts) {
+    if (account.enabled === false || account.models.length === 0) continue;
     const adapter = new MemeLoopDesktopLLMProvider({
-      providerId: provider.provider,
+      providerId: account.providerId,
       externalAPIService,
     });
     registry.register(
       { ownerId: 'tidgi-desktop', kind: 'host' },
       adapter,
       {
-        capabilities: [...new Set(provider.models.flatMap(model => model.features ?? []))],
-        models: provider.models.map(model => ({
-          modelId: model.name,
-          wireModelId: model.name,
-          apiMode: model.apiMode ?? 'chat-completions',
-        })),
+        models: account.models,
       },
     );
-    adapters.set(provider.provider, adapter);
+    adapters.set(account.providerId, adapter);
   }
 
   const globalConfig = await externalAPIService.getAIConfig();
-  const selected = globalConfig.default;
-  const parameters = globalConfig.modelParameters;
-  const maxOutputTokens = parameters.maxOutputTokens ?? parameters.maxTokens;
-  const defaultModelConfig: AgentModelConfig | undefined = selected?.provider && selected.model
-    ? {
-      providerId: selected.provider,
-      modelId: selected.model,
-      parameters: {
-        ...(parameters.temperature === undefined ? {} : { temperature: parameters.temperature }),
-        ...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
-        ...(parameters.topP === undefined ? {} : { topP: parameters.topP }),
-      },
-    }
-    : undefined;
-  const fallbackProvider = selected ? adapters.get(selected.provider) : undefined;
+  const defaultModelConfig: AgentModelConfig | undefined = globalConfig.default;
+  const fallbackProvider = defaultModelConfig ? adapters.get(defaultModelConfig.providerId) : undefined;
   return {
     registry,
     fallbackProvider: fallbackProvider ?? new MemeLoopDesktopLLMProvider({

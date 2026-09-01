@@ -5,7 +5,7 @@
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 import type { AgentDefinition, HostAgentToolConfig } from 'memeloop';
-import { AGENT_TOOL_LOOP_ID, getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
+import { getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
@@ -42,13 +42,6 @@ export function mergeDesktopGeneralAssistantTools(
   return merged;
 }
 
-export function resolveAgentToolsOverride(
-  entityTools: HostAgentToolConfig[] | null | undefined,
-  bundledTools: HostAgentToolConfig[] | undefined,
-): HostAgentToolConfig[] | undefined {
-  return entityTools === null || entityTools === undefined ? bundledTools : entityTools;
-}
-
 function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
   const portableDefinitions = getBuiltinLoopProfiles().map((profile): AgentDefinition => ({
     systemPrompt: '',
@@ -72,38 +65,25 @@ function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
 
 const defaultAgentsList = createDesktopBuiltinAgentDefinitions();
 
-function mergeTextOverride(value: string | null | undefined, fallback: string | undefined): string | undefined {
-  return value?.trim() ? value : fallback;
-}
-
-function mergeWithDefaultAgent(entity: AgentDefinitionEntity): AgentDefinition {
-  const defaultAgent = defaultAgentsList.find(agent => agent.id === entity.id);
+function projectAgentDefinition(entity: AgentDefinitionEntity): AgentDefinition {
   return {
-    systemPrompt: '',
-    tools: [],
-    version: '1',
-    ...defaultAgent,
     id: entity.id,
-    name: mergeTextOverride(entity.name, defaultAgent?.name) ?? '',
-    description: mergeTextOverride(entity.description, defaultAgent?.description) ?? '',
-    avatarUrl: mergeTextOverride(entity.avatarUrl, defaultAgent?.avatarUrl),
-    agentFrameworkID: mergeTextOverride(entity.agentFrameworkID, defaultAgent?.agentFrameworkID) || AGENT_TOOL_LOOP_ID,
-    agentFrameworkConfig: entity.agentFrameworkConfig ?? defaultAgent?.agentFrameworkConfig ?? { prompts: [], plugins: [] },
-    modelConfig: entity.modelConfig ?? defaultAgent?.modelConfig,
-    agentTools: resolveAgentToolsOverride(entity.agentTools, defaultAgent?.agentTools),
-    heartbeat: entity.heartbeat ?? defaultAgent?.heartbeat,
+    name: entity.name,
+    description: entity.description,
+    systemPrompt: entity.systemPrompt,
+    tools: [...entity.tools],
+    version: entity.version,
+    ...(entity.avatarUrl === undefined ? {} : { avatarUrl: entity.avatarUrl }),
+    ...(entity.agentFrameworkID === undefined ? {} : { agentFrameworkID: entity.agentFrameworkID }),
+    ...(entity.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
+    ...(entity.modelConfig === undefined ? {} : { modelConfig: entity.modelConfig }),
+    ...(entity.agentTools === undefined ? {} : { agentTools: entity.agentTools }),
+    ...(entity.heartbeat === undefined ? {} : { heartbeat: entity.heartbeat }),
   };
 }
 
-export function shouldRefreshBuiltinDefinition(entity: Pick<AgentDefinitionEntity, 'builtinVersion' | 'isCustomized' | 'createdAt' | 'updatedAt'>): boolean {
-  if (entity.isCustomized !== null && entity.isCustomized !== undefined) {
-    return !entity.isCustomized;
-  }
-
-  // Before builtinVersion/isCustomized existed, Desktop inserted complete
-  // bundled definitions. An unchanged row has identical creation/update
-  // timestamps; edited legacy rows must be preserved.
-  return entity.createdAt.getTime() === entity.updatedAt.getTime();
+export function shouldRefreshBuiltinDefinition(entity: Pick<AgentDefinitionEntity, 'isCustomized'>): boolean {
+  return !entity.isCustomized;
 }
 
 @injectable()
@@ -154,13 +134,15 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           id: definition.id,
           name: definition.name,
           description: definition.description,
+          systemPrompt: definition.systemPrompt,
+          tools: definition.tools,
+          version: definition.version,
           avatarUrl: definition.avatarUrl,
-          agentFrameworkID: definition.agentFrameworkID || AGENT_TOOL_LOOP_ID,
+          agentFrameworkID: definition.agentFrameworkID,
           agentFrameworkConfig: definition.agentFrameworkConfig,
           modelConfig: definition.modelConfig,
           agentTools: definition.agentTools,
           heartbeat: definition.heartbeat,
-          builtinVersion: definition.version,
           isCustomized: false,
         });
         entitiesToSave.push(entity);
@@ -171,7 +153,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
         logger.info('Refreshed bundled agent definitions', {
           definitions: entitiesToSave.map(entity => ({
             id: entity.id,
-            version: entity.builtinVersion,
+            version: entity.version,
           })),
         });
       }
@@ -208,12 +190,12 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     );
     existing.isCustomized = true;
     await this.agentDefRepository!.save(existing);
-    return existing as unknown as AgentDefinition;
+    return projectAgentDefinition(existing);
   }
 
   public async getAgentDefs(): Promise<AgentDefinition[]> {
     this.ensureRepositories();
-    return (await this.agentDefRepository!.find()).map(mergeWithDefaultAgent);
+    return (await this.agentDefRepository!.find()).map(projectAgentDefinition);
   }
 
   public async getAgentDef(definitionId?: string): Promise<AgentDefinition | undefined> {
@@ -223,7 +205,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       return all.length > 0 ? all[0] : undefined;
     }
     const entity = await this.agentDefRepository!.findOne({ where: { id: definitionId } });
-    return entity ? mergeWithDefaultAgent(entity) : undefined;
+    return entity ? projectAgentDefinition(entity) : undefined;
   }
 
   public async deleteAgentDef(id: string): Promise<void> {

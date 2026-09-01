@@ -48,7 +48,9 @@ export function getConfigErrorPresentation(
 ): ConfigErrorPresentation | undefined {
   const parameters = {
     ...asStringRecord(detail?.params),
-    ...(typeof detail?.provider === 'string' && detail.provider !== 'unknown' ? { provider: detail.provider } : {}),
+    ...(typeof detail?.providerId === 'string' && detail.providerId !== 'unknown'
+      ? { provider: detail.providerId }
+      : {}),
   };
   if (message.startsWith('Chat.ConfigError.')) {
     return {
@@ -81,7 +83,7 @@ export function serializeAIError(error: unknown): {
     message,
     name: error instanceof Error ? error.name : 'Error',
     ...(typeof structured.code === 'string' ? { code: structured.code } : {}),
-    ...(typeof structured.provider === 'string' ? { provider: structured.provider } : {}),
+    ...(typeof structured.providerId === 'string' ? { providerId: structured.providerId } : {}),
     ...(Object.keys(asStringRecord(structured.params)).length > 0 ? { params: asStringRecord(structured.params) } : {}),
   };
   const presentation = getConfigErrorPresentation(message, detail);

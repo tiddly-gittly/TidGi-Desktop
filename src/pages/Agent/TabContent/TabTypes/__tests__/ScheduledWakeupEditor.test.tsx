@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   language: 'en-US',
   scheduledTaskEditor: vi.fn<(properties: Record<string, unknown>) => void>(),
-  translate: (key: string, parameters?: { agentName?: string }) => parameters?.agentName ? `${key}:${parameters.agentName}` : key,
+  translate: (key: string, parameters?: { agentName?: string; returnObjects?: boolean }) =>
+    key === 'EditAgent.ScheduleCronLocale' && parameters?.returnObjects
+      ? { cronDescriptionText: 'fr' }
+      : parameters?.agentName
+      ? `${key}:${parameters.agentName}`
+      : key,
 }));
 
 vi.mock('@memeloop/react-ui/agent/scheduling', () => ({
@@ -16,10 +21,6 @@ vi.mock('@memeloop/react-ui/agent/scheduling', () => ({
 
 vi.mock('@/pages/Agent/adapters/DesktopScheduledTaskClient', () => ({
   createDesktopScheduledTaskClient: () => ({ kind: 'test-client' }),
-}));
-
-vi.mock('../scheduledTaskLocales', () => ({
-  resolveScheduledTaskLocale: () => ({ cronLocale: 'en', customLocale: { cronDescriptionText: 'fr' }, dateLocale: 'fr' }),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -61,7 +62,6 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
   });
 
   it('guides the user to a durable conversation and never schedules a volatile preview', async () => {
-    const listRemote = vi.fn();
     mutableService.deviceNetwork = {
       getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }),
       listDevices: vi.fn().mockResolvedValue([]),
@@ -75,19 +75,16 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
         hasMoreBefore: false,
         hasMoreAfter: false,
       }),
-      listRemoteScheduledTaskProjectionPageForAgent: listRemote,
     };
 
     render(<ScheduledWakeupEditor agentDefinition={agentDefinition} />);
 
     await waitFor(() => expect(screen.getByText('EditAgent.ScheduleConversationRequired')).toBeInTheDocument());
     expect(mocks.scheduledTaskEditor).not.toHaveBeenCalled();
-    expect(listRemote).not.toHaveBeenCalled();
   });
 
   it('binds the shared editor to a durable conversation, authenticated PeerId, and host locale', async () => {
     mocks.language = 'fr-FR';
-    const listRemote = vi.fn().mockResolvedValue({ items: [], revision: '0' });
     mutableService.deviceNetwork = {
       getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }),
       listDevices: vi.fn().mockResolvedValue([{
@@ -121,7 +118,6 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
         hasMoreBefore: false,
         hasMoreAfter: false,
       }),
-      listRemoteScheduledTaskProjectionPageForAgent: listRemote,
     };
 
     render(<ScheduledWakeupEditor agentDefinition={agentDefinition} />);
@@ -133,18 +129,13 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
     expect(properties).toMatchObject({
       agentInstanceId: 'durable-conversation',
       customLocale: expect.objectContaining({ cronDescriptionText: 'fr' }),
-      dateLocale: 'fr',
+      dateLocale: 'fr-FR',
       executionTargets: [
         { id: 'peer-local', label: 'Chat.ExecutionTarget.ThisDevice' },
         { disabled: false, id: 'peer-remote', label: 'Remote Mac' },
       ],
       localNodeId: 'peer-local',
       locale: 'en',
-    });
-    expect(listRemote).toHaveBeenCalledWith({
-      agentInstanceId: 'durable-conversation',
-      states: ['active', 'paused'],
-      limit: 32,
     });
     const labels = properties?.labels as { defaultTaskName?: (name: string) => string; defaultMessage?: string } | undefined;
     expect(labels?.defaultTaskName?.('Assistant')).toBe('EditAgent.ScheduleDefaultTaskName:Assistant');

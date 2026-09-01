@@ -11,7 +11,7 @@ describe('configuration error presentation', () => {
     const error = Object.assign(new Error('API key for siliconflow not found'), {
       code: 'MISSING_API_KEY',
       name: 'MissingAPIKeyError',
-      provider: 'siliconflow',
+      providerId: 'siliconflow',
     });
 
     expect(serializeAIError(error)).toEqual({
@@ -21,7 +21,7 @@ describe('configuration error presentation', () => {
         message: 'API key for siliconflow not found',
         name: 'MissingAPIKeyError',
         params: { provider: 'siliconflow' },
-        provider: 'siliconflow',
+        providerId: 'siliconflow',
       },
     });
   });

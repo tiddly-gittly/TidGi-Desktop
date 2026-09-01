@@ -4,8 +4,7 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentDefinition } from 'memeloop';
-import type { AgentInstance } from 'memeloop';
+import type { AgentDefinition, AgentRuntimeView } from 'memeloop';
 import path from 'node:path';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
@@ -13,8 +12,9 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,9 +28,36 @@ function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[nu
   };
 }
 
+function testWorkspace(): IWorkspace {
+  return {
+    id: 'CJXwbR91GJmElyURHiGA1',
+    name: 'wiki',
+    wikiFolderLocation: path.resolve('test-artifacts', 'all-tools-integration', 'wiki'),
+    homeUrl: 'http://localhost:5213/',
+    port: 5213,
+    isSubWiki: false,
+    mainWikiToLink: null,
+    tagNames: [],
+    lastUrl: null,
+    active: true,
+    hibernated: false,
+    order: 1,
+    enableHTTPAPI: false,
+    gitUrl: null,
+    readOnlyMode: false,
+    storageService: SupportedStorageServices.local,
+    syncOnInterval: false,
+    syncOnStartup: false,
+    tokenAuth: false,
+    transparentBackground: false,
+    userName: '',
+    picturePath: null,
+  };
+}
+
 describe('all tools integration', () => {
   let agentInstanceService: IAgentInstanceService;
-  let testAgentInstance: AgentInstance;
+  let testAgentInstance: AgentRuntimeView;
   let mockExternalAPIService: Partial<IExternalAPIService>;
   let mockWikiService: Partial<IWikiService>;
   let mockWorkspaceService: Partial<IWorkspaceService>;
@@ -69,23 +96,16 @@ describe('all tools integration', () => {
     testAgentInstance = await agentInstanceService.createAgent(defaultAgent.id, { id: nanoid() });
 
     mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
-      default: { provider: 'mock', model: 'mock-model' },
-      modelParameters: { temperature: 0.7 },
+      default: { providerId: 'mock', modelId: 'mock-model', parameters: { temperature: 0.7 } },
     });
-    mockExternalAPIService.getAIProviders = vi.fn().mockResolvedValue([{
-      provider: 'mock',
+    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'mock',
+      providerType: 'openai-compatible',
       enabled: true,
-      models: [{ name: 'mock-model' }],
+      models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
     }]);
 
-    mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([
-      {
-        name: 'wiki',
-        id: 'CJXwbR91GJmElyURHiGA1',
-        wikiFolderLocation: path.resolve('test-artifacts', 'all-tools-integration', 'wiki'),
-        isWiki: true,
-      } as never,
-    ]);
+    mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([testWorkspace()]);
   });
 
   afterEach(() => {
@@ -97,12 +117,26 @@ describe('all tools integration', () => {
     yield { type: 'finish' as const, finishReason: 'stop' };
   }
 
+  async function executeMessage(text: string) {
+    const requestId = `all-tools:request:${nanoid()}`;
+    const turnId = `all-tools:turn:${nanoid()}`;
+    return agentInstanceService.executeLocalAgentMessage({
+      target: { kind: 'local' },
+      provenance: {
+        conversationId: testAgentInstance.id,
+        definitionId: testAgentInstance.agentDefId,
+        requestId,
+        turnId,
+      },
+      message: text,
+    });
+  }
+
   async function getPersistedMessages() {
     const page = await agentInstanceService.getAgentMessagePage(testAgentInstance.id, {
       limit: 80,
       maxBytes: 4 * 1024 * 1024,
       direction: 'forward',
-      mode: 'full-content',
     });
     if (page.reset) throw new Error('unexpected conversation page reset');
     return page.items;
@@ -122,7 +156,7 @@ describe('all tools integration', () => {
 
     mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '搜索 wiki 中 tag 为 test 的笔记' });
+    await executeMessage('搜索 wiki 中 tag 为 test 的笔记');
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.runFilter,
@@ -155,7 +189,7 @@ describe('all tools integration', () => {
       .mockResolvedValueOnce(['筛选器错误: Missing [ in filter expression']);
     mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '精确查找 Broken' });
+    await executeMessage('精确查找 Broken');
 
     const toolMessage = (await getPersistedMessages())
       .find(message => message.role === 'tool');
@@ -178,7 +212,7 @@ describe('all tools integration', () => {
     mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
     mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: `在 wiki 中创建笔记 ${testTitle}` });
+    await executeMessage(`在 wiki 中创建笔记 ${testTitle}`);
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.addTiddler,
@@ -204,9 +238,7 @@ describe('all tools integration', () => {
 
     mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
-      text: '为这个三步目标建立计划',
-    });
+    await executeMessage('为这个三步目标建立计划');
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.addTiddler,
@@ -235,7 +267,7 @@ describe('all tools integration', () => {
     mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
     mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: `更新笔记 ${testTitle}` });
+    await executeMessage(`更新笔记 ${testTitle}`);
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.setTiddlerText,
@@ -254,7 +286,7 @@ describe('all tools integration', () => {
     mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
     mockWorkspaceService.exists = vi.fn().mockResolvedValue(true);
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: `删除笔记 ${testTitle}` });
+    await executeMessage(`删除笔记 ${testTitle}`);
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.deleteTiddler,
@@ -269,10 +301,11 @@ describe('all tools integration', () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(mockChunk('<tool_use name="ask-question">{"question":"Which workspace?","inputType":"single-select","options":[{"label":"wiki"}]}</tool_use>'));
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '帮我搜笔记' });
+    await executeMessage('帮我搜笔记');
 
     const agent = await agentInstanceService.getAgentMetadata(testAgentInstance.id);
-    expect(agent!.status.state).toBe('input-required');
+    if (!agent) throw new Error('Expected the created agent runtime metadata');
+    expect(agent.status.state).toBe('input-required');
   }, 30000);
 
   // ── workspacesList ─────────────────────────────────────────
@@ -281,7 +314,7 @@ describe('all tools integration', () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(mockChunk('workspaces 已列出。'));
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '列出工作区' });
+    await executeMessage('列出工作区');
 
     expect(mockWorkspaceService.getWorkspacesAsList).toHaveBeenCalled();
     const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
@@ -295,7 +328,7 @@ describe('all tools integration', () => {
       .mockReturnValueOnce(mockChunk('<tool_use name="web-fetch">{"url":"https://example.com"}</tool_use>'))
       .mockReturnValueOnce(mockChunk('已抓取。'));
 
-    await agentInstanceService.sendMsgToAgent(testAgentInstance.id, { text: '抓取 https://example.com' });
+    await executeMessage('抓取 https://example.com');
 
     const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
     expect(assistant.length).toBeGreaterThanOrEqual(1);

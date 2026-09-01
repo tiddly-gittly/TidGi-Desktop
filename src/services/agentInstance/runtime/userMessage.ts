@@ -4,28 +4,17 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { nanoid } from 'nanoid';
+import type { AgentDeviceRpcPendingUserMessage, RemoteAgentExecuteRequest } from 'memeloop';
 
-import type { AgentCommittedAttachment, PendingLocalChatMessage } from 'memeloop';
-
-export type AgentUserContent = {
-  text: string;
-  attachment?: AgentCommittedAttachment;
-  wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>;
-};
-
-export async function createMemeLoopUserMessage(input: {
-  agentId: string;
-  content: AgentUserContent;
-  originNodeId: string;
-  messageId?: string;
+export async function createAgentDeviceRpcPendingUserMessage(input: {
+  request: RemoteAgentExecuteRequest;
   beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>;
   metadata?: Readonly<Record<string, unknown>>;
-}): Promise<PendingLocalChatMessage> {
-  const messageId = input.messageId ?? nanoid();
+}): Promise<AgentDeviceRpcPendingUserMessage> {
+  const auditId = input.request.provenance.turnId;
   const metadata: Record<string, unknown> = { ...input.metadata };
 
-  const wikiTiddlersMetadata = await loadWikiTiddlerAttachments(messageId, input.content.wikiTiddlers);
+  const wikiTiddlersMetadata = await loadWikiTiddlerAttachments(auditId, input.request.wikiTiddlers);
   if (wikiTiddlersMetadata.length > 0) {
     metadata.wikiTiddlers = wikiTiddlersMetadata;
   }
@@ -35,7 +24,7 @@ export async function createMemeLoopUserMessage(input: {
   }
 
   // Inject wiki tiddler content into the message text
-  let messageContent = input.content.text;
+  let messageContent = input.request.message;
   if (wikiTiddlersMetadata.length > 0) {
     const tiddlerBlocks = wikiTiddlersMetadata.map(
       (tiddler) => `[Wiki Entry from ${tiddler.workspaceName}: ${tiddler.tiddlerTitle}]\n${tiddler.renderedContent}\n[End Wiki Entry]`,
@@ -44,20 +33,16 @@ export async function createMemeLoopUserMessage(input: {
   }
 
   return {
-    messageId,
-    turnId: messageId,
     content: messageContent,
-    originNodeId: input.originNodeId,
-    timestamp: Date.now(),
     contentType: 'text/plain',
-    ...(input.content.attachment === undefined ? {} : { attachments: [input.content.attachment.reference] }),
+    ...(input.request.attachment?.kind === 'committed' ? { attachments: [input.request.attachment.reference] } : {}),
     ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
   };
 }
 
 async function loadWikiTiddlerAttachments(
   messageId: string,
-  wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>,
+  wikiTiddlers?: readonly { workspaceName: string; tiddlerTitle: string }[],
 ): Promise<Array<{ workspaceId: string; workspaceName: string; tiddlerTitle: string; renderedContent: string }>> {
   if (!wikiTiddlers || wikiTiddlers.length === 0) return [];
 

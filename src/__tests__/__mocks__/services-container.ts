@@ -1,4 +1,4 @@
-import type { AIStreamResponse, IExternalAPIService } from '@/services/externalAPI/interface';
+import type { IExternalAPIService } from '@/services/externalAPI/interface';
 import { AgentBrowserService } from '@services/agentBrowser';
 import { AgentDefinitionService } from '@services/agentDefinition';
 import { AgentInstanceService } from '@services/agentInstance';
@@ -19,8 +19,8 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { Device, PairingSession } from 'memeloop';
-import { BehaviorSubject, Observable } from 'rxjs';
+import type { Device, ModelAssignments, PairingSession, PortableLlmStreamPart, ProviderAccountConfig } from 'memeloop';
+import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 
 // Mock bindServiceAndProxy to be an empty function
@@ -142,37 +142,23 @@ export const serviceInstances: {
     pairingSessions$: new BehaviorSubject<PairingSession[]>([]),
   },
   externalAPI: {
-    getAIConfig: vi.fn(async () => ({ default: { model: 'test-model', provider: 'test-provider' }, modelParameters: {} })),
-    getAIProviders: vi.fn(async () => []),
-    generateFromAI: vi.fn(async function*(): AsyncGenerator<AIStreamResponse, void, unknown> {
-      // harmless await for linter
-      await Promise.resolve();
-      yield { requestId: 'r0', content: '', status: 'start' };
-      return;
+    getAIConfig: vi.fn(async () => ({ default: { modelId: 'test-model', providerId: 'test-provider' } })),
+    getProviderAccounts: vi.fn(async () => []),
+    getProviderApiKey: vi.fn(async () => ''),
+    setProviderApiKey: vi.fn(async () => undefined),
+    generatePortableLlm: vi.fn(async function*(): AsyncGenerator<PortableLlmStreamPart, void, unknown> {
+      yield { type: 'text-delta', id: 'test-text', text: 'ok' };
+      yield { type: 'finish', finishReason: 'stop' };
     }),
-    streamFromAI: vi.fn((_messages, _config) =>
-      new Observable<AIStreamResponse>((subscriber) => {
-        subscriber.next({ requestId: 'r1', content: 'ok', status: 'start' });
-        subscriber.next({ requestId: 'r1', content: 'ok', status: 'done' });
-        subscriber.complete();
-      })
-    ),
-    generateEmbeddings: vi.fn(async () => ({
-      requestId: 'test-request',
-      embeddings: [[0.1, 0.2, 0.3, 0.4]], // Default 4D embedding
-      model: 'test-embedding-model',
-      object: 'embedding',
-      usage: {
-        prompt_tokens: 10,
-        total_tokens: 10,
-      },
-      status: 'done' as const,
-    })),
     cancelAIRequest: vi.fn(async () => undefined),
-    updateProvider: vi.fn(async () => undefined),
-    deleteProvider: vi.fn(async () => undefined),
+    setProviderAccount: vi.fn(async () => undefined),
+    deleteProviderAccount: vi.fn(async () => undefined),
     updateDefaultAIConfig: vi.fn(async () => undefined),
     deleteFieldFromDefaultAIConfig: vi.fn(async () => undefined),
+    isAIAvailable: vi.fn(async () => false),
+    getAPILogs: vi.fn(async () => []),
+    defaultConfig$: new BehaviorSubject<ModelAssignments>({}),
+    providerAccounts$: new BehaviorSubject<ProviderAccountConfig[]>([]),
   },
 };
 

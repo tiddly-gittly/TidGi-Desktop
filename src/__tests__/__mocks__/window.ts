@@ -1,9 +1,6 @@
-import { ChatMessage } from 'memeloop';
-
 import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { AgentPromptDescription } from 'memeloop';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { vi } from 'vitest';
 import { serviceInstances } from './services-container';
@@ -53,30 +50,20 @@ Object.defineProperty(window, 'observables', {
     },
     externalAPI: {
       defaultConfig$: new BehaviorSubject({
-        default: { provider: 'openai', model: 'gpt-4' },
-        modelParameters: { temperature: 0.7, topP: 0.95 },
+        default: { providerId: 'openai', modelId: 'gpt-4', parameters: { temperature: 0.7, topP: 0.95 } },
       }).asObservable(),
-      providers$: new BehaviorSubject([]).asObservable(),
+      providerAccounts$: new BehaviorSubject([]).asObservable(),
     },
     agentInstance: {
-      concatPrompt: vi.fn((promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: ChatMessage[]) => {
+      concatPromptPreview: vi.fn((input: Parameters<AgentInstanceService['concatPromptPreview']>[0]) => {
         const agentInstanceService = container.get<AgentInstanceService>(serviceIdentifier.AgentInstance);
-        // Initialize handlers (plugins and built-in handlers) before calling concatPrompt
-        // We need to wrap this in an Observable since concatPrompt returns an Observable
-        return new Observable((observer) => {
+        return new Observable<ReturnType<AgentInstanceService['concatPromptPreview']> extends Observable<infer T> ? T : never>((observer) => {
           const initAndCall = async () => {
             try {
-              // Need to register plugins first. In test environment, this needs to be called manually. While in real
-              // environment, this is handled in `main.ts` when app start.
               await agentInstanceService.initializeFrameworks();
-              const resultObservable = agentInstanceService.concatPrompt(promptDescription, messages);
-              // Subscribe to the result and forward to our observer
-              resultObservable.subscribe(observer);
+              agentInstanceService.concatPromptPreview(input).subscribe(observer);
             } catch (_error: unknown) {
-              // Log but keep test mocks resilient
-
               console.warn(`Error while inserting dom node in react widget, this might be cause by use transclude widget for the wikitext contains widget.`, _error);
-              void _error;
               observer.error(_error);
             }
           };

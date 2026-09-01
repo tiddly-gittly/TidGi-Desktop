@@ -1,11 +1,10 @@
-import { ScheduledTaskEditor, type ScheduledTaskExecutionTarget } from '@memeloop/react-ui/agent/scheduling';
+import { type ScheduledTaskCronLocale, ScheduledTaskEditor, type ScheduledTaskExecutionTarget } from '@memeloop/react-ui/agent/scheduling';
 import { Alert, Box, CircularProgress, MenuItem, TextField } from '@mui/material';
 import type { AgentDefinition, ConversationMeta } from 'memeloop';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { createDesktopScheduledTaskClient } from '@/pages/Agent/adapters/DesktopScheduledTaskClient';
-import { resolveScheduledTaskLocale } from '@/pages/Agent/TabContent/TabTypes/scheduledTaskLocales';
 
 interface ScheduledWakeupEditorProps {
   agentDefinition: AgentDefinition;
@@ -24,9 +23,9 @@ export function ScheduledWakeupEditor({ agentDefinition }: ScheduledWakeupEditor
   const [selectedConversationId, setSelectedConversationId] = useState<string>();
   const [executionTargets, setExecutionTargets] = useState<ScheduledTaskExecutionTarget[]>([]);
   const [identityState, setIdentityState] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
-  const scheduleLocale = useMemo(
-    () => resolveScheduledTaskLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
-    [i18n.language, i18n.resolvedLanguage],
+  const cronLocale = useMemo(
+    () => t('EditAgent.ScheduleCronLocale', { returnObjects: true }) as ScheduledTaskCronLocale,
+    [t],
   );
 
   useEffect(() => {
@@ -49,15 +48,8 @@ export function ScheduledWakeupEditor({ agentDefinition }: ScheduledWakeupEditor
       if (conversationPage.reset) throw new Error('conversation_directory_reset');
       const selectedConversation = conversationPage.items.find(item => item.conversationId === selectedConversationId) ??
         conversationPage.items[0];
-      const projectionPage = selectedConversation
-        ? await window.service.agentInstance.listRemoteScheduledTaskProjectionPageForAgent({
-          agentInstanceId: selectedConversation.conversationId,
-          states: ['active', 'paused'],
-          limit: 32,
-        })
-        : { items: [], revision: '0' };
-      return { identity, devices, conversationPage, selectedConversation, projectionPage };
-    }).then(({ identity, devices, conversationPage, selectedConversation, projectionPage }) => {
+      return { identity, devices, conversationPage, selectedConversation };
+    }).then(({ identity, devices, conversationPage, selectedConversation }) => {
       if (cancelled) return;
       const targets: ScheduledTaskExecutionTarget[] = [
         { id: identity.peerId, label: t('Chat.ExecutionTarget.ThisDevice') },
@@ -71,17 +63,6 @@ export function ScheduledWakeupEditor({ agentDefinition }: ScheduledWakeupEditor
             disabled: !device.trusted || device.reachability.state === 'offline',
           })),
       ];
-      const knownTargetIds = new Set(targets.map(target => target.id));
-      for (const projection of projectionPage.items) {
-        const task = projection.task;
-        if (knownTargetIds.has(task.executionNodeId)) continue;
-        targets.push({
-          id: task.executionNodeId,
-          label: `${task.executionNodeLabel || task.executionNodeId} · ${t('Chat.ExecutionTarget.Reachability.offline')}`,
-          disabled: true,
-        });
-        knownTargetIds.add(task.executionNodeId);
-      }
       setLocalNodeId(identity.peerId);
       setConversations(conversationPage.items);
       setSelectedConversationId(selectedConversation?.conversationId);
@@ -135,9 +116,9 @@ export function ScheduledWakeupEditor({ agentDefinition }: ScheduledWakeupEditor
         client={client}
         executionTargets={executionTargets}
         localNodeId={localNodeId}
-        locale={scheduleLocale.cronLocale}
-        customLocale={scheduleLocale.customLocale}
-        dateLocale={scheduleLocale.dateLocale}
+        locale='en'
+        customLocale={cronLocale}
+        dateLocale={i18n.resolvedLanguage ?? i18n.language}
         labels={{
           title: t('EditAgent.ScheduledWakeup'),
           description: t('EditAgent.ScheduledWakeupDescription'),

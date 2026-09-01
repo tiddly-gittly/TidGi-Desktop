@@ -3,7 +3,7 @@ import { DataSource, type Repository } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { IAgentInstanceService } from '../interface';
-import { getScheduledTasksPageForAgent, getTaskByScope, initScheduledTaskManager, removeTaskScoped, stopAllScheduledTasks, updateTaskScoped } from '../tools/scheduledTaskManager';
+import { getScheduledTaskPageForAgent, getTaskByScope, initScheduledTaskManager, removeTaskScoped, stopAllScheduledTasks, updateTaskScoped } from '../tools/scheduledTaskManager';
 
 const AGENT_ID = 'agent-page';
 const NODE_ID = 'peer-page';
@@ -59,14 +59,18 @@ describe('scheduled-task bounded keyset paging', () => {
       await repository.insert(Array.from({ length: 500 }, (_, offset) => row(start + offset)));
     }
 
-    const page = await getScheduledTasksPageForAgent({
-      agentInstanceId: AGENT_ID,
-      executionNodeId: NODE_ID,
+    const page = await getScheduledTaskPageForAgent(AGENT_ID, {
+      executionNodeIds: [NODE_ID],
       states: ['active'],
       limit: 64,
     });
     expect(page.items).toHaveLength(64);
-    expect(page.next).toBeDefined();
+    expect(page.nextCursor).toBeDefined();
+    expect(page).toMatchObject({
+      hasMoreAfter: true,
+      partial: false,
+      sources: [{ executionNodeId: NODE_ID, state: 'online', fromCache: false }],
+    });
     expect(new Set(page.items.map(task => task.id)).size).toBe(64);
 
     const plan = await dataSource.query<Array<{ detail?: string }>>(
@@ -79,21 +83,19 @@ describe('scheduled-task bounded keyset paging', () => {
   it('continues by stable updated/id keyset without duplicates', async () => {
     const repository = dataSource.getRepository(ScheduledTaskEntity);
     await repository.insert(Array.from({ length: 6 }, (_, index) => row(index)));
-    const first = await getScheduledTasksPageForAgent({
-      agentInstanceId: AGENT_ID,
-      executionNodeId: NODE_ID,
+    const first = await getScheduledTaskPageForAgent(AGENT_ID, {
+      executionNodeIds: [NODE_ID],
       states: ['active'],
       limit: 3,
     });
-    const second = await getScheduledTasksPageForAgent({
-      agentInstanceId: AGENT_ID,
-      executionNodeId: NODE_ID,
+    const second = await getScheduledTaskPageForAgent(AGENT_ID, {
+      executionNodeIds: [NODE_ID],
       states: ['active'],
       limit: 3,
-      after: first.next,
-      expectedRevision: first.revision,
+      cursor: first.nextCursor,
     });
     expect(new Set([...first.items, ...second.items].map(task => task.id)).size).toBe(6);
+    expect(second).toMatchObject({ hasMoreAfter: false, partial: false });
   });
 
   it.each([
@@ -106,20 +108,17 @@ describe('scheduled-task bounded keyset paging', () => {
   ])('rejects a stale cursor after %s', async (_label, mutate) => {
     const repository = dataSource.getRepository(ScheduledTaskEntity);
     await repository.insert(Array.from({ length: 4 }, (_, index) => row(index)));
-    const first = await getScheduledTasksPageForAgent({
-      agentInstanceId: AGENT_ID,
-      executionNodeId: NODE_ID,
+    const first = await getScheduledTaskPageForAgent(AGENT_ID, {
+      executionNodeIds: [NODE_ID],
       states: ['active'],
       limit: 2,
     });
     await mutate(repository);
-    await expect(getScheduledTasksPageForAgent({
-      agentInstanceId: AGENT_ID,
-      executionNodeId: NODE_ID,
+    await expect(getScheduledTaskPageForAgent(AGENT_ID, {
+      executionNodeIds: [NODE_ID],
       states: ['active'],
       limit: 2,
-      after: first.next,
-      expectedRevision: first.revision,
+      cursor: first.nextCursor,
     })).rejects.toThrow('scheduled_task_cursor_stale');
   });
 
@@ -128,9 +127,8 @@ describe('scheduled-task bounded keyset paging', () => {
     const querySpy = vi.spyOn(repository, 'createQueryBuilder');
     const abortController = new AbortController();
     abortController.abort(new Error('superseded'));
-    await expect(getScheduledTasksPageForAgent({
-      agentInstanceId: AGENT_ID,
-      executionNodeId: NODE_ID,
+    await expect(getScheduledTaskPageForAgent(AGENT_ID, {
+      executionNodeIds: [NODE_ID],
       states: ['active'],
       limit: 10,
       signal: abortController.signal,
@@ -150,26 +148,23 @@ describe('scheduled-task bounded keyset paging', () => {
 
     await expect(updateTaskScoped(
       { ...scope, agentDefinitionId: 'definition-other' },
-      { id: scope.taskId, enabled: false },
+      { enabled: false },
+    )).rejects.toThrow('scheduled_task_scope_unavailable');
+    await expect(updateTaskScoped(
+      { ...scope, taskId: 'task-other' },
+      { enabled: false },
+    )).rejects.toThrow('scheduled_task_scope_unavailable');
+    await expect(updateTaskScoped(
+      { ...scope, agentInstanceId: 'agent-other' },
+      { enabled: false },
     )).rejects.toThrow('scheduled_task_scope_unavailable');
     await expect(updateTaskScoped(scope, {
-      id: 'task-other',
-      enabled: false,
-    })).rejects.toThrow('scheduled_task_scope_unavailable');
-    await expect(updateTaskScoped(scope, {
-      id: scope.taskId,
-      agentDefinitionId: 'definition-other',
-      enabled: false,
-    })).rejects.toThrow('scheduled_task_scope_unavailable');
-    await expect(updateTaskScoped(scope, {
-      id: scope.taskId,
       executionNodeId: 'peer-other',
       enabled: false,
     })).rejects.toThrow('scheduled_task_scope_unavailable');
     expect((await repository.findOneByOrFail({ id: scope.taskId })).enabled).toBe(true);
 
     const updated = await updateTaskScoped(scope, {
-      id: scope.taskId,
       name: 'Updated atomically',
       enabled: false,
     });
@@ -198,7 +193,6 @@ describe('scheduled-task bounded keyset paging', () => {
     controller.abort(new Error('superseded'));
 
     await expect(updateTaskScoped(scope, {
-      id: scope.taskId,
       name: 'must not persist',
     }, { signal: controller.signal })).rejects.toThrow('superseded');
     expect((await repository.findOneByOrFail({ id: scope.taskId })).name).toBe('Task 2');

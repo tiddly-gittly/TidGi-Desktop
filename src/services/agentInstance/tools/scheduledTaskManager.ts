@@ -12,24 +12,35 @@
 
 import { Cron } from 'croner';
 import { previewScheduledTaskCron } from 'memeloop';
+import type {
+  AgentManagementCallOptions,
+  CreateScheduledTaskInput,
+  ListScheduledTasksOptions,
+  ScheduledTask,
+  ScheduledTaskPage,
+  ScheduledTaskRpcScopedTaskRequest,
+  ScheduledTaskRpcUpdatePatch,
+  ScheduledTaskState,
+} from 'memeloop';
 import { nanoid } from 'nanoid';
 import { In, Repository } from 'typeorm';
 
 import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from '../interface';
-import type {
-  CreateScheduledTaskInput,
-  ListScheduledTasksOptions,
-  ListScheduledTasksPageForAgentInput,
-  ScheduledTask,
-  ScheduledTaskCallOptions,
-  ScheduledTaskPage,
-  ScheduledTaskScope,
-  UpdateScheduledTaskInput,
-} from './scheduledTaskTypes';
 
-export type { CreateScheduledTaskInput, ScheduleConfig, ScheduledTask, ScheduleKind, UpdateScheduledTaskInput } from './scheduledTaskTypes';
+interface DurableScheduledTaskPagePosition {
+  updatedAt: string;
+  id: string;
+}
+
+interface DurableScheduledTaskPage {
+  items: ScheduledTask[];
+  revision: string;
+  next?: DurableScheduledTaskPagePosition;
+}
+
+export type { CreateScheduledTaskInput, ScheduledTask } from 'memeloop';
 
 // ─── Internal runtime entry ───────────────────────────────────────────────────
 
@@ -79,13 +90,12 @@ function isWithinActiveHours(task: ScheduledTaskEntity, now = new Date()): boole
   return currentMinutes >= start || currentMinutes <= end;
 }
 
-function entityToDto(entity: ScheduledTaskEntity): ScheduledTask {
+function entityToScheduledTask(entity: ScheduledTaskEntity): ScheduledTask {
   return {
     id: entity.id,
     agentInstanceId: entity.agentInstanceId,
     agentDefinitionId: entity.agentDefinitionId,
     name: entity.name,
-    scheduleKind: entity.scheduleKind,
     schedule: entity.schedule,
     payload: entity.payload ?? undefined,
     enabled: entity.enabled,
@@ -102,12 +112,15 @@ function entityToDto(entity: ScheduledTaskEntity): ScheduledTask {
     runCount: entity.runCount,
     maxRuns: entity.maxRuns,
     createdBy: entity.createdBy,
-    created: entity.created?.toISOString() ?? new Date().toISOString(),
-    updated: entity.updated?.toISOString() ?? new Date().toISOString(),
+    updatedAt: entity.updated.toISOString(),
     state: entity.state,
     executionNodeId: entity.executionNodeId,
     executionNodeLabel: entity.executionNodeLabel ?? undefined,
     originNodeId: entity.originNodeId,
+    executionRevision: entity.executionRevision,
+    occurrenceId: entity.occurrenceId ?? undefined,
+    occurrenceScheduledFor: entity.occurrenceScheduledFor ?? undefined,
+    occurrenceAttempt: entity.occurrenceAttempt,
   };
 }
 
@@ -160,17 +173,15 @@ async function fireTask(task: ScheduledTaskEntity): Promise<TaskFireOutcome> {
   try {
     await requireDurableAgentInstance(task.agentInstanceId, task.agentDefinitionId);
     const scheduledFor = (task.nextRetryAt ?? task.nextRunAt ?? new Date()).getTime();
-    await service.executeLocalAgentMessage(task.agentInstanceId, { text: message }, {
-      source: 'scheduled-task',
-      requestId: `scheduled-task:${task.id}:${scheduledFor}:request`,
-      turnId: `scheduled-task:${task.id}:${scheduledFor}:turn`,
+    await service.executeLocalAgentMessage({
+      target: { kind: 'local' },
       provenance: {
-        taskId: task.id,
-        scheduledFor,
-        executionNodeId: task.executionNodeId,
-        originNodeId: task.originNodeId,
-        createdBy: task.createdBy,
+        conversationId: task.agentInstanceId,
+        definitionId: task.agentDefinitionId,
+        requestId: `scheduled-task:${task.id}:${scheduledFor}:request`,
+        turnId: `scheduled-task:${task.id}:${scheduledFor}:turn`,
       },
+      message,
     });
     logger.info('ScheduledTaskManager: task fired', { taskId: task.id, agentInstanceId: task.agentInstanceId });
   } catch (error) {
@@ -398,7 +409,7 @@ export async function restoreScheduledTasks(
 }
 
 /** Add a new task (persists to DB + starts timer). */
-export async function addTask(input: CreateScheduledTaskInput, options: ScheduledTaskCallOptions = {}): Promise<ScheduledTask> {
+export async function addTask(input: CreateScheduledTaskInput, options: AgentManagementCallOptions = {}): Promise<ScheduledTask> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   options.signal?.throwIfAborted();
   if (!getLocalSchedulingIdentity) throw new Error('scheduled_task_identity_unavailable');
@@ -406,11 +417,10 @@ export async function addTask(input: CreateScheduledTaskInput, options: Schedule
     throw new Error('scheduled_task_identity_unavailable', { cause: error });
   });
   if (!identity.peerId) throw new Error('scheduled_task_identity_unavailable');
-  const agent = await requireDurableAgentInstance(input.agentInstanceId, input.agentDefinitionId);
-  const agentDefinitionId = input.agentDefinitionId ?? agent?.agentDefId;
-  if (!agentDefinitionId) throw new Error('scheduled_task_definition_unavailable');
-  const name = input.name ?? `${agent?.name || input.agentInstanceId} schedule`;
-  const executionNodeId = input.executionNodeId ?? identity.peerId;
+  await requireDurableAgentInstance(input.agentInstanceId, input.agentDefinitionId);
+  const agentDefinitionId = input.agentDefinitionId;
+  const name = input.name;
+  const executionNodeId = input.executionNodeId;
   // A manager owns timers only for its own stable PeerId. Remote creation is
   // routed to that peer's manager; accepting a third-party target here would
   // make the task appear remotely owned while executing on this process.
@@ -427,14 +437,13 @@ export async function addTask(input: CreateScheduledTaskInput, options: Schedule
     schedule: input.schedule,
     payload: input.payload ?? null,
     enabled: input.enabled ?? true,
-    state: input.state ?? (input.enabled === false ? 'paused' : 'active'),
+    state: input.enabled === false ? 'paused' : 'active',
     executionNodeId,
     executionNodeLabel: input.executionNodeLabel ?? identity.deviceName ?? null,
-    originNodeId: input.originNodeId ?? identity.peerId,
-    deleteAfterRun: input.deleteAfterRun ?? false,
+    originNodeId: input.originNodeId,
+    deleteAfterRun: false,
     activeHoursStart: input.activeHoursStart ?? null,
     activeHoursEnd: input.activeHoursEnd ?? null,
-    maxRuns: input.maxRuns,
     createdBy: input.createdBy ?? 'settings-ui',
     runCount: 0,
     consecutiveFailures: 0,
@@ -454,66 +463,56 @@ export async function addTask(input: CreateScheduledTaskInput, options: Schedule
   }
 
   logger.info('ScheduledTaskManager: task added', { taskId: saved.id, kind: saved.scheduleKind });
-  return entityToDto(saved);
+  return entityToScheduledTask(saved);
 }
 
 /** Update an existing task (restarts timer). */
-export async function updateTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask> {
+export async function updateTask(
+  taskId: string,
+  patch: ScheduledTaskRpcUpdatePatch,
+  options: AgentManagementCallOptions = {},
+): Promise<ScheduledTask> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
-
-  const persisted = await scheduledTaskRepo.findOne({ where: { id: input.id } });
-  if (!persisted) throw new Error(`ScheduledTask not found: ${input.id}`);
-  await requireDurableAgentInstance(persisted.agentInstanceId, input.agentDefinitionId ?? persisted.agentDefinitionId);
+  options.signal?.throwIfAborted();
+  const persisted = await scheduledTaskRepo.findOne({ where: { id: taskId } });
+  if (!persisted) throw new Error(`ScheduledTask not found: ${taskId}`);
+  await requireDurableAgentInstance(persisted.agentInstanceId, persisted.agentDefinitionId);
   // Validate a detached candidate so a rejected update cannot mutate the
   // repository-managed entity before save.
   const entity = scheduledTaskRepo.create();
   Object.assign(entity, persisted);
 
-  if (input.schedule !== undefined) {
-    entity.schedule = input.schedule;
-    entity.scheduleKind = input.schedule.kind;
-  }
-  if (input.name !== undefined) entity.name = input.name;
-  if (Object.hasOwn(input, 'payload')) entity.payload = input.payload ?? null;
-  if (input.enabled !== undefined) entity.enabled = input.enabled;
-  if (input.state !== undefined) entity.state = input.state;
-  else if (input.enabled !== undefined) entity.state = input.enabled ? 'active' : 'paused';
-  if (input.executionNodeId !== undefined) entity.executionNodeId = input.executionNodeId;
-  if (Object.hasOwn(input, 'executionNodeLabel')) entity.executionNodeLabel = input.executionNodeLabel ?? null;
-  if (input.originNodeId !== undefined) entity.originNodeId = input.originNodeId;
-  if (input.deleteAfterRun !== undefined) entity.deleteAfterRun = input.deleteAfterRun;
-  if (Object.hasOwn(input, 'activeHoursStart')) entity.activeHoursStart = input.activeHoursStart ?? null;
-  if (Object.hasOwn(input, 'activeHoursEnd')) entity.activeHoursEnd = input.activeHoursEnd ?? null;
-  if (input.maxRuns !== undefined) entity.maxRuns = input.maxRuns;
-  if (input.agentDefinitionId !== undefined) entity.agentDefinitionId = input.agentDefinitionId;
+  applyTaskUpdate(entity, persisted, patch);
 
   validateSchedule(entity);
 
+  options.signal?.throwIfAborted();
   await scheduledTaskRepo.save(entity);
+  options.signal?.throwIfAborted();
 
   cancelEntry(entity.id);
   if (entity.enabled) scheduleEntry(entity);
 
   logger.info('ScheduledTaskManager: task updated', { taskId: entity.id });
-  return entityToDto(entity);
+  return entityToScheduledTask(entity);
 }
 
 /** Atomically validate the complete RPC resource tuple and update one task. */
 export async function updateTaskScoped(
-  scope: ScheduledTaskScope,
-  input: UpdateScheduledTaskInput,
-  options: ScheduledTaskCallOptions = {},
+  scope: ScheduledTaskRpcScopedTaskRequest,
+  patch: ScheduledTaskRpcUpdatePatch,
+  options: AgentManagementCallOptions = {},
 ): Promise<ScheduledTask> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   options.signal?.throwIfAborted();
-  assertScopedUpdateIdentity(scope, input);
+  assertScopedUpdateIdentity(scope, patch);
   const entity = await scheduledTaskRepo.manager.transaction(async manager => {
     const repository = manager.getRepository(ScheduledTaskEntity);
     const where = scopeWhere(scope);
     const persisted = await repository.findOne({ where });
     options.signal?.throwIfAborted();
     if (!persisted) throw new Error('scheduled_task_scope_unavailable');
-    const candidate = applyTaskUpdate(repository.create(), persisted, input);
+    const candidate = applyTaskUpdate(repository.create(), persisted, patch);
     validateSchedule(candidate);
     options.signal?.throwIfAborted();
     const result = await repository.createQueryBuilder()
@@ -534,25 +533,25 @@ export async function updateTaskScoped(
   cancelEntry(entity.id);
   if (entity.enabled) scheduleEntry(entity);
   logger.info('ScheduledTaskManager: task updated', { taskId: entity.id });
-  return entityToDto(entity);
+  return entityToScheduledTask(entity);
 }
 
 /** Read one task by the same complete scope used for mutations. */
 export async function getTaskByScope(
-  scope: ScheduledTaskScope,
-  options: ScheduledTaskCallOptions = {},
+  scope: ScheduledTaskRpcScopedTaskRequest,
+  options: AgentManagementCallOptions = {},
 ): Promise<ScheduledTask | undefined> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   options.signal?.throwIfAborted();
   const entity = await scheduledTaskRepo.findOne({ where: scopeWhere(scope) });
   options.signal?.throwIfAborted();
-  return entity ? entityToDto(entity) : undefined;
+  return entity ? entityToScheduledTask(entity) : undefined;
 }
 
 /** Atomically match the full scope before soft-deleting a task. */
 export async function removeTaskScoped(
-  scope: ScheduledTaskScope,
-  options: ScheduledTaskCallOptions = {},
+  scope: ScheduledTaskRpcScopedTaskRequest,
+  options: AgentManagementCallOptions = {},
 ): Promise<void> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   options.signal?.throwIfAborted();
@@ -573,7 +572,7 @@ export async function removeTaskScoped(
   logger.info('ScheduledTaskManager: task removed', { taskId: scope.taskId });
 }
 
-function scopeWhere(scope: ScheduledTaskScope): Pick<ScheduledTaskEntity, 'id' | 'agentInstanceId' | 'agentDefinitionId' | 'executionNodeId'> {
+function scopeWhere(scope: ScheduledTaskRpcScopedTaskRequest): Pick<ScheduledTaskEntity, 'id' | 'agentInstanceId' | 'agentDefinitionId' | 'executionNodeId'> {
   return {
     id: scope.taskId,
     agentInstanceId: scope.agentInstanceId,
@@ -588,11 +587,9 @@ function scopeWhere(scope: ScheduledTaskScope): Pick<ScheduledTaskEntity, 'id' |
  * and the conditional SQL write are the authorization boundary for an existing
  * task, while a metadata lookup would be a separate, racy existence oracle.
  */
-function assertScopedUpdateIdentity(scope: ScheduledTaskScope, input: UpdateScheduledTaskInput): void {
+function assertScopedUpdateIdentity(scope: ScheduledTaskRpcScopedTaskRequest, patch: ScheduledTaskRpcUpdatePatch): void {
   if (
-    input.id !== scope.taskId ||
-    (input.agentDefinitionId !== undefined && input.agentDefinitionId !== scope.agentDefinitionId) ||
-    (input.executionNodeId !== undefined && input.executionNodeId !== scope.executionNodeId)
+    patch.executionNodeId !== undefined && patch.executionNodeId !== scope.executionNodeId
   ) {
     throw new Error('scheduled_task_scope_unavailable');
   }
@@ -601,7 +598,7 @@ function assertScopedUpdateIdentity(scope: ScheduledTaskScope, input: UpdateSche
 function applyTaskUpdate(
   entity: ScheduledTaskEntity,
   persisted: ScheduledTaskEntity,
-  input: UpdateScheduledTaskInput,
+  input: ScheduledTaskRpcUpdatePatch,
 ): ScheduledTaskEntity {
   Object.assign(entity, persisted);
   if (input.schedule !== undefined) {
@@ -611,13 +608,10 @@ function applyTaskUpdate(
   if (input.name !== undefined) entity.name = input.name;
   if (Object.hasOwn(input, 'payload')) entity.payload = input.payload ?? null;
   if (input.enabled !== undefined) entity.enabled = input.enabled;
-  if (input.state !== undefined) entity.state = input.state;
-  else if (input.enabled !== undefined) entity.state = input.enabled ? 'active' : 'paused';
+  if (input.enabled !== undefined) entity.state = input.enabled ? 'active' : 'paused';
   if (Object.hasOwn(input, 'executionNodeLabel')) entity.executionNodeLabel = input.executionNodeLabel ?? null;
-  if (input.deleteAfterRun !== undefined) entity.deleteAfterRun = input.deleteAfterRun;
   if (Object.hasOwn(input, 'activeHoursStart')) entity.activeHoursStart = input.activeHoursStart ?? null;
   if (Object.hasOwn(input, 'activeHoursEnd')) entity.activeHoursEnd = input.activeHoursEnd ?? null;
-  if (input.maxRuns !== undefined) entity.maxRuns = input.maxRuns;
   return entity;
 }
 
@@ -656,14 +650,14 @@ async function completeTask(taskId: string): Promise<void> {
 /** List all active in-memory tasks. */
 export async function getActiveTasks(options: ListScheduledTasksOptions = {}): Promise<ScheduledTask[]> {
   if (!scheduledTaskRepo) return [];
-  const states = options.states?.length ? options.states : ['active'];
+  const states = options.states?.length ? options.states : ['active', 'paused'];
   return (await scheduledTaskRepo.find({
     where: {
       state: In(states),
       ...(options.executionNodeIds?.length ? { executionNodeId: In(options.executionNodeIds) } : {}),
     },
     order: { updated: 'DESC' },
-  })).map(entityToDto);
+  })).map(entityToScheduledTask);
 }
 
 /** List tasks for a specific agent instance. */
@@ -672,7 +666,7 @@ export async function getActiveTasksForAgent(
   options: ListScheduledTasksOptions = {},
 ): Promise<ScheduledTask[]> {
   if (!scheduledTaskRepo) return [];
-  const states = options.states?.length ? options.states : ['active'];
+  const states = options.states?.length ? options.states : ['active', 'paused'];
   return (await scheduledTaskRepo.find({
     where: {
       agentInstanceId,
@@ -680,7 +674,105 @@ export async function getActiveTasksForAgent(
       ...(options.executionNodeIds?.length ? { executionNodeId: In(options.executionNodeIds) } : {}),
     },
     order: { updated: 'DESC' },
-  })).map(entityToDto);
+  })).map(entityToScheduledTask);
+}
+
+interface LocalScheduledTaskCursor {
+  version: 1;
+  agentInstanceId: string;
+  executionNodeId: string;
+  states: ScheduledTask['state'][];
+  revision: string;
+  after: { updatedAt: string; id: string };
+}
+
+/** Exact Core management page backed by the private SQLite keyset below. */
+export async function getScheduledTaskPageForAgent(
+  agentInstanceId: string,
+  options: ListScheduledTasksOptions = {},
+): Promise<ScheduledTaskPage> {
+  if (!getLocalSchedulingIdentity) throw new Error('scheduled_task_identity_unavailable');
+  options.signal?.throwIfAborted();
+  const identity = await getLocalSchedulingIdentity();
+  options.signal?.throwIfAborted();
+  const defaultStates: ScheduledTaskState[] = ['active', 'paused'];
+  const states: ScheduledTaskState[] = [...(options.states?.length ? options.states : defaultStates)].sort();
+  const cursor = options.cursor === undefined
+    ? undefined
+    : decodeLocalScheduledTaskCursor(options.cursor, agentInstanceId, identity.peerId, states);
+  const page = await getDurableScheduledTasksPageForAgent({
+    agentInstanceId,
+    executionNodeId: identity.peerId,
+    states,
+    limit: options.limit ?? 100,
+    ...(cursor === undefined ? {} : { after: cursor.after, expectedRevision: cursor.revision }),
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  });
+  const maxBytes = options.maxBytes ?? 256 * 1024;
+  const items: ScheduledTask[] = [];
+  let nextCursor: string | undefined;
+  for (let index = 0; index < page.items.length; index += 1) {
+    const item = page.items[index];
+    if (!item?.updatedAt) throw new Error('scheduled_task_page_missing_updated_at');
+    const hasMoreAfter = index + 1 < page.items.length || page.next !== undefined;
+    const candidateCursor = hasMoreAfter
+      ? encodeLocalScheduledTaskCursor({
+        version: 1,
+        agentInstanceId,
+        executionNodeId: identity.peerId,
+        states,
+        revision: page.revision,
+        after: { updatedAt: item.updatedAt, id: item.id },
+      })
+      : undefined;
+    const candidate: ScheduledTaskPage = {
+      items: [...items, item],
+      ...(candidateCursor === undefined ? {} : { nextCursor: candidateCursor }),
+      hasMoreAfter,
+      partial: false,
+      sources: [{ executionNodeId: identity.peerId, state: 'online', fromCache: false }],
+    };
+    if (Buffer.byteLength(JSON.stringify(candidate), 'utf8') > maxBytes) break;
+    items.push(item);
+    nextCursor = candidateCursor;
+  }
+  if (page.items.length > 0 && items.length === 0) throw new Error('scheduled_task_page_item_exceeds_byte_budget');
+  return {
+    items,
+    ...(nextCursor === undefined ? {} : { nextCursor }),
+    hasMoreAfter: nextCursor !== undefined,
+    partial: false,
+    sources: [{ executionNodeId: identity.peerId, state: 'online', fromCache: false }],
+  };
+}
+
+function encodeLocalScheduledTaskCursor(cursor: LocalScheduledTaskCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+}
+
+function decodeLocalScheduledTaskCursor(
+  value: string,
+  agentInstanceId: string,
+  executionNodeId: string,
+  states: ScheduledTask['state'][],
+): LocalScheduledTaskCursor {
+  if (!/^[A-Za-z0-9_-]{1,2048}$/u.test(value)) throw new TypeError('invalid scheduled task cursor');
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(Buffer.from(value, 'base64url').toString('utf8'));
+  } catch {
+    throw new TypeError('invalid scheduled task cursor');
+  }
+  if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) throw new TypeError('invalid scheduled task cursor');
+  const cursor = decoded as LocalScheduledTaskCursor;
+  if (
+    Object.keys(cursor).some(key => !['version', 'agentInstanceId', 'executionNodeId', 'states', 'revision', 'after'].includes(key)) ||
+    cursor.version !== 1 || cursor.agentInstanceId !== agentInstanceId || cursor.executionNodeId !== executionNodeId ||
+    !Array.isArray(cursor.states) || cursor.states.length !== states.length || cursor.states.some((state, index) => state !== states[index]) ||
+    typeof cursor.revision !== 'string' || !cursor.revision || !cursor.after || typeof cursor.after.id !== 'string' ||
+    typeof cursor.after.updatedAt !== 'string'
+  ) throw new TypeError('invalid scheduled task cursor');
+  return cursor;
 }
 
 /**
@@ -689,9 +781,17 @@ export async function getActiveTasksForAgent(
  * invalidates an older cursor instead of silently skipping or duplicating a
  * row. Concurrent inserts are handled the same way.
  */
-export async function getScheduledTasksPageForAgent(
-  input: ListScheduledTasksPageForAgentInput,
-): Promise<ScheduledTaskPage> {
+async function getDurableScheduledTasksPageForAgent(
+  input: {
+    agentInstanceId: string;
+    executionNodeId: string;
+    states: ScheduledTask['state'][];
+    limit: number;
+    after?: DurableScheduledTaskPagePosition;
+    expectedRevision?: string;
+    signal?: AbortSignal;
+  },
+): Promise<DurableScheduledTaskPage> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   input.signal?.throwIfAborted();
   if (!Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > 100) {
@@ -740,7 +840,7 @@ export async function getScheduledTasksPageForAgent(
     const pageRows = hasMore ? rows.slice(0, input.limit) : rows;
     const last = pageRows.at(-1);
     return {
-      items: pageRows.map(entityToDto),
+      items: pageRows.map(entityToScheduledTask),
       revision,
       ...(hasMore && last
         ? { next: { updatedAt: last.updated.toISOString(), id: last.id } }
@@ -818,6 +918,7 @@ const heartbeatStates = new Map<string, HeartbeatState>();
  */
 export function startHeartbeat(
   agentId: string,
+  agentDefinitionId: string,
   config: AgentHeartbeatConfig,
   agentInstanceService: IAgentInstanceService,
   options?: { createdBy?: string },
@@ -856,16 +957,15 @@ export function startHeartbeat(
     }
 
     const fireIdentity = s.lastRunAtISO ?? new Date().toISOString();
-    void agentInstanceService.executeLocalAgentMessage(agentId, { text: `[Heartbeat] ${message}` }, {
-      source: 'heartbeat',
-      requestId: `heartbeat:${agentId}:${fireIdentity}:request`,
-      turnId: `heartbeat:${agentId}:${fireIdentity}:turn`,
-      restartHeartbeat: false,
+    void agentInstanceService.executeLocalAgentMessage({
+      target: { kind: 'local' },
       provenance: {
-        heartbeatId: `__heartbeat:${agentId}`,
-        scheduledFor: Date.parse(fireIdentity),
-        createdBy: state.createdBy ?? 'agent-definition',
+        conversationId: agentId,
+        definitionId: agentDefinitionId,
+        requestId: `heartbeat:${agentId}:${fireIdentity}:request`,
+        turnId: `heartbeat:${agentId}:${fireIdentity}:turn`,
       },
+      message: `[Heartbeat] ${message}`,
     }).catch((error: unknown) => {
       logger.error('Heartbeat failed to send message', { error, agentId });
     });

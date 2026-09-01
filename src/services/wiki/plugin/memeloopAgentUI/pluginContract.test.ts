@@ -16,7 +16,7 @@ describe('MemeLoop TiddlyWiki plugin integration contract', () => {
     expect(source).toContain('ConversationTimelineWindowController');
     expect(source).toContain('DEFAULT_RESIDENT_MESSAGE_LIMIT');
     expect(source).toContain('DEFAULT_RESIDENT_CONTENT_BYTE_LIMIT');
-    expect(source).toContain('key={conversationId}');
+    expect(source).toContain('key={target.conversationId}');
   });
 
   it('does not regress to the former unbounded plugin-owned pager', () => {
@@ -63,6 +63,11 @@ describe('MemeLoop TiddlyWiki plugin integration contract', () => {
     expect(source).toContain('onErrorAction');
     const host = read('hostAdapter.ts');
     expect(host).toContain('export interface WikiAgentHostAdapter');
+    expect(host).toContain('definition: AgentDefinition');
+    expect(host).toContain('selection: AgentModelConfig');
+    expect(host).toContain('route: ProviderModelRoute');
+    expect(host).toContain('Promise<AgentSessionTarget>');
+    expect(source).toContain('activeExecutionTarget: targets.activeExecutionTarget');
     expect(host).toContain('MAX_AGENT_DEFINITIONS = 128');
     expect(host).toContain('MAX_MODEL_OPTIONS = 512');
   });

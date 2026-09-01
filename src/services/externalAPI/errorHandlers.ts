@@ -3,10 +3,10 @@ import { isProviderConfigError, parseProviderError } from './errors';
 /**
  * Extract structured error details from various error types
  */
-export function extractErrorDetails(error: unknown, provider: string): {
+export function extractErrorDetails(error: unknown, providerId: string): {
   name: string;
   code: string;
-  provider: string;
+  providerId: string;
   message?: string;
 } {
   // Check if it's already a known provider error type
@@ -14,17 +14,17 @@ export function extractErrorDetails(error: unknown, provider: string): {
     return {
       name: error.name,
       code: error.code,
-      provider: error.provider,
+      providerId: error.providerId,
       message: error.message,
     };
   }
 
-  const normalized = parseProviderError(error, provider);
+  const normalized = parseProviderError(error, providerId);
   if (isProviderConfigError(normalized)) {
     return {
       name: normalized.name,
       code: normalized.code,
-      provider: normalized.provider,
+      providerId: normalized.providerId,
       message: normalized.message,
     };
   }
@@ -34,7 +34,7 @@ export function extractErrorDetails(error: unknown, provider: string): {
   return {
     name: 'AIProviderError',
     code: 'UNKNOWN_ERROR',
-    provider,
+    providerId,
     message: 'Chat.ConfigError.ProviderUnavailable',
   };
 }

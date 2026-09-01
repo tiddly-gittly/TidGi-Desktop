@@ -1,26 +1,38 @@
-import type { AIProviderConfig } from '@/services/externalAPI/interface';
-import { PreferenceSections } from '@/services/preferences/interface';
-import type { AgentDefinition, AgentFrameworkConfig, AgentModelConfig } from 'memeloop';
+import { buildAgentRunErrorSettingsDeepLink } from '@/pages/Agent/adapters/openAgentRunErrorSettings';
+import type {
+  AgentDefinition,
+  AgentFrameworkConfig,
+  AgentInstanceClient,
+  AgentModelConfig,
+  AgentRunErrorSettingTarget,
+  AgentSessionTarget,
+  ModelCatalog,
+  ModelCatalogModel,
+  ModelCatalogProvider,
+  ProviderAccountConfig,
+  ProviderModelRoute,
+} from 'memeloop';
+
 import { resolveWikiAgentId } from './agentDiscovery';
 
 const MAX_AGENT_DEFINITIONS = 128;
 const MAX_MODEL_OPTIONS = 512;
 
 export interface WikiAgentDefinitionOption {
-  id: string;
+  definition: AgentDefinition;
   label: string;
-  description?: string;
 }
 
 export interface WikiAgentModelOption {
-  id: string;
-  providerId: string;
-  modelId: string;
+  selection: AgentModelConfig;
+  route: ProviderModelRoute;
+  provider?: ModelCatalogProvider;
+  catalogModel?: ModelCatalogModel;
   label: string;
 }
 
 export interface WikiAgentModelSelection {
-  selectedId?: string;
+  selected?: AgentModelConfig;
   options: readonly WikiAgentModelOption[];
 }
 
@@ -31,14 +43,15 @@ export interface WikiAgentModelSelection {
  */
 export interface WikiAgentHostAdapter {
   isReady(): boolean;
-  resolveAgentId(requestedAgentId: string | undefined, options: { signal: AbortSignal }): Promise<string>;
+  resolveAgentTarget(requestedAgentId: string | undefined, options: { signal: AbortSignal }): Promise<AgentSessionTarget>;
   listAgentDefinitions(options: { signal: AbortSignal }): Promise<readonly WikiAgentDefinitionOption[]>;
-  createAgent(definitionId: string, options: { signal: AbortSignal }): Promise<{ id: string }>;
+  createAgent(definition: AgentDefinition, options: { signal: AbortSignal }): ReturnType<AgentInstanceClient['createAgent']>;
   getAgentDefinition(definitionId: string, options: { signal: AbortSignal }): Promise<AgentDefinition | undefined>;
   getAgentFrameworkConfig(agentId: string, definitionId: string, options: { signal: AbortSignal }): Promise<AgentFrameworkConfig | undefined>;
   getModelSelection(agentId: string, definitionId: string, options: { signal: AbortSignal }): Promise<WikiAgentModelSelection>;
-  selectModel(agentId: string, option: WikiAgentModelOption, options: { signal: AbortSignal }): Promise<void>;
-  openSettings(): Promise<void>;
+  selectModel(agentId: string, selection: AgentModelConfig, options: { signal: AbortSignal }): Promise<void>;
+  /** Exact Core target when available; hosts without field focus may degrade to its section. */
+  openSettings(target?: AgentRunErrorSettingTarget): Promise<void>;
   logError(message: string, error: unknown): void;
 }
 
@@ -85,34 +98,56 @@ function boundedDefinitions(definitions: readonly AgentDefinition[]): WikiAgentD
     if (!definition.id || seen.has(definition.id)) continue;
     seen.add(definition.id);
     result.push({
-      id: definition.id,
+      definition,
       label: definition.name || definition.id,
-      ...(definition.description ? { description: definition.description } : {}),
     });
     if (result.length === MAX_AGENT_DEFINITIONS) break;
   }
   return result;
 }
 
-function modelOption(provider: AIProviderConfig, model: AIProviderConfig['models'][number]): WikiAgentModelOption {
+function findCatalogProvider(catalog: ModelCatalog, account: ProviderAccountConfig): ModelCatalogProvider | undefined {
+  return account.catalogProvider ?? catalog.providers.find(provider => provider.id === account.providerId);
+}
+
+function modelOption(
+  account: ProviderAccountConfig,
+  route: ProviderModelRoute,
+  catalog: ModelCatalog,
+  effectiveSelection: AgentModelConfig | undefined,
+): WikiAgentModelOption {
+  const provider = findCatalogProvider(catalog, account);
+  const catalogModel = provider?.models.find(model => model.id === route.modelId);
+  const selection = effectiveSelection?.providerId === account.providerId && effectiveSelection.modelId === route.modelId
+    ? effectiveSelection
+    : {
+      providerId: account.providerId,
+      modelId: route.modelId,
+      ...(effectiveSelection?.parameters === undefined ? {} : { parameters: effectiveSelection.parameters }),
+    };
   return {
-    id: JSON.stringify([provider.provider, model.name]),
-    providerId: provider.provider,
-    modelId: model.name,
-    label: `${provider.provider} · ${model.caption || model.name}`,
+    selection,
+    route,
+    ...(provider === undefined ? {} : { provider }),
+    ...(catalogModel === undefined ? {} : { catalogModel }),
+    label: `${provider?.name ?? account.providerId} · ${catalogModel?.name ?? route.modelId}`,
   };
 }
 
-function boundedModels(providers: readonly AIProviderConfig[]): WikiAgentModelOption[] {
+function boundedModels(
+  accounts: readonly ProviderAccountConfig[],
+  catalog: ModelCatalog,
+  effectiveSelection: AgentModelConfig | undefined,
+): WikiAgentModelOption[] {
   const seen = new Set<string>();
   const result: WikiAgentModelOption[] = [];
-  for (const provider of providers) {
-    if (provider.enabled === false || !provider.provider) continue;
-    for (const model of provider.models ?? []) {
-      if (!model.name) continue;
-      const option = modelOption(provider, model);
-      if (seen.has(option.id)) continue;
-      seen.add(option.id);
+  for (const account of accounts) {
+    if (account.enabled === false) continue;
+    for (const route of account.models) {
+      const key = JSON.stringify([account.providerId, route.modelId]);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const option = modelOption(account, route, catalog, effectiveSelection);
       result.push(option);
       if (result.length === MAX_MODEL_OPTIONS) return result;
     }
@@ -128,7 +163,7 @@ async function resolvedModelConfig(agentId: string, definitionId: string): Promi
   if (definition?.modelConfig) return definition.modelConfig;
   const globalConfig = await service.externalAPI.getAIConfig();
   return globalConfig.default
-    ? { providerId: globalConfig.default.provider, modelId: globalConfig.default.model }
+    ? globalConfig.default
     : undefined;
 }
 
@@ -143,11 +178,11 @@ export function createDesktopWikiAgentHostAdapter(): WikiAgentHostAdapter {
       }
     },
 
-    async resolveAgentId(requestedAgentId, { signal }) {
+    async resolveAgentTarget(requestedAgentId, { signal }) {
       throwIfAborted(signal);
       const agentId = await resolveWikiAgentId(requestedAgentId, assertReady().agentInstance);
       throwIfAborted(signal);
-      return agentId;
+      return { agentId, conversationId: agentId };
     },
 
     async listAgentDefinitions({ signal }) {
@@ -157,9 +192,9 @@ export function createDesktopWikiAgentHostAdapter(): WikiAgentHostAdapter {
       return boundedDefinitions(definitions);
     },
 
-    async createAgent(definitionId, { signal }) {
+    async createAgent(definition, { signal }) {
       throwIfAborted(signal);
-      const instance = await assertReady().agentInstance.createAgent(definitionId);
+      const instance = await assertReady().agentInstance.createAgent(definition.id);
       throwIfAborted(signal);
       return { id: instance.id };
     },
@@ -187,47 +222,36 @@ export function createDesktopWikiAgentHostAdapter(): WikiAgentHostAdapter {
     async getModelSelection(agentId, definitionId, { signal }) {
       throwIfAborted(signal);
       const service = assertReady();
-      const [providers, selection] = await Promise.all([
-        service.externalAPI.getAIProviders(),
+      const [accounts, catalog, selection] = await Promise.all([
+        service.externalAPI.getProviderAccounts(),
+        service.externalAPI.getProviderCatalog(),
         resolvedModelConfig(agentId, definitionId),
       ]);
       throwIfAborted(signal);
-      const options = boundedModels(providers);
+      const options = boundedModels(accounts, catalog.catalog, selection);
       return {
         options,
-        ...(selection === undefined
-          ? {}
-          : { selectedId: JSON.stringify([selection.providerId, selection.modelId]) }),
+        ...(selection === undefined ? {} : { selected: selection }),
       };
     },
 
-    async selectModel(agentId, option, { signal }) {
+    async selectModel(agentId, selection, { signal }) {
       throwIfAborted(signal);
       const service = assertReady();
       const instance = await service.agentInstance.getAgentMetadata(agentId);
       throwIfAborted(signal);
       if (!instance) throw new WikiAgentHostUnavailableError();
-      const definition = instance.agentDefId
-        ? await service.agentDefinition.getAgentDef(instance.agentDefId)
-        : undefined;
-      throwIfAborted(signal);
       await service.agentInstance.updateAgent(agentId, {
-        modelConfig: {
-          providerId: option.providerId,
-          modelId: option.modelId,
-          ...(instance.modelConfig?.parameters === undefined && definition?.modelConfig?.parameters === undefined
-            ? {}
-            : { parameters: instance.modelConfig?.parameters ?? definition?.modelConfig?.parameters }),
-        },
+        modelConfig: selection,
       });
       throwIfAborted(signal);
     },
 
-    async openSettings() {
+    async openSettings(target) {
       const service = assertReady();
       const isTestMode = await service.context.get('isTest');
       await service.deepLink.openDeepLink(
-        `${isTestMode ? 'tidgi-test' : 'tidgi'}://preferences/${PreferenceSections.externalAPI}`,
+        buildAgentRunErrorSettingsDeepLink(isTestMode ? 'tidgi-test' : 'tidgi', target),
       );
     },
 

@@ -228,6 +228,10 @@ describe('DesktopAgentRunStateStore atomic retry', () => {
     await dataSource.getRepository(AgentDefinitionEntity).save({
       id: 'definition-atomic-retry',
       name: 'Atomic retry',
+      description: '',
+      systemPrompt: '',
+      tools: [],
+      version: '1.0.0',
       revision: 0,
       totalMessages: 0,
       totalTurns: 0,

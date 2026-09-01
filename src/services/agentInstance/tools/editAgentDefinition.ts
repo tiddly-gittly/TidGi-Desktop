@@ -25,11 +25,11 @@ const EditHeartbeatToolSchema = z.object({
     title: 'Enabled',
     description: 'Enable or disable the heartbeat schedule.',
   }),
-  intervalSeconds: z.number().optional().meta({
+  intervalSeconds: z.number().int().min(60).meta({
     title: 'Interval (seconds)',
     description: 'How often to fire the heartbeat. Minimum 60.',
   }),
-  message: z.string().optional().meta({
+  message: z.string().min(1).meta({
     title: 'Message',
     description: 'Message sent to the agent on each heartbeat.',
   }),
@@ -46,7 +46,7 @@ const EditHeartbeatToolSchema = z.object({
   description: "Modify this agent's heartbeat (periodic self-wake) configuration. Requires user approval.",
   examples: [
     { enabled: true, intervalSeconds: 300, message: 'Periodic check-in. Review tasks and take pending actions.' },
-    { enabled: false },
+    { enabled: false, intervalSeconds: 300, message: 'Periodic check-in. Review tasks and take pending actions.' },
   ],
 });
 
@@ -89,9 +89,9 @@ export const editAgentDefinitionDefinition = defineDesktopTool({
       await executeToolCall('edit-heartbeat', async (parameters) => {
         const agentInstanceService = container.get<import('../interface').IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-        await agentInstanceService.setBackgroundHeartbeat(agentId, {
+        await agentInstanceService.setAgentHeartbeat(agentId, {
           enabled: parameters.enabled,
-          intervalSeconds: Math.max(60, parameters.intervalSeconds ?? 300),
+          intervalSeconds: parameters.intervalSeconds,
           message: parameters.message,
           activeHoursStart: parameters.activeHoursStart,
           activeHoursEnd: parameters.activeHoursEnd,
@@ -100,7 +100,7 @@ export const editAgentDefinitionDefinition = defineDesktopTool({
         return {
           success: true,
           data: parameters.enabled
-            ? `Heartbeat enabled — will fire every ${parameters.intervalSeconds ?? 300}s.`
+            ? `Heartbeat enabled — will fire every ${parameters.intervalSeconds}s.`
             : 'Heartbeat disabled.',
         };
       });

@@ -1,55 +1,50 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveDesktopProviderCatalog } from './providerCatalog';
+import { createDesktopModelCatalogManager } from './providerCatalog';
 
 const temporaryDirectories: string[] = [];
 
 afterEach(() => {
-  for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { recursive: true, force: true });
+  for (const directory of temporaryDirectories.splice(0)) {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });
 
-describe('provider catalog', () => {
-  it('returns the embedded catalog immediately before the first refresh', async () => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-provider-catalog-'));
-    temporaryDirectories.push(directory);
-    let fetched = false;
+function temporaryCachePath(): string {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-provider-catalog-'));
+  temporaryDirectories.push(directory);
+  return path.join(directory, 'catalog.json');
+}
 
-    const result = await resolveDesktopProviderCatalog({
-      cachePath: path.join(directory, 'missing.json'),
+describe('Desktop Core model catalog adapter', () => {
+  it('returns the exact embedded Core catalog while the first refresh runs', async () => {
+    const manager = createDesktopModelCatalogManager({
+      cachePath: temporaryCachePath(),
       fetch: async () => {
-        fetched = true;
-        throw new Error('must not fetch');
+        throw new Error('offline');
       },
     });
 
-    expect(result.status.source).toBe('embedded');
-    expect(result.providers.length).toBeGreaterThan(100);
-    expect(result.providers).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        provider: 'ollama',
-        providerClass: 'ollama',
-        baseURL: 'http://localhost:11434',
-      }),
-      expect.objectContaining({
-        provider: 'comfyui',
-        providerClass: 'comfyui',
-        baseURL: 'http://localhost:8188',
-        models: [expect.objectContaining({ name: 'flux', features: ['imageGeneration'] })],
-      }),
-    ]));
-    expect(fetched).toBe(false);
+    const result = await manager.resolve();
+
+    expect(result.source).toBe('embedded');
+    expect(result.stale).toBe(true);
+    expect(result.refreshing).toBe(true);
+    expect(result.catalog.providers.length).toBeGreaterThan(100);
+    const firstProvider = result.catalog.providers[0];
+    expect(firstProvider?.id).toEqual(expect.any(String));
+    expect(firstProvider?.name).toEqual(expect.any(String));
+    expect(Array.isArray(firstProvider?.models)).toBe(true);
+    manager.dispose();
   });
 
-  it('maps exact capabilities and caches a valid remote catalog', async () => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-provider-catalog-'));
-    temporaryDirectories.push(directory);
-    const cachePath = path.join(directory, 'catalog.json');
-    const result = await resolveDesktopProviderCatalog({
+  it('preserves exact catalog capabilities and atomically caches a valid refresh', async () => {
+    const cachePath = temporaryCachePath();
+    const manager = createDesktopModelCatalogManager({
       cachePath,
-      refresh: true,
       fetch: async () =>
         new Response(
           JSON.stringify({
@@ -75,27 +70,47 @@ describe('provider catalog', () => {
           { status: 200, headers: { etag: '"demo-v1"' } },
         ),
     });
-    expect(result.status.source).toBe('remote');
-    expect(result.providers[0]).toMatchObject({
-      provider: 'demo',
-      enabled: false,
-      models: [{ name: 'vision', features: ['language', 'reasoning', 'toolCalling', 'vision'] }],
+
+    const result = await manager.refresh();
+
+    expect(result.source).toBe('remote');
+    expect(result.stale).toBe(false);
+    const provider = result.catalog.providers[0];
+    expect(provider).toMatchObject({
+      id: 'demo',
+      name: 'Demo',
+      api: 'https://example.com/v1',
     });
-    expect(fs.existsSync(cachePath)).toBe(true);
+    expect(provider?.models[0]).toMatchObject({
+      id: 'vision',
+      name: 'Vision',
+      attachment: true,
+      reasoning: true,
+      toolCall: true,
+      limit: { context: 1000, output: 100 },
+    });
+    expect(provider?.models[0]?.modalities?.input).toEqual(['image', 'text']);
+    expect(provider?.models[0]?.modalities?.output).toEqual(['text']);
+    await vi.waitFor(() => {
+      expect(fs.existsSync(cachePath)).toBe(true);
+    });
+    manager.dispose();
   });
 
-  it('uses the embedded last-known-good snapshot while offline', async () => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-provider-catalog-'));
-    temporaryDirectories.push(directory);
-    const result = await resolveDesktopProviderCatalog({
-      cachePath: path.join(directory, 'missing.json'),
-      refresh: true,
+  it('returns the embedded last-known-good snapshot when a forced refresh is offline', async () => {
+    const manager = createDesktopModelCatalogManager({
+      cachePath: temporaryCachePath(),
       fetch: async () => {
         throw new Error('offline');
       },
     });
-    expect(result.status.source).toBe('embedded');
-    expect(result.status.refreshError).toContain('offline');
-    expect(result.providers.length).toBeGreaterThan(100);
+
+    const result = await manager.refresh();
+
+    expect(result.source).toBe('embedded');
+    expect(result.stale).toBe(true);
+    expect(result.refreshError).toBeDefined();
+    expect(result.catalog.providers.length).toBeGreaterThan(100);
+    manager.dispose();
   });
 });

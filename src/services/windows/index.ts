@@ -247,6 +247,7 @@ export class Window implements IWindowService {
       [WindowNames.tidgiMiniWindow]: 'TidGi [Mini Window]',
       [WindowNames.secondary]: 'TidGi [Secondary Window]',
       [WindowNames.preferences]: 'TidGi [Preferences]',
+      [WindowNames.promptPreview]: 'TidGi [Prompt Workspace]',
       [WindowNames.addWorkspace]: 'TidGi [Add Workspace]',
       [WindowNames.editWorkspace]: 'TidGi [Edit Workspace]',
       [WindowNames.about]: 'TidGi [About]',

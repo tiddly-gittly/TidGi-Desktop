@@ -77,6 +77,10 @@ export default defineConfig({
   },
 
   resolve: {
+    // Sibling-linked MemeLoop packages must share Desktop's React dispatcher,
+    // matching the packaged renderer contract in vite.renderer.aliases.ts.
+    dedupe: ['react', 'react-dom'],
+    preserveSymlinks: true,
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
       { find: '@services', replacement: path.resolve(__dirname, './src/services') },
@@ -88,6 +92,11 @@ export default defineConfig({
       // Resolve memeloop packages for vitest (SWC-transformed files need explicit paths)
       { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
       { find: /^@memeloop\/react-ui\/chat$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js') },
+      { find: /^@memeloop\/react-ui\/native$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/native/index.js') },
+      { find: /^@memeloop\/react-ui\/theme$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/theme/index.js') },
+      { find: /^@memeloop\/react-ui\/agent\/prompts$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/prompts/index.js') },
+      { find: /^@memeloop\/react-ui\/agent\/scheduling$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/scheduling/index.js') },
+      { find: /^@memeloop\/react-ui\/agent$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/index.js') },
       { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js') },
       // MUI rewrites this import through its browser map, so pin both exposed deep-import forms.
       { find: /^react-transition-group\/TransitionGroupContext$/, replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js') },

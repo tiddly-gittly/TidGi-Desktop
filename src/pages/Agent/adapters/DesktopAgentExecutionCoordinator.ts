@@ -1,5 +1,6 @@
 import type {
   AgentAttachmentInput,
+  AgentCommittedAttachment,
   AgentDeviceRpcClient,
   AgentDeviceRpcRunStatus,
   AgentRunError,
@@ -16,62 +17,46 @@ import type {
   RemoteAgentExecutionTarget,
   RemoteAgentRetryRequest,
 } from 'memeloop';
-import { ATTACHMENT_UPLOAD_LIMITS, buildAttachmentUploadChunkRequest, createAgentDeviceRpcClient, RemoteAgentExecutionCoordinator, RemoteAgentExecutionError } from 'memeloop';
+import {
+  ATTACHMENT_UPLOAD_LIMITS,
+  buildAttachmentUploadChunkRequest,
+  createAgentDeviceRpcClient,
+  extractAgentRunError,
+  RemoteAgentExecutionCoordinator,
+  RemoteAgentExecutionError,
+} from 'memeloop';
 
 import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/services/agentInstance/attachmentUploadProtocol';
-import type {
-  DesktopAgentExecuteRunRequest,
-  DesktopAttachmentUploadScope,
-  DesktopPreparedAgentUserMessage,
-  ReadDesktopAgentAttachmentChunkInput,
-} from '@/services/agentInstance/attachmentUploadProtocol';
-import type { DesktopAgentExecuteRunResult } from '@/services/agentInstance/interface';
+import type { IAgentInstanceService } from '@/services/agentInstance/interface';
+import type { IDeviceNetworkService } from '@/services/deviceNetwork/interface';
 
 import { createSecureBrowserUuid } from './createSecureBrowserUuid';
 
 const DEFAULT_RUN_POLL_INTERVAL_MS = 500;
 
-interface DesktopAgentInstanceExecutionPort {
-  abortAgentAttachmentUpload(scope: DesktopAttachmentUploadScope): Promise<void>;
-  beginAgentAttachmentUpload(input: {
-    conversationId: string;
-    filename: string;
-    mimeType: string;
-    totalBytes: number;
-    sha256?: string;
-  }): Promise<{ uploadId: string }>;
-  cancelAgentRun(runId: string): Promise<boolean>;
-  commitAgentAttachmentUpload(scope: DesktopAttachmentUploadScope): Promise<{ kind: 'committed'; reference: AttachmentReference }>;
-  deleteConversationTurn(request: {
-    conversationId: string;
-    turnId: string;
-    requestId: string;
-  }): Promise<{ ok: true }>;
-  executeAgentRun(request: DesktopAgentExecuteRunRequest): Promise<DesktopAgentExecuteRunResult>;
-  getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined>;
-  prepareRemoteAgentUserMessage(request: DesktopAgentExecuteRunRequest): Promise<DesktopPreparedAgentUserMessage>;
-  readAgentAttachmentChunk(input: ReadDesktopAgentAttachmentChunkInput): Promise<Uint8Array | null>;
-  retryConversationTurn(request: {
-    conversationId: string;
-    turnId: string;
-    newTurnId: string;
-    requestId: string;
-    definitionId?: string;
-  }): Promise<MemeLoopRunHandle & { ok: true }>;
-  writeAgentAttachmentChunk(input: {
-    uploadId: string;
-    conversationId: string;
-    offset: number;
-    data: Uint8Array;
-  }): Promise<{ nextOffset: number }>;
-}
+type DesktopAgentInstanceExecutionPort = Pick<
+  IAgentInstanceService,
+  | 'abortAgentAttachmentUpload'
+  | 'beginAgentAttachmentUpload'
+  | 'cancelAgentRun'
+  | 'commitAgentAttachmentUpload'
+  | 'deleteConversationTurn'
+  | 'executeAgentRun'
+  | 'getAgentRunStatus'
+  | 'prepareAgentDeviceRpcRunTurn'
+  | 'readAgentAttachmentChunk'
+  | 'retryConversationTurn'
+  | 'writeAgentAttachmentChunk'
+>;
 
-interface DesktopDeviceNetworkExecutionPort {
-  abortOperation(operationId: string): Promise<void>;
-  finishOperation(operationId: string): Promise<void>;
-  sendRpc(peerId: string, method: string, parameters: unknown, options?: { operationId?: string }): Promise<unknown>;
-  syncWithDevice(peerId: string, options: { conversationIds: string[]; operationId: string }): Promise<unknown>;
-}
+type DesktopDeviceNetworkExecutionPort =
+  & Pick<
+    IDeviceNetworkService,
+    'abortOperation' | 'finishOperation' | 'syncWithDevice'
+  >
+  & {
+    sendRpc(...arguments_: Parameters<IDeviceNetworkService['sendRpc']>): Promise<unknown>;
+  };
 
 export interface DesktopAgentExecutionCoordinatorServices {
   agentInstance: DesktopAgentInstanceExecutionPort;
@@ -88,8 +73,8 @@ export interface DesktopAgentExecutionCoordinatorFactoryOptions {
 }
 
 interface StagedAttachment {
-  attachment: { kind: 'committed'; reference: AttachmentReference };
-  scope?: DesktopAttachmentUploadScope;
+  attachment: AgentCommittedAttachment;
+  scope?: Parameters<IAgentInstanceService['abortAgentAttachmentUpload']>[0];
 }
 
 interface ActiveRun {
@@ -141,19 +126,11 @@ export function createDesktopAgentExecutionCoordinator(
   ): Promise<RemoteAgentExecutionResult> => {
     const staged = await stageAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
     try {
-      const result = await services.agentInstance.executeAgentRun({
-        conversationId: request.provenance.conversationId,
-        definitionId: request.provenance.definitionId,
-        message: request.message,
-        requestId: request.provenance.requestId,
-        turnId: request.provenance.turnId,
+      const runTurnRequest = await services.agentInstance.prepareAgentDeviceRpcRunTurn({
+        ...request,
         ...(staged === undefined ? {} : { attachment: staged.attachment }),
-        ...(request.wikiTiddlers === undefined ? {} : { wikiTiddlers: request.wikiTiddlers }),
       });
-      if (!result.ok) {
-        throw createRemoteExecutionFailure('PORT_FAILURE', result.error.retryable, result.error);
-      }
-      const handle = result.handle;
+      const handle = await services.agentInstance.executeAgentRun(runTurnRequest);
       assertRunHandleCorrelation(handle, request.provenance);
       await notifyRunAccepted(options, request.provenance, handle, services);
       await waitForAcceptedRun({
@@ -173,6 +150,8 @@ export function createDesktopAgentExecutionCoordinator(
         requestId: request.provenance.requestId,
         error,
       });
+      const runError = extractAgentRunError(error);
+      if (runError) throw createRemoteExecutionFailure('PORT_FAILURE', runError.retryable, runError);
       throw error;
     } finally {
       await releaseStagedAttachment(staged, services);
@@ -199,24 +178,12 @@ export function createDesktopAgentExecutionCoordinator(
             createId,
             callOptions.signal,
           );
-        const prepared = await services.agentInstance.prepareRemoteAgentUserMessage({
-          conversationId: request.provenance.conversationId,
-          definitionId: request.provenance.definitionId,
-          message: request.message,
-          requestId: request.provenance.requestId,
-          turnId: request.provenance.turnId,
+        const runTurnRequest = await services.agentInstance.prepareAgentDeviceRpcRunTurn({
+          ...request,
           ...(forwardedAttachment === undefined ? {} : { attachment: forwardedAttachment }),
-          ...(request.wikiTiddlers === undefined ? {} : { wikiTiddlers: request.wikiTiddlers }),
         });
         callOptions.signal.throwIfAborted();
-        const handle = await client.runTurn({
-          conversationId: request.provenance.conversationId,
-          definitionId: request.provenance.definitionId,
-          message: prepared.message,
-          requestId: request.provenance.requestId,
-          turnId: request.provenance.turnId,
-          userMessage: prepared.userMessage,
-        });
+        const handle = await client.runTurn(runTurnRequest);
         assertRunHandleCorrelation(handle, request.provenance);
         await notifyRunAccepted(options, request.provenance, handle, services);
         await waitForAcceptedRun({

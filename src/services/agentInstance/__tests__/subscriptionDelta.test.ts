@@ -1,6 +1,6 @@
 /** @vitest-environment node */
 import { createChatMessage } from 'memeloop';
-import type { AgentConversationUpdate, AgentInstance, ChatMessage } from 'memeloop';
+import type { AgentConversationUpdate, AgentRuntimeView, ChatMessage } from 'memeloop';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -9,7 +9,7 @@ import { AgentInstanceService } from '../index';
 describe('AgentInstanceService renderer subscription bounds', () => {
   it('emits metadata with zero messages rather than a 100k-message snapshot', () => {
     const service = new AgentInstanceService();
-    const subject = new BehaviorSubject<AgentInstance | undefined>(undefined);
+    const subject = new BehaviorSubject<AgentRuntimeView | undefined>(undefined);
     Object.assign(service as unknown as Record<string, unknown>, {
       agentInstanceSubjects: new Map([['conversation', subject]]),
     });
@@ -25,27 +25,27 @@ describe('AgentInstanceService renderer subscription bounds', () => {
         role: index % 2 === 0 ? 'user' : 'assistant',
         content: `message ${index}`,
       }));
-    const agent: AgentInstance = {
+    const agent: AgentRuntimeView & { messages: ChatMessage[] } = {
       id: 'conversation',
       agentDefId: 'definition',
-      version: '1',
-      description: '',
-      systemPrompt: '',
-      tools: [],
       created: new Date(),
       status: { state: 'working', modified: new Date() },
+      closed: false,
+      volatile: false,
+      preview: false,
       messages,
     };
-    let received: AgentInstance | undefined;
+    let received: AgentRuntimeView | undefined;
     const subscription = subject.subscribe(update => {
       if (update) received = update;
     });
 
     (service as unknown as {
-      notifyAgentUpdate(agentId: string, value: AgentInstance): void;
+      notifyAgentUpdate(agentId: string, value: AgentRuntimeView): void;
     }).notifyAgentUpdate('conversation', agent);
 
-    expect(received?.messages).toEqual([]);
+    expect(received).not.toHaveProperty('messages');
+    expect(agent.messages).toHaveLength(100_000);
     expect(Buffer.byteLength(JSON.stringify(received))).toBeLessThan(2_000);
     subscription.unsubscribe();
   });

@@ -1,20 +1,19 @@
 import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
-import ArticleIcon from '@mui/icons-material/Article';
 import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import SaveIcon from '@mui/icons-material/Save';
-import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import MuiDialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
+import Switch from '@mui/material/Switch';
 import Tooltip from '@mui/material/Tooltip';
 import type { PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditView } from './EditView';
 import { PreviewProgressBar } from './PreviewProgressBar';
@@ -29,6 +28,23 @@ export interface PromptPreviewDialogProps {
   onClose: () => void;
   inputText?: string;
   initialBaseMode?: 'preview' | 'edit';
+  /** Render as the content of the dedicated BrowserWindow. */
+  windowed?: boolean;
+}
+
+export interface PromptPreviewPaneVisibility {
+  preview: boolean;
+  edit: boolean;
+}
+
+/** Toggle one pane while preserving the invariant that at least one stays visible. */
+export function togglePromptPreviewPane(
+  visibility: PromptPreviewPaneVisibility,
+  pane: keyof PromptPreviewPaneVisibility,
+): PromptPreviewPaneVisibility {
+  const otherPane = pane === 'preview' ? 'edit' : 'preview';
+  if (visibility[pane] && !visibility[otherPane]) return visibility;
+  return { ...visibility, [pane]: !visibility[pane] };
 }
 
 export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
@@ -40,18 +56,27 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   onClose,
   inputText = '',
   initialBaseMode = 'preview',
+  windowed = false,
 }) => {
   const { t } = useTranslation('agent');
 
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [baseMode, setBaseMode] = useState<'preview' | 'edit'>(initialBaseMode);
-  const [showSideBySide, setShowSideBySide] = useState(false);
-  const [baseModeBeforeSideBySide, setBaseModeBeforeSideBySide] = useState<'preview' | 'edit'>(initialBaseMode);
+  const [visiblePanes, setVisiblePanes] = useState(() => ({
+    preview: initialBaseMode === 'preview',
+    edit: initialBaseMode === 'edit',
+  }));
+  const showPreview = visiblePanes.preview;
+  const showEdit = visiblePanes.edit;
   const [savedSnackbarOpen, setSavedSnackbarOpen] = useState(false);
+  const initialGenerationKey = useRef<string | undefined>(undefined);
+  const wasOpen = useRef(open);
 
   const {
     loading: agentFrameworkConfigLoading,
     config: agentFrameworkConfig,
+    setConfig: setAgentFrameworkConfig,
+    schema: handlerSchema,
+    persistConfig: persistAgentFrameworkConfig,
   } = useAgentFrameworkConfigManagement({
     agentDefId: agentDefinitionId,
     agentId,
@@ -75,70 +100,57 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
   }, [agentDefinitionId, agentFrameworkConfig]);
 
   useEffect(() => {
-    if (agentFrameworkConfigLoading || !agentFrameworkConfig || !open) return;
+    if (!open) {
+      initialGenerationKey.current = undefined;
+      return;
+    }
+    if (agentFrameworkConfigLoading || !agentFrameworkConfig) return;
+    const generationKey = `${agentId}\u0000${agentDefinitionId}\u0000${inputText}`;
+    if (initialGenerationKey.current === generationKey) return;
+    initialGenerationKey.current = generationKey;
     void controller.generate(
       agentFrameworkConfig,
       agentId,
       inputText.trim().length === 0 ? undefined : inputText,
     );
-  }, [agentFrameworkConfig, agentFrameworkConfigLoading, agentId, controller, inputText, open]);
+  }, [agentDefinitionId, agentFrameworkConfig, agentFrameworkConfigLoading, agentId, controller, inputText, open]);
 
   const handleToggleFullScreen = useCallback((): void => {
     setIsFullScreen(previous => !previous);
   }, []);
 
-  const handleToggleEditMode = useCallback((): void => {
-    setShowSideBySide(previous => {
-      if (!previous) {
-        // Entering side-by-side, save current baseMode
-        setBaseModeBeforeSideBySide(baseMode);
-      } else {
-        // Exiting side-by-side, restore previous baseMode
-        setBaseMode(baseModeBeforeSideBySide);
-      }
-      return !previous;
-    });
-  }, [baseMode, baseModeBeforeSideBySide]);
-
-  // Listen for form field scroll targets to automatically switch to side-by-side mode
+  // A tree selection always reveals the editor while preserving the preview.
   const { formFieldsToScrollTo } = state;
   useEffect(() => {
     if (formFieldsToScrollTo.length > 0) {
-      // Save current baseMode before switching to side-by-side
-      setBaseModeBeforeSideBySide(baseMode);
-      setBaseMode('edit');
-      setShowSideBySide(true); // Show side-by-side when clicking from PromptTree
+      setVisiblePanes(previous => previous.edit ? previous : { ...previous, edit: true });
     }
-  }, [formFieldsToScrollTo, baseMode]);
+  }, [formFieldsToScrollTo]);
 
   useEffect(() => {
-    if (open) {
-      setBaseMode(initialBaseMode);
-      setShowSideBySide(false);
+    const justOpened = open && !wasOpen.current;
+    wasOpen.current = open;
+    if (justOpened) {
+      setVisiblePanes({
+        preview: initialBaseMode === 'preview',
+        edit: initialBaseMode === 'edit',
+      });
     }
   }, [initialBaseMode, open]);
 
-  const showPreview = showSideBySide || baseMode === 'preview';
-  const showEdit = showSideBySide || baseMode === 'edit';
-  const isSideBySide = showSideBySide;
-
-  const sideBySideTooltip = isSideBySide
-    ? t('Prompt.ExitSideBySide')
-    : baseMode === 'edit'
-    ? t('Prompt.EnterPreviewSideBySide')
-    : t('Prompt.EnterEditSideBySide');
+  const contentFullScreen = isFullScreen || windowed;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth={isFullScreen ? false : 'md'}
+      maxWidth={contentFullScreen ? false : 'md'}
       fullWidth
-      fullScreen={isFullScreen}
+      fullScreen={contentFullScreen}
       slotProps={{
         paper: {
           sx: {
-            ...(isFullScreen && {
+            ...(contentFullScreen && {
               m: 0,
               width: '100%',
               height: '100%',
@@ -153,9 +165,35 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Box>{t('Prompt.Preview')}</Box>
-          <Box sx={{ display: 'flex' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showPreview}
+                  disabled={showPreview && !showEdit}
+                  onChange={() => {
+                    setVisiblePanes(previous => togglePromptPreviewPane(previous, 'preview'));
+                  }}
+                  slotProps={{ input: { 'aria-label': t('Prompt.ShowPreview') } }}
+                />
+              }
+              label={t('Prompt.ShowPreview')}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showEdit}
+                  disabled={showEdit && !showPreview}
+                  onChange={() => {
+                    setVisiblePanes(previous => togglePromptPreviewPane(previous, 'edit'));
+                  }}
+                  slotProps={{ input: { 'aria-label': t('Prompt.ShowEditor') } }}
+                />
+              }
+              label={t('Prompt.ShowEditor')}
+            />
             {/* Save to definition button — only in edit mode */}
-            {(showEdit || showSideBySide) && (
+            {showEdit && (
               <Tooltip title={t('Preference.SaveToDefinition')}>
                 <IconButton
                   aria-label={t('Preference.SaveToDefinition')}
@@ -169,24 +207,16 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
                 </IconButton>
               </Tooltip>
             )}
-            <Tooltip title={sideBySideTooltip}>
+            {!windowed && (
               <IconButton
-                aria-label={sideBySideTooltip}
-                onClick={handleToggleEditMode}
+                aria-label={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
+                onClick={handleToggleFullScreen}
                 sx={{ mr: 1 }}
-                color={isSideBySide ? 'primary' : 'default'}
+                title={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
               >
-                {isSideBySide ? <ViewSidebarIcon /> : baseMode === 'edit' ? <ArticleIcon /> : <EditIcon />}
+                {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
               </IconButton>
-            </Tooltip>
-            <IconButton
-              aria-label={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
-              onClick={handleToggleFullScreen}
-              sx={{ mr: 1 }}
-              title={isFullScreen ? t('Prompt.ExitFullScreen') : t('Prompt.EnterFullScreen')}
-            >
-              {isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-            </IconButton>
+            )}
             <IconButton
               aria-label={t('Prompt.Close')}
               onClick={onClose}
@@ -198,7 +228,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
       </DialogTitle>
       <MuiDialogContent
         sx={{
-          ...(isFullScreen && {
+          ...(contentFullScreen && {
             padding: 0,
             overflow: 'hidden',
             height: 'calc(100vh - 64px)',
@@ -211,7 +241,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
               display: 'flex',
               flexDirection: { xs: 'column', md: 'row' },
               gap: 2,
-              height: isFullScreen ? '100%' : '70vh',
+              height: contentFullScreen ? '100%' : '70vh',
               overflow: 'auto',
             }}
           >
@@ -227,7 +257,7 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
             >
               <PreviewProgressBar show={state.loading} state={state} />
               <PreviewTabsView
-                isFullScreen={isFullScreen}
+                isFullScreen={contentFullScreen}
                 state={state}
                 controller={controller}
               />
@@ -243,22 +273,26 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
               }}
             >
               <EditView
-                isFullScreen={isFullScreen}
+                isFullScreen={contentFullScreen}
                 inputText={inputText}
                 agentId={agentId}
-                agentDefinitionId={agentDefinitionId}
                 state={state}
                 controller={controller}
+                agentFrameworkConfigLoading={agentFrameworkConfigLoading}
+                agentFrameworkConfig={agentFrameworkConfig}
+                setAgentFrameworkConfig={setAgentFrameworkConfig}
+                handlerSchema={handlerSchema}
+                persistAgentFrameworkConfig={persistAgentFrameworkConfig}
               />
             </Box>
           </Box>
         )}
 
         {showPreview && !showEdit && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: isFullScreen ? '100%' : '70vh' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: contentFullScreen ? '100%' : '70vh' }}>
             <PreviewProgressBar show={state.loading} state={state} />
             <PreviewTabsView
-              isFullScreen={isFullScreen}
+              isFullScreen={contentFullScreen}
               state={state}
               controller={controller}
             />
@@ -266,14 +300,18 @@ export const PromptPreviewDialog: React.FC<PromptPreviewDialogProps> = ({
         )}
 
         {showEdit && !showPreview && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: isFullScreen ? '100%' : '70vh' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: contentFullScreen ? '100%' : '70vh' }}>
             <EditView
-              isFullScreen={isFullScreen}
+              isFullScreen={contentFullScreen}
               inputText={inputText}
               agentId={agentId}
-              agentDefinitionId={agentDefinitionId}
               state={state}
               controller={controller}
+              agentFrameworkConfigLoading={agentFrameworkConfigLoading}
+              agentFrameworkConfig={agentFrameworkConfig}
+              setAgentFrameworkConfig={setAgentFrameworkConfig}
+              handlerSchema={handlerSchema}
+              persistAgentFrameworkConfig={persistAgentFrameworkConfig}
             />
           </Box>
         )}

@@ -3,7 +3,7 @@
  * to implement the headless AgentInstanceClient interface.
  */
 
-import type { AgentInstanceClient, AgentRuntimeView } from 'memeloop';
+import type { AgentInstanceClient } from 'memeloop';
 
 /**
  * Desktop implementation of AgentInstanceClient.
@@ -22,32 +22,14 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
     const agent = await window.service.agentInstance.getAgentMetadata(agentId);
     options?.signal?.throwIfAborted();
     if (!agent) throw new Error(`Agent not found: ${agentId}`);
-    return {
-      id: agent.id,
-      name: agent.name ?? '',
-      agentDefId: agent.agentDefId ?? '',
-      status: {
-        state: (agent.status?.state ?? 'idle') as AgentRuntimeView['status']['state'],
-        progress: agent.status?.progress,
-      },
-      modelConfig: agent.modelConfig,
-    };
+    return agent;
   },
 
   updateAgent: async (agentId, data, options) => {
     options?.signal?.throwIfAborted();
     const updated = await window.service.agentInstance.updateAgent(agentId, data);
     options?.signal?.throwIfAborted();
-    return {
-      id: updated.id,
-      name: updated.name ?? '',
-      agentDefId: updated.agentDefId ?? '',
-      status: {
-        state: (updated.status?.state ?? 'idle') as AgentRuntimeView['status']['state'],
-        progress: updated.status?.progress,
-      },
-      modelConfig: updated.modelConfig,
-    };
+    return updated;
   },
 
   cancelAgent: async (agentId, options) => {
@@ -65,14 +47,7 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
   subscribeToUpdates: (agentId, listener) => {
     const subscription = window.observables.agentInstance.subscribeToAgentUpdates(agentId)
       .subscribe((update) => {
-        if (update) {
-          listener({
-            status: {
-              state: (update as { status?: { state?: string } }).status?.state as AgentRuntimeView['status']['state'] ?? 'idle',
-              progress: (update as { status?: { progress?: string } }).status?.progress,
-            },
-          });
-        }
+        if (update) listener(update);
       });
     return () => {
       subscription.unsubscribe();
@@ -84,7 +59,7 @@ export const createDesktopAgentInstanceClient = (): AgentInstanceClient => ({
     const agent = await window.service.agentInstance.getAgentMetadata(agentId);
     options?.signal?.throwIfAborted();
     if (!agent) throw new Error(`Agent not found: ${agentId}`);
-    return agent.agentDefId ?? '';
+    return agent.agentDefId;
   },
 
   getFrameworkConfigSchema: async (frameworkId, options) => {

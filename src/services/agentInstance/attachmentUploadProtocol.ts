@@ -1,4 +1,4 @@
-import type { AgentCommittedAttachment, AgentDeviceRpcPendingUserMessage, AgentDeviceRpcRunTurnRequest, AttachmentReference, WikiTiddlerAttachment } from 'memeloop';
+import type { AttachmentReference } from 'memeloop';
 
 /** Renderer/main attachment staging contract. Keep this module browser-safe. */
 export const DESKTOP_ATTACHMENT_UPLOAD_LIMITS = Object.freeze(
@@ -29,18 +29,6 @@ export interface WriteDesktopAttachmentChunkInput {
 export interface DesktopAttachmentUploadScope {
   uploadId: string;
   conversationId: string;
-}
-
-/** Exact durable run input accepted by the main-process runtime adapter. */
-export interface DesktopAgentExecuteRunRequest extends Omit<AgentDeviceRpcRunTurnRequest, 'userMessage'> {
-  attachment?: AgentCommittedAttachment;
-  wikiTiddlers?: readonly WikiTiddlerAttachment[];
-}
-
-/** Renderer-safe pending payload prepared by host-native wiki resolution. */
-export interface DesktopPreparedAgentUserMessage {
-  message: string;
-  userMessage: AgentDeviceRpcPendingUserMessage;
 }
 
 /** Scoped range read used only while forwarding an authorized attachment. */

@@ -11,6 +11,7 @@ import {
   type PromptPreviewAuditReleaseRequest,
   PromptPreviewAuditSessionStore,
   type PromptPreviewPreparedExecution,
+  type PromptPreviewPrepareRequest,
 } from 'memeloop';
 import { prepareAgentExecutionModelRequest } from 'memeloop';
 import { randomUUID } from 'node:crypto';
@@ -31,14 +32,6 @@ export interface DesktopPromptPreviewServiceOptions {
   now?: () => number;
 }
 
-export interface DesktopPromptPreviewPrepareInput {
-  requestId: string;
-  conversationId: string;
-  inputText?: string;
-}
-
-export type DesktopPromptPreviewPreparedExecution = PromptPreviewPreparedExecution;
-
 interface PendingPromptPreview {
   requestId: string;
   abortController: AbortController;
@@ -46,6 +39,7 @@ interface PendingPromptPreview {
 
 interface RetainedHostContext {
   revision: string;
+  conversationId: string;
   messages: ChatMessage[];
   lastAccessedAt: number;
 }
@@ -71,7 +65,7 @@ export class DesktopPromptPreviewService {
     this.now = options.now ?? Date.now;
   }
 
-  public async prepare(input: DesktopPromptPreviewPrepareInput): Promise<PromptPreviewPreparedExecution> {
+  public async prepare(input: PromptPreviewPrepareRequest): Promise<PromptPreviewPreparedExecution> {
     assertPrepareInput(input);
     this.sweepExpired();
     if (this.pending.has(input.requestId)) throw previewError('request_conflict');
@@ -107,6 +101,7 @@ export class DesktopPromptPreviewService {
       });
       this.retainedHostContexts.set(execution.sessionId, {
         revision: execution.revision,
+        conversationId: input.conversationId,
         messages: prepared.messages,
         lastAccessedAt: this.now(),
       });
@@ -135,8 +130,9 @@ export class DesktopPromptPreviewService {
   }
 
   /** Main-process-only access for the session-based prompt-concat observable. */
-  public getMessagesForHost(sessionId: string, expectedRevision: string): readonly ChatMessage[] {
-    return this.touch(sessionId, expectedRevision).messages;
+  public getContextForHost(sessionId: string, expectedRevision: string): Readonly<Pick<RetainedHostContext, 'conversationId' | 'messages'>> {
+    const context = this.touch(sessionId, expectedRevision);
+    return { conversationId: context.conversationId, messages: context.messages };
   }
 
   public release(request: PromptPreviewAuditReleaseRequest): void {
@@ -214,7 +210,7 @@ function classifyRequestSources(
   });
 }
 
-function assertPrepareInput(input: DesktopPromptPreviewPrepareInput): void {
+function assertPrepareInput(input: PromptPreviewPrepareRequest): void {
   assertRequestId(input.requestId);
   if (input.conversationId.trim().length === 0 || input.conversationId.length > 512) {
     throw previewError('conversation_invalid');

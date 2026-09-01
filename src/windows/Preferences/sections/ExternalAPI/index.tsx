@@ -5,9 +5,9 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { Button, List } from '@mui/material';
 
 import { ListItemText } from '@/components/ListItem';
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import type { IPossibleWindowMeta, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
+import type { ModelAssignments, ModelCatalogModel, ModelCatalogProvider, ProviderAccountConfig } from 'memeloop';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
 import { AIModelParametersDialog } from './components/AIModelParametersDialog';
 import { ModelSelector } from './components/ModelSelector';
@@ -19,8 +19,8 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
   const {
     loading,
     config,
-    providers,
-    setProviders,
+    accounts,
+    setAccounts,
     handleModelChange,
     handleEmbeddingModelChange,
     handleSpeechModelChange,
@@ -30,7 +30,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
     handleConfigChange,
   } = useAIConfigManagement();
   const [parametersDialogOpen, setParametersDialogOpen] = useState(false);
-  const [catalogProviders, setCatalogProviders] = useState<AIProviderConfig[]>([]);
+  const [catalogProviders, setCatalogProviders] = useState<ModelCatalogProvider[]>([]);
   const [focusTarget, setFocusTarget] = useState(
     () => (window.meta() as IPossibleWindowMeta<IPreferenceWindowMeta>).preferenceFocus,
   );
@@ -50,9 +50,9 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
     const loadCatalog = async () => {
       try {
         const local = await window.service.externalAPI.getProviderCatalog(false);
-        if (active) setCatalogProviders(local.providers);
+        if (active) setCatalogProviders([...local.catalog.providers]);
         const refreshed = await window.service.externalAPI.getProviderCatalog(true);
-        if (active) setCatalogProviders(refreshed.providers);
+        if (active) setCatalogProviders([...refreshed.catalog.providers]);
       } catch (error: unknown) {
         console.error('Failed to refresh provider catalog:', error);
       }
@@ -167,7 +167,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
         <List dense disablePadding>
           {loading ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (
             <>
-              {providers.length > 0 && (
+              {accounts.length > 0 && (
                 <>
                   <ListItemVertical>
                     <ListItemText
@@ -176,11 +176,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                     />
                     <ModelSelector
                       selectedModel={defaultModelConfig}
-                      modelOptions={providers.flatMap(provider =>
-                        provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('language'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
-                      )}
+                      modelOptions={modelOptionsForAssignment(accounts, 'default')}
                       onChange={handleModelChange}
                       onClear={handleModelClear}
                     />
@@ -193,11 +189,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                     />
                     <ModelSelector
                       selectedModel={embeddingConfig}
-                      modelOptions={providers.flatMap(provider =>
-                        provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('embedding'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
-                      )}
+                      modelOptions={modelOptionsForAssignment(accounts, 'embedding')}
                       onChange={handleEmbeddingModelChange}
                       onClear={handleEmbeddingModelClear}
                     />
@@ -210,11 +202,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                     />
                     <ModelSelector
                       selectedModel={speechConfig}
-                      modelOptions={providers.flatMap(provider =>
-                        provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('speech'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
-                      )}
+                      modelOptions={modelOptionsForAssignment(accounts, 'speech')}
                       onChange={handleSpeechModelChange}
                       onClear={handleSpeechModelClear}
                     />
@@ -227,11 +215,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                     />
                     <ModelSelector
                       selectedModel={imageGenerationConfig}
-                      modelOptions={providers.flatMap(provider =>
-                        provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('imageGeneration'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
-                      )}
+                      modelOptions={modelOptionsForAssignment(accounts, 'imageGeneration')}
                       onChange={handleImageGenerationModelChange}
                       onClear={handleImageGenerationModelClear}
                     />
@@ -244,11 +228,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                     />
                     <ModelSelector
                       selectedModel={transcriptionsConfig}
-                      modelOptions={providers.flatMap(provider =>
-                        provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('transcriptions'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
-                      )}
+                      modelOptions={modelOptionsForAssignment(accounts, 'transcriptions')}
                       onChange={handleTranscriptionsModelChange}
                       onClear={handleTranscriptionsModelClear}
                     />
@@ -261,11 +241,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                     />
                     <ModelSelector
                       selectedModel={freeModelConfig}
-                      modelOptions={providers.flatMap(provider =>
-                        provider.models
-                          .filter(model => Array.isArray(model.features) && model.features.includes('free'))
-                          .map(model => [provider, model] as [AIProviderConfig, ModelInfo])
-                      )}
+                      modelOptions={modelOptionsForAssignment(accounts, 'free')}
                       onChange={handleFreeModelChange}
                       onClear={handleFreeModelClear}
                     />
@@ -291,15 +267,9 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
               )}
 
               <ProviderConfig
-                providers={providers}
+                accounts={accounts}
                 catalogProviders={catalogProviders}
-                changeDefaultModel={handleModelChange}
-                changeDefaultEmbeddingModel={handleEmbeddingModelChange}
-                changeDefaultSpeechModel={handleSpeechModelChange}
-                changeDefaultImageGenerationModel={handleImageGenerationModelChange}
-                changeDefaultTranscriptionsModel={handleTranscriptionsModelChange}
-                changeDefaultFreeModel={handleFreeModelChange}
-                setProviders={setProviders}
+                setAccounts={setAccounts}
                 focusTarget={focusTarget}
               />
             </>
@@ -316,4 +286,38 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
       />
     </>
   );
+}
+
+function modelOptionsForAssignment(
+  accounts: readonly ProviderAccountConfig[],
+  assignment: keyof ModelAssignments,
+) {
+  return accounts.flatMap(account =>
+    account.models.flatMap(route => {
+      const model = account.catalogProvider?.models.find(candidate => candidate.id === route.modelId || candidate.id === route.wireModelId);
+      return supportsAssignment(model, assignment) ? [[account, route, model] as const] : [];
+    })
+  );
+}
+
+function supportsAssignment(
+  model: ModelCatalogModel | undefined,
+  assignment: keyof ModelAssignments,
+): boolean {
+  if (model === undefined) return assignment === 'default' || assignment === 'free';
+  const inputs = new Set(model.modalities?.input ?? []);
+  const outputs = new Set(model.modalities?.output ?? []);
+  switch (assignment) {
+    case 'default':
+    case 'free':
+      return inputs.has('text') && outputs.has('text');
+    case 'embedding':
+      return /embed/i.test(model.id) || /embed/i.test(model.name);
+    case 'speech':
+      return outputs.has('audio');
+    case 'imageGeneration':
+      return outputs.has('image');
+    case 'transcriptions':
+      return inputs.has('audio') && outputs.has('text');
+  }
 }

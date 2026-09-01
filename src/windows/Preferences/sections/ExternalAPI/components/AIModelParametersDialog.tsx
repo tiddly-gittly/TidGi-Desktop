@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField, Typography } from '@mui/material';
-import type { DesktopAIConfig, DesktopModelParameters } from '@services/externalAPI/interface';
 import { cloneDeep } from 'lodash';
+import type { AgentModelParameters, ModelAssignments } from 'memeloop';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,8 +10,8 @@ import { useTranslation } from 'react-i18next';
 interface AIModelParametersDialogProps {
   open: boolean;
   onClose: () => void;
-  config: DesktopAIConfig | null;
-  onSave: (newConfig: DesktopAIConfig) => Promise<void>;
+  config: ModelAssignments | null;
+  onSave: (newConfig: ModelAssignments) => Promise<void>;
 }
 
 /**
@@ -20,19 +20,22 @@ interface AIModelParametersDialogProps {
  */
 export function AIModelParametersDialog({ open, onClose, config, onSave }: AIModelParametersDialogProps) {
   const { t } = useTranslation(['translation', 'agent']);
-  const [parameters, setParameters] = useState<DesktopModelParameters>({
+  const [parameters, setParameters] = useState<AgentModelParameters>({
     temperature: 0.7,
-    maxTokens: 1000,
+    maxOutputTokens: 1000,
     topP: 0.95,
   });
 
   // Update local state when config changes
   useEffect(() => {
-    if (config?.modelParameters) {
+    if (config?.default) {
       setParameters({
-        temperature: config.modelParameters.temperature ?? 0.7,
-        maxTokens: config.modelParameters.maxTokens ?? 1000,
-        topP: config.modelParameters.topP ?? 0.95,
+        temperature: config.default.parameters?.temperature ?? 0.7,
+        maxOutputTokens: config.default.parameters?.maxOutputTokens ?? 1000,
+        topP: config.default.parameters?.topP ?? 0.95,
+        ...(config.default.parameters?.reasoningEffort === undefined
+          ? {}
+          : { reasoningEffort: config.default.parameters.reasoningEffort }),
       });
     }
   }, [config]);
@@ -44,7 +47,8 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     try {
       // Create a deep copy of the config to avoid mutating the original
       const newConfig = cloneDeep(config);
-      newConfig.modelParameters = parameters;
+      if (!newConfig.default) return;
+      newConfig.default.parameters = parameters;
       await onSave(newConfig);
       onClose();
     } catch (error) {
@@ -74,7 +78,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     if (!isNaN(value)) {
       setParameters((previous) => ({
         ...previous,
-        maxTokens: value,
+        maxOutputTokens: value,
       }));
     }
   };
@@ -85,7 +89,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
       <DialogContent>
         {config?.default && (
           <Typography variant='subtitle2' color='text.secondary' sx={{ mb: 2 }}>
-            {config.default.provider} - {config.default.model}
+            {config.default.providerId} - {config.default.modelId}
           </Typography>
         )}
         <FormControl fullWidth sx={{ mt: 2 }}>
@@ -127,7 +131,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
         <FormControl fullWidth sx={{ mt: 3 }}>
           <TextField
             label={t('Preference.MaxTokens', { ns: 'agent' })}
-            value={parameters.maxTokens}
+            value={parameters.maxOutputTokens}
             onChange={handleMaxTokensChange}
             type='number'
             slotProps={{

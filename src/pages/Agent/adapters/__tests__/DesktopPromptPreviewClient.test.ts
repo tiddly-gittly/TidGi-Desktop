@@ -121,7 +121,6 @@ function auditExecution() {
   return store.createSession({
     request: {
       providerId: 'provider',
-      modelId: 'wire',
       logicalModelId: 'logical',
       wireModelId: 'wire',
       apiMode: 'responses',

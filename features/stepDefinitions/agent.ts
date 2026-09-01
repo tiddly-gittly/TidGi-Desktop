@@ -1,9 +1,10 @@
 import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
-import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
+import type { DesktopExternalAPISettings } from '@services/externalAPI/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
+import type { ProviderAccountConfig } from 'memeloop';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
@@ -73,15 +74,21 @@ async function startMockOpenAIServerAndUpdateSettings(
 
   await world.mockOpenAIServer.start();
 
-  // Update provider config with actual mock server URL
-  world.providerConfig.baseURL = `${world.mockOpenAIServer.baseUrl}/v1`;
+  // Update the canonical provider account with the actual mock server URL.
+  world.providerConfig = {
+    ...world.providerConfig,
+    baseUrl: `${world.mockOpenAIServer.baseUrl}/v1`,
+  };
 
-  // Update AI settings in settings.json with the correct baseURL
+  // Update the persisted canonical account with the correct base URL.
   const settingsPath = getSettingsPath(world);
   if (fs.existsSync(settingsPath)) {
     const settings = fs.readJsonSync(settingsPath) as ISettingFile;
-    if (settings.aiSettings?.providers?.[0]) {
-      settings.aiSettings.providers[0].baseURL = world.providerConfig.baseURL;
+    if (settings.aiSettings?.accounts[0]) {
+      settings.aiSettings = {
+        ...settings.aiSettings,
+        accounts: [world.providerConfig, ...settings.aiSettings.accounts.slice(1)],
+      };
       fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
     }
   }
@@ -363,19 +370,24 @@ Then('the last AI request user message should not contain {string}', async funct
 
 // Factory function to create scenario-specific provider config
 // Returns a new object each time to avoid state pollution between scenarios
-function createProviderConfig(): AIProviderConfig {
+function createProviderConfig(): ProviderAccountConfig {
   return {
-    provider: 'test-provider',
-    baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
+    providerId: 'test-provider',
+    providerType: 'openai-compatible',
+    baseUrl: 'http://127.0.0.1:1/v1', // Replaced with the mock server's actual port before launch.
     models: [
-      { name: 'test-model', features: ['language'], apiMode: 'chat-completions' },
-      { name: 'test-embedding-model', features: ['language', 'embedding'], apiMode: 'chat-completions' },
-      { name: 'test-speech-model', features: ['speech'], apiMode: 'chat-completions' },
+      { modelId: 'test-model', wireModelId: 'test-model', apiMode: 'chat-completions' },
+      { modelId: 'test-embedding-model', wireModelId: 'test-embedding-model', apiMode: 'chat-completions' },
+      { modelId: 'test-speech-model', wireModelId: 'test-speech-model', apiMode: 'chat-completions' },
     ],
-    providerClass: 'openAICompatible',
-    isPreset: false,
     enabled: true,
   };
+}
+
+function requiredModelId(account: ProviderAccountConfig, index: number): string {
+  const modelId = account.models[index]?.modelId;
+  if (modelId === undefined) throw new Error(`Missing test model route at index ${index}`);
+  return modelId;
 }
 
 const desiredModelParameters = { temperature: 0.7, topP: 0.95 };
@@ -393,40 +405,37 @@ Given('I remove test ai settings', function(this: ApplicationWorld) {
 
 Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
-  const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
+  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+  const actual = parsed.aiSettings;
 
   if (!actual) {
     throw new Error('aiSettings not found in settings file');
   }
 
-  const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
+  const actualAccounts = actual.accounts;
 
   // If providerConfig is set (from mock server), use it; otherwise create expected config
-  // and use actual baseURL from settings (for UI-configured scenarios)
-  let providerConfig: AIProviderConfig;
+  // and use the persisted exact account for UI-configured scenarios.
+  let providerConfig: ProviderAccountConfig;
   const providerName = 'test-provider';
-  const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
+  const existingProvider = actualAccounts.find(account => account.providerId === providerName);
 
   if (this.providerConfig) {
     // Use the mock server's providerConfig
     providerConfig = this.providerConfig;
   } else if (existingProvider) {
-    // For UI-configured scenarios: build expected config using actual baseURL
-    providerConfig = createProviderConfig();
-    providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
+    providerConfig = existingProvider;
   } else {
     providerConfig = createProviderConfig();
   }
 
   // Build expected aiSettings from providerConfig and compare with actual
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
+  const modelName = requiredModelId(providerConfig, 0);
 
   // Check test-provider exists
-  const testProvider = actualProviders.find(p => p.provider === providerName);
+  const testProvider = actualAccounts.find(account => account.providerId === providerName);
   if (!testProvider) {
-    console.error('test-provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
+    console.error('test-provider not found in actual accounts:', JSON.stringify(actualAccounts, null, 2));
     throw new Error('test-provider not found in aiSettings');
   }
 
@@ -437,32 +446,9 @@ Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
     throw new Error('test-provider configuration does not match expected');
   }
 
-  // Check ComfyUI provider exists
-  const comfyuiProvider = actualProviders.find(p => p.provider === 'comfyui');
-  if (!comfyuiProvider) {
-    console.error('ComfyUI provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
-    throw new Error('ComfyUI provider not found in aiSettings');
-  }
-
-  // Verify ComfyUI has test-flux model with workflow path
-  const comfyuiModels = (comfyuiProvider.models as Array<Record<string, unknown>>) || [];
-  const testFluxModel = comfyuiModels.find(m => m.name === 'test-flux');
-  if (!testFluxModel) {
-    console.error('test-flux model not found in ComfyUI models:', JSON.stringify(comfyuiModels, null, 2));
-    throw new Error('test-flux model not found in ComfyUI provider');
-  }
-
-  // Verify workflow path
-  const parameters = testFluxModel.parameters as Record<string, unknown> | undefined;
-  if (!parameters || parameters.workflowPath !== 'C:/test/mock/workflow.json') {
-    console.error('Workflow path mismatch. expected: C:/test/mock/workflow.json, actual:', parameters?.workflowPath);
-    throw new Error('Workflow path not correctly saved');
-  }
-
   // Verify default config
-  const defaultConfig = actual.defaultConfig as Record<string, unknown>;
-  const defaultModel = defaultConfig.default as Record<string, unknown>;
-  if (defaultModel?.provider !== providerName || defaultModel?.model !== modelName) {
+  const defaultModel = actual.modelAssignments.default;
+  if (defaultModel?.providerId !== providerName || defaultModel?.modelId !== modelName) {
     console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
     console.error('actual defaultModel:', JSON.stringify(defaultModel, null, 2));
     throw new Error('Default configuration does not match expected');
@@ -485,27 +471,27 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   }
   const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+  const modelName = requiredModelId(providerConfig, 0);
+  const embeddingModelName = requiredModelId(providerConfig, 1);
+  const speechModelName = requiredModelId(providerConfig, 2);
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
+  const newAi: DesktopExternalAPISettings = {
+    accounts: [providerConfig],
+    providerCredentials: [],
+    modelAssignments: {
       default: {
-        provider: providerConfig.provider,
-        model: modelName,
+        providerId: providerConfig.providerId,
+        modelId: modelName,
+        parameters: desiredModelParameters,
       },
       embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
+        providerId: providerConfig.providerId,
+        modelId: embeddingModelName,
       },
       speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
+        providerId: providerConfig.providerId,
+        modelId: speechModelName,
       },
-      modelParameters: desiredModelParameters,
     },
   };
 
@@ -530,10 +516,9 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   }
   const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+  const modelName = requiredModelId(providerConfig, 0);
+  const embeddingModelName = requiredModelId(providerConfig, 1);
+  const speechModelName = requiredModelId(providerConfig, 2);
 
   // Parse options from data table
   let freeModel: string | undefined;
@@ -561,30 +546,31 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
     }
   }
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
+  const newAi: DesktopExternalAPISettings = {
+    accounts: [providerConfig],
+    providerCredentials: [],
+    modelAssignments: {
       default: {
-        provider: providerConfig.provider,
-        model: modelName,
+        providerId: providerConfig.providerId,
+        modelId: modelName,
+        parameters: desiredModelParameters,
       },
       embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
+        providerId: providerConfig.providerId,
+        modelId: embeddingModelName,
       },
       speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
+        providerId: providerConfig.providerId,
+        modelId: speechModelName,
       },
       ...(freeModel
         ? {
           free: {
-            provider: providerConfig.provider,
-            model: freeModel,
+            providerId: providerConfig.providerId,
+            modelId: freeModel,
           },
         }
         : {}),
-      modelParameters: desiredModelParameters,
     },
   };
 

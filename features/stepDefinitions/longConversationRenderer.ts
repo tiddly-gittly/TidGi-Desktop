@@ -183,7 +183,10 @@ When('I seek the conversation timeline to its first absolute entry', async funct
       maxBytes: 256 * 1024,
     });
   }, state.agentId);
-  if (hostPage.reset || hostPage.items[0]?.entryIndex !== 0 || hostPage.items[0]?.kind !== 'turn' || !hostPage.items[0].turnId.endsWith(':00000')) {
+  if (
+    hostPage.reset || hostPage.items[0]?.entryIndex !== 0 ||
+    hostPage.items[0]?.kind !== 'message' || !hostPage.items[0].turnId.endsWith(':00000')
+  ) {
     throw new Error(`Host absolute timeline entry zero is invalid: ${JSON.stringify(hostPage)}`);
   }
   const timeline = page.locator('[data-testid="conversation-timeline"]');

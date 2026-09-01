@@ -273,6 +273,34 @@ export class ConversationTimelineRankCheckpointEntity {
   messageId!: string;
 }
 
+/** Durable `.mjs` workflow milestone used for restart and node hand-off. */
+@Entity('agent_loop_checkpoints')
+export class AgentLoopCheckpointEntity {
+  @PrimaryColumn()
+  conversationId!: string;
+
+  @PrimaryColumn()
+  key!: string;
+
+  @Column({ type: 'simple-json' })
+  result!: unknown;
+
+  @Column()
+  eventId!: string;
+
+  @Column()
+  originNodeId!: string;
+
+  @Column({ type: 'integer' })
+  originSequence!: number;
+
+  @Column({ type: 'integer' })
+  lamportClock!: number;
+
+  @Column({ type: 'integer' })
+  timestamp!: number;
+}
+
 /** Singleton invalidation token for revisioned conversation directory pages. */
 @Entity('conversation_list_state')
 export class ConversationListStateEntity {
@@ -305,7 +333,7 @@ export class ConversationTimelineEntryEntity {
   cursor!: string;
 
   @Column({ type: 'varchar' })
-  kind!: 'turn' | 'compaction';
+  kind!: 'message' | 'compaction';
 
   @Column()
   turnId!: string;
@@ -319,15 +347,21 @@ export class ConversationTimelineEntryEntity {
   @Column()
   originNodeId!: string;
 
+  /** Exact user-root index for messages; null until an orphan response's root arrives. */
+  @Column({ type: 'integer', nullable: true })
+  turnIndex?: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  role?: 'user' | 'assistant' | 'agent';
+
+  @Column({ nullable: true })
+  actorId?: string;
+
+  @Column({ nullable: true })
+  actorLabel?: string;
+
   @Column({ type: 'text', nullable: true })
-  userPreview?: string;
-
-  /** Bounded canonical JSON array using the shared Core timeline schema. */
-  @Column({ type: 'text', default: '[]' })
-  participantPreviewsJson!: string;
-
-  @Column({ type: 'integer', default: 0 })
-  responseCount!: number;
+  preview?: string;
 
   @Column({ type: 'text', nullable: true })
   summaryPreview?: string;

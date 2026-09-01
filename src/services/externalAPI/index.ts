@@ -1,44 +1,40 @@
 import { app, safeStorage } from 'electron';
 import { inject, injectable } from 'inversify';
-import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';
 import path from 'node:path';
-import { BehaviorSubject, defer, from, Observable } from 'rxjs';
-import { filter, finalize, startWith } from 'rxjs/operators';
+import { BehaviorSubject } from 'rxjs';
 
 import type { IDatabaseService } from '@services/database/interface';
 import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMetadata } from '@services/database/schema/externalAPILog';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { assertPortableLlmRequest, assertPortableLlmStreamPart, assertProviderId, type PortableLlmRequest, type PortableLlmStreamPart } from 'memeloop';
-
+import {
+  assertPortableLlmRequest,
+  assertPortableLlmStreamPart,
+  type ModelAssignments,
+  type ModelCatalogManager,
+  type ModelCatalogModel,
+  type ModelCatalogResolution,
+  normalizeModelAssignments,
+  normalizeProviderAccountConfig,
+  normalizeProviderAccountSettings,
+  type PortableLlmRequest,
+  type PortableLlmStreamPart,
+  type ProviderAccountConfig,
+} from 'memeloop';
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
 import { generateImageFromProvider } from './callImageGenerationAPI';
-import { createProviderFromConfig, streamFromProvider } from './callProviderAPI';
+import { resolveProviderModelRoute } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
-import type { ModelMessage } from './interface';
-import type {
-  AIEmbeddingResponse,
-  AIGlobalSettings,
-  AIImageGenerationResponse,
-  AIProviderConfig,
-  AISpeechResponse,
-  AIStreamResponse,
-  AITranscriptionResponse,
-  DesktopAIConfig,
-  IExternalAPIService,
-  ModelInfo,
-  OfficialModelDiscoveryResult,
-  ProviderCatalogResult,
-} from './interface';
-import { discoverOfficialModelIds, mergeOfficialModels } from './officialModels';
-import { isLoopbackOpenAIBaseURL, normalizeOpenAIBaseURL } from './openAIBaseURL';
-import { resolveDesktopProviderCatalog } from './providerCatalog';
-import { DEFAULT_RETRY_CONFIG, withRetry } from './retryUtility';
+import type { AIEmbeddingResponse, AIImageGenerationResponse, AISpeechResponse, AITranscriptionResponse, DesktopExternalAPISettings, IExternalAPIService } from './interface';
+import { discoverOfficialModelIds, mergeDiscoveredProviderRoutes } from './officialModels';
+import { isLoopbackOpenAIBaseURL } from './openAIBaseURL';
+import { createDesktopModelCatalogManager } from './providerCatalog';
+import { desktopLlmProviderFactoryPort } from './providerFactory';
 
 /**
  * Simplified request context
@@ -61,24 +57,17 @@ export class ExternalAPIService implements IExternalAPIService {
   private initializationPromise: Promise<void> | null = null; // Prevent race condition in lazy initialization
   private activeRequests: Map<string, AbortController> = new Map();
   private settingsLoaded = false;
+  private modelCatalogManager: ModelCatalogManager | undefined;
 
-  private userSettings: AIGlobalSettings = {
-    providers: [],
-    defaultConfig: {
-      default: {
-        provider: '',
-        model: '',
-      },
-      modelParameters: {
-        temperature: 0.7,
-        topP: 0.95,
-      },
-    },
+  private userSettings: DesktopExternalAPISettings = {
+    accounts: [],
+    providerCredentials: [],
+    modelAssignments: {},
   };
 
   // Observable to emit config changes - will be updated when settings are loaded
-  public defaultConfig$ = new BehaviorSubject<DesktopAIConfig>(this.userSettings.defaultConfig);
-  public providers$ = new BehaviorSubject<AIProviderConfig[]>(this.userSettings.providers);
+  public defaultConfig$ = new BehaviorSubject<ModelAssignments>(this.userSettings.modelAssignments);
+  public providerAccounts$ = new BehaviorSubject<ProviderAccountConfig[]>([...this.userSettings.accounts]);
 
   /**
    * Initialize the external API service
@@ -102,20 +91,18 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private loadSettingsFromDatabase(): void {
     const savedSettings = this.databaseService.getSetting('aiSettings');
-    this.userSettings = savedSettings ?? this.userSettings;
-    // Plaintext provider credentials are deliberately not migrated. New
-    // installs persist only OS-backed ciphertext.
-    let removedPlaintextCredential = false;
-    for (const provider of this.userSettings.providers) {
-      if (provider.apiKey !== undefined) removedPlaintextCredential = true;
-      delete provider.apiKey;
+    if (savedSettings !== undefined) {
+      try {
+        this.userSettings = normalizeDesktopExternalAPISettings(savedSettings);
+      } catch (error) {
+        logger.warn('Ignoring invalid or obsolete external API settings', error);
+      }
     }
-    if (removedPlaintextCredential) this.databaseService.setSetting('aiSettings', this.userSettings);
     this.settingsLoaded = true;
 
     // Update Observables with loaded settings
-    this.defaultConfig$.next(this.userSettings.defaultConfig);
-    this.providers$.next(this.getPublicProviders());
+    this.defaultConfig$.next(normalizeModelAssignments(this.userSettings.modelAssignments));
+    this.providerAccounts$.next(this.getPublicProviderAccounts());
   }
 
   private ensureSettingsLoaded(): void {
@@ -127,31 +114,24 @@ export class ExternalAPIService implements IExternalAPIService {
   private saveSettingsToDatabase(): void {
     this.databaseService.setSetting('aiSettings', this.userSettings);
     // Emit updated config and providers to subscribers
-    this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
-    this.providers$.next(this.getPublicProviders());
+    this.defaultConfig$.next(normalizeModelAssignments(this.userSettings.modelAssignments));
+    this.providerAccounts$.next(this.getPublicProviderAccounts());
   }
 
-  private getPublicProviders(): AIProviderConfig[] {
-    return this.userSettings.providers.map(provider => {
-      const result = cloneDeep(provider);
-      result.hasApiKey = Boolean(result.encryptedApiKey);
-      delete result.apiKey;
-      delete result.encryptedApiKey;
-      return result;
-    });
+  private getPublicProviderAccounts(): ProviderAccountConfig[] {
+    return this.userSettings.accounts.map(account => normalizeProviderAccountConfig(account));
   }
 
-  private getRuntimeProvider(providerName: string): AIProviderConfig | undefined {
-    const stored = this.userSettings.providers.find(provider => provider.provider === providerName);
+  private getRuntimeProviderAccount(providerId: string): [ProviderAccountConfig, string] | undefined {
+    const stored = this.userSettings.accounts.find(account => account.providerId === providerId);
     if (!stored) return undefined;
-    const result = cloneDeep(stored);
-    if (stored.encryptedApiKey) {
+    const credential = this.userSettings.providerCredentials.find(candidate => candidate.providerId === providerId);
+    let apiKey = '';
+    if (credential) {
       if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
-      result.apiKey = safeStorage.decryptString(Buffer.from(stored.encryptedApiKey, 'base64'));
+      apiKey = safeStorage.decryptString(Buffer.from(credential.encryptedApiKey, 'base64'));
     }
-    delete result.encryptedApiKey;
-    delete result.hasApiKey;
-    return result;
+    return [normalizeProviderAccountConfig(stored), apiKey];
   }
 
   /**
@@ -164,90 +144,85 @@ export class ExternalAPIService implements IExternalAPIService {
    * 2. Future: other field linkage rules
    */
   private reactToConfigChange(): void {
-    const defaultConfig = this.userSettings.defaultConfig;
-    const providers = this.userSettings.providers;
+    const defaultConfig = normalizeModelAssignments(this.userSettings.modelAssignments);
+    const accounts = this.userSettings.accounts;
     let configChanged = false;
 
-    // Collect all available models from all enabled providers
-    const allModels: Array<{ provider: string; model: ModelInfo }> = [];
-    for (const provider of providers) {
-      if (provider.enabled === false) continue;
-      for (const model of provider.models) {
-        allModels.push({ provider: provider.provider, model });
+    const allModels: Array<{
+      account: ProviderAccountConfig;
+      model: ModelCatalogModel | undefined;
+      modelId: string;
+    }> = [];
+    for (const account of accounts) {
+      if (account.enabled === false) continue;
+      for (const route of account.models) {
+        const model = account.catalogProvider?.models.find(candidate => candidate.id === route.modelId || candidate.id === route.wireModelId);
+        allModels.push({ account, model, modelId: route.modelId });
       }
     }
 
-    // Auto-fill empty default fields with first matching model
-    for (const { provider, model } of allModels) {
-      if (!model.features || model.features.length === 0) continue;
-
-      // Auto-fill default language model - only if not set
+    for (const { account, model, modelId } of allModels) {
+      const selection = { providerId: account.providerId, modelId };
       if (
-        model.features.includes('language') &&
-        (!defaultConfig.default?.model || !defaultConfig.default?.provider)
+        isCatalogModelCapability(model, 'language') &&
+        (!defaultConfig.default?.modelId || !defaultConfig.default?.providerId)
       ) {
-        defaultConfig.default = { provider, model: model.name };
+        defaultConfig.default = selection;
         configChanged = true;
-        logger.info(`Auto-filled default language model: ${provider}/${model.name}`);
+        logger.info(`Auto-filled default language model: ${account.providerId}/${modelId}`);
       }
-
-      // Auto-fill embedding model
       if (
-        model.features.includes('embedding') &&
-        (!defaultConfig.embedding?.model || !defaultConfig.embedding?.provider)
+        isCatalogModelCapability(model, 'embedding') &&
+        (!defaultConfig.embedding?.modelId || !defaultConfig.embedding?.providerId)
       ) {
-        defaultConfig.embedding = { provider, model: model.name };
+        defaultConfig.embedding = selection;
         configChanged = true;
-        logger.info(`Auto-filled default embedding model: ${provider}/${model.name}`);
+        logger.info(`Auto-filled default embedding model: ${account.providerId}/${modelId}`);
       }
-
-      // Auto-fill speech model
       if (
-        model.features.includes('speech') &&
-        (!defaultConfig.speech?.model || !defaultConfig.speech?.provider)
+        isCatalogModelCapability(model, 'speech') &&
+        (!defaultConfig.speech?.modelId || !defaultConfig.speech?.providerId)
       ) {
-        defaultConfig.speech = { provider, model: model.name };
+        defaultConfig.speech = selection;
         configChanged = true;
-        logger.info(`Auto-filled default speech model: ${provider}/${model.name}`);
+        logger.info(`Auto-filled default speech model: ${account.providerId}/${modelId}`);
       }
-
-      // Auto-fill image generation model
       if (
-        model.features.includes('imageGeneration') &&
-        (!defaultConfig.imageGeneration?.model || !defaultConfig.imageGeneration?.provider)
+        isCatalogModelCapability(model, 'imageGeneration') &&
+        (!defaultConfig.imageGeneration?.modelId || !defaultConfig.imageGeneration?.providerId)
       ) {
-        defaultConfig.imageGeneration = { provider, model: model.name };
+        defaultConfig.imageGeneration = selection;
         configChanged = true;
-        logger.info(`Auto-filled default image generation model: ${provider}/${model.name}`);
+        logger.info(`Auto-filled default image generation model: ${account.providerId}/${modelId}`);
       }
-
-      // Auto-fill transcriptions model
       if (
-        model.features.includes('transcriptions') &&
-        (!defaultConfig.transcriptions?.model || !defaultConfig.transcriptions?.provider)
+        isCatalogModelCapability(model, 'transcriptions') &&
+        (!defaultConfig.transcriptions?.modelId || !defaultConfig.transcriptions?.providerId)
       ) {
-        defaultConfig.transcriptions = { provider, model: model.name };
+        defaultConfig.transcriptions = selection;
         configChanged = true;
-        logger.info(`Auto-filled default transcriptions model: ${provider}/${model.name}`);
+        logger.info(`Auto-filled default transcriptions model: ${account.providerId}/${modelId}`);
       }
-
-      // Auto-fill free model
       if (
-        model.features.includes('free') &&
-        (!defaultConfig.free?.model || !defaultConfig.free?.provider)
+        isCatalogModelCapability(model, 'language') &&
+        (!defaultConfig.free?.modelId || !defaultConfig.free?.providerId)
       ) {
-        defaultConfig.free = { provider, model: model.name };
+        defaultConfig.free = selection;
         configChanged = true;
-        logger.info(`Auto-filled default free model: ${provider}/${model.name}`);
+        logger.info(`Auto-filled auxiliary text model: ${account.providerId}/${modelId}`);
       }
     }
 
     // Only save if we actually changed something
     if (configChanged) {
+      this.userSettings = {
+        ...this.userSettings,
+        modelAssignments: normalizeModelAssignments(defaultConfig),
+      };
       // Save without triggering reactToConfigChange again (use internal save)
       this.databaseService.setSetting('aiSettings', this.userSettings);
-      this.defaultConfig$.next(cloneDeep(this.userSettings.defaultConfig));
-      this.providers$.next(this.getPublicProviders());
+      this.defaultConfig$.next(normalizeModelAssignments(this.userSettings.modelAssignments));
+      this.providerAccounts$.next(this.getPublicProviderAccounts());
     }
   }
 
@@ -265,7 +240,7 @@ export class ExternalAPIService implements IExternalAPIService {
       requestPayload?: Record<string, unknown>;
       responseContent?: string;
       responseMetadata?: ResponseMetadata;
-      errorDetail?: { name: string; code: string; provider: string; message?: string };
+      errorDetail?: { name: string; code: string; providerId: string; message?: string };
     } = {},
   ): Promise<void> {
     try {
@@ -302,7 +277,10 @@ export class ExternalAPIService implements IExternalAPIService {
         callType,
         status,
         agentInstanceId: options.agentInstanceId ?? existing?.agentInstanceId,
-        requestMetadata: options.requestMetadata || existing?.requestMetadata || { provider: 'unknown', model: 'unknown' },
+        requestMetadata: options.requestMetadata ?? existing?.requestMetadata ?? {
+          providerId: 'unknown',
+          logicalModelId: 'unknown',
+        },
         requestPayload: options.requestPayload ?? existing?.requestPayload,
         responseContent: options.responseContent ?? existing?.responseContent,
         responseMetadata: options.responseMetadata ?? existing?.responseMetadata,
@@ -337,64 +315,113 @@ export class ExternalAPIService implements IExternalAPIService {
     }
   }
 
-  async getAIProviders(): Promise<AIProviderConfig[]> {
+  async getProviderAccounts(): Promise<ProviderAccountConfig[]> {
     this.ensureSettingsLoaded();
-    return this.getPublicProviders();
+    return this.getPublicProviderAccounts();
   }
 
   async getProviderApiKey(providerName: string): Promise<string> {
     this.ensureSettingsLoaded();
-    return this.getRuntimeProvider(providerName)?.apiKey ?? '';
+    return this.getRuntimeProviderAccount(providerName)?.[1] ?? '';
   }
 
-  async getProviderCatalog(refresh = false): Promise<ProviderCatalogResult> {
-    return resolveDesktopProviderCatalog({
-      cachePath: path.join(app.getPath('userData'), 'model-catalog.v1.json'),
-      refresh,
-    });
-  }
-
-  async refreshOfficialModels(providerName: string): Promise<OfficialModelDiscoveryResult> {
+  async setProviderApiKey(providerId: string, apiKey: string): Promise<void> {
     this.ensureSettingsLoaded();
-    const provider = this.userSettings.providers.find(candidate => candidate.provider === providerName);
-    if (!provider) throw new Error(`Provider not found: ${providerName}`);
-    const discoveredIds = await discoverOfficialModelIds(provider);
-    const catalog = await this.getProviderCatalog(false);
-    const catalogModels = catalog.providers.find(candidate => candidate.provider === providerName)?.models ?? [];
-    provider.models = mergeOfficialModels(provider.models, discoveredIds, catalogModels);
+    const accountIndex = this.userSettings.accounts.findIndex(account => account.providerId === providerId);
+    if (accountIndex < 0) throw new Error(`Provider account not found: ${providerId}`);
+    const credentialIndex = this.userSettings.providerCredentials.findIndex(credential => credential.providerId === providerId);
+    const trimmed = apiKey.trim();
+    if (trimmed === '') {
+      const providerCredentials = credentialIndex >= 0
+        ? this.userSettings.providerCredentials.filter(credential => credential.providerId !== providerId)
+        : this.userSettings.providerCredentials;
+      const account = this.userSettings.accounts[accountIndex];
+      const updatedAccount = normalizeProviderAccountConfig({
+        ...account,
+        secretRef: undefined,
+      });
+      this.userSettings = {
+        ...this.userSettings,
+        accounts: replaceAt(this.userSettings.accounts, accountIndex, updatedAccount),
+        providerCredentials,
+      };
+    } else {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
+      const credential = {
+        providerId,
+        encryptedApiKey: safeStorage.encryptString(trimmed).toString('base64'),
+      };
+      const providerCredentials = credentialIndex >= 0
+        ? replaceAt(this.userSettings.providerCredentials, credentialIndex, credential)
+        : [...this.userSettings.providerCredentials, credential];
+      const account = this.userSettings.accounts[accountIndex];
+      const updatedAccount = normalizeProviderAccountConfig({
+        ...account,
+        secretRef: providerCredentialReference(providerId),
+      });
+      this.userSettings = {
+        ...this.userSettings,
+        accounts: replaceAt(this.userSettings.accounts, accountIndex, updatedAccount),
+        providerCredentials,
+      };
+    }
+    this.saveSettingsToDatabase();
+  }
+
+  async getProviderCatalog(refresh = false): Promise<ModelCatalogResolution> {
+    this.modelCatalogManager ??= createDesktopModelCatalogManager({
+      cachePath: path.join(app.getPath('userData'), 'model-catalog.v1.json'),
+    });
+    return refresh
+      ? this.modelCatalogManager.refresh()
+      : this.modelCatalogManager.resolve();
+  }
+
+  async refreshProviderAccountModels(providerName: string): Promise<ProviderAccountConfig> {
+    this.ensureSettingsLoaded();
+    const accountIndex = this.userSettings.accounts.findIndex(candidate => candidate.providerId === providerName);
+    if (accountIndex < 0) throw new Error(`Provider account not found: ${providerName}`);
+    const account = this.userSettings.accounts[accountIndex];
+    const apiKey = this.getRuntimeProviderAccount(providerName)?.[1] ?? '';
+    const discoveredIds = await discoverOfficialModelIds(account, apiKey);
+    const resolution = await this.getProviderCatalog(false);
+    const catalogProvider = resolution.catalog.providers.find(candidate => candidate.id === providerName) ??
+      account.catalogProvider;
+    const updated = mergeDiscoveredProviderRoutes(account, discoveredIds, catalogProvider);
+    this.userSettings = {
+      ...this.userSettings,
+      accounts: replaceAt(this.userSettings.accounts, accountIndex, updated),
+    };
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
-    return {
-      provider: providerName,
-      discoveredCount: discoveredIds.length,
-      models: cloneDeep(provider.models),
-    };
+    return updated;
   }
 
-  async getAIConfig(): Promise<DesktopAIConfig> {
+  async getAIConfig(): Promise<ModelAssignments> {
     this.ensureSettingsLoaded();
-    return cloneDeep(this.userSettings.defaultConfig);
+    return normalizeModelAssignments(this.userSettings.modelAssignments);
   }
 
   async isAIAvailable(): Promise<boolean> {
     try {
       const aiConfig = await this.getAIConfig();
       // Check if free model and provider are configured
-      if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
+      if (!aiConfig?.free?.modelId || !aiConfig?.free?.providerId) {
         return false;
       }
 
       // Check if the provider has API key configured
-      const providerConfig = await this.getProviderConfig(aiConfig.free.provider);
-      if (!providerConfig) {
+      const runtimeAccount = this.getRuntimeProviderAccount(aiConfig.free.providerId);
+      if (!runtimeAccount) {
         return false;
       }
+      const [account, apiKey] = runtimeAccount;
 
       // Some providers like Ollama don't require API keys, check if it's enabled
       // For providers that require API keys (most cloud providers), verify it's not empty
-      const isLocalOpenAICompatible = providerConfig.providerClass === 'openAICompatible' && isLoopbackOpenAIBaseURL(providerConfig.baseURL);
-      const requiresApiKey = providerConfig.providerClass !== 'ollama' && providerConfig.providerClass !== 'comfyui' && !isLocalOpenAICompatible;
-      if (requiresApiKey && !providerConfig.apiKey?.trim()) {
+      const isLocalOpenAICompatible = account.providerType === 'openai-compatible' && isLoopbackOpenAIBaseURL(account.baseUrl);
+      const requiresApiKey = account.providerType !== 'ollama' && account.providerType !== 'comfyui' && !isLocalOpenAICompatible;
+      if (requiresApiKey && !apiKey.trim()) {
         return false;
       }
 
@@ -407,90 +434,53 @@ export class ExternalAPIService implements IExternalAPIService {
   /**
    * Get provider configuration by provider name
    */
-  private async getProviderConfig(providerName: string): Promise<AIProviderConfig | undefined> {
+  private async getProviderAccount(providerName: string): Promise<[ProviderAccountConfig, string] | undefined> {
     this.ensureSettingsLoaded();
-    return this.getRuntimeProvider(providerName);
+    return this.getRuntimeProviderAccount(providerName);
   }
 
-  async updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void> {
-    assertProviderId(provider, 'provider id');
-    if (config.provider !== undefined) {
-      assertProviderId(config.provider, 'provider config id');
-      if (config.provider !== provider) throw new TypeError('provider config id must match provider id');
-    }
+  async setProviderAccount(account: ProviderAccountConfig): Promise<void> {
     this.ensureSettingsLoaded();
-    const existingProvider = this.userSettings.providers.find(p => p.provider === provider);
-
-    const persistedConfig = cloneDeep(config);
-    if (Object.hasOwn(persistedConfig, 'apiKey')) {
-      const apiKey = persistedConfig.apiKey?.trim() ?? '';
-      delete persistedConfig.apiKey;
-      if (apiKey) {
-        if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
-        persistedConfig.encryptedApiKey = safeStorage.encryptString(apiKey).toString('base64');
-      } else {
-        persistedConfig.encryptedApiKey = undefined;
-      }
-    }
-    delete persistedConfig.hasApiKey;
-    if (typeof persistedConfig.baseURL === 'string') {
-      const providerClass = persistedConfig.providerClass ?? existingProvider?.providerClass ?? existingProvider?.provider;
-      persistedConfig.baseURL = providerClass === 'openAICompatible' || providerClass === 'openai'
-        ? normalizeOpenAIBaseURL(persistedConfig.baseURL)
-        : persistedConfig.baseURL.replace(/\/+$/, '');
-    }
-
-    if (existingProvider) {
-      Object.assign(existingProvider, persistedConfig);
-      if (persistedConfig.encryptedApiKey === undefined && Object.hasOwn(config, 'apiKey')) {
-        delete existingProvider.encryptedApiKey;
-      }
-    } else {
-      this.userSettings.providers.push({
-        provider,
-        models: [],
-        ...persistedConfig,
-      });
-    }
-
-    // Save the provider update
+    const normalized = normalizeProviderAccountConfig(account);
+    const index = this.userSettings.accounts.findIndex(candidate => candidate.providerId === normalized.providerId);
+    const accounts = index >= 0
+      ? replaceAt(this.userSettings.accounts, index, normalized)
+      : [...this.userSettings.accounts, normalized];
+    this.userSettings = {
+      ...this.userSettings,
+      accounts,
+      modelAssignments: retainValidModelAssignments(accounts, this.userSettings.modelAssignments),
+    };
     this.saveSettingsToDatabase();
-
-    // React to the change: check if any default model fields need auto-filling
     this.reactToConfigChange();
   }
 
-  async deleteProvider(provider: string): Promise<void> {
+  async deleteProviderAccount(providerId: string): Promise<void> {
     this.ensureSettingsLoaded();
-    const index = this.userSettings.providers.findIndex(p => p.provider === provider);
+    const index = this.userSettings.accounts.findIndex(account => account.providerId === providerId);
     if (index !== -1) {
-      this.userSettings.providers.splice(index, 1);
+      const accounts = this.userSettings.accounts.filter(account => account.providerId !== providerId);
+      this.userSettings = {
+        ...this.userSettings,
+        accounts,
+        providerCredentials: this.userSettings.providerCredentials.filter(credential => credential.providerId !== providerId),
+        modelAssignments: retainValidModelAssignments(accounts, this.userSettings.modelAssignments),
+      };
       this.saveSettingsToDatabase();
     }
   }
 
-  async updateDefaultAIConfig(config: Partial<DesktopAIConfig>): Promise<void> {
+  async updateDefaultAIConfig(config: ModelAssignments): Promise<void> {
     this.ensureSettingsLoaded();
-
-    // Deep merge with custom strategy: ignore undefined values to prevent clearing existing fields
-    this.userSettings.defaultConfig = mergeWith(
-      {},
-      this.userSettings.defaultConfig,
-      config,
-      // Custom merge function: skip undefined values
-      (objectValue: unknown, sourceValue: unknown) => {
-        // If source value is undefined, keep the original value
-        if (sourceValue === undefined) {
-          return objectValue;
-        }
-        // For other values, let lodash handle the merge
-        return undefined;
-      },
-    );
-
+    const normalized = normalizeProviderAccountSettings({
+      accounts: this.userSettings.accounts,
+      modelAssignments: config,
+    });
+    this.userSettings = {
+      ...this.userSettings,
+      modelAssignments: normalized.modelAssignments,
+    };
     this.saveSettingsToDatabase();
-
-    // React to config change for potential auto-fill
     this.reactToConfigChange();
   }
 
@@ -507,7 +497,9 @@ export class ExternalAPIService implements IExternalAPIService {
     ] as const;
     const selectionKey = selectionKeys.find(key => key === fieldPath);
     if (selectionKey === undefined) return;
-    delete this.userSettings.defaultConfig[selectionKey];
+    const modelAssignments = normalizeModelAssignments(this.userSettings.modelAssignments);
+    delete modelAssignments[selectionKey];
+    this.userSettings = { ...this.userSettings, modelAssignments };
     this.saveSettingsToDatabase();
   }
 
@@ -528,299 +520,6 @@ export class ExternalAPIService implements IExternalAPIService {
     this.activeRequests.delete(requestId);
   }
 
-  streamFromAI(
-    messages: Array<ModelMessage>,
-    config: DesktopAIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
-  ): Observable<AIStreamResponse> {
-    // Use defer to create a new observable stream for each subscription
-    return defer(() => {
-      // Prepare request context
-      const { requestId, controller } = this.prepareAIRequest();
-
-      // Get AsyncGenerator from generateFromAI and convert to Observable
-      return from(this.generateFromAI(messages, config, options)).pipe(
-        // Skip the first 'start' event since we'll emit our own
-        // to ensure it happens immediately (AsyncGenerator might delay it)
-        filter((response, index) => !(index === 0 && response.status === 'start')),
-        // Ensure we emit a start event immediately
-        startWith({ requestId, content: '', status: 'start' as const }),
-        // Ensure cleanup happens on completion, error, or unsubscribe
-        finalize(() => {
-          if (this.activeRequests.has(requestId)) {
-            controller.abort();
-            this.cleanupAIRequest(requestId);
-            logger.debug(`[${requestId}] Cleaned up in streamFromAI finalize`);
-          }
-        }),
-      );
-    });
-  }
-
-  async *generateFromAI(
-    messages: Array<ModelMessage>,
-    config: DesktopAIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
-  ): AsyncGenerator<AIStreamResponse, void, unknown> {
-    // Prepare request with minimal context
-    const { requestId, controller } = this.prepareAIRequest();
-    const requestTimeoutMs = options?.requestTimeoutMs;
-    let didTimeout = false;
-    const requestTimeout = requestTimeoutMs && requestTimeoutMs > 0
-      ? setTimeout(() => {
-        didTimeout = true;
-        controller.abort(new Error(`AI request timed out after ${requestTimeoutMs}ms`));
-      }, requestTimeoutMs)
-      : undefined;
-
-    // Get the default model configuration
-    const modelConfig = config.default;
-    if (!modelConfig?.provider || !modelConfig?.model) {
-      yield {
-        requestId,
-        content: 'Chat.ConfigError.NoDefaultModel',
-        status: 'error',
-        errorDetail: {
-          name: 'MissingConfigError',
-          code: 'NO_DEFAULT_MODEL',
-          provider: 'unknown',
-          message: 'Chat.ConfigError.NoDefaultModel',
-        },
-      };
-      if (requestTimeout) clearTimeout(requestTimeout);
-      controller.abort();
-      this.cleanupAIRequest(requestId);
-      return;
-    }
-
-    // Prepare messages for logging - convert Buffer to metadata only for better visibility
-    const messagesForLog = messages.map(message => {
-      if (Array.isArray(message.content)) {
-        return {
-          ...message,
-          content: message.content.map(part => {
-            if (typeof part === 'object' && 'type' in part && part.type === 'image' && 'image' in part) {
-              const imagePart = part as { type: 'image'; image: Buffer | Uint8Array };
-              return {
-                type: 'image',
-                imageSize: imagePart.image.length,
-                imageFormat: 'buffer',
-              };
-            }
-            return part;
-          }),
-        };
-      }
-      return message;
-    });
-
-    // Log request start. If caller requested blocking logs (tests), await the DB write so it's visible synchronously.
-    if (options?.awaitLogs) {
-      await this.logAPICall(requestId, 'streaming', 'start', {
-        agentInstanceId: options?.agentInstanceId,
-        requestMetadata: {
-          provider: modelConfig.provider,
-          model: modelConfig.model,
-          messageCount: messages.length,
-          hasImageContent: messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image')),
-        },
-        requestPayload: {
-          messages: messagesForLog,
-          config: config,
-        },
-      });
-    } else {
-      void this.logAPICall(requestId, 'streaming', 'start', {
-        agentInstanceId: options?.agentInstanceId,
-        requestMetadata: {
-          provider: modelConfig.provider,
-          model: modelConfig.model,
-          messageCount: messages.length,
-          hasImageContent: messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image')),
-        },
-        requestPayload: {
-          messages: messagesForLog,
-          config: config,
-        },
-      });
-    }
-
-    try {
-      // Send start event
-      yield { requestId, content: '', status: 'start' };
-
-      // Check if request contains images and verify model supports vision
-      const hasImageContent = messages.some(m => Array.isArray(m.content) && m.content.some((p: { type?: string }) => p.type === 'image'));
-      if (hasImageContent) {
-        // Find the model configuration to check if it supports vision
-        const providers = await this.getAIProviders();
-        const provider = providers.find(p => p.provider === modelConfig.provider);
-        const model = provider?.models?.find(m => m.name === modelConfig.model);
-
-        if (!model?.features?.includes('vision')) {
-          const errorResponse = {
-            requestId,
-            content: 'Chat.ConfigError.ModelNoVisionSupport',
-            status: 'error' as const,
-            errorDetail: {
-              name: 'UnsupportedFeatureError',
-              code: 'MODEL_NO_VISION_SUPPORT',
-              provider: modelConfig.provider,
-              message: 'Chat.ConfigError.ModelNoVisionSupport',
-              params: { model: modelConfig.model },
-            },
-          };
-          if (options?.awaitLogs) {
-            await this.logAPICall(requestId, 'streaming', 'error', {
-              errorDetail: errorResponse.errorDetail,
-            });
-          } else {
-            void this.logAPICall(requestId, 'streaming', 'error', {
-              errorDetail: errorResponse.errorDetail,
-            });
-          }
-          yield errorResponse;
-          return;
-        }
-      }
-
-      // Get provider configuration
-      const providerConfig = await this.getProviderConfig(modelConfig.provider);
-      if (!providerConfig) {
-        const errorResponse = {
-          requestId,
-          content: 'Chat.ConfigError.ProviderNotFound',
-          status: 'error' as const,
-          errorDetail: {
-            name: 'MissingProviderError',
-            code: 'PROVIDER_NOT_FOUND',
-            provider: modelConfig.provider,
-            message: 'Chat.ConfigError.ProviderNotFound',
-            params: { provider: modelConfig.provider },
-          },
-        };
-        if (options?.awaitLogs) {
-          await this.logAPICall(requestId, 'streaming', 'error', {
-            errorDetail: errorResponse.errorDetail,
-          });
-        } else {
-          void this.logAPICall(requestId, 'streaming', 'error', {
-            errorDetail: errorResponse.errorDetail,
-          });
-        }
-        yield errorResponse;
-        return;
-      }
-
-      // Create the stream with retry for transient failures (429, 5xx, network errors)
-      let result: AsyncIterable<string>;
-      try {
-        result = await withRetry(
-          async () =>
-            streamFromProvider(
-              config,
-              messages,
-              controller.signal,
-              providerConfig,
-            ),
-          DEFAULT_RETRY_CONFIG,
-          (attempt, maxAttempts, delayMs, error) => {
-            logger.info('Retrying AI stream creation', {
-              requestId,
-              attempt,
-              maxAttempts,
-              delayMs,
-              error: error.message,
-            });
-          },
-        );
-      } catch (providerError) {
-        // Handle provider creation errors directly
-        const errorDetail = extractErrorDetails(providerError, modelConfig.provider);
-        if (options?.awaitLogs) {
-          await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
-        } else {
-          void this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
-        }
-
-        yield {
-          requestId,
-          content: `Error: ${errorDetail.message || errorDetail.name}`,
-          status: 'error',
-          errorDetail,
-        };
-        return;
-      }
-
-      // Process the stream
-      let fullResponse = '';
-      const startTime = Date.now();
-
-      // Iterate through stream chunks
-      for await (const chunk of result) {
-        // Process content
-        fullResponse += chunk;
-
-        // Check cancellation after processing chunk so we capture the latest partial content
-        if (controller.signal.aborted) {
-          void this.logAPICall(requestId, 'streaming', 'cancel', { responseContent: fullResponse });
-          yield {
-            requestId,
-            content: 'Request cancelled',
-            status: 'error',
-          };
-          return;
-        }
-
-        yield {
-          requestId,
-          content: fullResponse,
-          status: 'update',
-        };
-      }
-
-      // Stream completed
-      const duration = Date.now() - startTime;
-      // Log done (optional, and async; awaiting can be expensive for long responses)
-      void this.logAPICall(requestId, 'streaming', 'done', {
-        responseContent: fullResponse,
-        responseMetadata: {
-          duration,
-        },
-      });
-
-      yield { requestId, content: fullResponse, status: 'done' };
-    } catch (error) {
-      // Handle errors and categorize them
-      const errorDetail = didTimeout
-        ? {
-          name: 'TimeoutError',
-          code: 'AI_REQUEST_TIMEOUT',
-          provider: modelConfig.provider,
-          message: `AI request timed out after ${requestTimeoutMs}ms`,
-        }
-        : extractErrorDetails(error, modelConfig.provider);
-
-      if (options?.awaitLogs) {
-        await this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
-      } else {
-        void this.logAPICall(requestId, 'streaming', 'error', { errorDetail });
-      }
-
-      // Yield error with details
-      yield {
-        requestId,
-        content: `Error: ${errorDetail.message || errorDetail.name}`,
-        status: 'error',
-        errorDetail,
-      };
-    } finally {
-      if (requestTimeout) clearTimeout(requestTimeout);
-      if (!controller.signal.aborted) controller.abort();
-      this.cleanupAIRequest(requestId);
-    }
-  }
-
   async *generatePortableLlm(
     request: PortableLlmRequest,
     options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
@@ -834,17 +533,18 @@ export class ExternalAPIService implements IExternalAPIService {
       [request.signal, controller.signal, timeoutSignal]
         .filter((candidate): candidate is AbortSignal => candidate !== undefined),
     );
-    const providerConfig = await this.getProviderConfig(request.providerId);
-    if (!providerConfig) {
+    const runtimeAccount = await this.getProviderAccount(request.providerId);
+    if (!runtimeAccount) {
       this.cleanupAIRequest(requestId);
-      throw new Error(`Provider configuration not found: ${request.providerId}`);
+      throw new Error(`Provider account not found: ${request.providerId}`);
     }
-    const selectedModel = providerConfig.models.find(model => model.name === request.logicalModelId);
-    if (!selectedModel || selectedModel.name !== request.wireModelId) {
+    const [account, apiKey] = runtimeAccount;
+    const route = resolveProviderModelRoute(account, request.logicalModelId);
+    if (route.wireModelId !== request.wireModelId) {
       this.cleanupAIRequest(requestId);
       throw new Error(`Model route not found: ${request.providerId}/${request.logicalModelId}`);
     }
-    if ((selectedModel.apiMode ?? 'chat-completions') !== request.apiMode) {
+    if (route.apiMode !== request.apiMode) {
       this.cleanupAIRequest(requestId);
       throw new Error(`Model API mode mismatch: ${request.providerId}/${request.logicalModelId}`);
     }
@@ -859,8 +559,9 @@ export class ExternalAPIService implements IExternalAPIService {
     const logStart = this.logAPICall(requestId, 'streaming', 'start', {
       agentInstanceId: options?.agentInstanceId,
       requestMetadata: {
-        provider: request.providerId,
-        model: request.logicalModelId,
+        providerId: request.providerId,
+        logicalModelId: request.logicalModelId,
+        wireModelId: request.wireModelId,
         messageCount: request.messages.length,
       },
       requestPayload: loggedRequest,
@@ -871,7 +572,7 @@ export class ExternalAPIService implements IExternalAPIService {
     let responseText = '';
     try {
       signal.throwIfAborted();
-      const provider = await createProviderFromConfig(providerConfig, selectedModel);
+      const provider = await desktopLlmProviderFactoryPort.createFromAccountRoute({ account, route, apiKey });
       const result = await provider.chat({ ...request, signal });
       if (!isPortableStream(result)) {
         throw new TypeError('Desktop provider returned a non-portable LLM stream');
@@ -912,7 +613,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateEmbeddings(
     inputs: string[],
-    config: DesktopAIConfig,
+    config: ModelAssignments,
     options?: {
       dimensions?: number;
       encoding_format?: 'float' | 'base64';
@@ -923,17 +624,17 @@ export class ExternalAPIService implements IExternalAPIService {
 
     // Get embedding model configuration, fallback to default
     const modelConfig = config.embedding ?? config.default;
-    if (!modelConfig?.provider || !modelConfig?.model) {
+    if (!modelConfig?.providerId || !modelConfig?.modelId) {
       return {
         requestId,
         embeddings: [],
-        model: 'unknown',
+        logicalModelId: 'unknown',
         object: 'error',
         status: 'error',
         errorDetail: {
           name: 'MissingConfigError',
           code: 'NO_EMBEDDING_MODEL',
-          provider: 'unknown',
+          providerId: 'unknown',
         },
       };
     }
@@ -942,40 +643,42 @@ export class ExternalAPIService implements IExternalAPIService {
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(modelConfig.provider);
-      if (!providerConfig) {
+      const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
+      if (!runtimeAccount) {
         return {
           requestId,
           embeddings: [],
-          model: modelConfig.model,
+          logicalModelId: modelConfig.modelId,
           object: 'error',
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: modelConfig.provider,
+            providerId: modelConfig.providerId,
           },
         };
       }
+      const [account, apiKey] = runtimeAccount;
 
       // Generate embeddings
       const result = await generateEmbeddingsFromProvider(
         inputs,
         config,
         controller.signal,
-        providerConfig,
+        account,
+        apiKey,
         options,
       );
 
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
 
       return {
         requestId,
         embeddings: [],
-        model: modelConfig.model,
+        logicalModelId: modelConfig.modelId,
         object: 'error',
         status: 'error',
         errorDetail,
@@ -987,7 +690,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateSpeech(
     input: string,
-    config: DesktopAIConfig,
+    config: ModelAssignments,
     options?: {
       responseFormat?: string;
       sampleRate?: number;
@@ -995,7 +698,7 @@ export class ExternalAPIService implements IExternalAPIService {
       gain?: number;
       voice?: string;
       stream?: boolean;
-      maxTokens?: number;
+      maxOutputTokens?: number;
     },
   ): Promise<AISpeechResponse> {
     // Prepare request context
@@ -1003,17 +706,17 @@ export class ExternalAPIService implements IExternalAPIService {
 
     // Get speech model configuration, fallback to default
     const modelConfig = config.speech ?? config.default;
-    if (!modelConfig?.provider || !modelConfig?.model) {
+    if (!modelConfig?.providerId || !modelConfig?.modelId) {
       return {
         requestId,
         audio: new ArrayBuffer(0),
         format: 'mp3',
-        model: 'unknown',
+        logicalModelId: 'unknown',
         status: 'error',
         errorDetail: {
           name: 'MissingConfigError',
           code: 'NO_SPEECH_MODEL',
-          provider: 'unknown',
+          providerId: 'unknown',
         },
       };
     }
@@ -1022,41 +725,43 @@ export class ExternalAPIService implements IExternalAPIService {
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(modelConfig.provider);
-      if (!providerConfig) {
+      const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
+      if (!runtimeAccount) {
         return {
           requestId,
           audio: new ArrayBuffer(0),
           format: 'mp3',
-          model: modelConfig.model,
+          logicalModelId: modelConfig.modelId,
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: modelConfig.provider,
+            providerId: modelConfig.providerId,
           },
         };
       }
+      const [account, apiKey] = runtimeAccount;
 
       // Generate speech
       const result = await generateSpeechFromProvider(
         input,
         config,
         controller.signal,
-        providerConfig,
+        account,
+        apiKey,
         options,
       );
 
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
 
       return {
         requestId,
         audio: new ArrayBuffer(0),
         format: 'mp3',
-        model: modelConfig.model,
+        logicalModelId: modelConfig.modelId,
         status: 'error',
         errorDetail,
       };
@@ -1067,7 +772,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateTranscription(
     audioFile: File | Blob,
-    config: DesktopAIConfig,
+    config: ModelAssignments,
     options?: {
       language?: string;
       responseFormat?: string;
@@ -1080,16 +785,16 @@ export class ExternalAPIService implements IExternalAPIService {
 
     // Get transcriptions model configuration, fallback to default
     const modelConfig = config.transcriptions ?? config.default;
-    if (!modelConfig?.provider || !modelConfig?.model) {
+    if (!modelConfig?.providerId || !modelConfig?.modelId) {
       return {
         requestId,
         text: '',
-        model: 'unknown',
+        logicalModelId: 'unknown',
         status: 'error',
         errorDetail: {
           name: 'MissingConfigError',
           code: 'NO_TRANSCRIPTIONS_MODEL',
-          provider: 'unknown',
+          providerId: 'unknown',
         },
       };
     }
@@ -1098,39 +803,41 @@ export class ExternalAPIService implements IExternalAPIService {
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(modelConfig.provider);
-      if (!providerConfig) {
+      const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
+      if (!runtimeAccount) {
         return {
           requestId,
           text: '',
-          model: modelConfig.model,
+          logicalModelId: modelConfig.modelId,
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: modelConfig.provider,
+            providerId: modelConfig.providerId,
           },
         };
       }
+      const [account, apiKey] = runtimeAccount;
 
       // Generate transcription
       const result = await generateTranscriptionFromProvider(
         audioFile,
         config,
         controller.signal,
-        providerConfig,
+        account,
+        apiKey,
         options,
       );
 
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
 
       return {
         requestId,
         text: '',
-        model: modelConfig.model,
+        logicalModelId: modelConfig.modelId,
         status: 'error',
         errorDetail,
       };
@@ -1141,7 +848,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async generateImage(
     prompt: string,
-    config: DesktopAIConfig,
+    config: ModelAssignments,
     options?: {
       numImages?: number;
       width?: number;
@@ -1153,16 +860,16 @@ export class ExternalAPIService implements IExternalAPIService {
 
     // Get image generation model configuration, fallback to default
     const modelConfig = config.imageGeneration ?? config.default;
-    if (!modelConfig?.provider || !modelConfig?.model) {
+    if (!modelConfig?.providerId || !modelConfig?.modelId) {
       return {
         requestId,
         images: [],
-        model: 'unknown',
+        logicalModelId: 'unknown',
         status: 'error',
         errorDetail: {
           name: 'MissingConfigError',
           code: 'NO_IMAGE_GENERATION_MODEL',
-          provider: 'unknown',
+          providerId: 'unknown',
         },
       };
     }
@@ -1171,39 +878,41 @@ export class ExternalAPIService implements IExternalAPIService {
 
     try {
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(modelConfig.provider);
-      if (!providerConfig) {
+      const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
+      if (!runtimeAccount) {
         return {
           requestId,
           images: [],
-          model: modelConfig.model,
+          logicalModelId: modelConfig.modelId,
           status: 'error',
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: modelConfig.provider,
+            providerId: modelConfig.providerId,
           },
         };
       }
+      const [account, apiKey] = runtimeAccount;
 
       // Generate image
       const result = await generateImageFromProvider(
         prompt,
         config,
         controller.signal,
-        providerConfig,
+        account,
+        apiKey,
         options,
       );
 
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.provider);
+      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
 
       return {
         requestId,
         images: [],
-        model: modelConfig.model,
+        logicalModelId: modelConfig.modelId,
         status: 'error',
         errorDetail,
       };
@@ -1259,4 +968,119 @@ export class ExternalAPIService implements IExternalAPIService {
 function isPortableStream(value: unknown): value is AsyncIterable<PortableLlmStreamPart> {
   return value !== null && typeof value === 'object' &&
     typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function';
+}
+
+function normalizeDesktopExternalAPISettings(value: unknown): DesktopExternalAPISettings {
+  if (value === null || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) {
+    throw new TypeError('external API settings must be a plain object');
+  }
+  const record = value as Record<string, unknown>;
+  const keys = Reflect.ownKeys(record);
+  const allowed = ['accounts', 'modelAssignments', 'providerCredentials'];
+  if (keys.some(key => typeof key !== 'string' || !allowed.includes(key))) {
+    throw new TypeError('external API settings contain unknown fields');
+  }
+  for (const key of keys) {
+    const descriptor = Object.getOwnPropertyDescriptor(record, key);
+    if (descriptor === undefined || !('value' in descriptor) || !descriptor.enumerable) {
+      throw new TypeError('external API settings contain an accessor or hidden field');
+    }
+  }
+  const providerSettings = normalizeProviderAccountSettings({
+    accounts: record.accounts,
+    modelAssignments: record.modelAssignments,
+  });
+  if (!Array.isArray(record.providerCredentials) || record.providerCredentials.length > 512) {
+    throw new TypeError('providerCredentials must be a bounded array');
+  }
+  const accountIds = new Set(providerSettings.accounts.map(account => account.providerId));
+  const providerCredentials = record.providerCredentials.map((value): { providerId: string; encryptedApiKey: string } => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) {
+      throw new TypeError('provider credential must be a plain object');
+    }
+    const credential = value as Record<string, unknown>;
+    const credentialKeys = Reflect.ownKeys(credential);
+    const expectedCredentialKeys = new Set(['providerId', 'encryptedApiKey']);
+    if (
+      credentialKeys.length !== expectedCredentialKeys.size ||
+      credentialKeys.some(key => typeof key !== 'string' || !expectedCredentialKeys.has(key))
+    ) {
+      throw new TypeError('provider credential contains unknown fields');
+    }
+    for (const key of credentialKeys) {
+      const descriptor = Object.getOwnPropertyDescriptor(credential, key);
+      if (descriptor === undefined || !('value' in descriptor) || !descriptor.enumerable) {
+        throw new TypeError('provider credential contains an accessor or hidden field');
+      }
+    }
+    if (
+      typeof credential.providerId !== 'string' || !accountIds.has(credential.providerId) ||
+      typeof credential.encryptedApiKey !== 'string' || credential.encryptedApiKey.length === 0 ||
+      credential.encryptedApiKey.length > 64 * 1024 ||
+      Buffer.from(credential.encryptedApiKey, 'base64').toString('base64') !== credential.encryptedApiKey
+    ) throw new TypeError('invalid provider credential');
+    return {
+      providerId: credential.providerId,
+      encryptedApiKey: credential.encryptedApiKey,
+    };
+  });
+  if (new Set(providerCredentials.map(credential => credential.providerId)).size !== providerCredentials.length) {
+    throw new TypeError('provider credential ids must be unique');
+  }
+  return {
+    accounts: [...providerSettings.accounts],
+    modelAssignments: normalizeModelAssignments(providerSettings.modelAssignments),
+    providerCredentials,
+  };
+}
+
+function providerCredentialReference(providerId: string): string {
+  return `desktop-keychain:${providerId}`;
+}
+
+function replaceAt<T>(values: readonly T[], index: number, value: T): T[] {
+  return values.map((current, currentIndex) => currentIndex === index ? value : current);
+}
+
+function retainValidModelAssignments(
+  accounts: readonly ProviderAccountConfig[],
+  assignments: ModelAssignments,
+): ModelAssignments {
+  const normalized = normalizeModelAssignments(assignments);
+  const retained: ModelAssignments = {};
+  for (
+    const [purpose, selection] of Object.entries(normalized) as Array<[
+      keyof ModelAssignments,
+      NonNullable<ModelAssignments[keyof ModelAssignments]>,
+    ]>
+  ) {
+    const account = accounts.find(candidate => candidate.providerId === selection.providerId);
+    if (account?.models.some(route => route.modelId === selection.modelId) === true) {
+      retained[purpose] = selection;
+    }
+  }
+  return normalizeModelAssignments(retained);
+}
+
+type CatalogModelCapability = 'language' | 'embedding' | 'speech' | 'imageGeneration' | 'transcriptions';
+
+function isCatalogModelCapability(
+  model: ModelCatalogModel | undefined,
+  capability: CatalogModelCapability,
+): boolean {
+  if (model === undefined) return capability === 'language';
+  const inputs = new Set(model.modalities?.input ?? []);
+  const outputs = new Set(model.modalities?.output ?? []);
+  switch (capability) {
+    case 'language':
+      return inputs.has('text') && outputs.has('text');
+    case 'embedding':
+      return /embed/i.test(model.id) || /embed/i.test(model.name);
+    case 'speech':
+      return outputs.has('audio');
+    case 'imageGeneration':
+      return outputs.has('image');
+    case 'transcriptions':
+      return inputs.has('audio') && outputs.has('text');
+  }
 }

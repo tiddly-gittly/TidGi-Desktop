@@ -70,7 +70,7 @@ export class ApplicationWorld {
   scenarioName: string = 'default'; // Scenario name from Cucumber pickle
   scenarioSlug: string = 'default'; // Sanitized scenario name for file paths
   scenarioTags: string[] = [];
-  providerConfig: import('@services/externalAPI/interface').AIProviderConfig | undefined; // Scenario-specific AI provider config
+  providerConfig: import('memeloop').ProviderAccountConfig | undefined; // Scenario-specific canonical provider account
   appPid: number | undefined; // Playwright Electron process PID for hard-kill cleanup
   launchEnvOverrides: Record<string, string> = {};
 

@@ -1,7 +1,6 @@
 /** @vitest-environment node */
 import 'reflect-metadata';
 
-import { canonicalJsonBytes, projectConversationMessageForList } from 'memeloop';
 import type { ChatMessage, ConversationEvent } from 'memeloop';
 import type { Logger } from 'typeorm';
 import { DataSource } from 'typeorm';
@@ -114,6 +113,10 @@ describe('long conversation SQL paging', () => {
     await dataSource.getRepository(AgentDefinitionEntity).save({
       id: 'definition',
       name: 'Long chat',
+      description: 'Long chat performance fixture',
+      systemPrompt: 'Assist the paging test.',
+      tools: [],
+      version: '1.0.0',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -125,74 +128,83 @@ describe('long conversation SQL paging', () => {
       closed: false,
       volatile: false,
     });
-    const repository = dataSource.getRepository(AgentInstanceMessageEntity);
-    const detailRepository = dataSource.getRepository(ConversationMessageDetailEntity);
     const seedStartedAt = performance.now();
-    for (let start = 0; start < 100_000; start += 500) {
-      const messages: ChatMessage[] = Array.from({ length: 500 }, (_, offset) => {
-        const index = start + offset;
-        return {
-          messageId: `m-${index.toString().padStart(6, '0')}`,
-          conversationId: 'conversation',
-          originNodeId: index % 2 === 0 ? 'desktop' : 'mobile',
-          originSequence: Math.floor(index / 2) + 1,
-          turnId: `m-${(Math.floor(index / 2) * 2).toString().padStart(6, '0')}`,
-          timestamp: 1_000 + Math.floor(index / 2),
-          lamportClock: index + 1,
-          role: index % 2 === 0 ? 'user' as const : 'assistant' as const,
-          content: `${index % 2 === 0 ? 'prompt' : 'response'} ${index}`,
-          hidden: false,
-        };
-      });
-      const details = messages.map(message => {
-        const canonical = Buffer.from(canonicalJsonBytes(message));
-        const projection = Buffer.from(canonicalJsonBytes(
-          projectConversationMessageForList(message, 48 * 1024),
-        ));
-        return {
-          conversationId: message.conversationId,
-          messageId: message.messageId,
-          turnId: message.turnId,
-          byteLength: canonical.byteLength,
-          canonicalJson: canonical,
-          listProjectionByteLength: projection.byteLength,
-          listProjectionJson: projection,
-        };
-      });
-      await repository.insert(messages as Parameters<typeof repository.insert>[0]);
-      await detailRepository.insert(details);
-    }
+    const numberCte = `WITH digits(d) AS (
+       VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)
+     ), numbers AS (
+       SELECT ones.d + tens.d * 10 + hundreds.d * 100 +
+         thousands.d * 1000 + ten_thousands.d * 10000 AS i
+       FROM digits AS ones CROSS JOIN digits AS tens CROSS JOIN digits AS hundreds
+       CROSS JOIN digits AS thousands CROSS JOIN digits AS ten_thousands
+     )`;
+    await dataSource.query(
+      `${numberCte}
+       INSERT INTO agent_instance_messages (
+         messageId, conversationId, originNodeId, originSequence, turnId,
+         timestamp, lamportClock, role, content, hidden, isContextCompaction
+       )
+       SELECT printf('m-%06d', i), 'conversation',
+         CASE WHEN i % 2 = 0 THEN 'desktop' ELSE 'mobile' END,
+         CAST(i / 2 AS INTEGER) + 1,
+         printf('m-%06d', CAST(i / 2 AS INTEGER) * 2),
+         1000 + CAST(i / 2 AS INTEGER), i + 1,
+         CASE WHEN i % 2 = 0 THEN 'user' ELSE 'assistant' END,
+         (CASE WHEN i % 2 = 0 THEN 'prompt ' ELSE 'response ' END) || i,
+         0, 0
+       FROM numbers`,
+    );
+    await dataSource.query(
+      `${numberCte}, canonical AS (
+         SELECT i, printf('m-%06d', i) AS messageId,
+           printf('m-%06d', CAST(i / 2 AS INTEGER) * 2) AS turnId,
+           CASE WHEN i % 2 = 0 THEN 'desktop' ELSE 'mobile' END AS originNodeId,
+           CASE WHEN i % 2 = 0 THEN 'user' ELSE 'assistant' END AS role,
+           (CASE WHEN i % 2 = 0 THEN 'prompt ' ELSE 'response ' END) || i AS content
+         FROM numbers
+       ), payload AS (
+         SELECT messageId, turnId,
+           '{"content":"' || content || '","conversationId":"conversation","hidden":false,' ||
+           '"lamportClock":' || (i + 1) || ',"messageId":"' || messageId || '",' ||
+           '"originNodeId":"' || originNodeId || '","originSequence":' ||
+           (CAST(i / 2 AS INTEGER) + 1) || ',"role":"' || role || '",' ||
+           '"timestamp":' || (1000 + CAST(i / 2 AS INTEGER)) || ',"turnId":"' || turnId || '"}' AS json
+         FROM canonical
+       )
+       INSERT INTO conversation_message_details (
+         conversationId, messageId, turnId, byteLength, canonicalJson,
+         listProjectionByteLength, listProjectionJson
+       )
+       SELECT 'conversation', messageId, turnId,
+         length(CAST(json AS BLOB)), CAST(json AS BLOB),
+         length(CAST(json AS BLOB)), CAST(json AS BLOB)
+       FROM payload`,
+    );
     const timelineRepository = dataSource.getRepository(ConversationTimelineEntryEntity);
-    for (let start = 0; start < 50_000; start += 500) {
-      await timelineRepository.insert(Array.from({ length: 500 }, (_, offset) => {
-        const turnIndex = start + offset;
-        const messageIndex = turnIndex * 2;
-        return {
-          conversationId: 'conversation',
-          messageId: `m-${messageIndex.toString().padStart(6, '0')}`,
-          cursor: `cursor-${turnIndex}`,
-          kind: 'turn' as const,
-          turnId: `m-${messageIndex.toString().padStart(6, '0')}`,
-          timestamp: 1_000 + turnIndex,
-          lamportClock: messageIndex + 1,
-          originNodeId: 'desktop',
-          userPreview: `prompt ${messageIndex}`,
-          participantPreviewsJson: JSON.stringify([{
-            actorId: 'mobile',
-            actorLabel: 'mobile',
-            role: 'assistant',
-            preview: `response ${messageIndex + 1}`,
-          }]),
-          responseCount: 1,
-        };
-      }));
-    }
+    await timelineRepository.query(
+      `INSERT INTO conversation_timeline_entries (
+         conversationId, messageId, cursor, kind, turnId,
+         timestamp, lamportClock, originNodeId, turnIndex,
+         role, actorId, actorLabel, preview
+       )
+       SELECT message.conversationId, message.messageId, message.messageId,
+         'message', message.turnId, message.timestamp, message.lamportClock,
+         message.originNodeId,
+         CAST((ROW_NUMBER() OVER (
+           ORDER BY message.timestamp, message.lamportClock,
+             message.originNodeId, message.messageId
+         ) - 1) / 2 AS INTEGER),
+         message.role, message.originNodeId, message.originNodeId, message.content
+       FROM agent_instance_messages AS message
+       WHERE message.conversationId = 'conversation'
+       ORDER BY message.timestamp, message.lamportClock,
+         message.originNodeId, message.messageId`,
+    );
     await dataSource.getRepository(ConversationTimelineStateEntity).insert({
       conversationId: 'conversation',
       revision: 1,
       totalMessages: 100_000,
       totalTurns: 50_000,
-      totalEntries: 50_000,
+      totalEntries: 100_000,
     });
     await rebuildTimelineRankCheckpoints(dataSource.manager, 'conversation');
     performanceEvidence.seedMs = performance.now() - seedStartedAt;
@@ -264,13 +276,13 @@ describe('long conversation SQL paging', () => {
     if (timeline.reset) throw new Error('unexpected reset');
     expect(timeline.totalMessages).toBe(100_000);
     expect(timeline.totalTurns).toBe(50_000);
-    expect(timeline.totalEntries).toBe(50_000);
+    expect(timeline.totalEntries).toBe(100_000);
     expect(timeline.items).toHaveLength(64);
     expect(timeline.items[0]).toMatchObject({
-      messageId: 'm-099872',
-      entryIndex: 49_936,
+      messageId: 'm-099936',
+      entryIndex: 99_936,
     });
-    expect(timeline.items.at(-1)?.entryIndex).toBe(49_999);
+    expect(timeline.items.at(-1)?.entryIndex).toBe(99_999);
 
     expect(performanceEvidence.timelineColdMs).toBeLessThan(200);
     expect(performanceEvidence.timelineHotMs).toBeLessThan(200);
@@ -284,13 +296,13 @@ describe('long conversation SQL paging', () => {
     const around = await getConversationTimelinePage(
       dataSource.getRepository(AgentInstanceMessageEntity),
       'conversation',
-      { limit: 64, maxBytes: 64 * 1024, aroundEntryIndex: 25_000 },
+      { limit: 64, maxBytes: 64 * 1024, aroundEntryIndex: 50_000 },
     );
     performanceEvidence.loadAroundMs = performance.now() - startedAt;
     performanceEvidence.loadAroundBytes = Buffer.byteLength(JSON.stringify(around));
     expect(around.reset).toBe(false);
     if (around.reset) throw new Error('unexpected reset');
-    expect(around.items[32]).toMatchObject({ messageId: 'm-050000', entryIndex: 25_000, turnIndex: 25_000 });
+    expect(around.items[32]).toMatchObject({ messageId: 'm-050000', entryIndex: 50_000, turnIndex: 25_000 });
     expect(around.items).toHaveLength(64);
     expect(queryLogger.queries).toBeLessThanOrEqual(5);
     expect(performanceEvidence.loadAroundBytes).toBeLessThan(64 * 1024);
@@ -331,11 +343,11 @@ describe('long conversation SQL paging', () => {
     const timeline = await getConversationTimelinePage(
       dataSource.getRepository(AgentInstanceMessageEntity),
       'conversation',
-      { limit: 8, maxBytes: 16 * 1024, aroundEntryIndex: 25_000 },
+      { limit: 8, maxBytes: 16 * 1024, aroundEntryIndex: 50_000 },
     );
     if (timeline.reset) throw new Error('unexpected reset');
-    const entry = timeline.items.find(item => item.kind === 'turn');
-    if (!entry || entry.kind !== 'turn') throw new Error('turn fixture missing');
+    const entry = timeline.items.find(item => item.kind === 'message' && item.messageId === 'm-050000');
+    if (!entry || entry.kind !== 'message') throw new Error('message fixture missing');
     queryLogger.reset();
     const result = await getMessageWindowAround(dataSource, 'conversation', {
       focus: { kind: 'timeline-entry', entryId: entry.entryId, cursor: entry.cursor },
@@ -346,11 +358,14 @@ describe('long conversation SQL paging', () => {
     expect(result.reset).toBe(false);
     if (result.reset) throw new Error('unexpected reset');
     expect(result.focus).toEqual({
-      kind: 'turn',
+      kind: 'message',
+      messageId: entry.messageId,
       turnId: entry.turnId,
       entryId: entry.entryId,
       cursor: entry.cursor,
     });
+    expect(result.recenterAnchor).toEqual({ messageId: entry.messageId, turnId: entry.turnId });
+    expect(result.items.some(message => message.messageId === entry.messageId)).toBe(true);
     expect(result.items.some(message => message.turnId === entry.turnId)).toBe(true);
     expect(result.items).toHaveLength(80);
     expect(queryLogger.queries).toBeLessThanOrEqual(3);
@@ -439,7 +454,10 @@ describe('long conversation SQL paging', () => {
     // smoke test because this suite shares CPU with up to five Vitest forks.
     expect(mergeMs).toBeLessThan(45_000);
     expect(writes).toBeLessThan(900);
-    expect(queryLogger.statements.some(sql => /SET\s+(entryIndex|turnIndex)/i.test(sql))).toBe(false);
+    const rankRewrites = queryLogger.statements.filter(sql => /UPDATE\s+conversation_timeline_entries[\s\S]*SET\s+turnIndex/i.test(sql));
+    expect(rankRewrites).toHaveLength(1);
+    expect(rankRewrites[0]).toMatch(/WITH ranked AS MATERIALIZED/i);
+    expect(queryLogger.statements.some(sql => /SET\s+entryIndex/i.test(sql))).toBe(false);
     expect(await dataSource.getRepository(ConversationEventEntity).countBy({ originNodeId: 'remote-bulk' })).toBe(100_000);
     expect(
       await dataSource.getRepository(ConversationEventSequenceEntity).findOneByOrFail({
@@ -464,18 +482,19 @@ describe('long conversation SQL paging', () => {
     expect(projectionCounts).toEqual({ messages: 99_999, userRoots: 49_999, eligibleUserRoots: 49_999 });
     const [timelineProjectionCounts] = await dataSource.query<Array<{ candidates: number; projected: number }>>(
       `SELECT
-         (SELECT COUNT(*) FROM agent_instance_messages AS user
-          WHERE user.conversationId = 'conversation' AND user.role = 'user'
-            AND user.messageId = user.turnId AND user.hidden = 0
+         (SELECT COUNT(*) FROM agent_instance_messages AS message
+          WHERE message.conversationId = 'conversation'
+            AND message.role IN ('user', 'assistant', 'agent') AND message.hidden = 0
+            AND message.isContextCompaction = 0
             AND NOT EXISTS (
               SELECT 1 FROM conversation_turn_tombstones AS tombstone
-              WHERE tombstone.conversationId = user.conversationId
-                AND tombstone.turnId = user.turnId
+              WHERE tombstone.conversationId = message.conversationId
+                AND tombstone.turnId = message.turnId
             )) AS candidates,
          (SELECT COUNT(*) FROM conversation_timeline_entries
-          WHERE conversationId = 'conversation' AND kind = 'turn') AS projected`,
+          WHERE conversationId = 'conversation' AND kind = 'message') AS projected`,
     );
-    expect(timelineProjectionCounts).toEqual({ candidates: 99_998, projected: 99_998 });
+    expect(timelineProjectionCounts).toEqual({ candidates: 199_996, projected: 199_996 });
 
     await expect(getConversationTimelinePage(
       dataSource.getRepository(AgentInstanceMessageEntity),
@@ -488,8 +507,8 @@ describe('long conversation SQL paging', () => {
       { limit: 8, maxBytes: 16 * 1024, aroundEntryIndex: 0 },
     );
     if (around.reset) throw new Error('unexpected reset');
-    expect(around).toMatchObject({ totalMessages: 199_996, totalTurns: 99_998, totalEntries: 99_999 });
-    expect(around.items.some(item => item.kind === 'turn' && item.messageId === 'remote-turn-00000')).toBe(true);
+    expect(around).toMatchObject({ totalMessages: 199_996, totalTurns: 99_998, totalEntries: 199_997 });
+    expect(around.items.some(item => item.kind === 'message' && item.messageId === 'remote-turn-00000')).toBe(true);
     expect(around.items).toContainEqual(expect.objectContaining({
       entryId: 'remote-summary',
       kind: 'compaction',

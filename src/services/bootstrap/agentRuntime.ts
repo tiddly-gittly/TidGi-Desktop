@@ -41,7 +41,6 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
     agentInstanceService,
     agentDefinitionService,
     getLocalNodeId: async () => identity.peerId,
-    notifyAgentChanged: () => {},
   });
   const durableRuntime = await agentInstanceService.getDurableAgentRuntime();
 

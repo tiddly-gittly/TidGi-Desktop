@@ -2,97 +2,108 @@
  * Integration test: verify that builtin agent definitions with agentTools
  * produce prompt output with tool descriptions.
  *
- * This covers the real pipeline: builtin JSON → mergeAgentToolsIntoFrameworkConfig → concatPrompt → tool descriptions.
+ * This covers the exact host pipeline: builtin Core profile -> persisted
+ * Desktop conversation -> Core-owned preview session -> prompt plugin output.
  */
-import type { ChatMessage } from 'memeloop';
-
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
+import type { IDatabaseService } from '@services/database/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { AgentFrameworkConfig } from 'memeloop';
+import type { AgentDefinition, PromptConcatStreamState } from 'memeloop';
 import { getBuiltinLoopProfiles, mergeAgentToolsIntoFrameworkConfig } from 'memeloop';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nanoid } from 'nanoid';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('default agent tools → prompt integration', () => {
+function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
+  return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  };
+}
+
+describe('default agent tools -> prompt integration', () => {
+  let agentDefinitionService: IAgentDefinitionService;
   let agentInstanceService: IAgentInstanceService;
+  let externalAPIService: Partial<IExternalAPIService>;
+
+  beforeAll(async () => {
+    await container.get<IDatabaseService>(serviceIdentifier.Database).initializeForApp();
+  });
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    container.get(serviceIdentifier.AgentDefinition);
+    agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-    await agentInstanceService.initializeFrameworks();
+    externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+    await agentDefinitionService.initialize();
+    await agentInstanceService.initialize();
+
+    externalAPIService.getAIConfig = vi.fn().mockResolvedValue({
+      default: { providerId: 'mock', modelId: 'mock-model' },
+    });
+    externalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'mock',
+      providerType: 'openai-compatible',
+      enabled: true,
+      models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
+    }]);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('builtin general-assistant agentTools are reflected in the prompt', async () => {
-    const defaultAgent = getBuiltinLoopProfiles().find(agent => agent.id === 'memeloop:general-assistant') as unknown as {
-      id: string;
-      agentTools?: Array<{ toolId: string; parameters?: Record<string, unknown> }>;
-      agentFrameworkConfig: Record<string, unknown>;
-    };
+  it('reflects the general-assistant agentTools in the exact Core preview result', async () => {
+    const profile = getBuiltinLoopProfiles().find(agent => agent.id === 'memeloop:general-assistant');
+    if (!profile) throw new Error('Missing built-in general assistant profile');
+    const definition = toAgentDefinition(profile);
+    vi.spyOn(agentDefinitionService, 'getAgentDef').mockResolvedValue(definition);
 
-    expect(defaultAgent.agentTools).toBeDefined();
-    expect(defaultAgent.agentTools!.length).toBeGreaterThanOrEqual(4);
-
+    const agent = await agentInstanceService.createAgent(definition.id, { id: nanoid() });
     const mergedConfig = mergeAgentToolsIntoFrameworkConfig(
-      defaultAgent.agentFrameworkConfig as unknown as AgentFrameworkConfig,
-      defaultAgent.agentTools,
+      definition.agentFrameworkConfig,
+      definition.agentTools,
     );
-
-    expect(mergedConfig.plugins).toBeDefined();
-    const pluginToolIds = (mergedConfig.plugins as Array<{ toolId: string }>).map(p => p.toolId);
-    for (const tool of defaultAgent.agentTools!) expect(pluginToolIds).toContain(tool.toolId);
-
-    // Preserve non-tool prompt modifiers like fullReplacement
+    const pluginToolIds = mergedConfig.plugins.map(plugin => plugin.toolId);
+    for (const tool of definition.agentTools ?? []) expect(pluginToolIds).toContain(tool.toolId);
     expect(pluginToolIds).toContain('fullReplacement');
 
-    // Call concatPrompt and verify it produces output with tool descriptions
-    const messages: ChatMessage[] = [{
-      messageId: 'test-msg-1',
-      turnId: 'test-msg-1',
-      conversationId: 'test-agent',
-      originNodeId: 'tidgi-desktop',
-      originSequence: 1,
-      timestamp: Date.now(),
-      lamportClock: Date.now(),
-      role: 'user',
-      content: '帮我搜一下 wiki 里的笔记',
-    }];
-
-    let lastCompleteState: Record<string, unknown> | null = null;
-    const obs = agentInstanceService.concatPrompt(
-      { agentFrameworkConfig: mergedConfig },
-      messages,
-    );
-    await new Promise<void>((resolve, reject) => {
-      obs.subscribe({
-        next: (state) => {
-          if ((state as unknown as { isComplete: boolean }).isComplete) {
-            lastCompleteState = state as unknown as Record<string, unknown>;
-          }
-        },
-        error: (err) => {
-          reject(err instanceof Error ? err : new Error(String(err)));
-        },
-        complete: () => {
-          resolve();
-        },
-      });
+    const prepared = await agentInstanceService.preparePromptPreviewExecutionModelRequest({
+      requestId: `agent-tools-prompt:${nanoid()}`,
+      conversationId: agent.id,
+      inputText: '帮我搜一下 wiki 里的笔记',
     });
+    let lastCompleteState: PromptConcatStreamState | undefined;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        agentInstanceService.concatPromptPreview({
+          sessionId: prepared.sessionId,
+          expectedRevision: prepared.revision,
+          agentFrameworkConfig: mergedConfig,
+        }).subscribe({
+          next: state => {
+            if (state.isComplete) lastCompleteState = state;
+          },
+          error: reject,
+          complete: resolve,
+        });
+      });
+    } finally {
+      await agentInstanceService.releasePromptPreviewAuditSession({
+        sessionId: prepared.sessionId,
+        expectedRevision: prepared.revision,
+      });
+    }
 
-    expect(lastCompleteState).not.toBeNull();
-    const flatPrompts = (lastCompleteState as unknown as { flatPrompts: Array<{ role: string; content: unknown }> })?.flatPrompts;
-    expect(flatPrompts).toBeDefined();
-    const allContent = JSON.stringify(flatPrompts);
-
-    // Tool descriptions injected via onProcessPrompts → injectToolList
-    // The tool content is generated from zod LLM schemas; verify injection happened
+    expect(lastCompleteState).toBeDefined();
+    const allContent = JSON.stringify(lastCompleteState?.flatPrompts);
     expect(allContent).toContain('spawn-agent');
     expect(allContent).toContain('## ask-question');
     expect(allContent).toContain('manage-todo');
     expect(allContent).toContain('**Description**');
-  }, 30000);
+  }, 30_000);
 });

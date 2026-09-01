@@ -10,13 +10,13 @@ export class ProviderConfigError extends Error {
   /**
    * Provider name that has the configuration issue
    */
-  provider: string;
+  providerId: string;
 
-  constructor(message: string, code: string, provider: string) {
+  constructor(message: string, code: string, providerId: string) {
     super(message);
     this.name = 'ProviderConfigError';
     this.code = code;
-    this.provider = provider;
+    this.providerId = providerId;
 
     // Ensure instanceof works properly
     Object.setPrototypeOf(this, ProviderConfigError.prototype);
@@ -30,7 +30,7 @@ export class ProviderConfigError extends Error {
       name: this.name,
       message: this.message,
       code: this.code,
-      provider: this.provider,
+      providerId: this.providerId,
     };
   }
 }
@@ -39,11 +39,11 @@ export class ProviderConfigError extends Error {
  * Error for missing API key
  */
 export class MissingAPIKeyError extends ProviderConfigError {
-  constructor(provider: string) {
+  constructor(providerId: string) {
     super(
-      `API key for ${provider} not found`,
+      `API key for ${providerId} not found`,
       'MISSING_API_KEY',
-      provider,
+      providerId,
     );
     this.name = 'MissingAPIKeyError';
 
@@ -56,11 +56,11 @@ export class MissingAPIKeyError extends ProviderConfigError {
  * Error for missing base URL
  */
 export class MissingBaseURLError extends ProviderConfigError {
-  constructor(provider: string) {
+  constructor(providerId: string) {
     super(
-      `${provider} provider requires baseURL`,
+      `${providerId} provider requires a base URL`,
       'MISSING_BASE_URL',
-      provider,
+      providerId,
     );
     this.name = 'MissingBaseURLError';
 
@@ -73,11 +73,11 @@ export class MissingBaseURLError extends ProviderConfigError {
  * Error for authentication failure
  */
 export class AuthenticationError extends ProviderConfigError {
-  constructor(provider: string) {
+  constructor(providerId: string) {
     super(
-      `${provider} authentication failed: Invalid API key`,
+      `${providerId} authentication failed: Invalid API key`,
       'AUTHENTICATION_FAILED',
-      provider,
+      providerId,
     );
     this.name = 'AuthenticationError';
 
@@ -122,17 +122,17 @@ export function getProviderHttpStatus(error: unknown): number | undefined {
 }
 
 /** Normalize only stable provider error fields. */
-export function parseProviderError(error: unknown, provider: string): Error {
+export function parseProviderError(error: unknown, providerId: string): Error {
   if (isProviderConfigError(error)) return error;
   const status = getProviderHttpStatus(error);
   if (status === 401 || status === 403) {
-    return new AuthenticationError(provider);
+    return new AuthenticationError(providerId);
   }
   if (status === 404) {
-    return new ProviderConfigError('Chat.ConfigError.ModelNotFound', 'MODEL_NOT_FOUND', provider);
+    return new ProviderConfigError('Chat.ConfigError.ModelNotFound', 'MODEL_NOT_FOUND', providerId);
   }
   if (status === 429) {
-    return new ProviderConfigError('Chat.ConfigError.RateLimitExceeded', 'RATE_LIMIT_EXCEEDED', provider);
+    return new ProviderConfigError('Chat.ConfigError.RateLimitExceeded', 'RATE_LIMIT_EXCEEDED', providerId);
   }
   return error instanceof Error ? error : new Error('AI provider request failed');
 }

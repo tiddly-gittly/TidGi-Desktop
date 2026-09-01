@@ -3,6 +3,7 @@
  */
 
 import type { ScheduledTaskEntity } from '@services/database/schema/agent';
+import type { CreateScheduledTaskInput } from 'memeloop';
 import type { Repository } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IAgentInstanceService } from '../interface';
@@ -41,6 +42,7 @@ function makeEntity(overrides: Partial<ScheduledTaskEntity> = {}): ScheduledTask
     created: new Date(),
     updated: new Date(),
     ...overrides,
+    executionRevision: overrides.executionRevision ?? 0,
     state: overrides.state ?? 'active',
     executionNodeId: overrides.executionNodeId ?? 'local',
     executionNodeLabel: overrides.executionNodeLabel,
@@ -102,6 +104,20 @@ function makeAgentService(sendMsgMock = vi.fn()): IAgentInstanceService {
 
 const localIdentity = async () => ({ peerId: 'peer-desktop', deviceName: 'Test Desktop' });
 
+function createInput(overrides: Partial<CreateScheduledTaskInput> = {}): CreateScheduledTaskInput {
+  const schedule = overrides.schedule ?? { kind: 'cron' as const, expression: '* * * * *' };
+  return {
+    agentInstanceId: 'agent-1',
+    agentDefinitionId: 'definition-1',
+    name: 'Test task',
+    executionNodeId: 'peer-desktop',
+    originNodeId: 'peer-desktop',
+    ...overrides,
+    schedule,
+    scheduleKind: schedule.kind,
+  };
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('ScheduledTaskManager', () => {
@@ -134,15 +150,14 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
 
-      const task = await manager.addTask({
+      const task = await manager.addTask(createInput({
         agentInstanceId: 'agent-1',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         enabled: true,
-      });
+      }));
 
       expect(task.id).toBeTruthy();
-      expect(task.scheduleKind).toBe('cron');
+      expect(task.schedule.kind).toBe('cron');
       expect(task.nextRunAt).toBeTruthy();
       expect(task).toMatchObject({
         executionNodeId: 'peer-desktop',
@@ -156,23 +171,21 @@ describe('ScheduledTaskManager', () => {
       manager.initScheduledTaskManager(repo, makeAgentService(), async () => {
         throw new Error('keychain unavailable');
       });
-      await expect(manager.addTask({
+      await expect(manager.addTask(createInput({
         agentInstanceId: 'agent-no-identity',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
-      })).rejects.toThrow('scheduled_task_identity_unavailable');
+      }))).rejects.toThrow('scheduled_task_identity_unavailable');
       expect(repo.save).not.toHaveBeenCalled();
     });
 
     it('rejects a task labelled for another execution node on this manager', async () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
-      await expect(manager.addTask({
+      await expect(manager.addTask(createInput({
         agentInstanceId: 'agent-wrong-node',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         executionNodeId: 'peer-mobile',
-      })).rejects.toThrow('scheduled_task_wrong_execution_node:peer-mobile');
+      }))).rejects.toThrow('scheduled_task_wrong_execution_node:peer-mobile');
       expect(repo.save).not.toHaveBeenCalled();
     });
 
@@ -187,29 +200,31 @@ describe('ScheduledTaskManager', () => {
       } as never);
       manager.initScheduledTaskManager(repo, service, localIdentity);
 
-      await expect(manager.addTask({
+      await expect(manager.addTask(createInput({
         agentInstanceId: 'preview-agent',
         agentDefinitionId: 'definition-1',
         name: 'Must not survive preview cleanup',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
-      })).rejects.toThrow('scheduled_task_volatile_agent');
+      }))).rejects.toThrow('scheduled_task_volatile_agent');
       expect(repo.save).not.toHaveBeenCalled();
     });
 
     it('does not start a timer for disabled tasks', async () => {
       const repo = makeRepo();
-      manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
+      const sendMessage = vi.fn();
+      manager.initScheduledTaskManager(repo, makeAgentService(sendMessage), localIdentity);
 
-      await manager.addTask({
+      await manager.addTask(createInput({
         agentInstanceId: 'agent-2',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         enabled: false,
-      });
+      }));
 
-      const activeTasks = await manager.getActiveTasksForAgent('agent-2');
+      const activeTasks = await manager.getActiveTasksForAgent('agent-2', { states: ['active'] });
       expect(activeTasks).toHaveLength(0);
+      expect(await manager.getActiveTasksForAgent('agent-2')).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(sendMessage).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -218,11 +233,10 @@ describe('ScheduledTaskManager', () => {
     ])('rejects an invalid schedule before persistence', async (schedule, expectedError) => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
-      await expect(manager.addTask({
+      await expect(manager.addTask(createInput({
         agentInstanceId: 'invalid-agent',
-        scheduleKind: 'cron',
         schedule,
-      })).rejects.toThrow(expectedError);
+      }))).rejects.toThrow(expectedError);
       expect(repo.save).not.toHaveBeenCalled();
     });
 
@@ -231,11 +245,10 @@ describe('ScheduledTaskManager', () => {
       const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
-      await manager.addTask({
+      await manager.addTask(createInput({
         agentInstanceId: 'far-future-agent',
-        scheduleKind: 'at',
         schedule: { kind: 'at', wakeAtISO: '2026-03-01T00:00:00.000Z' },
-      });
+      }));
       const scheduledDelay = timeoutSpy.mock.calls.find(call => typeof call[1] === 'number')?.[1] as number;
       expect(scheduledDelay).toBeLessThanOrEqual(2_147_000_000);
       expect(scheduledDelay).toBeGreaterThan(2_000_000_000);
@@ -246,12 +259,10 @@ describe('ScheduledTaskManager', () => {
       const sendMessage = vi.fn().mockRejectedValue(new Error('provider unavailable'));
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(sendMessage), localIdentity);
-      const task = await manager.addTask({
+      const task = await manager.addTask(createInput({
         agentInstanceId: 'retry-agent',
-        scheduleKind: 'at',
         schedule: { kind: 'at', wakeAtISO: '2026-01-01T00:00:01.000Z' },
-        deleteAfterRun: true,
-      });
+      }));
       await vi.advanceTimersByTimeAsync(1_100);
       const persisted = await repo.findOne({ where: { id: task.id } });
       expect(persisted).toMatchObject({
@@ -273,11 +284,10 @@ describe('ScheduledTaskManager', () => {
         .mockResolvedValue(undefined);
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(sendMessage), localIdentity);
-      const task = await manager.addTask({
+      const task = await manager.addTask(createInput({
         agentInstanceId: 'recovering-agent',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
-      });
+      }));
 
       await vi.advanceTimersByTimeAsync(61_000);
       expect(await repo.findOne({ where: { id: task.id } })).toMatchObject({
@@ -308,11 +318,10 @@ describe('ScheduledTaskManager', () => {
       );
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(sendMessage), localIdentity);
-      await manager.addTask({
+      await manager.addTask(createInput({
         agentInstanceId: 'slow-agent',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
-      });
+      }));
 
       await vi.advanceTimersByTimeAsync(121_000);
       expect(sendMessage).toHaveBeenCalledTimes(1);
@@ -329,12 +338,11 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
 
-      const task = await manager.addTask({
+      const task = await manager.addTask(createInput({
         agentInstanceId: 'agent-3',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         enabled: true,
-      });
+      }));
 
       expect(await manager.getActiveTasksForAgent('agent-3')).toHaveLength(1);
       await manager.removeTask(task.id);
@@ -347,24 +355,23 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
 
-      const task = await manager.addTask({
+      const task = await manager.addTask(createInput({
         agentInstanceId: 'agent-4',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         enabled: true,
-      });
+      }));
 
-      const updated = await manager.updateTask({ id: task.id, enabled: false });
+      const updated = await manager.updateTask(task.id, { enabled: false });
       expect(updated.enabled).toBe(false);
-      expect(await manager.getActiveTasksForAgent('agent-4')).toHaveLength(0);
+      expect(await manager.getActiveTasksForAgent('agent-4', { states: ['active'] })).toHaveLength(0);
+      expect(await manager.getActiveTasksForAgent('agent-4')).toHaveLength(1);
     });
 
     it('does not mutate or save a task when the replacement cron is invalid', async () => {
       const existing = makeEntity({ id: 'task-update-invalid' });
       const repo = makeRepo([existing]);
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
-      await expect(manager.updateTask({
-        id: existing.id,
+      await expect(manager.updateTask(existing.id, {
         schedule: { kind: 'cron', expression: 'invalid' },
       })).rejects.toThrow('scheduled_task_invalid_cron');
       expect(repo.save).not.toHaveBeenCalled();
@@ -382,8 +389,7 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo([existing]);
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
 
-      const updated = await manager.updateTask({
-        id: existing.id,
+      const updated = await manager.updateTask(existing.id, {
         activeHoursEnd: null,
         activeHoursStart: null,
         executionNodeLabel: null,
@@ -410,9 +416,9 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), localIdentity);
 
-      await manager.addTask({ agentInstanceId: 'agent-5', scheduleKind: 'cron', schedule: { kind: 'cron', expression: '* * * * *' }, enabled: true });
-      await manager.addTask({ agentInstanceId: 'agent-5', scheduleKind: 'cron', schedule: { kind: 'cron', expression: '*/2 * * * *' }, enabled: true });
-      await manager.addTask({ agentInstanceId: 'agent-6', scheduleKind: 'cron', schedule: { kind: 'cron', expression: '* * * * *' }, enabled: true });
+      await manager.addTask(createInput({ agentInstanceId: 'agent-5', schedule: { kind: 'cron', expression: '* * * * *' }, enabled: true }));
+      await manager.addTask(createInput({ agentInstanceId: 'agent-5', schedule: { kind: 'cron', expression: '*/2 * * * *' }, enabled: true }));
+      await manager.addTask(createInput({ agentInstanceId: 'agent-6', schedule: { kind: 'cron', expression: '* * * * *' }, enabled: true }));
 
       expect(await manager.getActiveTasksForAgent('agent-5')).toHaveLength(2);
 
@@ -437,9 +443,11 @@ describe('ScheduledTaskManager', () => {
       const isVolatile = vi.fn(async () => false);
       await manager.restoreScheduledTasks(repo, isVolatile);
 
-      // Only the enabled task should be in the active entries
+      // Paused rows remain visible in the Core default page, but only active
+      // rows are eligible for timer restoration.
       expect(await manager.getActiveTasksForAgent('agent-7')).toHaveLength(1);
-      expect(await manager.getActiveTasksForAgent('agent-8')).toHaveLength(0);
+      expect(await manager.getActiveTasksForAgent('agent-8')).toHaveLength(1);
+      expect(await manager.getActiveTasksForAgent('agent-8', { states: ['active'] })).toHaveLength(0);
     });
 
     it('skips volatile agent instances', async () => {
@@ -466,13 +474,12 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(sendMsg), localIdentity);
 
-      await manager.addTask({
+      await manager.addTask(createInput({
         agentInstanceId: 'agent-active',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         enabled: true,
         // No activeHoursStart / activeHoursEnd — always fires
-      });
+      }));
 
       // Advance timer by 60s to trigger the interval
       await vi.advanceTimersByTimeAsync(61_000);
@@ -489,14 +496,13 @@ describe('ScheduledTaskManager', () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(sendMsg), localIdentity);
 
-      await manager.addTask({
+      await manager.addTask(createInput({
         agentInstanceId: 'agent-inactive',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *' },
         enabled: true,
         activeHoursStart: '00:00',
         activeHoursEnd: '00:01',
-      });
+      }));
 
       await vi.advanceTimersByTimeAsync(61_000);
       // 06:00 is outside 00:00-00:01, so sendMsg should NOT be called
@@ -508,13 +514,12 @@ describe('ScheduledTaskManager', () => {
       const sendMsg = vi.fn().mockResolvedValue(undefined);
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(sendMsg), localIdentity);
-      await manager.addTask({
+      await manager.addTask(createInput({
         agentInstanceId: 'timezone-agent',
-        scheduleKind: 'cron',
         schedule: { kind: 'cron', expression: '* * * * *', timezone: 'America/Los_Angeles' },
         activeHoursStart: '22:00',
         activeHoursEnd: '22:10',
-      });
+      }));
       await vi.advanceTimersByTimeAsync(61_000);
       expect(sendMsg).toHaveBeenCalledTimes(1);
     });

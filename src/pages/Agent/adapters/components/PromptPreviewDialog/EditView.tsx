@@ -1,10 +1,9 @@
-import { useAgentFrameworkConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAgentFrameworkConfigManagement';
 import { Box, CircularProgress, styled } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
+import debounce from 'lodash/debounce';
 
-import React, { FC, lazy, Suspense, SyntheticEvent, useCallback, useEffect, useState } from 'react';
+import React, { type Dispatch, FC, lazy, type SetStateAction, Suspense, SyntheticEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
@@ -22,115 +21,64 @@ interface EditViewProps {
   isFullScreen: boolean;
   inputText: string;
   agentId: string;
-  agentDefinitionId: string;
   state: PromptPreviewDialogState;
   controller: PromptPreviewController;
+  agentFrameworkConfigLoading: boolean;
+  agentFrameworkConfig: AgentFrameworkConfig | undefined;
+  setAgentFrameworkConfig: Dispatch<SetStateAction<AgentFrameworkConfig | undefined>>;
+  handlerSchema: Record<string, unknown> | undefined;
+  persistAgentFrameworkConfig: (config: AgentFrameworkConfig) => Promise<void>;
 }
 
 export const EditView: FC<EditViewProps> = ({
   isFullScreen,
   inputText,
   agentId,
-  agentDefinitionId,
   state,
   controller,
+  agentFrameworkConfigLoading,
+  agentFrameworkConfig,
+  setAgentFrameworkConfig,
+  handlerSchema,
+  persistAgentFrameworkConfig,
 }) => {
   const { t } = useTranslation('agent');
   const [editorMode, setEditorMode] = useState<'form' | 'code'>('form');
   const [monacoInitialized, setMonacoInitialized] = useState(false);
   const { formFieldsToScrollTo } = state;
 
-  const {
-    loading: agentFrameworkConfigLoading,
-    config: agentFrameworkConfig,
-    setConfig: setAgentFrameworkConfig,
-    schema: handlerSchema,
-    persistConfig: persistAgentFrameworkConfig,
-  } = useAgentFrameworkConfigManagement({
-    agentDefId: agentDefinitionId,
-    agentId,
-  });
-
-  // Use a ref to track if we're currently processing a scroll request
-  const isProcessingScrollReference = React.useRef(false);
-  const savedPathReference = React.useRef<string[]>([]);
-
-  useEffect(() => {
-    if (formFieldsToScrollTo.length > 0 && editorMode === 'form' && agentFrameworkConfig && !isProcessingScrollReference.current) {
-      // Mark as processing and save the path
-      isProcessingScrollReference.current = true;
-      savedPathReference.current = [...formFieldsToScrollTo];
-      const savedPath = savedPathReference.current;
-
-      // NOTE: Don't clear formFieldsToScrollTo immediately!
-      // RootObjectFieldTemplate also listens to this to switch tabs.
-      // We'll clear it after the tab has had time to switch.
-
-      // Path format: ['prompts', 'system', 'child-id', 'child-id'] or ['prompts', 'system']
-      // - savedPath[0]: top-level key (prompts, plugins, response)
-      // - savedPath[1]: parent item id
-      // - savedPath[2+]: nested child item ids (if present)
-
-      // Step 1: Wait for the shared RootObjectFieldTemplate to switch tabs.
-      setTimeout(() => {
-        controller.setFormFieldsToScrollTo([]);
-      }, 100);
-
-      // Step 2: Scroll to the target element after the target tab has rendered.
-      const scrollDelay = 200;
-      setTimeout(() => {
-        const targetId = savedPath[savedPath.length - 1];
-
-        // Find input element whose value exactly matches the target ID
-        const targetElement = document.querySelector(`input[value="${targetId}"]`);
-        if (targetElement) {
-          // Scroll to element and highlight
-          setTimeout(() => {
-            if (targetElement instanceof HTMLElement) {
-              targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              const originalStyle = targetElement.style.cssText;
-              targetElement.style.cssText += '; outline: 2px solid #1976d2; outline-offset: 2px;';
-              setTimeout(() => {
-                targetElement.style.cssText = originalStyle;
-              }, 2000);
-            }
-          }, 300);
-        }
-
-        // Mark processing as complete
-        isProcessingScrollReference.current = false;
-      }, scrollDelay);
+  const persistAndRefresh = useCallback(async (updatedConfig: AgentFrameworkConfig) => {
+    try {
+      await persistAgentFrameworkConfig(updatedConfig);
+      await controller.generate(
+        updatedConfig,
+        agentId,
+        inputText.trim().length === 0 ? undefined : inputText,
+      );
+    } catch (error) {
+      await window.service.native.log('error', 'EditView: Error auto-saving config:', { error });
     }
-  }, [agentFrameworkConfig, controller, editorMode, formFieldsToScrollTo]);
+  }, [agentId, controller, inputText, persistAgentFrameworkConfig]);
 
-  // Keep local ref to track if preview should be updated
-  const isUserEditingReference = React.useRef(false);
-
-  const handleFormChange = useDebouncedCallback(
-    async (updatedConfig: AgentFrameworkConfig) => {
-      try {
-        await persistAgentFrameworkConfig(updatedConfig);
-        if (isUserEditingReference.current) {
-          void controller.generate(
-            updatedConfig,
-            agentId,
-            inputText.trim().length === 0 ? undefined : inputText,
-          );
-        }
-      } catch (error) {
-        await window.service.native.log('error', 'EditView: Error auto-saving config:', { error });
-      }
-    },
-    [agentId, controller, inputText, persistAgentFrameworkConfig],
-    500,
-    { leading: false, maxWait: 2000 },
+  const handleFormChange = useMemo(
+    () =>
+      debounce(
+        (updatedConfig: AgentFrameworkConfig) => {
+          void persistAndRefresh(updatedConfig);
+        },
+        500,
+        { leading: false, maxWait: 2000 },
+      ),
+    [persistAndRefresh],
   );
+  useEffect(() => () => {
+    handleFormChange.cancel();
+  }, [handleFormChange]);
 
   // 输入时立即更新本地 config，避免 formData 滞后导致 RJSF 输入框光标跳动；持久化由 handleFormChange 防抖执行
   const handleInputChange = useCallback((changedFormData: AgentFrameworkConfig) => {
-    isUserEditingReference.current = true;
     setAgentFrameworkConfig(changedFormData);
-    void handleFormChange(changedFormData);
+    handleFormChange(changedFormData);
   }, [setAgentFrameworkConfig, handleFormChange]);
 
   const handleEditorModeChange = useCallback(async (_event: SyntheticEvent, newValue: 'form' | 'code') => {
@@ -147,11 +95,12 @@ export const EditView: FC<EditViewProps> = ({
     if (!value) return;
     try {
       const parsedConfig = JSON.parse(value) as AgentFrameworkConfig;
-      void handleFormChange(parsedConfig);
+      setAgentFrameworkConfig(parsedConfig);
+      handleFormChange(parsedConfig);
     } catch (error) {
       void window.service.native.log('error', 'EditView: Invalid JSON in code editor:', { error });
     }
-  }, [handleFormChange]);
+  }, [handleFormChange, setAgentFrameworkConfig]);
 
   return (
     <Box
@@ -194,6 +143,9 @@ export const EditView: FC<EditViewProps> = ({
             onChange={handleInputChange}
             loading={agentFrameworkConfigLoading}
             formFieldsToScrollTo={formFieldsToScrollTo}
+            onFieldReveal={() => {
+              controller.setFormFieldsToScrollTo([]);
+            }}
           />
         )}
         {editorMode === 'code' && (

@@ -1,130 +1,88 @@
-import { render, screen } from '@testing-library/react';
+import type { DialogProps } from '@mui/material';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { ModelCatalogModel, ProviderModelRoute } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
 import { NewModelDialog } from '../NewModelDialog';
 
-describe('NewModelDialog - ComfyUI workflow support', () => {
-  const mockOnClose = vi.fn();
-  const mockOnAddModel = vi.fn();
-  const mockOnSelectDefaultModel = vi.fn();
-  const mockOnModelFormChange = vi.fn();
-  const mockOnFeatureChange = vi.fn();
-
-  const defaultProps = {
-    open: true,
-    onClose: mockOnClose,
-    onAddModel: mockOnAddModel,
-    currentProvider: 'comfyui',
-    providerClass: 'comfyui',
-    newModelForm: {
-      name: 'flux',
-      caption: 'Flux',
-      features: ['imageGeneration' as const],
-      parameters: {},
-    },
-    availableDefaultModels: [],
-    selectedDefaultModel: '',
-    onSelectDefaultModel: mockOnSelectDefaultModel,
-    onModelFormChange: mockOnModelFormChange,
-    onFeatureChange: mockOnFeatureChange,
-    editMode: false,
+vi.mock('@mui/material', async importOriginal => {
+  const material = await importOriginal<typeof import('@mui/material')>();
+  return {
+    ...material,
+    Dialog: ({ children, open }: Pick<DialogProps, 'children' | 'open'>) => open ? <div role='dialog'>{children}</div> : null,
   };
+});
 
-  it('should show workflow file input for ComfyUI provider', async () => {
-    render(<NewModelDialog {...defaultProps} />);
+const route: ProviderModelRoute = {
+  modelId: 'reasoning',
+  wireModelId: 'vendor/gpt-5.6',
+  apiMode: 'responses',
+};
 
-    // ComfyUI should show workflow file input
-    expect(await screen.findByTestId('workflow-path-input')).toBeInTheDocument();
-    expect(await screen.findByTestId('select-workflow-button')).toBeInTheDocument();
-  });
+const model: ModelCatalogModel = {
+  id: 'reasoning',
+  name: 'Reasoning model',
+  attachment: true,
+  reasoning: true,
+  toolCall: true,
+  modalities: { input: ['text', 'image'], output: ['text'] },
+};
 
-  it('should not show workflow file input for non-ComfyUI providers', async () => {
+describe('NewModelDialog', () => {
+  it('edits one exact logical-to-wire route with catalog metadata', () => {
     render(
       <NewModelDialog
-        {...defaultProps}
-        currentProvider='openai'
-        providerClass='openai'
+        open
+        route={route}
+        model={model}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
       />,
     );
 
-    // Non-ComfyUI providers should not show workflow input
-    expect(screen.queryByTestId('workflow-path-input')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('select-workflow-button')).not.toBeInTheDocument();
+    expect(screen.getByTestId('new-model-name-input')).toHaveValue('reasoning');
+    expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('vendor/gpt-5.6');
+    expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ResponsesAPIMode');
+    expect(screen.getByLabelText('Preference.InputModalities')).toHaveValue('text, image');
+    expect(screen.getByLabelText('Preference.OutputModalities')).toHaveValue('text');
+    expect(screen.getByRole('checkbox', { name: 'Preference.Attachments' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.Reasoning' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.ToolCalling' })).toBeChecked();
+
+    expect(screen.getByTestId('save-new-model-button')).toBeEnabled();
   });
 
-  it('should render workflow input correctly for ComfyUI', async () => {
-    render(<NewModelDialog {...defaultProps} />);
+  it('saves newly entered logical and provider wire identifiers without exchanging them', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
 
-    // data-testid is on the input element itself via slotProps.htmlInput
-    const workflowInput = await screen.findByTestId('workflow-path-input');
-    expect(workflowInput).toBeInTheDocument();
-    expect(workflowInput).toHaveAttribute('type', 'text');
+    const logicalInput = screen.getByTestId('new-model-name-input');
+    await user.click(logicalInput);
+    await user.type(logicalInput, '模型2');
+    await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型2:latest');
+    await user.type(screen.getByLabelText('Preference.ModelCaption'), 'Private model');
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.Reasoning' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.ToolCalling' }));
+    expect(screen.getByTestId('new-model-name-input')).toHaveValue('模型2');
+    expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('供应商/模型2:latest');
+    expect(screen.getByLabelText('Preference.ModelCaption')).toHaveValue('Private model');
+    expect(screen.getByRole('checkbox', { name: 'Preference.Reasoning' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.ToolCalling' })).toBeChecked();
+    fireEvent.click(screen.getByTestId('save-new-model-button'));
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ modelId: '模型2', wireModelId: '供应商/模型2:latest' }),
+        expect.objectContaining({ id: '模型2' }),
+      );
+    });
   });
 
-  it('should render browse button for ComfyUI', async () => {
-    render(<NewModelDialog {...defaultProps} />);
-
-    const browseButton = await screen.findByTestId('select-workflow-button');
-    expect(browseButton).toBeInTheDocument();
-    expect(browseButton).toHaveTextContent('Preference.Browse');
-  });
-
-  it('should display existing workflow path in edit mode', async () => {
-    render(
-      <NewModelDialog
-        {...defaultProps}
-        newModelForm={{
-          ...defaultProps.newModelForm,
-          parameters: {
-            workflowPath: 'C:\\existing\\workflow.json',
-          },
-        }}
-        editMode={true}
-      />,
-    );
-
-    const workflowInput = await screen.findByTestId('workflow-path-input');
-    expect(workflowInput).toHaveValue('C:\\existing\\workflow.json');
-  });
-
-  it('should show Update button in edit mode', async () => {
-    render(<NewModelDialog {...defaultProps} editMode={true} />);
-
-    expect(await screen.findByText('Update')).toBeInTheDocument();
-  });
-
-  it('should show Save button in add mode', async () => {
-    render(<NewModelDialog {...defaultProps} editMode={false} />);
-
-    expect(await screen.findByText('Save')).toBeInTheDocument();
-  });
-
-  it('renders advanced model metadata and disables save for invalid ranges', async () => {
-    render(
-      <NewModelDialog
-        {...defaultProps}
-        currentProvider='cpa'
-        providerClass='openAICompatible'
-        newModelForm={{
-          name: 'reasoning-model',
-          caption: 'Reasoning model',
-          features: ['language', 'reasoning'],
-          apiMode: 'chat-completions',
-          contextWindowSize: 1_000_000,
-          maxOutputTokens: 32_768,
-          modelOptions: { top_p: 1.5 },
-          supportsReasoningEffort: ['minimal', 'high'],
-          reasoningEffortFormat: 'chat-completions',
-        }}
-      />,
-    );
-
-    expect(await screen.findByTestId('model-context-window-input')).toHaveValue(1_000_000);
-    expect(screen.getByTestId('model-max-output-input')).toHaveValue(32_768);
-    expect(screen.getByTestId('model-top-p-input')).toHaveValue(1.5);
-    expect(screen.getByRole('checkbox', { name: 'minimal' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'low' })).not.toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'high' })).toBeChecked();
-    expect(screen.getByTestId('save-model-button')).toBeDisabled();
+  it('starts a new route with the canonical API mode default', () => {
+    render(<NewModelDialog open onClose={vi.fn()} onSave={vi.fn()} />);
+    expect(screen.getByTestId('new-model-name-input')).toHaveValue('');
+    expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('');
+    expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ChatCompletionsAPIMode');
   });
 });

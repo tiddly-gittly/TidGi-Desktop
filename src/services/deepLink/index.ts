@@ -75,10 +75,15 @@ export class DeepLinkService implements IDeepLinkService {
         const windowService = container.get<IWindowService>(serviceIdentifier.Window);
         if (Object.values(PreferenceSections).includes(sectionId)) {
           const providerId = searchParams.get('provider');
+          const modelId = searchParams.get('model');
           const field = searchParams.get('field');
           const preferenceFocus = sectionId === PreferenceSections.externalAPI &&
               providerId !== null && isSafePreferenceIdentifier(providerId) && isProviderSettingField(field)
-            ? { providerId, field }
+            ? {
+              providerId,
+              field,
+              ...(modelId !== null && isSafePreferenceIdentifier(modelId) ? { modelId } : {}),
+            }
             : undefined;
           logger.info(`Open preferences via deep link`, { sectionId, function: 'deepLinkHandler' });
           await windowService.open(WindowNames.preferences, {

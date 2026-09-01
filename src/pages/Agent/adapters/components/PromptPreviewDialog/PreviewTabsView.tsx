@@ -1,4 +1,4 @@
-import { PromptTree } from '@memeloop/react-ui/agent/prompts';
+import { groupGeneratedToolPrompts, PromptTree } from '@memeloop/react-ui/agent/prompts';
 import { Box, Button, Chip, Divider, Paper, styled, Typography } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -6,14 +6,13 @@ import {
   MAX_PROMPT_PREVIEW_AUDIT_DETAIL_CHUNK_BYTES,
   MAX_PROMPT_PREVIEW_AUDIT_PAGE_BYTES,
   MAX_PROMPT_PREVIEW_AUDIT_PAGE_ENTRIES,
-  type PromptNode,
   type PromptPreviewAuditDetailTarget,
   type PromptPreviewAuditPage,
   type PromptPreviewController,
   type PromptPreviewDialogState,
   type PromptPreviewPreparedExecution,
 } from 'memeloop';
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const DETAIL_CHUNK_BYTES = Math.min(64 * 1_024, MAX_PROMPT_PREVIEW_AUDIT_DETAIL_CHUNK_BYTES);
@@ -60,17 +59,24 @@ const TreeContent = memo<{
   isFullScreen: boolean;
   state: PromptPreviewDialogState;
   controller: PromptPreviewController;
-}>(({ isFullScreen, state, controller }) => (
-  <PreviewContent isFullScreen={isFullScreen}>
-    <PromptTree
-      prompts={(state.result?.processedPrompts ?? []) as PromptNode[]}
-      onFieldSelect={(paths: string[]) => {
-        controller.setFormFieldsToScrollTo(paths);
-      }}
-    />
-    <LastUpdatedIndicator lastUpdated={state.lastUpdated} />
-  </PreviewContent>
-));
+}>(({ isFullScreen, state, controller }) => {
+  const { t } = useTranslation('agent');
+  const prompts = useMemo(
+    () => groupGeneratedToolPrompts(state.result?.processedPrompts ?? [], t('Prompt.GeneratedTools')),
+    [state.result?.processedPrompts, t],
+  );
+  return (
+    <PreviewContent isFullScreen={isFullScreen}>
+      <PromptTree
+        prompts={prompts}
+        onFieldSelect={(paths: string[]) => {
+          controller.setFormFieldsToScrollTo(paths);
+        }}
+      />
+      <LastUpdatedIndicator lastUpdated={state.lastUpdated} />
+    </PreviewContent>
+  );
+});
 TreeContent.displayName = 'TreeContent';
 
 function AuditContent({

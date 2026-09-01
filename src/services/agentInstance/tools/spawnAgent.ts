@@ -71,21 +71,20 @@ async function executeSpawnAgent(
       ? `${task}\n\n<context>\n${taskContext}\n</context>`
       : task;
 
-    const terminal = await agentInstanceService.executeLocalAgentMessage(childAgent.id, { text: fullMessage }, {
-      source: 'spawn-agent',
-      requestId: `spawn-agent:${parentAgentId}:${childAgent.id}:request`,
-      turnId: `spawn-agent:${parentAgentId}:${childAgent.id}:turn`,
-      timeoutMs,
+    const terminal = await agentInstanceService.executeLocalAgentMessage({
+      target: { kind: 'local' },
       provenance: {
-        parentConversationId: parentAgentId,
-        childConversationId: childAgent.id,
+        conversationId: childAgent.id,
+        definitionId,
+        requestId: `spawn-agent:${parentAgentId}:${childAgent.id}:request`,
+        turnId: `spawn-agent:${parentAgentId}:${childAgent.id}:turn`,
       },
-    });
-    const page = await agentInstanceService.getAgentMessagePage(childAgent.id, {
+      message: fullMessage,
+    }, { signal: AbortSignal.timeout(timeoutMs) });
+    const page = await agentInstanceService.getAgentStorageFullContentMessagePage(childAgent.id, {
       limit: 50,
       maxBytes: 256 * 1024,
       direction: 'backward',
-      mode: 'full-content',
     });
     const resultText = page.reset
       ? '(sub-agent completed with no output)'

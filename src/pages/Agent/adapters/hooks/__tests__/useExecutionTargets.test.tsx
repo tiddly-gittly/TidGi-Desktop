@@ -125,7 +125,10 @@ describe('useExecutionTargets', () => {
       onRunAccepted: expect.any(Function),
     });
 
-    await act(async () => result.current.setExecutionTarget('peer:peer-remote'));
+    const remoteTarget = result.current.executionTargets[1]?.value;
+    expect(remoteTarget).toEqual({ kind: 'remote', peerId: 'peer-remote' });
+    if (!remoteTarget) throw new Error('remote target not discovered');
+    await act(async () => result.current.setExecutionTarget(remoteTarget));
     const attachment = {
       kind: 'source' as const,
       filename: 'note.txt',
@@ -224,7 +227,10 @@ describe('useExecutionTargets', () => {
     await waitFor(() => {
       expect(result.current.executionTargets).toHaveLength(2);
     });
-    await act(async () => result.current.setExecutionTarget('peer:peer-remote', { restartCurrentTurn: true }));
+    const remoteTarget = result.current.executionTargets[1]?.value;
+    expect(remoteTarget).toEqual({ kind: 'remote', peerId: 'peer-remote' });
+    if (!remoteTarget) throw new Error('remote target not discovered');
+    await act(async () => result.current.setExecutionTarget(remoteTarget, { restartCurrentTurn: true }));
 
     expect(coordinatorHarness.coordinator.cancel).toHaveBeenCalledWith(expect.objectContaining({
       target: { kind: 'local' },

@@ -1,12 +1,8 @@
-import type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
-import type { ScheduledTask as DesktopScheduledTask } from '@services/agentInstance/tools/scheduledTaskTypes';
-import type { ScheduledTaskState } from 'memeloop';
+import type { CreateScheduledTaskInput, ScheduledTaskState } from 'memeloop';
 import type { AgentDefinition, AgentHeartbeatConfig, AgentModelConfig, HostAgentToolConfig } from 'memeloop';
-import type { AgentInstanceLatestStatus } from 'memeloop';
+import type { AgentInstanceLatestStatus, AgentInstanceMetadata } from 'memeloop';
 import type { AgentFrameworkConfig, AttachmentReference, ChatMessage, ChatMessagePart, ChatRole, DetailReference, ToolCall } from 'memeloop';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
-
-export type { ScheduleConfig, ScheduleKind } from '@services/agentInstance/tools/scheduledTaskTypes';
 
 @Entity('scheduled_tasks')
 @Index('IDX_scheduled_task_rpc_page', ['agentInstanceId', 'executionNodeId', 'state', 'updated', 'id'])
@@ -29,11 +25,11 @@ export class ScheduledTaskEntity {
 
   /** Schedule kind discriminator */
   @Column({ type: 'varchar' })
-  scheduleKind!: ScheduleKind;
+  scheduleKind!: CreateScheduledTaskInput['scheduleKind'];
 
   /** Full schedule config stored as JSON */
   @Column({ type: 'simple-json' })
-  schedule!: ScheduleConfig;
+  schedule!: CreateScheduledTaskInput['schedule'];
 
   /** Payload: message sent to agent on trigger */
   @Column({ type: 'simple-json', nullable: true })
@@ -98,6 +94,20 @@ export class ScheduledTaskEntity {
   @Column({ default: 0 })
   runCount: number = 0;
 
+  /** Monotonic CAS fence for timer/config races. */
+  @Column({ type: 'integer', default: 0 })
+  executionRevision: number = 0;
+
+  /** Durable identity of the currently scheduled occurrence/retry chain. */
+  @Column({ type: 'varchar', nullable: true })
+  occurrenceId?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  occurrenceScheduledFor?: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  occurrenceAttempt?: number;
+
   /** Stop firing after this many runs (null = unlimited) */
   @Column({ type: 'integer', nullable: true })
   maxRuns?: number;
@@ -113,53 +123,29 @@ export class ScheduledTaskEntity {
   updated!: Date;
 }
 
-/** Durable read-only projection of schedules owned by another device. */
-@Entity('remote_scheduled_task_projections')
-@Index('IDX_remote_scheduled_task_agent_node', ['agentInstanceId', 'executionNodeId'])
-@Index('IDX_remote_scheduled_task_page', ['agentInstanceId', 'state', 'observedAt', 'id'])
-export class RemoteScheduledTaskProjectionEntity {
-  @PrimaryColumn()
-  id!: string;
-
-  @Column()
-  taskId!: string;
-
-  @Column()
-  agentInstanceId!: string;
-
-  @Column()
-  executionNodeId!: string;
-
-  /** Denormalized for bounded SQL filtering; never scan the JSON task blob. */
-  @Column({ type: 'varchar' })
-  state!: ScheduledTaskState;
-
-  @Column({ type: 'simple-json' })
-  task!: DesktopScheduledTask;
-
-  @Column({ type: 'integer' })
-  observedAt!: number;
-}
-
 /**
- * Database entity: Stores user modifications to predefined Agents
- * Note: AgentDefinition typically comes from downloaded JSON or app-defined templates,
- * we only store the user's customizations, not the complete definition
- * This saves space and makes it easier to track user personalization
+ * Exact durable projection of Core AgentDefinition.
  */
 @Entity('agent_definitions')
-export class AgentDefinitionEntity implements Partial<AgentDefinition> {
+export class AgentDefinitionEntity implements AgentDefinition {
   /** Unique identifier for the agent */
   @PrimaryColumn()
   id!: string;
 
-  /** Agent name, nullable indicates using default name */
-  @Column({ nullable: true })
-  name?: string;
+  @Column()
+  name!: string;
 
-  /** Detailed agent description, nullable indicates using default description */
-  @Column({ type: 'text', nullable: true })
-  description?: string;
+  @Column({ type: 'text' })
+  description!: string;
+
+  @Column({ type: 'text' })
+  systemPrompt!: string;
+
+  @Column({ type: 'simple-json' })
+  tools!: string[];
+
+  @Column()
+  version!: string;
 
   /** Agent avatar or icon URL, nullable indicates using default avatar */
   @Column({ nullable: true })
@@ -185,16 +171,8 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
   @Column({ type: 'simple-json', nullable: true })
   heartbeat?: AgentHeartbeatConfig;
 
-  /** Last bundled profile version applied to this row. Null identifies a legacy row. */
-  @Column({ nullable: true })
-  builtinVersion?: string;
-
-  /**
-   * Whether the user changed this definition. Null identifies a legacy row,
-   * whose timestamps are used once to infer whether it is safe to refresh.
-   */
-  @Column({ type: 'boolean', nullable: true })
-  isCustomized?: boolean;
+  @Column({ type: 'boolean', default: false })
+  isCustomized: boolean = false;
 
   /** Creation timestamp */
   @CreateDateColumn()
@@ -214,7 +192,7 @@ export class AgentDefinitionEntity implements Partial<AgentDefinition> {
  */
 @Entity('agent_instances')
 @Index('IDX_agent_instance_directory_order', ['volatile', 'closed', 'modified', 'id'])
-export class AgentInstanceEntity {
+export class AgentInstanceEntity implements AgentInstanceMetadata {
   @PrimaryColumn()
   id!: string;
 
@@ -346,7 +324,7 @@ export class AgentInstanceMessageEntity implements ChatMessage {
   isContextCompaction: boolean = false;
 
   @Column({ type: 'integer', nullable: true })
-  duration?: number;
+  duration?: number | null;
 
   // Relation to AgentInstance
   @ManyToOne(() => AgentInstanceEntity, instance => instance.messages)
