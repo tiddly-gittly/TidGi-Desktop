@@ -58,8 +58,9 @@ export const TabListDropdown: React.FC = () => {
     try {
       const tasks = await window.service.agentInstance.listScheduledTasks({ states: ['active', 'paused'] });
       setScheduledTasks(tasks);
-    } catch {
-      // Ignore transient IPC errors during startup.
+    } catch (error) {
+      // Scheduled-task indicators are best effort, but failures remain observable for diagnostics.
+      void window.service.native.log('warn', 'TabListDropdown: failed to refresh scheduled tasks', { error });
     }
   }, []);
 

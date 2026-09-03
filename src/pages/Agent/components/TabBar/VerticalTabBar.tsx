@@ -47,8 +47,9 @@ export const VerticalTabBar = () => {
     try {
       const tasks = await window.service.agentInstance.listScheduledTasks({ states: ['active', 'paused'] });
       setScheduledTasks(tasks);
-    } catch {
-      // Ignore transient IPC failures while the app is booting.
+    } catch (error) {
+      // Scheduled-task indicators are best effort, but failures remain observable for diagnostics.
+      void window.service.native.log('warn', 'VerticalTabBar: failed to refresh scheduled tasks', { error });
     }
   }, []);
 
