@@ -115,7 +115,7 @@ describe('Desktop scheduled-task RPC store', () => {
       limit: 2,
       maxBytes: 256 * 1024,
       cursor: first.nextCursor,
-    }, { localPeerId: 'peer-local', remotePeerId: 'peer-remote' })).rejects.toThrow('scheduled_task_invalid_cursor');
+    }, { localPeerId: 'peer-local', remotePeerId: 'peer-remote' })).rejects.toThrow('scheduled_task_cursor_stale');
   });
 
   it('binds cursors to the normalized state filter', async () => {
@@ -142,7 +142,7 @@ describe('Desktop scheduled-task RPC store', () => {
       limit: 1,
       maxBytes: 256 * 1024,
       cursor: first.nextCursor,
-    }, { localPeerId: 'peer-local', remotePeerId: 'peer-remote' })).rejects.toThrow('scheduled_task_invalid_cursor');
+    }, { localPeerId: 'peer-local', remotePeerId: 'peer-remote' })).rejects.toThrow('scheduled_task_cursor_stale');
     expect(service.listScheduledTasksForAgent).toHaveBeenCalledTimes(1);
   });
 

@@ -49,12 +49,13 @@ import type {
   DesktopDeviceConnectionOptions,
   DesktopDeviceSyncOptions,
   DeviceCloudConnectionStatus,
-  DeviceNetworkPersistedCloudConfiguration,
   DeviceNetworkPersistedIdentity,
   DeviceNetworkPersistedSettings,
-  DeviceNetworkRuntimeOptions,
+  HostDeviceNetworkPersistedCloudConfiguration,
+  HostDeviceNetworkRuntimeOptions,
   IDeviceNetworkService,
 } from './interface';
+import { createInitialDeviceCloudConnectionStatus } from './interface';
 import { TrustedRpcGate } from './trustedRpcGate';
 
 const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
@@ -232,9 +233,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private cloudConfigurationCommit: Promise<void> = Promise.resolve();
   private cloudValidationController = new AbortController();
   private readonly activeOperations = new Map<string, AbortController>();
-  private cloudStatus: DeviceCloudConnectionStatus = { configured: false, state: 'not-configured' };
+  private cloudStatus: DeviceCloudConnectionStatus = createInitialDeviceCloudConnectionStatus();
   public cloudStatus$ = new BehaviorSubject<DeviceCloudConnectionStatus>(this.cloudStatus);
-  private runtimeOptions: DeviceNetworkRuntimeOptions = {};
+  private runtimeOptions: HostDeviceNetworkRuntimeOptions = {};
   public devices$ = new BehaviorSubject<Device[]>([]);
   public pairingSessions$ = new BehaviorSubject<PairingSession[]>([]);
   private deviceNetworkUnsubscribers: Array<() => void> = [];
@@ -248,7 +249,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     this.trustStore = new DatabaseSettingsDeviceTrustStore(this.settingsStore);
   }
 
-  public configureRuntime(options: DeviceNetworkRuntimeOptions): void {
+  public configureRuntime(options: HostDeviceNetworkRuntimeOptions): void {
     this.runtimeOptions = options;
   }
 
@@ -343,7 +344,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       if (request !== this.cloudConfigurationRequest) throw new Error('stale device cloud configuration');
       const shouldResumeCoordinator = this.started && this.cloudCoordinator !== undefined;
       if (shouldResumeCoordinator) await this.cloudCoordinator!.stop();
-      const record: DeviceNetworkPersistedCloudConfiguration = {
+      const record: HostDeviceNetworkPersistedCloudConfiguration = {
         cloudUrl: normalized.cloudUrl,
         encryptedAccessToken: safeStorage.encryptString(normalized.accessToken).toString('base64'),
       };
@@ -370,7 +371,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       await this.trustStore.clearCloudAccountSnapshot(cleanupController.signal);
       await this.cloudCoordinator?.setConfiguration(undefined);
       if (shouldResumeCoordinator) await this.cloudCoordinator!.start();
-      this.updateCloudStatus({ configured: false, state: 'not-configured' });
+      this.updateCloudStatus(createInitialDeviceCloudConnectionStatus());
     });
   }
 
@@ -528,13 +529,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       protocols: [protocol],
       rpcMethodScope: { mode: 'none' },
     });
-    return (this.core as unknown as {
-      openStream(
-        targetPeerId: string,
-        targetProtocol: MemeLoopProtocol,
-        connectionOptions: { presentedGrant?: DeviceConnectionGrant; signal?: AbortSignal },
-      ): Promise<MemeLoopDuplexStream>;
-    }).openStream(peerId, protocol, { presentedGrant: grant, signal: options.signal });
+    return this.core!.openStream(peerId, protocol, { presentedGrant: grant, signal: options.signal });
   }
 
   public async sendRpc<T>(
@@ -566,14 +561,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       });
       signal?.throwIfAborted();
       if (!isTrusted()) throw new Error(`device_rpc_trust_changed:${peerId}`);
-      return (core as unknown as {
-        sendRpc<Result>(
-          targetPeerId: string,
-          targetMethod: string,
-          targetParameters: unknown,
-          connectionOptions: { presentedGrant?: DeviceConnectionGrant; signal?: AbortSignal },
-        ): Promise<Result>;
-      }).sendRpc<T>(peerId, method, parameters, { presentedGrant: grant, signal });
+      return core.sendRpc<T>(peerId, method, parameters, { presentedGrant: grant, signal });
     });
   }
 
@@ -593,9 +581,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     });
     signal?.throwIfAborted();
     const { operationId: _operationId, ...syncOptions } = options;
-    return (this.core as unknown as {
-      syncWithDevice(targetPeerId: string, targetOptions: DesktopDeviceSyncOptions): Promise<SyncResult>;
-    }).syncWithDevice(peerId, { ...syncOptions, presentedGrant: grant, signal });
+    return this.core!.syncWithDevice(peerId, { ...syncOptions, presentedGrant: grant, signal });
   }
 
   public async abortOperation(operationId: string): Promise<void> {
@@ -704,18 +690,9 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private applyCloudConnectionSnapshot(snapshot: DeviceCloudConnectionSnapshot): void {
     const connected = snapshot.status === 'online' || snapshot.status === 'degraded';
     this.updateCloudStatus({
-      configured: snapshot.status !== 'not-configured',
+      ...snapshot,
       cloudUrl: this.cloudConfig?.cloudUrl,
-      components: snapshot.components,
-      error: snapshot.lastError === undefined ? undefined : [
-        snapshot.lastError.code,
-        snapshot.lastError.classification,
-        snapshot.lastError.component,
-      ].filter(value => value !== undefined).join(':'),
-      generation: snapshot.generation,
       lastConnectedAt: connected ? Date.now() : this.cloudStatus.lastConnectedAt,
-      nextRetryAt: snapshot.nextRetryAt,
-      state: snapshot.status,
     });
   }
 
@@ -783,7 +760,11 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       const client = createDesktopCloudClient(normalized);
       this.cloudConfig = { ...normalized, client };
       this.cloudClient = client;
-      this.updateCloudStatus({ configured: true, cloudUrl: normalized.cloudUrl, state: 'offline' });
+      this.updateCloudStatus({
+        ...createInitialDeviceCloudConnectionStatus(),
+        status: 'offline',
+        cloudUrl: normalized.cloudUrl,
+      });
     } catch (error) {
       logger.warn('DeviceNetworkService ignored invalid encrypted Cloud configuration', { error });
     }
@@ -796,7 +777,11 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     this.cloudConfig = config;
     this.cloudClient = config.client;
     this.lastCloudDevices = [];
-    this.updateCloudStatus({ configured: true, cloudUrl: config.cloudUrl, state: 'offline' });
+    this.updateCloudStatus({
+      ...createInitialDeviceCloudConnectionStatus(),
+      status: 'offline',
+      cloudUrl: config.cloudUrl,
+    });
     if (!this.started) return;
     this.ensureCloudCoordinator();
     await this.cloudCoordinator!.setConfiguration(config.client);

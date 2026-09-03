@@ -2,6 +2,7 @@ import type {
   CloudDeviceClient,
   CloudDeviceRecord,
   DeviceCloudCommitFence,
+  DeviceCloudConnectionSnapshot,
   DeviceConnectionGrant,
   DeviceRelayReservationToken,
   LocalDeviceIdentity,
@@ -24,6 +25,7 @@ import {
   validateCloudConfiguration,
 } from '../index';
 import type { DeviceNetworkPersistedSettings } from '../interface';
+import { createInitialDeviceCloudConnectionStatus } from '../interface';
 
 vi.mock('@memeloop/libp2p', async (importOriginal) => ({
   ...await importOriginal<typeof import('@memeloop/libp2p')>(),
@@ -195,6 +197,21 @@ const coreSupportsRegistrationInvalid = (
 ).classifyError(registrationInvalidError) === 'registration-invalid';
 
 describe('DeviceNetwork Cloud configuration', () => {
+  it('keeps the Desktop Cloud status assignable to Core snapshots', () => {
+    const snapshot: DeviceCloudConnectionSnapshot = createInitialDeviceCloudConnectionStatus();
+    expect(snapshot).toMatchObject({
+      status: 'not-configured',
+      generation: 0,
+      components: {
+        authorizer: 'not-run',
+        registration: 'not-run',
+        relay: 'not-run',
+        heartbeat: 'not-run',
+        directory: 'not-run',
+      },
+    });
+  });
+
   it('accepts HTTPS and normalizes the service origin', () => {
     expect(validateCloudConfiguration({
       cloudUrl: ' https://cloud.example.test/ ',
@@ -379,8 +396,7 @@ describe('DeviceNetwork Cloud configuration', () => {
     });
     expect(service.cloudStatus$.value).toMatchObject({
       cloudUrl: 'https://latest.example.test',
-      configured: true,
-      state: 'offline',
+      status: 'offline',
     });
   });
 
@@ -424,7 +440,7 @@ describe('DeviceNetwork Cloud configuration', () => {
     await staleRejection;
 
     expect(persisted?.cloudConfigurationV1).toBeUndefined();
-    expect(service.cloudStatus$.value).toEqual({ configured: false, state: 'not-configured' });
+    expect(service.cloudStatus$.value).toEqual(createInitialDeviceCloudConnectionStatus());
   });
 
   it('merges a large Cloud directory from one consistent trust-store snapshot', async () => {
@@ -673,7 +689,7 @@ describe('DeviceNetwork Cloud configuration', () => {
       );
       expect(coordinator.snapshot.status).toBe('online');
       await vi.advanceTimersByTimeAsync(0);
-      expect(service.cloudStatus$.value).toMatchObject({ configured: true, state: 'online' });
+      expect(service.cloudStatus$.value).toMatchObject({ status: 'online' });
       await coordinator.stop();
     } finally {
       vi.useRealTimers();
@@ -700,13 +716,13 @@ describe('DeviceNetwork Cloud configuration', () => {
         nextRetryAt: baseTime + 1_000,
       });
       await vi.advanceTimersByTimeAsync(0);
-      expect(service.cloudStatus$.value).toMatchObject({ configured: true, state: 'offline' });
+      expect(service.cloudStatus$.value).toMatchObject({ status: 'offline' });
 
       await vi.advanceTimersByTimeAsync(1_000);
       expect(coordinator.snapshot.status).toBe('online');
       expect(client.registerDevice).toHaveBeenCalledOnce();
       expect(heartbeat).toHaveBeenCalledTimes(2);
-      expect(service.cloudStatus$.value).toMatchObject({ configured: true, state: 'online' });
+      expect(service.cloudStatus$.value).toMatchObject({ status: 'online' });
       await coordinator.stop();
     } finally {
       random.mockRestore();
@@ -734,7 +750,7 @@ describe('DeviceNetwork Cloud configuration', () => {
       expect(client.registerDevice).toHaveBeenCalledTimes(2);
       expect(coordinator.snapshot.status).toBe('online');
       await vi.waitFor(() => {
-        expect(service.cloudStatus$.value.state).toBe('online');
+        expect(service.cloudStatus$.value.status).toBe('online');
       });
       await coordinator.stop();
     },

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
-import type { Device, DeviceCloudConnectionStatus, PairingSession } from '@services/deviceNetwork/interface';
+import { createInitialDeviceCloudConnectionStatus, type Device, type DeviceCloudConnectionStatus, type PairingSession } from '@services/deviceNetwork/interface';
 import useObservable from 'beautiful-react-hooks/useObservable';
 import { DevicePairingInviteDialog, DevicePairingScannerDialog } from './DevicePairingDialogs';
 
@@ -39,12 +39,17 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
   const [error, setError] = useState<string | undefined>();
   const [cloudUrl, setCloudUrl] = useState('');
   const [cloudAccessToken, setCloudAccessToken] = useState('');
-  const [cloudStatus, setCloudStatus] = useState<DeviceCloudConnectionStatus>({ configured: false, state: 'not-configured' });
+  const [cloudStatus, setCloudStatus] = useState<DeviceCloudConnectionStatus>(createInitialDeviceCloudConnectionStatus());
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [invitePayload, setInvitePayload] = useState<string>();
   const [inviteQrDataUrl, setInviteQrDataUrl] = useState<string>();
   const [scannerDialogOpen, setScannerDialogOpen] = useState(false);
-  const cloudConfigured = cloudStatus.configured;
+  const cloudConfigured = cloudStatus.status !== 'not-configured';
+  const cloudError = cloudStatus.lastError === undefined ? undefined : [
+    cloudStatus.lastError.code,
+    cloudStatus.lastError.classification,
+    cloudStatus.lastError.component,
+  ].filter(value => value !== undefined).join(':');
 
   const pendingSessions = useMemo(() => pairingSessions.filter(session => session.status === 'pending'), [pairingSessions]);
   const pendingPeerIds = useMemo(() => new Set(pendingSessions.map(session => session.remotePeerId)), [pendingSessions]);
@@ -100,10 +105,10 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip
               size='small'
-              color={cloudStatus.state === 'online' ? 'success' : cloudStatus.state === 'error' ? 'error' : 'default'}
-              label={t(`DeviceNetwork.CloudStatus.${cloudStatus.state}`)}
+              color={cloudStatus.status === 'online' ? 'success' : cloudStatus.status === 'error' ? 'error' : 'default'}
+              label={t(`DeviceNetwork.CloudStatus.${cloudStatus.status}`)}
             />
-            {cloudStatus.error && <Typography variant='caption' color='error'>{cloudStatus.error}</Typography>}
+            {cloudError && <Typography variant='caption' color='error'>{cloudError}</Typography>}
           </Box>
           <TextField
             size='small'
@@ -135,7 +140,7 @@ export function DeviceNetworkPanelItem(): React.JSX.Element {
                 onClick={() => {
                   void runAction('cloud-clear', async () => {
                     await window.service.deviceNetwork.clearCloudConfiguration();
-                    setCloudStatus({ configured: false, state: 'not-configured' });
+                    setCloudStatus(createInitialDeviceCloudConnectionStatus());
                     setCloudAccessToken('');
                   });
                 }}

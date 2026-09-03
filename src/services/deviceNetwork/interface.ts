@@ -4,11 +4,10 @@ import type {
   CloudDeviceRecord,
   Device,
   DeviceCapabilities,
-  DeviceCloudConnectionSnapshot,
   DeviceConnectionGrant,
   DeviceNetworkService as CoreDeviceNetworkService,
   DeviceRpcHandler,
-  IAgentStorage,
+  FullAgentStorage,
   LocalDeviceIdentity,
   MemeLoopDuplexStream,
   MemeLoopProtocol,
@@ -16,6 +15,7 @@ import type {
   SyncResult,
   TrustedDeviceRecord,
 } from 'memeloop';
+import type { DeviceCloudConnectionSnapshot } from 'memeloop/device-network';
 import type { BehaviorSubject } from 'rxjs';
 
 export interface DeviceNetworkPersistedIdentity {
@@ -27,7 +27,8 @@ export interface DeviceNetworkPersistedIdentity {
   createdAt: number;
 }
 
-export interface DeviceNetworkPersistedCloudConfiguration {
+/** Host-only persisted Cloud settings; the access token is encrypted at rest. */
+export interface HostDeviceNetworkPersistedCloudConfiguration {
   cloudUrl: string;
   encryptedAccessToken: string;
 }
@@ -43,27 +44,37 @@ export interface DeviceNetworkPersistedSettings {
     epoch: string;
     generation: number;
   };
-  cloudConfigurationV1?: DeviceNetworkPersistedCloudConfiguration;
+  cloudConfigurationV1?: HostDeviceNetworkPersistedCloudConfiguration;
   identityV1?: DeviceNetworkPersistedIdentity;
   trustedDevicesV1?: TrustedDeviceRecord[];
 }
 
-export interface DeviceNetworkRuntimeOptions {
+/** Host-only runtime injection points for Core's device-network service. */
+export interface HostDeviceNetworkRuntimeOptions {
   buildCapabilities?: () => Promise<DeviceCapabilities>;
   rpcHandler?: DeviceRpcHandler;
-  syncStorage?: IAgentStorage;
+  syncStorage?: FullAgentStorage;
 }
 
-export interface DeviceCloudConnectionStatus {
-  configured: boolean;
-  cloudUrl?: string;
-  components?: DeviceCloudConnectionSnapshot['components'];
-  error?: string;
-  generation?: number;
-  lastConnectedAt?: number;
-  nextRetryAt?: number;
-  relayExpiresAt?: number;
-  state: DeviceCloudConnectionSnapshot['status'];
+/** Core Cloud snapshot plus Desktop-only display metadata. */
+export type DeviceCloudConnectionStatus = DeviceCloudConnectionSnapshot & {
+  readonly cloudUrl?: string;
+  readonly lastConnectedAt?: number;
+};
+
+/** Initial Core-shaped snapshot used before the Cloud coordinator starts. */
+export function createInitialDeviceCloudConnectionStatus(): DeviceCloudConnectionStatus {
+  return {
+    status: 'not-configured',
+    generation: 0,
+    components: {
+      authorizer: 'not-run',
+      registration: 'not-run',
+      relay: 'not-run',
+      heartbeat: 'not-run',
+      directory: 'not-run',
+    },
+  };
 }
 
 export interface DesktopDeviceSyncOptions {
@@ -93,7 +104,7 @@ export interface IDeviceNetworkService extends Omit<CoreDeviceNetworkService, 'o
   requestPairingFromInvite(serialized: string): Promise<PairingSession>;
   clearCloudConfiguration(): Promise<void>;
   configureCloud(config: { cloudUrl: string; accessToken: string }): Promise<void>;
-  configureRuntime(options: DeviceNetworkRuntimeOptions): void;
+  configureRuntime(options: HostDeviceNetworkRuntimeOptions): void;
   cloudStatus$: BehaviorSubject<DeviceCloudConnectionStatus>;
   devices$: BehaviorSubject<Device[]>;
   pairingSessions$: BehaviorSubject<PairingSession[]>;

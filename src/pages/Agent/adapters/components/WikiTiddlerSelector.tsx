@@ -7,7 +7,20 @@ import type { WikiTiddlerAttachment } from '@memeloop/react-ui/chat';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import { Autocomplete, type AutocompleteRenderInputParams, Box, ClickAwayListener, IconButton, ListItemIcon, ListItemText, Popper, TextField, Tooltip } from '@mui/material';
+import {
+  Alert,
+  Autocomplete,
+  type AutocompleteRenderInputParams,
+  Box,
+  Button,
+  ClickAwayListener,
+  IconButton,
+  ListItemIcon,
+  ListItemText,
+  Popper,
+  TextField,
+  Tooltip,
+} from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -38,6 +51,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
   const [options, setOptions] = useState<TiddlerOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [searchText, setSearchText] = useState('');
   const open = Boolean(anchorElement);
   const abortControllerReference = useRef<AbortController | null>(null);
@@ -49,6 +63,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
 
     setLoading(true);
     setLoaded(false);
+    setLoadError(false);
 
     try {
       // IWorkspace uses `wikiFolderLocation` as a discriminator for wiki workspaces.
@@ -78,8 +93,19 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
             }));
             tiddlerOptions.push(...workspaceTiddlers);
           }
-        } catch {
-          // Skip workspace on error
+        } catch (error) {
+          if (abortController.signal.aborted || isAbortError(error)) {
+            void window.service.native.log('debug', 'WikiTiddlerSelector: workspace tiddler loading was cancelled', {
+              workspaceID: workspace.id,
+              error,
+            });
+            return;
+          }
+          // A single unavailable workspace should not hide tiddlers from other workspaces.
+          void window.service.native.log('warn', 'WikiTiddlerSelector: failed to load workspace tiddlers', {
+            workspaceID: workspace.id,
+            error,
+          });
         }
       }
 
@@ -87,8 +113,16 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
         setOptions(tiddlerOptions);
         setLoaded(true);
       }
-    } catch {
-      // Ignore
+    } catch (error) {
+      if (abortController.signal.aborted || isAbortError(error)) {
+        void window.service.native.log('debug', 'WikiTiddlerSelector: tiddler loading was cancelled', { error });
+        return;
+      }
+      void window.service.native.log('error', 'WikiTiddlerSelector: failed to load wiki tiddlers', { error });
+      if (!abortController.signal.aborted) {
+        setLoadError(true);
+        setLoaded(true);
+      }
     } finally {
       if (!abortController.signal.aborted) {
         setLoading(false);
@@ -166,6 +200,25 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
               gap: 1,
             }}
           >
+            {loadError && (
+              <Alert
+                severity='error'
+                role='alert'
+                action={
+                  <Button
+                    color='inherit'
+                    size='small'
+                    onClick={() => {
+                      void loadOptions();
+                    }}
+                  >
+                    {t('Chat.Actions.Retry')}
+                  </Button>
+                }
+              >
+                {t('Chat.OperationError')}
+              </Alert>
+            )}
             <Autocomplete<AttachmentOption>
               size='small'
               autoFocus
@@ -244,3 +297,7 @@ export const WikiTiddlerSelector: React.FC<WikiTiddlerSelectorProps> = ({ disabl
     </>
   );
 };
+
+function isAbortError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'name' in error && error.name === 'AbortError';
+}

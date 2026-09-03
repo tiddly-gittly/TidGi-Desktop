@@ -9,9 +9,12 @@
 
 import type { Device } from '@services/deviceNetwork/interface';
 import {
+  createScheduledTaskAggregatePageController,
   type CreateScheduledTaskInput,
   type ListScheduledTasksOptions,
+  normalizeScheduledTaskAggregateStates,
   type ScheduledTask,
+  type ScheduledTaskAggregateCursorSource,
   type ScheduledTaskClient,
   type ScheduledTaskPage,
   type ScheduledTaskPageSource,
@@ -30,27 +33,8 @@ const AGGREGATE_OVERHEAD_BYTES = 16 * 1024;
 const MAX_SOURCE_BATCH = 8;
 const MAX_DIRECTORY_SOURCES = 64;
 const MAX_RPC_CONCURRENCY = 4;
-const MAX_CURSOR_CHARACTERS = 16 * 1024;
-const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 type SourcePath = 'local' | 'live' | 'offline';
-
-interface SourceCursor {
-  executionNodeId: string;
-  path: SourcePath;
-  done: boolean;
-  cursor?: string;
-}
-
-interface AggregateCursor {
-  version: 1;
-  agentInstanceId: string;
-  states: ScheduledTaskState[];
-  executionNodeIds?: string[];
-  directorySignature: string;
-  targetOffset: number;
-  sources: SourceCursor[];
-}
 
 interface Target {
   executionNodeId: string;
@@ -58,7 +42,7 @@ interface Target {
 }
 
 interface SourceReadResult {
-  cursor: SourceCursor;
+  cursor: ScheduledTaskAggregateCursorSource;
   items: ScheduledTask[];
   source: ScheduledTaskPageSource;
   partial: boolean;
@@ -134,7 +118,7 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
       options.signal?.throwIfAborted();
       const limit = normalizedPageSize(options.limit);
       const maxBytes = normalizedPageBytes(options.maxBytes);
-      const states = normalizedStates(options.states);
+      const states = normalizeScheduledTaskAggregateStates(options.states);
       const executionNodeIds = normalizedExecutionNodeIds(options.executionNodeIds);
       const [identity, devices] = await Promise.all([
         localIdentity(),
@@ -146,30 +130,24 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
       const targets = directory.slice(0, MAX_DIRECTORY_SOURCES);
       const directorySignature = targetSignature(identity.peerId, targets);
       const requestGeneration = reconcileConfiguration(directorySignature);
+      const pageController = createScheduledTaskAggregatePageController({
+        agentInstanceId,
+        scope: directorySignature,
+        states,
+        sourceCount: targets.length,
+      });
       const assertCurrent = () => {
         if (requestGeneration !== configurationGeneration) {
           throw new Error('scheduled_task_configuration_changed');
         }
       };
-      const decoded = options.cursor
-        ? decodeAggregateCursor(options.cursor, {
-          agentInstanceId,
-          states,
-          executionNodeIds,
-          directorySignature,
-          targetCount: targets.length,
-        })
-        : undefined;
-      const targetOffset = decoded?.targetOffset ?? 0;
+      const decoded = options.cursor === undefined ? undefined : pageController.decode(options.cursor);
+      const targetOffset = decoded?.sourceIndex ?? 0;
       const maximumSourcesForBudget = Math.max(1, Math.floor(maxBytes / MIN_PAGE_BYTES));
       const batch = targets.slice(targetOffset, targetOffset + Math.min(MAX_SOURCE_BATCH, maximumSourcesForBudget));
       const sourceCursors = decoded?.sources.length
         ? validateSourceCursors(decoded.sources, batch)
-        : batch.map(target => ({
-          executionNodeId: target.executionNodeId,
-          path: target.path,
-          done: false,
-        } satisfies SourceCursor));
+        : batch.map(target => ({ executionNodeId: target.executionNodeId, done: false } satisfies ScheduledTaskAggregateCursorSource));
       const activeCount = Math.max(1, sourceCursors.filter(source => !source.done).length);
       const sourceLimit = Math.max(1, Math.floor(limit / activeCount));
       const itemBudget = Math.max(MIN_PAGE_BYTES, maxBytes - Math.min(AGGREGATE_OVERHEAD_BYTES, Math.floor(maxBytes / 4)));
@@ -177,9 +155,12 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
       const reads = await mapWithConcurrency(
         sourceCursors,
         MAX_RPC_CONCURRENCY,
-        source =>
-          readSourcePage({
+        source => {
+          const target = batch.find(candidate => candidate.executionNodeId === source.executionNodeId);
+          if (!target) throw new Error('scheduled_task_cursor_stale');
+          return readSourcePage({
             source,
+            target,
             agentInstanceId,
             states,
             limit: sourceLimit,
@@ -187,7 +168,8 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
             signal: options.signal,
             remoteClient,
             assertCurrent,
-          }),
+          });
+        },
       );
       options.signal?.throwIfAborted();
       assertCurrent();
@@ -199,13 +181,8 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
       const hasAnotherBatch = nextOffset < targets.length;
       const hasMoreAfter = !batchDone || hasAnotherBatch;
       const nextCursor = hasMoreAfter
-        ? encodeAggregateCursor({
-          version: 1,
-          agentInstanceId,
-          states,
-          ...(executionNodeIds ? { executionNodeIds } : {}),
-          directorySignature,
-          targetOffset: nextOffset,
+        ? pageController.encodePage({
+          sourceIndex: nextOffset,
           sources: batchDone ? [] : reads.map(read => read.cursor),
         })
         : undefined;
@@ -277,7 +254,8 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
 };
 
 async function readSourcePage(input: {
-  source: SourceCursor;
+  source: ScheduledTaskAggregateCursorSource;
+  target: Target;
   agentInstanceId: string;
   states: ScheduledTaskState[];
   limit: number;
@@ -287,17 +265,18 @@ async function readSourcePage(input: {
   assertCurrent: () => void;
 }): Promise<SourceReadResult> {
   const { source, signal } = input;
+  const { target } = input;
   signal?.throwIfAborted();
   input.assertCurrent();
   if (source.done) {
     return {
       cursor: source,
       items: [],
-      source: provenance(source.executionNodeId, source.path === 'offline' ? 'offline' : 'online', false),
-      partial: source.path === 'offline',
+      source: provenance(source.executionNodeId, target.path === 'offline' ? 'offline' : 'online', false),
+      partial: target.path === 'offline',
     };
   }
-  if (source.path === 'local') {
+  if (target.path === 'local') {
     const page = await window.service.agentInstance.listScheduledTasksForAgent(input.agentInstanceId, {
       states: input.states,
       executionNodeIds: [source.executionNodeId],
@@ -317,7 +296,6 @@ async function readSourcePage(input: {
       items: page.items,
       cursor: {
         executionNodeId: source.executionNodeId,
-        path: 'local',
         done: !page.hasMoreAfter,
         ...(page.nextCursor ? { cursor: page.nextCursor } : {}),
       },
@@ -325,7 +303,7 @@ async function readSourcePage(input: {
       partial: page.partial,
     };
   }
-  if (source.path === 'offline') {
+  if (target.path === 'offline') {
     return {
       items: [],
       cursor: { ...source, done: true },
@@ -333,7 +311,7 @@ async function readSourcePage(input: {
       partial: true,
     };
   }
-  if (source.path === 'live') {
+  if (target.path === 'live') {
     let page: ScheduledTaskPage;
     try {
       page = await (await input.remoteClient(source.executionNodeId)).listScheduledTasksForAgent(
@@ -369,7 +347,6 @@ async function readSourcePage(input: {
       items: page.items,
       cursor: {
         executionNodeId: source.executionNodeId,
-        path: 'live',
         done: !page.hasMoreAfter,
         ...(page.nextCursor ? { cursor: page.nextCursor } : {}),
       },
@@ -445,20 +422,6 @@ function normalizedPageBytes(value: number | undefined): number {
   return maxBytes;
 }
 
-function normalizedStates(states: readonly ScheduledTaskState[] | undefined): ScheduledTaskState[] {
-  const normalized: ScheduledTaskState[] = states?.length ? [...states] : ['active', 'paused'];
-  normalized.sort();
-  const allowed = new Set<ScheduledTaskState>(['active', 'paused', 'completed', 'cancelled', 'archived']);
-  if (
-    normalized.length > allowed.size ||
-    new Set(normalized).size !== normalized.length ||
-    normalized.some(state => !allowed.has(state))
-  ) {
-    throw new Error('scheduled_task_invalid_states');
-  }
-  return normalized;
-}
-
 function assertSourceItems(
   items: readonly ScheduledTask[],
   expected: {
@@ -521,72 +484,10 @@ function provenance(
   return { executionNodeId, state, fromCache };
 }
 
-function encodeAggregateCursor(cursor: AggregateCursor): string {
-  const bytes = new TextEncoder().encode(JSON.stringify(cursor));
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
-  if (encoded.length > MAX_CURSOR_CHARACTERS) throw new Error('scheduled_task_cursor_too_large');
-  return encoded;
-}
-
-function decodeAggregateCursor(
-  value: string,
-  expected: {
-    agentInstanceId: string;
-    states: ScheduledTaskState[];
-    executionNodeIds?: string[];
-    directorySignature: string;
-    targetCount: number;
-  },
-): AggregateCursor {
-  if (value.length < 1 || value.length > MAX_CURSOR_CHARACTERS || !BASE64URL_PATTERN.test(value)) {
-    throw new Error('scheduled_task_invalid_cursor');
-  }
-  let parsed: unknown;
-  try {
-    const padded = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
-    const binary = atob(padded);
-    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-    parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
-  } catch {
-    throw new Error('scheduled_task_invalid_cursor');
-  }
-  if (!isAggregateCursor(parsed)) throw new Error('scheduled_task_invalid_cursor');
-  if (
-    parsed.agentInstanceId !== expected.agentInstanceId ||
-    parsed.directorySignature !== expected.directorySignature ||
-    !sameStrings(parsed.states, expected.states) ||
-    !sameStrings(parsed.executionNodeIds, expected.executionNodeIds) ||
-    parsed.targetOffset > expected.targetCount
-  ) throw new Error('scheduled_task_cursor_stale');
-  return parsed;
-}
-
-function isAggregateCursor(value: unknown): value is AggregateCursor {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const cursor = value as Record<string, unknown>;
-  if (Object.keys(cursor).some(key => !['version', 'agentInstanceId', 'states', 'executionNodeIds', 'directorySignature', 'targetOffset', 'sources'].includes(key))) return false;
-  return cursor.version === 1 &&
-    typeof cursor.agentInstanceId === 'string' && cursor.agentInstanceId.length > 0 && cursor.agentInstanceId.length <= 512 &&
-    Array.isArray(cursor.states) && cursor.states.every(state => typeof state === 'string') &&
-    (cursor.executionNodeIds === undefined || (Array.isArray(cursor.executionNodeIds) && cursor.executionNodeIds.every(nodeId => typeof nodeId === 'string'))) &&
-    typeof cursor.directorySignature === 'string' && cursor.directorySignature.length <= 16_000 &&
-    Number.isSafeInteger(cursor.targetOffset) && (cursor.targetOffset as number) >= 0 &&
-    Array.isArray(cursor.sources) && cursor.sources.length <= MAX_SOURCE_BATCH && cursor.sources.every(isSourceCursor);
-}
-
-function isSourceCursor(value: unknown): value is SourceCursor {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const cursor = value as Record<string, unknown>;
-  if (Object.keys(cursor).some(key => !['executionNodeId', 'path', 'done', 'cursor'].includes(key))) return false;
-  return typeof cursor.executionNodeId === 'string' && cursor.executionNodeId.length > 0 && cursor.executionNodeId.length <= 512 &&
-    ['local', 'live', 'offline'].includes(cursor.path as string) &&
-    typeof cursor.done === 'boolean' &&
-    (cursor.cursor === undefined || (typeof cursor.cursor === 'string' && cursor.cursor.length <= 4096));
-}
-
-function validateSourceCursors(sources: SourceCursor[], targets: Target[]): SourceCursor[] {
+function validateSourceCursors(
+  sources: readonly ScheduledTaskAggregateCursorSource[],
+  targets: readonly Target[],
+): ScheduledTaskAggregateCursorSource[] {
   if (sources.length !== targets.length) throw new Error('scheduled_task_cursor_stale');
   for (let index = 0; index < targets.length; index += 1) {
     const source = sources[index];
@@ -594,15 +495,8 @@ function validateSourceCursors(sources: SourceCursor[], targets: Target[]): Sour
     if (!source || !target || source.executionNodeId !== target.executionNodeId) {
       throw new Error('scheduled_task_cursor_stale');
     }
-    if (source.path === 'live' && target.path !== 'live') throw new Error('scheduled_task_cursor_stale');
-    if (source.path === 'local' && target.path !== 'local') throw new Error('scheduled_task_cursor_stale');
   }
-  return sources;
-}
-
-function sameStrings(left: readonly string[] | undefined, right: readonly string[] | undefined): boolean {
-  if (left === undefined || right === undefined) return left === right;
-  return left.length === right.length && left.every((value, index) => value === right[index]);
+  return [...sources];
 }
 
 async function mapWithConcurrency<Input, Output>(

@@ -985,18 +985,3 @@ export function stopHeartbeat(agentId: string): void {
   cancelEntry(`__heartbeat:${agentId}`);
   heartbeatStates.delete(agentId);
 }
-
-export function getActiveHeartbeatEntries(): Array<{
-  agentId: string;
-  config: AgentHeartbeatConfig;
-  nextWakeAtISO?: string;
-  createdBy?: string;
-  lastRunAtISO?: string;
-  runCount: number;
-}> {
-  return [...heartbeatStates.entries()].map(([agentId, state]) => ({
-    agentId,
-    config: { enabled: true, intervalSeconds: 0, message: '' },
-    ...state,
-  }));
-}

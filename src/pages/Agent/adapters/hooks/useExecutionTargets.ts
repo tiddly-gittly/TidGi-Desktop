@@ -2,7 +2,7 @@ import type { AgentExecutionTarget, SetExecutionTargetOptions } from '@memeloop/
 import type {
   AgentAttachmentInput,
   AgentRuntimeView,
-  ChatMessage,
+  ConversationMessageListProjection,
   Device,
   RemoteAgentExecutionCoordinator,
   RemoteAgentExecutionSnapshot,
@@ -18,7 +18,7 @@ const LOCAL_EXECUTION_TARGET = Object.freeze({ kind: 'local' } as const satisfie
 
 interface UseExecutionTargetsOptions {
   agent: AgentRuntimeView | null;
-  orderedMessages: readonly ChatMessage[];
+  orderedMessages: readonly ConversationMessageListProjection[];
 }
 
 interface SendExecutionMessageOptions {
@@ -86,6 +86,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
         };
       } catch (error) {
         if (!disposed) setDiscoveryError(error instanceof Error ? error : new Error(String(error)));
+        void window.service.native.log('error', 'useExecutionTargets: device discovery failed', { error });
       }
     })();
 
@@ -97,8 +98,12 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
       if (ownedCoordinator && activeAgentId) {
         try {
           ownedCoordinator.stopConversation(activeAgentId);
-        } catch {
+        } catch (error) {
           // Disposal below is the final fence.
+          void window.service.native.log('warn', 'useExecutionTargets: failed to stop conversation during disposal', {
+            agentID: activeAgentId,
+            error,
+          });
         }
       }
       void ownedCoordinator?.dispose();
@@ -117,8 +122,12 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
     return () => {
       try {
         coordinator.stopConversation(agent.id);
-      } catch {
+      } catch (error) {
         // A concurrent hook disposal may already own the final fence.
+        void window.service.native.log('warn', 'useExecutionTargets: failed to stop conversation during agent switch cleanup', {
+          agentID: agent.id,
+          error,
+        });
       }
     };
   }, [agent?.id, coordinator]);
