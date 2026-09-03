@@ -30,6 +30,7 @@
     "CurrentAgent": "Showing logs for agent: {{agentId}}",
     "Description": "Debug logs for external API calls made by this agent. Enable 'External API Debug' in preferences to start logging.",
     "ErrorDetails": "Error Details",
+    "Loading": "Loading API logs…",
     "NoLogs": "No API logs found for this agent",
     "NoResponse": "No response",
     "RequestDetails": "Request Details",
@@ -70,6 +71,10 @@
   },
   "Chat": {
     "Cancel": "Cancel",
+    "Attachment": {
+      "RemoveFile": "Remove {{name}}",
+      "RemoveTiddler": "Remove {{title}} from {{workspaceName}}"
+    },
     "GenericError": "The agent could not complete this request. Please try again.",
     "OperationError": "The chat operation failed. Please try again.",
     "ExecutionTarget": {
@@ -381,6 +386,14 @@
     "FailedToDeleteProvider": "Failed to delete provider {{providerName}}",
     "FailedToRemoveModel": "Failed to remove model",
     "FailedToRefreshOfficialModels": "Failed to refresh models",
+    "FailedToLoadAIConfig": "Failed to load AI model settings",
+    "FailedToUpdateAIConfig": "Failed to save AI model settings",
+    "FailedToClearAIConfig": "Failed to clear the selected AI model",
+    "FailedToLoadProviderCatalog": "Failed to load the provider model catalog",
+    "FailedToSaveModelParameters": "Failed to save model parameters",
+    "FailedToLoadFrameworkConfig": "Failed to load agent framework settings",
+    "FailedToUpdateFrameworkConfig": "Failed to save agent framework settings",
+    "FailedToClearFrameworkConfig": "Failed to clear agent framework settings",
     "FailedToSaveSettings": "Failed to save settings",
     "FailedToUpdateModel": "Failed to update model",
     "FailedToUpdateProviderStatus": "Failed to update provider status",
@@ -397,9 +410,11 @@
     "ModelFeatures": "Model Features",
     "ModelName": "Model Name",
     "ModelNameRequired": "Model name is required",
+    "ModelIdInvalid": "Model ID must not contain surrounding whitespace or control characters and must be no more than {{maxBytes}} UTF-8 bytes.",
     "LogicalModelId": "Logical model ID",
     "WireModelId": "Provider model ID",
     "WireModelIdDescription": "The exact model identifier sent to the provider.",
+    "EditModel": "Edit Model",
     "APIMode": "API mode",
     "ChatCompletionsAPIMode": "Chat Completions",
     "ResponsesAPIMode": "Responses",
@@ -456,6 +471,7 @@
     "TemperatureDescription": "Lower values produce more deterministic and focused responses, while higher values yield more diverse and creative responses.",
     "TopP": "Top P",
     "TopPDescription": "Control the randomness of responses. Lower values make responses more deterministic, while higher values allow for greater variability.",
+    "TokensUnit": "tokens",
     "WorkflowFile": "Workflow File",
     "WorkflowFileHelp": "Path to the ComfyUI workflow JSON file",
     "WorkflowFilePath": "Workflow File Path"
@@ -514,7 +530,9 @@
     "ShowEditor": "Show editor",
     "ShowPreview": "Show preview",
     "Tree": "Tree View",
-    "ValidationErrors": "Validation Errors"
+    "ValidationErrors": "Validation Errors",
+    "NoPrompts": "No prompts configured",
+    "Prompt": "Prompt"
   },
   "PromptConfig": {
     "AddItem": "Add project",
@@ -532,7 +550,9 @@
       "HelperText": "Press Enter to add a tag after input, or select from predefined tags.",
       "NoOptions": "No optional tags",
       "Placeholder": "Input tags..."
-    }
+    },
+    "NoneOption": "None",
+    "ConfigurationSections": "Configuration sections"
   },
   "Schema": {
     "AlarmClock": {

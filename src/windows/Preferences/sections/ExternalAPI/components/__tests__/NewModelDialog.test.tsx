@@ -85,4 +85,30 @@ describe('NewModelDialog', () => {
     expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('');
     expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ChatCompletionsAPIMode');
   });
+
+  it('shows a required error instead of silently ignoring an empty logical id', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
+
+    await user.click(screen.getByTestId('save-new-model-button'));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText('Preference.ModelNameRequired')).toBeVisible();
+    expect(screen.getByTestId('new-model-name-input')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows a visible error for invalid wire identifiers', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
+
+    await user.type(screen.getByTestId('new-model-name-input'), '模型2');
+    await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型 2');
+    await user.click(screen.getByTestId('save-new-model-button'));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText('Preference.ModelIdInvalid')).toBeVisible();
+    expect(screen.getByLabelText('Preference.WireModelId')).toHaveAttribute('aria-invalid', 'true');
+  });
 });

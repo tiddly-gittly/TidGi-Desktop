@@ -12,7 +12,7 @@ import { localizeAgentRunError } from '@/pages/Agent/adapters/localizeAgentRunEr
 import { ScheduledWakeupEditor } from '@/pages/Agent/TabContent/TabTypes/ScheduledWakeupEditor';
 import { darkTheme, lightTheme } from '@/services/theme/defaultTheme';
 import { AgentChatConfigError, type AgentChatErrorPresentation, AgentChatShell, AgentSessionProvider, useAgentSession, useAgentSessionChatAdapter } from '@memeloop/react-ui/agent';
-import { PromptTree } from '@memeloop/react-ui/agent/prompts';
+import { groupGeneratedToolPrompts, PromptTree, type PromptTreeLabels } from '@memeloop/react-ui/agent/prompts';
 import {
   ConversationTimelineWindowController,
   DEFAULT_RESIDENT_CONTENT_BYTE_LIMIT,
@@ -22,13 +22,25 @@ import {
   type WebSelectedAttachmentBatch,
 } from '@memeloop/react-ui/chat';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { type AgentDefinition, type AgentModelConfig, AgentSessionController, type AgentSessionTarget, type ChatMessage, extractAgentRunError } from 'memeloop';
+import {
+  type AgentDefinition,
+  type AgentModelConfig,
+  AgentSessionController,
+  type AgentSessionTarget,
+  type ConversationMessageListProjection,
+  extractAgentRunError,
+  type ModelCatalog,
+  type ModelCatalogModel,
+  type ModelCatalogProvider,
+  type ProviderAccountConfig,
+  type ProviderModelRoute,
+} from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { I18nextProvider } from 'react-i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import type { Widget as TiddlyWikiWidget } from 'tiddlywiki';
 import { type AttachmentSelection, clearAttachmentSelectionAtRevision, EMPTY_ATTACHMENTS, nextAttachmentSelection } from './attachmentSelection';
 import { resolveTiddlyWikiDrop } from './dropPayload';
-import { createDesktopWikiAgentHostAdapter, type WikiAgentDefinitionOption, type WikiAgentHostAdapter, type WikiAgentModelOption } from './hostAdapter';
+import { createDesktopWikiAgentHostAdapter, WIKI_AGENT_HOST_LIMITS, type WikiAgentHostAdapter } from './hostAdapter';
 import { formatTimelineMessage, getWikiAgentLabels, resolveWikiAgentLocale } from './labels';
 import { wikiAgentI18n } from './localization';
 import { resolveWikiAgentColorScheme, resolveWikiAgentDirection, type WikiAgentColorScheme } from './presentation';
@@ -46,6 +58,55 @@ interface MemeLoopAgentChatProps {
   language?: string;
   mode?: 'full' | 'sidebar';
   parentWidget?: TiddlyWikiWidget;
+}
+
+/**
+ * View-only model option. The host boundary exposes canonical Core records;
+ * this projection adds only the metadata needed to render a selector.
+ */
+interface WikiAgentModelOption {
+  selection: AgentModelConfig;
+  account: ProviderAccountConfig;
+  route: ProviderModelRoute;
+  provider?: ModelCatalogProvider;
+  catalogModel?: ModelCatalogModel;
+  label: string;
+}
+
+function projectModelOptions(
+  accounts: readonly ProviderAccountConfig[],
+  catalog: ModelCatalog,
+  effectiveSelection: AgentModelConfig | undefined,
+): WikiAgentModelOption[] {
+  const seen = new Set<string>();
+  const result: WikiAgentModelOption[] = [];
+  for (const account of accounts) {
+    if (account.enabled === false) continue;
+    for (const route of account.models) {
+      const key = JSON.stringify([account.providerId, route.modelId]);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const provider = account.catalogProvider ?? catalog.providers.find(candidate => candidate.id === account.providerId);
+      const catalogModel = provider?.models.find(model => model.id === route.modelId);
+      const selection = effectiveSelection?.providerId === account.providerId && effectiveSelection.modelId === route.modelId
+        ? effectiveSelection
+        : {
+          providerId: account.providerId,
+          modelId: route.modelId,
+          ...(effectiveSelection?.parameters === undefined ? {} : { parameters: effectiveSelection.parameters }),
+        };
+      result.push({
+        selection,
+        account,
+        route,
+        ...(provider === undefined ? {} : { provider }),
+        ...(catalogModel === undefined ? {} : { catalogModel }),
+        label: `${provider?.name ?? account.providerId} · ${catalogModel?.name ?? route.modelId}`,
+      });
+      if (result.length === WIKI_AGENT_HOST_LIMITS.modelOptions) return result;
+    }
+  }
+  return result;
 }
 
 function useWikiAgentTarget(
@@ -103,7 +164,7 @@ function WikiAgentSelectors({
   labels: ReturnType<typeof getWikiAgentLabels>;
   onAgentChange: (agentId: string) => void;
 }) {
-  const [definitions, setDefinitions] = useState<readonly WikiAgentDefinitionOption[]>([]);
+  const [definitions, setDefinitions] = useState<readonly AgentDefinition[]>([]);
   const [models, setModels] = useState<readonly WikiAgentModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState<AgentModelConfig>();
   const [loading, setLoading] = useState(true);
@@ -116,12 +177,14 @@ function WikiAgentSelectors({
     setOperationError(undefined);
     void Promise.all([
       hostAdapter.listAgentDefinitions({ signal: controller.signal }),
-      hostAdapter.getModelSelection(agentId, currentDefinitionId, { signal: controller.signal }),
-    ]).then(([nextDefinitions, modelSelection]) => {
+      hostAdapter.getModelConfig(agentId, currentDefinitionId, { signal: controller.signal }),
+      hostAdapter.listProviderAccounts({ signal: controller.signal }),
+      hostAdapter.getProviderCatalog({ signal: controller.signal }),
+    ]).then(([nextDefinitions, selectedModel, accounts, catalog]) => {
       if (controller.signal.aborted) return;
       setDefinitions(nextDefinitions);
-      setModels(modelSelection.options);
-      setSelectedModel(modelSelection.selected);
+      setModels(projectModelOptions(accounts, catalog, selectedModel));
+      setSelectedModel(selectedModel);
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       setDefinitions([]);
@@ -184,16 +247,16 @@ function WikiAgentSelectors({
         <select
           aria-label={labels.selectAgent}
           disabled={disabled || loading || definitions.length === 0}
-          value={definitions.some(option => option.definition.id === currentDefinitionId) ? currentDefinitionId : ''}
+          value={definitions.some(definition => definition.id === currentDefinitionId) ? currentDefinitionId : ''}
           onChange={event => {
-            const option = definitions.find(candidate => candidate.definition.id === event.target.value);
-            if (option) switchAgent(option.definition);
+            const definition = definitions.find(candidate => candidate.id === event.target.value);
+            if (definition) switchAgent(definition);
           }}
         >
           <option value='' disabled>{labels.noOptions}</option>
-          {definitions.map(option => (
-            <option key={option.definition.id} value={option.definition.id} title={option.definition.description}>
-              {option.label}
+          {definitions.map(definition => (
+            <option key={definition.id} value={definition.id} title={definition.description}>
+              {definition.name || definition.id}
             </option>
           ))}
         </select>
@@ -242,6 +305,7 @@ function WikiPromptPreview({
   hostAdapter: WikiAgentHostAdapter;
   labels: ReturnType<typeof getWikiAgentLabels>;
 }) {
+  const { t } = useTranslation('agent');
   const aui = useAui();
   const controller = useMemo(createDesktopPromptPreviewController, [agentId]);
   const [state, setState] = useState(() => controller.getState());
@@ -303,6 +367,17 @@ function WikiPromptPreview({
   }, [agentDefinitionId, agentId, aui, controller, hostAdapter]);
 
   const audit = state.result?.audit;
+  const promptTreePrompts = useMemo(
+    () => groupGeneratedToolPrompts(state.result?.processedPrompts ?? [], t('Prompt.GeneratedTools')),
+    [state.result?.processedPrompts, t],
+  );
+  const promptTreeLabels: Partial<PromptTreeLabels> = {
+    empty: t('Prompt.NoPrompts'),
+    prompt: t('Prompt.Prompt'),
+    role: role => t(`Prompt.Role.${role ?? ''}`, { defaultValue: role ?? '' }),
+    expand: t('PromptConfig.Expand'),
+    collapse: t('PromptConfig.Collapse'),
+  };
 
   return (
     <>
@@ -337,7 +412,7 @@ function WikiPromptPreview({
             {!state.loading && !previewError && !state.result && <p>{labels.previewUnavailable}</p>}
             {state.result && (
               <div className='memeloop-tw-chat__preview-content'>
-                <PromptTree prompts={state.result.processedPrompts} />
+                <PromptTree prompts={promptTreePrompts} labels={promptTreeLabels} />
                 {audit && (
                   <section className='memeloop-tw-chat__preview-context' aria-label={labels.previewContext}>
                     <h3>{labels.previewContext}</h3>
@@ -348,7 +423,7 @@ function WikiPromptPreview({
                     </p>
                     {audit.initialPage.items.map(item => (
                       <article className='memeloop-tw-chat__preview-entry' key={item.entryId}>
-                        <strong>{item.role}</strong>
+                        <strong>{t(`Prompt.Role.${item.role}`, { defaultValue: item.role })}</strong>
                         <p>{item.preview || labels.noDetails}</p>
                       </article>
                     ))}
@@ -485,7 +560,7 @@ function BoundMemeLoopWikiChat({
     (timestamp: number) => timelineTimestampFormatter.format(new Date(timestamp)),
     [timelineTimestampFormatter],
   );
-  const resolveErrorPresentation = useCallback((value: Error | ChatMessage): AgentChatErrorPresentation | null => {
+  const resolveErrorPresentation = useCallback((value: Error | ConversationMessageListProjection): AgentChatErrorPresentation | null => {
     const runError = value instanceof Error
       ? extractAgentRunError(value)
       : extractAgentRunError(value.metadata?.agentRunError);

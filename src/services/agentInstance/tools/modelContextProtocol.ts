@@ -11,7 +11,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
-import type { ToolExecutionResult } from 'memeloop';
+import { assertPortableLlmJsonValue, type PortableLlmJsonValue, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
 
@@ -77,6 +77,25 @@ interface MCPClientState {
   /** Whether the client is connected */
   connected: boolean;
   timeoutMs: number;
+}
+
+function normalizeMCPInputSchema(value: unknown): Record<string, PortableLlmJsonValue> {
+  const schema = value ?? { type: 'object', additionalProperties: true };
+  assertPortableLlmJsonValue(schema);
+  if (schema === null || Array.isArray(schema) || typeof schema !== 'object') {
+    throw new TypeError('MCP tool input schema must be a JSON object');
+  }
+  return schema;
+}
+
+export function createMCPModelToolDefinitions(
+  tools: MCPClientState['tools'],
+): Array<{ name: string; description?: string; inputSchema: Record<string, PortableLlmJsonValue> }> {
+  return tools.map(tool => ({
+    name: `mcp-${tool.name}`,
+    ...(tool.description === undefined ? {} : { description: tool.description }),
+    inputSchema: normalizeMCPInputSchema(tool.inputSchema),
+  }));
 }
 
 const clientStates = new Map<string, MCPClientState>();
@@ -204,7 +223,7 @@ export const mcpDefinition = defineDesktopTool({
   configSchema: ModelContextProtocolParameterSchema,
   // No static llmToolSchemas — MCP tools are dynamic
 
-  async onProcessPrompts({ config, agentFrameworkContext, injectContent }) {
+  async onProcessPrompts({ config, agentFrameworkContext, injectContent, registerModelTool }) {
     const agentId = agentFrameworkContext?.agent?.id;
     if (!agentId) return;
 
@@ -218,26 +237,20 @@ export const mcpDefinition = defineDesktopTool({
 
     if (!state?.tools.length) return;
 
-    // Build tool descriptions for prompt injection
-    const toolDescriptions = state.tools.map((tool) => {
-      const schemaString = tool.inputSchema ? JSON.stringify(tool.inputSchema, null, 2) : '{}';
-      return `Tool: mcp-${tool.name}\nDescription: ${tool.description ?? 'No description'}\nParameters schema:\n${schemaString}`;
-    }).join('\n\n');
-
-    const content = `MCP Server Tools (use <tool_use name="mcp-TOOLNAME">{params}</tool_use> to call):\n\n${toolDescriptions}`;
+    for (const tool of createMCPModelToolDefinitions(state.tools)) registerModelTool(tool);
 
     const pos = config.toolListPosition;
     if (pos?.targetId) {
       injectContent({
         targetId: pos.targetId,
         position: pos.position || 'after',
-        content,
+        content: `MCP native tools available: ${state.tools.map(tool => `mcp-${tool.name}`).join(', ')}`,
         caption: 'MCP Tools',
       });
     }
   },
 
-  async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext, hooks, requestId }) {
+  async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext, hooks, requestId, yieldToSelf }) {
     if (!toolCall || !toolCall.found || !toolCall.toolId.startsWith('mcp-')) return;
 
     const agentId = agentFrameworkContext.agent.id;
@@ -262,8 +275,6 @@ export const mcpDefinition = defineDesktopTool({
       toolInfo: { toolId: toolCall.toolId, parameters: toolCall.parameters ?? {}, originalText: toolCall.originalText },
       requestId,
     });
-
-    // Continue processing
-    // (yieldToSelf would be called by the caller if needed)
+    yieldToSelf();
   },
 });

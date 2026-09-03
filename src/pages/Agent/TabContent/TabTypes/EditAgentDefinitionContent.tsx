@@ -1,4 +1,5 @@
 import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
+import type { PromptEditorLabels } from '@memeloop/react-ui/web';
 import { Box, Button, CircularProgress, Container, Divider, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
@@ -8,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { DesktopAgentChatTab } from '../../adapters';
 import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
-import { applyEditedAgentFrameworkConfig, createEditableAgentFrameworkConfig } from './agentDefinitionFrameworkConfig';
+import { createEditableAgentFrameworkConfig } from './agentDefinitionFrameworkConfig';
 import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
 import { ScheduledWakeupEditor } from './ScheduledWakeupEditor';
 
@@ -58,6 +59,15 @@ const ActionBar = styled(Box)`
 
 export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
+  const promptEditorLabels: Partial<PromptEditorLabels> = {
+    tagsPlaceholder: t('PromptConfig.Tags.Placeholder'),
+    tagsHelperText: t('PromptConfig.Tags.HelperText'),
+    noneOption: t('PromptConfig.NoneOption'),
+    configurationSections: t('PromptConfig.ConfigurationSections'),
+    arrayItem: (title, index) => title ? `${title} ${index + 1}` : t('PromptConfig.ItemIndex', { index: index + 1 }),
+    expandArrayItem: t('PromptConfig.Expand'),
+    collapseArrayItem: t('PromptConfig.Collapse'),
+  };
 
   const [agentDefinition, setAgentDefinition] = useState<AgentDefinition | null>(null);
   const [agentName, setAgentName] = useState('');
@@ -243,7 +253,10 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
       previous => {
         if (!previous) return null;
 
-        return applyEditedAgentFrameworkConfig(previous, formData as AgentFrameworkConfig);
+        return {
+          ...previous,
+          agentFrameworkConfig: formData as AgentFrameworkConfig,
+        };
       },
     );
 
@@ -391,6 +404,10 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
                   schema={promptSchema}
                   formData={editableAgentFrameworkConfig}
                   onChange={handlePromptConfigChange}
+                  noSchemaMessage={t('Prompt.SchemaNotProvided')}
+                  noSchemaDescription={t('Prompt.SchemaNotProvidedDescription')}
+                  validationErrorMessage={t('Prompt.ValidationErrors')}
+                  promptEditorLabels={promptEditorLabels}
                 />
               </Box>
             )

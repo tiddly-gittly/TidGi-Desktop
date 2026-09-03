@@ -325,6 +325,7 @@
     "SaveErrorPrefix": "保存失败"
   },
   "Error": {
+    "Generic": "出了点问题。",
     "ALreadyExistErrorDescription": "当前路径已有文件夹，新的知识库无法在此新建。",
     "AlreadyExistError": "该处已被文件夹占用",
     "CopyWikiTemplateError": "E-3 复制知识库模板错误",
@@ -662,10 +663,12 @@
     "NotificationsDetail": "设置通知暂停时间",
     "NotificationsDisableSchedule": "按时间自动禁用通知：",
     "NotificationsMuteAudio": "暂停通知时也同时静音工作区",
+    "TimeFrom": "开始",
+    "TimeTo": "结束",
+    "ClearSearch": "清除搜索",
     "UnreadCountBadge": "在应用图标上显示未读数量徽章",
     "OpenExternalAPISettings": "打开 AI API 设置",
     "OpenAtLogin": "开机自启",
-    "OpenAtLoginMinimized": "开机自启并最小化(MacOS)",
     "OpenLogFolder": "打开Log文件夹",
     "OpenLogFolderDetail": "上报问题时，请打开日期最新的一个 .log 文件，将其内容发送给开发者，或黏贴到 pastebin.com 后将 URL 黏贴到 Github Issue 里",
     "OpenMetaDataFolder": "打开太记工作区元信息文件夹",

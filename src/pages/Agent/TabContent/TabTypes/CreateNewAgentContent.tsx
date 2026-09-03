@@ -1,4 +1,5 @@
 import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
+import type { PromptEditorLabels } from '@memeloop/react-ui/web';
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
@@ -53,6 +54,15 @@ const STEPS = ['setupAgent', 'editPrompt', 'immediateUse'] as const;
 
 export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
+  const promptEditorLabels: Partial<PromptEditorLabels> = {
+    tagsPlaceholder: t('PromptConfig.Tags.Placeholder'),
+    tagsHelperText: t('PromptConfig.Tags.HelperText'),
+    noneOption: t('PromptConfig.NoneOption'),
+    configurationSections: t('PromptConfig.ConfigurationSections'),
+    arrayItem: (title, index) => title ? `${title} ${index + 1}` : t('PromptConfig.ItemIndex', { index: index + 1 }),
+    expandArrayItem: t('PromptConfig.Expand'),
+    collapseArrayItem: t('PromptConfig.Collapse'),
+  };
   const { updateTabData, addTab, closeTab } = useTabStore();
 
   const [currentStep, setCurrentStep] = useState(tab.currentStep ?? 0);
@@ -437,6 +447,10 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
                       });
                     }}
                     loading={false}
+                    noSchemaMessage={t('Prompt.SchemaNotProvided')}
+                    noSchemaDescription={t('Prompt.SchemaNotProvidedDescription')}
+                    validationErrorMessage={t('Prompt.ValidationErrors')}
+                    promptEditorLabels={promptEditorLabels}
                   />
                 </Box>
               )

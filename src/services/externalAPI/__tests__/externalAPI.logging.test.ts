@@ -158,6 +158,18 @@ describe('ExternalAPIService canonical provider persistence and logging', () => 
     expect(await service.isAIAvailable()).toBe(false);
   });
 
+  it('clears assignments when a configured account is disabled', async () => {
+    await service.updateDefaultAIConfig({ free: { providerId, modelId: route.modelId } });
+    expect(await service.getAIConfig()).toMatchObject({
+      free: { providerId, modelId: route.modelId },
+    });
+
+    await service.setProviderAccount({ ...account, enabled: false });
+
+    expect(await service.getAIConfig()).not.toHaveProperty('free');
+    expect(await service.isAIAvailable()).toBe(false);
+  });
+
   it('aborts a portable request that exceeds its timeout and records cancellation', async () => {
     const provider: ILLMProvider = {
       name: providerId,

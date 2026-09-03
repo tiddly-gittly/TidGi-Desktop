@@ -65,7 +65,11 @@ describe('MemeLoop TiddlyWiki plugin integration contract', () => {
     expect(host).toContain('export interface WikiAgentHostAdapter');
     expect(host).toContain('definition: AgentDefinition');
     expect(host).toContain('selection: AgentModelConfig');
-    expect(host).toContain('route: ProviderModelRoute');
+    expect(host).toContain('getModelConfig');
+    expect(host).toContain('listProviderAccounts');
+    expect(host).toContain('getProviderCatalog');
+    expect(host).not.toContain('WikiAgentModelOption');
+    expect(host).not.toContain('getModelSelection');
     expect(host).toContain('Promise<AgentSessionTarget>');
     expect(source).toContain('activeExecutionTarget: targets.activeExecutionTarget');
     expect(host).toContain('MAX_AGENT_DEFINITIONS = 128');

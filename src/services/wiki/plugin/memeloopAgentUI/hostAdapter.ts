@@ -7,34 +7,13 @@ import type {
   AgentRunErrorSettingTarget,
   AgentSessionTarget,
   ModelCatalog,
-  ModelCatalogModel,
-  ModelCatalogProvider,
   ProviderAccountConfig,
-  ProviderModelRoute,
 } from 'memeloop';
 
 import { resolveWikiAgentId } from './agentDiscovery';
 
 const MAX_AGENT_DEFINITIONS = 128;
 const MAX_MODEL_OPTIONS = 512;
-
-export interface WikiAgentDefinitionOption {
-  definition: AgentDefinition;
-  label: string;
-}
-
-export interface WikiAgentModelOption {
-  selection: AgentModelConfig;
-  route: ProviderModelRoute;
-  provider?: ModelCatalogProvider;
-  catalogModel?: ModelCatalogModel;
-  label: string;
-}
-
-export interface WikiAgentModelSelection {
-  selected?: AgentModelConfig;
-  options: readonly WikiAgentModelOption[];
-}
 
 /**
  * Narrow host boundary used by the example plugin. The React view does not
@@ -44,11 +23,13 @@ export interface WikiAgentModelSelection {
 export interface WikiAgentHostAdapter {
   isReady(): boolean;
   resolveAgentTarget(requestedAgentId: string | undefined, options: { signal: AbortSignal }): Promise<AgentSessionTarget>;
-  listAgentDefinitions(options: { signal: AbortSignal }): Promise<readonly WikiAgentDefinitionOption[]>;
+  listAgentDefinitions(options: { signal: AbortSignal }): Promise<readonly AgentDefinition[]>;
   createAgent(definition: AgentDefinition, options: { signal: AbortSignal }): ReturnType<AgentInstanceClient['createAgent']>;
   getAgentDefinition(definitionId: string, options: { signal: AbortSignal }): Promise<AgentDefinition | undefined>;
   getAgentFrameworkConfig(agentId: string, definitionId: string, options: { signal: AbortSignal }): Promise<AgentFrameworkConfig | undefined>;
-  getModelSelection(agentId: string, definitionId: string, options: { signal: AbortSignal }): Promise<WikiAgentModelSelection>;
+  getModelConfig(agentId: string, definitionId: string, options: { signal: AbortSignal }): Promise<AgentModelConfig | undefined>;
+  listProviderAccounts(options: { signal: AbortSignal }): Promise<readonly ProviderAccountConfig[]>;
+  getProviderCatalog(options: { signal: AbortSignal }): Promise<ModelCatalog>;
   selectModel(agentId: string, selection: AgentModelConfig, options: { signal: AbortSignal }): Promise<void>;
   /** Exact Core target when available; hosts without field focus may degrade to its section. */
   openSettings(target?: AgentRunErrorSettingTarget): Promise<void>;
@@ -81,7 +62,7 @@ function assertPluginHostReady(): void {
   assertReady();
   const observables = typeof window === 'undefined'
     ? undefined
-    : window.observables as unknown as Record<string, unknown> | undefined;
+    : window.observables;
   if (!observables?.agentInstance || !observables.deviceNetwork || !observables.externalAPI) {
     throw new WikiAgentHostUnavailableError();
   }
@@ -91,66 +72,14 @@ function throwIfAborted(signal: AbortSignal): void {
   signal.throwIfAborted();
 }
 
-function boundedDefinitions(definitions: readonly AgentDefinition[]): WikiAgentDefinitionOption[] {
+function boundedDefinitions(definitions: readonly AgentDefinition[]): AgentDefinition[] {
   const seen = new Set<string>();
-  const result: WikiAgentDefinitionOption[] = [];
+  const result: AgentDefinition[] = [];
   for (const definition of definitions) {
     if (!definition.id || seen.has(definition.id)) continue;
     seen.add(definition.id);
-    result.push({
-      definition,
-      label: definition.name || definition.id,
-    });
+    result.push(definition);
     if (result.length === MAX_AGENT_DEFINITIONS) break;
-  }
-  return result;
-}
-
-function findCatalogProvider(catalog: ModelCatalog, account: ProviderAccountConfig): ModelCatalogProvider | undefined {
-  return account.catalogProvider ?? catalog.providers.find(provider => provider.id === account.providerId);
-}
-
-function modelOption(
-  account: ProviderAccountConfig,
-  route: ProviderModelRoute,
-  catalog: ModelCatalog,
-  effectiveSelection: AgentModelConfig | undefined,
-): WikiAgentModelOption {
-  const provider = findCatalogProvider(catalog, account);
-  const catalogModel = provider?.models.find(model => model.id === route.modelId);
-  const selection = effectiveSelection?.providerId === account.providerId && effectiveSelection.modelId === route.modelId
-    ? effectiveSelection
-    : {
-      providerId: account.providerId,
-      modelId: route.modelId,
-      ...(effectiveSelection?.parameters === undefined ? {} : { parameters: effectiveSelection.parameters }),
-    };
-  return {
-    selection,
-    route,
-    ...(provider === undefined ? {} : { provider }),
-    ...(catalogModel === undefined ? {} : { catalogModel }),
-    label: `${provider?.name ?? account.providerId} · ${catalogModel?.name ?? route.modelId}`,
-  };
-}
-
-function boundedModels(
-  accounts: readonly ProviderAccountConfig[],
-  catalog: ModelCatalog,
-  effectiveSelection: AgentModelConfig | undefined,
-): WikiAgentModelOption[] {
-  const seen = new Set<string>();
-  const result: WikiAgentModelOption[] = [];
-  for (const account of accounts) {
-    if (account.enabled === false) continue;
-    for (const route of account.models) {
-      const key = JSON.stringify([account.providerId, route.modelId]);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const option = modelOption(account, route, catalog, effectiveSelection);
-      result.push(option);
-      if (result.length === MAX_MODEL_OPTIONS) return result;
-    }
   }
   return result;
 }
@@ -211,7 +140,7 @@ export function createDesktopWikiAgentHostAdapter(): WikiAgentHostAdapter {
       const service = assertReady();
       const instance = await service.agentInstance.getAgentMetadata(agentId);
       throwIfAborted(signal);
-      if (instance?.agentFrameworkConfig && Object.keys(instance.agentFrameworkConfig).length > 0) {
+      if (instance?.agentFrameworkConfig !== undefined) {
         return instance.agentFrameworkConfig;
       }
       const definition = await service.agentDefinition.getAgentDef(instance?.agentDefId || definitionId);
@@ -219,20 +148,25 @@ export function createDesktopWikiAgentHostAdapter(): WikiAgentHostAdapter {
       return definition?.agentFrameworkConfig;
     },
 
-    async getModelSelection(agentId, definitionId, { signal }) {
+    async getModelConfig(agentId, definitionId, { signal }) {
       throwIfAborted(signal);
-      const service = assertReady();
-      const [accounts, catalog, selection] = await Promise.all([
-        service.externalAPI.getProviderAccounts(),
-        service.externalAPI.getProviderCatalog(),
-        resolvedModelConfig(agentId, definitionId),
-      ]);
+      const selection = await resolvedModelConfig(agentId, definitionId);
       throwIfAborted(signal);
-      const options = boundedModels(accounts, catalog.catalog, selection);
-      return {
-        options,
-        ...(selection === undefined ? {} : { selected: selection }),
-      };
+      return selection;
+    },
+
+    async listProviderAccounts({ signal }) {
+      throwIfAborted(signal);
+      const accounts = await assertReady().externalAPI.getProviderAccounts();
+      throwIfAborted(signal);
+      return accounts;
+    },
+
+    async getProviderCatalog({ signal }) {
+      throwIfAborted(signal);
+      const resolution = await assertReady().externalAPI.getProviderCatalog();
+      throwIfAborted(signal);
+      return resolution.catalog;
     },
 
     async selectModel(agentId, selection, { signal }) {

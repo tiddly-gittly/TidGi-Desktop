@@ -35,6 +35,7 @@ describe('useAIConfigManagement', () => {
   let getAIConfig: ReturnType<typeof vi.fn<() => Promise<ModelAssignments>>>;
   let getProviderAccounts: ReturnType<typeof vi.fn<() => Promise<ProviderAccountConfig[]>>>;
   let updateDefaultAIConfig: ReturnType<typeof vi.fn<(config: ModelAssignments) => Promise<void>>>;
+  let deleteFieldFromDefaultAIConfig: ReturnType<typeof vi.fn<(fieldPath: string) => Promise<void>>>;
   let log: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -44,12 +45,14 @@ describe('useAIConfigManagement', () => {
     getAIConfig = vi.fn().mockResolvedValue(assignments);
     getProviderAccounts = vi.fn().mockResolvedValue(accounts);
     updateDefaultAIConfig = vi.fn().mockResolvedValue(undefined);
+    deleteFieldFromDefaultAIConfig = vi.fn().mockResolvedValue(undefined);
     log = vi.fn();
 
     Object.defineProperties(window.service.externalAPI, {
       getAIConfig: { value: getAIConfig, writable: true },
       getProviderAccounts: { value: getProviderAccounts, writable: true },
       updateDefaultAIConfig: { value: updateDefaultAIConfig, writable: true },
+      deleteFieldFromDefaultAIConfig: { value: deleteFieldFromDefaultAIConfig, writable: true },
     });
     Object.defineProperty(window.observables, 'externalAPI', {
       value: {
@@ -104,6 +107,44 @@ describe('useAIConfigManagement', () => {
     };
     expect(result.current.config).toEqual(expected);
     expect(updateDefaultAIConfig).toHaveBeenCalledWith(expected);
+  });
+
+  it('rolls back a rejected model update and exposes an update failure', async () => {
+    updateDefaultAIConfig.mockRejectedValueOnce(new Error('backend rejected model update'));
+    const { result } = renderHook(() => useAIConfigManagement());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await expect(result.current.handleModelChange({ providerId: 'openai-main', modelId: 'fast' }))
+        .rejects.toThrow('backend rejected model update');
+    });
+
+    expect(result.current.config).toEqual(assignments);
+    expect(result.current.error).toMatchObject({
+      operation: 'update',
+      error: expect.any(Error),
+    });
+  });
+
+  it('rolls back a rejected model clear and exposes a clear failure', async () => {
+    deleteFieldFromDefaultAIConfig.mockRejectedValueOnce(new Error('backend rejected model clear'));
+    const { result } = renderHook(() => useAIConfigManagement());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await expect(result.current.handleFieldClear('default')).rejects.toThrow('backend rejected model clear');
+    });
+
+    expect(result.current.config).toEqual(assignments);
+    expect(result.current.error).toMatchObject({
+      operation: 'clear',
+      error: expect.any(Error),
+    });
+    expect(updateDefaultAIConfig).not.toHaveBeenCalled();
   });
 
   it('persists an instance override as one canonical AgentModelConfig', async () => {

@@ -30,6 +30,7 @@
     "CurrentAgent": "Afficher les journaux de l'agent intelligent : {{agentId}}",
     "Description": "Journal de débogage des appels API externes pour cet agent. Activez le 'Débogage des API externes' dans les préférences pour commencer l'enregistrement.",
     "ErrorDetails": "Détails de l'erreur",
+    "Loading": "Chargement des journaux API…",
     "NoLogs": "Journal des API de cet agent intelligent introuvable",
     "NoResponse": "pas de réponse",
     "RequestDetails": "Détails de la demande",
@@ -70,6 +71,10 @@
   },
   "Chat": {
     "Cancel": "Annuler",
+    "Attachment": {
+      "RemoveFile": "Supprimer {{name}}",
+      "RemoveTiddler": "Supprimer {{title}} de {{workspaceName}}"
+    },
     "GenericError": "L’agent n’a pas pu terminer cette demande. Veuillez réessayer.",
     "OperationError": "L’opération de discussion a échoué. Veuillez réessayer.",
     "ExecutionTarget": {
@@ -401,6 +406,14 @@
     "FailedToDeleteProvider": "Échec de la suppression du fournisseur {{providerName}}",
     "FailedToRemoveModel": "Échec de la suppression du modèle",
     "FailedToRefreshOfficialModels": "Échec de l’actualisation des modèles",
+    "FailedToLoadAIConfig": "Échec du chargement des paramètres des modèles IA",
+    "FailedToUpdateAIConfig": "Échec de l’enregistrement des paramètres des modèles IA",
+    "FailedToClearAIConfig": "Échec de la suppression du modèle IA sélectionné",
+    "FailedToLoadProviderCatalog": "Échec du chargement du catalogue des modèles des fournisseurs",
+    "FailedToSaveModelParameters": "Échec de l’enregistrement des paramètres du modèle",
+    "FailedToLoadFrameworkConfig": "Échec du chargement des paramètres du framework de l’agent",
+    "FailedToUpdateFrameworkConfig": "Échec de l’enregistrement des paramètres du framework de l’agent",
+    "FailedToClearFrameworkConfig": "Échec de la suppression des paramètres du framework de l’agent",
     "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
     "FailedToUpdateModel": "Impossible de mettre à jour le modèle",
     "FailedToUpdateProviderStatus": "Échec de la mise à jour du statut du fournisseur",
@@ -414,9 +427,11 @@
     "ModelFeatures": "Fonctionnalités du modèle",
     "ModelName": "Nom du modèle",
     "ModelNameRequired": "Le nom du modèle est requis",
+    "ModelIdInvalid": "L’identifiant du modèle ne doit pas contenir d’espaces environnants ni de caractères de contrôle et ne doit pas dépasser {{maxBytes}} octets UTF-8.",
     "LogicalModelId": "Identifiant logique du modèle",
     "WireModelId": "Identifiant du modèle fournisseur",
     "WireModelIdDescription": "Identifiant exact du modèle envoyé au fournisseur.",
+    "EditModel": "Modifier le modèle",
     "APIMode": "Mode API",
     "ChatCompletionsAPIMode": "Chat Completions",
     "ResponsesAPIMode": "Responses",
@@ -472,6 +487,7 @@
     "TemperatureDescription": "Une valeur plus faible produit une réponse plus déterministe et concentrée, tandis qu'une valeur plus élevée génère une réponse plus diversifiée et créative.",
     "TopP": "Top P",
     "TopPDescription": "Contrôler l'aléatoire des réponses. Une valeur plus faible rend la réponse plus déterminée, tandis qu'une valeur plus élevée permet davantage de possibilités.",
+    "TokensUnit": "jetons",
     "WorkflowFile": "fichier de flux de travail",
     "WorkflowFileHelp": "Chemin du fichier JSON du flux de travail ComfyUI",
     "WorkflowFilePath": "chemin du fichier de flux de travail"
@@ -530,7 +546,9 @@
     "ShowEditor": "Afficher l’éditeur",
     "ShowPreview": "Afficher l’aperçu",
     "Tree": "vue arborescente",
-    "ValidationErrors": "détecter une erreur"
+    "ValidationErrors": "détecter une erreur",
+    "NoPrompts": "Aucun prompt configuré",
+    "Prompt": "Prompt"
   },
   "PromptConfig": {
     "AddItem": "ajouter un projet",
@@ -548,7 +566,9 @@
       "HelperText": "Appuyez sur Entrée après la saisie pour ajouter une étiquette, ou choisissez parmi les étiquettes prédéfinies.",
       "NoOptions": "aucune étiquette disponible",
       "Placeholder": "Entrer une étiquette..."
-    }
+    },
+    "NoneOption": "Aucun",
+    "ConfigurationSections": "Sections de configuration"
   },
   "Schema": {
     "AlarmClock": {

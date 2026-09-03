@@ -3,6 +3,7 @@ import type { AgentModelConfig, ModelCatalogModel, ProviderAccountConfig, Provid
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { hasUsableProviderCredentialReference } from '@services/externalAPI/providerCredentials';
 import { TextField } from '../../../PreferenceComponents';
 import { ModelFeatureChip } from './ModelFeatureChip';
 
@@ -17,17 +18,14 @@ interface ModelSelectorProps {
   >;
   onChange: (selection: AgentModelConfig) => void;
   onClear?: () => void;
-  onlyShowEnabled?: boolean;
 }
 
-export function ModelSelector({ selectedModel, modelOptions, onChange, onClear, onlyShowEnabled }: ModelSelectorProps) {
+export function ModelSelector({ selectedModel, modelOptions, onChange, onClear }: ModelSelectorProps) {
   const { t } = useTranslation('agent');
   const selectedValue = selectedModel
     ? modelOptions.find(([account, route]) => account.providerId === selectedModel.providerId && route.modelId === selectedModel.modelId) ?? null
     : null;
-  const filteredModelOptions = onlyShowEnabled
-    ? modelOptions.filter(([account]) => account.enabled !== false)
-    : modelOptions;
+  const filteredModelOptions = modelOptions.filter(([account]) => account.enabled !== false && hasUsableProviderCredentialReference(account));
 
   return (
     <Autocomplete

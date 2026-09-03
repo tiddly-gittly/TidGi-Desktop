@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
-import type { ModelCatalogModel, ProviderModelRoute } from 'memeloop';
+import { type ModelCatalogModel, normalizeProviderModelRoutes, PROVIDER_MODEL_ID_MAX_UTF8_BYTES, type ProviderModelRoute } from 'memeloop';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +22,7 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
   const [toolCall, setToolCall] = useState(false);
   const [inputModalities, setInputModalities] = useState('text');
   const [outputModalities, setOutputModalities] = useState('text');
+  const [validationError, setValidationError] = useState<'logical-required' | 'logical-invalid' | 'wire-invalid'>();
 
   useEffect(() => {
     if (!open) return;
@@ -34,12 +35,25 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
     setToolCall(model?.toolCall ?? false);
     setInputModalities((model?.modalities?.input ?? ['text']).join(', '));
     setOutputModalities((model?.modalities?.output ?? ['text']).join(', '));
+    setValidationError(undefined);
   }, [model, open, route]);
 
   const save = () => {
     const logicalId = logicalModelId.trim();
+    if (!logicalId) {
+      setValidationError('logical-required');
+      return;
+    }
+    if (!isValidModelIdentifier(logicalId)) {
+      setValidationError('logical-invalid');
+      return;
+    }
     const wireId = wireModelId.trim() || logicalId;
-    if (!logicalId || !wireId) return;
+    if (!isValidModelIdentifier(wireId)) {
+      setValidationError('wire-invalid');
+      return;
+    }
+    setValidationError(undefined);
     onSave(
       { modelId: logicalId, wireModelId: wireId, apiMode },
       {
@@ -66,8 +80,15 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
           margin='normal'
           label={t('Preference.LogicalModelId')}
           value={logicalModelId}
+          error={validationError === 'logical-required' || validationError === 'logical-invalid'}
+          helperText={validationError === 'logical-required'
+            ? t('Preference.ModelNameRequired')
+            : validationError === 'logical-invalid'
+            ? t('Preference.ModelIdInvalid', { maxBytes: PROVIDER_MODEL_ID_MAX_UTF8_BYTES })
+            : undefined}
           onChange={event => {
             setLogicalModelId(event.target.value);
+            setValidationError(undefined);
           }}
           slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
         />
@@ -76,10 +97,14 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
           margin='normal'
           label={t('Preference.WireModelId')}
           value={wireModelId}
+          error={validationError === 'wire-invalid'}
           onChange={event => {
             setWireModelId(event.target.value);
+            setValidationError(undefined);
           }}
-          helperText={t('Preference.WireModelIdDescription')}
+          helperText={validationError === 'wire-invalid'
+            ? t('Preference.ModelIdInvalid', { maxBytes: PROVIDER_MODEL_ID_MAX_UTF8_BYTES })
+            : t('Preference.WireModelIdDescription')}
         />
         <TextField
           fullWidth
@@ -167,4 +192,23 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
 
 function parseModalities(value: string): string[] {
   return [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))];
+}
+
+/**
+ * Keep model route identifiers aligned with Core's canonical schema.  Unlike
+ * provider IDs, model IDs intentionally allow provider-specific Unicode and
+ * punctuation (for example `供应商/模型2:latest`), but reject surrounding
+ * whitespace/control characters and over-budget values.
+ */
+function isValidModelIdentifier(value: string): boolean {
+  try {
+    normalizeProviderModelRoutes([{
+      modelId: value,
+      wireModelId: value,
+      apiMode: 'chat-completions',
+    }]);
+    return true;
+  } catch {
+    return false;
+  }
 }

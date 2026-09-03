@@ -30,6 +30,7 @@
     "CurrentAgent": "顯示智慧體日誌: {{agentId}}",
     "Description": "此智慧體的外部介面調用除錯日誌。在偏好設置中啟用「外部介面除錯」以開始記錄。",
     "ErrorDetails": "錯誤詳情",
+    "Loading": "正在載入介面日誌…",
     "NoLogs": "未找到此智慧體的介面調用日誌",
     "NoResponse": "無響應",
     "RequestDetails": "請求詳情",
@@ -70,6 +71,10 @@
   },
   "Chat": {
     "Cancel": "取消",
+    "Attachment": {
+      "RemoveFile": "移除 {{name}}",
+      "RemoveTiddler": "從 {{workspaceName}} 移除 {{title}}"
+    },
     "GenericError": "智慧代理未能完成此請求，請重試。",
     "OperationError": "對話操作失敗，請重試。",
     "ExecutionTarget": {
@@ -399,6 +404,14 @@
     "FailedToDeleteProvider": "刪除提供商 {{providerName}} 失敗",
     "FailedToRemoveModel": "無法刪除模型",
     "FailedToRefreshOfficialModels": "重新整理模型列表失敗",
+    "FailedToLoadAIConfig": "載入 AI 模型設定失敗",
+    "FailedToUpdateAIConfig": "儲存 AI 模型設定失敗",
+    "FailedToClearAIConfig": "清除所選 AI 模型失敗",
+    "FailedToLoadProviderCatalog": "載入提供商模型目錄失敗",
+    "FailedToSaveModelParameters": "儲存模型參數失敗",
+    "FailedToLoadFrameworkConfig": "載入智能體框架設定失敗",
+    "FailedToUpdateFrameworkConfig": "儲存智能體框架設定失敗",
+    "FailedToClearFrameworkConfig": "清除智能體框架設定失敗",
     "FailedToSaveSettings": "無法保存設置",
     "FailedToUpdateModel": "無法更新模型",
     "FailedToUpdateProviderStatus": "無法更新提供商狀態",
@@ -412,9 +425,11 @@
     "ModelFeatures": "模型功能",
     "ModelName": "模型名稱",
     "ModelNameRequired": "模型名稱為必填項",
+    "ModelIdInvalid": "模型 ID 不能包含前後空白或控制字元，且不能超過 {{maxBytes}} 個 UTF-8 位元組。",
     "LogicalModelId": "邏輯模型 ID",
     "WireModelId": "提供商模型 ID",
     "WireModelIdDescription": "實際傳送給提供商的精確模型標識。",
+    "EditModel": "編輯模型",
     "APIMode": "API 模式",
     "ChatCompletionsAPIMode": "聊天補全",
     "ResponsesAPIMode": "Responses",
@@ -456,6 +471,7 @@
     "TemperatureDescription": "較低的值會產生更確定性、更集中的響應，較高的值會產生更多樣化、更創造性的響應",
     "TopP": "Top P",
     "TopPDescription": "控制響應的隨機性。較低的值使響應更確定，較高的值允許更多的可能性",
+    "TokensUnit": "個令牌",
     "WorkflowFile": "工作流檔案",
     "WorkflowFileHelp": "ComfyUI 工作流 JSON 文件的路徑",
     "WorkflowFilePath": "工作流檔案路徑"
@@ -514,7 +530,9 @@
     "ShowEditor": "顯示編輯",
     "ShowPreview": "顯示預覽",
     "Tree": "樹形視圖",
-    "ValidationErrors": "發現錯誤"
+    "ValidationErrors": "發現錯誤",
+    "NoPrompts": "未設定提示詞",
+    "Prompt": "提示詞"
   },
   "PromptConfig": {
     "AddItem": "添加項目",
@@ -532,7 +550,9 @@
       "HelperText": "輸入後按 Enter 鍵添加標籤，或從預定義標籤中選擇",
       "NoOptions": "沒有可選標籤",
       "Placeholder": "輸入標籤..."
-    }
+    },
+    "NoneOption": "無",
+    "ConfigurationSections": "設定區段"
   },
   "Schema": {
     "AlarmClock": {

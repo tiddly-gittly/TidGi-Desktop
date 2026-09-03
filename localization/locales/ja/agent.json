@@ -30,6 +30,7 @@
     "CurrentAgent": "エージェントログを表示: {{agentId}}",
     "Description": "このインテリジェントエージェントの外部API呼び出しデバッグログ。設定で「外部APIデバッグ」を有効にして記録を開始します。",
     "ErrorDetails": "エラーの詳細",
+    "Loading": "API ログを読み込んでいます…",
     "NoLogs": "このエージェントのAPIログが見つかりません",
     "NoResponse": "応答なし",
     "RequestDetails": "リクエストの詳細",
@@ -70,6 +71,10 @@
   },
   "Chat": {
     "Cancel": "キャンセル",
+    "Attachment": {
+      "RemoveFile": "{{name}}を削除",
+      "RemoveTiddler": "{{workspaceName}}から{{title}}を削除"
+    },
     "GenericError": "エージェントはこのリクエストを完了できませんでした。もう一度お試しください。",
     "OperationError": "チャット操作に失敗しました。もう一度お試しください。",
     "ExecutionTarget": {
@@ -402,6 +407,14 @@
     "FailedToDeleteProvider": "プロバイダー {{providerName}} の削除に失敗しました",
     "FailedToRemoveModel": "モデルの削除に失敗しました",
     "FailedToRefreshOfficialModels": "モデルの更新に失敗しました",
+    "FailedToLoadAIConfig": "AIモデル設定の読み込みに失敗しました",
+    "FailedToUpdateAIConfig": "AIモデル設定の保存に失敗しました",
+    "FailedToClearAIConfig": "選択したAIモデルの削除に失敗しました",
+    "FailedToLoadProviderCatalog": "プロバイダーモデルカタログの読み込みに失敗しました",
+    "FailedToSaveModelParameters": "モデルパラメーターの保存に失敗しました",
+    "FailedToLoadFrameworkConfig": "エージェントフレームワーク設定の読み込みに失敗しました",
+    "FailedToUpdateFrameworkConfig": "エージェントフレームワーク設定の保存に失敗しました",
+    "FailedToClearFrameworkConfig": "エージェントフレームワーク設定の削除に失敗しました",
     "FailedToSaveSettings": "設定の保存に失敗しました",
     "FailedToUpdateModel": "モデルを更新できません",
     "FailedToUpdateProviderStatus": "プロバイダーのステータス更新に失敗しました",
@@ -415,9 +428,11 @@
     "ModelFeatures": "モデル機能",
     "ModelName": "モデル名",
     "ModelNameRequired": "モデル名は必須です",
+    "ModelIdInvalid": "モデル ID の前後に空白や制御文字を含めず、UTF-8 で {{maxBytes}} バイト以内にしてください。",
     "LogicalModelId": "論理モデル ID",
     "WireModelId": "プロバイダーモデル ID",
     "WireModelIdDescription": "プロバイダーへ送信する正確なモデル識別子です。",
+    "EditModel": "モデルを編集",
     "APIMode": "API モード",
     "ChatCompletionsAPIMode": "Chat Completions",
     "ResponsesAPIMode": "Responses",
@@ -473,6 +488,7 @@
     "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
     "TopP": "トップP",
     "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。",
+    "TokensUnit": "トークン",
     "WorkflowFile": "ワークフローファイル",
     "WorkflowFileHelp": "ComfyUI ワークフロー JSON ファイルのパス",
     "WorkflowFilePath": "ワークフローファイルのパス"
@@ -531,7 +547,9 @@
     "ShowEditor": "エディターを表示",
     "ShowPreview": "プレビューを表示",
     "Tree": "ツリービュー",
-    "ValidationErrors": "エラーを発見"
+    "ValidationErrors": "エラーを発見",
+    "NoPrompts": "設定されたプロンプトはありません",
+    "Prompt": "プロンプト"
   },
   "PromptConfig": {
     "AddItem": "プロジェクトを追加",
@@ -549,7 +567,9 @@
       "HelperText": "入力後、Enterキーを押してタグを追加するか、事前定義されたタグから選択してください",
       "NoOptions": "選択可能なタグがありません",
       "Placeholder": "入力タグ..."
-    }
+    },
+    "NoneOption": "なし",
+    "ConfigurationSections": "設定セクション"
   },
   "Schema": {
     "AlarmClock": {

@@ -5,8 +5,8 @@ import { AgentInstanceService } from '@services/agentInstance';
 import { container } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import { DatabaseService } from '@services/database';
-import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
-import type { DeviceCloudConnectionStatus } from '@services/deviceNetwork/interface';
+import type { DeviceCloudConnectionStatus, IDeviceNetworkService } from '@services/deviceNetwork/interface';
+import { createInitialDeviceCloudConnectionStatus } from '@services/deviceNetwork/interface';
 import { ExternalAPIService } from '@services/externalAPI';
 import type { IGitService, IGitStateChange, IGitSyncProgressEvent } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
@@ -133,11 +133,11 @@ export const serviceInstances: {
     removeTrustedDevice: vi.fn().mockResolvedValue(undefined),
     configureCloud: vi.fn().mockResolvedValue(undefined),
     clearCloudConfiguration: vi.fn().mockResolvedValue(undefined),
-    getCloudConnectionStatus: vi.fn().mockResolvedValue({ configured: false, state: 'not-configured' }),
+    getCloudConnectionStatus: vi.fn().mockResolvedValue(createInitialDeviceCloudConnectionStatus()),
     syncCloudDevices: vi.fn().mockResolvedValue([]),
     sendRpc: vi.fn().mockResolvedValue(undefined),
     syncWithDevice: vi.fn().mockResolvedValue(undefined),
-    cloudStatus$: new BehaviorSubject<DeviceCloudConnectionStatus>({ configured: false, state: 'not-configured' }),
+    cloudStatus$: new BehaviorSubject<DeviceCloudConnectionStatus>(createInitialDeviceCloudConnectionStatus()),
     devices$: new BehaviorSubject<Device[]>([]),
     pairingSessions$: new BehaviorSubject<PairingSession[]>([]),
   },
@@ -191,7 +191,6 @@ const defaultWorkspaces: IWorkspace[] = [
     homeUrl: 'http://localhost:5212/',
     port: 5212,
     isSubWiki: false,
-    mainWikiToLink: null,
     tagNames: [],
     lastUrl: null,
     active: true,
@@ -222,7 +221,6 @@ const defaultWorkspaces: IWorkspace[] = [
     homeUrl: 'http://localhost:5213/',
     port: 5213,
     isSubWiki: false,
-    mainWikiToLink: null,
     tagNames: [],
     lastUrl: null,
     active: true,

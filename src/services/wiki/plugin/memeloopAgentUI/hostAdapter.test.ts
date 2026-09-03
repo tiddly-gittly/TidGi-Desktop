@@ -1,24 +1,92 @@
+import type { AgentModelConfig } from 'memeloop';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDesktopWikiAgentHostAdapter, WIKI_AGENT_HOST_LIMITS, WikiAgentHostUnavailableError } from './hostAdapter';
 
+interface TestAgentDefinition {
+  id: string;
+  name?: string;
+  agentFrameworkConfig?: Record<string, unknown>;
+}
+
+interface TestAgentDefinitionService {
+  getAgentDefs: () => Promise<readonly TestAgentDefinition[]>;
+  getAgentDef: (definitionId?: string) => Promise<TestAgentDefinition | undefined>;
+}
+
+interface TestAgentMetadata {
+  id: string;
+  agentDefId?: string;
+  agentFrameworkConfig?: Record<string, unknown>;
+  modelConfig?: AgentModelConfig;
+}
+
+interface TestAgentInstanceService {
+  getAgents?: () => unknown;
+  getAgentMetadata?: (agentId: string) => Promise<TestAgentMetadata | undefined>;
+  createAgent: (definitionId: string) => Promise<{ id: string }>;
+  updateAgent: (agentId: string, update: { modelConfig?: AgentModelConfig }) => Promise<{ id: string }>;
+}
+
+interface TestExternalAPIService {
+  getProviderAccounts: () => Promise<readonly unknown[]>;
+  getProviderCatalog: () => Promise<unknown>;
+  getAIConfig: () => Promise<unknown>;
+}
+
+interface TestContextService {
+  get: (key: string) => Promise<unknown>;
+}
+
+interface TestDeepLinkService {
+  openDeepLink: (url: string) => Promise<void>;
+}
+
+type TestServiceParts = {
+  agentDefinition: TestAgentDefinitionService | undefined;
+  agentInstance: TestAgentInstanceService | undefined;
+  externalAPI: TestExternalAPIService | undefined;
+  context: TestContextService | undefined;
+  deepLink: TestDeepLinkService | undefined;
+};
+
+const testServiceKeys = ['agentDefinition', 'agentInstance', 'externalAPI', 'context', 'deepLink'] as const;
+
+function setService<K extends keyof TestServiceParts>(key: K, value: TestServiceParts[K]): void {
+  Object.defineProperty(window.service, key, {
+    value,
+    writable: true,
+    configurable: true,
+  });
+}
+
 describe('Desktop Wiki agent host adapter', () => {
-  const mutableService = window.service as unknown as Record<string, unknown>;
-  let original: Record<string, unknown>;
+  let original: { [K in keyof TestServiceParts]: unknown };
 
   beforeEach(() => {
-    original = { ...mutableService };
+    original = {
+      agentDefinition: window.service.agentDefinition,
+      agentInstance: window.service.agentInstance,
+      externalAPI: window.service.externalAPI,
+      context: window.service.context,
+      deepLink: window.service.deepLink,
+    };
   });
 
   afterEach(() => {
-    for (const key of Object.keys(mutableService)) delete mutableService[key];
-    Object.assign(mutableService, original);
+    for (const key of testServiceKeys) {
+      Object.defineProperty(window.service, key, {
+        value: original[key],
+        writable: true,
+        configurable: true,
+      });
+    }
     vi.restoreAllMocks();
   });
 
   it('fails closed before any missing host method is invoked', async () => {
-    mutableService.agentDefinition = undefined;
-    mutableService.agentInstance = undefined;
-    mutableService.externalAPI = undefined;
+    setService('agentDefinition', undefined);
+    setService('agentInstance', undefined);
+    setService('externalAPI', undefined);
     const adapter = createDesktopWikiAgentHostAdapter();
 
     expect(adapter.isReady()).toBe(false);
@@ -27,11 +95,11 @@ describe('Desktop Wiki agent host adapter', () => {
   });
 
   it('returns the canonical session target instead of a Wiki conversation DTO', async () => {
-    mutableService.agentDefinition = { getAgentDefs: vi.fn(), getAgentDef: vi.fn() };
-    mutableService.agentInstance = { getAgents: vi.fn(), createAgent: vi.fn(), updateAgent: vi.fn() };
-    mutableService.externalAPI = { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() };
-    mutableService.context = { get: vi.fn() };
-    mutableService.deepLink = { openDeepLink: vi.fn() };
+    setService('agentDefinition', { getAgentDefs: vi.fn(), getAgentDef: vi.fn() });
+    setService('agentInstance', { getAgents: vi.fn(), createAgent: vi.fn(), updateAgent: vi.fn() });
+    setService('externalAPI', { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() });
+    setService('context', { get: vi.fn() });
+    setService('deepLink', { openDeepLink: vi.fn() });
 
     await expect(
       createDesktopWikiAgentHostAdapter().resolveAgentTarget(
@@ -41,101 +109,105 @@ describe('Desktop Wiki agent host adapter', () => {
     ).resolves.toEqual({ agentId: 'conversation-1', conversationId: 'conversation-1' });
   });
 
-  it('bounds and de-duplicates definition and model selectors', async () => {
+  it('bounds and de-duplicates definitions while exposing canonical provider records', async () => {
     const definitions = Array.from({ length: WIKI_AGENT_HOST_LIMITS.agentDefinitions + 20 }, (_, index) => ({
       id: `definition-${index}`,
       name: `Definition ${index}`,
       agentFrameworkConfig: {},
     }));
-    definitions.push(definitions[0]);
+    definitions.splice(1, 0, definitions[0]);
     const routes = Array.from({ length: WIKI_AGENT_HOST_LIMITS.modelOptions + 20 }, (_, index) => ({
       modelId: `model-${index}`,
       wireModelId: `wire-model-${index}`,
       apiMode: 'responses' as const,
     }));
     const selected = { providerId: 'provider', modelId: 'model-1', parameters: { reasoningEffort: 'high' as const } };
-    mutableService.agentDefinition = {
+    const accounts = [
+      {
+        providerId: 'disabled',
+        providerType: 'openai-compatible',
+        enabled: false,
+        models: [{ modelId: 'hidden', wireModelId: 'hidden', apiMode: 'chat-completions' as const }],
+      },
+      { providerId: 'provider', providerType: 'openai-compatible', enabled: true, models: [...routes, routes[0]] },
+    ];
+    const catalog = {
+      schemaVersion: 1 as const,
+      source: 'https://models.dev/api.json' as const,
+      catalogVersion: 'test',
+      fetchedAt: '2026-08-31T00:00:00.000Z',
+      providers: [{
+        id: 'provider',
+        name: 'Provider caption',
+        env: [],
+        models: [{
+          id: 'model-1',
+          name: 'Model caption',
+          attachment: true,
+          reasoning: true,
+          toolCall: true,
+        }],
+      }],
+    };
+    setService('agentDefinition', {
       getAgentDefs: vi.fn(async () => definitions),
       getAgentDef: vi.fn(async () => undefined),
-    };
-    mutableService.agentInstance = {
+    });
+    setService('agentInstance', {
       getAgentMetadata: vi.fn(async () => ({ id: 'agent-1', agentDefId: 'definition-1' })),
       createAgent: vi.fn(),
       updateAgent: vi.fn(),
-    };
-    mutableService.externalAPI = {
-      getProviderAccounts: vi.fn(async () => [
-        {
-          providerId: 'disabled',
-          providerType: 'openai-compatible',
-          enabled: false,
-          models: [{ modelId: 'hidden', wireModelId: 'hidden', apiMode: 'chat-completions' }],
-        },
-        { providerId: 'provider', providerType: 'openai-compatible', enabled: true, models: [...routes, routes[0]] },
-      ]),
+    });
+    setService('externalAPI', {
+      getProviderAccounts: vi.fn(async () => accounts),
       getProviderCatalog: vi.fn(async () => ({
         source: 'embedded',
         stale: false,
-        catalog: {
-          schemaVersion: 1,
-          source: 'https://models.dev/api.json',
-          catalogVersion: 'test',
-          fetchedAt: '2026-08-31T00:00:00.000Z',
-          providers: [{
-            id: 'provider',
-            name: 'Provider caption',
-            env: [],
-            models: [{
-              id: 'model-1',
-              name: 'Model caption',
-              attachment: true,
-              reasoning: true,
-              toolCall: true,
-            }],
-          }],
-        },
+        catalog,
       })),
       getAIConfig: vi.fn(async () => ({ default: selected })),
-    };
-    mutableService.context = { get: vi.fn() };
-    mutableService.deepLink = { openDeepLink: vi.fn() };
+    });
+    setService('context', { get: vi.fn() });
+    setService('deepLink', { openDeepLink: vi.fn() });
     const adapter = createDesktopWikiAgentHostAdapter();
 
     const definitionOptions = await adapter.listAgentDefinitions({ signal: new AbortController().signal });
     expect(definitionOptions).toHaveLength(WIKI_AGENT_HOST_LIMITS.agentDefinitions);
-    expect(definitionOptions[0]?.definition).toBe(definitions[0]);
-    const selection = await adapter.getModelSelection(
+    expect(definitionOptions[0]).toBe(definitions[0]);
+    expect(definitionOptions[1]).toBe(definitions[2]);
+
+    const selection = await adapter.getModelConfig(
       'agent-1',
       'definition-1',
       { signal: new AbortController().signal },
     );
-    expect(selection.options).toHaveLength(WIKI_AGENT_HOST_LIMITS.modelOptions);
-    expect(selection.options.some(option => option.selection.providerId === 'disabled')).toBe(false);
-    expect(selection.selected).toBe(selected);
-    expect(selection.options[0]?.route).toBe(routes[0]);
-    expect(selection.options[1]?.selection).toBe(selected);
-    expect(selection.options[1]).toMatchObject({
-      label: 'Provider caption · Model caption',
-      catalogModel: { id: 'model-1' },
-      provider: { id: 'provider' },
-    });
+    expect(selection).toBe(selected);
+
+    const accountRecords = await adapter.listProviderAccounts({ signal: new AbortController().signal });
+    expect(accountRecords).toBe(accounts);
+    expect(accountRecords).toHaveLength(2);
+    expect(accountRecords[0]?.enabled).toBe(false);
+
+    const catalogRecord = await adapter.getProviderCatalog({ signal: new AbortController().signal });
+    expect(catalogRecord).toBe(catalog);
+    expect(catalogRecord.providers[0]?.models[0]?.id).toBe('model-1');
   });
 
   it('passes the selected canonical model config through unchanged and fences an aborted selection', async () => {
     let receivedSelection: unknown;
-    const updateAgent = vi.fn(async (_agentId: string, update: { modelConfig?: unknown }) => {
+    const updateAgent = vi.fn(async (_agentId: string, update: { modelConfig?: AgentModelConfig }) => {
       receivedSelection = update.modelConfig;
       return { id: 'agent-1' };
     });
-    mutableService.agentDefinition = { getAgentDefs: vi.fn(), getAgentDef: vi.fn() };
-    mutableService.agentInstance = {
+    setService('agentDefinition', { getAgentDefs: vi.fn(), getAgentDef: vi.fn() });
+    setService('agentInstance', {
       getAgentMetadata: vi.fn(async () => ({ id: 'agent-1' })),
       createAgent: vi.fn(),
       updateAgent,
-    };
-    mutableService.externalAPI = { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() };
-    mutableService.context = { get: vi.fn() };
-    mutableService.deepLink = { openDeepLink: vi.fn() };
+    });
+    setService('externalAPI', { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() });
+    setService('context', { get: vi.fn() });
+    setService('deepLink', { openDeepLink: vi.fn() });
     const adapter = createDesktopWikiAgentHostAdapter();
     const selection = {
       providerId: 'provider-next',
@@ -168,11 +240,11 @@ describe('Desktop Wiki agent host adapter', () => {
       id: 'definition-2',
       agentFrameworkConfig: { prompts: [{ id: 'definition' }] },
     }));
-    mutableService.agentDefinition = { getAgentDefs: vi.fn(), getAgentDef };
-    mutableService.agentInstance = { getAgentMetadata, createAgent: vi.fn(), updateAgent: vi.fn() };
-    mutableService.externalAPI = { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() };
-    mutableService.context = { get: vi.fn() };
-    mutableService.deepLink = { openDeepLink: vi.fn() };
+    setService('agentDefinition', { getAgentDefs: vi.fn(), getAgentDef });
+    setService('agentInstance', { getAgentMetadata, createAgent: vi.fn(), updateAgent: vi.fn() });
+    setService('externalAPI', { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() });
+    setService('context', { get: vi.fn() });
+    setService('deepLink', { openDeepLink: vi.fn() });
     const adapter = createDesktopWikiAgentHostAdapter();
 
     await expect(adapter.getAgentFrameworkConfig(
@@ -188,6 +260,33 @@ describe('Desktop Wiki agent host adapter', () => {
       { signal: new AbortController().signal },
     )).resolves.toEqual({ prompts: [{ id: 'definition' }] });
     expect(getAgentDef).toHaveBeenCalledWith('definition-2');
+  });
+
+  it('preserves an explicitly empty instance framework config', async () => {
+    const getAgentMetadata = vi.fn(async () => ({
+      id: 'agent-empty',
+      agentDefId: 'definition-empty',
+      agentFrameworkConfig: {},
+    }));
+    const getAgentDef = vi.fn(async () => ({
+      id: 'definition-empty',
+      agentFrameworkConfig: { prompts: [{ id: 'definition' }] },
+    }));
+    setService('agentDefinition', { getAgentDefs: vi.fn(), getAgentDef });
+    setService('agentInstance', { getAgentMetadata, createAgent: vi.fn(), updateAgent: vi.fn() });
+    setService('externalAPI', { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() });
+    setService('context', { get: vi.fn() });
+    setService('deepLink', { openDeepLink: vi.fn() });
+    const adapter = createDesktopWikiAgentHostAdapter();
+
+    const config = await adapter.getAgentFrameworkConfig(
+      'agent-empty',
+      'definition-empty',
+      { signal: new AbortController().signal },
+    );
+
+    expect(config).toEqual({});
+    expect(getAgentDef).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -208,11 +307,11 @@ describe('Desktop Wiki agent host adapter', () => {
     },
   ])('opens the exact $name settings target through the Desktop host', async ({ target, expected }) => {
     const openDeepLink = vi.fn(async () => undefined);
-    mutableService.agentDefinition = { getAgentDefs: vi.fn(), getAgentDef: vi.fn() };
-    mutableService.agentInstance = { getAgents: vi.fn(), createAgent: vi.fn(), updateAgent: vi.fn() };
-    mutableService.externalAPI = { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() };
-    mutableService.context = { get: vi.fn(async () => true) };
-    mutableService.deepLink = { openDeepLink };
+    setService('agentDefinition', { getAgentDefs: vi.fn(), getAgentDef: vi.fn() });
+    setService('agentInstance', { getAgents: vi.fn(), createAgent: vi.fn(), updateAgent: vi.fn() });
+    setService('externalAPI', { getProviderAccounts: vi.fn(), getProviderCatalog: vi.fn(), getAIConfig: vi.fn() });
+    setService('context', { get: vi.fn(async () => true) });
+    setService('deepLink', { openDeepLink });
 
     await createDesktopWikiAgentHostAdapter().openSettings(target);
 

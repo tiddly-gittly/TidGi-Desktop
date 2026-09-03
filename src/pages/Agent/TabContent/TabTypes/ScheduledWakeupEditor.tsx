@@ -25,7 +25,7 @@ export function ScheduledWakeupEditor({ agentDefinition }: ScheduledWakeupEditor
   const [identityState, setIdentityState] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
   const cronLocale = useMemo(
     () => t('EditAgent.ScheduleCronLocale', { returnObjects: true }) as ScheduledTaskCronLocale,
-    [t],
+    [i18n.language, i18n.resolvedLanguage, t],
   );
 
   useEffect(() => {

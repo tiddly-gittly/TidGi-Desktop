@@ -9,6 +9,20 @@ import zhHans from '../../../../../../localization/locales/zh-Hans/agent.json';
 import zhHant from '../../../../../../localization/locales/zh-Hant/agent.json';
 
 describe('scheduled-task i18next resources', () => {
+  it('keeps the cron locale object and schedule labels in parity across all supported languages', () => {
+    const languages = [en, fr, ja, ru, zhHans, zhHant];
+    const cronLocaleKeys = Object.keys(en.EditAgent.ScheduleCronLocale).sort();
+    const scheduleLabelKeys = Object.keys(en.EditAgent)
+      .filter(key => key.startsWith('Schedule') || key.startsWith('ActiveHours'))
+      .sort();
+
+    for (const resource of languages) {
+      expect(Object.keys(resource.EditAgent.ScheduleCronLocale).sort()).toEqual(cronLocaleKeys);
+      expect(Object.keys(resource.EditAgent).filter(key => key.startsWith('Schedule') || key.startsWith('ActiveHours')).sort())
+        .toEqual(scheduleLabelKeys);
+    }
+  });
+
   it.each([
     ['en-US', 'en', en],
     ['fr-FR', 'fr', fr],

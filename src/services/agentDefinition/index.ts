@@ -4,7 +4,7 @@
  */
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
-import type { AgentDefinition, HostAgentToolConfig } from 'memeloop';
+import type { AgentDefinition, AgentDefinitionToolConfig } from 'memeloop';
 import { getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
@@ -23,10 +23,10 @@ const DESKTOP_WIKI_PROFILE_ID = 'memeloop:frontend-ui-ux';
 const DESKTOP_GENERAL_ASSISTANT_TOOL_IDS = new Set(['workspacesList', 'wikiSearch', 'wikiOperation']);
 
 export function mergeDesktopGeneralAssistantTools(
-  tools: readonly HostAgentToolConfig[] | undefined,
-  desktopTools: readonly HostAgentToolConfig[],
-): HostAgentToolConfig[] {
-  const merged: HostAgentToolConfig[] = [];
+  tools: readonly AgentDefinitionToolConfig[] | undefined,
+  desktopTools: readonly AgentDefinitionToolConfig[],
+): AgentDefinitionToolConfig[] {
+  const merged: AgentDefinitionToolConfig[] = [];
   const toolIndex = new Map<string, number>();
   for (const tool of [...desktopTools, ...(tools ?? [])]) {
     const configuredIndex = toolIndex.get(tool.toolId);
@@ -233,8 +233,10 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           templates.push(agentDefinition);
         }
       }
-    } catch {
-      // Workspace service not available
+    } catch (error: unknown) {
+      // Template discovery is optional while the workspace service is still
+      // booting, but preserve the failure in the main-process log.
+      logger.warn('Failed to load agent templates from active workspaces', { error });
     }
 
     return templates;

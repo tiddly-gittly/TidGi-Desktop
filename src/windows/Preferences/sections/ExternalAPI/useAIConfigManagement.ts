@@ -1,4 +1,3 @@
-import { cloneDeep } from 'lodash';
 import type { AgentModelConfig, ModelAssignments, ProviderAccountConfig } from 'memeloop';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -7,9 +6,19 @@ interface UseAIConfigManagementProps {
   agentId?: string;
 }
 
+export type AIConfigOperation = 'load' | 'update' | 'clear';
+
+export interface AIConfigFailure {
+  operation: AIConfigOperation;
+  error: Error;
+}
+
 interface UseAIConfigManagementResult {
   loading: boolean;
   config: ModelAssignments | null;
+  /** The last failed operation. The UI maps the operation to a localized message. */
+  error?: AIConfigFailure;
+  clearError?: () => void;
   accounts: ProviderAccountConfig[];
   setAccounts: React.Dispatch<React.SetStateAction<ProviderAccountConfig[]>>;
   handleModelChange: (selection: AgentModelConfig) => Promise<void>;
@@ -19,17 +28,24 @@ interface UseAIConfigManagementResult {
   handleTranscriptionsModelChange: (selection: AgentModelConfig) => Promise<void>;
   handleFreeModelChange: (selection: AgentModelConfig) => Promise<void>;
   handleConfigChange: (newConfig: ModelAssignments) => Promise<void>;
+  handleFieldClear: (key: keyof ModelAssignments) => Promise<void>;
+}
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<ModelAssignments | null>(null);
   const [accounts, setAccounts] = useState<ProviderAccountConfig[]>([]);
+  const [error, setError] = useState<AIConfigFailure>();
 
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         setLoading(true);
+        setError(undefined);
         let agentModelConfig: AgentModelConfig | undefined;
 
         // Three-tier configuration hierarchy: global < definition < instance
@@ -59,7 +75,13 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
         setLoading(false);
       } catch (error) {
-        void window.service.native.log('error', 'Failed to load AI configuration', { function: 'useAIConfigManagement.fetchConfig', error });
+        const normalizedError = toError(error);
+        setConfig(null);
+        setError({ operation: 'load', error: normalizedError });
+        void window.service.native.log('error', 'Failed to load AI configuration', {
+          function: 'useAIConfigManagement.fetchConfig',
+          error: normalizedError,
+        });
         setLoading(false);
       }
     };
@@ -105,17 +127,22 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     selection: AgentModelConfig,
   ) => {
     if (!config) return;
+    const previousConfig = config;
+    const updatedConfig: ModelAssignments = { ...config, [key]: selection };
+    setConfig(updatedConfig);
+    setError(undefined);
     try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig[key] = selection;
-      setConfig(updatedConfig);
       await updateConfig(updatedConfig);
     } catch (error) {
+      const normalizedError = toError(error);
+      setConfig(previousConfig);
+      setError({ operation: 'update', error: normalizedError });
       void window.service.native.log('error', 'Failed to update model assignment', {
         function: 'useAIConfigManagement.updateSelection',
         key,
-        error,
+        error: normalizedError,
       });
+      throw normalizedError;
     }
   }, [config, updateConfig]);
 
@@ -149,17 +176,61 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
   );
 
   const handleConfigChange = useCallback(async (newConfig: ModelAssignments) => {
+    const previousConfig = config;
+    setConfig(newConfig);
+    setError(undefined);
     try {
-      setConfig(newConfig);
       await updateConfig(newConfig);
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update configuration', { function: 'useAIConfigManagement.handleConfigChange', error });
+      const normalizedError = toError(error);
+      if (previousConfig !== undefined) setConfig(previousConfig);
+      setError({ operation: 'update', error: normalizedError });
+      void window.service.native.log('error', 'Failed to update configuration', {
+        function: 'useAIConfigManagement.handleConfigChange',
+        error: normalizedError,
+      });
+      throw normalizedError;
     }
-  }, [updateConfig]);
+  }, [config, updateConfig]);
+
+  const handleFieldClear = useCallback(async (key: keyof ModelAssignments) => {
+    if (!config) return;
+    const previousConfig = config;
+    const updatedConfig = { ...config };
+    delete updatedConfig[key];
+    setError(undefined);
+    try {
+      // The dedicated global delete API intentionally bypasses automatic
+      // model auto-fill. Updating the whole assignment object here would
+      // immediately repopulate a field the user explicitly cleared.
+      if (!agentId && !agentDefId) {
+        await window.service.externalAPI.deleteFieldFromDefaultAIConfig(key);
+      } else {
+        await updateConfig(updatedConfig);
+      }
+      setConfig(updatedConfig);
+    } catch (error) {
+      const normalizedError = toError(error);
+      setConfig(previousConfig);
+      setError({ operation: 'clear', error: normalizedError });
+      void window.service.native.log('error', 'Failed to clear model assignment', {
+        function: 'useAIConfigManagement.handleFieldClear',
+        key,
+        error: normalizedError,
+      });
+      throw normalizedError;
+    }
+  }, [agentDefId, agentId, config, updateConfig]);
+
+  const clearError = useCallback(() => {
+    setError(undefined);
+  }, []);
 
   return {
     loading,
     config,
+    error,
+    clearError,
     accounts,
     setAccounts,
     handleModelChange,
@@ -169,5 +240,6 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     handleTranscriptionsModelChange,
     handleFreeModelChange,
     handleConfigChange,
+    handleFieldClear,
   };
 };

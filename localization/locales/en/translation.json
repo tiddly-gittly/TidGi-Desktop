@@ -325,6 +325,7 @@
     "SaveErrorPrefix": "Failed to save"
   },
   "Error": {
+    "Generic": "Something went wrong.",
     "ALreadyExistErrorDescription": "A folder already exists at this path, and a new knowledge base cannot be created here.",
     "AlreadyExistError": "Folder already exist here.",
     "CopyWikiTemplateError": "E-3 CopyWikiTemplateError",
@@ -644,10 +645,12 @@
     "NotificationsDetail": "Control notifications pause time",
     "NotificationsDisableSchedule": "Automatically disable notifications by schedule:",
     "NotificationsMuteAudio": "Mute audio when notifications are paused",
+    "TimeFrom": "From",
+    "TimeTo": "To",
+    "ClearSearch": "Clear search",
     "UnreadCountBadge": "Show unread count badge on app icon",
     "OpenExternalAPISettings": "Open AI API Settings",
     "OpenAtLogin": "Open at login",
-    "OpenAtLoginMinimized": "Yes, but minimized (MacOS)",
     "OpenLogFolder": "Open the Log folder",
     "OpenLogFolderDetail": "When reporting a problem, please open the latest .log file in the folder and send its content to the developer, or paste it to pastebin.com and then paste the URL into the Github Issue",
     "OpenMetaDataFolder": "Open the metadata folder of TidGi workspace",

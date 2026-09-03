@@ -1,7 +1,7 @@
 import type { DialogProps } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ModelCatalogProvider, ProviderAccountConfig } from 'memeloop';
 import type { SetStateAction } from 'react';
@@ -31,6 +31,12 @@ const catalogProvider: ModelCatalogProvider = {
     toolCall: true,
     modalities: { input: ['text', 'image'], output: ['text'] },
   }],
+};
+
+const unicodeCatalogProvider: ModelCatalogProvider = {
+  ...catalogProvider,
+  id: 'provider2',
+  name: '供应商2',
 };
 
 const account: ProviderAccountConfig = {
@@ -129,7 +135,7 @@ describe('ProviderConfig', () => {
     if (typeof updater === 'function') expect(updater([account])).toEqual([]);
   });
 
-  it.each(['0提供方', '提供方'])('adds a valid canonical provider id: %s', async providerId => {
+  it.each(['2', '0提供方', '提供方'])('adds a valid canonical provider id: %s', async providerId => {
     const user = userEvent.setup();
     renderProviderConfig([], setAccounts);
 
@@ -147,6 +153,17 @@ describe('ProviderConfig', () => {
         models: [],
       });
     });
+  });
+
+  it('shows a visible required error when the provider id is empty', async () => {
+    const user = userEvent.setup();
+    renderProviderConfig([], setAccounts);
+
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    await user.click(screen.getByTestId('add-provider-submit-button'));
+
+    expect(screen.getByText('Preference.ProviderNameRequired')).toBeVisible();
+    expect(setProviderAccount).not.toHaveBeenCalled();
   });
 
   it('persists Unicode logical and wire model ids without exchanging them', async () => {
@@ -171,6 +188,28 @@ describe('ProviderConfig', () => {
     });
   });
 
+  it.each(['2', '0提供方', '提供方2', 'Mix提供方2'])('adds a model for a provider id containing Unicode/digits: %s', async providerId => {
+    const user = userEvent.setup();
+    const configuredAccount: ProviderAccountConfig = {
+      providerId,
+      providerType: 'openai-compatible',
+      baseUrl: 'https://models.example.test/v1',
+      models: [],
+    };
+    renderProviderConfig([configuredAccount], setAccounts);
+    await user.click(screen.getByTestId('add-new-model-button'));
+    await user.type(await screen.findByTestId('new-model-name-input'), '模型2');
+    await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型2:latest');
+    await user.click(screen.getByTestId('save-new-model-button'));
+
+    await waitFor(() => {
+      expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
+        providerId,
+        models: [{ modelId: '模型2', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' }],
+      }));
+    });
+  });
+
   it('offers exact catalog providers without a local provider projection', async () => {
     const user = userEvent.setup();
     renderProviderConfig([], setAccounts, [catalogProvider]);
@@ -179,5 +218,26 @@ describe('ProviderConfig', () => {
     await user.click(within(screen.getByTestId('new-provider-preset-select')).getByRole('combobox'));
     expect(await screen.findByRole('option', { name: 'OpenAI Main' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'OpenAI Main' })).toHaveAttribute('data-value', 'openai-main');
+  });
+
+  it('preserves a Unicode/digit catalog display name while keeping its canonical provider id', async () => {
+    const user = userEvent.setup();
+    renderProviderConfig([], setAccounts, [unicodeCatalogProvider]);
+
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    await user.click(within(screen.getByTestId('new-provider-preset-select')).getByRole('combobox'));
+    await screen.findByRole('option', { name: '供应商2' });
+    fireEvent.change(screen.getByTestId('new-provider-preset-select').querySelector('input')!, {
+      target: { value: 'provider2' },
+    });
+    await waitFor(() => expect(screen.getByTestId('new-provider-name-input')).toHaveValue('provider2'));
+    await user.click(screen.getByTestId('add-provider-submit-button'));
+
+    await waitFor(() => {
+      expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
+        providerId: 'provider2',
+        catalogProvider: expect.objectContaining({ id: 'provider2', name: '供应商2' }),
+      }));
+    });
   });
 });

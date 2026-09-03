@@ -1,7 +1,7 @@
 import type { AgentDefinition, AgentFrameworkConfig } from 'memeloop';
 import { describe, expect, it } from 'vitest';
 
-import { applyEditedAgentFrameworkConfig, createEditableAgentFrameworkConfig } from '../agentDefinitionFrameworkConfig';
+import { createEditableAgentFrameworkConfig } from '../agentDefinitionFrameworkConfig';
 
 const definition = (): AgentDefinition => ({
   id: 'memeloop:general-assistant',
@@ -34,17 +34,21 @@ describe('agent definition framework config editing', () => {
     expect(customTool).toMatchObject({ enabled: false });
   });
 
-  it('persists the complete edited config and explicitly clears host tool fallback', () => {
+  it('keeps the canonical host tool declarations separate from the editable config', () => {
     const current = definition();
+    const editable = createEditableAgentFrameworkConfig(current);
     const editedConfig: AgentFrameworkConfig = {
-      ...createEditableAgentFrameworkConfig(current),
-      plugins: createEditableAgentFrameworkConfig(current).plugins?.map(plugin => plugin.toolId === 'wikiSearch' ? { ...plugin, enabled: false } : plugin),
+      ...editable,
+      plugins: editable.plugins?.map(plugin => plugin.toolId === 'wikiSearch' ? { ...plugin, enabled: false } : plugin),
     };
-    const edited = applyEditedAgentFrameworkConfig(current, editedConfig);
+    const edited: AgentDefinition = {
+      ...current,
+      agentFrameworkConfig: editedConfig,
+    };
 
     expect(edited.name).toBe('Customized assistant');
     expect(edited.description).toBe('Keep me');
     expect(edited.agentFrameworkConfig?.plugins?.find(plugin => plugin.toolId === 'wikiSearch')?.enabled).toBe(false);
-    expect(edited.agentTools).toEqual([]);
+    expect(edited.agentTools).toBe(current.agentTools);
   });
 });

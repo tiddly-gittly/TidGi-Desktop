@@ -30,6 +30,7 @@
     "CurrentAgent": "显示智能体日志: {{agentId}}",
     "Description": "此智能体的外部接口调用调试日志。在偏好设置中启用「外部接口调试」以开始记录。",
     "ErrorDetails": "错误详情",
+    "Loading": "正在加载接口日志…",
     "NoLogs": "未找到此智能体的接口调用日志",
     "NoResponse": "无响应",
     "RequestDetails": "请求详情",
@@ -70,6 +71,10 @@
   },
   "Chat": {
     "Cancel": "取消",
+    "Attachment": {
+      "RemoveFile": "移除 {{name}}",
+      "RemoveTiddler": "从 {{workspaceName}} 移除 {{title}}"
+    },
     "GenericError": "智能体未能完成此请求，请重试。",
     "OperationError": "对话操作失败，请重试。",
     "ExecutionTarget": {
@@ -382,6 +387,14 @@
     "FailedToDeleteProvider": "无法删除提供商 {{providerName}}",
     "FailedToRemoveModel": "无法删除模型",
     "FailedToRefreshOfficialModels": "刷新模型列表失败",
+    "FailedToLoadAIConfig": "加载 AI 模型设置失败",
+    "FailedToUpdateAIConfig": "保存 AI 模型设置失败",
+    "FailedToClearAIConfig": "清除所选 AI 模型失败",
+    "FailedToLoadProviderCatalog": "加载提供商模型目录失败",
+    "FailedToSaveModelParameters": "保存模型参数失败",
+    "FailedToLoadFrameworkConfig": "加载智能体框架设置失败",
+    "FailedToUpdateFrameworkConfig": "保存智能体框架设置失败",
+    "FailedToClearFrameworkConfig": "清除智能体框架设置失败",
     "FailedToSaveSettings": "无法保存设置",
     "FailedToUpdateModel": "无法更新模型",
     "FailedToUpdateProviderStatus": "无法更新提供商状态",
@@ -398,9 +411,11 @@
     "ModelFeatures": "模型功能",
     "ModelName": "模型名称",
     "ModelNameRequired": "模型名称为必填项",
+    "ModelIdInvalid": "模型 ID 不能包含首尾空白或控制字符，且不能超过 {{maxBytes}} 个 UTF-8 字节。",
     "LogicalModelId": "逻辑模型 ID",
     "WireModelId": "提供商模型 ID",
     "WireModelIdDescription": "实际发送给提供商的精确模型标识。",
+    "EditModel": "编辑模型",
     "APIMode": "API 模式",
     "ChatCompletionsAPIMode": "聊天补全",
     "ResponsesAPIMode": "Responses",
@@ -457,6 +472,7 @@
     "TemperatureDescription": "较低的值会产生更确定性、更集中的响应，较高的值会产生更多样化、更创造性的响应",
     "TopP": "Top P",
     "TopPDescription": "控制响应的随机性。较低的值使响应更确定，较高的值允许更多的可能性",
+    "TokensUnit": "个令牌",
     "WorkflowFile": "工作流文件",
     "WorkflowFileHelp": "ComfyUI 工作流 JSON 文件的路径",
     "WorkflowFilePath": "工作流文件路径"
@@ -515,7 +531,9 @@
     "ShowEditor": "显示编辑",
     "ShowPreview": "显示预览",
     "Tree": "树形视图",
-    "ValidationErrors": "发现错误"
+    "ValidationErrors": "发现错误",
+    "NoPrompts": "未配置提示词",
+    "Prompt": "提示词"
   },
   "PromptConfig": {
     "AddItem": "添加项目",
@@ -533,7 +551,9 @@
       "HelperText": "输入后按 Enter 键添加标签，或从预定义标签中选择",
       "NoOptions": "没有可选标签",
       "Placeholder": "输入标签..."
-    }
+    },
+    "NoneOption": "无",
+    "ConfigurationSections": "配置部分"
   },
   "Schema": {
     "AlarmClock": {

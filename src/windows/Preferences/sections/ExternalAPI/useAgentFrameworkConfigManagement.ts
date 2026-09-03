@@ -1,14 +1,29 @@
 import type { AgentFrameworkConfig } from 'memeloop';
-import React, { useCallback, useEffect, useState } from 'react';
+import { mergeAgentToolsIntoFrameworkConfig } from 'memeloop/tools';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface useAgentFrameworkConfigManagementProps {
   agentDefId?: string;
   agentId?: string;
 }
 
+export type AgentFrameworkConfigOperation = 'load' | 'update' | 'clear';
+
+export interface AgentFrameworkConfigFailure {
+  operation: AgentFrameworkConfigOperation;
+  error: Error;
+}
+
+function toError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value));
+}
+
 interface UseAgentFrameworkConfigManagementResult {
   loading: boolean;
   config: AgentFrameworkConfig | undefined;
+  /** The last failed operation. The UI maps the operation to a localized message. */
+  error?: AgentFrameworkConfigFailure;
+  clearError?: () => void;
   /** 立即更新本地 config（用于输入时保持 formData 与输入一致，避免光标跳动） */
   setConfig: React.Dispatch<React.SetStateAction<AgentFrameworkConfig | undefined>>;
   schema?: Record<string, unknown>;
@@ -22,43 +37,75 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<AgentFrameworkConfig | undefined>(undefined);
   const [schema, setSchema] = useState<Record<string, unknown> | undefined>(undefined);
+  const [error, setError] = useState<AgentFrameworkConfigFailure>();
+  const persistedConfigReference = useRef<AgentFrameworkConfig | undefined>(undefined);
 
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         setLoading(true);
-        let finalConfig: AgentFrameworkConfig | undefined;
-        let agentFrameworkID: string | undefined;
+        setError(undefined);
+        setConfig(undefined);
+        persistedConfigReference.current = undefined;
+        setSchema(undefined);
+        let rawConfig: AgentFrameworkConfig | undefined;
+        let agentDefinition: Awaited<ReturnType<typeof window.service.agentDefinition.getAgentDef>> | undefined;
 
         if (agentId) {
           const agentInstance = await window.service.agentInstance.getAgentMetadata(agentId);
-          let agentDefinition: Awaited<ReturnType<typeof window.service.agentDefinition.getAgentDef>> | undefined;
           if (agentInstance?.agentDefId) {
             agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
           }
-          finalConfig = agentInstance?.agentFrameworkConfig ?? agentDefinition?.agentFrameworkConfig;
-          agentFrameworkID = agentDefinition?.agentFrameworkID;
+          rawConfig = agentInstance?.agentFrameworkConfig ?? agentDefinition?.agentFrameworkConfig;
         } else if (agentDefId) {
-          const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
-          if (agentDefinition?.agentFrameworkConfig) {
-            finalConfig = agentDefinition.agentFrameworkConfig;
-          }
-          agentFrameworkID = agentDefinition?.agentFrameworkID;
+          agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
+          rawConfig = agentDefinition?.agentFrameworkConfig;
         }
+
+        // Built-in profiles use the Core loop's `loopId` rather than the
+        // Desktop-only `agentFrameworkID`, and persisted definitions may lose
+        // that non-storage field. A canonical prompt config is still enough
+        // to select the built-in schema as a safe fallback.
+        const definitionLoopId = agentDefinition !== undefined && 'loopId' in agentDefinition &&
+            typeof agentDefinition.loopId === 'string'
+          ? agentDefinition.loopId
+          : undefined;
+        const isAgentToolLoopConfig = (
+          rawConfig !== undefined && ['prompts', 'plugins', 'response'].some(key => key in rawConfig)
+        ) || (agentDefinition?.agentTools?.length ?? 0) > 0;
+        const agentFrameworkID = agentDefinition?.agentFrameworkID ??
+          definitionLoopId ??
+          (isAgentToolLoopConfig ? 'agent-tool-loop' : undefined);
 
         if (agentFrameworkID) {
           try {
             const frameworkSchema = await window.service.agentInstance.getFrameworkConfigSchema(agentFrameworkID);
             setSchema(frameworkSchema);
           } catch (error) {
-            void window.service.native.log('error', 'Failed to load framework schema', { function: 'useAgentFrameworkConfigManagement.fetchConfig', error });
+            const normalizedError = toError(error);
+            setError({ operation: 'load', error: normalizedError });
+            void window.service.native.log('error', 'Failed to load framework schema', {
+              function: 'useAgentFrameworkConfigManagement.fetchConfig',
+              error: normalizedError,
+            });
           }
         }
 
+        const finalConfig = rawConfig !== undefined || (agentDefinition?.agentTools?.length ?? 0) > 0
+          ? mergeAgentToolsIntoFrameworkConfig(rawConfig, agentDefinition?.agentTools)
+          : undefined;
         setConfig(finalConfig);
+        persistedConfigReference.current = finalConfig;
         setLoading(false);
       } catch (error) {
-        void window.service.native.log('error', 'Failed to load framework configuration', { function: 'useAgentFrameworkConfigManagement.fetchConfig', error });
+        const normalizedError = toError(error);
+        setConfig(undefined);
+        persistedConfigReference.current = undefined;
+        setError({ operation: 'load', error: normalizedError });
+        void window.service.native.log('error', 'Failed to load framework configuration', {
+          function: 'useAgentFrameworkConfigManagement.fetchConfig',
+          error: normalizedError,
+        });
         setLoading(false);
       }
     };
@@ -67,6 +114,8 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
   }, [agentDefId, agentId]);
 
   const persistConfig = useCallback(async (newConfig: AgentFrameworkConfig) => {
+    const previousConfig = persistedConfigReference.current;
+    setError(undefined);
     try {
       if (agentId) {
         await window.service.agentInstance.updateAgent(agentId, {
@@ -79,15 +128,22 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
             ...agentDefinition,
             agentFrameworkConfig: newConfig,
           });
+        } else {
+          throw new Error(`Agent definition not found: ${agentDefId}`);
         }
       } else {
-        void window.service.native.log('error', 'No agent ID or definition ID provided for updating handler config', {
-          function: 'useAgentFrameworkConfigManagement.persistConfig',
-        });
+        throw new Error('An agent ID or definition ID is required to update framework configuration');
       }
+      persistedConfigReference.current = newConfig;
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update framework configuration', { function: 'useAgentFrameworkConfigManagement.persistConfig', error });
-      throw error;
+      const normalizedError = toError(error);
+      setConfig(previousConfig);
+      setError({ operation: 'update', error: normalizedError });
+      void window.service.native.log('error', 'Failed to update framework configuration', {
+        function: 'useAgentFrameworkConfigManagement.persistConfig',
+        error: normalizedError,
+      });
+      throw normalizedError;
     }
   }, [agentId, agentDefId]);
 
@@ -96,9 +152,15 @@ export const useAgentFrameworkConfigManagement = ({ agentDefId, agentId }: useAg
     await persistConfig(newConfig);
   }, [persistConfig]);
 
+  const clearError = useCallback(() => {
+    setError(undefined);
+  }, []);
+
   return {
     loading,
     config,
+    error,
+    clearError,
     setConfig,
     schema,
     persistConfig,

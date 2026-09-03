@@ -11,6 +11,7 @@ import { ExternalAPI } from '../index';
 const account: ProviderAccountConfig = {
   providerId: 'openai-main',
   providerType: 'openai',
+  secretRef: 'desktop-keychain:openai-main',
   enabled: true,
   models: [
     { modelId: 'reasoning', wireModelId: 'gpt-5.6', apiMode: 'responses' },
@@ -123,5 +124,14 @@ describe('ExternalAPI preferences section', () => {
     });
     expect(getProviderCatalog).toHaveBeenNthCalledWith(1, false);
     expect(getProviderCatalog).toHaveBeenNthCalledWith(2, true);
+  });
+
+  it('renders a localized catalog loading failure instead of logging it only', async () => {
+    getProviderCatalog.mockRejectedValueOnce(new Error('catalog unavailable'));
+    renderExternalAPI();
+
+    await waitFor(() => {
+      expect(screen.getByText('Preference.FailedToLoadProviderCatalog')).toBeInTheDocument();
+    });
   });
 });

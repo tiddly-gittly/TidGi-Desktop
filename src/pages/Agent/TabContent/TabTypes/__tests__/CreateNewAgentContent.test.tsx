@@ -426,7 +426,7 @@ describe('CreateNewAgentContent', () => {
       </ThemeProvider>,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: '展开' }));
+    fireEvent.click(await screen.findByTestId('prompt-array-item-toggle-0'));
     const promptInput = await screen.findByDisplayValue('Original prompt');
     fireEvent.change(promptInput, { target: { value: 'Latest prompt edit' } });
     fireEvent.click(screen.getByTestId('next-button'));

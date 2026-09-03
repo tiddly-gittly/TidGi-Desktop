@@ -1,21 +1,22 @@
-import type { HostAgentToolConfig } from 'memeloop';
+import type { AgentDefinitionToolConfig } from 'memeloop';
 import { describe, expect, it } from 'vitest';
 
 import { mergeDesktopGeneralAssistantTools, shouldRefreshBuiltinDefinition } from '../index';
 
 describe('bundled Agent definition refresh', () => {
   it('adds missing Desktop tools without replacing a configured tool', () => {
-    const configuredWikiSearch = {
+    const configuredWikiSearch: AgentDefinitionToolConfig = {
       toolId: 'wikiSearch',
       parameters: { wikiSearchParam: { sourceType: 'custom-wiki' } },
-    } as HostAgentToolConfig;
+    };
+    const desktopTools: AgentDefinitionToolConfig[] = [
+      { toolId: 'workspacesList' },
+      { toolId: 'wikiSearch', parameters: { wikiSearchParam: { sourceType: 'desktop-wiki' } } },
+      { toolId: 'wikiOperation' },
+    ];
     const result = mergeDesktopGeneralAssistantTools(
       [configuredWikiSearch],
-      [
-        { toolId: 'workspacesList' },
-        { toolId: 'wikiSearch', parameters: { wikiSearchParam: { sourceType: 'desktop-wiki' } } },
-        { toolId: 'wikiOperation' },
-      ] as HostAgentToolConfig[],
+      desktopTools,
     );
 
     expect(result.map(tool => tool.toolId)).toEqual(['workspacesList', 'wikiSearch', 'wikiOperation']);

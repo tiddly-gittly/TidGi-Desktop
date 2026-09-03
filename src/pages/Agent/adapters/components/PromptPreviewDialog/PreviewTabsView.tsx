@@ -44,12 +44,13 @@ const PreviewContent = styled('div', {
 `;
 
 function LastUpdatedIndicator({ lastUpdated }: { lastUpdated: Date | null }) {
-  const { t } = useTranslation('agent');
+  const { i18n, t } = useTranslation('agent');
   if (!lastUpdated) return null;
+  const locale = i18n.resolvedLanguage ?? i18n.language;
   return (
     <Box sx={{ mt: 2, pt: 1, borderTop: '1px dashed', borderColor: 'divider', display: 'flex', justifyContent: 'flex-end' }}>
       <Typography variant='caption' sx={{ color: 'text.secondary' }}>
-        {t('Prompt.LastUpdated')}: {lastUpdated.toLocaleTimeString()}
+        {t('Prompt.LastUpdated')}: {lastUpdated.toLocaleTimeString(locale)}
       </Typography>
     </Box>
   );
@@ -69,6 +70,13 @@ const TreeContent = memo<{
     <PreviewContent isFullScreen={isFullScreen}>
       <PromptTree
         prompts={prompts}
+        labels={{
+          empty: t('Prompt.NoPrompts'),
+          prompt: t('Prompt.Prompt'),
+          role: role => t(`Prompt.Role.${role ?? ''}`, { defaultValue: role ?? '' }),
+          expand: t('PromptConfig.Expand'),
+          collapse: t('PromptConfig.Collapse'),
+        }}
         onFieldSelect={(paths: string[]) => {
           controller.setFormFieldsToScrollTo(paths);
         }}

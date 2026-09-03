@@ -4,12 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   language: 'en-US',
   scheduledTaskEditor: vi.fn<(properties: Record<string, unknown>) => void>(),
-  translate: (key: string, parameters?: { agentName?: string; returnObjects?: boolean }) =>
-    key === 'EditAgent.ScheduleCronLocale' && parameters?.returnObjects
-      ? { cronDescriptionText: 'fr' }
-      : parameters?.agentName
-      ? `${key}:${parameters.agentName}`
-      : key,
+  translate: (key: string, parameters?: { agentName?: string; returnObjects?: boolean }) => {
+    if (key === 'EditAgent.ScheduleCronLocale' && parameters?.returnObjects) {
+      const language = mocks.language.toLowerCase();
+      return { cronDescriptionText: language.startsWith('fr') ? 'fr' : language.startsWith('ja') ? 'ja' : 'en' };
+    }
+    return parameters?.agentName ? `${key}:${parameters.agentName}` : key;
+  },
 }));
 
 vi.mock('@memeloop/react-ui/agent/scheduling', () => ({
@@ -120,7 +121,7 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
       }),
     };
 
-    render(<ScheduledWakeupEditor agentDefinition={agentDefinition} />);
+    const view = render(<ScheduledWakeupEditor agentDefinition={agentDefinition} />);
 
     await waitFor(() => {
       expect(mocks.scheduledTaskEditor).toHaveBeenCalled();
@@ -140,5 +141,14 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
     const labels = properties?.labels as { defaultTaskName?: (name: string) => string; defaultMessage?: string } | undefined;
     expect(labels?.defaultTaskName?.('Assistant')).toBe('EditAgent.ScheduleDefaultTaskName:Assistant');
     expect(labels?.defaultMessage).toBe('EditAgent.ScheduleMessagePlaceholder');
+
+    mocks.language = 'ja-JP';
+    view.rerender(<ScheduledWakeupEditor agentDefinition={agentDefinition} />);
+    await waitFor(() => {
+      expect(mocks.scheduledTaskEditor.mock.calls.at(-1)?.[0]).toMatchObject({
+        customLocale: expect.objectContaining({ cronDescriptionText: 'ja' }),
+        dateLocale: 'ja-JP',
+      });
+    });
   });
 });

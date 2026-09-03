@@ -61,7 +61,7 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
   onClose,
   agentInstanceId,
 }) => {
-  const { t } = useTranslation('agent');
+  const { i18n, t } = useTranslation('agent');
   const [logs, setLogs] = useState<ExternalAPILogEntity[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -88,7 +88,7 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
   };
 
   const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat('zh-CN', {
+    return new Intl.DateTimeFormat(i18n.resolvedLanguage ?? i18n.language, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -152,7 +152,7 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
             </Typography>
             {agentInstanceId && (
               <Typography variant='caption' color='textSecondary'>
-                Agent ID: {agentInstanceId}
+                {t('APILogs.CurrentAgent', { agentId: agentInstanceId })}
               </Typography>
             )}
           </Box>
@@ -162,7 +162,7 @@ export const APILogsDialog: React.FC<APILogsDialogProps> = ({
         </IconButton>
       </StyledDialogTitle>
       <DialogContent>
-        {loading ? <Typography>{t('Loading')}</Typography> : logs.length === 0
+        {loading ? <Typography>{t('APILogs.Loading')}</Typography> : logs.length === 0
           ? (
             <Typography color='textSecondary' align='center' sx={{ py: 4 }}>
               {t('APILogs.NoLogs')}

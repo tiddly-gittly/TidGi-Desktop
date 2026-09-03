@@ -109,6 +109,10 @@ export function ProviderConfig({
 
   const addProvider = async () => {
     const providerId = newProviderForm.providerId.trim();
+    if (!providerId) {
+      setSnackbar({ message: t('Preference.ProviderNameRequired'), severity: 'error' });
+      return;
+    }
     if (!isProviderId(providerId) || new TextEncoder().encode(providerId).byteLength > PROVIDER_ID_MAX_UTF8_BYTES) {
       setSnackbar({
         message: t('Preference.ProviderIdInvalid', { maxBytes: PROVIDER_ID_MAX_UTF8_BYTES }),
@@ -138,9 +142,9 @@ export function ProviderConfig({
       setShowAddProviderForm(false);
       setSelectedCatalogProviderId('');
       setNewProviderForm({ providerId: '', providerType: 'openai-compatible', baseUrl: '' });
-      setSnackbar({ message: t('Preference.ProviderAdded'), severity: 'success' });
-    } catch (error) {
-      setSnackbar({ message: error instanceof Error ? error.message : String(error), severity: 'error' });
+      setSnackbar({ message: t('Preference.ProviderAddedSuccessfully'), severity: 'success' });
+    } catch {
+      setSnackbar({ message: t('Preference.FailedToAddProvider'), severity: 'error' });
     }
   };
 
@@ -160,9 +164,9 @@ export function ProviderConfig({
     await persistAccount({ ...selectedAccount, ...updates });
   };
 
-  const runMutation = (operation: () => Promise<void>) => {
-    void operation().catch((error: unknown) => {
-      setSnackbar({ message: error instanceof Error ? error.message : String(error), severity: 'error' });
+  const runMutation = (operation: () => Promise<void>, fallbackMessage = t('Preference.FailedToSaveSettings')) => {
+    void Promise.resolve().then(operation).catch(() => {
+      setSnackbar({ message: fallbackMessage, severity: 'error' });
     });
   };
 
@@ -177,6 +181,10 @@ export function ProviderConfig({
         ? selectedAccount.models.find(candidate => candidate.modelId === editingModelId)
         : undefined;
       const routes = selectedAccount.models.filter(candidate => candidate.modelId !== previousRoute?.modelId);
+      if (routes.some(candidate => candidate.modelId === route.modelId)) {
+        setSnackbar({ message: t('Preference.ModelAlreadyExists'), severity: 'error' });
+        return;
+      }
       routes.push(route);
       const catalogProvider = selectedAccount.catalogProvider ?? {
         id: selectedAccount.providerId,
@@ -197,8 +205,11 @@ export function ProviderConfig({
       });
       setModelDialogOpen(false);
       setEditingModelId(undefined);
-    } catch (error) {
-      setSnackbar({ message: error instanceof Error ? error.message : String(error), severity: 'error' });
+    } catch {
+      setSnackbar({
+        message: t(editingModelId ? 'Preference.FailedToUpdateModel' : 'Preference.FailedToAddModel'),
+        severity: 'error',
+      });
     }
   };
 
@@ -208,8 +219,6 @@ export function ProviderConfig({
     try {
       const updated = await window.service.externalAPI.refreshProviderAccountModels(selectedAccount.providerId);
       setAccounts(current => current.map(account => account.providerId === updated.providerId ? updated : account));
-    } catch (error) {
-      setSnackbar({ message: error instanceof Error ? error.message : String(error), severity: 'error' });
     } finally {
       setRefreshingProvider(undefined);
     }
@@ -256,21 +265,26 @@ export function ProviderConfig({
           }}
           onFieldCommit={field => {
             if (field === 'apiKey') {
-              runMutation(() =>
-                window.service.externalAPI.setProviderApiKey(
-                  selectedAccount.providerId,
-                  apiKeys[selectedAccount.providerId] ?? '',
-                )
+              runMutation(
+                () =>
+                  window.service.externalAPI.setProviderApiKey(
+                    selectedAccount.providerId,
+                    apiKeys[selectedAccount.providerId] ?? '',
+                  ),
+                t('Preference.FailedToSaveSettings'),
               );
             } else {
-              runMutation(() => updateSelectedAccount({ baseUrl: baseUrls[selectedAccount.providerId] || undefined }));
+              runMutation(
+                () => updateSelectedAccount({ baseUrl: baseUrls[selectedAccount.providerId] || undefined }),
+                t('Preference.FailedToSaveSettings'),
+              );
             }
           }}
           onEnabledChange={enabled => {
-            runMutation(() => updateSelectedAccount({ enabled }));
+            runMutation(() => updateSelectedAccount({ enabled }), t('Preference.FailedToUpdateProviderStatus'));
           }}
           onRemoveModel={modelId => {
-            runMutation(() => removeModel(modelId));
+            runMutation(() => removeModel(modelId), t('Preference.FailedToRemoveModel'));
           }}
           onEditModel={modelId => {
             setEditingModelId(modelId);
@@ -281,10 +295,15 @@ export function ProviderConfig({
             setModelDialogOpen(true);
           }}
           onDeleteProvider={() => {
-            runMutation(deleteProvider);
+            runMutation(
+              deleteProvider,
+              t('Preference.FailedToDeleteProvider', {
+                providerName: selectedAccount.catalogProvider?.name ?? selectedAccount.providerId,
+              }),
+            );
           }}
           onRefreshModels={() => {
-            runMutation(refreshModels);
+            runMutation(refreshModels, t('Preference.FailedToRefreshOfficialModels'));
           }}
           refreshingModels={refreshingProvider === selectedAccount.providerId}
           focusField={focusTarget?.providerId === selectedAccount.providerId ? focusTarget.field : undefined}

@@ -27,11 +27,16 @@ export async function resolveWikiAgentId(
     return service.createAgent('memeloop:general-assistant').then(agent => agent.id);
   })();
   pendingResolution.set(service, resolution);
-  void resolution.finally(() => {
-    if (pendingResolution.get(service) === resolution) pendingResolution.delete(service);
-  }).catch(() => {
-    // The original consumer observes this failure. This branch only prevents
-    // an unhandled rejection from the cleanup promise returned by finally.
-  });
+  // Attach both settlement handlers to the derived cleanup promise so a
+  // rejected resolution cannot become an unhandled rejection. The original
+  // `resolution` is returned unchanged and remains observable to its caller.
+  void resolution.then(
+    () => {
+      if (pendingResolution.get(service) === resolution) pendingResolution.delete(service);
+    },
+    () => {
+      if (pendingResolution.get(service) === resolution) pendingResolution.delete(service);
+    },
+  );
   return resolution;
 }

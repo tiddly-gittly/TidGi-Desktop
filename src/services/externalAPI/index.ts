@@ -32,8 +32,8 @@ import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
 import type { AIEmbeddingResponse, AIImageGenerationResponse, AISpeechResponse, AITranscriptionResponse, DesktopExternalAPISettings, IExternalAPIService } from './interface';
 import { discoverOfficialModelIds, mergeDiscoveredProviderRoutes } from './officialModels';
-import { isLoopbackOpenAIBaseURL } from './openAIBaseURL';
 import { createDesktopModelCatalogManager } from './providerCatalog';
+import { hasUsableProviderCredential } from './providerCredentials';
 import { desktopLlmProviderFactoryPort } from './providerFactory';
 
 /**
@@ -154,7 +154,15 @@ export class ExternalAPIService implements IExternalAPIService {
       modelId: string;
     }> = [];
     for (const account of accounts) {
-      if (account.enabled === false) continue;
+      if (
+        account.enabled === false ||
+        !hasUsableProviderCredential(
+          account,
+          this.userSettings.providerCredentials.find(
+            credential => credential.providerId === account.providerId,
+          )?.encryptedApiKey,
+        )
+      ) continue;
       for (const route of account.models) {
         const model = account.catalogProvider?.models.find(candidate => candidate.id === route.modelId || candidate.id === route.wireModelId);
         allModels.push({ account, model, modelId: route.modelId });
@@ -365,7 +373,16 @@ export class ExternalAPIService implements IExternalAPIService {
         providerCredentials,
       };
     }
+    this.userSettings = {
+      ...this.userSettings,
+      modelAssignments: retainValidModelAssignments(
+        this.userSettings.accounts,
+        this.userSettings.modelAssignments,
+        this.userSettings.providerCredentials,
+      ),
+    };
     this.saveSettingsToDatabase();
+    this.reactToConfigChange();
   }
 
   async getProviderCatalog(refresh = false): Promise<ModelCatalogResolution> {
@@ -416,16 +433,14 @@ export class ExternalAPIService implements IExternalAPIService {
         return false;
       }
       const [account, apiKey] = runtimeAccount;
-
-      // Some providers like Ollama don't require API keys, check if it's enabled
-      // For providers that require API keys (most cloud providers), verify it's not empty
-      const isLocalOpenAICompatible = account.providerType === 'openai-compatible' && isLoopbackOpenAIBaseURL(account.baseUrl);
-      const requiresApiKey = account.providerType !== 'ollama' && account.providerType !== 'comfyui' && !isLocalOpenAICompatible;
-      if (requiresApiKey && !apiKey.trim()) {
+      if (
+        account.enabled === false ||
+        !account.models.some(route => route.modelId === aiConfig.free?.modelId)
+      ) {
         return false;
       }
 
-      return true;
+      return hasUsableProviderCredential(account, apiKey);
     } catch {
       return false;
     }
@@ -449,7 +464,11 @@ export class ExternalAPIService implements IExternalAPIService {
     this.userSettings = {
       ...this.userSettings,
       accounts,
-      modelAssignments: retainValidModelAssignments(accounts, this.userSettings.modelAssignments),
+      modelAssignments: retainValidModelAssignments(
+        accounts,
+        this.userSettings.modelAssignments,
+        this.userSettings.providerCredentials,
+      ),
     };
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
@@ -464,7 +483,14 @@ export class ExternalAPIService implements IExternalAPIService {
         ...this.userSettings,
         accounts,
         providerCredentials: this.userSettings.providerCredentials.filter(credential => credential.providerId !== providerId),
-        modelAssignments: retainValidModelAssignments(accounts, this.userSettings.modelAssignments),
+      };
+      this.userSettings = {
+        ...this.userSettings,
+        modelAssignments: retainValidModelAssignments(
+          accounts,
+          this.userSettings.modelAssignments,
+          this.userSettings.providerCredentials,
+        ),
       };
       this.saveSettingsToDatabase();
     }
@@ -478,7 +504,11 @@ export class ExternalAPIService implements IExternalAPIService {
     });
     this.userSettings = {
       ...this.userSettings,
-      modelAssignments: normalized.modelAssignments,
+      modelAssignments: retainValidModelAssignments(
+        this.userSettings.accounts,
+        normalized.modelAssignments,
+        this.userSettings.providerCredentials,
+      ),
     };
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
@@ -526,51 +556,49 @@ export class ExternalAPIService implements IExternalAPIService {
   ): AsyncGenerator<PortableLlmStreamPart, void, unknown> {
     assertPortableLlmRequest(request);
     const { requestId, controller } = this.prepareAIRequest();
-    const timeoutSignal = options?.requestTimeoutMs && options.requestTimeoutMs > 0
-      ? AbortSignal.timeout(options.requestTimeoutMs)
-      : undefined;
-    const signal = AbortSignal.any(
-      [request.signal, controller.signal, timeoutSignal]
-        .filter((candidate): candidate is AbortSignal => candidate !== undefined),
-    );
-    const runtimeAccount = await this.getProviderAccount(request.providerId);
-    if (!runtimeAccount) {
-      this.cleanupAIRequest(requestId);
-      throw new Error(`Provider account not found: ${request.providerId}`);
-    }
-    const [account, apiKey] = runtimeAccount;
-    const route = resolveProviderModelRoute(account, request.logicalModelId);
-    if (route.wireModelId !== request.wireModelId) {
-      this.cleanupAIRequest(requestId);
-      throw new Error(`Model route not found: ${request.providerId}/${request.logicalModelId}`);
-    }
-    if (route.apiMode !== request.apiMode) {
-      this.cleanupAIRequest(requestId);
-      throw new Error(`Model API mode mismatch: ${request.providerId}/${request.logicalModelId}`);
-    }
+    let signal: AbortSignal | undefined;
+    let responseText = '';
+    let loggingStarted = false;
+    try {
+      const timeoutSignal = options?.requestTimeoutMs && options.requestTimeoutMs > 0
+        ? AbortSignal.timeout(options.requestTimeoutMs)
+        : undefined;
+      signal = AbortSignal.any(
+        [request.signal, controller.signal, timeoutSignal]
+          .filter((candidate): candidate is AbortSignal => candidate !== undefined),
+      );
+      const runtimeAccount = await this.getProviderAccount(request.providerId);
+      if (!runtimeAccount) throw new Error(`Provider account not found: ${request.providerId}`);
+      const [account, apiKey] = runtimeAccount;
+      const route = resolveProviderModelRoute(account, request.logicalModelId);
+      if (route.wireModelId !== request.wireModelId) {
+        throw new Error(`Model route not found: ${request.providerId}/${request.logicalModelId}`);
+      }
+      if (route.apiMode !== request.apiMode) {
+        throw new Error(`Model API mode mismatch: ${request.providerId}/${request.logicalModelId}`);
+      }
 
-    const loggedRequest = {
-      providerId: request.providerId,
-      logicalModelId: request.logicalModelId,
-      wireModelId: request.wireModelId,
-      apiMode: request.apiMode,
-      messageCount: request.messages.length,
-    };
-    const logStart = this.logAPICall(requestId, 'streaming', 'start', {
-      agentInstanceId: options?.agentInstanceId,
-      requestMetadata: {
+      const loggedRequest = {
         providerId: request.providerId,
         logicalModelId: request.logicalModelId,
         wireModelId: request.wireModelId,
+        apiMode: request.apiMode,
         messageCount: request.messages.length,
-      },
-      requestPayload: loggedRequest,
-    });
-    if (options?.awaitLogs) await logStart;
-    else void logStart;
+      };
+      const logStart = this.logAPICall(requestId, 'streaming', 'start', {
+        agentInstanceId: options?.agentInstanceId,
+        requestMetadata: {
+          providerId: request.providerId,
+          logicalModelId: request.logicalModelId,
+          wireModelId: request.wireModelId,
+          messageCount: request.messages.length,
+        },
+        requestPayload: loggedRequest,
+      });
+      loggingStarted = true;
+      if (options?.awaitLogs) await logStart;
+      else void logStart;
 
-    let responseText = '';
-    try {
       signal.throwIfAborted();
       const provider = await desktopLlmProviderFactoryPort.createFromAccountRoute({ account, route, apiKey });
       const result = await provider.chat({ ...request, signal });
@@ -589,8 +617,9 @@ export class ExternalAPIService implements IExternalAPIService {
       if (options?.awaitLogs) await logDone;
       else void logDone;
     } catch (error) {
+      if (!loggingStarted) throw error;
       const detail = extractErrorDetails(error, request.providerId);
-      const logError = this.logAPICall(requestId, 'streaming', signal.aborted ? 'cancel' : 'error', {
+      const logError = this.logAPICall(requestId, 'streaming', signal?.aborted ? 'cancel' : 'error', {
         errorDetail: detail,
         responseContent: responseText,
       });
@@ -621,27 +650,27 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AIEmbeddingResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
-
-    // Get embedding model configuration, fallback to default
-    const modelConfig = config.embedding ?? config.default;
-    if (!modelConfig?.providerId || !modelConfig?.modelId) {
-      return {
-        requestId,
-        embeddings: [],
-        logicalModelId: 'unknown',
-        object: 'error',
-        status: 'error',
-        errorDetail: {
-          name: 'MissingConfigError',
-          code: 'NO_EMBEDDING_MODEL',
-          providerId: 'unknown',
-        },
-      };
-    }
-
-    logger.debug(`[${requestId}] Starting generateEmbeddings with config`, { inputCount: inputs.length });
-
+    let modelConfig: { providerId: string; modelId: string } | undefined;
     try {
+      // Get embedding model configuration, fallback to default
+      modelConfig = config?.embedding ?? config?.default;
+      if (!modelConfig?.providerId || !modelConfig?.modelId) {
+        return {
+          requestId,
+          embeddings: [],
+          logicalModelId: 'unknown',
+          object: 'error',
+          status: 'error',
+          errorDetail: {
+            name: 'MissingConfigError',
+            code: 'NO_EMBEDDING_MODEL',
+            providerId: 'unknown',
+          },
+        };
+      }
+
+      logger.debug(`[${requestId}] Starting generateEmbeddings with config`, { inputCount: inputs.length });
+
       // Get provider configuration
       const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
       if (!runtimeAccount) {
@@ -673,17 +702,18 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
+      const errorDetail = extractErrorDetails(error, modelConfig?.providerId ?? 'unknown');
 
       return {
         requestId,
         embeddings: [],
-        logicalModelId: modelConfig.modelId,
+        logicalModelId: modelConfig?.modelId ?? 'unknown',
         object: 'error',
         status: 'error',
         errorDetail,
       };
     } finally {
+      if (!controller.signal.aborted) controller.abort();
       this.cleanupAIRequest(requestId);
     }
   }
@@ -703,27 +733,27 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AISpeechResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
-
-    // Get speech model configuration, fallback to default
-    const modelConfig = config.speech ?? config.default;
-    if (!modelConfig?.providerId || !modelConfig?.modelId) {
-      return {
-        requestId,
-        audio: new ArrayBuffer(0),
-        format: 'mp3',
-        logicalModelId: 'unknown',
-        status: 'error',
-        errorDetail: {
-          name: 'MissingConfigError',
-          code: 'NO_SPEECH_MODEL',
-          providerId: 'unknown',
-        },
-      };
-    }
-
-    logger.debug(`[${requestId}] Starting generateSpeech with config`, { inputLength: input.length });
-
+    let modelConfig: { providerId: string; modelId: string } | undefined;
     try {
+      // Get speech model configuration, fallback to default
+      modelConfig = config?.speech ?? config?.default;
+      if (!modelConfig?.providerId || !modelConfig?.modelId) {
+        return {
+          requestId,
+          audio: new ArrayBuffer(0),
+          format: 'mp3',
+          logicalModelId: 'unknown',
+          status: 'error',
+          errorDetail: {
+            name: 'MissingConfigError',
+            code: 'NO_SPEECH_MODEL',
+            providerId: 'unknown',
+          },
+        };
+      }
+
+      logger.debug(`[${requestId}] Starting generateSpeech with config`, { inputLength: input.length });
+
       // Get provider configuration
       const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
       if (!runtimeAccount) {
@@ -755,17 +785,18 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
+      const errorDetail = extractErrorDetails(error, modelConfig?.providerId ?? 'unknown');
 
       return {
         requestId,
         audio: new ArrayBuffer(0),
         format: 'mp3',
-        logicalModelId: modelConfig.modelId,
+        logicalModelId: modelConfig?.modelId ?? 'unknown',
         status: 'error',
         errorDetail,
       };
     } finally {
+      if (!controller.signal.aborted) controller.abort();
       this.cleanupAIRequest(requestId);
     }
   }
@@ -782,26 +813,26 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AITranscriptionResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
-
-    // Get transcriptions model configuration, fallback to default
-    const modelConfig = config.transcriptions ?? config.default;
-    if (!modelConfig?.providerId || !modelConfig?.modelId) {
-      return {
-        requestId,
-        text: '',
-        logicalModelId: 'unknown',
-        status: 'error',
-        errorDetail: {
-          name: 'MissingConfigError',
-          code: 'NO_TRANSCRIPTIONS_MODEL',
-          providerId: 'unknown',
-        },
-      };
-    }
-
-    logger.debug(`[${requestId}] Starting generateTranscription with config`);
-
+    let modelConfig: { providerId: string; modelId: string } | undefined;
     try {
+      // Get transcriptions model configuration, fallback to default
+      modelConfig = config?.transcriptions ?? config?.default;
+      if (!modelConfig?.providerId || !modelConfig?.modelId) {
+        return {
+          requestId,
+          text: '',
+          logicalModelId: 'unknown',
+          status: 'error',
+          errorDetail: {
+            name: 'MissingConfigError',
+            code: 'NO_TRANSCRIPTIONS_MODEL',
+            providerId: 'unknown',
+          },
+        };
+      }
+
+      logger.debug(`[${requestId}] Starting generateTranscription with config`);
+
       // Get provider configuration
       const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
       if (!runtimeAccount) {
@@ -832,16 +863,17 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
+      const errorDetail = extractErrorDetails(error, modelConfig?.providerId ?? 'unknown');
 
       return {
         requestId,
         text: '',
-        logicalModelId: modelConfig.modelId,
+        logicalModelId: modelConfig?.modelId ?? 'unknown',
         status: 'error',
         errorDetail,
       };
     } finally {
+      if (!controller.signal.aborted) controller.abort();
       this.cleanupAIRequest(requestId);
     }
   }
@@ -857,26 +889,26 @@ export class ExternalAPIService implements IExternalAPIService {
   ): Promise<AIImageGenerationResponse> {
     // Prepare request context
     const { requestId, controller } = this.prepareAIRequest();
-
-    // Get image generation model configuration, fallback to default
-    const modelConfig = config.imageGeneration ?? config.default;
-    if (!modelConfig?.providerId || !modelConfig?.modelId) {
-      return {
-        requestId,
-        images: [],
-        logicalModelId: 'unknown',
-        status: 'error',
-        errorDetail: {
-          name: 'MissingConfigError',
-          code: 'NO_IMAGE_GENERATION_MODEL',
-          providerId: 'unknown',
-        },
-      };
-    }
-
-    logger.debug(`[${requestId}] Starting generateImage with config`, { promptLength: prompt.length });
-
+    let modelConfig: { providerId: string; modelId: string } | undefined;
     try {
+      // Get image generation model configuration, fallback to default
+      modelConfig = config?.imageGeneration ?? config?.default;
+      if (!modelConfig?.providerId || !modelConfig?.modelId) {
+        return {
+          requestId,
+          images: [],
+          logicalModelId: 'unknown',
+          status: 'error',
+          errorDetail: {
+            name: 'MissingConfigError',
+            code: 'NO_IMAGE_GENERATION_MODEL',
+            providerId: 'unknown',
+          },
+        };
+      }
+
+      logger.debug(`[${requestId}] Starting generateImage with config`, { promptLength: prompt.length });
+
       // Get provider configuration
       const runtimeAccount = await this.getProviderAccount(modelConfig.providerId);
       if (!runtimeAccount) {
@@ -907,16 +939,17 @@ export class ExternalAPIService implements IExternalAPIService {
       return result;
     } catch (error) {
       // Handle errors and categorize them
-      const errorDetail = extractErrorDetails(error, modelConfig.providerId);
+      const errorDetail = extractErrorDetails(error, modelConfig?.providerId ?? 'unknown');
 
       return {
         requestId,
         images: [],
-        logicalModelId: modelConfig.modelId,
+        logicalModelId: modelConfig?.modelId ?? 'unknown',
         status: 'error',
         errorDetail,
       };
     } finally {
+      if (!controller.signal.aborted) controller.abort();
       this.cleanupAIRequest(requestId);
     }
   }
@@ -1029,7 +1062,11 @@ function normalizeDesktopExternalAPISettings(value: unknown): DesktopExternalAPI
   }
   return {
     accounts: [...providerSettings.accounts],
-    modelAssignments: normalizeModelAssignments(providerSettings.modelAssignments),
+    modelAssignments: retainValidModelAssignments(
+      providerSettings.accounts,
+      providerSettings.modelAssignments,
+      providerCredentials,
+    ),
     providerCredentials,
   };
 }
@@ -1045,6 +1082,7 @@ function replaceAt<T>(values: readonly T[], index: number, value: T): T[] {
 function retainValidModelAssignments(
   accounts: readonly ProviderAccountConfig[],
   assignments: ModelAssignments,
+  providerCredentials: readonly { providerId: string; encryptedApiKey: string }[] = [],
 ): ModelAssignments {
   const normalized = normalizeModelAssignments(assignments);
   const retained: ModelAssignments = {};
@@ -1055,7 +1093,13 @@ function retainValidModelAssignments(
     ]>
   ) {
     const account = accounts.find(candidate => candidate.providerId === selection.providerId);
-    if (account?.models.some(route => route.modelId === selection.modelId) === true) {
+    const hasRoute = account?.models.some(route => route.modelId === selection.modelId) === true;
+    const credential = providerCredentials.find(candidate => candidate.providerId === selection.providerId);
+    const hasCredential = account !== undefined && hasUsableProviderCredential(
+      account,
+      credential?.encryptedApiKey,
+    );
+    if (account?.enabled !== false && hasRoute && hasCredential) {
       retained[purpose] = selection;
     }
   }

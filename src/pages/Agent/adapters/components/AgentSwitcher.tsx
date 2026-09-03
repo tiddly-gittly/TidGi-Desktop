@@ -90,8 +90,11 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
       try {
         const defs = await window.service.agentDefinition.getAgentDefs();
         if (active) setAgentDefs(defs);
-      } catch {
+      } catch (error) {
         // Keep bundled profiles available if persistence is temporarily unavailable.
+        void window.service.native.log('warn', 'AgentSwitcher: failed to load persisted agent definitions', {
+          error,
+        });
       }
     })();
     return () => {
@@ -113,7 +116,7 @@ export const AgentSwitcher: React.FC<AgentSwitcherProps> = ({ currentAgentDefId,
   }, [open]);
 
   const currentDefinition = agentDefs.find((d) => d.id === currentAgentDefId);
-  const displayName = currentDefinition?.name ?? currentAgentDefId ?? 'Agent';
+  const displayName = currentDefinition?.name ?? currentAgentDefId ?? t('Agent.Untitled');
 
   return (
     <>

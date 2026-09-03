@@ -30,6 +30,7 @@
     "CurrentAgent": "Показать журнал агента: {{agentId}}",
     "Description": "Журнал отладки вызовов внешнего API этого агента. Включите параметр 'Отладка внешнего API' в настройках, чтобы начать запись.",
     "ErrorDetails": "Подробности ошибки",
+    "Loading": "Загрузка журналов API…",
     "NoLogs": "API-журнал этого агента не найден.",
     "NoResponse": "не отвечает",
     "RequestDetails": "детали запроса",
@@ -70,6 +71,10 @@
   },
   "Chat": {
     "Cancel": "Отмена",
+    "Attachment": {
+      "RemoveFile": "Удалить {{name}}",
+      "RemoveTiddler": "Удалить {{title}} из {{workspaceName}}"
+    },
     "GenericError": "Агент не смог выполнить запрос. Повторите попытку.",
     "OperationError": "Не удалось выполнить действие в чате. Повторите попытку.",
     "ExecutionTarget": {
@@ -402,6 +407,14 @@
     "FailedToDeleteProvider": "Не удалось удалить поставщика {{providerName}}",
     "FailedToRemoveModel": "Не удалось удалить модель",
     "FailedToRefreshOfficialModels": "Не удалось обновить список моделей",
+    "FailedToLoadAIConfig": "Не удалось загрузить настройки моделей ИИ",
+    "FailedToUpdateAIConfig": "Не удалось сохранить настройки моделей ИИ",
+    "FailedToClearAIConfig": "Не удалось очистить выбранную модель ИИ",
+    "FailedToLoadProviderCatalog": "Не удалось загрузить каталог моделей провайдеров",
+    "FailedToSaveModelParameters": "Не удалось сохранить параметры модели",
+    "FailedToLoadFrameworkConfig": "Не удалось загрузить настройки фреймворка агента",
+    "FailedToUpdateFrameworkConfig": "Не удалось сохранить настройки фреймворка агента",
+    "FailedToClearFrameworkConfig": "Не удалось очистить настройки фреймворка агента",
     "FailedToSaveSettings": "Не удалось сохранить настройки",
     "FailedToUpdateModel": "Не удалось обновить модель",
     "FailedToUpdateProviderStatus": "Не удалось обновить статус поставщика",
@@ -415,9 +428,11 @@
     "ModelFeatures": "Возможности модели",
     "ModelName": "Имя модели",
     "ModelNameRequired": "Имя модели обязательно",
+    "ModelIdInvalid": "Идентификатор модели не должен содержать пробелы по краям или управляющие символы и не должен превышать {{maxBytes}} байт UTF-8.",
     "LogicalModelId": "Логический ID модели",
     "WireModelId": "ID модели поставщика",
     "WireModelIdDescription": "Точный идентификатор модели, отправляемый поставщику.",
+    "EditModel": "Изменить модель",
     "APIMode": "Режим API",
     "ChatCompletionsAPIMode": "Chat Completions",
     "ResponsesAPIMode": "Responses",
@@ -473,6 +488,7 @@
     "TemperatureDescription": "Низкие значения приводят к более детерминированным и сфокусированным ответам, а высокие — к более разнообразным и творческим.",
     "TopP": "Топ P",
     "TopPDescription": "Управление случайностью ответов. Низкие значения делают ответы более предсказуемыми, а высокие — допускают больше вариантов.",
+    "TokensUnit": "токенов",
     "WorkflowFile": "файл рабочего процесса",
     "WorkflowFileHelp": "Путь к JSON-файлу рабочего процесса ComfyUI",
     "WorkflowFilePath": "Путь к файлу рабочего процесса"
@@ -531,7 +547,9 @@
     "ShowEditor": "Показать редактор",
     "ShowPreview": "Показать предпросмотр",
     "Tree": "Древовидное представление",
-    "ValidationErrors": "обнаружить ошибку"
+    "ValidationErrors": "обнаружить ошибку",
+    "NoPrompts": "Промпты не настроены",
+    "Prompt": "Промпт"
   },
   "PromptConfig": {
     "AddItem": "добавить проект",
@@ -549,7 +567,9 @@
       "HelperText": "После ввода нажмите Enter, чтобы добавить метку, или выберите из предопределенных меток.",
       "NoOptions": "Нет доступных тегов",
       "Placeholder": "Введите метку..."
-    }
+    },
+    "NoneOption": "Нет",
+    "ConfigurationSections": "Разделы конфигурации"
   },
   "Schema": {
     "AlarmClock": {

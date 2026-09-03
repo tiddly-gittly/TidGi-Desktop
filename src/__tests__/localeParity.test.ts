@@ -53,10 +53,31 @@ describe('locale parity', () => {
     }
   });
 
-  it('contains every English application key in Simplified Chinese', () => {
+  it('contains every English application key in every supported locale', () => {
     const englishKeys = flattenKeys(readLocale('en', 'translation'));
-    const chineseKeys = new Set(flattenKeys(readLocale('zh-Hans', 'translation')));
-    expect(englishKeys.filter(key => !chineseKeys.has(key))).toEqual([]);
+    for (const locale of SUPPORTED_LOCALES) {
+      const localeKeys = new Set(flattenKeys(readLocale(locale, 'translation')));
+      expect(englishKeys.filter(key => !localeKeys.has(key)), locale).toEqual([]);
+    }
+  });
+
+  it('preserves every English application interpolation variable in every supported locale', () => {
+    const englishValues = flattenValues(readLocale('en', 'translation'));
+    for (const locale of SUPPORTED_LOCALES) {
+      const localeValues = flattenValues(readLocale(locale, 'translation'));
+      for (const [key, englishValue] of Object.entries(englishValues)) {
+        expect(interpolationVariables(localeValues[key]), `${locale}: ${key}`).toEqual(interpolationVariables(englishValue));
+      }
+    }
+  });
+
+  it('contains no empty application or Agent translations', () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      for (const namespace of ['translation', 'agent'] as const) {
+        const values = flattenValues(readLocale(locale, namespace));
+        expect(Object.entries(values).filter(([, value]) => value.trim() === ''), `${locale}: ${namespace}`).toEqual([]);
+      }
+    }
   });
 
   it('contains the scheduled wake-up editor keys in every supported locale', () => {

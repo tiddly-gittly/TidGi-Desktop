@@ -1,5 +1,4 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField, Typography } from '@mui/material';
-import { cloneDeep } from 'lodash';
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField, Typography } from '@mui/material';
 import type { AgentModelParameters, ModelAssignments } from 'memeloop';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,9 +24,15 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     maxOutputTokens: 1000,
     topP: 0.95,
   });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   // Update local state when config changes
   useEffect(() => {
+    if (!open) {
+      setSaveError(false);
+      setSaving(false);
+    }
     if (config?.default) {
       setParameters({
         temperature: config.default.parameters?.temperature ?? 0.7,
@@ -38,21 +43,31 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
           : { reasoningEffort: config.default.parameters.reasoningEffort }),
       });
     }
-  }, [config]);
+  }, [config, open]);
 
   // Handle save action
   const handleSave = async () => {
-    if (!config) return;
+    if (!config?.default) {
+      setSaveError(true);
+      return;
+    }
 
+    setSaveError(false);
+    setSaving(true);
     try {
-      // Create a deep copy of the config to avoid mutating the original
-      const newConfig = cloneDeep(config);
-      if (!newConfig.default) return;
-      newConfig.default.parameters = parameters;
+      const newConfig: ModelAssignments = {
+        ...config,
+        default: {
+          ...config.default,
+          parameters,
+        },
+      };
       await onSave(newConfig);
       onClose();
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to save model parameters', { function: 'AIModelParametersDialog.handleSave', error });
+    } catch {
+      setSaveError(true);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -87,6 +102,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>{t('Preference.ModelParameters', { ns: 'agent' })}</DialogTitle>
       <DialogContent>
+        {saveError && <Alert severity='error' sx={{ mb: 2 }}>{t('Preference.FailedToSaveModelParameters', { ns: 'agent' })}</Alert>}
         {config?.default && (
           <Typography variant='subtitle2' color='text.secondary' sx={{ mb: 2 }}>
             {config.default.providerId} - {config.default.modelId}
@@ -136,7 +152,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
             type='number'
             slotProps={{
               input: {
-                endAdornment: <InputAdornment position='end'>tokens</InputAdornment>,
+                endAdornment: <InputAdornment position='end'>{t('Preference.TokensUnit', { ns: 'agent' })}</InputAdornment>,
               },
             }}
             helperText={t('Preference.MaxTokensDescription', { ns: 'agent' })}
@@ -144,8 +160,15 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>{t('Cancel')}</Button>
-        <Button onClick={handleSave} variant='contained' color='primary'>
+        <Button onClick={onClose} disabled={saving}>{t('Cancel')}</Button>
+        <Button
+          onClick={() => {
+            void handleSave();
+          }}
+          variant='contained'
+          color='primary'
+          disabled={saving || !config?.default}
+        >
           {t('Save')}
         </Button>
       </DialogActions>
