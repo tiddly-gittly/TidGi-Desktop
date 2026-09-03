@@ -24,9 +24,11 @@ describe('MCP native model tools', () => {
   });
 
   it('rejects a non-object schema before it reaches a provider request', () => {
-    expect(() => createMCPModelToolDefinitions([{
-      name: 'invalid',
-      inputSchema: [] as unknown as Record<string, unknown>,
-    }])).toThrow('MCP tool input schema must be a JSON object');
+    expect(() =>
+      createMCPModelToolDefinitions([{
+        name: 'invalid',
+        inputSchema: [] as unknown as Record<string, unknown>,
+      }])
+    ).toThrow('MCP tool input schema must be a JSON object');
   });
 });

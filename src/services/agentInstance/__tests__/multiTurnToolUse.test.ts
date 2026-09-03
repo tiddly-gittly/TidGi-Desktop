@@ -149,20 +149,22 @@ describe('multi-turn tool-use conversation', () => {
 
   it('runs a complete multi-turn: search wiki → add tiddler', async () => {
     // Turn 1: AI returns a wiki-search tool call
-    const aiTurn1 = () => portableToolCall('wiki-search', {
-      workspaceName: 'test-wiki-1',
-      searchType: 'filter',
-      filter: '[tag[test]]',
-      limit: 5,
-    }, 'call-1');
+    const aiTurn1 = () =>
+      portableToolCall('wiki-search', {
+        workspaceName: 'test-wiki-1',
+        searchType: 'filter',
+        filter: '[tag[test]]',
+        limit: 5,
+      }, 'call-1');
 
     // Turn 2: AI returns a wiki-operation tool call
-    const aiTurn2 = () => portableToolCall('wiki-operation', {
-      workspaceName: 'test-wiki-1',
-      operation: 'wiki-add-tiddler',
-      title: 'new-note',
-      text: 'hello world',
-    }, 'call-2');
+    const aiTurn2 = () =>
+      portableToolCall('wiki-operation', {
+        workspaceName: 'test-wiki-1',
+        operation: 'wiki-add-tiddler',
+        title: 'new-note',
+        text: 'hello world',
+      }, 'call-2');
 
     // Turn 3: AI returns final text
     const aiTurn3 = () => portableText('已完成搜索和添加笔记。', 'r3');
@@ -190,17 +192,19 @@ describe('multi-turn tool-use conversation', () => {
 
   it('handles tool errors then self-corrects', async () => {
     // Turn 1: AI calls wiki-search for nonexistent workspace → error
-    const aiTurn1 = () => portableToolCall('wiki-search', {
-      workspaceName: 'bad-workspace',
-      searchType: 'filter',
-      filter: '[tag[x]]',
-    }, 'call-error');
+    const aiTurn1 = () =>
+      portableToolCall('wiki-search', {
+        workspaceName: 'bad-workspace',
+        searchType: 'filter',
+        filter: '[tag[x]]',
+      }, 'call-error');
     // Turn 2: AI calls wiki-search for correct workspace
-    const aiTurn2 = () => portableToolCall('wiki-search', {
-      workspaceName: 'test-wiki-1',
-      searchType: 'filter',
-      filter: '[tag[x]]',
-    }, 'call-corrected');
+    const aiTurn2 = () =>
+      portableToolCall('wiki-search', {
+        workspaceName: 'test-wiki-1',
+        searchType: 'filter',
+        filter: '[tag[x]]',
+      }, 'call-corrected');
     // Turn 3: final answer
     const aiTurn3 = () => portableText('没有找到相关笔记。', 'r3');
 

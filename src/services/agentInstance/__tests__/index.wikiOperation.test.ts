@@ -119,10 +119,11 @@ describe('AgentInstanceService Wiki Operation', () => {
 
   it('corrects a missing workspace and performs the wiki write only after resolution succeeds', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const toolCall = (input: Record<string, unknown>, toolCallId: string) => (async function*() {
-      yield { type: 'tool-call' as const, toolCallId, toolName: 'wiki-operation', input };
-      yield { type: 'finish' as const, finishReason: 'tool-calls' };
-    })();
+    const toolCall = (input: Record<string, unknown>, toolCallId: string) =>
+      (async function*() {
+        yield { type: 'tool-call' as const, toolCallId, toolName: 'wiki-operation', input };
+        yield { type: 'finish' as const, finishReason: 'tool-calls' };
+      })();
     const finalResponse = (async function*() {
       yield { type: 'text-delta' as const, id: 'r3', text: '已创建笔记。' };
       yield { type: 'finish' as const, finishReason: 'stop' };
