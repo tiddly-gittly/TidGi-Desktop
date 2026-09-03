@@ -16,11 +16,13 @@ interface AgentsPluginOptions {
 export const createAgentsPlugin = (options: AgentsPluginOptions = {}): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
   // Get translation function, but fallback gracefully in test environment
   let t: (key: string) => string;
+  let errorMessage: string | undefined;
   try {
     t = getI18n().t;
-  } catch {
+  } catch (error) {
     // Fallback for test environment
     t = (key: string) => key;
+    void window.service.native.log('warn', 'AgentsPlugin: i18n was unavailable while creating the search plugin', { error });
   }
   const plugin = {
     getSources({ query }) {
@@ -35,6 +37,7 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
               const agents = options.searchTemplates
                 ? await window.service.agentDefinition.getAgentTemplates()
                 : await window.service.agentDefinition.getAgentDefs();
+              errorMessage = undefined;
 
               if (!query) {
                 return agents as (AgentDefinition & Record<string, unknown>)[];
@@ -47,7 +50,8 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
                 (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
               );
             } catch (error) {
-              console.error(t('Search.FailedToFetchAgents'), error);
+              errorMessage = t('Search.FailedToFetchAgents');
+              void window.service.native.log('error', 'AgentsPlugin: failed to fetch agent definitions', { error });
               return [];
             }
           },
@@ -122,8 +126,8 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
             },
             noResults() {
               return (
-                <div className='aa-ItemWrapper'>
-                  <div className='aa-ItemContent'>{t('Search.NoAgentsFound')}</div>
+                <div className='aa-ItemWrapper' role={errorMessage ? 'alert' : undefined}>
+                  <div className='aa-ItemContent'>{errorMessage ?? t('Search.NoAgentsFound')}</div>
                 </div>
               );
             },
@@ -153,7 +157,8 @@ export const createAgentsPlugin = (options: AgentsPluginOptions = {}): Autocompl
                 agentDefId: item.id,
               });
             } catch (error) {
-              console.error(t('Search.FailedToCreateChatWithAgent'), error);
+              errorMessage = t('Search.FailedToCreateChatWithAgent');
+              void window.service.native.log('error', 'AgentsPlugin: failed to create a chat with the selected agent', { error });
             }
           },
         },
@@ -191,8 +196,9 @@ function highlightHits({
       } else {
         value = JSON.stringify(attributeValue);
       }
-    } catch {
-      // Conversion failed, keep empty string
+    } catch (error) {
+      // Conversion failed; retain an empty value and make the failure observable in the native log.
+      void window.service.native.log('warn', 'AgentsPlugin: failed to format a search hit', { attribute, error });
     }
   }
 

@@ -139,8 +139,13 @@ async function initializeTemplateBackends(
         if (Array.isArray(tiddlers)) {
           templates.push(...tiddlers.map(tiddler => ({ tiddler, workspaceName: workspace.name })));
         }
-      } catch {
-        // Skip workspaces that fail to respond.
+      } catch (error: unknown) {
+        // A single unavailable workspace should not prevent other templates
+        // from loading, but retain the diagnostic for troubleshooting.
+        logger.warn('Failed to read agent templates from workspace', {
+          error,
+          workspaceID: workspace.id,
+        });
       }
     }
     return templates;
