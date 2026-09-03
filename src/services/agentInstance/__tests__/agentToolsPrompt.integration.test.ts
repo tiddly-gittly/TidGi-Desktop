@@ -49,6 +49,7 @@ describe('default agent tools -> prompt integration', () => {
       providerId: 'mock',
       providerType: 'openai-compatible',
       enabled: true,
+      secretRef: 'test://mock/api-key',
       models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
     }]);
   });
@@ -60,7 +61,10 @@ describe('default agent tools -> prompt integration', () => {
   it('reflects the general-assistant agentTools in the exact Core preview result', async () => {
     const profile = getBuiltinLoopProfiles().find(agent => agent.id === 'memeloop:general-assistant');
     if (!profile) throw new Error('Missing built-in general assistant profile');
-    const definition = toAgentDefinition(profile);
+    const definition: AgentDefinition = {
+      ...toAgentDefinition(profile),
+      modelConfig: { providerId: 'mock', modelId: 'mock-model' },
+    };
     vi.spyOn(agentDefinitionService, 'getAgentDef').mockResolvedValue(definition);
 
     const agent = await agentInstanceService.createAgent(definition.id, { id: nanoid() });

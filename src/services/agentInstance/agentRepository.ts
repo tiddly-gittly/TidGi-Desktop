@@ -40,6 +40,7 @@ import type {
   ConversationEventPage,
   ConversationFullContentMessagePage,
   ConversationListPage,
+  ConversationListProjectionCursor,
   ConversationMessageCursor,
   ConversationMessageDetailRange,
   ConversationMessageIdentity,
@@ -62,6 +63,7 @@ import type {
   MessageVersionFrontierCursor,
   MessageVersionFrontierPage,
   RetainedCompactionControlPage,
+  TurnDetailProjectionCursor,
 } from 'memeloop';
 import type { ConversationMeta } from 'memeloop';
 import {
@@ -75,6 +77,9 @@ import {
   conversationEventAttachmentReferences,
   conversationEventToMessage,
   createAgentInstanceFromDefinition,
+  createChatMessage,
+  decodeConversationProjectionCursor,
+  encodeConversationProjectionCursor,
   messageCursor,
   OrchestrationError,
   projectConversationMessageForList,
@@ -359,8 +364,11 @@ function utf8AlignedReasoningPage(bytes: Uint8Array, finalPage: boolean): Uint8A
     try {
       decoder.decode(bytes.subarray(0, end));
       valid = true;
-    } catch {
+    } catch (error: unknown) {
       // Try the next shorter suffix; a UTF-8 code point is at most four bytes.
+      // TextDecoder with `fatal` reports malformed bytes as TypeError; any
+      // other failure is unexpected and must remain observable.
+      if (!(error instanceof TypeError)) throw error;
     }
     if (!valid) continue;
     if (finalPage && end !== bytes.byteLength) {
@@ -402,7 +410,9 @@ export async function getFullContentMessagePage(
 
 type MessagePageReadOptions = GetMessagePageOptions | GetFullContentMessagePageOptions;
 
-type BoundedMessagePage<T extends ChatMessage> =
+type MessageCursorSource = Pick<ChatMessage, 'messageId' | 'timestamp' | 'lamportClock' | 'originNodeId'>;
+
+type BoundedMessagePage<T extends MessageCursorSource> =
   | {
     reset: false;
     conversationId: string;
@@ -415,7 +425,7 @@ type BoundedMessagePage<T extends ChatMessage> =
   }
   | { reset: true; conversationId: string; revision: string };
 
-async function readBoundedMessagePage<T extends ChatMessage>(
+async function readBoundedMessagePage<T extends MessageCursorSource>(
   repository: Repository<AgentInstanceMessageEntity>,
   conversationId: string,
   options: MessagePageReadOptions,
@@ -599,53 +609,6 @@ async function readBoundedMessagePage<T extends ChatMessage>(
   return build();
 }
 
-interface TurnDetailCursorPayload extends ConversationMessageCursor {
-  v: 1;
-  conversationId: string;
-  turnId: string;
-}
-
-function encodeTurnDetailCursor(message: ChatMessage): string {
-  return Buffer.from(
-    canonicalJson(
-      {
-        v: 1,
-        conversationId: message.conversationId,
-        turnId: message.turnId,
-        timestamp: message.timestamp,
-        lamportClock: message.lamportClock,
-        originNodeId: message.originNodeId,
-        messageId: message.messageId,
-      } satisfies TurnDetailCursorPayload,
-    ),
-    'utf8',
-  ).toString('base64url');
-}
-
-function decodeTurnDetailCursor(
-  value: string,
-  conversationId: string,
-  turnId: string,
-): TurnDetailCursorPayload | undefined {
-  try {
-    if (value.length === 0 || value.length > 2048) return undefined;
-    const json = Buffer.from(value, 'base64url').toString('utf8');
-    const parsed: unknown = JSON.parse(json);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
-    const cursor = parsed as Partial<TurnDetailCursorPayload>;
-    if (
-      cursor.v !== 1 || cursor.conversationId !== conversationId || cursor.turnId !== turnId ||
-      !Number.isSafeInteger(cursor.timestamp) || !Number.isSafeInteger(cursor.lamportClock) ||
-      typeof cursor.originNodeId !== 'string' || cursor.originNodeId.length === 0 ||
-      typeof cursor.messageId !== 'string' || cursor.messageId.length === 0 ||
-      Buffer.from(json, 'utf8').toString('base64url') !== value
-    ) return undefined;
-    return cursor as TurnDetailCursorPayload;
-  } catch {
-    return undefined;
-  }
-}
-
 interface TurnDetailSqlRow extends RawMessageSqlRow {
   valid: number;
   hasMoreBefore: number;
@@ -669,13 +632,34 @@ export async function getTurnDetail(
   if (!request.conversationId || !request.turnId) {
     throw eventStoreError('VALIDATION_ERROR', 'turn detail requires conversationId and turnId');
   }
-  const cursor = request.cursor
-    ? decodeTurnDetailCursor(request.cursor, request.conversationId, request.turnId)
-    : undefined;
-  if (request.cursor && !cursor) throw eventStoreError('VALIDATION_ERROR', 'invalid turn detail cursor');
-  const seenCursor = request.seenCursor
-    ? decodeTurnDetailCursor(request.seenCursor, request.conversationId, request.turnId)
-    : undefined;
+  let cursor: TurnDetailProjectionCursor | undefined;
+  if (request.cursor !== undefined) {
+    try {
+      const decoded = decodeConversationProjectionCursor(request.cursor, {
+        kind: 'turn-detail',
+        conversationId: request.conversationId,
+        turnId: request.turnId,
+      });
+      cursor = decoded.kind === 'turn-detail' ? decoded : undefined;
+    } catch (error: unknown) {
+      if (!(error instanceof Error)) throw error;
+      throw eventStoreError('VALIDATION_ERROR', 'invalid turn detail cursor');
+    }
+  }
+  let seenCursor: TurnDetailProjectionCursor | undefined;
+  if (request.seenCursor !== undefined) {
+    try {
+      const decoded = decodeConversationProjectionCursor(request.seenCursor, {
+        kind: 'turn-detail',
+        conversationId: request.conversationId,
+        turnId: request.turnId,
+      });
+      seenCursor = decoded.kind === 'turn-detail' ? decoded : undefined;
+    } catch (error: unknown) {
+      if (!(error instanceof Error)) throw error;
+      throw eventStoreError('VALIDATION_ERROR', 'invalid turn detail seen cursor');
+    }
+  }
   const readingForward = request.direction === 'forward';
   const direction = readingForward ? 'ASC' : 'DESC';
   const relation = readingForward ? '>' : '<';
@@ -744,13 +728,8 @@ export async function getTurnDetail(
   );
   const first = rows[0];
   if (first?.valid !== 1) throw eventStoreError('CONFLICT', 'turn detail cursor is no longer retained');
-  const itemProjectionBudget = Math.max(
-    1,
-    maxBytes - Math.min(16 * 1024, Math.floor(maxBytes / 4)),
-  );
-  let items = rows.map(messageFromSqlRow)
-    .filter((message): message is ChatMessage => message !== undefined)
-    .map(message => projectConversationMessageForList(message, itemProjectionBudget));
+  let items = rows.map(messageProjectionFromSqlRow)
+    .filter((message): message is ConversationMessageListProjection => message !== undefined);
   let hasMoreBefore = first.hasMoreBefore === 1;
   let hasMoreAfter = first.hasMoreAfter === 1;
   const build = (): AgentDeviceRpcGetTurnDetailResponse => {
@@ -761,8 +740,34 @@ export async function getTurnDetail(
       items,
       hasMoreBefore,
       hasMoreAfter,
-      ...(hasMoreBefore && oldest ? { previousCursor: encodeTurnDetailCursor(oldest) } : {}),
-      ...(hasMoreAfter && newest ? { nextCursor: encodeTurnDetailCursor(newest) } : {}),
+      ...(hasMoreBefore && oldest
+        ? {
+          previousCursor: encodeConversationProjectionCursor({
+            version: 1,
+            kind: 'turn-detail',
+            conversationId: oldest.conversationId,
+            turnId: oldest.turnId,
+            timestamp: oldest.timestamp,
+            lamportClock: oldest.lamportClock,
+            originNodeId: oldest.originNodeId,
+            messageId: oldest.messageId,
+          }),
+        }
+        : {}),
+      ...(hasMoreAfter && newest
+        ? {
+          nextCursor: encodeConversationProjectionCursor({
+            version: 1,
+            kind: 'turn-detail',
+            conversationId: newest.conversationId,
+            turnId: newest.turnId,
+            timestamp: newest.timestamp,
+            lamportClock: newest.lamportClock,
+            originNodeId: newest.originNodeId,
+            messageId: newest.messageId,
+          }),
+        }
+        : {}),
       ...(request.seenCursor === undefined ? {} : { seenCursorFound: first.seenCursorFound === 1 }),
     };
   };
@@ -813,26 +818,14 @@ function parseOptionalJsonColumn(value: string): unknown {
 
 function messageFromSqlRow(row: RawMessageSqlRow): ChatMessage | undefined {
   if (row.projectionExpected === 1) {
-    if (row.messageId === null) return undefined;
-    if (row.projectionJson === null || row.projectionJson === undefined) {
-      throw eventStoreError('CONFLICT', `message projection ${row.messageId} is missing its bounded payload`);
-    }
-    const projectionJson = typeof row.projectionJson === 'string'
-      ? row.projectionJson
-      : new TextDecoder('utf-8', { fatal: true }).decode(row.projectionJson);
-    const projection: unknown = JSON.parse(projectionJson);
-    assertConversationMessageProjection(projection, row.conversationId ?? undefined);
-    if (canonicalJson(projection) !== projectionJson) {
-      throw eventStoreError('CONFLICT', `message projection ${row.messageId} is not canonical`);
-    }
-    return projection;
+    throw eventStoreError('CONFLICT', 'full-content message decoder received a bounded projection row');
   }
   if (
     row.messageId === null || row.conversationId === null || row.originNodeId === null ||
     row.originSequence === null || row.turnId === null || row.timestamp === null ||
     row.lamportClock === null || row.role === null || row.content === null
   ) return undefined;
-  return {
+  return createChatMessage({
     messageId: row.messageId,
     conversationId: row.conversationId,
     originNodeId: row.originNodeId,
@@ -851,7 +844,7 @@ function messageFromSqlRow(row: RawMessageSqlRow): ChatMessage | undefined {
     ...(row.hidden === null ? {} : { hidden: row.hidden === 1 }),
     ...(row.metadataJson === null ? {} : { metadata: parseOptionalJsonColumn(row.metadataJson) as ChatMessage['metadata'] }),
     ...(row.duration === null ? {} : { duration: row.duration }),
-  };
+  });
 }
 
 function messageProjectionFromSqlRow(row: RawMessageSqlRow): ConversationMessageListProjection | undefined {
@@ -1777,14 +1770,6 @@ export async function getAgents(
   return instances.map(projectAgentInstanceMetadata);
 }
 
-interface ConversationListCursorPayload {
-  v: 1;
-  revision: string;
-  queryDigest: string;
-  timestamp: number;
-  conversationId: string;
-}
-
 export interface ConversationListProjectionScope {
   allowedConversationIds?: readonly string[];
   allowedDefinitionIds?: readonly string[];
@@ -1796,32 +1781,6 @@ function conversationListQueryDigest(
   scope?: ConversationListProjectionScope,
 ): string {
   return createHash('sha256').update(canonicalJson({ query: query ?? {}, scopeKey: scope?.scopeKey ?? 'local' }), 'utf8').digest('base64url');
-}
-
-function encodeConversationListCursor(payload: ConversationListCursorPayload): string {
-  return Buffer.from(canonicalJson(payload), 'utf8').toString('base64url');
-}
-
-function decodeConversationListCursor(
-  encoded: string,
-  expectedRevision: string,
-  expectedQueryDigest: string,
-): ConversationListCursorPayload | undefined {
-  if (encoded.length === 0 || encoded.length > 2048) return undefined;
-  try {
-    const decoded = Buffer.from(encoded, 'base64url').toString('utf8');
-    const value = JSON.parse(decoded) as Partial<ConversationListCursorPayload> & Record<string, unknown>;
-    if (
-      Object.keys(value).sort().join(',') !== 'conversationId,queryDigest,revision,timestamp,v' ||
-      value.v !== 1 || value.revision !== expectedRevision || value.queryDigest !== expectedQueryDigest ||
-      typeof value.conversationId !== 'string' || value.conversationId.length === 0 || value.conversationId.length > 512 ||
-      !Number.isSafeInteger(value.timestamp) || value.timestamp! < 0 ||
-      encodeConversationListCursor(value as ConversationListCursorPayload) !== encoded
-    ) return undefined;
-    return value as ConversationListCursorPayload;
-  } catch {
-    return undefined;
-  }
 }
 
 interface ConversationListRow {
@@ -1952,10 +1911,20 @@ export async function getConversationListPage(
   if (options.expectedRevision !== undefined && options.expectedRevision !== revision) return reset();
   const queryDigest = conversationListQueryDigest(query, scope);
   const encodedCursor = options.beforeCursor ?? options.afterCursor;
-  const cursor = encodedCursor
-    ? decodeConversationListCursor(encodedCursor, revision, queryDigest)
-    : undefined;
-  if (encodedCursor && !cursor) return reset();
+  let cursor: ConversationListProjectionCursor | undefined;
+  if (encodedCursor !== undefined) {
+    try {
+      const decoded = decodeConversationProjectionCursor(encodedCursor, {
+        kind: 'conversation-list',
+        revision,
+        queryDigest,
+      });
+      cursor = decoded.kind === 'conversation-list' ? decoded : undefined;
+    } catch (error: unknown) {
+      logger.debug('Resetting conversation list after invalid cursor', { error });
+      return reset();
+    }
+  }
 
   const filters = ['instance.volatile = 0', 'instance.closed = 0'];
   const parameters: Array<string | number> = [];
@@ -2047,8 +2016,9 @@ export async function getConversationListPage(
   let ordered = descending ? availableRows.slice(0, options.limit) : availableRows.slice(0, options.limit).reverse();
   let items = ordered.map(row => conversationMetaFromRow(row, localNodeId));
   const cursorFor = (row: ConversationListConcreteRow) =>
-    encodeConversationListCursor({
-      v: 1,
+    encodeConversationProjectionCursor({
+      version: 1,
+      kind: 'conversation-list',
       revision,
       queryDigest,
       timestamp: row.lastMessageTimestamp,
@@ -2665,7 +2635,7 @@ function toMessageDetailProjection(message: ChatMessage): ConversationMessageDet
   const canonicalBytes = Buffer.from(canonicalJson(message), 'utf8');
   const listProjectionBytes = Buffer.from(
     canonicalJson(
-      projectConversationMessageForList(message, PERSISTED_MESSAGE_LIST_PROJECTION_BYTES),
+      projectConversationMessageForList(message, PERSISTED_MESSAGE_LIST_PROJECTION_BYTES, { detailAvailable: true }),
     ),
     'utf8',
   );
@@ -2734,6 +2704,8 @@ async function projectConversationEvent(
     const existing = await repository.findOne({
       where: { conversationId: event.conversationId, key: event.checkpoint.key },
     });
+    const incomingFence = event.checkpoint.fencingEpoch ?? 0;
+    if (existing && incomingFence < (existing.fencingEpoch ?? 0)) return;
     if (existing && compareConversationLoopCheckpointEvents(existing, event) >= 0) return;
     await repository.save(repository.create({
       conversationId: event.conversationId,
@@ -2744,6 +2716,8 @@ async function projectConversationEvent(
       originSequence: event.originSequence,
       lamportClock: event.lamportClock,
       timestamp: event.timestamp,
+      revision: event.checkpoint.revision ?? ((existing?.revision ?? 0) + 1),
+      fencingEpoch: incomingFence,
     }));
     return;
   }
@@ -2756,21 +2730,8 @@ async function projectConversationEvent(
   if (!instance) {
     throw eventStoreError('CONFLICT', `conversation metadata must arrive before messages for ${event.conversationId}`);
   }
-  const message = event.kind === 'message'
-    ? conversationEventToMessage(event)
-    : ({
-      messageId: event.eventId,
-      turnId: event.summary.turnId,
-      conversationId: event.conversationId,
-      originNodeId: event.originNodeId,
-      originSequence: event.originSequence,
-      timestamp: event.timestamp,
-      lamportClock: event.lamportClock,
-      role: 'assistant',
-      content: event.summary.content,
-      parts: event.summary.parts,
-      metadata: { contextCompaction: event.boundary, compacted: true },
-    } satisfies ChatMessage);
+  const message = conversationEventProjectionMessage(event);
+  if (!message) return;
   const messageRepository = manager.getRepository(AgentInstanceMessageEntity);
   const existing = await messageRepository.findOne({ where: { messageId: message.messageId } });
   if (existing) {
@@ -2916,7 +2877,7 @@ const REMOTE_PROJECTION_CHUNK_SIZE = 1_000;
 function conversationEventProjectionMessage(event: ConversationEvent): ChatMessage | undefined {
   if (event.kind === 'message') return conversationEventToMessage(event);
   if (event.kind !== 'compaction' || event.mode !== 'summary') return undefined;
-  return {
+  return createChatMessage({
     messageId: event.eventId,
     turnId: event.summary.turnId,
     conversationId: event.conversationId,
@@ -2926,9 +2887,9 @@ function conversationEventProjectionMessage(event: ConversationEvent): ChatMessa
     lamportClock: event.lamportClock,
     role: 'assistant',
     content: event.summary.content,
-    parts: event.summary.parts,
+    ...(event.summary.parts === undefined ? {} : { parts: event.summary.parts }),
     metadata: { contextCompaction: event.boundary, compacted: true },
-  };
+  });
 }
 
 /**

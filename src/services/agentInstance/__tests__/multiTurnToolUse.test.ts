@@ -36,7 +36,6 @@ function testWorkspace(): IWorkspace {
     homeUrl: 'http://localhost:5213/',
     port: 5213,
     isSubWiki: false,
-    mainWikiToLink: null,
     tagNames: [],
     lastUrl: null,
     active: true,
@@ -72,6 +71,21 @@ describe('multi-turn tool-use conversation', () => {
     mockWikiService = container.get(serviceIdentifier.Wiki);
     mockWorkspaceService = container.get(serviceIdentifier.Workspace);
 
+    mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
+      default: { providerId: 'siliconflow', modelId: 'deepseek-ai/DeepSeek-V4-Pro', parameters: { temperature: 0.7 } },
+    });
+    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'siliconflow',
+      providerType: 'openai-compatible',
+      enabled: true,
+      secretRef: 'test://siliconflow/api-key',
+      models: [{
+        modelId: 'deepseek-ai/DeepSeek-V4-Pro',
+        wireModelId: 'deepseek-ai/DeepSeek-V4-Pro',
+        apiMode: 'chat-completions',
+      }],
+    }]);
+
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     const definition = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     await definition.initialize();
@@ -81,29 +95,19 @@ describe('multi-turn tool-use conversation', () => {
     const wikiProfile = getBuiltinLoopProfiles().find(a => a.id === 'memeloop:frontend-ui-ux');
     if (!defaultProfile) throw new Error('Missing built-in general assistant profile');
     if (!wikiProfile) throw new Error('Missing built-in frontend assistant profile');
-    const defaultAgent = {
+    const defaultAgent: AgentDefinition = {
       ...toAgentDefinition(defaultProfile),
       tools: [],
-      plugins: [],
       agentTools: (wikiProfile.agentTools ?? []).filter(tool => ['wikiSearch', 'wikiOperation'].includes(tool.toolId)),
+      modelConfig: {
+        providerId: 'siliconflow',
+        modelId: 'deepseek-ai/DeepSeek-V4-Pro',
+        parameters: { temperature: 0.7 },
+      },
     };
 
     vi.spyOn(definition, 'getAgentDef').mockResolvedValue(defaultAgent);
     testAgentInstance = await agentInstanceService.createAgent(defaultAgent.id, { id: nanoid() });
-
-    mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
-      default: { providerId: 'siliconflow', modelId: 'deepseek-ai/DeepSeek-V4-Pro', parameters: { temperature: 0.7 } },
-    });
-    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
-      providerId: 'siliconflow',
-      providerType: 'openai-compatible',
-      enabled: true,
-      models: [{
-        modelId: 'deepseek-ai/DeepSeek-V4-Pro',
-        wireModelId: 'deepseek-ai/DeepSeek-V4-Pro',
-        apiMode: 'chat-completions',
-      }],
-    }]);
   });
 
   afterEach(() => {
@@ -125,6 +129,11 @@ describe('multi-turn tool-use conversation', () => {
     yield { type: 'finish' as const, finishReason: 'stop' };
   }
 
+  async function* portableToolCall(toolName: string, input: Record<string, unknown>, id: string) {
+    yield { type: 'tool-call' as const, toolCallId: id, toolName, input };
+    yield { type: 'finish' as const, finishReason: 'tool-calls' };
+  }
+
   async function executeMessage(text: string) {
     return agentInstanceService.executeLocalAgentMessage({
       target: { kind: 'local' },
@@ -140,18 +149,20 @@ describe('multi-turn tool-use conversation', () => {
 
   it('runs a complete multi-turn: search wiki → add tiddler', async () => {
     // Turn 1: AI returns a wiki-search tool call
-    const aiTurn1 = () =>
-      portableText(
-        '<tool_use name="wiki-search">{"workspaceName":"test-wiki-1","searchType":"filter","filter":"[tag[test]]","limit":5}</tool_use>',
-        'r1',
-      );
+    const aiTurn1 = () => portableToolCall('wiki-search', {
+      workspaceName: 'test-wiki-1',
+      searchType: 'filter',
+      filter: '[tag[test]]',
+      limit: 5,
+    }, 'call-1');
 
     // Turn 2: AI returns a wiki-operation tool call
-    const aiTurn2 = () =>
-      portableText(
-        '<tool_use name="wiki-operation">{"workspaceName":"test-wiki-1","operation":"wiki-add-tiddler","title":"new-note","text":"hello world"}</tool_use>',
-        'r2',
-      );
+    const aiTurn2 = () => portableToolCall('wiki-operation', {
+      workspaceName: 'test-wiki-1',
+      operation: 'wiki-add-tiddler',
+      title: 'new-note',
+      text: 'hello world',
+    }, 'call-2');
 
     // Turn 3: AI returns final text
     const aiTurn3 = () => portableText('已完成搜索和添加笔记。', 'r3');
@@ -179,17 +190,17 @@ describe('multi-turn tool-use conversation', () => {
 
   it('handles tool errors then self-corrects', async () => {
     // Turn 1: AI calls wiki-search for nonexistent workspace → error
-    const aiTurn1 = () =>
-      portableText(
-        '<tool_use name="wiki-search">{"workspaceName":"bad-workspace","searchType":"filter","filter":"[tag[x]]"}</tool_use>',
-        'r1',
-      );
+    const aiTurn1 = () => portableToolCall('wiki-search', {
+      workspaceName: 'bad-workspace',
+      searchType: 'filter',
+      filter: '[tag[x]]',
+    }, 'call-error');
     // Turn 2: AI calls wiki-search for correct workspace
-    const aiTurn2 = () =>
-      portableText(
-        '<tool_use name="wiki-search">{"workspaceName":"test-wiki-1","searchType":"filter","filter":"[tag[x]]"}</tool_use>',
-        'r2',
-      );
+    const aiTurn2 = () => portableToolCall('wiki-search', {
+      workspaceName: 'test-wiki-1',
+      searchType: 'filter',
+      filter: '[tag[x]]',
+    }, 'call-corrected');
     // Turn 3: final answer
     const aiTurn3 = () => portableText('没有找到相关笔记。', 'r3');
 

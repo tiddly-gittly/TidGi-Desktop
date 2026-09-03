@@ -1,3 +1,5 @@
+import type { AgentInstanceState, AgentLoopStep, MemeLoopRuntimeUpdate } from 'memeloop';
+import { resolveAgentToolLoopTerminalState } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AgentInstanceService } from '../index';
@@ -9,6 +11,84 @@ describe('AgentInstanceService durable execution IPC', () => {
     mimeType: 'image/png',
     size: 4,
   } as const;
+
+  it.each(
+    [
+      ['input-required', 'input-required'],
+      ['max-iterations', 'completed'],
+      ['blocked', 'failed'],
+      ['cancelled', 'canceled'],
+    ] as const,
+  )('uses Core terminal projection for %s', (status, expected) => {
+    const step: AgentLoopStep = { type: 'thinking', data: { status } };
+    expect(resolveAgentToolLoopTerminalState(step, 'completed')).toBe(expected satisfies AgentInstanceState);
+  });
+
+  it('projects a streamed Core input-required state without decoding step payloads in Desktop', async () => {
+    const statuses: string[] = [];
+    let listener: ((update: MemeLoopRuntimeUpdate) => void) | undefined;
+    const runtime = {
+      subscribeToUpdates: vi.fn((_conversationId: string, next: (update: MemeLoopRuntimeUpdate) => void) => {
+        listener = next;
+        return vi.fn();
+      }),
+      sendMessage: vi.fn(async () => {
+        listener?.({
+          type: 'agent-step',
+          conversationId: 'conversation-1',
+          runId: 'run-1',
+          step: { type: 'thinking', data: { status: 'input-required' } },
+        });
+        return {
+          runId: 'run-1',
+          conversationId: 'conversation-1',
+          turnId: 'turn-1',
+          requestId: 'request-1',
+          state: 'accepted' as const,
+        };
+      }),
+    };
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    Object.assign(service as unknown as Record<string, unknown>, {
+      deviceNetworkService: { getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }) },
+      agentDefinitionService: { getAgentDef: vi.fn().mockResolvedValue({ id: 'definition-1' }) },
+      getAgentMetadata: vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1' }),
+      getAgentMessage: vi.fn().mockResolvedValue(undefined),
+      createAgentDeviceRpcRunTurn: vi.fn().mockResolvedValue({
+        conversationId: 'conversation-1',
+        definitionId: 'definition-1',
+        requestId: 'request-1',
+        turnId: 'turn-1',
+        message: 'hello',
+      }),
+      captureBeforeTurnCommitMap: vi.fn().mockResolvedValue({}),
+      updateAgentStatusBestEffort: vi.fn(async (_agentId: string, status: { state: string }) => {
+        statuses.push(status.state);
+      }),
+      getDurableAgentRuntime: vi.fn().mockResolvedValue(runtime),
+      waitForDurableRun: vi.fn().mockResolvedValue({
+        runId: 'run-1',
+        conversationId: 'conversation-1',
+        turnId: 'turn-1',
+        requestId: 'request-1',
+        state: 'completed',
+      }),
+      activeDurableRunIds: new Map(),
+    });
+
+    await service.executeLocalAgentMessage({
+      target: { kind: 'local' },
+      provenance: {
+        conversationId: 'conversation-1',
+        definitionId: 'definition-1',
+        requestId: 'request-1',
+        turnId: 'turn-1',
+      },
+      message: 'hello',
+    });
+
+    expect(statuses).toEqual(['working', 'input-required']);
+  });
 
   it('preserves caller provenance and materializes the exact local user-root message', async () => {
     const sendMessage = vi.fn().mockResolvedValue({
@@ -259,6 +339,7 @@ describe('AgentInstanceService durable execution IPC', () => {
     mutable.agentDefinitionService = { getAgentDef: vi.fn().mockResolvedValue({ id: 'definition-1' }) };
     mutable.workspaceService = { getWorkspacesAsList: vi.fn().mockResolvedValue([]) };
     mutable.getAgentMetadata = vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1', volatile: false });
+    mutable.getAgentMessage = vi.fn().mockResolvedValue(undefined);
     mutable.getDurableAgentRuntime = vi.fn().mockResolvedValue({
       sendMessage,
       getRunStatus,

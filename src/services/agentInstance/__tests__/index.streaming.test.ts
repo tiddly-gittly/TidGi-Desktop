@@ -52,6 +52,11 @@ describe('AgentInstanceService Streaming Behavior', () => {
       plugins: [],
       agentTools: [],
       agentFrameworkConfig: { prompts: [], plugins: [], response: [] },
+      modelConfig: {
+        providerId: 'mock',
+        modelId: 'mock-model',
+        parameters: { temperature: 0.7 },
+      },
     };
     vi.spyOn(definitionService, 'getAgentDef').mockResolvedValue(definition);
     testAgentInstance = await agentInstanceService.createAgent(definition.id, { id: nanoid() });
@@ -63,6 +68,7 @@ describe('AgentInstanceService Streaming Behavior', () => {
       providerId: 'mock',
       providerType: 'openai-compatible',
       enabled: true,
+      secretRef: 'test://mock/api-key',
       models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
     }]);
   });
@@ -247,13 +253,16 @@ describe('AgentInstanceService Streaming Behavior', () => {
     });
     const abortController = new AbortController();
     const execution = executeMessage('取消这次回答', abortController.signal);
-    const rejection = expect(execution).rejects.toMatchObject({ name: 'AbortError' });
+    const settledError = execution.then(
+      () => undefined,
+      (error: unknown) => error,
+    );
     try {
       await vi.waitFor(() => {
         expect(projections.some(update => update.message.content === '已开始回答')).toBe(true);
       });
       abortController.abort();
-      await rejection;
+      await expect(settledError).resolves.toMatchObject({ name: 'AbortError' });
       await vi.waitFor(async () => {
         expect((await agentInstanceService.getAgentMetadata(testAgentInstance.id))?.status?.state).toBe('canceled');
       });

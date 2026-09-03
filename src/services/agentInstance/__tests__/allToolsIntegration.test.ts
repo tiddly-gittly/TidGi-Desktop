@@ -36,7 +36,6 @@ function testWorkspace(): IWorkspace {
     homeUrl: 'http://localhost:5213/',
     port: 5213,
     isSubWiki: false,
-    mainWikiToLink: null,
     tagNames: [],
     lastUrl: null,
     active: true,
@@ -85,6 +84,11 @@ describe('all tools integration', () => {
       ...toAgentDefinition(defaultProfile),
       tools: [],
       plugins: [],
+      modelConfig: {
+        providerId: 'mock',
+        modelId: 'mock-model',
+        parameters: { temperature: 0.7 },
+      },
       agentTools: [...new Map(
         [...(defaultProfile.agentTools ?? []), ...(wikiProfile.agentTools ?? [])]
           .filter(tool => ['workspacesList', 'wikiSearch', 'wikiOperation', 'ask-question', 'todoWrite', 'webFetch'].includes(tool.toolId))
@@ -102,6 +106,7 @@ describe('all tools integration', () => {
       providerId: 'mock',
       providerType: 'openai-compatible',
       enabled: true,
+      secretRef: 'test://mock/api-key',
       models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
     }]);
 
@@ -115,6 +120,11 @@ describe('all tools integration', () => {
   async function* mockChunk(content: string) {
     yield { type: 'text-delta' as const, id: 'r-' + Math.random().toString(36).slice(2, 8), text: content };
     yield { type: 'finish' as const, finishReason: 'stop' };
+  }
+
+  async function* mockToolCall(toolName: string, input: Record<string, unknown>) {
+    yield { type: 'tool-call' as const, toolCallId: `call-${nanoid()}`, toolName, input };
+    yield { type: 'finish' as const, finishReason: 'tool-calls' };
   }
 
   async function executeMessage(text: string) {
@@ -146,7 +156,12 @@ describe('all tools integration', () => {
 
   it('wiki-search: agent calls wikiSearch and receives tiddler results', async () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(mockChunk('<tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"filter","filter":"[tag[test]]","limit":10}</tool_use>'))
+      .mockReturnValueOnce(mockToolCall('wiki-search', {
+        workspaceName: 'wiki',
+        searchType: 'filter',
+        filter: '[tag[test]]',
+        limit: 10,
+      }))
       .mockReturnValueOnce(mockChunk('搜索完成：找到了 2 条笔记。'));
 
     mockWikiService.wikiOperationInServer = vi.fn()
@@ -181,7 +196,11 @@ describe('all tools integration', () => {
   it('wiki-search: reports filter parse errors instead of treating them as notes', async () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(
-        mockChunk('<tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"filter","filter":"[title=Broken]"}</tool_use>'),
+        mockToolCall('wiki-search', {
+          workspaceName: 'wiki',
+          searchType: 'filter',
+          filter: '[title=Broken]',
+        }),
       )
       .mockReturnValueOnce(mockChunk('搜索条件无效，尚未完成验证。'));
 
@@ -205,7 +224,12 @@ describe('all tools integration', () => {
 
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(
-        mockChunk(`<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"${testTitle}","text":"${testText}"}</tool_use>`),
+        mockToolCall('wiki-operation', {
+          workspaceName: 'wiki',
+          operation: 'wiki-add-tiddler',
+          title: testTitle,
+          text: testText,
+        }),
       )
       .mockReturnValueOnce(mockChunk('已创建笔记。'));
 
@@ -230,9 +254,7 @@ describe('all tools integration', () => {
     const todoText = '- [ ] 列出工作区\n- [ ] 创建笔记\n- [ ] 核对正文';
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(
-        mockChunk(
-          `<tool_use name="manage-todo">{"workspaceName":"wiki","operation":"write","text":"${todoText.replaceAll('\n', '\\n')}"}</tool_use>`,
-        ),
+        mockToolCall('manage-todo', { workspaceName: 'wiki', operation: 'write', text: todoText }),
       )
       .mockReturnValueOnce(mockChunk('计划已保存。'));
 
@@ -260,7 +282,12 @@ describe('all tools integration', () => {
 
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(
-        mockChunk(`<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-set-tiddler-text","title":"${testTitle}","text":"${updatedText}"}</tool_use>`),
+        mockToolCall('wiki-operation', {
+          workspaceName: 'wiki',
+          operation: 'wiki-set-tiddler-text',
+          title: testTitle,
+          text: updatedText,
+        }),
       )
       .mockReturnValueOnce(mockChunk('已更新。'));
 
@@ -280,7 +307,11 @@ describe('all tools integration', () => {
     const testTitle = `AI-Delete-${Date.now()}`;
 
     mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(mockChunk(`<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-delete-tiddler","title":"${testTitle}"}</tool_use>`))
+      .mockReturnValueOnce(mockToolCall('wiki-operation', {
+        workspaceName: 'wiki',
+        operation: 'wiki-delete-tiddler',
+        title: testTitle,
+      }))
       .mockReturnValueOnce(mockChunk('已删除。'));
 
     mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
@@ -299,7 +330,11 @@ describe('all tools integration', () => {
 
   it('askQuestion: agent yields to human for input', async () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(mockChunk('<tool_use name="ask-question">{"question":"Which workspace?","inputType":"single-select","options":[{"label":"wiki"}]}</tool_use>'));
+      .mockReturnValueOnce(mockToolCall('ask-question', {
+        question: 'Which workspace?',
+        inputType: 'single-select',
+        options: [{ label: 'wiki' }],
+      }));
 
     await executeMessage('帮我搜笔记');
 
@@ -325,7 +360,7 @@ describe('all tools integration', () => {
 
   it('webFetch: agent fetches a URL', async () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(mockChunk('<tool_use name="web-fetch">{"url":"https://example.com"}</tool_use>'))
+      .mockReturnValueOnce(mockToolCall('web-fetch', { url: 'https://example.com' }))
       .mockReturnValueOnce(mockChunk('已抓取。'));
 
     await executeMessage('抓取 https://example.com');

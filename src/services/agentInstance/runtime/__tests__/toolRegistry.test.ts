@@ -12,6 +12,7 @@ describe('MemeLoopDesktopToolRegistry ownership', () => {
     expect(first.getPromptPlugins()).not.toBe(second.getPromptPlugins());
     expect(first.getToolDefinitionRegistry().getAllToolDefinitions().size).toBe(desktopBuiltinToolDefinitions.length);
     expect(first.hasTool('wikiOperation')).toBe(true);
+    expect(first.hasTool('wiki-operation')).toBe(false);
     expect(first.listTools()).toContain('ask-question');
 
     first.dispose();

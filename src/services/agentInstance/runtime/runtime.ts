@@ -35,6 +35,7 @@ import {
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
+import { hasUsableProviderCredentialReference } from '@services/externalAPI/providerCredentials';
 import { logger } from '@services/libs/log';
 import type { DataSource } from 'typeorm';
 import type { IAgentInstanceService } from '../interface';
@@ -47,10 +48,11 @@ import { MemeLoopDesktopToolRegistry } from './toolRegistry';
 /**
  * Resolve one fresh execution definition for a Desktop conversation.
  *
- * Core invokes this port at every user-turn boundary. Definition data remains
- * the base, while the conversation's persisted instance prompt/model overrides
- * are deliberately read on every invocation so an editor save affects the next
- * turn without rebuilding the runtime or teaching loop scripts about host JSON.
+ * Core invokes this port at every user-turn boundary and between self-directed
+ * rounds. Definition data remains the base, while the conversation's persisted
+ * instance prompt/model overrides are deliberately read on every invocation so
+ * an editor save affects the next prompt build without rebuilding the runtime
+ * or teaching loop scripts about host JSON.
  */
 export async function resolveDesktopAgentDefinition(options: {
   agentId: string;
@@ -168,15 +170,11 @@ export class MemeLoopDesktopRuntime {
   }): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
     const retained = this.promptPreviewService.getContextForHost(input.sessionId, input.expectedRevision);
     const context = await this.createContext(retained.conversationId, undefined, input.signal);
-    const agent = context.resolveAgentRuntimeView
-      ? await context.resolveAgentRuntimeView(retained.conversationId, [...retained.messages])
-      : undefined;
-    if (!agent) throw new Error('prompt preview agent runtime view is unavailable');
     input.signal.throwIfAborted();
     return yield* promptConcatStream(
       { agentFrameworkConfig: input.agentFrameworkConfig },
       [...retained.messages],
-      { ...context, agent, operationSignal: input.signal },
+      { ...context, operationSignal: input.signal },
     );
   }
 
@@ -204,12 +202,21 @@ export class MemeLoopDesktopRuntime {
   }
 
   private async *runChildAgent(parentAgentId: string, input: Parameters<AgentLoopRuntime['runChildAgent']>[0]): AgentLoopGenerator {
-    const childAgent = await this.options.agentInstanceService.createAgent(input.profileId, { volatile: true });
+    input.signal?.throwIfAborted();
+    const existingChild = await this.options.agentInstanceService.getAgentMetadata(input.conversationId);
+    if (existingChild && existingChild.agentDefId !== input.profileId) {
+      throw new Error(`child conversation '${input.conversationId}' is bound to another profile`);
+    }
+    const childAgent = existingChild ?? await this.options.agentInstanceService.createAgent(input.profileId, {
+      id: input.conversationId,
+      volatile: true,
+    });
+    input.signal?.throwIfAborted();
     await this.options.agentInstanceService.updateAgent(childAgent.id, {
       name: `Sub-task: ${input.prompt.slice(0, 50)}`,
     });
 
-    const childContext = await this.createContext(childAgent.id, parentAgentId);
+    const childContext = await this.createContext(childAgent.id, parentAgentId, input.signal);
     const childRunner = await this.createProfileRunner(childAgent.id, childContext);
     if (!childRunner) {
       yield { type: 'message', data: `Child agent profile not found: ${input.profileId}` };
@@ -219,6 +226,8 @@ export class MemeLoopDesktopRuntime {
     yield* childRunner({
       conversationId: childAgent.id,
       message: input.prompt,
+      ...(input.signal ? { signal: input.signal } : {}),
+      ...(input.runId ? { runId: input.runId } : {}),
     });
   }
 
@@ -302,7 +311,10 @@ export async function createDesktopModelBindings(
   const registry = new ProviderRegistry();
   const adapters = new Map<string, MemeLoopDesktopLLMProvider>();
   for (const account of accounts) {
-    if (account.enabled === false || account.models.length === 0) continue;
+    if (
+      account.enabled === false || account.models.length === 0 ||
+      !hasUsableProviderCredentialReference(account)
+    ) continue;
     const adapter = new MemeLoopDesktopLLMProvider({
       providerId: account.providerId,
       externalAPIService,
@@ -318,7 +330,12 @@ export async function createDesktopModelBindings(
   }
 
   const globalConfig = await externalAPIService.getAIConfig();
-  const defaultModelConfig: AgentModelConfig | undefined = globalConfig.default;
+  const defaultModelConfig: AgentModelConfig | undefined = globalConfig.default &&
+      adapters.has(globalConfig.default.providerId) &&
+      accounts.find(account => account.providerId === globalConfig.default?.providerId)
+        ?.models.some(route => route.modelId === globalConfig.default?.modelId)
+    ? globalConfig.default
+    : undefined;
   const fallbackProvider = defaultModelConfig ? adapters.get(defaultModelConfig.providerId) : undefined;
   return {
     registry,

@@ -10,7 +10,6 @@ import type {
   ConversationFullContentMessagePage,
   ConversationListPage,
   ConversationListPageCallOptions,
-  ConversationMessageCursor,
   ConversationMessageDetailRange,
   ConversationMessageIdentity,
   ConversationMessagePage,
@@ -18,6 +17,7 @@ import type {
   ConversationMeta,
   ConversationTimelinePage,
   ConversationTimelinePageCallOptions,
+  FullAgentStorage,
   GetCompactionCandidatePageOptions,
   GetConversationEventPageOptions,
   GetConversationListPageOptions,
@@ -25,15 +25,13 @@ import type {
   GetConversationTimelinePageOptions,
   GetFullContentMessagePageOptions,
   GetMessagePageOptions,
-  GetMessagesOptions,
   GetRetainedCompactionControlsOptions,
-  IAgentStorage,
   MessageVersionFrontier,
   MessageVersionFrontierCursor,
   MessageVersionFrontierPage,
   RetainedCompactionControlPage,
 } from 'memeloop';
-import { assertCanonicalChatMessageProjection, PORTABLE_LLM_REQUEST_LIMITS } from 'memeloop';
+import { assertCanonicalChatMessageProjection, createChatMessage, PORTABLE_LLM_REQUEST_LIMITS } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '../interface';
@@ -44,7 +42,7 @@ import type { IAgentInstanceService } from '../interface';
  * storage boundary instead of weakening or stringify-cloning the validator.
  */
 function toPlainStorageMessage(message: ChatMessage): ChatMessage {
-  const result: ChatMessage = {
+  const result = createChatMessage({
     messageId: message.messageId,
     conversationId: message.conversationId,
     originNodeId: message.originNodeId,
@@ -54,21 +52,21 @@ function toPlainStorageMessage(message: ChatMessage): ChatMessage {
     lamportClock: message.lamportClock,
     role: message.role,
     content: message.content,
-    ...(message.parts == null ? {} : { parts: message.parts }),
-    ...(message.toolCalls == null ? {} : { toolCalls: message.toolCalls }),
-    ...(message.attachments == null ? {} : { attachments: message.attachments }),
-    ...(message.detailRef == null ? {} : { detailRef: message.detailRef }),
-    ...(message.reasoning_content == null ? {} : { reasoning_content: message.reasoning_content }),
-    ...(message.contentType == null ? {} : { contentType: message.contentType }),
-    ...(message.hidden == null ? {} : { hidden: message.hidden }),
-    ...(message.duration == null ? {} : { duration: message.duration }),
-    ...(message.metadata == null ? {} : { metadata: message.metadata }),
-  };
+    parts: message.parts,
+    toolCalls: message.toolCalls,
+    attachments: message.attachments,
+    detailRef: message.detailRef,
+    reasoning_content: message.reasoning_content,
+    contentType: message.contentType,
+    hidden: message.hidden,
+    duration: message.duration,
+    metadata: message.metadata,
+  });
   assertCanonicalChatMessageProjection(result, message.conversationId);
   return result;
 }
 
-export class MemeLoopDesktopStorage implements IAgentStorage {
+export class MemeLoopDesktopStorage implements FullAgentStorage {
   public constructor(
     private readonly options: {
       agentInstanceService: IAgentInstanceService;
@@ -87,26 +85,6 @@ export class MemeLoopDesktopStorage implements IAgentStorage {
     const page = await this.options.agentInstanceService.getAgentConversationListPage(localNodeId, options);
     callOptions?.signal?.throwIfAborted();
     return page;
-  }
-
-  public async getMessages(conversationId: string, options?: GetMessagesOptions): Promise<ChatMessage[]> {
-    const messages: ChatMessage[] = [];
-    let after: ConversationMessageCursor | undefined;
-    let expectedRevision: string | undefined;
-    do {
-      const page = await this.options.agentInstanceService.getAgentStorageMessagePage(conversationId, {
-        limit: 80,
-        maxBytes: 4 * 1024 * 1024,
-        direction: 'forward',
-        ...(options?.mode === undefined ? {} : { mode: options.mode }),
-        ...(after ? { after, expectedRevision } : {}),
-      });
-      if (page.reset) throw new Error('conversation_message_page_invalidated');
-      messages.push(...page.items);
-      expectedRevision = page.revision;
-      after = page.hasMoreAfter ? page.endCursor : undefined;
-    } while (after);
-    return messages;
   }
 
   public async getMessagePage(

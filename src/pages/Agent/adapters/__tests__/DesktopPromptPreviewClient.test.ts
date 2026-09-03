@@ -55,6 +55,7 @@ describe('DesktopPromptPreviewClient', () => {
       currentPlugin: { id: 'wiki-search', toolId: 'wiki-search' },
       flatPrompts: [{ role: 'system', content: 'bounded system prompt' }],
       processedPrompts: [],
+      modelTools: [],
       isComplete: false,
     });
     states.next({
@@ -62,6 +63,7 @@ describe('DesktopPromptPreviewClient', () => {
       step: 'finalize',
       flatPrompts: [{ role: 'system', content: 'bounded system prompt' }],
       processedPrompts: [],
+      modelTools: [],
       isComplete: true,
     });
 

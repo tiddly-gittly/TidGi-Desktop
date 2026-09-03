@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 import 'reflect-metadata';
 
-import { assertConversationTimelinePage, canonicalJsonBytes, MAX_CONVERSATION_EVENT_BYTES } from 'memeloop';
+import { assertConversationTimelinePage, canonicalJsonBytes, createAgentRunError, MAX_CONVERSATION_EVENT_BYTES } from 'memeloop';
 import type { ConversationEvent, ConversationEventDraft, ConversationTimelineMessageEntry } from 'memeloop';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -83,6 +83,7 @@ function messageEvent(input: {
       turnId,
       role: input.role ?? 'user',
       content: input.content ?? input.eventId,
+      parts: [{ type: 'text', text: input.content ?? input.eventId }],
     },
   };
 }
@@ -129,7 +130,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'local-user', turnId: 'local-user', role: 'user', content: 'hello' },
+      message: { messageId: 'local-user', turnId: 'local-user', role: 'user', content: 'hello', parts: [{ type: 'text', text: 'hello' }] },
     });
     expect(event).toMatchObject({ originSequence: 2, lamportClock: 2 });
     const messageRepository = dataSource.getRepository(AgentInstanceMessageEntity);
@@ -303,7 +304,7 @@ describe('Desktop canonical conversation event store', () => {
         conversationId: 'conversation',
         originNodeId: 'desktop',
         timestamp: 2,
-        message: { messageId: 'batch-user', turnId: 'batch-user', role: 'user', content: 'question' },
+        message: { messageId: 'batch-user', turnId: 'batch-user', role: 'user', content: 'question', parts: [{ type: 'text', text: 'question' }] },
       },
       {
         kind: 'message',
@@ -311,7 +312,7 @@ describe('Desktop canonical conversation event store', () => {
         conversationId: 'conversation',
         originNodeId: 'desktop',
         timestamp: 3,
-        message: { messageId: 'batch-answer', turnId: 'batch-user', role: 'assistant', content: 'answer' },
+        message: { messageId: 'batch-answer', turnId: 'batch-user', role: 'assistant', content: 'answer', parts: [{ type: 'text', text: 'answer' }] },
       },
     ]);
     expect(events.map(event => [event.originSequence, event.lamportClock])).toEqual([[2, 2], [3, 3]]);
@@ -324,7 +325,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 4,
-      message: { messageId: 'no-partial', turnId: 'no-partial', role: 'user', content: 'valid' },
+      message: { messageId: 'no-partial', turnId: 'no-partial', role: 'user', content: 'valid', parts: [{ type: 'text', text: 'valid' }] },
     };
     const invalid = { ...valid, eventId: 'invalid-second', message: { ...valid.message, messageId: 'drift' } };
     await expect(appendLocalConversationEventsAtomic(dataSource, [valid, invalid])).rejects.toThrow(/canonical conversation event/);
@@ -339,7 +340,7 @@ describe('Desktop canonical conversation event store', () => {
         conversationId: 'conversation',
         originNodeId: 'desktop',
         timestamp: 2,
-        message: { messageId: 'detail-turn', turnId: 'detail-turn', role: 'user', content: 'question' },
+        message: { messageId: 'detail-turn', turnId: 'detail-turn', role: 'user', content: 'question', parts: [{ type: 'text', text: 'question' }] },
       },
       ...Array.from({ length: 3 }, (_, index): ConversationEventDraft => ({
         kind: 'message',
@@ -352,6 +353,7 @@ describe('Desktop canonical conversation event store', () => {
           turnId: 'detail-turn',
           role: 'assistant',
           content: `answer ${index}`,
+          parts: [{ type: 'text', text: `answer ${index}` }],
         },
       })),
     ]);
@@ -407,7 +409,14 @@ describe('Desktop canonical conversation event store', () => {
         }],
         reasoning_content: reasoningContent,
         detailRef: { type: 'file', fileUri: 'memeloop://local/file/large-turn' },
-        metadata: { agentRunError: { code: 'INTERRUPTED' } },
+        metadata: {
+          agentRunError: createAgentRunError({
+            code: 'INTERRUPTED',
+            messageKey: 'agent.run.error.interrupted',
+            retryable: false,
+            diagnosticId: 'fixture-interrupted',
+          }),
+        },
       },
     });
     const options = {
@@ -618,7 +627,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'control-turn', turnId: 'control-turn', role: 'user', content: 'old question' },
+      message: { messageId: 'control-turn', turnId: 'control-turn', role: 'user', content: 'old question', parts: [{ type: 'text', text: 'old question' }] },
     });
     const deleteRequest = {
       conversationId: 'conversation',
@@ -640,7 +649,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'immutable', turnId: 'immutable', role: 'user', content: 'first' },
+      message: { messageId: 'immutable', turnId: 'immutable', role: 'user', content: 'first', parts: [{ type: 'text', text: 'first' }] },
     };
     await appendLocalConversationEvent(dataSource, draft);
     const checkpointBefore = await dataSource.getRepository(ConversationTimelineRankCheckpointEntity).find({
@@ -757,7 +766,7 @@ describe('Desktop canonical conversation event store', () => {
     const valid = messageEvent({ eventId: 'strict-valid', originNodeId: 'strict-remote', originSequence: 1, lamportClock: 10 });
     const invalid = {
       ...messageEvent({ eventId: 'strict-invalid', originNodeId: 'strict-remote', originSequence: 2, lamportClock: 11 }),
-      message: { messageId: 'different-id', turnId: 'different-id', role: 'user', content: 'invalid' },
+      message: { messageId: 'different-id', turnId: 'different-id', role: 'user', content: 'invalid', parts: [{ type: 'text', text: 'invalid' }] },
     } as ConversationEvent;
     await expect(insertConversationEventsIfAbsent(dataSource, [valid, invalid])).rejects.toThrow(/canonical conversation event/);
     expect(await dataSource.getRepository(ConversationEventEntity).countBy({ originNodeId: 'strict-remote' })).toBe(0);
@@ -770,7 +779,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'getter-event', turnId: 'getter-event', role: 'user', content: 'getter' },
+      message: { messageId: 'getter-event', turnId: 'getter-event', role: 'user', content: 'getter', parts: [{ type: 'text', text: 'getter' }] },
     } as unknown as ConversationEventDraft;
     Object.defineProperty(accessorDraft, 'eventId', { enumerable: true, get: getter });
     await expect(appendLocalConversationEvent(dataSource, accessorDraft)).rejects.toThrow();
@@ -829,7 +838,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'revision-user', turnId: 'revision-user', role: 'user', content: 'hello' },
+      message: { messageId: 'revision-user', turnId: 'revision-user', role: 'user', content: 'hello', parts: [{ type: 'text', text: 'hello' }] },
     });
     const initial = await getMessagePage(
       dataSource.getRepository(AgentInstanceMessageEntity),
@@ -935,7 +944,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 3,
-      message: { messageId: 'future-turn', turnId: 'future-turn', role: 'user', content: 'hidden before arrival' },
+      message: { messageId: 'future-turn', turnId: 'future-turn', role: 'user', content: 'hidden before arrival', parts: [{ type: 'text', text: 'hidden before arrival' }] },
     });
 
     await appendLocalConversationEvent(dataSource, {
@@ -944,7 +953,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 4,
-      message: { messageId: 'late-turn', turnId: 'late-turn', role: 'user', content: 'visible briefly' },
+      message: { messageId: 'late-turn', turnId: 'late-turn', role: 'user', content: 'visible briefly', parts: [{ type: 'text', text: 'visible briefly' }] },
     });
     await appendLocalConversationEvent(dataSource, {
       kind: 'tombstone',
@@ -970,7 +979,7 @@ describe('Desktop canonical conversation event store', () => {
       conversationId: 'conversation',
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'kept-user', turnId: 'kept-user', role: 'user', content: 'kept' },
+      message: { messageId: 'kept-user', turnId: 'kept-user', role: 'user', content: 'kept', parts: [{ type: 'text', text: 'kept' }] },
     });
     const rawCount = await dataSource.getRepository(ConversationEventEntity).count();
     const detailBefore = await readMessageDetailRange(dataSource, 'conversation', 'kept-user', 0, 1024);
@@ -1000,6 +1009,7 @@ describe('Desktop canonical conversation event store', () => {
           turnId: 'preview-user',
           role: 'user',
           content: `\n \t\n  ${longEmojiLine}  \nignored`,
+          parts: [{ type: 'text', text: `\n \t\n  ${longEmojiLine}  \nignored` }],
         },
       },
       {
@@ -1013,6 +1023,7 @@ describe('Desktop canonical conversation event store', () => {
           turnId: 'preview-user',
           role: 'assistant',
           content: '\n\n  答😀😀😀😀😀  ',
+          parts: [{ type: 'text', text: '\n\n  答😀😀😀😀😀  ' }],
         },
       },
       {
@@ -1092,7 +1103,7 @@ describe('Desktop canonical conversation event store', () => {
         conversationId: 'conversation',
         originNodeId: 'desktop',
         timestamp: 20,
-        message: { messageId: 'multi-turn', turnId: 'multi-turn', role: 'user', content: 'delegate widely' },
+        message: { messageId: 'multi-turn', turnId: 'multi-turn', role: 'user', content: 'delegate widely', parts: [{ type: 'text', text: 'delegate widely' }] },
       },
       ...Array.from({ length: 6 }, (_, index): ConversationEventDraft => ({
         kind: 'message',
@@ -1105,6 +1116,7 @@ describe('Desktop canonical conversation event store', () => {
           turnId: 'multi-turn',
           role: index % 2 === 0 ? 'agent' : 'assistant',
           content: `response-${index + 1}-${'界'.repeat(200)}`,
+          parts: [{ type: 'text', text: `response-${index + 1}-${'界'.repeat(200)}` }],
           metadata: { actorId: `agent-${index + 1}`, actorLabel: `Agent ${index + 1}` },
         },
       })),

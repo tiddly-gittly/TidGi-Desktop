@@ -27,6 +27,7 @@ function fullMessage(content = 'complete 🙂 response'): ChatMessage {
     timestamp: 1,
     role: 'assistant',
     content,
+    parts: [{ type: 'text', text: content }],
     reasoning_content: 'private reasoning',
   };
 }

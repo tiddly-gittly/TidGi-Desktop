@@ -15,7 +15,7 @@ import { ConversationTimelineWindowController, type MemeLoopMessageLabels, type 
 import TuneIcon from '@mui/icons-material/Tune';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import type { TFunction } from 'i18next';
-import { AgentSessionController, type ChatMessage, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
+import { AgentSessionController, type ConversationMessageListProjection, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -257,7 +257,7 @@ function DesktopAgentChatView({
     });
   }, [instanceClient, tab.agentDefId, tab.id, updateTabData]);
 
-  const resolveErrorPresentation = useCallback((value: Error | ChatMessage): AgentChatErrorPresentation | null => {
+  const resolveErrorPresentation = useCallback((value: Error | ConversationMessageListProjection): AgentChatErrorPresentation | null => {
     const runError = value instanceof Error
       ? extractAgentRunError(value)
       : extractAgentRunError(value.metadata?.agentRunError);

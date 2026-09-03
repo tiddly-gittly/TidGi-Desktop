@@ -190,14 +190,19 @@ function decodeCursor(value: string, kind: ProjectionCursor['kind'], scope: stri
   }
   if (!decoded || typeof decoded !== 'object' || Array.isArray(decoded)) throw new Error('agent_projection_cursor_invalid');
   const record = decoded as Record<string, unknown>;
+  const recordVersion = record.v;
+  const recordKind = record.kind;
+  const recordScope = record.scope;
+  const recordRevision = record.revision;
+  const recordCursor = record.cursor;
   if (
-    Object.keys(record).sort().join(',') !== 'cursor,kind,revision,scope,v' || record.v !== 1 ||
-    record.kind !== kind || record.scope !== scope || typeof record.revision !== 'string' ||
-    record.revision.length < 1 || record.revision.length > 512 || typeof record.cursor !== 'string' ||
-    record.cursor.length < 1 || record.cursor.length > 2048 ||
-    encodeCursor(kind, scope, record.revision, record.cursor) !== value
+    Object.keys(record).sort().join(',') !== 'cursor,kind,revision,scope,v' || recordVersion !== 1 ||
+    recordKind !== kind || recordScope !== scope || typeof recordRevision !== 'string' ||
+    recordRevision.length < 1 || recordRevision.length > 512 || typeof recordCursor !== 'string' ||
+    recordCursor.length < 1 || recordCursor.length > 2048 ||
+    encodeCursor(kind, scope, recordRevision, recordCursor) !== value
   ) throw new Error('agent_projection_cursor_invalid');
-  return record as unknown as ProjectionCursor;
+  return { v: 1, kind, scope, revision: recordRevision, cursor: recordCursor };
 }
 
 function jsonBytes(value: unknown): number {

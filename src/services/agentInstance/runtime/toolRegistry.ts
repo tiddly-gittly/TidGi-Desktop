@@ -18,7 +18,6 @@ function createLazyToolLoader(): Map<string, ToolFunction> {
     return executeWikiSearch(arguments_ as Parameters<typeof executeWikiSearch>[0]);
   };
 
-  map.set('wiki-search', wikiSearchFunction);
   map.set('wikiSearch', wikiSearchFunction);
 
   const wikiOperationFunction: ToolFunction = async (arguments_: Record<string, unknown>) => {
@@ -26,7 +25,6 @@ function createLazyToolLoader(): Map<string, ToolFunction> {
     return executeWikiOperation(arguments_ as Parameters<typeof executeWikiOperation>[0]);
   };
 
-  map.set('wiki-operation', wikiOperationFunction);
   map.set('wikiOperation', wikiOperationFunction);
 
   return map;

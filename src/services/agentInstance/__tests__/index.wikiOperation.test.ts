@@ -60,7 +60,6 @@ describe('AgentInstanceService Wiki Operation', () => {
         homeUrl: 'http://localhost:5213/',
         port: 5213,
         isSubWiki: false,
-        mainWikiToLink: null,
         tagNames: [],
         lastUrl: null,
         active: true,
@@ -92,6 +91,11 @@ describe('AgentInstanceService Wiki Operation', () => {
       tools: [],
       plugins: [],
       agentTools: [wikiOperation],
+      modelConfig: {
+        providerId: 'mock',
+        modelId: 'mock-model',
+        parameters: { temperature: 0.7 },
+      },
     };
 
     mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue(agentDefWithWikiPlugin);
@@ -104,6 +108,7 @@ describe('AgentInstanceService Wiki Operation', () => {
       providerId: 'mock',
       providerType: 'openai-compatible',
       enabled: true,
+      secretRef: 'test://mock/api-key',
       models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
     }]);
   });
@@ -114,34 +119,29 @@ describe('AgentInstanceService Wiki Operation', () => {
 
   it('corrects a missing workspace and performs the wiki write only after resolution succeeds', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // Simulate two portable model rounds: first a missing workspace, then the corrected workspace.
-
-    const firstAssistant = {
-      role: 'assistant',
-      content: '<tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>',
-    };
-
-    const assistantSecond = {
-      role: 'assistant',
-      // Use an existing workspace name from defaultWorkspaces so plugin can find it
-      content: '<tool_use name="wiki-operation">{"workspaceName":"test-wiki-1","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>',
-    };
-
-    // MemeLoop's core loop drains one structured portable stream per ReAct round.
-    let callIndex = 0;
-    const responses = [firstAssistant.content, assistantSecond.content, '已创建笔记。'];
-    mockExternalAPIService.generatePortableLlm = vi.fn(async function*() {
-      callIndex += 1;
-      if (callIndex > responses.length) {
-        return;
-      }
-      yield {
-        type: 'text-delta' as const,
-        id: `r${callIndex}`,
-        text: responses[callIndex - 1],
-      };
+    const toolCall = (input: Record<string, unknown>, toolCallId: string) => (async function*() {
+      yield { type: 'tool-call' as const, toolCallId, toolName: 'wiki-operation', input };
+      yield { type: 'finish' as const, finishReason: 'tool-calls' };
+    })();
+    const finalResponse = (async function*() {
+      yield { type: 'text-delta' as const, id: 'r3', text: '已创建笔记。' };
       yield { type: 'finish' as const, finishReason: 'stop' };
-    });
+    })();
+
+    mockExternalAPIService.generatePortableLlm = vi.fn()
+      .mockReturnValueOnce(toolCall({
+        workspaceName: 'default',
+        operation: 'wiki-add-tiddler',
+        title: 'testNote',
+        text: 'test',
+      }, 'wiki-operation-invalid-workspace'))
+      .mockReturnValueOnce(toolCall({
+        workspaceName: 'test-wiki-1',
+        operation: 'wiki-add-tiddler',
+        title: 'test',
+        text: '这是测试内容',
+      }, 'wiki-operation-valid-workspace'))
+      .mockReturnValueOnce(finalResponse);
 
     await agentInstanceService.executeLocalAgentMessage({
       target: { kind: 'local' },

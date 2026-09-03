@@ -299,6 +299,12 @@ export class AgentLoopCheckpointEntity {
 
   @Column({ type: 'integer' })
   timestamp!: number;
+
+  @Column({ type: 'integer', default: 1 })
+  revision!: number;
+
+  @Column({ type: 'integer', default: 0 })
+  fencingEpoch!: number;
 }
 
 /** Singleton invalidation token for revisioned conversation directory pages. */

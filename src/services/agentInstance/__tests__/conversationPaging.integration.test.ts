@@ -404,6 +404,7 @@ describe('long conversation SQL paging', () => {
           turnId,
           role: user ? 'user' : 'assistant',
           content: `${user ? 'old question' : 'old answer'} ${turnIndex}`,
+          parts: [{ type: 'text', text: `${user ? 'old question' : 'old answer'} ${turnIndex}` }],
         },
       };
     });
@@ -559,6 +560,7 @@ describe('long conversation SQL paging', () => {
       lamportClock: 50_001,
       role: 'user',
       content: 'prompt 50000',
+      parts: [{ type: 'text', text: 'prompt 50000' }],
       hidden: false,
     };
     const revision = String(

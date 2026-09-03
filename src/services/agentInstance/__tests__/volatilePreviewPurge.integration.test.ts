@@ -115,7 +115,7 @@ describe('volatile Agent preview purge', () => {
       conversationId: PREVIEW_ID,
       originNodeId: 'desktop',
       timestamp: 2,
-      message: { messageId: 'preview-user', turnId: 'preview-user', role: 'user', content: 'hello' },
+      message: { messageId: 'preview-user', turnId: 'preview-user', role: 'user', content: 'hello', parts: [{ type: 'text', text: 'hello' }] },
     });
     await appendLocalConversationEvent(dataSource, {
       kind: 'message',
@@ -123,7 +123,7 @@ describe('volatile Agent preview purge', () => {
       conversationId: PREVIEW_ID,
       originNodeId: 'desktop',
       timestamp: 3,
-      message: { messageId: 'preview-assistant', turnId: 'preview-user', role: 'assistant', content: 'world' },
+      message: { messageId: 'preview-assistant', turnId: 'preview-user', role: 'assistant', content: 'world', parts: [{ type: 'text', text: 'world' }] },
     });
     await appendLocalConversationEvent(dataSource, {
       kind: 'message',
@@ -131,7 +131,7 @@ describe('volatile Agent preview purge', () => {
       conversationId: DURABLE_ID,
       originNodeId: 'desktop',
       timestamp: 4,
-      message: { messageId: 'durable-user', turnId: 'durable-user', role: 'user', content: 'keep me' },
+      message: { messageId: 'durable-user', turnId: 'durable-user', role: 'user', content: 'keep me', parts: [{ type: 'text', text: 'keep me' }] },
     });
 
     await dataSource.getRepository(ConversationTurnTombstoneEntity).insert({

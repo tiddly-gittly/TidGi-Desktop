@@ -12,7 +12,6 @@ import {
   conversationEventToMessage,
   type ConversationMessagePayload,
   createMemeLoopRuntime,
-  type IAgentStorage,
   type MemeLoopRunState,
   type MemeLoopRuntime,
 } from 'memeloop';
@@ -33,8 +32,28 @@ import {
   ConversationTimelineStateEntity,
   ConversationTurnTombstoneEntity,
 } from '@/services/database/schema/conversationEvent';
+import { AgentDefinitionService } from '@services/agentDefinition';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { appendLocalConversationEvent } from '../../agentRepository';
+import { AgentInstanceService } from '../../index';
+import type { IAgentInstanceService } from '../../interface';
 import { DesktopAgentRunStateStore } from '../agentRunStateStore';
+import { MemeLoopDesktopStorage } from '../storage';
+
+type RuntimeDefinitionServiceOverrides = Pick<IAgentDefinitionService, 'getAgentDef'>;
+type RuntimeInstanceServiceOverrides = Pick<IAgentInstanceService, 'appendLocalConversationEvent' | 'getAgentConversationMeta'>;
+
+function createDefinitionService(overrides: Partial<RuntimeDefinitionServiceOverrides>): IAgentDefinitionService {
+  const service = new AgentDefinitionService();
+  Object.assign(service, overrides);
+  return service;
+}
+
+function createInstanceService(overrides: Partial<RuntimeInstanceServiceOverrides>): IAgentInstanceService {
+  const service = new AgentInstanceService();
+  Object.assign(service, overrides);
+  return service;
+}
 
 const ATOMIC_RETRY_ENTITIES = [
   AgentDefinitionEntity,
@@ -57,23 +76,27 @@ function createRuntimeContext(
   runAgentToolLoop: NonNullable<AgentFrameworkContext['runAgentToolLoop']>,
 ): AgentFrameworkContext {
   let sequence = 0;
-  const storage = {
-    getConversationMeta: vi.fn(async (conversationId: string) => ({
-      conversationId,
-      title: 'Conversation',
-      definitionId: 'definition-1',
-      lastMessagePreview: '',
-      lastMessageTimestamp: 0,
-      messageCount: 0,
-      originNodeId: 'peer-desktop',
-      originClock: sequence,
-      isUserInitiated: true,
-    })),
-    appendLocalEvent: vi.fn(async (draft: ConversationEventDraft): Promise<ConversationEvent> => {
-      sequence += 1;
-      return { ...draft, originSequence: sequence, lamportClock: sequence };
+  const storage = new MemeLoopDesktopStorage({
+    agentDefinitionService: createDefinitionService({ getAgentDef: vi.fn(async () => undefined) }),
+    agentInstanceService: createInstanceService({
+      getAgentConversationMeta: vi.fn(async (_localNodeId: string, conversationId: string) => ({
+        conversationId,
+        title: 'Conversation',
+        definitionId: 'definition-1',
+        lastMessagePreview: '',
+        lastMessageTimestamp: 0,
+        messageCount: 0,
+        originNodeId: 'peer-desktop',
+        originClock: sequence,
+        isUserInitiated: true,
+      })),
+      appendLocalConversationEvent: vi.fn(async (draft: ConversationEventDraft): Promise<ConversationEvent> => {
+        sequence += 1;
+        return { ...draft, originSequence: sequence, lamportClock: sequence };
+      }),
     }),
-  } as unknown as IAgentStorage;
+    getLocalNodeId: vi.fn(async () => 'peer-desktop'),
+  });
   return {
     storage,
     localNodeId: 'peer-desktop',
@@ -305,6 +328,7 @@ describe('DesktopAgentRunStateStore atomic retry', () => {
         turnId: input.candidateRun.turnId,
         role: 'user',
         content: 'conflicting durable event',
+        parts: [{ type: 'text', text: 'conflicting durable event' }],
       },
     });
 

@@ -1,9 +1,26 @@
-import type { AgentDefinition, AgentFrameworkConfig, AgentInstance } from 'memeloop';
+import type { AgentDefinition, AgentFrameworkConfig, AgentRuntimeView } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
+import { AgentDefinitionService } from '@services/agentDefinition';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentInstanceService } from '../../index';
 import type { IAgentInstanceService } from '../../interface';
 import { createDesktopAgentDefinitionResolver, resolveDesktopAgentDefinition } from '../runtime';
+
+type DefinitionServiceOverrides = Pick<IAgentDefinitionService, 'getAgentDef'>;
+type InstanceServiceOverrides = Pick<IAgentInstanceService, 'getAgentMetadata'>;
+
+function createDefinitionService(overrides: Partial<DefinitionServiceOverrides>): IAgentDefinitionService {
+  const service = new AgentDefinitionService();
+  Object.assign(service, overrides);
+  return service;
+}
+
+function createInstanceService(overrides: Partial<InstanceServiceOverrides>): IAgentInstanceService {
+  const service = new AgentInstanceService();
+  Object.assign(service, overrides);
+  return service;
+}
 
 describe('resolveDesktopAgentDefinition', () => {
   it('re-reads the latest persisted instance prompt config for the next Core turn', async () => {
@@ -36,8 +53,8 @@ describe('resolveDesktopAgentDefinition', () => {
     const services = {
       agentId,
       definitionId,
-      agentDefinitionService: { getAgentDef } as unknown as IAgentDefinitionService,
-      agentInstanceService: { getAgentMetadata } as unknown as IAgentInstanceService,
+      agentDefinitionService: createDefinitionService({ getAgentDef }),
+      agentInstanceService: createInstanceService({ getAgentMetadata }),
     };
 
     const firstTurnDefinition = await resolveDesktopAgentDefinition(services);
@@ -70,10 +87,10 @@ describe('resolveDesktopAgentDefinition', () => {
     const resolved = await resolveDesktopAgentDefinition({
       agentId: 'conversation-1',
       definitionId: definition.id,
-      agentDefinitionService: {
+      agentDefinitionService: createDefinitionService({
         getAgentDef: vi.fn(async () => definition),
-      } as unknown as IAgentDefinitionService,
-      agentInstanceService: {
+      }),
+      agentInstanceService: createInstanceService({
         getAgentMetadata: vi.fn(async () =>
           agentInstance({
             agentDefId: 'different-definition',
@@ -83,7 +100,7 @@ describe('resolveDesktopAgentDefinition', () => {
             },
           })
         ),
-      } as unknown as IAgentInstanceService,
+      }),
     });
 
     expect(resolved?.agentFrameworkConfig?.prompts[0]?.text).toBe('definition prompt');
@@ -101,10 +118,10 @@ describe('resolveDesktopAgentDefinition', () => {
     const getAgentMetadata = vi.fn(async (agentId: string) => agentInstance({ id: agentId }));
     const resolver = createDesktopAgentDefinitionResolver({
       fallbackAgentId: '__memeloop_runtime__',
-      agentDefinitionService: {
+      agentDefinitionService: createDefinitionService({
         getAgentDef: vi.fn(async () => definition),
-      } as unknown as IAgentDefinitionService,
-      agentInstanceService: { getAgentMetadata } as unknown as IAgentInstanceService,
+      }),
+      agentInstanceService: createInstanceService({ getAgentMetadata }),
     });
 
     await resolver(definition.id, { conversationId: 'real-conversation' });
@@ -113,17 +130,16 @@ describe('resolveDesktopAgentDefinition', () => {
   });
 });
 
-function agentInstance(overrides: Partial<AgentInstance>): AgentInstance {
+function agentInstance(overrides: Partial<AgentRuntimeView>): AgentRuntimeView {
   return {
     id: 'conversation-1',
     agentDefId: 'definition-1',
-    description: '',
-    systemPrompt: '',
-    tools: [],
-    messages: [],
+    name: 'Conversation',
     status: { state: 'working', modified: new Date(0) },
     created: new Date(0),
-    version: '1',
+    closed: false,
+    volatile: false,
+    preview: false,
     ...overrides,
   };
 }

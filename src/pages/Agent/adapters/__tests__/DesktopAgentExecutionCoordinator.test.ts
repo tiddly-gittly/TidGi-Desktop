@@ -515,6 +515,7 @@ function retryEvents(request: {
         turnId: String(request.newTurnId),
         role: 'user' as const,
         content: 'retry',
+        parts: [{ type: 'text' as const, text: 'retry' }],
       },
     },
   };

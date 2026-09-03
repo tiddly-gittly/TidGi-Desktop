@@ -43,6 +43,7 @@ import {
   type AgentInstanceLatestStatus,
   type AgentInstanceMetadata,
   type AgentInstanceMetadataUpdate,
+  type AgentInstanceState,
   type AgentManagementCallOptions,
   type AgentRunError,
   AgentRunFailure,
@@ -91,6 +92,7 @@ import {
   type PromptPreviewPreparedExecution,
   type PromptPreviewPrepareRequest,
   type RemoteAgentExecuteRequest,
+  resolveAgentToolLoopTerminalState,
   type RetainedCompactionControlPage,
   type ScheduledTask,
   type ScheduledTaskPage,
@@ -489,7 +491,16 @@ export class AgentInstanceService implements IAgentInstanceService {
     try {
       await this.updateAgent(agentId, { status });
     } catch (error) {
-      const currentAgent = await this.getAgentMetadata(agentId).catch(() => undefined);
+      let currentAgent: AgentRuntimeView | undefined;
+      try {
+        currentAgent = await this.getAgentMetadata(agentId);
+      } catch (metadataError: unknown) {
+        logger.error('Failed to read agent metadata while recovering status persistence', {
+          agentId,
+          error: metadataError,
+        });
+        throw error;
+      }
       if (!currentAgent) throw error;
       this.notifyAgentUpdate(agentId, { ...currentAgent, status });
       logger.warn('Failed to persist agent status during MemeLoop turn; continuing with bounded in-memory status', { error, agentId, state: status.state });
@@ -503,7 +514,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (existing) return existing;
     const pending = (async () => {
       const messageId = `agent-run-error:${status.runId}`;
-      const existingMessage = await this.getAgentMessage(messageId).catch(() => undefined);
+      const existingMessage = await this.getAgentMessage(messageId);
       if (existingMessage?.conversationId === status.conversationId) return;
       const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
       const event = await this.appendLocalConversationEvent({
@@ -517,6 +528,7 @@ export class AgentInstanceService implements IAgentInstanceService {
           turnId: status.turnId,
           role: 'error',
           content: runError.messageKey,
+          parts: [{ type: 'text', text: runError.messageKey }],
           duration: 1,
           metadata: { agentRunError: runError, runId: status.runId },
         },
@@ -849,6 +861,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             turnId,
             role: 'user',
             content: `E2E long question ${number}`,
+            parts: [{ type: 'text', text: `E2E long question ${number}` }],
           },
         },
         {
@@ -864,6 +877,7 @@ export class AgentInstanceService implements IAgentInstanceService {
             turnId,
             role: 'assistant',
             content: `E2E long answer ${number}`,
+            parts: [{ type: 'text', text: `E2E long answer ${number}` }],
           },
         },
       );
@@ -1097,7 +1111,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
 
     const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    const existingUserRoot = await this.getAgentMessage(turnId).catch(() => undefined);
+    const existingUserRoot = await this.getAgentMessage(turnId);
     const prepared = existingUserRoot?.conversationId === agentId && existingUserRoot.role === 'user'
       ? this.runTurnRequestFromPersistedUserRoot({
         conversationId: agentId,
@@ -1114,14 +1128,12 @@ export class AgentInstanceService implements IAgentInstanceService {
     await this.updateAgentStatusBestEffort(agentId, { state: 'working', modified: new Date() });
     let handle: MemeLoopRunHandle | undefined;
     let terminalStatusPersisted = false;
-    const inputRequiredRunIds = new Set<string>();
+    const runTerminalStates = new Map<string, AgentInstanceState>();
     const durableRuntime = await this.getDurableAgentRuntime();
     const unsubscribeRuntime = durableRuntime.subscribeToUpdates(agentId, update => {
-      if (update.type !== 'agent-step' || update.runId === undefined || update.step.type !== 'thinking') return;
-      const data = update.step.data;
-      if (data && typeof data === 'object' && 'status' in data && data.status === 'input-required') {
-        inputRequiredRunIds.add(update.runId);
-      }
+      if (update.type !== 'agent-step' || update.runId === undefined) return;
+      const current = runTerminalStates.get(update.runId) ?? 'completed';
+      runTerminalStates.set(update.runId, resolveAgentToolLoopTerminalState(update.step, current));
     });
     try {
       handle = await durableRuntime.sendMessage({
@@ -1151,10 +1163,11 @@ export class AgentInstanceService implements IAgentInstanceService {
         terminalStatusPersisted = true;
         throw new Error('agent_run_cancelled');
       }
-      // askQuestion yields an input-required step while the durable transport
-      // lifecycle correctly reaches completed. Correlate the step to this
-      // exact run instead of inferring it from mutable conversation data.
-      const completedState = inputRequiredRunIds.has(handle.runId) ? 'input-required' : 'completed';
+      // The durable runtime keeps transport lifecycle states separate from
+      // Core's loop terminal state. Consume Core's canonical projection of
+      // the streamed steps so ask-question can remain input-required without
+      // teaching Desktop the shape of step payloads.
+      const completedState = runTerminalStates.get(handle.runId) ?? 'completed';
       await this.updateAgentStatusBestEffort(agentId, { state: completedState, modified: new Date() });
       if (definition.heartbeat?.enabled && !agent.volatile) {
         startHeartbeat(agentId, definition.id, definition.heartbeat, this, { createdBy: 'agent-definition' });
@@ -1172,7 +1185,10 @@ export class AgentInstanceService implements IAgentInstanceService {
       throw error;
     } finally {
       unsubscribeRuntime();
-      if (handle) this.untrackDurableRun(agentId, handle.runId);
+      if (handle) {
+        runTerminalStates.delete(handle.runId);
+        this.untrackDurableRun(agentId, handle.runId);
+      }
     }
   }
 
@@ -1184,8 +1200,13 @@ export class AgentInstanceService implements IAgentInstanceService {
         try {
           const commitHash = await this.gitService.callGitOpForWorkspace(workspace.id, 'getHeadCommitHash', workspace.wikiFolderLocation);
           beforeCommitMap[workspace.id] = { wikiFolderLocation: workspace.wikiFolderLocation, commitHash };
-        } catch {
+        } catch (error: unknown) {
           // A workspace without a Git HEAD cannot participate in rollback.
+          logger.debug('Skipping workspace without a Git HEAD during rollback snapshot', {
+            agentId,
+            workspaceId: workspace.id,
+            error,
+          });
         }
       }
       logger.debug('Recorded before-turn commit hashes', { agentId, workspaceCount: Object.keys(beforeCommitMap).length });
@@ -1707,7 +1728,13 @@ export class AgentInstanceService implements IAgentInstanceService {
     operation: () => Promise<void>,
   ): Promise<void> {
     const previousQueue = this.conversationInvalidationQueues.get(conversationId) ?? Promise.resolve();
-    const nextQueue = previousQueue.catch(() => {}).then(operation);
+    const nextQueue = previousQueue.catch((error: unknown) => {
+      logger.error('Previous conversation publication failed before the queue recovered', {
+        conversationId,
+        error,
+        function: 'serializeConversationPublication',
+      });
+    }).then(operation);
     this.conversationInvalidationQueues.set(conversationId, nextQueue);
     try {
       await nextQueue;

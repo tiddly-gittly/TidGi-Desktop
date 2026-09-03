@@ -242,6 +242,7 @@ function message(originSequence: number, role: ChatMessage['role']): ChatMessage
     lamportClock: originSequence,
     role,
     content: `message ${originSequence}`,
+    parts: [{ type: 'text', text: `message ${originSequence}` }],
   };
 }
 
@@ -252,6 +253,7 @@ function summary(messageId: string, originSequence: number, content: string): Ch
     turnId: messageId,
     originNodeId: 'desktop-local',
     content,
+    parts: [{ type: 'text', text: content }],
     metadata: {
       compacted: true,
       contextCompaction: {

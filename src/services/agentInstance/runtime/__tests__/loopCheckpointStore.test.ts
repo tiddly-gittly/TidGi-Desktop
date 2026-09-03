@@ -18,14 +18,18 @@ import {
   ConversationTimelineStateEntity,
   ConversationTurnTombstoneEntity,
 } from '@/services/database/schema/conversationEvent';
+import type { ConversationEvent, LoopCheckpointScope } from 'memeloop';
 import { appendLocalConversationEvent, insertConversationEventsIfAbsent, rebuildConversationEventProjection } from '../../agentRepository';
 import { DesktopLoopCheckpointStore } from '../loopCheckpointStore';
 
 let dataSource: DataSource | undefined;
+let secondDataSource: DataSource | undefined;
 
 afterEach(async () => {
   if (dataSource?.isInitialized) await dataSource.destroy();
+  if (secondDataSource?.isInitialized) await secondDataSource.destroy();
   dataSource = undefined;
+  secondDataSource = undefined;
 });
 
 describe('DesktopLoopCheckpointStore', () => {
@@ -121,5 +125,71 @@ describe('DesktopLoopCheckpointStore', () => {
       })),
     );
     await expect(restarted.loadCheckpoint('conversation-1', 'state:bulk-progress')).resolves.toBe(257);
+  });
+
+  it('hands raw checkpoint events from one independent store to another with fence conflict resolution', async () => {
+    const entities = [
+      AgentDefinitionEntity,
+      AgentInstanceEntity,
+      AgentInstanceMessageEntity,
+      AgentLoopCheckpointEntity,
+      ConversationAttachmentReferenceEntity,
+      ConversationEventEntity,
+      ConversationEventSequenceEntity,
+      ConversationListStateEntity,
+      ConversationMessageDetailEntity,
+      ConversationMetadataFieldEntity,
+      ConversationTimelineEntryEntity,
+      ConversationTimelineRankCheckpointEntity,
+      ConversationTimelineStateEntity,
+      ConversationTurnTombstoneEntity,
+    ];
+    dataSource = new DataSource({ type: 'better-sqlite3', database: ':memory:', entities, synchronize: true });
+    secondDataSource = new DataSource({ type: 'better-sqlite3', database: ':memory:', entities, synchronize: true });
+    await dataSource.initialize();
+    await secondDataSource.initialize();
+    const scope: LoopCheckpointScope = {
+      scriptDigest: `sha256:${'1'.repeat(64)}`,
+      apiVersion: 'loops.memeloop.io/v1alpha1',
+      schemaVersion: '1',
+      runId: 'handoff-run',
+    };
+    const sourceStore = new DesktopLoopCheckpointStore(dataSource, async () => 'source');
+    await sourceStore.saveCheckpoint('handoff-conversation', 'phase', { value: 'fenced' }, {
+      scope,
+      fencingEpoch: 2,
+      expectedRevision: 0,
+    });
+    const sourceRow = await dataSource.getRepository(ConversationEventEntity).findOneOrFail({
+      where: { conversationId: 'handoff-conversation', kind: 'loopCheckpoint' },
+    });
+    const rawEvent = JSON.parse(sourceRow.eventJson) as ConversationEvent;
+    if (rawEvent.kind !== 'loopCheckpoint') throw new Error('expected checkpoint event');
+    await insertConversationEventsIfAbsent(secondDataSource, [rawEvent]);
+    const targetStore = new DesktopLoopCheckpointStore(secondDataSource, async () => 'target');
+    await expect(targetStore.loadCheckpoint('handoff-conversation', 'phase', { scope }))
+      .resolves.toEqual({ value: 'fenced' });
+    await expect(targetStore.loadCheckpoint('handoff-conversation', 'phase', {
+      scope: {
+        ...scope,
+        scriptDigest: `sha256:${'2'.repeat(64)}`,
+      },
+    })).resolves.toBeUndefined();
+
+    await insertConversationEventsIfAbsent(secondDataSource, [{
+      ...rawEvent,
+      eventId: 'stale-fence-event',
+      originNodeId: 'stale-source',
+      originSequence: 1,
+      lamportClock: rawEvent.lamportClock + 100,
+      checkpoint: {
+        ...rawEvent.checkpoint,
+        result: { value: 'stale' },
+        fencingEpoch: 1,
+        revision: 99,
+      },
+    }]);
+    await expect(targetStore.loadCheckpoint('handoff-conversation', 'phase', { scope }))
+      .resolves.toEqual({ value: 'fenced' });
   });
 });

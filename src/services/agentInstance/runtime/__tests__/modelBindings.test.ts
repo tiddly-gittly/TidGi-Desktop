@@ -22,6 +22,7 @@ describe('createDesktopModelBindings', () => {
       providerId: 'cpa',
       providerType: 'openai-compatible',
       baseUrl: 'https://models.example.test',
+      secretRef: 'desktop-keychain:cpa',
       enabled: true,
       models: [
         { modelId: 'gpt-5.6-sol', wireModelId: 'gpt-5.6-sol', apiMode: 'responses' },
@@ -74,5 +75,24 @@ describe('createDesktopModelBindings', () => {
     expect(bindings.defaultModelConfig).toBeUndefined();
     expect(bindings.fallbackProvider.name).toBe('desktop-unconfigured');
     expect(bindings.fallbackProvider).toSatisfy((provider: ILLMProvider) => typeof provider.chat === 'function');
+  });
+
+  it('does not register a remote provider without a credential and drops its default binding', async () => {
+    vi.spyOn(externalAPIService, 'getProviderAccounts').mockResolvedValue([{
+      providerId: 'keyless-remote',
+      providerType: 'openai-compatible',
+      baseUrl: 'https://models.example.test',
+      enabled: true,
+      models: [{ modelId: 'model', wireModelId: 'model', apiMode: 'chat-completions' }],
+    }]);
+    vi.spyOn(externalAPIService, 'getAIConfig').mockResolvedValue({
+      default: { providerId: 'keyless-remote', modelId: 'model' },
+    });
+
+    const bindings = await createDesktopModelBindings(externalAPIService);
+
+    expect(bindings.registry.list()).toEqual([]);
+    expect(bindings.defaultModelConfig).toBeUndefined();
+    expect(bindings.fallbackProvider.name).toBe('desktop-unconfigured');
   });
 });
