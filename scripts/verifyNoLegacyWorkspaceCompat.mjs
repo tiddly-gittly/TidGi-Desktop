@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +16,8 @@ const defaultTargetRoots = [
   resolve(repositoryRoot, 'src'),
   resolve(repositoryRoot, 'packages/tidgi-shared/src'),
 ];
+const rendererEntry = 'src/renderer.tsx';
+const rendererNodeI18nImport = '@services/libs/i18n';
 
 /**
  * A repository contract violation includes a source location so one run can
@@ -50,6 +52,141 @@ export function productionFiles(directory) {
       ? [child]
       : [];
   });
+}
+
+/**
+ * Resolve an internal source import from the same aliases used by Vite.
+ * External packages and browser-safe subpaths are intentionally ignored.
+ *
+ * @param {string} root
+ * @param {string} importer
+ * @param {string} specifier
+ * @returns {string | undefined}
+ */
+function resolveRendererImport(root, importer, specifier) {
+  let base;
+  if (specifier.startsWith('@/')) {
+    base = join(root, 'src', specifier.slice(2));
+  } else if (specifier.startsWith('@services/')) {
+    base = join(root, 'src', 'services', specifier.slice('@services/'.length));
+  } else if (specifier.startsWith('.')) {
+    base = resolve(importer, '..', specifier);
+  } else {
+    return undefined;
+  }
+
+  const explicitExtension = extname(base);
+  const extensionlessBase = explicitExtension ? base.slice(0, -explicitExtension.length) : base;
+  const candidates = [
+    base,
+    ...[...sourceExtensions].map(extension => `${extensionlessBase}${extension}`),
+    ...[...sourceExtensions].map(extension => join(base, `index${extension}`)),
+  ];
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate) || !statSync(candidate).isFile()) continue;
+    if (!sourceExtensions.has(extname(candidate))) continue;
+    if (/(?:\.test|\.spec)\.[cm]?[jt]sx?$/u.test(candidate)) continue;
+    return resolve(candidate);
+  }
+  return undefined;
+}
+
+/** @param {string} fileName @returns {import('typescript').ScriptKind} */
+function scriptKindForFile(fileName) {
+  const extension = extname(fileName).toLowerCase();
+  return extension === '.tsx' || extension === '.jsx'
+    ? ts.ScriptKind.TSX
+    : extension === '.js' || extension === '.mjs' || extension === '.cjs'
+    ? ts.ScriptKind.JS
+    : ts.ScriptKind.TS;
+}
+
+/**
+ * Return static internal module specifiers from one source file.
+ *
+ * @param {string} source
+ * @param {string} fileName
+ * @returns {Array<{ specifier: string, index: number }>}
+ */
+function rendererImportSpecifiers(source, fileName) {
+  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, scriptKindForFile(fileName));
+  /** @type {Array<{ specifier: string, index: number }>} */
+  const imports = [];
+  /** @param {import('typescript').Node} node */
+  const visit = node => {
+    if (
+      ts.isImportDeclaration(node) &&
+      node.importClause?.phaseModifier !== ts.SyntaxKind.TypeKeyword &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      imports.push({ specifier: node.moduleSpecifier.text, index: node.moduleSpecifier.getStart(sourceFile) });
+    } else if (
+      ts.isExportDeclaration(node) &&
+      !node.isTypeOnly &&
+      node.moduleSpecifier !== undefined &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      imports.push({ specifier: node.moduleSpecifier.text, index: node.moduleSpecifier.getStart(sourceFile) });
+    } else if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      imports.push({ specifier: node.arguments[0].text, index: node.arguments[0].getStart(sourceFile) });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return imports;
+}
+
+/**
+ * Follow internal imports from the renderer entry point. This keeps the
+ * renderer boundary assertion tied to the actual Vite entry graph instead of
+ * maintaining a hand-written list of UI directories.
+ *
+ * @param {string} [root]
+ * @returns {string[]}
+ */
+export function rendererReachableFiles(root = repositoryRoot) {
+  const entry = resolve(root, rendererEntry);
+  if (!existsSync(entry) || !statSync(entry).isFile()) return [];
+
+  const reachable = [];
+  const pending = [entry];
+  const visited = new Set();
+  while (pending.length > 0) {
+    const file = pending.pop();
+    if (file === undefined) continue;
+    const normalized = resolve(file);
+    if (visited.has(normalized)) continue;
+    visited.add(normalized);
+    reachable.push(normalized);
+
+    const source = readFileSync(normalized, 'utf8');
+    for (const { specifier } of rendererImportSpecifiers(source, normalized)) {
+      const dependency = resolveRendererImport(root, normalized, specifier);
+      if (dependency !== undefined && !visited.has(dependency)) pending.push(dependency);
+    }
+  }
+  return reachable;
+}
+
+/**
+ * Find imports of the Node/Electron i18n entry in a renderer-reachable module.
+ * The `/renderer`, `/placeholder`, and other subpaths are separate browser-safe
+ * modules and therefore do not match this exact entry-point assertion.
+ *
+ * @param {string} source
+ * @param {string} fileName
+ * @returns {number[]}
+ */
+export function findRendererNodeI18nImports(source, fileName) {
+  return rendererImportSpecifiers(source, fileName)
+    .filter(({ specifier }) => specifier === rendererNodeI18nImport)
+    .map(({ index }) => index);
 }
 
 /**
@@ -322,7 +459,30 @@ export function scanRepository(options = {}) {
   const root = resolve(options.repositoryRoot ?? repositoryRoot);
   const roots = options.targetRoots ?? defaultTargetRoots.map(targetRoot => relative(repositoryRoot, targetRoot));
   const files = roots.flatMap(targetRoot => productionFiles(resolve(root, targetRoot)));
-  return files.flatMap(file => scan(readFileSync(file, 'utf8'), relative(root, file).split('\\').join('/')));
+  const violations = files.flatMap(file => scan(readFileSync(file, 'utf8'), relative(root, file).split('\\').join('/')));
+  const configuredFiles = new Set(files.map(file => resolve(file)));
+
+  // Renderer modules must not import the main-process i18n entry. That entry
+  // statically reaches Electron and Node filesystem APIs, which Vite turns
+  // into browser shims that fail at runtime in packaged Windows builds.
+  for (const file of rendererReachableFiles(root)) {
+    if (!configuredFiles.has(file)) continue;
+    const source = readFileSync(file, 'utf8');
+    const fileName = relative(root, file).split('\\').join('/');
+    const starts = lineStarts(source);
+    for (const index of findRendererNodeI18nImports(source, fileName)) {
+      const lineIndex = Math.max(0, starts.findLastIndex(start => start <= index));
+      violations.push({
+        code: 'renderer_node_i18n_import',
+        file: fileName,
+        line: lineIndex + 1,
+        column: index - starts[lineIndex] + 1,
+        index,
+      });
+    }
+  }
+
+  return violations.sort((left, right) => left.file.localeCompare(right.file) || left.index - right.index || left.code.localeCompare(right.code));
 }
 
 /** @param {Violation} violation @returns {string} */

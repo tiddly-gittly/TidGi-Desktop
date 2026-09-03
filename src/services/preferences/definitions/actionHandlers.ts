@@ -1,5 +1,5 @@
-import { i18n } from '@services/libs/i18n';
 import { WindowNames } from '@services/windows/WindowProperties';
+import i18next from 'i18next';
 
 /**
  * Resolve a context key (like 'LOG_FOLDER') to its runtime value.
@@ -44,8 +44,8 @@ const explicitHandlers: Record<string, (...arguments_: string[]) => Promise<void
   },
   'notification.test': async () => {
     await window.service.notification.show({
-      title: i18n.t('Preference.TestNotification'),
-      body: i18n.t('Preference.ItIsWorking'),
+      title: i18next.t('Preference.TestNotification'),
+      body: i18next.t('Preference.ItIsWorking'),
     });
   },
   'native.pickDirectory': async () => {

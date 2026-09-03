@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maskNonCode, scan } from '../verifyNoLegacyWorkspaceCompat.mjs';
+import { findRendererNodeI18nImports, maskNonCode, scan } from '../verifyNoLegacyWorkspaceCompat.mjs';
 
 describe('verifyNoLegacyWorkspaceCompat scanner', () => {
   it('reports comment-only catch blocks, including parameterized async rejection handlers', () => {
@@ -65,5 +65,15 @@ describe('verifyNoLegacyWorkspaceCompat scanner', () => {
     const matches = scan(source, 'fixture.ts');
     expect(matches).toHaveLength(1);
     expect(matches[0]).toMatchObject({ code: 'workspace_remote_identity_alias', line: 4 });
+  });
+
+  it('rejects the main-process i18n entry while allowing renderer-safe subpaths', () => {
+    const source = [
+      "import { i18n } from '@services/libs/i18n';",
+      "import { initRendererI18N } from '@services/libs/i18n/renderer';",
+      "import { t } from '@services/libs/i18n/placeholder';",
+    ].join('\n');
+
+    expect(findRendererNodeI18nImports(source, 'fixture.tsx')).toHaveLength(1);
   });
 });

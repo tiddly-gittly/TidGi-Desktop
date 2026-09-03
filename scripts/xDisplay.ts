@@ -7,10 +7,18 @@ export function requiresVirtualXDisplay(platform: NodeJS.Platform, hasDisplay: b
 export function isXDisplayReachable(display: string | undefined): boolean {
   if (!display) return false;
   try {
-    return spawnSync('xdpyinfo', ['-display', display], {
+    const result = spawnSync('xdpyinfo', ['-display', display], {
       stdio: 'ignore',
       timeout: 2000,
-    }).status === 0;
+    });
+    // `xdpyinfo` is provided by x11-utils, which is not installed on every
+    // runner that has xvfb. A non-empty DISPLAY is still the best signal in
+    // that environment; avoid nesting a second xvfb-run around a live server.
+    if (result.error && (result.error as NodeJS.ErrnoException).code === 'ENOENT') {
+      console.warn(`[xDisplay] xdpyinfo is unavailable; trusting DISPLAY=${display}`);
+      return true;
+    }
+    return result.status === 0;
   } catch {
     return false;
   }
