@@ -11,6 +11,7 @@ overrides:
   react-transition-group: 4.4.5
   rc>ini: ^1.3.8
   tar-stream>bl: ^4.1.0
+  '@ai-sdk/provider-utils': 5.0.34
 
 importers:
 
@@ -59,11 +60,11 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@memeloop/libp2p':
-        specifier: ^0.2.5
-        version: 0.2.5(memeloop@0.2.10(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
+        specifier: ^0.3.0
+        version: 0.3.0(memeloop@0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
       '@memeloop/react-ui':
-        specifier: ^0.1.8
-        version: 0.1.8(d0fe890b9c2cf27d967345cea6c8bc24)
+        specifier: ^0.2.0
+        version: 0.2.0(3941b3e0c900678eb0f597645a0716b5)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(supports-color@10.2.2)(zod@4.4.3)
@@ -209,8 +210,8 @@ importers:
         specifier: ^5.3.7
         version: 5.3.7(@mui/material@9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(react@19.2.8)
       memeloop:
-        specifier: ^0.2.10
-        version: 0.2.10(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
+        specifier: ^0.3.0
+        version: 0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
       menubar:
         specifier: 9.5.2
         version: 9.5.2(electron@43.2.0(supports-color@10.2.2))
@@ -585,14 +586,18 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@5.0.12':
-    resolution: {integrity: sha512-bbhlOgHeYwrIGheLkM6fhS8hVger8uFPmcOLg+kxc9EFh7y30XYorWhthlYAgpadO3SJhFZrIcEknN7qEqEVvA==}
+  '@ai-sdk/provider-utils@5.0.34':
+    resolution: {integrity: sha512-tRBdgRcys/4d8wyQdOdyYScq1AxfMdMd0hIlwolxJKVIbBwXUgClZuQT0VIsz4e7pylY8FE6utYCCZ494UAMJQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/provider@4.0.3':
     resolution: {integrity: sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw==}
+    engines: {node: '>=22'}
+
+  '@ai-sdk/provider@4.0.9':
+    resolution: {integrity: sha512-XnGXPWiBIfqjsVEud5pOaVneRByJQOu2sYNwlSVJTPCvakdCDkVuYKKfNuStkIpMUYl7JIkBZGBx+B5YfNeVjA==}
     engines: {node: '>=22'}
 
   '@algolia/abtesting@1.19.0':
@@ -2171,15 +2176,17 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@memeloop/libp2p@0.2.5':
-    resolution: {integrity: sha512-813frM7LyfYOQ4BpzxB1AaEhPkeb/7z18ePN5+D1evcV9sNZ0P78EX15pjV6+2AYc9LF2TC6Y1Q5BwdtU7SOdw==}
+  '@memeloop/libp2p@0.3.0':
+    resolution: {integrity: sha512-4PlURHG3vA2aggo6sHqNrovS/vWIAnPK3GmAdO/3/xxpZrcBJKG5oPfgNDwgAilQK0PQiPyDmXODIfTiPKuMSw==}
     peerDependencies:
-      memeloop: ^0.2.9
+      memeloop: ^0.3.0
 
-  '@memeloop/react-ui@0.1.8':
-    resolution: {integrity: sha512-wUmOWR3uY08xx+CZkcf8YPPERmmaVxE1wAAK70vf4fHJH/KZAOunSSVJ26ggo8lrYHR4qwzXWCSWlDj8+ulppQ==}
+  '@memeloop/react-ui@0.2.0':
+    resolution: {integrity: sha512-vep80K2Fa3cvyTj4AJYsKtBkJ8cJI7VDxBe5wW2IyzvGY31Ae07WPpwNdUs620+xlylRfeCPsFoMjcN6ZU0ZiA==}
     peerDependencies:
       '@assistant-ui/react': ^0.15.16
+      '@emotion/react': '>=11.0.0 <12.0.0'
+      '@emotion/styled': '>=11.0.0 <12.0.0'
       '@mui/icons-material': '>=6.0.0 <10.0.0'
       '@mui/material': '>=6.0.0 <10.0.0'
       '@rjsf/core': '>=6.0.0'
@@ -2187,19 +2194,13 @@ packages:
       '@rjsf/utils': '>=6.0.0'
       '@rjsf/validator-ajv8': '>=6.0.0'
       material-ui-cron: '>=2.0.0'
-      memeloop: ^0.2.10
+      memeloop: ^0.3.0
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
       react-native: '>=0.78.0'
       react-native-gifted-chat: '>=2.8.0'
       react-native-paper: '>=5.0.0'
     peerDependenciesMeta:
-      '@assistant-ui/react':
-        optional: true
-      '@mui/icons-material':
-        optional: true
-      '@mui/material':
-        optional: true
       '@rjsf/core':
         optional: true
       '@rjsf/mui':
@@ -7004,8 +7005,8 @@ packages:
     resolution: {integrity: sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==}
     engines: {node: '>= 0.8'}
 
-  memeloop@0.2.10:
-    resolution: {integrity: sha512-nwyCLu3xmoUitXW1/OhQLOwpFDDHiGliol+J5C/97zgbPKmdkQGaGJ4V5O4yjHZXwsHUfCy0m7+gtVnyfwPOaQ==}
+  memeloop@0.3.0:
+    resolution: {integrity: sha512-/3J0+xC1z/ClyEejR3Y8BZriufYgH2FOWtPRQxkVGlXpK5N3o4a3GNh7BuTh6JdOtM0JYTMM/cKA0M/OjdPX0g==}
     peerDependencies:
       '@ai-sdk/anthropic': ^4.0.19
       '@ai-sdk/azure': ^4.0.0
@@ -9046,6 +9047,10 @@ packages:
     resolution: {integrity: sha512-uZsKNuzQxDMUY6M3pIMvy5tvlGmtq8XJ2oLAkfRKGNu+1VQAIvLy2xIVG5ATZl5wDXl/tddByAWCizRbOme+TA==}
     engines: {node: '>=20.18.1'}
 
+  undici@7.29.0:
+    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
+    engines: {node: '>=20.18.1'}
+
   unicorn-magic@0.4.0:
     resolution: {integrity: sha512-wH590V9VNgYH9g3lH9wWjTrUoKsjLF6sGLjhR4sH1LWpLmCOH0Zf7PukhDA8BiS7KHe4oPNkcTHqYkj7SOGUOw==}
     engines: {node: '>=20'}
@@ -9590,43 +9595,48 @@ snapshots:
   '@ai-sdk/anthropic@4.0.21(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/deepseek@3.0.13(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/gateway@4.0.28(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
   '@ai-sdk/openai-compatible@3.0.14(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/openai@4.0.20(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@5.0.12(zod@4.4.3)':
+  '@ai-sdk/provider-utils@5.0.34(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider': 4.0.9
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.0
+      undici: 7.29.0
       zod: 4.4.3
 
   '@ai-sdk/provider@4.0.3':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@4.0.9':
     dependencies:
       json-schema: 0.4.0
 
@@ -11723,7 +11733,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@memeloop/libp2p@0.2.5(memeloop@0.2.10(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))':
+  '@memeloop/libp2p@0.3.0(memeloop@0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))':
     dependencies:
       '@chainsafe/libp2p-noise': 17.0.0
       '@chainsafe/libp2p-yamux': 8.0.1
@@ -11740,20 +11750,22 @@ snapshots:
       '@libp2p/websockets': 10.1.19
       '@multiformats/multiaddr': 13.0.3
       libp2p: 3.3.8
-      memeloop: 0.2.10(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
+      memeloop: 0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
       uint8arrays: 6.1.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@memeloop/react-ui@0.1.8(d0fe890b9c2cf27d967345cea6c8bc24)':
+  '@memeloop/react-ui@0.2.0(3941b3e0c900678eb0f597645a0716b5)':
     dependencies:
-      memeloop: 0.2.10(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
-      react: 19.2.8
-    optionalDependencies:
       '@assistant-ui/react': 0.15.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(immer@11.1.15)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
+      '@emotion/react': 11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)
+      '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)
       '@mui/icons-material': 9.2.0(@mui/material@9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(react@19.2.8)
       '@mui/material': 9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      memeloop: 0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
+      react: 19.2.8
+    optionalDependencies:
       '@rjsf/core': 6.7.0(@rjsf/utils@6.7.0(react@19.2.8))(react@19.2.8)
       '@rjsf/mui': 6.7.0(df60922d93469d142ae4a1f65a9fb920)
       '@rjsf/utils': 6.7.0(react@19.2.8)
@@ -13835,7 +13847,7 @@ snapshots:
     dependencies:
       '@ai-sdk/gateway': 4.0.28(zod@4.4.3)
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       zod: 4.4.3
 
   ajv-formats@2.1.1(ajv@8.20.0):
@@ -17000,7 +17012,7 @@ snapshots:
 
   media-typer@1.1.0: {}
 
-  memeloop@0.2.10(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)):
+  memeloop@0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)):
     dependencies:
       '@types/json-schema': 7.0.15
       acorn: 8.17.0
@@ -17010,7 +17022,6 @@ snapshots:
       json5: 2.2.3
       semver: 7.8.5
       zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
     optionalDependencies:
       '@ai-sdk/anthropic': 4.0.21(zod@4.4.3)
       '@ai-sdk/deepseek': 3.0.13(zod@4.4.3)
@@ -17384,7 +17395,7 @@ snapshots:
   ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3):
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.34(zod@4.4.3)
       ai: 7.0.37(zod@4.4.3)
       zod: 4.4.3
 
@@ -19155,6 +19166,8 @@ snapshots:
   undici@6.26.0: {}
 
   undici@7.27.2: {}
+
+  undici@7.29.0: {}
 
   unicorn-magic@0.4.0: {}
 

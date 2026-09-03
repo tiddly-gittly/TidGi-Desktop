@@ -28,7 +28,8 @@
     "init:git-submodule": "git submodule update --init --recursive && git submodule update --remote",
     "lint": "eslint ./src ./features ./scripts ./localization ./*.ts --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src ./features ./scripts ./localization ./*.ts --ext ts,tsx,json --fix",
-    "check": "tsc --noEmit --skipLibCheck",
+    "check": "pnpm run check:repository-contracts && tsc --noEmit --skipLibCheck",
+    "check:repository-contracts": "node scripts/verifyNoLegacyWorkspaceCompat.mjs",
     "validate:push": "pnpm run check && pnpm run lint --max-warnings 0",
     "prepare": "husky",
     "installType": "typesync"
@@ -51,8 +52,8 @@
     "@dnd-kit/utilities": "3.2.2",
     "@dr.pogodin/react-helmet": "^3.2.2",
     "@fontsource/roboto": "^5.3.0",
-    "@memeloop/libp2p": "^0.2.5",
-    "@memeloop/react-ui": "^0.1.8",
+    "@memeloop/libp2p": "^0.3.0",
+    "@memeloop/react-ui": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^9.2.0",
@@ -101,7 +102,7 @@
     "lodash": "4.18.1",
     "material-ui-popup-state": "^5.3.7",
     "material-ui-cron": "2.0.1",
-    "memeloop": "^0.2.10",
+    "memeloop": "^0.3.0",
     "menubar": "9.5.2",
     "monaco-editor": "^0.56.0",
     "nanoid": "^6.0.0",
@@ -208,5 +209,5 @@
   "optionalDependencies": {
     "registry-js": "1.16.1"
   },
-  "private": false
+  "private": true
 }
