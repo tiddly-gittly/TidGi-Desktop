@@ -14,6 +14,10 @@ import { inject, injectable } from 'inversify';
 import path from 'node:path';
 import type { IDeepLinkService } from './interface';
 
+export function findTidGiProtocolUrl(commandLine: readonly string[]): string | undefined {
+  return commandLine.find(argument => argument.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`));
+}
+
 @injectable()
 export class DeepLinkService implements IDeepLinkService {
   private pendingDeepLink: string | undefined;
@@ -63,15 +67,29 @@ export class DeepLinkService implements IDeepLinkService {
     const analyticsService = container.get<IAnalyticsService>(serviceIdentifier.Analytics);
     try {
       // hostname is workspace id or name
-      const { hostname, hash, pathname } = new URL(requestUrl);
+      const { hostname, hash, pathname, searchParams } = new URL(requestUrl);
 
       // Handle tidgi://preferences/<sectionId> deep links (global preferences)
       if (hostname === 'preferences') {
         const sectionId = decodeURIComponent(pathname.replace(/^\//, '')) as PreferenceSections;
         const windowService = container.get<IWindowService>(serviceIdentifier.Window);
         if (Object.values(PreferenceSections).includes(sectionId)) {
+          const providerId = searchParams.get('provider');
+          const modelId = searchParams.get('model');
+          const field = searchParams.get('field');
+          const preferenceFocus = sectionId === PreferenceSections.externalAPI &&
+              providerId !== null && isSafePreferenceIdentifier(providerId) && isProviderSettingField(field)
+            ? {
+              providerId,
+              field,
+              ...(modelId !== null && isSafePreferenceIdentifier(modelId) ? { modelId } : {}),
+            }
+            : undefined;
           logger.info(`Open preferences via deep link`, { sectionId, function: 'deepLinkHandler' });
-          await windowService.open(WindowNames.preferences, { preferenceGotoTab: sectionId });
+          await windowService.open(WindowNames.preferences, {
+            preferenceGotoTab: sectionId,
+            ...(preferenceFocus ? { preferenceFocus } : {}),
+          });
         } else {
           logger.info(`Open preferences window via deep link (no section)`, { function: 'deepLinkHandler' });
           await windowService.open(WindowNames.preferences);
@@ -203,8 +221,8 @@ export class DeepLinkService implements IDeepLinkService {
     if (gotTheLock) {
       // Handle second instance (when app is already running)
       app.on('second-instance', (_event, commandLine) => {
-        const url = commandLine.pop();
-        if (url !== undefined && url !== '') {
+        const url = findTidGiProtocolUrl(commandLine);
+        if (url !== undefined) {
           void this.openDeepLink(url);
         }
       });
@@ -213,7 +231,7 @@ export class DeepLinkService implements IDeepLinkService {
       // On Windows/Linux, protocol URLs are passed as command line arguments
       if (process.argv.length >= 2) {
         // Find the protocol URL in command line arguments
-        const protocolUrl = process.argv.find(argument => argument.startsWith(`${TIDGI_PROTOCOL_SCHEME}://`));
+        const protocolUrl = findTidGiProtocolUrl(process.argv);
         if (protocolUrl) {
           logger.info(`Processing initial deep link from command line`, { protocolUrl, function: 'setupWindowsLinuxHandler' });
           // Process after app is ready
@@ -230,4 +248,20 @@ export class DeepLinkService implements IDeepLinkService {
       app.quit();
     }
   }
+}
+
+function isSafePreferenceIdentifier(value: string): boolean {
+  return value.length > 0 && value.length <= 256 && !hasControlCharacters(value);
+}
+
+function hasControlCharacters(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0)!;
+    if (codePoint <= 0x1F || codePoint === 0x7F) return true;
+  }
+  return false;
+}
+
+function isProviderSettingField(value: string | null): value is 'apiKey' | 'baseUrl' | 'model' | 'apiMode' {
+  return value === 'apiKey' || value === 'baseUrl' || value === 'model' || value === 'apiMode';
 }

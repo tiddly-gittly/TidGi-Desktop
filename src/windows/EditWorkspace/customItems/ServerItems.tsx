@@ -83,7 +83,7 @@ export function ServerPortItem(_props: ICustomItemProps): React.JSX.Element {
               )}
           </span>
         }
-        placeholder='Optional'
+        placeholder={t('Schema.Optional')}
         value={portInput}
         onChange={(event) => {
           const raw = event.target.value;
@@ -401,7 +401,7 @@ export function ServerHttpsCertItems(_props: ICustomItemProps): React.JSX.Elemen
           id='outlined-full-width'
           label={t('EditWorkspace.HTTPSCertPath')}
           helperText={t('EditWorkspace.HTTPSCertPathDescription')}
-          placeholder='Optional'
+          placeholder={t('Schema.Optional')}
           fullWidth
           value={https.tlsCert ?? ''}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -444,7 +444,7 @@ export function ServerHttpsCertItems(_props: ICustomItemProps): React.JSX.Elemen
           id='outlined-full-width'
           label={t('EditWorkspace.HTTPSKeyPath')}
           helperText={t('EditWorkspace.HTTPSKeyPathDescription')}
-          placeholder='Optional'
+          placeholder={t('Schema.Optional')}
           fullWidth
           value={https.tlsKey ?? ''}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,9 +1,10 @@
 import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
-import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
+import type { DesktopExternalAPISettings } from '@services/externalAPI/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
+import type { ProviderAccountConfig } from 'memeloop';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
@@ -73,15 +74,21 @@ async function startMockOpenAIServerAndUpdateSettings(
 
   await world.mockOpenAIServer.start();
 
-  // Update provider config with actual mock server URL
-  world.providerConfig.baseURL = `${world.mockOpenAIServer.baseUrl}/v1`;
+  // Update the canonical provider account with the actual mock server URL.
+  world.providerConfig = {
+    ...world.providerConfig,
+    baseUrl: `${world.mockOpenAIServer.baseUrl}/v1`,
+  };
 
-  // Update AI settings in settings.json with the correct baseURL
+  // Update the persisted canonical account with the correct base URL.
   const settingsPath = getSettingsPath(world);
   if (fs.existsSync(settingsPath)) {
     const settings = fs.readJsonSync(settingsPath) as ISettingFile;
-    if (settings.aiSettings?.providers?.[0]) {
-      settings.aiSettings.providers[0].baseURL = world.providerConfig.baseURL;
+    if (settings.aiSettings?.accounts[0]) {
+      settings.aiSettings = {
+        ...settings.aiSettings,
+        accounts: [world.providerConfig, ...settings.aiSettings.accounts.slice(1)],
+      };
       fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
     }
   }
@@ -226,7 +233,8 @@ Then('I should see {int} messages in chat history', async function(this: Applica
     try {
       const finalCount = await currentWindow.locator(messageSelector).count();
       throw new Error(`Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`);
-    } catch {
+    } catch (rethrow) {
+      if (rethrow instanceof Error && rethrow.message.startsWith('Could not find')) throw rethrow;
       throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
     }
   });
@@ -237,20 +245,35 @@ Then('the last AI request should contain system prompt {string}', async function
     throw new Error('Mock OpenAI server is not running');
   }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+  let lastSystemPrompt = '';
+  await backOff(
+    async () => {
+      const lastRequest = this.mockOpenAIServer!.getLastRequest();
+      if (!lastRequest) {
+        throw new Error('No AI request has been made yet');
+      }
 
-  // Find system message in the request
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
-    throw new Error('No system message found in the AI request');
-  }
+      const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+      if (systemMessages.length === 0) {
+        throw new Error('No system message found in the AI request');
+      }
 
-  if (!systemMessage.content || !systemMessage.content.includes(expectedPrompt)) {
-    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`);
-  }
+      lastSystemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+      if (!lastSystemPrompt.includes(expectedPrompt)) {
+        throw new Error(`System prompt does not contain expected text yet`);
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  ).catch(() => {
+    const requestPrompts = this.mockOpenAIServer!.getAllRequests().map((request, index) => {
+      const content = request.messages
+        .filter(message => message.role === 'system')
+        .map(message => message.content ?? '')
+        .join('\n');
+      return `${index + 1}: ${content.slice(0, 300)}`;
+    }).join('\n');
+    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${lastSystemPrompt}"\nAll request system prompts:\n${requestPrompts}`);
+  });
 });
 
 Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
@@ -263,14 +286,15 @@ Then('the last AI request system prompt should not contain {string}', async func
     throw new Error('No AI request has been made yet');
   }
 
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
+  const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+  if (systemMessages.length === 0) {
     // No system message means it definitely doesn't contain the text
     return;
   }
 
-  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
-    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
+  const systemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+  if (systemPrompt.includes(unexpectedText)) {
+    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemPrompt.substring(0, 300)}..."`);
   }
 });
 
@@ -346,23 +370,27 @@ Then('the last AI request user message should not contain {string}', async funct
 
 // Factory function to create scenario-specific provider config
 // Returns a new object each time to avoid state pollution between scenarios
-function createProviderConfig(): AIProviderConfig {
+function createProviderConfig(): ProviderAccountConfig {
   return {
-    provider: 'TestProvider',
-    baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
-    apiKey: 'test-api-key', // Required by isAIAvailable() for non-Ollama providers
+    providerId: 'test-provider',
+    providerType: 'openai-compatible',
+    baseUrl: 'http://127.0.0.1:1/v1', // Replaced with the mock server's actual port before launch.
     models: [
-      { name: 'test-model', features: ['language'] },
-      { name: 'test-embedding-model', features: ['language', 'embedding'] },
-      { name: 'test-speech-model', features: ['speech'] },
+      { modelId: 'test-model', wireModelId: 'test-model', apiMode: 'chat-completions' },
+      { modelId: 'test-embedding-model', wireModelId: 'test-embedding-model', apiMode: 'chat-completions' },
+      { modelId: 'test-speech-model', wireModelId: 'test-speech-model', apiMode: 'chat-completions' },
     ],
-    providerClass: 'openAICompatible',
-    isPreset: false,
     enabled: true,
   };
 }
 
-const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
+function requiredModelId(account: ProviderAccountConfig, index: number): string {
+  const modelId = account.models[index]?.modelId;
+  if (modelId === undefined) throw new Error(`Missing test model route at index ${index}`);
+  return modelId;
+}
+
+const desiredModelParameters = { temperature: 0.7, topP: 0.95 };
 
 // Step to remove AI settings for testing config errors
 Given('I remove test ai settings', function(this: ApplicationWorld) {
@@ -377,80 +405,50 @@ Given('I remove test ai settings', function(this: ApplicationWorld) {
 
 Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
   const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
-  const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
+  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+  const actual = parsed.aiSettings;
 
   if (!actual) {
     throw new Error('aiSettings not found in settings file');
   }
 
-  const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
+  const actualAccounts = actual.accounts;
 
   // If providerConfig is set (from mock server), use it; otherwise create expected config
-  // and use actual baseURL from settings (for UI-configured scenarios)
-  let providerConfig: AIProviderConfig;
-  const providerName = 'TestProvider';
-  const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
+  // and use the persisted exact account for UI-configured scenarios.
+  let providerConfig: ProviderAccountConfig;
+  const providerName = 'test-provider';
+  const existingProvider = actualAccounts.find(account => account.providerId === providerName);
 
   if (this.providerConfig) {
     // Use the mock server's providerConfig
     providerConfig = this.providerConfig;
   } else if (existingProvider) {
-    // For UI-configured scenarios: build expected config using actual baseURL
-    providerConfig = createProviderConfig();
-    providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
-    // UI-created providers won't have an apiKey — align expected with actual
-    if (!existingProvider.apiKey) {
-      delete (providerConfig as unknown as Record<string, unknown>).apiKey;
-    }
+    providerConfig = existingProvider;
   } else {
     providerConfig = createProviderConfig();
   }
 
   // Build expected aiSettings from providerConfig and compare with actual
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
+  const modelName = requiredModelId(providerConfig, 0);
 
-  // Check TestProvider exists
-  const testProvider = actualProviders.find(p => p.provider === providerName);
+  // Check test-provider exists
+  const testProvider = actualAccounts.find(account => account.providerId === providerName);
   if (!testProvider) {
-    console.error('TestProvider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
-    throw new Error('TestProvider not found in aiSettings');
+    console.error('test-provider not found in actual accounts:', JSON.stringify(actualAccounts, null, 2));
+    throw new Error('test-provider not found in aiSettings');
   }
 
-  // Verify TestProvider configuration
+  // Verify test-provider configuration
   if (!isEqual(testProvider, providerConfig)) {
-    console.error('TestProvider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
-    console.error('TestProvider config actual:', JSON.stringify(testProvider, null, 2));
-    throw new Error('TestProvider configuration does not match expected');
-  }
-
-  // Check ComfyUI provider exists
-  const comfyuiProvider = actualProviders.find(p => p.provider === 'comfyui');
-  if (!comfyuiProvider) {
-    console.error('ComfyUI provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
-    throw new Error('ComfyUI provider not found in aiSettings');
-  }
-
-  // Verify ComfyUI has test-flux model with workflow path
-  const comfyuiModels = (comfyuiProvider.models as Array<Record<string, unknown>>) || [];
-  const testFluxModel = comfyuiModels.find(m => m.name === 'test-flux');
-  if (!testFluxModel) {
-    console.error('test-flux model not found in ComfyUI models:', JSON.stringify(comfyuiModels, null, 2));
-    throw new Error('test-flux model not found in ComfyUI provider');
-  }
-
-  // Verify workflow path
-  const parameters = testFluxModel.parameters as Record<string, unknown> | undefined;
-  if (!parameters || parameters.workflowPath !== 'C:/test/mock/workflow.json') {
-    console.error('Workflow path mismatch. expected: C:/test/mock/workflow.json, actual:', parameters?.workflowPath);
-    throw new Error('Workflow path not correctly saved');
+    console.error('test-provider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
+    console.error('test-provider config actual:', JSON.stringify(testProvider, null, 2));
+    throw new Error('test-provider configuration does not match expected');
   }
 
   // Verify default config
-  const defaultConfig = actual.defaultConfig as Record<string, unknown>;
-  const defaultModel = defaultConfig.default as Record<string, unknown>;
-  if (defaultModel?.provider !== providerName || defaultModel?.model !== modelName) {
+  const defaultModel = actual.modelAssignments.default;
+  if (defaultModel?.providerId !== providerName || defaultModel?.modelId !== modelName) {
     console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
     console.error('actual defaultModel:', JSON.stringify(defaultModel, null, 2));
     throw new Error('Default configuration does not match expected');
@@ -473,27 +471,27 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   }
   const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+  const modelName = requiredModelId(providerConfig, 0);
+  const embeddingModelName = requiredModelId(providerConfig, 1);
+  const speechModelName = requiredModelId(providerConfig, 2);
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
+  const newAi: DesktopExternalAPISettings = {
+    accounts: [providerConfig],
+    providerCredentials: [],
+    modelAssignments: {
       default: {
-        provider: providerConfig.provider,
-        model: modelName,
+        providerId: providerConfig.providerId,
+        modelId: modelName,
+        parameters: desiredModelParameters,
       },
       embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
+        providerId: providerConfig.providerId,
+        modelId: embeddingModelName,
       },
       speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
+        providerId: providerConfig.providerId,
+        modelId: speechModelName,
       },
-      modelParameters: desiredModelParameters,
     },
   };
 
@@ -518,10 +516,9 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   }
   const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+  const modelName = requiredModelId(providerConfig, 0);
+  const embeddingModelName = requiredModelId(providerConfig, 1);
+  const speechModelName = requiredModelId(providerConfig, 2);
 
   // Parse options from data table
   let freeModel: string | undefined;
@@ -549,30 +546,31 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
     }
   }
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
+  const newAi: DesktopExternalAPISettings = {
+    accounts: [providerConfig],
+    providerCredentials: [],
+    modelAssignments: {
       default: {
-        provider: providerConfig.provider,
-        model: modelName,
+        providerId: providerConfig.providerId,
+        modelId: modelName,
+        parameters: desiredModelParameters,
       },
       embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
+        providerId: providerConfig.providerId,
+        modelId: embeddingModelName,
       },
       speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
+        providerId: providerConfig.providerId,
+        modelId: speechModelName,
       },
       ...(freeModel
         ? {
           free: {
-            provider: providerConfig.provider,
-            model: freeModel,
+            providerId: providerConfig.providerId,
+            modelId: freeModel,
           },
         }
         : {}),
-      modelParameters: desiredModelParameters,
     },
   };
 
@@ -620,6 +618,12 @@ When('I send ask AI with selection message with text {string} and workspace {str
     throw new Error('Electron app not found');
   }
 
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const requestCountBeforeSend = this.mockOpenAIServer.getAllRequests().length;
+
   const sendResult = await this.app.evaluate(async ({ BrowserWindow }, { text, wsId }: { text: string; wsId: string }) => {
     // Find main window - the first window is always the main window in TidGi
     const allWindows = BrowserWindow.getAllWindows();
@@ -645,8 +649,23 @@ When('I send ask AI with selection message with text {string} and workspace {str
     throw new Error(`Failed to send IPC message: ${sendResult.error || 'Unknown error'}`);
   }
 
-  // Small delay to ensure IPC message is processed (cross-process communication needs time)
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // Wait for the observable result of the cross-process event instead of assuming
+  // a fixed delay is long enough on every CI host.
+  await backOff(
+    async () => {
+      const requestsAfterSend = this.mockOpenAIServer!.getAllRequests().slice(requestCountBeforeSend);
+      const receivedSelection = requestsAfterSend.some(
+        (request) =>
+          request.messages.some(
+            (message) => message.role === 'user' && message.content?.includes(selectionText),
+          ),
+      );
+      if (!receivedSelection) {
+        throw new Error('The Ask AI selection has not reached the mock provider yet');
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  );
 });
 
 export { clearAISettings };

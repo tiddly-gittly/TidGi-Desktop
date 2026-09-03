@@ -1,4 +1,3 @@
-import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
 import { inject, injectable } from 'inversify';
@@ -30,15 +29,10 @@ export class View implements IViewService {
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
+    @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
   ) {}
-
-  private get windowService(): IWindowService {
-    return container.get<IWindowService>(serviceIdentifier.Window);
-  }
-
-  private get workspaceService(): IWorkspaceService {
-    return container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  }
 
   public async initialize(): Promise<void> {
     await registerViewMenu();
@@ -71,7 +65,7 @@ export class View implements IViewService {
   }
 
   public getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined {
-    let view = this.views.get(workspaceID)?.get(windowName);
+    const view = this.views.get(workspaceID)?.get(windowName);
     if (view) {
       // Stale entry from a window that was destroyed (e.g. close-handler race in older builds).
       // Remove it so callers know to recreate the view rather than reusing a dead one.
@@ -82,24 +76,6 @@ export class View implements IViewService {
       return view;
     }
 
-    // Case-insensitive fallback — indicates a casing bug elsewhere, but keeps things working
-    const lower = workspaceID.toLowerCase();
-    for (const [id, windowViews] of this.views.entries()) {
-      if (id.toLowerCase() === lower) {
-        view = windowViews.get(windowName);
-        if (view) {
-          if (view.webContents.isDestroyed()) {
-            windowViews.delete(windowName);
-            continue;
-          }
-          logger[process.env.NODE_ENV === 'development' ? 'warn' : 'debug'](
-            'getView: case-insensitive match — workspace ID casing inconsistency',
-            { requestedId: workspaceID, actualId: id, windowName },
-          );
-          return view;
-        }
-      }
-    }
     return undefined;
   }
 
@@ -210,8 +186,7 @@ export class View implements IViewService {
   ): Promise<WebContentsView> {
     const view = new WebContentsView({ webPreferences: sharedWebPreferences });
 
-    const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
-    const shouldUseDarkColors = await themeService.shouldUseDarkColors();
+    const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
     view.setBackgroundColor(shouldUseDarkColors ? '#212121' : '#ffffff');
 
     if (this.shouldMuteAudio) {
@@ -389,8 +364,10 @@ export class View implements IViewService {
     try {
       browserWindow.contentView.removeChildView(view);
       attached = true;
-    } catch {
+    } catch (error: unknown) {
       // View was not attached — normal for window-recreation or first-show.
+      // Keep the lifecycle probe observable without failing the show path.
+      logger.debug('showView: removeChildView skipped', { workspaceID, windowName, error });
     }
     try {
       browserWindow.contentView.addChildView(view);
@@ -450,7 +427,11 @@ export class View implements IViewService {
       this.customBoundsMap.set(key, bounds);
       try {
         browserWindow.contentView.addChildView(view);
-      } catch { /* already added */ }
+      } catch (error: unknown) {
+        // addChildView is idempotent from the caller's perspective; Electron
+        // throws when the view is already attached, so retain the diagnostic.
+        logger.debug('setViewBounds: view already attached', { workspaceID, windowName, error });
+      }
       view.setBounds(bounds);
     } else {
       const previousCustomBounds = this.customBoundsMap.get(key);
@@ -526,7 +507,11 @@ export class View implements IViewService {
       if (browserWindow && !browserWindow.isDestroyed()) {
         try {
           browserWindow.contentView.removeChildView(view);
-        } catch { /* ok */ }
+        } catch (error: unknown) {
+          // The view may already have been detached by Electron during window
+          // teardown. Destruction remains best-effort, with a trace for races.
+          logger.debug('destroyAllViewsOfWorkspace: removeChildView skipped', { workspaceID, windowName, error });
+        }
       }
       // Destroy webContents
       try {

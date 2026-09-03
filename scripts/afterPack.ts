@@ -4,12 +4,71 @@
  * Adapted for electron forge https://github.com/electron-userland/electron-forge/issues/2248
  */
 import fs from 'fs-extra';
+import { findPackageJSON } from 'node:module';
 import path from 'path';
 
 // Packages whose absence makes the app non-functional at runtime.
 // If any of these fail to copy, packaging itself should fail so that the
 // problem is caught before deployment, not discovered by a user crash.
-const CRITICAL_PACKAGES = ['tiddlywiki', 'better-sqlite3', 'nsfw', 'dugite'];
+const CRITICAL_PACKAGES = [
+  'tiddlywiki',
+  'better-sqlite3',
+  'nsfw',
+  'dugite',
+  'typeorm',
+  'electron-unhandled',
+  '@modelcontextprotocol/sdk',
+];
+
+interface PackageJsonWithDependencies {
+  dependencies?: Record<string, string>;
+  name?: string;
+  optionalDependencies?: Record<string, string>;
+}
+
+const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/i;
+
+class PackageNotFoundError extends Error {}
+
+/**
+ * Resolve a package root with Node's package-aware resolver.
+ *
+ * `findPackageJSON` understands scoped packages, package `exports`, pnpm's
+ * nested layout, and platform path rules. Passing the parent package.json as
+ * the base keeps resolution anchored to the package that declares the
+ * dependency instead of assuming that every dependency was hoisted.
+ */
+export function resolvePackageDirectory(packageName: string, fromFolder: string): string {
+  if (!PACKAGE_NAME_PATTERN.test(packageName)) {
+    throw new Error(`Invalid package name in runtime dependency closure: ${packageName}`);
+  }
+
+  let packageJsonPath: string | undefined;
+  try {
+    packageJsonPath = findPackageJSON(packageName, path.join(fromFolder, 'package.json'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
+      throw new PackageNotFoundError(
+        `Could not resolve package directory for ${packageName} from ${fromFolder}`,
+        { cause: error },
+      );
+    }
+    throw error;
+  }
+  if (packageJsonPath === undefined) {
+    throw new PackageNotFoundError(
+      `Could not resolve package directory for ${packageName} from ${fromFolder}`,
+    );
+  }
+
+  const packageJson = fs.readJsonSync(packageJsonPath) as PackageJsonWithDependencies;
+  if (packageJson.name !== packageName) {
+    throw new Error(
+      `Node resolved ${packageName} to a package manifest named ${packageJson.name ?? '<unnamed>'}`,
+    );
+  }
+  return path.dirname(packageJsonPath);
+}
 
 function copyWithTracking(
   source: string,
@@ -24,6 +83,76 @@ function copyWithTracking(
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Error copying ${source} → ${destination}: ${errorMessage}`);
     failures.add(criticalPackage);
+  }
+}
+
+/**
+ * Restore one Vite-externalized package and its installed runtime dependency
+ * closure after Electron Packager has pruned the staging directory.
+ *
+ * A full `pnpm deploy` would stage every production dependency and duplicate
+ * Forge/Vite's normal packaging work. This targeted traversal instead follows
+ * Node's resolver from each parent package and copies only the externals that
+ * cannot be bundled safely. Regular dependencies are required. Installed
+ * optional dependencies are copied and become required once selected, while
+ * optional dependencies that are absent for the current OS/CPU are skipped.
+ * The `copiedPackages` set also breaks cycles and avoids repeated copies.
+ */
+export function copyPackageDependencyClosure(
+  packageName: string,
+  resolutionBaseFolder: string,
+  destinationNodeModulesFolder: string,
+  criticalPackage: string,
+  failures: Set<string>,
+  copiedPackages: Set<string> = new Set(),
+  optional = false,
+): void {
+  if (copiedPackages.has(packageName)) return;
+
+  const packageSegments = packageName.split('/');
+  let source: string;
+  try {
+    source = resolvePackageDirectory(packageName, resolutionBaseFolder);
+  } catch (error) {
+    if (optional && error instanceof PackageNotFoundError) return;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error resolving ${packageName}: ${errorMessage}`);
+    failures.add(criticalPackage);
+    return;
+  }
+  copiedPackages.add(packageName);
+  const destination = path.resolve(destinationNodeModulesFolder, ...packageSegments);
+  copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
+
+  let packageJson: PackageJsonWithDependencies;
+  try {
+    packageJson = fs.readJsonSync(path.join(source, 'package.json')) as PackageJsonWithDependencies;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error reading ${packageName} package.json: ${errorMessage}`);
+    failures.add(criticalPackage);
+    return;
+  }
+
+  const runtimeDependencies = new Map<string, { optional: boolean }>();
+  for (const dependencyName of Object.keys(packageJson.dependencies ?? {})) {
+    runtimeDependencies.set(dependencyName, { optional: false });
+  }
+  for (const dependencyName of Object.keys(packageJson.optionalDependencies ?? {})) {
+    // npm treats an entry present in both maps as optional.
+    runtimeDependencies.set(dependencyName, { optional: true });
+  }
+
+  for (const [dependencyName, dependency] of runtimeDependencies) {
+    copyPackageDependencyClosure(
+      dependencyName,
+      source,
+      destinationNodeModulesFolder,
+      criticalPackage,
+      failures,
+      copiedPackages,
+      dependency.optional,
+    );
   }
 }
 
@@ -138,15 +267,40 @@ export default async (
         );
       }
 
-      // MCP SDK — non-critical
-      console.log('Copy @modelcontextprotocol/sdk');
+      console.log('Copy typeorm dependency closure');
+      copyPackageDependencyClosure(
+        'typeorm',
+        sourceNodeModulesFolder,
+        path.join(cwd, 'node_modules'),
+        'typeorm',
+        failures,
+      );
+
+      // electron-unhandled is pure ESM and remains external to the Vite main
+      // bundle. Electron must resolve it, and all of its transitive runtime
+      // dependencies, from Resources/node_modules at application startup.
+      console.log('Copy electron-unhandled dependency closure');
+      copyPackageDependencyClosure(
+        'electron-unhandled',
+        sourceNodeModulesFolder,
+        path.join(cwd, 'node_modules'),
+        'electron-unhandled',
+        failures,
+      );
+
+      // MCP SDK remains external to the Vite main bundle. Copy its complete
+      // runtime dependency closure: recent releases load zod/v3 during module
+      // initialization, before any MCP server is configured.
+      console.log('Copy @modelcontextprotocol/sdk dependency closure');
       const mcpSdkDestination = path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk');
+      copyPackageDependencyClosure(
+        '@modelcontextprotocol/sdk',
+        sourceNodeModulesFolder,
+        path.join(cwd, 'node_modules'),
+        '@modelcontextprotocol/sdk',
+        failures,
+      );
       try {
-        fs.copySync(
-          path.join(sourceNodeModulesFolder, '@modelcontextprotocol', 'sdk'),
-          mcpSdkDestination,
-          { dereference: true },
-        );
         // The SDK package has "type": "module", so Node.js treats all .js files as ESM.
         // Its CJS dist lives under dist/cjs/ with .js extensions, which breaks require()
         // at runtime. Override the type for the CJS subtree so require() works in the
@@ -154,6 +308,7 @@ export default async (
         fs.writeJsonSync(path.join(mcpSdkDestination, 'dist', 'cjs', 'package.json'), { type: 'commonjs' });
       } catch (error) {
         console.error(`Error copying @modelcontextprotocol/sdk: ${error instanceof Error ? error.message : String(error)}`);
+        failures.add('@modelcontextprotocol/sdk');
       }
 
       // dugite — critical (git operations)

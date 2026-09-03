@@ -1,8 +1,36 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "実行はキャンセルされました。",
+        "interrupted": "実行は中断されました。",
+        "invalidRequest": "エージェントのリクエストが無効です。",
+        "modelNotFound": "{{providerId}} でモデル {{modelId}} を利用できません。",
+        "providerAuthMissing": "{{providerId}} の認証情報がないか無効です。",
+        "providerConfigurationMissing": "{{providerId}} に必要な {{settingField}} 設定がありません。",
+        "providerUnavailable": "{{providerId}} は一時的に利用できません。",
+        "rateLimited": "{{providerId}} がリクエストを制限しています。後でもう一度お試しください。",
+        "runnerUnavailable": "利用できるエージェントランナーがありません。",
+        "storageUnavailable": "エージェントストレージを利用できません。",
+        "deviceAuthRequired": "エージェントを実行する前にこのデバイスを承認してください。",
+        "devicePermissionDenied": "このデバイスにはエージェントを実行する権限がありません。",
+        "networkUnavailable": "エージェントネットワークを利用できません。",
+        "userMessageTooLarge": "ユーザーメッセージが大きすぎるため、この実行を開始できません。内容を短くするか、大きな内容を添付ファイルとして送信してください。",
+        "userMessageTooLargeDetail": "要求サイズは {{requested}} バイト、上限は {{limit}} バイトです。",
+        "contextCompactionPending": "長い会話の圧縮を続行しています。進捗は保存されています。しばらくしてから再試行してください。",
+        "contextCompactionPendingProgress": "{{processedMessages}} 件のメッセージを処理しました。",
+        "contextCompactionPendingProgressEstimate": "{{processedMessages}} 件のメッセージを処理し、残りは約 {{remainingEstimate}} 件です。",
+        "contextCompactionFailed": "長い会話を安全に圧縮できませんでした。",
+        "contextBudgetExceeded": "会話がモデルのコンテキスト上限を超えています。",
+        "internal": "エージェントで内部エラーが発生しました。"
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "エージェントログを表示: {{agentId}}",
     "Description": "このインテリジェントエージェントの外部API呼び出しデバッグログ。設定で「外部APIデバッグ」を有効にして記録を開始します。",
     "ErrorDetails": "エラーの詳細",
+    "Loading": "API ログを読み込んでいます…",
     "NoLogs": "このエージェントのAPIログが見つかりません",
     "NoResponse": "応答なし",
     "RequestDetails": "リクエストの詳細",
@@ -26,6 +54,7 @@
     "EditTitle": "編集エージェント名",
     "InvalidTabType": "無効なタブタイプです。チャットタブが必要です。",
     "LoadingChat": "会話を読み込んでいます...",
+    "SearchAgents": "エージェントを検索…",
     "StartConversation": "会話を開始する",
     "ThinkingProcess": "考え中",
     "Untitled": "無題"
@@ -42,6 +71,39 @@
   },
   "Chat": {
     "Cancel": "キャンセル",
+    "Attachment": {
+      "RemoveFile": "{{name}}を削除",
+      "RemoveTiddler": "{{workspaceName}}から{{title}}を削除"
+    },
+    "GenericError": "エージェントはこのリクエストを完了できませんでした。もう一度お試しください。",
+    "OperationError": "チャット操作に失敗しました。もう一度お試しください。",
+    "ExecutionTarget": {
+      "NoActiveAgent": "利用可能なエージェントがありません。",
+      "Platform": {
+        "cli": "CLI",
+        "desktop": "デスクトップ",
+        "mobile": "モバイル"
+      },
+      "Reachability": {
+        "connecting": "接続中",
+        "nearby": "近く",
+        "offline": "オフライン",
+        "online": "オンライン"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "リモート実行では添付ファイルをまだ利用できません。このデバイスに切り替えるか、テキストのみを送信してください。",
+      "RunOn": "実行先",
+      "Label": "実行ターゲット",
+      "RunOnTarget": "{{target}} で実行",
+      "ConfirmTitle": "実行ターゲットを切り替えますか？",
+      "ConfirmDescription": "現在のターンはまだ実行中です。{{target}} に切り替えると停止し、最新のユーザーターンをそこで再開します。",
+      "AnotherTarget": "別のターゲット",
+      "KeepRunning": "実行を続ける",
+      "StopAndRestart": "停止して再開",
+      "RunOnThisDesktop": "このデスクトップで実行",
+      "RunOnThisDesktopWithPeerId": "このデスクトップで実行（{{peerId}}）",
+      "ThisDevice": "このデバイス"
+    },
     "ConfigError": {
       "AuthenticationError": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
       "AuthenticationFailed": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
@@ -51,7 +113,7 @@
       "MissingConfigError": "AIプロバイダーまたはモデルが設定されていません。設定で構成してください。",
       "MissingProviderError": "プロバイダー {{provider}} は利用できません。設定で構成してください。",
       "NoDefaultModel": "デフォルトモデルが設定されていません。設定でモデルを選択してください。",
-      "ModelNoVisionSupport": "選択したモデルは画像入力（ビジョン）をサポートしていません。ビジョン機能を持つモデルを選択してください。",
+      "ModelNoVisionSupport": "モデル {{model}} は画像入力（ビジョン）をサポートしていません。ビジョン機能を持つモデルを選択してください。",
       "ProviderNotFound": "プロバイダー {{provider}} が見つかりません。設定で構成してください。",
       "Title": "設定の問題"
     },
@@ -60,7 +122,54 @@
       "TooLarge": "ファイルサイズ {{size}}MB が制限（{{maxSize}}MB）を超えています。もっと小さいファイルを選択してください。"
     },
     "InputPlaceholder": "メッセージを入力、Ctrl+Enterで送信",
-    "Send": "送信"
+    "Send": "送信",
+    "Actions": {
+      "Retry": "再試行",
+      "DeleteTurn": "このターンを削除",
+      "Copy": "コピー",
+      "CopyAll": "すべてコピー",
+      "User": "ユーザー",
+      "Agent": "エージェント"
+    },
+    "Message": {
+      "AttachmentAlt": "添付ファイル",
+      "AttachmentLoadFailed": "添付ファイルのプレビューを読み込めませんでした。",
+      "NoDetails": "詳細はありません。",
+      "LoadDetails": "詳細を読み込む",
+      "ReloadDetails": "詳細を再読み込み",
+      "HideDetails": "詳細を隠す",
+      "ShowDetails": "詳細を表示",
+      "DetailTruncated": "制限された詳細のみ表示しています。完全な内容は会話をエクスポートしてください。",
+      "DetailLoadFailed": "詳細を読み込めませんでした。",
+      "ExportFullMessage": "完全なメッセージをエクスポート",
+      "Reasoning": "推論過程",
+      "Thinking": "思考中…",
+      "ShowReasoning": "推論過程を表示",
+      "HideReasoning": "推論過程を隠す",
+      "LoadMoreReasoning": "推論過程をさらに読み込む",
+      "ReasoningLoadFailed": "推論過程を読み込めませんでした。",
+      "DetailLine": "{{role}}: {{content}}",
+      "Error": "エラー",
+      "ToolResult": "ツール結果",
+      "ToolCall": "ツール呼び出し: {{toolName}}",
+      "Truncated": "表示のためメッセージを短縮しました（{{count}} 文字）。完全な内容は会話のエクスポートまたはメッセージ詳細で確認できます。"
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "回答を入力…",
+      "Submit": "送信",
+      "ConfirmSelection": "選択を確定",
+      "Answered": "回答済み"
+    },
+    "Timeline": {
+      "Navigation": "会話タイムライン",
+      "Message": "{{total}} 件中 {{index}} 番目のメッセージ · {{role}}",
+      "Compacted": "以前の {{count}} 件のメッセージを圧縮済み",
+      "LoadEarlier": "以前のメッセージを読み込む",
+      "LoadLater": "新しいメッセージを読み込む",
+      "Seek": "会話ターンへ移動",
+      "Close": "タイムラインを閉じる",
+      "NewMessages": "新着メッセージ {{count}} 件 — 最新へ移動"
+    }
   },
   "Common": {
     "None": "選択されていません"
@@ -103,11 +212,84 @@
     "SetupAgentDescription": "あなたのエージェントに名前を付け、テンプレートを出発点として選択してください",
     "Title": "新しいインテリジェントエージェントを作成する"
   },
-  "WikiEmbed": {
-    "Error": "Wiki の埋め込みに失敗しました",
-    "Loading": "Wiki を読み込んでいます..."
-  },
   "EditAgent": {
+    "ActiveHoursEnd": "アクティブ時間の終了（任意）",
+    "ActiveHoursStart": "アクティブ時間の開始（任意）",
+    "Hours": "時間",
+    "Minutes": "分",
+    "ScheduleCronLocale": {
+      "everyText": "毎",
+      "periodLabel": "期間",
+      "atEveryText": "指定/間隔",
+      "minuteLabel": "分",
+      "atOptionLabel": "指定",
+      "everyOptionLabel": "間隔",
+      "betweenText": "から",
+      "inText": "の",
+      "onText": "に",
+      "andText": "まで",
+      "monthLabel": "月",
+      "dayOfWeekLabel": "曜日",
+      "onEveryText": "指定/毎",
+      "multiDayOfMonthLabel": "日付",
+      "dayOfMonthLabel": "日",
+      "hourLabel": "時",
+      "weekDaysOptions": ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"],
+      "periodOptions": ["時間", "日", "週", "月", "年"],
+      "shortMonthOptions": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+      "onOptionLabel": "に",
+      "lastDayOfMonthLabel": "月末",
+      "scheduleTitle": "スケジュール",
+      "nextRunsLabel": "次回の実行",
+      "noUpcomingRunsText": "今後の実行はありません",
+      "noRunsOnDayText": "この日の実行はありません",
+      "moreRunsText": "ほか {count} 件",
+      "invalidScheduleText": "有効なスケジュールを入力してください",
+      "copyLabel": "コピー",
+      "copiedText": "コピーしました",
+      "resetLabel": "リセット",
+      "cronDescriptionText": "ja"
+    },
+    "ScheduleCron": "高度な Cron 式",
+    "ScheduleCronExpr": "Cron 式",
+    "ScheduleCronHelp": "5 フィールド Cron：分 時 日 月 曜日",
+    "ScheduleCronPreview": "次回の実行：",
+    "ScheduleExecutionTarget": "実行するデバイス",
+    "ScheduleExecutionTargetUnavailable": "選択したデバイスは利用できません。スケジュールを変更する前に、利用可能なデバイスを選択してください。",
+    "ScheduleIdentityLoading": "このデバイスの安全な識別情報を読み込んでいます…",
+    "ScheduleIdentityError": "このデバイスの安全な識別情報を利用できません。デバイスネットワークの準備が完了するまでスケジュールは無効です。",
+    "ScheduleConversation": "スケジュールする会話",
+    "ScheduleConversationRequired": "タスクをスケジュールする前に、このエージェントとの永続的な会話を作成または開いてください。プレビュー会話は一時的なため、スケジュールを保持できません。",
+    "ScheduleDefaultTaskName": "{{agentName}} のスケジュール",
+    "ScheduleInvalidCron": "有効な Cron スケジュールを入力してください。",
+    "ScheduleInvalidTimezone": "対応しているタイムゾーンを選択してください。",
+    "ScheduleNoPreview": "今後の実行時刻が見つかりません。",
+    "SchedulePreviewLoading": "スケジュールを確認中...",
+    "ScheduleDaily": "毎日（指定時刻）",
+    "ScheduleDailyTime": "起動時刻",
+    "ScheduledWakeup": "スケジュール起動",
+    "ScheduledWakeupDescription": "このエージェントを自動的に起動してリマインダーを送信する定期スケジュールを設定します。",
+    "ScheduleInterval": "間隔（N 秒/分/時間ごと）",
+    "ScheduleIntervalUnit": "単位",
+    "ScheduleIntervalValue": "間隔",
+    "ScheduleMessage": "起動メッセージ",
+    "ScheduleMessagePlaceholder": "[スケジュール] 定期確認。タスクを確認し、保留中の項目を処理してください。",
+    "ScheduleMode": "モード",
+    "ScheduleNone": "なし（スケジュール起動なし）",
+    "ScheduleSave": "スケジュールを保存",
+    "ScheduleSaveWait": "プレビューエージェントを読み込み中...",
+    "ScheduleSaving": "保存中...",
+    "ScheduleTaskSelection": "スケジュール済みタスク",
+    "ScheduleNewTask": "新しいスケジュール済みタスク",
+    "ScheduleOperationFailed": "スケジュール済みタスクの操作に失敗しました。",
+    "ScheduleSourceIncomplete": "一部のデバイスから完全な最新スケジュールを取得できませんでした。すべてのソースが利用可能になるまで変更できません。",
+    "ScheduleSourceOnline": "{{executionTarget}} はオンラインです。",
+    "ScheduleSourceOffline": "{{executionTarget}} はオフラインです。",
+    "ScheduleSourceDegraded": "{{executionTarget}} は機能が低下しています。",
+    "ScheduleSourceCached": "{{executionTarget}} はキャッシュ済みのスケジュールを表示しています。",
+    "ScheduleTimezone": "タイムゾーン",
+    "ScheduleUpdate": "スケジュールを更新",
+    "Seconds": "秒",
     "AgentDescription": "エージェントの説明",
     "AgentDescriptionHelper": "あなたのエージェントの機能と用途を説明してください",
     "AgentDescriptionPlaceholder": "入力エージェントの説明...",
@@ -159,6 +341,33 @@
     "AIAgentDescription": "AI Agentの対話記録データベースを管理する",
     "AIAgentDescriptionDetail": "ここではAI Agentの会話記録データベースのサイズと位置情報を確認および削除できます。",
     "APIKey": "APIキー",
+    "ChatCompletions": "Chat Completions",
+    "ChatCompletionsReasoningEffort": "Chat Completions（reasoning_effort）",
+    "ContextWindow": "コンテキストウィンドウ / 最大入力トークン数",
+    "ContextWindowDescription": "モデルの入力コンテキストに適用する正の整数のトークン上限です。",
+    "DefaultTopP": "デフォルトの top_p",
+    "DefaultTopPDescription": "0 から 1 までの数値です。リクエスト単位の topP が優先されます。",
+    "HideAPIKey": "APIキーを隠す",
+    "DefaultFreeModelSelection": "デフォルトの無料モデル",
+    "DefaultFreeModelSelectionDescription": "要約タイトルや予備タイトルの生成に使用する無料の小規模モデル",
+    "Logout": "ログアウト",
+    "MaxOutputTokens": "最大出力トークン数",
+    "MaxOutputTokensDescription": "正の整数のデフォルト値です。リクエストで明示された上限が優先されます。",
+    "None": "なし",
+    "OpenAIAPIMode": "OpenAI API モード",
+    "BackgroundTasks": "バックグラウンドタスク",
+    "BackgroundTasksDescription": "実行中のスケジュール済みエージェントタスク（ハートビートとアラーム）です。タイマーに従ってエージェントを自動的に起動します。",
+    "NoBackgroundTasks": "実行中のバックグラウンドタスクはありません。",
+    "CancelTask": "このバックグラウンドタスクをキャンセル",
+    "SaveToDefinition": "定義に保存",
+    "SaveToDefinitionDescription": "現在のプロンプト設定をエージェント定義に反映し、新しいインスタンスでも使用できるようにします",
+    "ProviderConfigurationTabs": "プロバイダー設定タブ",
+    "ReasoningEffortFormat": "推論強度の形式",
+    "RefreshingOfficialModels": "更新中…",
+    "ShowAPIKey": "APIキーを表示",
+    "OpenAICompatibleBaseURLDescription": "必要に応じて /v1 を含む完全な API ベース URL を入力してください。/v1 は自動的には追加されません。",
+    "ResponsesAPI": "Responses",
+    "SupportedReasoningEffort": "対応する推論強度",
     "AddNewModel": "新しいモデルを追加",
     "AddNewProvider": "新しいプロバイダーを追加",
     "AddProvider": "プロバイダーを追加",
@@ -197,6 +406,15 @@
     "FailedToAddProvider": "プロバイダーの追加に失敗しました",
     "FailedToDeleteProvider": "プロバイダー {{providerName}} の削除に失敗しました",
     "FailedToRemoveModel": "モデルの削除に失敗しました",
+    "FailedToRefreshOfficialModels": "モデルの更新に失敗しました",
+    "FailedToLoadAIConfig": "AIモデル設定の読み込みに失敗しました",
+    "FailedToUpdateAIConfig": "AIモデル設定の保存に失敗しました",
+    "FailedToClearAIConfig": "選択したAIモデルの削除に失敗しました",
+    "FailedToLoadProviderCatalog": "プロバイダーモデルカタログの読み込みに失敗しました",
+    "FailedToSaveModelParameters": "モデルパラメーターの保存に失敗しました",
+    "FailedToLoadFrameworkConfig": "エージェントフレームワーク設定の読み込みに失敗しました",
+    "FailedToUpdateFrameworkConfig": "エージェントフレームワーク設定の保存に失敗しました",
+    "FailedToClearFrameworkConfig": "エージェントフレームワーク設定の削除に失敗しました",
     "FailedToSaveSettings": "設定の保存に失敗しました",
     "FailedToUpdateModel": "モデルを更新できません",
     "FailedToUpdateProviderStatus": "プロバイダーのステータス更新に失敗しました",
@@ -210,6 +428,17 @@
     "ModelFeatures": "モデル機能",
     "ModelName": "モデル名",
     "ModelNameRequired": "モデル名は必須です",
+    "ModelIdInvalid": "モデル ID の前後に空白や制御文字を含めず、UTF-8 で {{maxBytes}} バイト以内にしてください。",
+    "LogicalModelId": "論理モデル ID",
+    "WireModelId": "プロバイダーモデル ID",
+    "WireModelIdDescription": "プロバイダーへ送信する正確なモデル識別子です。",
+    "EditModel": "モデルを編集",
+    "APIMode": "API モード",
+    "ChatCompletionsAPIMode": "Chat Completions",
+    "ResponsesAPIMode": "Responses",
+    "InputModalities": "入力モダリティ",
+    "OutputModalities": "出力モダリティ",
+    "Attachments": "添付ファイル",
     "ModelParameters": "モデルパラメータ",
     "ModelParametersDescription": "生成AIモデルの動作パラメータ（温度、トークン制限など）を設定する",
     "ModelRemovedSuccessfully": "モデルが正常に削除されました",
@@ -217,12 +446,13 @@
     "Models": "利用可能なモデル",
     "NoPresetSelected": "プリセットモデルが選択されていません",
     "NoProvidersAvailable": "利用可能なプロバイダーがありません",
+    "OfficialModelsRefreshed": "{{count}} 件のモデルを更新しました",
     "OpenDatabaseFolder": "データベースフォルダを開く",
     "PresetModels": "プリセットモデル",
     "PresetProvider": "プリセットプロバイダー",
     "ProviderAddedSuccessfully": "プロバイダーが正常に追加されました",
     "ProviderAlreadyExists": "プロバイダー名は既に存在します",
-    "ProviderClass": "プロバイダーインターフェースタイプ",
+    "ProviderType": "プロバイダーインターフェースタイプ",
     "ProviderConfiguration": "プロバイダー設定",
     "ProviderConfigurationDescription": "AIプロバイダーのAPIキーやその他の設定を構成します",
     "ProviderDeleted": "プロバイダー {{providerName}} は削除されました",
@@ -230,6 +460,8 @@
     "ProviderEnabled": "プロバイダーが有効になりました",
     "ProviderName": "プロバイダー名",
     "ProviderNameRequired": "プロバイダー名は必須です",
+    "ProviderIdInvalid": "プロバイダー ID は Unicode の文字または数字で始め、以降は Unicode の文字、数字、ピリオド、アンダースコア、ハイフンを使用してください（最大 {{maxBytes}} UTF-8 バイト）。",
+    "RefreshOfficialModels": "モデルを更新",
     "Search": "検索と埋め込み",
     "SearchEmbeddingDelete": "削除",
     "SearchEmbeddingDeleteConfirm": "ワークスペース「{{workspaceName}}」のすべてのベクトル埋め込みを削除してもよろしいですか？この操作は取り消せません。",
@@ -256,30 +488,68 @@
     "TemperatureDescription": "低い値はより確定的で集中した応答を生成し、高い値はより多様で創造的な応答を生成します。",
     "TopP": "トップP",
     "TopPDescription": "応答のランダム性を制御します。低い値は応答をより確定的にし、高い値はより多くの可能性を許容します。",
+    "TokensUnit": "トークン",
     "WorkflowFile": "ワークフローファイル",
     "WorkflowFileHelp": "ComfyUI ワークフロー JSON ファイルのパス",
     "WorkflowFilePath": "ワークフローファイルのパス"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "圧縮サマリー",
+      "ConversationMessage": "会話メッセージ",
+      "PreviewInput": "現在の入力",
+      "Prompt": "プロンプト",
+      "System": "システムプロンプト",
+      "Tool": "ツールメッセージ"
+    },
     "AutoRefresh": "プレビューは入力テキストの変更に応じて自動的に更新されます",
     "CodeEditor": "コードエディタ",
+    "Close": "プロンプトプレビューを閉じる",
+    "CompactionSummaryCount": "圧縮サマリー",
+    "ContextSegments": "有効なコンテキストセグメント",
+    "ContextStats": "有効なコンテキスト統計",
     "Edit": "プロンプト編集",
+    "EditorModeTabs": "プロンプト編集モードのタブ",
     "Enabled": "有効化",
-    "EnterEditSideBySide": "分割画面表示編集",
     "EnterFullScreen": "全画面表示に入る",
-    "EnterPreviewSideBySide": "分割画面表示プレビュー",
     "ExitFullScreen": "全画面表示を終了",
-    "ExitSideBySide": "分割画面を終了する",
     "Flat": "グリッドビュー",
     "FormEditor": "フォームエディター",
+    "GeneratedTools": "生成されたツールプロンプト",
     "LastUpdated": "前回の更新時間",
     "Loading": "プレビューを読み込み中...",
+    "MessageCount": "コンテキストメッセージ",
+    "ModelRequest": "実際のモデルリクエスト",
     "NoMessages": "まだプレビューできるメッセージはありません",
+    "Progress": {
+      "Complete": "完了",
+      "Completing": "完了処理中…",
+      "Error": "エラーが発生しました",
+      "Finalizing": "プロンプトを確定中…",
+      "Flattening": "プロンプトツリーを展開中…",
+      "LivePreview": "⚡ ライブプレビュー — 読み込み中のため、まだ確定していません",
+      "ProcessingTool": "ツールを処理中: {{plugin}}",
+      "Starting": "開始中…",
+      "Timeout": "プレビューがタイムアウトしました",
+      "UnknownTool": "不明"
+    },
     "Preview": "プロンプトプレビュー",
+    "PreviewTabs": "プロンプトプレビューのタブ",
+    "Role": {
+      "assistant": "アシスタント",
+      "error": "エラー",
+      "system": "システム",
+      "tool": "ツール",
+      "user": "ユーザー"
+    },
     "SchemaNotProvided": "フォーマットが提供されていません",
     "SchemaNotProvidedDescription": "JSONスキーマが提供されていないか、正しく取得できませんでした。編集フォームを表示できません。",
+    "ShowEditor": "エディターを表示",
+    "ShowPreview": "プレビューを表示",
     "Tree": "ツリービュー",
-    "ValidationErrors": "エラーを発見"
+    "ValidationErrors": "エラーを発見",
+    "NoPrompts": "設定されたプロンプトはありません",
+    "Prompt": "プロンプト"
   },
   "PromptConfig": {
     "AddItem": "プロジェクトを追加",
@@ -297,9 +567,29 @@
       "HelperText": "入力後、Enterキーを押してタグを追加するか、事前定義されたタグから選択してください",
       "NoOptions": "選択可能なタグがありません",
       "Placeholder": "入力タグ..."
-    }
+    },
+    "NoneOption": "なし",
+    "ConfigurationSections": "設定セクション"
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM。この時刻より後の実行をスキップします。",
+      "ActiveHoursStartDescription": "HH:MM。この時刻より前の実行をスキップします。",
+      "AlarmDescription": "一度だけの起動時刻を設定して会話ループを一時終了します。繰り返し作業には Cron を使用します。",
+      "EnabledDescription": "削除せずにタスクを有効または無効にします。",
+      "EnabledTitle": "有効",
+      "KindDescription": "「at」は ISO 日時に一度実行し、「cron」は繰り返しスケジュールを定義します。",
+      "ListDescription": "このエージェントの有効なスケジュールタスクを一覧表示します。",
+      "MessageDescription": "スケジュール実行時にエージェントへ送るメッセージです。",
+      "RemoveDescription": "ID を指定して有効なスケジュールタスクを削除します。",
+      "TaskIdDescription": "list-schedules が返したスケジュールタスクの ID です。",
+      "TaskIdTitle": "タスク ID",
+      "TaskNameDescription": "このスケジュールの読みやすい名前です。",
+      "TaskNameTitle": "タスク名",
+      "TimezoneDescription": "Cron 用の IANA タイムゾーン（例：Asia/Tokyo）。",
+      "UpdateDescription": "既存タスクの状態、メッセージ、稼働時間を更新します。",
+      "WakeAtDescription": "エージェントを起動する ISO 8601 日時です。"
+    },
     "AIConfig": {
       "Default": "デフォルトで使用される対話モデル",
       "DefaultTitle": "デフォルトモデル",
@@ -403,14 +693,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -445,8 +731,7 @@
       "ProviderTitle": "プロバイダー",
       "Title": "モデル選択"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "位置パラメータ設定",
       "TargetId": "ターゲット要素ID",
@@ -480,8 +765,7 @@
       "TextTitle": "テキスト",
       "Title": "プロンプト"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "レスポンスヘッダー、このレスポンスエントリを識別するために使用されます",
       "CaptionTitle": "タイトル",
@@ -645,6 +929,12 @@
     "NoTabs": "分割ビューにタグがありません"
   },
   "Tab": {
+    "Close": "タブを閉じる",
+    "ScheduledTaskCloseWarning": "このエージェントにはスケジュール済みタスクがあります。次回の起動: {{wakeTime}}。このタブを閉じても、スケジュール済みの起動は停止しません。",
+    "ScheduledTaskMore": "（ほか {{count}} 件）",
+    "ScheduledTaskNextWake": "次回の起動: {{wakeTime}}",
+    "ScheduledTaskUnknownWake": "不明",
+    "TabList": "タブ",
     "Title": {
       "CreateNewAgent": "新しいインテリジェントエージェントを作成",
       "EditAgentDefinition": "編集エージェント",
@@ -654,7 +944,41 @@
       "WikiEmbed": "ウィキ"
     }
   },
+  "ToolApproval": {
+    "Add": "追加",
+    "AddRule": "ルールを追加",
+    "Allow": "許可",
+    "APIRetry": "API 再試行（指数バックオフ）",
+    "Cancel": "キャンセル",
+    "Deny": "拒否",
+    "GlobalSettings": "全般設定",
+    "GlobalTimeout": "全体のタイムアウト（ミリ秒）",
+    "GlobalTimeoutDescription": "すべてのツール実行に適用するデフォルトのタイムアウトです。0 = タイムアウトなし。",
+    "InitialDelay": "初回待機時間（ミリ秒）",
+    "InitialDelayDescription": "最初の再試行までの待機時間です。試行ごとに 2 倍になります",
+    "MaxAttempts": "最大試行回数",
+    "NoRetryDescription": "0 = 再試行なし",
+    "NoRules": "ツール別ルールは設定されていません。すべてのツールで全体のタイムアウトと自動承認が使用されます。",
+    "PatternsDescription": "拒否パターンは実行をブロックし、許可パターンは承認を省略します。",
+    "PerToolRules": "ツール別ルール",
+    "RegexPlaceholder": "正規表現パターン…",
+    "RequireApproval": "承認を必須にする",
+    "Save": "保存",
+    "Timeout": "タイムアウト（ミリ秒）",
+    "Title": "ツールの承認とタイムアウト設定",
+    "Tool": "ツール"
+  },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "有効なスケジュールタスク：\n{{summary}}",
+      "AlarmSet": "{{wakeAtISO}}（{{delaySeconds}} 秒後）にアラームを設定しました。ループを終了し、時刻になると再開します。",
+      "NoActiveTasks": "有効なスケジュールタスクはありません。",
+      "TaskCreated": "スケジュールタスクを作成しました（ID: {{taskId}}）。次回：{{nextRun}}。",
+      "TaskRemoved": "スケジュールタスク {{taskId}} を削除しました。",
+      "TaskSummary": "[{{taskId}}] {{name}} — 次回：{{nextRun}} — 実行回数：{{runCount}}",
+      "TaskUpdated": "スケジュールタスク {{taskId}} を更新しました。",
+      "Unknown": "不明"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "ワークスペース名またはID「{{workspaceName}}」は存在しません"

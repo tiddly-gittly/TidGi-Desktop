@@ -1,13 +1,13 @@
-import { ChatTabContent } from '@/pages/ChatTabContent';
-import { PromptConfigForm } from '@/pages/ChatTabContent/components/PromptPreviewDialog/PromptConfigForm';
+import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
+import type { PromptEditorLabels } from '@memeloop/react-ui/web';
 import { Box, Button, Container, Step, StepLabel, Stepper, TextField, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { RJSFSchema } from '@rjsf/utils';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
-import { AgentFrameworkConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import type { AgentDefinition, AgentFrameworkConfig } from 'memeloop';
 import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DesktopAgentChatTab } from '../../adapters';
 import { TemplateSearch } from '../../components/Search/TemplateSearch';
 import { useTabStore } from '../../store/tabStore';
 import { ICreateNewAgentTab, TabState, TabType } from '../../types/tab';
@@ -54,6 +54,15 @@ const STEPS = ['setupAgent', 'editPrompt', 'immediateUse'] as const;
 
 export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
+  const promptEditorLabels: Partial<PromptEditorLabels> = {
+    tagsPlaceholder: t('PromptConfig.Tags.Placeholder'),
+    tagsHelperText: t('PromptConfig.Tags.HelperText'),
+    noneOption: t('PromptConfig.NoneOption'),
+    configurationSections: t('PromptConfig.ConfigurationSections'),
+    arrayItem: (title, index) => title ? `${title} ${index + 1}` : t('PromptConfig.ItemIndex', { index: index + 1 }),
+    expandArrayItem: t('PromptConfig.Expand'),
+    collapseArrayItem: t('PromptConfig.Collapse'),
+  };
   const { updateTabData, addTab, closeTab } = useTabStore();
 
   const [currentStep, setCurrentStep] = useState(tab.currentStep ?? 0);
@@ -63,6 +72,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   const [previewAgentId, setPreviewAgentId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [promptSchema, setPromptSchema] = useState<RJSFSchema | null>(null);
+  const latestTemporaryAgentDefinitionReference = useRef<AgentDefinition | null>(null);
   const temporaryAgentDefinitionIdReference = useRef<string | null>(tab.agentDefId ?? null);
   const previewAgentIdReference = useRef<string | null>(null);
   const [agentDefinitionSaveQueue] = useState(() => createAgentDefinitionSaveQueue(async definition => await window.service.agentDefinition.updateAgentDef(definition)));
@@ -85,6 +95,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
           // Load the temporary agent definition
           const agentDefinition = await window.service.agentDefinition.getAgentDef(tab.agentDefId);
           if (agentDefinition) {
+            latestTemporaryAgentDefinitionReference.current = agentDefinition;
             setTemporaryAgentDefinition(agentDefinition);
             setAgentName(agentDefinition.name ?? '');
 
@@ -126,28 +137,47 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
 
   // Create preview agent when entering step 3
   useEffect(() => {
+    let cancelled = false;
     const createPreviewAgent = async () => {
-      if (currentStep === 2 && temporaryAgentDefinition && !previewAgentId) {
+      const latestTemporaryAgentDefinition = latestTemporaryAgentDefinitionReference.current;
+      if (currentStep === 2 && latestTemporaryAgentDefinition && !previewAgentId) {
         try {
           setIsLoading(true);
           // Save the definition from this render before creating the preview.
           // The background auto-save is only a fallback and may still be pending.
-          await agentDefinitionSaveQueue.save(temporaryAgentDefinition);
+          await agentDefinitionSaveQueue.save(latestTemporaryAgentDefinition);
+          if (cancelled) return;
           const previewAgent = await window.service.agentInstance.createAgent(
-            temporaryAgentDefinition.id,
+            latestTemporaryAgentDefinition.id,
             { preview: true },
           );
+          // Keep the cleanup identity synchronous with the backend result. A
+          // tab can unmount before React commits the state update below.
+          previewAgentIdReference.current = previewAgent.id;
+          if (cancelled) {
+            await window.service.agentInstance.discardVolatileAgentPreview({
+              agentId: previewAgent.id,
+              ...(latestTemporaryAgentDefinition.id.startsWith('temp-')
+                ? { temporaryDefinitionId: latestTemporaryAgentDefinition.id }
+                : {}),
+            });
+            return;
+          }
           setPreviewAgentId(previewAgent.id);
         } catch (error) {
+          if (cancelled) return;
           console.error('Failed to create preview agent:', error);
           void window.service.native.log('error', 'CreateNewAgentContent: Failed to create preview agent', { error });
         } finally {
-          setIsLoading(false);
+          if (!cancelled) setIsLoading(false);
         }
       }
     };
 
     void createPreviewAgent();
+    return () => {
+      cancelled = true;
+    };
   }, [agentDefinitionSaveQueue, currentStep, temporaryAgentDefinition, previewAgentId]);
 
   // Auto-save to the backend after edits settle. Cancelling the previous timer
@@ -187,18 +217,16 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
         const currentPreviewAgentId = previewAgentIdReference.current;
         const currentTemporaryAgentDefinitionId = temporaryAgentDefinitionIdReference.current;
 
-        if (currentPreviewAgentId) {
+        if (currentPreviewAgentId || currentTemporaryAgentDefinitionId?.startsWith('temp-')) {
           try {
-            await window.service.agentInstance.deleteAgent(currentPreviewAgentId);
+            await window.service.agentInstance.discardVolatileAgentPreview({
+              ...(currentPreviewAgentId ? { agentId: currentPreviewAgentId } : {}),
+              ...(currentTemporaryAgentDefinitionId?.startsWith('temp-')
+                ? { temporaryDefinitionId: currentTemporaryAgentDefinitionId }
+                : {}),
+            });
           } catch (error) {
-            console.error('Failed to cleanup preview agent:', error);
-          }
-        }
-        if (currentTemporaryAgentDefinitionId?.startsWith('temp-')) {
-          try {
-            await window.service.agentDefinition.deleteAgentDef(currentTemporaryAgentDefinitionId);
-          } catch (error) {
-            console.error('Failed to cleanup temporary agent definition:', error);
+            console.error('Failed to cleanup volatile agent preview:', error);
           }
         }
       };
@@ -208,10 +236,12 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
 
   const handleNext = async () => {
     if (currentStep < STEPS.length - 1) {
-      // Force save before advancing to next step (especially step 3)
-      if (temporaryAgentDefinition?.id) {
+      // PromptConfigForm is controlled: its onChange handler updates this ref
+      // synchronously, so advancing never depends on RJSF's private DOM shape.
+      const latestTemporaryAgentDefinition = latestTemporaryAgentDefinitionReference.current;
+      if (latestTemporaryAgentDefinition?.id) {
         try {
-          await agentDefinitionSaveQueue.save(temporaryAgentDefinition);
+          await agentDefinitionSaveQueue.save(latestTemporaryAgentDefinition);
         } catch (error) {
           console.error('❌ Failed to force save agent definition:', error);
         }
@@ -245,6 +275,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
       };
 
       const createdDefinition = await window.service.agentDefinition.createAgentDef(newAgentDefinition);
+      latestTemporaryAgentDefinitionReference.current = createdDefinition;
       setTemporaryAgentDefinition(createdDefinition);
 
       // Update agent name
@@ -264,8 +295,9 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     }
   }, [agentName, tab.id, updateTabData]);
 
-  const handleAgentDefinitionChange = async (updatedDefinition: AgentDefinition) => {
+  const handleAgentDefinitionChange = (updatedDefinition: AgentDefinition) => {
     // Immediately update React state
+    latestTemporaryAgentDefinitionReference.current = updatedDefinition;
     setTemporaryAgentDefinition(updatedDefinition);
   };
 
@@ -403,17 +435,22 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             </Typography>
             {temporaryAgentDefinition && promptSchema
               ? (
-                <Box sx={{ mt: 2, height: 400, overflow: 'auto' }}>
+                <Box sx={{ mt: 2, height: 400, overflow: 'auto' }} data-testid='prompt-config-form'>
                   <PromptConfigForm
                     schema={promptSchema}
-                    formData={(temporaryAgentDefinition.agentFrameworkConfig || {}) as AgentFrameworkConfig}
-                    onChange={(updatedConfig) => {
-                      void handleAgentDefinitionChange({
-                        ...temporaryAgentDefinition,
+                    formData={temporaryAgentDefinition.agentFrameworkConfig ?? { prompts: [], plugins: [] }}
+                    onChange={(updatedConfig: AgentFrameworkConfig) => {
+                      const latestDefinition = latestTemporaryAgentDefinitionReference.current ?? temporaryAgentDefinition;
+                      handleAgentDefinitionChange({
+                        ...latestDefinition,
                         agentFrameworkConfig: updatedConfig,
                       });
                     }}
                     loading={false}
+                    noSchemaMessage={t('Prompt.SchemaNotProvided')}
+                    noSchemaDescription={t('Prompt.SchemaNotProvidedDescription')}
+                    validationErrorMessage={t('Prompt.ValidationErrors')}
+                    promptEditorLabels={promptEditorLabels}
                   />
                 </Box>
               )
@@ -448,7 +485,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
             {temporaryAgentDefinition && previewAgentId
               ? (
                 <Box sx={{ flex: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                  <ChatTabContent
+                  <DesktopAgentChatTab
                     tab={{
                       id: `preview-${previewAgentId}`,
                       type: TabType.CHAT,

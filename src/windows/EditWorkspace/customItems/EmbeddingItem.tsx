@@ -70,12 +70,12 @@ export function WorkspaceEmbeddingItem(_props: ICustomItemProps): React.JSX.Elem
   const handleGenerate = async () => {
     try {
       const aiConfig = await window.service.externalAPI.getAIConfig();
-      if (!aiConfig.default?.provider && !aiConfig.embedding?.provider) {
+      if (!aiConfig.default?.providerId && !aiConfig.embedding?.providerId) {
         setInfoMessage(t('Preference.SearchEmbeddingNoAIConfigError'));
         setShowOpenSettingsButton(true);
         return;
       }
-      if (!aiConfig.embedding?.model) {
+      if (!aiConfig.embedding?.modelId) {
         setInfoMessage(t('Preference.SearchEmbeddingNoEmbeddingModelError'));
         setShowOpenSettingsButton(true);
         return;

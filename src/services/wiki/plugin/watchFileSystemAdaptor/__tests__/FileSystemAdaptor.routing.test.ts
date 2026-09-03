@@ -445,7 +445,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       );
     });
 
-    it('should route to main wiki root when useWikiFolderAsTiddlersPath is enabled', async () => {
+    it('keeps main-wiki routing in its configured tiddlers directory', async () => {
       // @ts-expect-error - TiddlyWiki global
       global.$tw.boot.wikiPath = '/test/wiki';
 
@@ -486,9 +486,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
-        expect.objectContaining({
-          directory: path.resolve('/test/wiki'),
-        }),
+        expect.objectContaining({ directory: RESOLVED_TIDDLERS_PATH }),
       );
     });
   });

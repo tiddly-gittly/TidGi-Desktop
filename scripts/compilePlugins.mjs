@@ -17,21 +17,29 @@ const __dirname = path.dirname(__filename);
 
 /**
  * esbuild plugin to handle native .node files and their parent packages
- * Rewrites require() calls for .node files to use absolute paths from node_modules
+ * Rewrites require() calls for .node files to use an absolute path supplied by
+ * the main process.
  */
 const nativeNodeModulesPlugin = {
   name: 'native-node-modules',
   setup(build) {
-    // Rewrite nsfw's require() to use node_modules path
+    // Rewrite nsfw's require() to use the main-process binary path
     build.onLoad({ filter: /nsfw[/\\]js[/\\]src[/\\]index\.js$/ }, async (args) => {
       let contents = await fs.readFile(args.path, 'utf8');
 
-      // Replace relative path with require from node_modules
-      // Original: require('../../build/Release/nsfw.node')
-      // New: require('nsfw/build/Release/nsfw.node')
+      // The wiki worker may boot a wiki-local TiddlyWiki installation.  A bare
+      // `require('nsfw/...')` from the bundled plugin then resolves against that
+      // installation instead of TidGi's packaged dependency tree.  Resolve the
+      // native module from the absolute path supplied by the main process.
       contents = contents.replace(
-        /require\(['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\)/g,
-        "require('nsfw/build/Release/nsfw.node')",
+        /require\(\s*['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\s*\)/g,
+        `(() => {
+          const binaryPath = process.env['TIDGI_NSFW_BINARY_PATH'];
+          if (!binaryPath || !path.isAbsolute(binaryPath)) {
+            throw new Error('TIDGI_NSFW_BINARY_PATH must be an absolute path to nsfw.node');
+          }
+          return require(binaryPath);
+        })()`,
       );
 
       return {
@@ -48,6 +56,43 @@ const nativeNodeModulesPlugin = {
     build.onResolve({ filter: /^\$:\// }, () => ({
       external: true,
     }));
+    // External typeorm optional drivers that are irrelevant in Electron context
+    build.onResolve({ filter: /^(expo-sqlite|react-native-sqlite-storage|sql\.js|oracledb|mongodb|redis|ioredis)$/ }, () => ({
+      external: true,
+    }));
+  },
+};
+
+/**
+ * tw-react's npm package contains its compiled widget implementation but not
+ * the plugin metadata or browser-side React modules from its release bundle.
+ * Bundle that implementation into our browser plugin so it shares the exact
+ * React instance used by @memeloop/react-ui and has no unresolved bare-module
+ * dependency inside TiddlyWiki.
+ */
+const bundledTwReactWidgetPlugin = {
+  name: 'bundled-tw-react-widget',
+  setup(build) {
+    build.onResolve({ filter: /^\$:\/plugins\/linonetwo\/tw-react\/widget\.js$/ }, () => ({
+      path: path.join(__dirname, '../node_modules/tw-react/dist/plugins/linonetwo/tw-react/widget.js'),
+    }));
+  },
+};
+
+/**
+ * tw-react 0.6.4 still imports `react-dom` and calls `createRoot` on it. React
+ * 19 exposes that API only from `react-dom/client`, so keep the compatibility
+ * seam local to the bundled third-party widget instead of patching React or
+ * leaking a second React root implementation into the Wiki at runtime.
+ */
+const twReactReact19Plugin = {
+  name: 'tw-react-react-19-client-entry',
+  setup(build) {
+    build.onResolve({ filter: /^react-dom$/ }, args => {
+      const normalizedImporter = args.importer.replaceAll('\\', '/');
+      if (!normalizedImporter.endsWith('/tw-react/dist/plugins/linonetwo/tw-react/widget.js')) return undefined;
+      return { path: path.join(__dirname, '../node_modules/react-dom/client.js') };
+    });
   },
 };
 
@@ -80,6 +125,16 @@ const PLUGINS = [
       'routingUtilities.ts',
     ],
   },
+  {
+    name: 'memeloop-agent-ui',
+    sourceFolder: '../src/services/wiki/plugin/memeloopAgentUI',
+    entryPoints: ['components.tsx', 'widget.ts'],
+    buildOptions: {
+      platform: 'browser',
+      format: 'cjs',
+      plugins: [bundledTwReactWidgetPlugin, twReactReact19Plugin, nativeNodeModulesPlugin],
+    },
+  },
 ];
 
 /**
@@ -88,6 +143,11 @@ const PLUGINS = [
 const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const ESBUILD_CONFIG = {
   logLevel: 'info',
+  logOverride: {
+    // Locale resources are bundled as JSON. Duplicate keys silently shadow
+    // earlier translations at runtime, so treat them as a build failure.
+    'duplicate-object-key': 'error',
+  },
   bundle: true,
   platform: 'node', // Use node so we have `exports`, otherwise `module.adaptorClass` will be undefined
   minify: process.env.NODE_ENV === 'production',
@@ -99,7 +159,7 @@ const ESBUILD_CONFIG = {
 /**
  * Filter function to exclude TypeScript files when copying
  */
-const filterNonTsFiles = (src) => !src.endsWith('.ts');
+const filterNonTsFiles = (src) => !/\.tsx?$/.test(src);
 
 /**
  * Get all possible output directories for a plugin
@@ -158,6 +218,7 @@ async function buildEntryPoints(plugin, outDirs) {
       plugin.entryPoints.map(entryPoint =>
         esbuild.build({
           ...ESBUILD_CONFIG,
+          ...plugin.buildOptions,
           entryPoints: [path.join(sourcePath, entryPoint)],
           outdir: outDir,
           // Preserve subdirectory structure (e.g., Startup/) in output
@@ -206,6 +267,11 @@ async function buildPlugin(plugin) {
  */
 async function main() {
   console.log('Starting plugin compilation...\n');
+
+  // Older builds copied an incomplete tw-react npm folder into TiddlyWiki's
+  // plugin path. It is now bundled into memeloop-agent-ui and must not remain
+  // as a discoverable-but-unloadable sibling plugin.
+  await Promise.all(getPluginOutputDirs('tw-react').map(async outputDirectory => await rimraf(outputDirectory)));
 
   for (const plugin of PLUGINS) {
     await buildPlugin(plugin);

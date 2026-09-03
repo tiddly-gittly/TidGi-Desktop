@@ -3,6 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
+
 /**
  * External attachment utilities for moving files when tiddlers are routed between workspaces.
  */
@@ -16,14 +20,6 @@ export function getWikiRootFromTiddlerPath(
   wikisWithRouting: IWikiWorkspace[],
 ): string | undefined {
   const wikiTiddlersPath = $tw.boot.wikiTiddlersPath;
-  const useWikiFolderAsTiddlersPath = $tw.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
-  const wikiRootPath = $tw.boot.wikiPath === undefined ? undefined : path.resolve($tw.boot.wikiPath);
-
-  if (useWikiFolderAsTiddlersPath) {
-    if (wikiRootPath !== undefined && path.normalize(tiddlerDirectory).startsWith(path.normalize(wikiRootPath))) {
-      return wikiRootPath;
-    }
-  }
 
   // Check if this is the main wiki's tiddlers folder
   if (wikiTiddlersPath && path.normalize(tiddlerDirectory).startsWith(path.normalize(wikiTiddlersPath))) {
@@ -36,8 +32,10 @@ export function getWikiRootFromTiddlerPath(
     let subWikiPath = subWiki.wikiFolderLocation;
     try {
       subWikiPath = fs.realpathSync(subWikiPath);
-    } catch {
-      // Use original if realpath fails
+    } catch (error: unknown) {
+      // A workspace can be created before its directory exists; retain the
+      // configured path for ENOENT and surface other realpath failures.
+      if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
     }
     if (path.normalize(tiddlerDirectory).startsWith(path.normalize(subWikiPath))) {
       return subWikiPath;

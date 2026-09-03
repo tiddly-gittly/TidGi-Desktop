@@ -51,8 +51,11 @@ export async function destroyLogger(): Promise<void> {
       try {
         // May cause `TypeError: Cannot read properties of undefined (reading 'length') at DerivedLogger.remove`
         logger.remove(t);
-      } catch {
-        // Ignore because without logger we can't even log the error
+      } catch (error: unknown) {
+        // Logger teardown is intentionally idempotent. Calling the logger from
+        // this handler would recurse into the transport being removed, so use
+        // an explicit stable fallback instead of emitting another record.
+        void error;
       }
     }
   });

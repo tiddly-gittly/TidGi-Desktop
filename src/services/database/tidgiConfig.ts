@@ -94,7 +94,7 @@ export function getTidgiConfigPath(wikiFolderLocation: string): string {
  * Extract syncable config fields from a workspace
  */
 export function extractSyncableConfig(workspace: IWikiWorkspaceMinimal): Partial<ISyncableWikiConfig> {
-  const syncableConfig: Partial<ISyncableWikiConfig> = { id: workspace.id };
+  const syncableConfig: Partial<ISyncableWikiConfig> = {};
   for (const field of syncableConfigFields) {
     if (field in workspace) {
       // Only include non-default values to keep the file minimal
@@ -130,9 +130,6 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
   }
 
   const result: Partial<ISyncableWikiConfig> = {};
-  if (typeof parsed.id === 'string' && parsed.id.length > 0) {
-    result.id = parsed.id;
-  }
   for (const field of syncableConfigFields) {
     if (field in parsed && parsed[field] !== undefined) {
       (result as Record<string, unknown>)[field] = parsed[field];
@@ -205,9 +202,6 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
 
     // Filter out default values
     const nonDefaultConfig = pickBy(config, (value, key) => {
-      if (key === 'id') {
-        return typeof value === 'string' && value.length > 0;
-      }
       const defaultValue = syncableConfigDefaultValues[key as SyncableConfigField];
       return !isEqual(value, defaultValue);
     });
@@ -224,10 +218,6 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
         delete (mergedConfig as Record<string, unknown>)[field];
       }
     }
-    if (!('id' in nonDefaultConfig)) {
-      delete (mergedConfig as Record<string, unknown>).id;
-    }
-
     const remainingFields = Object.keys(mergedConfig).filter((key) => key !== '$schema' && key !== 'version');
     if (remainingFields.length === 0) {
       if (await fs.pathExists(configPath)) {
@@ -259,9 +249,6 @@ export function mergeWithSyncedConfig<T extends IWikiWorkspaceMinimal>(
 
   // Apply synced config over local, with defaults for missing fields
   const merged = { ...localWorkspace };
-  if (typeof syncedConfig.id === 'string' && syncedConfig.id.length > 0) {
-    (merged as Record<string, unknown>).id = syncedConfig.id;
-  }
   for (const field of syncableConfigFields) {
     if (field in syncedConfig) {
       (merged as Record<string, unknown>)[field] = syncedConfig[field];

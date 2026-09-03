@@ -13,7 +13,6 @@ const baseWorkspace = {
   storageService: SupportedStorageServices.local,
   isSubWiki: false,
   mainWikiID: null,
-  mainWikiToLink: null,
 } as const;
 
 describe('tidgiConfig syncable fields for git repo scope', () => {

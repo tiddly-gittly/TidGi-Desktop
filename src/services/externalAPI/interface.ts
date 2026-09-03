@@ -1,10 +1,9 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { BehaviorSubject, Observable } from 'rxjs';
+import type { BehaviorSubject } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import { ModelMessage } from 'ai';
+import type { ModelAssignments, ModelCatalogResolution, PortableLlmRequest, PortableLlmStreamPart, ProviderAccountConfig, ProviderAccountSettings } from 'memeloop';
 
 /**
  * Shared error detail structure used across all AI responses
@@ -14,25 +13,12 @@ export interface AIErrorDetail {
   name: string;
   /** Error code */
   code: string;
-  /** Provider name associated with the error */
-  provider: string;
+  /** Canonical provider account ID associated with the error. */
+  providerId: string;
   /** Human readable error message (may be an i18n key) */
   message?: string;
   /** Parameters for i18n interpolation */
   params?: Record<string, string>;
-}
-
-/**
- * AI streaming response status interface
- */
-export interface AIStreamResponse {
-  requestId: string;
-  content: string;
-  status: 'start' | 'update' | 'done' | 'error' | 'cancel';
-  /**
-   * Structured error details, provided when status is 'error'
-   */
-  errorDetail?: AIErrorDetail;
 }
 
 /**
@@ -41,7 +27,8 @@ export interface AIStreamResponse {
 export interface AIEmbeddingResponse {
   requestId: string;
   embeddings: number[][];
-  model: string;
+  logicalModelId: string;
+  wireModelId?: string;
   object: string;
   usage?: {
     prompt_tokens: number;
@@ -56,8 +43,8 @@ export interface AIEmbeddingResponse {
     name: string;
     /** Error code */
     code: string;
-    /** Provider name associated with the error */
-    provider: string;
+    /** Canonical provider account ID associated with the error. */
+    providerId: string;
     /** Human readable error message */
     message?: string;
   };
@@ -72,7 +59,8 @@ export interface AISpeechResponse {
   audio: ArrayBuffer;
   /** Audio format (mp3, wav, etc.) */
   format: string;
-  model: string;
+  logicalModelId: string;
+  wireModelId?: string;
   status: 'done' | 'error';
   /**
    * Structured error details, provided when status is 'error'
@@ -91,7 +79,8 @@ export interface AITranscriptionResponse {
   language?: string;
   /** Duration in seconds (if available) */
   duration?: number;
-  model: string;
+  logicalModelId: string;
+  wireModelId?: string;
   status: 'done' | 'error';
   /**
    * Structured error details, provided when status is 'error'
@@ -115,7 +104,8 @@ export interface AIImageGenerationResponse {
     /** Height in pixels */
     height?: number;
   }>;
-  model: string;
+  logicalModelId: string;
+  wireModelId?: string;
   /** Prompt ID (for ComfyUI) */
   promptId?: string;
   status: 'done' | 'error';
@@ -125,59 +115,15 @@ export interface AIImageGenerationResponse {
   errorDetail?: AIErrorDetail;
 }
 
-/**
- * Supported AI providers
- */
-export type AIProvider = string;
-
-/**
- * Model feature types
- */
-export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding' | 'speech' | 'transcriptions' | 'free';
-
-/**
- * Extended model information
- */
-export interface ModelInfo {
-  /** Unique identifier for the model */
-  name: string;
-  /** Display name for the model */
-  caption?: string;
-  /** Features supported by the model */
-  features?: ModelFeature[];
-  /** Model-specific parameters (e.g., ComfyUI workflow path) */
-  parameters?: Record<string, unknown>;
-  /** Input context window size in tokens (e.g. 128000 for GPT-4o, 200000 for Claude) */
-  contextWindowSize?: number;
-  /** Max output tokens (e.g. 4096, 16384) */
-  maxOutputTokens?: number;
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
+/** Desktop-only encrypted bytes. Provider/model identity stays in Core types. */
+export interface ProviderCredentialState {
+  providerId: string;
+  encryptedApiKey: string;
 }
 
-/**
- * AI provider configuration like uri and api key
- */
-export interface AIProviderConfig {
-  provider: string;
-  apiKey?: string;
-  baseURL?: string;
-  models: ModelInfo[];
-  /** Type of provider API interface */
-  providerClass?: string; // e.g. 'openai', 'openAICompatible', 'anthropic', 'deepseek', 'ollama', 'custom'
-  isPreset?: boolean;
-  enabled?: boolean;
-  showBaseURLField?: boolean;
-}
-
-/**
- * AI settings store in user's JSON config file. As global AI related config that can edit in preferences.
- */
-export interface AIGlobalSettings {
-  /** Providers configuration including API keys and base URLs */
-  providers: AIProviderConfig[];
-  /** Default AI configuration */
-  defaultConfig: AiAPIConfig;
+/** Host persistence composed entirely from canonical Core provider/model types. */
+export interface DesktopExternalAPISettings extends ProviderAccountSettings {
+  providerCredentials: ProviderCredentialState[];
 }
 
 /**
@@ -190,32 +136,11 @@ export interface IExternalAPIService {
   initialize(): Promise<void>;
 
   /**
-   * Send messages to AI provider and get streaming response as an Observable
-   * requestId will be automatically generated and returned in the AIStreamResponse
-   */
-  streamFromAI(
-    messages: Array<ModelMessage>,
-    config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
-  ): Observable<AIStreamResponse>;
-
-  /**
-   * Send messages to AI provider and get streaming response as an AsyncGenerator
-   * This is a more direct approach than Observable for certain use cases
-   * requestId will be automatically generated and returned in the AIStreamResponse
-   */
-  generateFromAI(
-    messages: Array<ModelMessage>,
-    config: AiAPIConfig,
-    options?: { agentInstanceId?: string; awaitLogs?: boolean },
-  ): AsyncGenerator<AIStreamResponse, void, unknown>;
-
-  /**
    * Generate embeddings from AI provider
    */
   generateEmbeddings(
     inputs: string[],
-    config: AiAPIConfig,
+    config: ModelAssignments,
     options?: {
       /** Dimensions for the embedding (supported by some providers) */
       dimensions?: number;
@@ -229,7 +154,7 @@ export interface IExternalAPIService {
    */
   generateSpeech(
     input: string,
-    config: AiAPIConfig,
+    config: ModelAssignments,
     options?: {
       /** Response audio format (mp3, wav, opus, etc.) */
       responseFormat?: string;
@@ -244,7 +169,7 @@ export interface IExternalAPIService {
       /** Whether to stream the response */
       stream?: boolean;
       /** Maximum tokens for generation (for some providers) */
-      maxTokens?: number;
+      maxOutputTokens?: number;
     },
   ): Promise<AISpeechResponse>;
 
@@ -253,7 +178,7 @@ export interface IExternalAPIService {
    */
   generateTranscription(
     audioFile: File | Blob,
-    config: AiAPIConfig,
+    config: ModelAssignments,
     options?: {
       /** Language of the audio (ISO-639-1 format, e.g., 'en', 'zh') */
       language?: string;
@@ -271,7 +196,7 @@ export interface IExternalAPIService {
    */
   generateImage(
     prompt: string,
-    config: AiAPIConfig,
+    config: ModelAssignments,
     options?: {
       /** Number of images to generate */
       numImages?: number;
@@ -290,12 +215,44 @@ export interface IExternalAPIService {
   /**
    * Get readonly all supported AI providers and their models
    */
-  getAIProviders(): Promise<AIProviderConfig[]>;
+  getProviderAccounts(): Promise<ProviderAccountConfig[]>;
+
+  /**
+   * Decrypt one provider credential for the explicit settings editor.
+   * Provider observables remain redacted so credentials are not broadcast to
+   * every renderer subscriber.
+   */
+  getProviderApiKey(providerId: string): Promise<string>;
+
+  /** Replace or clear one OS-encrypted credential without changing account routes. */
+  setProviderApiKey(providerId: string, apiKey: string): Promise<void>;
+
+  /**
+   * Get recommended providers/models without mutating user configuration.
+   * Pass refresh=true for a bounded network refresh of the fixed catalog source.
+   */
+  getProviderCatalog(refresh?: boolean): Promise<ModelCatalogResolution>;
+
+  /**
+   * Refresh the models visible to the configured provider account.
+   * User-created model entries are retained; earlier discovered entries are replaced.
+   */
+  refreshProviderAccountModels(providerId: string): Promise<ProviderAccountConfig>;
 
   /**
    * Get readonly AI configuration default values
    */
-  getAIConfig(): Promise<AiAPIConfig>;
+  getAIConfig(): Promise<ModelAssignments>;
+
+  /**
+   * Main-process agent execution path. It preserves MemeLoop's exact portable
+   * request/stream contracts instead of round-tripping through accumulated
+   * renderer-friendly strings.
+   */
+  generatePortableLlm(
+    request: PortableLlmRequest,
+    options?: { agentInstanceId?: string; awaitLogs?: boolean; requestTimeoutMs?: number },
+  ): AsyncIterable<PortableLlmStreamPart>;
 
   /**
    * Check if AI is available (has free model and provider configured)
@@ -306,27 +263,27 @@ export interface IExternalAPIService {
   /**
    * Observable for changes to default AI configuration
    */
-  defaultConfig$: BehaviorSubject<AiAPIConfig>;
+  defaultConfig$: BehaviorSubject<ModelAssignments>;
 
   /**
    * Observable for changes to providers list
    */
-  providers$: BehaviorSubject<AIProviderConfig[]>;
+  providerAccounts$: BehaviorSubject<ProviderAccountConfig[]>;
 
   /**
    * Update provider configuration
    */
-  updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void>;
+  setProviderAccount(account: ProviderAccountConfig): Promise<void>;
 
   /**
    * Delete a provider configuration
    */
-  deleteProvider(provider: string): Promise<void>;
+  deleteProviderAccount(providerId: string): Promise<void>;
 
   /**
    * Update default AI configuration settings
    */
-  updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void>;
+  updateDefaultAIConfig(config: ModelAssignments): Promise<void>;
 
   /**
    * Delete a field from default AI configuration
@@ -347,22 +304,25 @@ export const ExternalAPIServiceIPCDescriptor = {
   channel: ExternalAPIChannel.name,
   properties: {
     initialize: ProxyPropertyType.Function,
-    streamFromAI: ProxyPropertyType.Function$,
     generateEmbeddings: ProxyPropertyType.Function,
     generateSpeech: ProxyPropertyType.Function,
     generateTranscription: ProxyPropertyType.Function,
     generateImage: ProxyPropertyType.Function,
     cancelAIRequest: ProxyPropertyType.Function,
-    getAIProviders: ProxyPropertyType.Function,
+    getProviderAccounts: ProxyPropertyType.Function,
+    getProviderApiKey: ProxyPropertyType.Function,
+    setProviderApiKey: ProxyPropertyType.Function,
+    getProviderCatalog: ProxyPropertyType.Function,
+    refreshProviderAccountModels: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
     isAIAvailable: ProxyPropertyType.Function,
     defaultConfig$: ProxyPropertyType.Value$,
-    providers$: ProxyPropertyType.Value$,
-    updateProvider: ProxyPropertyType.Function,
-    deleteProvider: ProxyPropertyType.Function,
+    providerAccounts$: ProxyPropertyType.Value$,
+    setProviderAccount: ProxyPropertyType.Function,
+    deleteProviderAccount: ProxyPropertyType.Function,
     updateDefaultAIConfig: ProxyPropertyType.Function,
     deleteFieldFromDefaultAIConfig: ProxyPropertyType.Function,
     getAPILogs: ProxyPropertyType.Function,
-    // generateFromAI is intentionally not exposed via IPC as AsyncGenerators aren't directly supported by electron-ipc-cat
+    // generatePortableLlm is main-process only: AsyncIterables are not IPC values.
   },
 };

@@ -1,112 +1,86 @@
-/**
- * The filename for workspace config in wiki folder
- * Duplicated here to avoid importing from configSetting which would pull in electron dependencies
- */
-const TIDGI_CONFIG_FILE = 'tidgi.config.json';
-
-import type { LogContext, LogLevel } from '@services/libs/log/schema';
+import type { LogContext } from '@services/libs/log/schema';
 import type { IWikiWorkspace } from '@services/workspaces/interface';
+import { realpathSync } from 'node:fs';
 import type { TiddlyWiki } from 'tiddlywiki';
+import { resolveFolderTiddlerStoragePath, scanFolderTiddlers } from './folderTiddlerLoader';
+import { logForBestEffort, type WorkerLogSink } from './workerLogging';
 
 /**
- * Factory function to create a custom loadWikiTiddlers function that loads sub-wiki tiddlers.
- * This ensures sub-wiki tiddlers are loaded into the main wiki's $tw.boot.files
- * and $tw.wiki, making them available alongside main wiki tiddlers.
- *
- * TiddlyWiki's includeWikis mechanism normally requires modifying tiddlywiki.info,
- * but we dynamically inject sub-wikis based on workspace configuration instead.
- * This wraps TiddlyWiki's original loadWikiTiddlers to dynamically inject sub-wiki tiddlers
- * after the main wiki is loaded, without modifying tiddlywiki.info.
- *
- * @param wikiInstance - The TiddlyWiki instance
- * @param homePath - Main wiki home path
- * @param subWikis - Array of sub-wiki workspaces sorted by order (priority)
- * @param workspaceName - Workspace name for logging
- * @param nativeLogger - Logger function
+ * Wrap TiddlyWiki's wiki loader to support configured sub-wikis without
+ * loading any physical root twice.
  */
 export function createLoadWikiTiddlersWithSubWikis(
   wikiInstance: ReturnType<typeof TiddlyWiki>,
   homePath: string,
   subWikis: IWikiWorkspace[],
-  options: {
-    allowLoadingWithoutWikiInfo?: boolean;
-  } = {},
   logContext: LogContext,
-  nativeLogger: {
-    logFor: (context: LogContext, level: LogLevel, message: string) => Promise<void>;
-  },
+  nativeLogger: WorkerLogSink,
 ) {
-  const { allowLoadingWithoutWikiInfo = false } = options;
   const originalLoadWikiTiddlers = wikiInstance.loadWikiTiddlers.bind(wikiInstance);
+  const loadedStorageRoots = new Set<string>();
+
+  const loadFolderRoot = (folderPath: string): void => {
+    const canonicalFolderPath = realpathSync(folderPath);
+    const storagePath = resolveFolderTiddlerStoragePath(canonicalFolderPath);
+    if (loadedStorageRoots.has(storagePath)) return;
+    loadedStorageRoots.add(storagePath);
+
+    const scan = scanFolderTiddlers(wikiInstance, canonicalFolderPath, {
+      onProgress: ({ durationBucket, scannedFileCount, stage }) => {
+        void logForBestEffort(
+          nativeLogger,
+          logContext,
+          'debug',
+          `Folder tiddler scan ${stage}: #${scannedFileCount}${durationBucket === undefined ? '' : ` (${durationBucket})`}`,
+        );
+      },
+    });
+    for (const tiddlerFile of scan.files) {
+      if (tiddlerFile.filepath) {
+        for (const tiddler of tiddlerFile.tiddlers) {
+          wikiInstance.boot.files[tiddler.title] = {
+            filepath: tiddlerFile.filepath,
+            type: tiddlerFile.type ?? 'application/x-tiddler',
+            hasMetaFile: tiddlerFile.hasMetaFile ?? false,
+            isEditableFile: tiddlerFile.isEditableFile ?? true,
+          };
+        }
+      }
+      wikiInstance.wiki.addTiddlers(tiddlerFile.tiddlers);
+    }
+    void logForBestEffort(
+      nativeLogger,
+      logContext,
+      'info',
+      `Loaded ${scan.files.length} tiddler files from bounded folder storage`,
+    );
+  };
 
   return function loadWikiTiddlersWithSubWikis(
     wikiPath: string,
-    options?: { parentPaths?: string[]; readOnly?: boolean },
+    loadOptions?: { parentPaths?: string[]; readOnly?: boolean },
   ) {
-    // Call original function first to load main wiki
-    const wikiInfo = originalLoadWikiTiddlers(wikiPath, options);
+    const wikiInfo = originalLoadWikiTiddlers(wikiPath, loadOptions);
+    // Stock includeWikis recursion also enters this wrapper. Register every
+    // successfully loaded physical wiki root so the same directory cannot be
+    // scanned again through TidGi's configured sub-wiki list.
+    if (wikiInfo !== null) loadedStorageRoots.add(resolveFolderTiddlerStoragePath(wikiPath));
 
-    // Only inject sub-wikis when loading the main wiki (not when loading included wikis)
-    if (wikiPath !== homePath || subWikis.length === 0 || (!wikiInfo && !allowLoadingWithoutWikiInfo)) {
-      return wikiInfo;
-    }
+    // Included standard wikis recurse through this wrapper. Only the physical
+    // home root may inject configured TidGi sub-wikis.
+    if (wikiPath !== homePath) return wikiInfo;
     for (const subWiki of subWikis) {
-      // Sub-wikis store tiddlers directly in their root folder (not in /tiddlers subfolder)
-      // Only the main wiki uses /tiddlers because it has other meta files like .github
-      const subWikiTiddlersPath = subWiki.wikiFolderLocation;
-
       try {
-        // Load tiddlers from sub-wiki directory
-        const tiddlerFiles = wikiInstance.loadTiddlersFromPath(subWikiTiddlersPath);
-
-        for (const tiddlerFile of tiddlerFiles) {
-          // Skip tidgi.config.json - it's a TidGi configuration file, not a tiddler
-          if (tiddlerFile.filepath) {
-            const fileName = tiddlerFile.filepath.split('/').pop() ?? '';
-            if (fileName === TIDGI_CONFIG_FILE) {
-              continue;
-            }
-          }
-
-          // Skip files in the external attachments folder (default: files/)
-          // These are referenced by tiddlers via _canonical_uri and should not be loaded as separate tiddlers
-          if (tiddlerFile.filepath) {
-            const relativePath = tiddlerFile.filepath.replace(subWikiTiddlersPath, '').replace(/^\//, '');
-            const externalAttachmentsFolder = wikiInstance.wiki?.getTiddlerText?.('$:/config/ExternalAttachments/WikiFolderToMove', 'files') ?? 'files';
-            if (relativePath.startsWith(`${externalAttachmentsFolder}/`)) {
-              continue; // Skip files in external attachments folder
-            }
-          }
-
-          // Register file info for filesystem adaptor (so tiddlers save back to correct location)
-          if (tiddlerFile.filepath) {
-            for (const tiddler of tiddlerFile.tiddlers) {
-              wikiInstance.boot.files[tiddler.title] = {
-                filepath: tiddlerFile.filepath,
-                type: tiddlerFile.type ?? 'application/x-tiddler',
-                hasMetaFile: tiddlerFile.hasMetaFile ?? false,
-                isEditableFile: tiddlerFile.isEditableFile ?? true,
-              };
-            }
-          }
-          // Add tiddlers to wiki
-          wikiInstance.wiki.addTiddlers(tiddlerFile.tiddlers);
-        }
-
-        void nativeLogger.logFor(
-          logContext,
-          'info',
-          `Loaded sub-wiki tiddlers from: ${subWikiTiddlersPath}`,
-        );
+        loadFolderRoot(subWiki.wikiFolderLocation);
       } catch (error) {
-        void nativeLogger.logFor(
+        void logForBestEffort(
+          nativeLogger,
           logContext,
           'error',
-          `Failed to load sub-wiki tiddlers from ${subWikiTiddlersPath}: ${(error as Error).message}`,
+          `Failed to load sub-wiki tiddlers from ${subWiki.wikiFolderLocation}: ${(error as Error).message}`,
         );
       }
     }
-
     return wikiInfo;
   };
 }

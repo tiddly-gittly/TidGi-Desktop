@@ -29,7 +29,7 @@ Feature: Message Streaming Status
     And I should see a "search interface" element with selector ".aa-Autocomplete"
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
     # Send first message

@@ -5,7 +5,7 @@
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const AskQuestionParameterSchema = z.object({
   toolListPosition: z.object({
@@ -47,8 +47,8 @@ const AskQuestionToolSchema = z.object({
   ],
 });
 
-const askQuestionDefinition = registerToolDefinition({
-  toolId: 'askQuestion',
+export const askQuestionDefinition = defineDesktopTool({
+  toolId: 'ask-question',
   displayName: 'Ask Question',
   description: 'Pause to ask the user a clarifying question with optional choices',
   configSchema: AskQuestionParameterSchema,
@@ -61,7 +61,7 @@ const askQuestionDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult, yieldToHuman }) {
-    if (!toolCall || toolCall.toolId !== 'ask-question') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'ask-question') return;
 
     const parameters = toolCall.parameters as z.infer<typeof AskQuestionToolSchema>;
     const questionId = `ask-q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -83,12 +83,10 @@ const askQuestionDefinition = registerToolDefinition({
       duration: 3,
     });
 
-    // Signal the framework to set status to 'input-required' so the UI can render the question.
-    // When the user answers, resolveAskQuestion() will inject the answer as a tool result
-    // and resume the agent loop in the same turn (no new user message).
+    // Signal input-required so the UI can render the question. The host resumes
+    // through a separately identified durable answer turn; this completed turn
+    // remains immutable and can be replayed across restarts.
     yieldToHuman();
     logger.debug('Ask question: yielding to user for answer', { questionId });
   },
 });
-
-export const askQuestionTool = askQuestionDefinition.tool;

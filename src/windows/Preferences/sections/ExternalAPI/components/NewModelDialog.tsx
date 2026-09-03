@@ -1,227 +1,214 @@
-import {
-  Box,
-  Button,
-  Checkbox,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  FormControlLabel,
-  FormGroup,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-} from '@mui/material';
-import defaultProvidersConfig from '@services/externalAPI/defaultProviders';
-import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
-import { useEffect, useRef } from 'react';
+import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormControlLabel, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { type ModelCatalogModel, normalizeProviderModelRoutes, PROVIDER_MODEL_ID_MAX_UTF8_BYTES, type ProviderModelRoute } from 'memeloop';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ModelFeatureChip } from './ModelFeatureChip';
 
-interface ModelDialogProps {
+interface NewModelDialogProps {
   open: boolean;
+  route?: ProviderModelRoute;
+  model?: ModelCatalogModel;
   onClose: () => void;
-  onAddModel: () => void;
-  currentProvider: string | null;
-  providerClass?: string;
-  newModelForm: {
-    name: string;
-    caption: string;
-    features: ModelFeature[];
-    parameters?: Record<string, unknown>;
-  };
-  availableDefaultModels: ModelInfo[];
-  selectedDefaultModel: string;
-  onSelectDefaultModel: (model: string) => void;
-  onModelFormChange: (field: string, value: string | ModelFeature[] | Record<string, unknown>) => void;
-  onFeatureChange: (feature: ModelFeature, checked: boolean) => void;
-  editMode?: boolean;
+  onSave: (route: ProviderModelRoute, model: ModelCatalogModel) => void;
 }
 
-export function NewModelDialog({
-  open,
-  onClose,
-  onAddModel,
-  currentProvider,
-  providerClass,
-  newModelForm,
-  availableDefaultModels,
-  selectedDefaultModel,
-  onSelectDefaultModel,
-  onModelFormChange,
-  onFeatureChange,
-  editMode = false,
-}: ModelDialogProps) {
-  const { t } = useTranslation(['translation', 'agent']);
-  const lastSelectedModelReference = useRef<string | null>(null);
+export function NewModelDialog({ open, route, model, onClose, onSave }: NewModelDialogProps) {
+  const { t } = useTranslation('agent');
+  const [logicalModelId, setLogicalModelId] = useState('');
+  const [wireModelId, setWireModelId] = useState('');
+  const [name, setName] = useState('');
+  const [apiMode, setApiMode] = useState<ProviderModelRoute['apiMode']>('chat-completions');
+  const [attachment, setAttachment] = useState(false);
+  const [reasoning, setReasoning] = useState(false);
+  const [toolCall, setToolCall] = useState(false);
+  const [inputModalities, setInputModalities] = useState('text');
+  const [outputModalities, setOutputModalities] = useState('text');
+  const [validationError, setValidationError] = useState<'logical-required' | 'logical-invalid' | 'wire-invalid'>();
 
-  // Handle workflow file selection for ComfyUI
-  const handleSelectWorkflowFile = async () => {
-    const result = await window.service.native.pickFile([{ name: 'JSON Files', extensions: ['json'] }]);
+  useEffect(() => {
+    if (!open) return;
+    setLogicalModelId(route?.modelId ?? '');
+    setWireModelId(route?.wireModelId ?? '');
+    setName(model?.name ?? '');
+    setApiMode(route?.apiMode ?? 'chat-completions');
+    setAttachment(model?.attachment ?? false);
+    setReasoning(model?.reasoning ?? false);
+    setToolCall(model?.toolCall ?? false);
+    setInputModalities((model?.modalities?.input ?? ['text']).join(', '));
+    setOutputModalities((model?.modalities?.output ?? ['text']).join(', '));
+    setValidationError(undefined);
+  }, [model, open, route]);
 
-    if (result.length > 0) {
-      const workflowPath = result[0];
-      const parameters = { ...(newModelForm.parameters || {}), workflowPath };
-      onModelFormChange('parameters', parameters);
+  const save = () => {
+    const logicalId = logicalModelId.trim();
+    if (!logicalId) {
+      setValidationError('logical-required');
+      return;
     }
+    if (!isValidModelIdentifier(logicalId)) {
+      setValidationError('logical-invalid');
+      return;
+    }
+    const wireId = wireModelId.trim() || logicalId;
+    if (!isValidModelIdentifier(wireId)) {
+      setValidationError('wire-invalid');
+      return;
+    }
+    setValidationError(undefined);
+    onSave(
+      { modelId: logicalId, wireModelId: wireId, apiMode },
+      {
+        id: logicalId,
+        name: name.trim() || logicalId,
+        attachment,
+        reasoning,
+        toolCall,
+        modalities: {
+          input: parseModalities(inputModalities),
+          output: parseModalities(outputModalities),
+        },
+      },
+    );
   };
 
-  // When a preset model is selected, fill in its details to the form
-  useEffect(() => {
-    // 只有当选择的模型与上次不同时才进行更新
-    if (selectedDefaultModel !== lastSelectedModelReference.current) {
-      lastSelectedModelReference.current = selectedDefaultModel;
-
-      if (selectedDefaultModel) {
-        const selectedModel = availableDefaultModels.find(m => m.name === selectedDefaultModel);
-        if (selectedModel) {
-          onModelFormChange('name', selectedModel.name);
-          onModelFormChange('caption', selectedModel.caption || '');
-          onModelFormChange('features', selectedModel.features || ['language']);
-        }
-      }
-    }
-  }, [selectedDefaultModel, availableDefaultModels, onModelFormChange]);
-
   return (
-    <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
-      <DialogTitle>{t('Preference.AddNewModel', { ns: 'agent' })}</DialogTitle>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth='sm'>
+      <DialogTitle>{route ? t('Preference.EditModel') : t('Preference.AddNewModel')}</DialogTitle>
       <DialogContent>
-        {currentProvider && (
-          <>
-            {availableDefaultModels.length > 0 && (
-              <Box sx={{ mb: 3, mt: 1 }}>
-                <Typography variant='subtitle2' gutterBottom>
-                  {t('Preference.SelectFromPresets', { ns: 'agent' })}
-                </Typography>
-
-                <FormControl fullWidth margin='dense'>
-                  <InputLabel>{t('Preference.PresetModels', { ns: 'agent' })}</InputLabel>
-                  <Select
-                    value={selectedDefaultModel}
-                    onChange={(event) => {
-                      onSelectDefaultModel(event.target.value);
-                    }}
-                    label={t('Preference.PresetModels', { ns: 'agent' })}
-                    renderValue={(selected) => {
-                      if (!selected) return t('Preference.NoPresetSelected', { ns: 'agent' });
-                      const model = availableDefaultModels.find(m => m.name === selected);
-                      if (model) return model.caption || model.name;
-                      return selected;
-                    }}
-                  >
-                    <MenuItem value=''>{t('Preference.NoPresetSelected', { ns: 'agent' })}</MenuItem>
-                    {availableDefaultModels.map((model) => (
-                      <MenuItem key={model.name} value={model.name} sx={{ py: 1 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0.5 }}>
-                          <Typography variant='body1'>
-                            {model.caption || model.name}
-                          </Typography>
-                          {model.features && model.features.length > 0 && (
-                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                              {model.features.map(feature => <ModelFeatureChip key={feature} feature={feature} />)}
-                            </Box>
-                          )}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant='subtitle2' gutterBottom>
-                {t('Preference.ModelDetails', { ns: 'agent' })}
-              </Typography>
-
-              <TextField
-                label={t('Preference.ModelName', { ns: 'agent' })}
-                value={newModelForm.name}
-                onChange={(event) => {
-                  onModelFormChange('name', event.target.value);
-                }}
-                fullWidth
-                margin='normal'
-                slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
-              />
-
-              <TextField
-                label={t('Preference.ModelCaption', { ns: 'agent' })}
-                value={newModelForm.caption}
-                onChange={(event) => {
-                  onModelFormChange('caption', event.target.value);
-                }}
-                fullWidth
-                margin='normal'
-                helperText={t('Preference.ModelCaptionHelp', { ns: 'agent' })}
-              />
-
-              <Typography variant='subtitle2' sx={{ mt: 2, mb: 1 }}>
-                {t('Preference.ModelFeatures', { ns: 'agent' })}
-              </Typography>
-
-              <FormGroup>
-                {defaultProvidersConfig.modelFeatures.map((feature) => (
-                  <FormControlLabel
-                    key={feature.value}
-                    data-testid={`feature-checkbox-${feature.value}`}
-                    control={
-                      <Checkbox
-                        checked={newModelForm.features.includes(feature.value as ModelFeature)}
-                        onChange={(event) => {
-                          onFeatureChange(feature.value as ModelFeature, event.target.checked);
-                        }}
-                      />
-                    }
-                    label={t(feature.i18nKey, { ns: 'agent' })}
-                  />
-                ))}
-              </FormGroup>
-
-              {/* ComfyUI workflow path */}
-              {providerClass === 'comfyui' && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant='subtitle2' gutterBottom>
-                    {t('Preference.WorkflowFile', { ns: 'agent' })}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <TextField
-                      label={t('Preference.WorkflowFilePath', { ns: 'agent' })}
-                      value={(newModelForm.parameters?.workflowPath) || ''}
-                      onChange={(event) => {
-                        const parameters = { ...(newModelForm.parameters || {}), workflowPath: event.target.value };
-                        onModelFormChange('parameters', parameters);
-                      }}
-                      fullWidth
-                      margin='normal'
-                      slotProps={{ htmlInput: { 'data-testid': 'workflow-path-input' } }}
-                      helperText={t('Preference.WorkflowFileHelp', { ns: 'agent' })}
-                    />
-                    <Button
-                      variant='outlined'
-                      onClick={handleSelectWorkflowFile}
-                      data-testid='select-workflow-button'
-                      sx={{ mt: 1 }}
-                    >
-                      {t('Preference.Browse', { ns: 'agent' })}
-                    </Button>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          </>
-        )}
+        <TextField
+          autoFocus
+          fullWidth
+          margin='normal'
+          label={t('Preference.LogicalModelId')}
+          value={logicalModelId}
+          error={validationError === 'logical-required' || validationError === 'logical-invalid'}
+          helperText={validationError === 'logical-required'
+            ? t('Preference.ModelNameRequired')
+            : validationError === 'logical-invalid'
+            ? t('Preference.ModelIdInvalid', { maxBytes: PROVIDER_MODEL_ID_MAX_UTF8_BYTES })
+            : undefined}
+          onChange={event => {
+            setLogicalModelId(event.target.value);
+            setValidationError(undefined);
+          }}
+          slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
+        />
+        <TextField
+          fullWidth
+          margin='normal'
+          label={t('Preference.WireModelId')}
+          value={wireModelId}
+          error={validationError === 'wire-invalid'}
+          onChange={event => {
+            setWireModelId(event.target.value);
+            setValidationError(undefined);
+          }}
+          helperText={validationError === 'wire-invalid'
+            ? t('Preference.ModelIdInvalid', { maxBytes: PROVIDER_MODEL_ID_MAX_UTF8_BYTES })
+            : t('Preference.WireModelIdDescription')}
+        />
+        <TextField
+          fullWidth
+          margin='normal'
+          label={t('Preference.ModelCaption')}
+          value={name}
+          onChange={event => {
+            setName(event.target.value);
+          }}
+        />
+        <FormControl fullWidth margin='normal'>
+          <InputLabel id='model-api-mode-label'>{t('Preference.APIMode')}</InputLabel>
+          <Select
+            labelId='model-api-mode-label'
+            value={apiMode}
+            label={t('Preference.APIMode')}
+            onChange={event => {
+              const value = event.target.value;
+              if (value === 'chat-completions' || value === 'responses') setApiMode(value);
+            }}
+          >
+            <MenuItem value='chat-completions'>{t('Preference.ChatCompletionsAPIMode')}</MenuItem>
+            <MenuItem value='responses'>{t('Preference.ResponsesAPIMode')}</MenuItem>
+          </Select>
+        </FormControl>
+        <TextField
+          fullWidth
+          margin='normal'
+          label={t('Preference.InputModalities')}
+          value={inputModalities}
+          onChange={event => {
+            setInputModalities(event.target.value);
+          }}
+        />
+        <TextField
+          fullWidth
+          margin='normal'
+          label={t('Preference.OutputModalities')}
+          value={outputModalities}
+          onChange={event => {
+            setOutputModalities(event.target.value);
+          }}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={attachment}
+              onChange={event => {
+                setAttachment(event.target.checked);
+              }}
+            />
+          }
+          label={t('Preference.Attachments')}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={reasoning}
+              onChange={event => {
+                setReasoning(event.target.checked);
+              }}
+            />
+          }
+          label={t('Preference.Reasoning')}
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={toolCall}
+              onChange={event => {
+                setToolCall(event.target.checked);
+              }}
+            />
+          }
+          label={t('Preference.ToolCalling')}
+        />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>
-        <Button onClick={onAddModel} variant='contained' color='primary' data-testid='save-model-button'>
-          {editMode ? t('Update') : t('Save')}
-        </Button>
+        <Button onClick={save} variant='contained' data-testid='save-new-model-button'>{t('Save')}</Button>
       </DialogActions>
     </Dialog>
   );
+}
+
+function parseModalities(value: string): string[] {
+  return [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))];
+}
+
+/**
+ * Keep model route identifiers aligned with Core's canonical schema.  Unlike
+ * provider IDs, model IDs intentionally allow provider-specific Unicode and
+ * punctuation (for example `供应商/模型2:latest`), but reject surrounding
+ * whitespace/control characters and over-budget values.
+ */
+function isValidModelIdentifier(value: string): boolean {
+  try {
+    normalizeProviderModelRoutes([{
+      modelId: value,
+      wireModelId: value,
+      apiMode: 'chat-completions',
+    }]);
+    return true;
+  } catch {
+    return false;
+  }
 }

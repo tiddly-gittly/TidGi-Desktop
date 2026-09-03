@@ -5,6 +5,40 @@ import { getWikiTestRootPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
+const UI_ACTION_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 1000);
+const UI_ASSERT_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
+
+async function getControlSummaryForSelectorFailure(
+  page: NonNullable<ApplicationWorld['currentWindow']>,
+  selector: string,
+): Promise<string> {
+  const containerMatch = selector.match(/^(?<container>\[data-testid='[^']+'\])/);
+  const containerSelector = containerMatch?.groups?.container ?? 'body';
+
+  try {
+    return await page.evaluate((rootSelector) => {
+      const root = document.querySelector(rootSelector) ?? document.body;
+      const controls = Array.from(root.querySelectorAll('input, textarea, button, [role="tab"], [role="tabpanel"]')).slice(0, 80);
+      return controls.map((element) => {
+        const htmlElement = element as HTMLElement;
+        const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
+        return [
+          element.tagName.toLowerCase(),
+          htmlElement.getAttribute('role') ? `role=${htmlElement.getAttribute('role')}` : '',
+          htmlElement.id ? `id=${htmlElement.id}` : '',
+          htmlElement.getAttribute('data-testid') ? `testid=${htmlElement.getAttribute('data-testid')}` : '',
+          htmlElement.getAttribute('aria-label') ? `aria=${htmlElement.getAttribute('aria-label')}` : '',
+          inputElement.type ? `type=${inputElement.type}` : '',
+          inputElement.name ? `name=${inputElement.name}` : '',
+          htmlElement.textContent?.trim() ? `text=${htmlElement.textContent.trim().slice(0, 40)}` : '',
+        ].filter(Boolean).join(' ');
+      }).join('\n');
+    }, containerSelector);
+  } catch (error) {
+    return `Could not summarize controls: ${error as Error}`;
+  }
+}
+
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
 });
@@ -57,13 +91,14 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector(selector, { timeout: UI_ASSERT_TIMEOUT });
     const isVisible = await currentWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
   } catch (error) {
-    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
+    const controlSummary = await getControlSummaryForSelectorFailure(currentWindow, selector);
+    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}\nVisible controls near target:\n${controlSummary}`);
   }
 });
 
@@ -78,13 +113,22 @@ Then('the {string} element with selector {string} should be aligned near the top
   await element.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
   await backOff(async () => {
-    const offsetFromViewportTop = await element.evaluate((node) => {
-      const scrollViewport = node.closest('[role="list"]');
+    const alignment = await element.evaluate((node) => {
+      const scrollViewport = node.closest('[data-settings-scroll-viewport], [role="list"]');
       if (!scrollViewport) throw new Error('Settings scroll viewport was not found');
-      return node.getBoundingClientRect().top - scrollViewport.getBoundingClientRect().top;
+      const nodeRectangle = node.getBoundingClientRect();
+      const viewportRectangle = scrollViewport.getBoundingClientRect();
+      return {
+        offsetFromViewportTop: nodeRectangle.top - viewportRectangle.top,
+        scrollTop: scrollViewport.scrollTop,
+        viewportHeight: viewportRectangle.height,
+      };
     });
-    if (Math.abs(offsetFromViewportTop) > 32) {
-      throw new Error(`${elementComment} is ${offsetFromViewportTop}px from the viewport top`);
+    if (Math.abs(alignment.offsetFromViewportTop) > 32) {
+      throw new Error(
+        `${elementComment} is ${alignment.offsetFromViewportTop}px from the viewport top ` +
+          `(viewport height ${alignment.viewportHeight}px, scrollTop ${alignment.scrollTop}px)`,
+      );
     }
   }, {
     delayFirstAttempt: true,
@@ -209,14 +253,17 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 
   try {
-    await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await targetWindow.waitForSelector(selector, { timeout: UI_ACTION_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
     await targetWindow.click(selector);
   } catch (error) {
-    throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
+    const controlSummary = await getControlSummaryForSelectorFailure(targetWindow, selector);
+    throw new Error(
+      `Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}\nVisible controls near target:\n${controlSummary}`,
+    );
   }
 });
 
@@ -347,7 +394,12 @@ When('I type {string} in {string} element with selector {string}', async functio
 
   try {
     await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
-    await currentWindow.locator(selector).fill(actualText);
+    const element = currentWindow.locator(selector);
+    await element.fill(actualText);
+    const value = await element.inputValue();
+    if (value !== actualText) {
+      throw new Error(`Expected value "${actualText}" after fill, got "${value}"`);
+    }
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
   }
@@ -426,6 +478,14 @@ When('I press {string} key', async function(this: ApplicationWorld, key: string)
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
+  }
+
+  // Dispatch to the focused control when possible. This preserves the generic
+  // step's semantics without coupling it to a specific component library.
+  const focusedControl = currentWindow.locator(':focus').first();
+  if (await focusedControl.count() > 0) {
+    await focusedControl.press(key);
+    return;
   }
 
   await currentWindow.keyboard.press(key);

@@ -1,8 +1,36 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "本次執行已取消。",
+        "interrupted": "本次執行已中斷。",
+        "invalidRequest": "智慧代理請求無效。",
+        "modelNotFound": "{{providerId}} 中沒有可用的模型 {{modelId}}。",
+        "providerAuthMissing": "{{providerId}} 的驗證資訊缺失或無效。",
+        "providerConfigurationMissing": "{{providerId}} 缺少必要的 {{settingField}} 設定。",
+        "providerUnavailable": "{{providerId}} 暫時無法使用。",
+        "rateLimited": "{{providerId}} 正在限制請求頻率，請稍後重試。",
+        "runnerUnavailable": "目前沒有可用的智慧代理執行器。",
+        "storageUnavailable": "智慧代理儲存目前無法使用。",
+        "deviceAuthRequired": "執行智慧代理前需要先授權此裝置。",
+        "devicePermissionDenied": "此裝置無權執行該智慧代理。",
+        "networkUnavailable": "智慧代理網路目前無法使用。",
+        "userMessageTooLarge": "使用者訊息過大，無法開始本輪執行。請縮短內容，或將大量內容作為附件傳送。",
+        "userMessageTooLargeDetail": "請求大小為 {{requested}} 位元組，上限為 {{limit}} 位元組。",
+        "contextCompactionPending": "正在繼續壓縮這段長對話。進度已儲存，請稍後再試。",
+        "contextCompactionPendingProgress": "已處理 {{processedMessages}} 則訊息。",
+        "contextCompactionPendingProgressEstimate": "已處理 {{processedMessages}} 則訊息，預計還剩 {{remainingEstimate}} 則。",
+        "contextCompactionFailed": "無法安全壓縮這段長對話。",
+        "contextBudgetExceeded": "對話已超出模型的上下文預算。",
+        "internal": "智慧代理發生內部錯誤。"
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "顯示智慧體日誌: {{agentId}}",
     "Description": "此智慧體的外部介面調用除錯日誌。在偏好設置中啟用「外部介面除錯」以開始記錄。",
     "ErrorDetails": "錯誤詳情",
+    "Loading": "正在載入介面日誌…",
     "NoLogs": "未找到此智慧體的介面調用日誌",
     "NoResponse": "無響應",
     "RequestDetails": "請求詳情",
@@ -26,6 +54,7 @@
     "EditTitle": "編輯智慧體名字",
     "InvalidTabType": "無效的標籤頁類型。需要聊天標籤頁。",
     "LoadingChat": "正在載入對話...",
+    "SearchAgents": "搜尋智慧體…",
     "StartConversation": "開始對話",
     "ThinkingProcess": "思考中",
     "Untitled": "未命名"
@@ -42,6 +71,39 @@
   },
   "Chat": {
     "Cancel": "取消",
+    "Attachment": {
+      "RemoveFile": "移除 {{name}}",
+      "RemoveTiddler": "從 {{workspaceName}} 移除 {{title}}"
+    },
+    "GenericError": "智慧代理未能完成此請求，請重試。",
+    "OperationError": "對話操作失敗，請重試。",
+    "ExecutionTarget": {
+      "NoActiveAgent": "目前沒有可用的智慧代理。",
+      "Platform": {
+        "cli": "命令列",
+        "desktop": "桌面端",
+        "mobile": "行動端"
+      },
+      "Reachability": {
+        "connecting": "連線中",
+        "nearby": "附近",
+        "offline": "離線",
+        "online": "上線"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "遠端執行暫不支援附件。請切換到此裝置，或只傳送文字。",
+      "RunOn": "執行於",
+      "Label": "執行目標",
+      "RunOnTarget": "在 {{target}} 上執行",
+      "ConfirmTitle": "切換執行目標？",
+      "ConfirmDescription": "目前輪次仍在執行。切換到 {{target}} 會先停止它，再在該裝置上重新執行最新的使用者輪次。",
+      "AnotherTarget": "其他目標",
+      "KeepRunning": "繼續執行",
+      "StopAndRestart": "停止並重新執行",
+      "RunOnThisDesktop": "在此桌面端執行",
+      "RunOnThisDesktopWithPeerId": "在此桌面端執行（{{peerId}}）",
+      "ThisDevice": "此裝置"
+    },
     "ConfigError": {
       "AuthenticationError": "{{provider}} 身份驗證失敗。請在設置中檢查您的 API 密鑰。",
       "AuthenticationFailed": "{{provider}} 身份驗證失敗。請在設置中檢查您的 API 密鑰。",
@@ -50,6 +112,7 @@
       "MissingBaseURLError": "{{provider}} 提供商需要配置基礎 URL。請在設置中進行配置。",
       "MissingConfigError": "未配置 AI 提供商或模型。請在設置中進行配置。",
       "MissingProviderError": "提供商 {{provider}} 不可用。請在設置中進行配置。",
+      "ModelNoVisionSupport": "模型 {{model}} 不支援視覺或圖片輸入。請選擇支援視覺的模型（可查看帶有「vision」功能標籤的模型）。",
       "NoDefaultModel": "未配置默認模型。請在設定中配置默認模型。",
       "ProviderNotFound": "未找到提供商 {{provider}}。請在設置中進行配置。",
       "Title": "配置問題"
@@ -59,7 +122,54 @@
       "TooLarge": "檔案大小 {{size}}MB 超過了限制（{{maxSize}}MB）。請選擇較小的檔案。"
     },
     "InputPlaceholder": "輸入消息，Ctrl+Enter 發送",
-    "Send": "發送"
+    "Send": "發送",
+    "Actions": {
+      "Retry": "重試",
+      "DeleteTurn": "刪除此輪",
+      "Copy": "複製",
+      "CopyAll": "複製全部",
+      "User": "使用者",
+      "Agent": "智慧代理"
+    },
+    "Message": {
+      "AttachmentAlt": "附件",
+      "AttachmentLoadFailed": "無法載入附件預覽。",
+      "NoDetails": "沒有可用的詳細內容。",
+      "LoadDetails": "載入詳細內容",
+      "ReloadDetails": "重新載入詳細內容",
+      "HideDetails": "隱藏詳細內容",
+      "ShowDetails": "顯示詳細內容",
+      "DetailTruncated": "這裡只顯示有界的詳情片段。請匯出對話以取得完整內容。",
+      "DetailLoadFailed": "無法載入詳細內容。",
+      "ExportFullMessage": "匯出完整訊息",
+      "Reasoning": "推理過程",
+      "Thinking": "正在思考…",
+      "ShowReasoning": "展開推理過程",
+      "HideReasoning": "收起推理過程",
+      "LoadMoreReasoning": "載入更多推理過程",
+      "ReasoningLoadFailed": "無法載入推理過程。",
+      "DetailLine": "{{role}}：{{content}}",
+      "Error": "錯誤",
+      "ToolResult": "工具結果",
+      "ToolCall": "工具呼叫：{{toolName}}",
+      "Truncated": "訊息已縮短顯示（原文 {{count}} 個字元）。請使用對話匯出或訊息詳細內容查看完整文字。"
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "輸入回答…",
+      "Submit": "提交",
+      "ConfirmSelection": "確認選擇",
+      "Answered": "已回答"
+    },
+    "Timeline": {
+      "Navigation": "對話時間軸",
+      "Message": "第 {{index}} / {{total}} 則訊息 · {{role}}",
+      "Compacted": "已壓縮前面的 {{count}} 條訊息",
+      "LoadEarlier": "載入更早訊息",
+      "LoadLater": "載入更新訊息",
+      "Seek": "跳至對話輪次",
+      "Close": "關閉時間軸",
+      "NewMessages": "{{count}} 則新訊息 — 跳到最新"
+    }
   },
   "Common": {
     "None": "未選擇"
@@ -102,11 +212,84 @@
     "SetupAgentDescription": "為您的智慧體命名並選擇一個模板作為起點",
     "Title": "創建新智慧體"
   },
-  "WikiEmbed": {
-    "Error": "嵌入 Wiki 失敗",
-    "Loading": "正在載入 Wiki..."
-  },
   "EditAgent": {
+    "ActiveHoursEnd": "活躍時段結束（可選）",
+    "ActiveHoursStart": "活躍時段開始（可選）",
+    "Hours": "小時",
+    "Minutes": "分鐘",
+    "ScheduleCronLocale": {
+      "everyText": "每",
+      "periodLabel": "時間間隔",
+      "atEveryText": "在/每隔",
+      "minuteLabel": "分鐘",
+      "atOptionLabel": "在",
+      "everyOptionLabel": "每隔",
+      "betweenText": "從",
+      "inText": "在",
+      "onText": "在",
+      "andText": "到",
+      "monthLabel": "月",
+      "dayOfWeekLabel": "星期",
+      "onEveryText": "在/每隔",
+      "multiDayOfMonthLabel": "每月日期",
+      "dayOfMonthLabel": "天",
+      "hourLabel": "小時",
+      "weekDaysOptions": ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+      "periodOptions": ["小時", "天", "星期", "月", "年"],
+      "shortMonthOptions": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+      "onOptionLabel": "在",
+      "lastDayOfMonthLabel": "每月最後一天",
+      "scheduleTitle": "排程",
+      "nextRunsLabel": "接下來的執行",
+      "noUpcomingRunsText": "沒有即將執行的項目",
+      "noRunsOnDayText": "當天沒有執行",
+      "moreRunsText": "還有 {count} 次執行",
+      "invalidScheduleText": "請輸入有效排程",
+      "copyLabel": "複製",
+      "copiedText": "已複製！",
+      "resetLabel": "重設",
+      "cronDescriptionText": "zh_TW"
+    },
+    "ScheduleCron": "進階 Cron 表達式",
+    "ScheduleCronExpr": "Cron 表達式",
+    "ScheduleCronHelp": "5 段 Cron：分鐘 小時 日期 月份 星期",
+    "ScheduleCronPreview": "接下來執行：",
+    "ScheduleExecutionTarget": "執行裝置",
+    "ScheduleExecutionTargetUnavailable": "所選裝置目前無法使用。請先選擇可用裝置再修改此排程。",
+    "ScheduleIdentityLoading": "正在載入本機安全身分…",
+    "ScheduleIdentityError": "本機安全身分無法使用。裝置網路就緒前已停用排程。",
+    "ScheduleConversation": "排程所屬對話",
+    "ScheduleConversationRequired": "請先建立或開啟一個使用此智慧代理的持久對話，再設定排程。預覽對話是暫時的，不能擁有排程。",
+    "ScheduleDefaultTaskName": "{{agentName}} 的排程",
+    "ScheduleInvalidCron": "請輸入有效的 Cron 排程。",
+    "ScheduleInvalidTimezone": "請選擇支援的時區。",
+    "ScheduleNoPreview": "找不到即將執行的時間。",
+    "SchedulePreviewLoading": "正在檢查排程...",
+    "ScheduleDaily": "每天（指定時間）",
+    "ScheduleDailyTime": "喚醒時間",
+    "ScheduledWakeup": "定時喚醒",
+    "ScheduledWakeupDescription": "設定重複排程，自動喚醒此智慧代理並傳送提醒訊息。",
+    "ScheduleInterval": "固定間隔（每 N 秒/分鐘/小時）",
+    "ScheduleIntervalUnit": "單位",
+    "ScheduleIntervalValue": "每隔",
+    "ScheduleMessage": "喚醒訊息",
+    "ScheduleMessagePlaceholder": "[定時] 週期檢查。請檢查任務並處理所有待辦事項。",
+    "ScheduleMode": "模式",
+    "ScheduleNone": "無（不定時喚醒）",
+    "ScheduleSave": "儲存排程",
+    "ScheduleSaveWait": "正在載入預覽智慧代理...",
+    "ScheduleSaving": "儲存中...",
+    "ScheduleTaskSelection": "排程任務",
+    "ScheduleNewTask": "新增排程任務",
+    "ScheduleOperationFailed": "排程任務操作失敗。",
+    "ScheduleSourceIncomplete": "部分裝置未能提供完整的即時排程。所有來源恢復可用前已停用修改。",
+    "ScheduleSourceOnline": "{{executionTarget}} 在線上。",
+    "ScheduleSourceOffline": "{{executionTarget}} 離線。",
+    "ScheduleSourceDegraded": "{{executionTarget}} 狀態異常。",
+    "ScheduleSourceCached": "{{executionTarget}} 目前顯示快取的排程資料。",
+    "ScheduleTimezone": "時區",
+    "ScheduleUpdate": "更新排程",
+    "Seconds": "秒",
     "AgentDescription": "智能體描述",
     "AgentDescriptionHelper": "描述您的智慧體的功能和用途",
     "AgentDescriptionPlaceholder": "輸入智慧體描述...",
@@ -158,6 +341,33 @@
     "AIAgentDescription": "管理智慧體對話記錄資料庫",
     "AIAgentDescriptionDetail": "這裡可以查看和刪除智慧體對話記錄資料庫的大小和位置資訊",
     "APIKey": "API 金鑰",
+    "ChatCompletions": "Chat Completions",
+    "ChatCompletionsReasoningEffort": "Chat Completions（reasoning_effort）",
+    "ContextWindow": "上下文視窗 / 最大輸入 Token 數",
+    "ContextWindowDescription": "模型輸入上下文的正整數 Token 上限。",
+    "DefaultTopP": "預設 top_p",
+    "DefaultTopPDescription": "介於 0 與 1 之間的數值；個別請求指定的 topP 優先。",
+    "HideAPIKey": "隱藏 API 金鑰",
+    "DefaultFreeModelSelection": "預設免費模型",
+    "DefaultFreeModelSelectionDescription": "用於生成摘要標題和備用標題的小型免費模型",
+    "Logout": "登出",
+    "MaxOutputTokens": "最大輸出 Token 數",
+    "MaxOutputTokensDescription": "正整數預設值；個別請求明確指定的上限優先。",
+    "None": "無",
+    "OpenAIAPIMode": "OpenAI API 模式",
+    "BackgroundTasks": "背景任務",
+    "BackgroundTasksDescription": "目前啟用的智慧體排程任務（心跳和鬧鐘）。這些任務會依計時器自動喚醒智慧體。",
+    "NoBackgroundTasks": "沒有啟用中的背景任務。",
+    "CancelTask": "取消此背景任務",
+    "SaveToDefinition": "儲存至定義",
+    "SaveToDefinitionDescription": "將目前的提示詞設定套用至智慧體定義，讓新建立的實例也使用相同設定",
+    "ProviderConfigurationTabs": "提供商設定分頁",
+    "ReasoningEffortFormat": "推理強度格式",
+    "RefreshingOfficialModels": "重新整理中…",
+    "ShowAPIKey": "顯示 API 金鑰",
+    "OpenAICompatibleBaseURLDescription": "請輸入完整的 API 基礎 URL，並在需要時包含 /v1。系統不會自動附加 /v1。",
+    "ResponsesAPI": "Responses",
+    "SupportedReasoningEffort": "支援的推理強度",
     "AddNewModel": "添加新模型",
     "AddNewProvider": "添加新提供商",
     "AddProvider": "添加提供商",
@@ -193,6 +403,15 @@
     "FailedToAddProvider": "添加提供商失敗",
     "FailedToDeleteProvider": "刪除提供商 {{providerName}} 失敗",
     "FailedToRemoveModel": "無法刪除模型",
+    "FailedToRefreshOfficialModels": "重新整理模型列表失敗",
+    "FailedToLoadAIConfig": "載入 AI 模型設定失敗",
+    "FailedToUpdateAIConfig": "儲存 AI 模型設定失敗",
+    "FailedToClearAIConfig": "清除所選 AI 模型失敗",
+    "FailedToLoadProviderCatalog": "載入提供商模型目錄失敗",
+    "FailedToSaveModelParameters": "儲存模型參數失敗",
+    "FailedToLoadFrameworkConfig": "載入智能體框架設定失敗",
+    "FailedToUpdateFrameworkConfig": "儲存智能體框架設定失敗",
+    "FailedToClearFrameworkConfig": "清除智能體框架設定失敗",
     "FailedToSaveSettings": "無法保存設置",
     "FailedToUpdateModel": "無法更新模型",
     "FailedToUpdateProviderStatus": "無法更新提供商狀態",
@@ -206,6 +425,17 @@
     "ModelFeatures": "模型功能",
     "ModelName": "模型名稱",
     "ModelNameRequired": "模型名稱為必填項",
+    "ModelIdInvalid": "模型 ID 不能包含前後空白或控制字元，且不能超過 {{maxBytes}} 個 UTF-8 位元組。",
+    "LogicalModelId": "邏輯模型 ID",
+    "WireModelId": "提供商模型 ID",
+    "WireModelIdDescription": "實際傳送給提供商的精確模型標識。",
+    "EditModel": "編輯模型",
+    "APIMode": "API 模式",
+    "ChatCompletionsAPIMode": "聊天補全",
+    "ResponsesAPIMode": "Responses",
+    "InputModalities": "輸入模態",
+    "OutputModalities": "輸出模態",
+    "Attachments": "附件",
     "ModelParameters": "模型參數",
     "ModelParametersDescription": "配置生成式AI模型的行為參數，如溫度、token限制等",
     "ModelRemovedSuccessfully": "模型刪除成功",
@@ -213,12 +443,13 @@
     "Models": "可用模型",
     "NoPresetSelected": "不使用預設模型",
     "NoProvidersAvailable": "沒有可用的提供商",
+    "OfficialModelsRefreshed": "已重新整理 {{count}} 個模型",
     "OpenDatabaseFolder": "打開資料庫文件夾",
     "PresetModels": "預設模型",
     "PresetProvider": "預置提供商",
     "ProviderAddedSuccessfully": "提供商添加成功",
     "ProviderAlreadyExists": "提供商名稱已存在",
-    "ProviderClass": "提供商介面類型",
+    "ProviderType": "提供商介面類型",
     "ProviderConfiguration": "提供商配置",
     "ProviderConfigurationDescription": "配置人工智慧提供商的介面金鑰和其他設置",
     "ProviderDeleted": "提供商 {{providerName}} 已刪除",
@@ -226,6 +457,8 @@
     "ProviderEnabled": "提供方已啟用",
     "ProviderName": "提供商名稱",
     "ProviderNameRequired": "提供商名稱為必填項",
+    "ProviderIdInvalid": "提供商 ID 必須以 Unicode 字母或數字開頭，後續可使用 Unicode 字母、數字、點、底線或連字號（最多 {{maxBytes}} 個 UTF-8 位元組）。",
+    "RefreshOfficialModels": "重新整理模型列表",
     "SearchEmbeddingNoEmbeddingModelError": "請先在外部API部分配置默認嵌入模型設置。",
     "SelectDefaultProvider": "選擇默認提供商",
     "SelectFromPresets": "從預設模型中選擇",
@@ -238,30 +471,68 @@
     "TemperatureDescription": "較低的值會產生更確定性、更集中的響應，較高的值會產生更多樣化、更創造性的響應",
     "TopP": "Top P",
     "TopPDescription": "控制響應的隨機性。較低的值使響應更確定，較高的值允許更多的可能性",
+    "TokensUnit": "個令牌",
     "WorkflowFile": "工作流檔案",
     "WorkflowFileHelp": "ComfyUI 工作流 JSON 文件的路徑",
     "WorkflowFilePath": "工作流檔案路徑"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "壓縮摘要",
+      "ConversationMessage": "對話訊息",
+      "PreviewInput": "目前輸入",
+      "Prompt": "提示詞",
+      "System": "系統提示詞",
+      "Tool": "工具訊息"
+    },
     "AutoRefresh": "預覽會隨輸入文本的變化自動刷新",
     "CodeEditor": "代碼編輯器",
+    "Close": "關閉提示詞預覽",
+    "CompactionSummaryCount": "壓縮摘要數",
+    "ContextSegments": "有效上下文片段",
+    "ContextStats": "有效上下文統計",
     "Edit": "提示詞編輯",
+    "EditorModeTabs": "提示詞編輯模式分頁",
     "Enabled": "啟用",
-    "EnterEditSideBySide": "分屏顯示編輯",
     "EnterFullScreen": "進入全螢幕",
-    "EnterPreviewSideBySide": "分屏顯示預覽",
     "ExitFullScreen": "退出全螢幕",
-    "ExitSideBySide": "退出分屏",
     "Flat": "平鋪視圖",
     "FormEditor": "表單編輯器",
+    "GeneratedTools": "工具提示詞",
     "LastUpdated": "上次更新時間",
     "Loading": "載入預覽中...",
+    "MessageCount": "上下文消息數",
+    "ModelRequest": "實際模型請求",
     "NoMessages": "還沒有消息可以預覽",
+    "Progress": {
+      "Complete": "完成",
+      "Completing": "即將完成…",
+      "Error": "發生錯誤",
+      "Finalizing": "正在完成提示詞…",
+      "Flattening": "正在展開提示詞樹…",
+      "LivePreview": "⚡ 即時預覽 — 仍在載入，內容尚未確定",
+      "ProcessingTool": "正在處理工具：{{plugin}}",
+      "Starting": "正在開始…",
+      "Timeout": "提示詞預覽逾時",
+      "UnknownTool": "未知"
+    },
     "Preview": "提示詞預覽",
+    "PreviewTabs": "提示詞預覽分頁",
+    "Role": {
+      "assistant": "助理",
+      "error": "錯誤",
+      "system": "系統",
+      "tool": "工具",
+      "user": "使用者"
+    },
     "SchemaNotProvided": "格式未提供",
     "SchemaNotProvidedDescription": "沒有提供 JSON Schema 或無法正確獲取到。編輯表單無法展示。",
+    "ShowEditor": "顯示編輯",
+    "ShowPreview": "顯示預覽",
     "Tree": "樹形視圖",
-    "ValidationErrors": "發現錯誤"
+    "ValidationErrors": "發現錯誤",
+    "NoPrompts": "未設定提示詞",
+    "Prompt": "提示詞"
   },
   "PromptConfig": {
     "AddItem": "添加項目",
@@ -279,9 +550,29 @@
       "HelperText": "輸入後按 Enter 鍵添加標籤，或從預定義標籤中選擇",
       "NoOptions": "沒有可選標籤",
       "Placeholder": "輸入標籤..."
-    }
+    },
+    "NoneOption": "無",
+    "ConfigurationSections": "設定區段"
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM；略過此時間之後的執行。",
+      "ActiveHoursStartDescription": "HH:MM；略過此時間之前的執行。",
+      "AlarmDescription": "設定一次性喚醒並暫時退出對話循環。重複任務請使用 Cron 排程。",
+      "EnabledDescription": "啟用或停用任務，而不刪除任務。",
+      "EnabledTitle": "啟用",
+      "KindDescription": "「at」在 ISO 日期時間執行一次；「cron」定義重複排程。",
+      "ListDescription": "列出此智慧體的所有活躍排程任務。",
+      "MessageDescription": "排程觸發時傳送給此智慧體的訊息。",
+      "RemoveDescription": "按 ID 刪除活躍排程任務。",
+      "TaskIdDescription": "list-schedules 傳回的排程任務 ID。",
+      "TaskIdTitle": "任務 ID",
+      "TaskNameDescription": "此排程便於閱讀的名稱。",
+      "TaskNameTitle": "任務名稱",
+      "TimezoneDescription": "Cron 表達式使用的 IANA 時區，例如 Asia/Taipei。",
+      "UpdateDescription": "更新現有排程任務的狀態、訊息或活躍時段。",
+      "WakeAtDescription": "喚醒智慧體的 ISO 8601 日期時間。"
+    },
     "AIConfig": {
       "Default": "預設使用的對話模型",
       "DefaultTitle": "預設模型",
@@ -385,14 +676,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -427,8 +714,7 @@
       "ProviderTitle": "供應商",
       "Title": "模型選擇"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "位置參數配置，用於確定內容插入的精確位置。支持相對位置、絕對位置、前置和後置四種定位方式",
       "TargetId": "目標元素ID",
@@ -462,8 +748,7 @@
       "TextTitle": "文本",
       "Title": "提示詞"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "回應標題，用於識別該回應條目",
       "CaptionTitle": "標題",
@@ -627,6 +912,12 @@
     "NoTabs": "分屏視圖中沒有標籤"
   },
   "Tab": {
+    "Close": "關閉分頁",
+    "ScheduledTaskCloseWarning": "此智慧體有排程任務。下次喚醒：{{wakeTime}}。關閉分頁不會停止排程喚醒。",
+    "ScheduledTaskMore": "（另有 {{count}} 個）",
+    "ScheduledTaskNextWake": "下次喚醒：{{wakeTime}}",
+    "ScheduledTaskUnknownWake": "未知",
+    "TabList": "分頁",
     "Title": {
       "CreateNewAgent": "創建新智慧體",
       "EditAgentDefinition": "編輯智慧體",
@@ -636,7 +927,41 @@
       "WikiEmbed": "維基"
     }
   },
+  "ToolApproval": {
+    "Add": "新增",
+    "AddRule": "新增規則",
+    "Allow": "允許",
+    "APIRetry": "API 重試（指數退避）",
+    "Cancel": "取消",
+    "Deny": "拒絕",
+    "GlobalSettings": "全域設定",
+    "GlobalTimeout": "全域逾時（毫秒）",
+    "GlobalTimeoutDescription": "所有工具執行的預設逾時時間。0 = 不限時。",
+    "InitialDelay": "初始延遲（毫秒）",
+    "InitialDelayDescription": "第一次重試前的延遲時間，此後每次加倍",
+    "MaxAttempts": "最大嘗試次數",
+    "NoRetryDescription": "0 = 不重試",
+    "NoRules": "尚未設定個別工具規則。所有工具都使用全域逾時和自動核准。",
+    "PatternsDescription": "拒絕模式會阻止執行；允許模式會略過核准。",
+    "PerToolRules": "個別工具規則",
+    "RegexPlaceholder": "正規表示式模式…",
+    "RequireApproval": "需要核准",
+    "Save": "儲存",
+    "Timeout": "逾時（毫秒）",
+    "Title": "工具核准與逾時設定",
+    "Tool": "工具"
+  },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "活躍排程任務：\n{{summary}}",
+      "AlarmSet": "已設定在 {{wakeAtISO}}（{{delaySeconds}} 秒後）喚醒。現在退出循環，屆時繼續執行。",
+      "NoActiveTasks": "沒有活躍排程任務。",
+      "TaskCreated": "已建立排程任務（ID：{{taskId}}）。下次執行：{{nextRun}}。",
+      "TaskRemoved": "已刪除排程任務 {{taskId}}。",
+      "TaskSummary": "[{{taskId}}] {{name}} — 下次：{{nextRun}} — 已執行：{{runCount}} 次",
+      "TaskUpdated": "已更新排程任務 {{taskId}}。",
+      "Unknown": "未知"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "工作區名稱或ID\"{{workspaceName}}\"不存在"

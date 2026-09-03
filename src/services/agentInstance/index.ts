@@ -1,52 +1,162 @@
 import { inject, injectable } from 'inversify';
-import { nanoid } from 'nanoid';
-import { BehaviorSubject, Observable } from 'rxjs';
+import path from 'node:path';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
-import type { AgentHeartbeatConfig } from '@services/agentDefinition/interface';
+import { USER_DATA_FOLDER } from '@/constants/appPaths';
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
+import { isTest } from '@/constants/environment';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import { basicPromptConcatHandler } from '@services/agentInstance/agentFrameworks/taskAgent';
-import type { AgentFramework, AgentFrameworkContext } from '@services/agentInstance/agentFrameworks/utilities/type';
-import { promptConcatStream } from '@services/agentInstance/promptConcat/promptConcat';
-import type { AgentPromptDescription } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { getPromptConcatAgentFrameworkConfigJsonSchema } from '@services/agentInstance/promptConcat/promptConcatSchema/jsonSchema';
-import type { PromptConcatStreamState } from '@services/agentInstance/promptConcat/promptConcatTypes';
-import { createHooksWithPlugins, initializePluginSystem } from '@services/agentInstance/tools';
-import { container } from '@services/container';
+import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
+
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import { ConversationTimelineStateEntity } from '@services/database/schema/conversationEvent';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import {
+  AGENT_RUN_ERROR_MESSAGE_KEYS,
+  AGENT_TOOL_LOOP_ID,
+  type AgentCommittedAttachment,
+  type AgentConversationMessagePage,
+  type AgentConversationMessagePageOptions,
+  type AgentConversationMessageProjection,
+  type AgentConversationMessageWindowRequest,
+  type AgentConversationMessageWindowResult,
+  agentConversationPageOptionsToStorage,
+  type AgentConversationUpdate,
+  agentConversationWindowRequestToStorage,
+  type AgentDeviceRpcDeleteTurnRequest,
+  type AgentDeviceRpcDeleteTurnResponse,
+  type AgentDeviceRpcGetTurnDetailRequest,
+  type AgentDeviceRpcGetTurnDetailResponse,
+  agentDeviceRpcPendingUserMessageFromChatMessage,
+  type AgentDeviceRpcRetryTurnRequest,
+  type AgentDeviceRpcRetryTurnResponse,
+  type AgentDeviceRpcRunTurnRequest,
+  type AgentFrameworkConfig,
+  type AgentHeartbeatConfig,
+  type AgentInstanceLatestStatus,
+  type AgentInstanceMetadata,
+  type AgentInstanceMetadataUpdate,
+  type AgentInstanceState,
+  type AgentManagementCallOptions,
+  type AgentRunError,
+  AgentRunFailure,
+  type AgentRuntimeView,
+  assertPromptPreviewGeneratedResult,
+  type AttachmentReference,
+  type ChatMessage,
+  type CompactionCandidatePage,
+  type ConversationEvent,
+  type ConversationEventDraft,
+  type ConversationEventPage,
+  conversationEventToMessage,
+  type ConversationFullContentMessagePage,
+  type ConversationListPage,
+  type ConversationMessageDetailRange,
+  type ConversationMessageIdentity,
+  type ConversationMessagePage,
+  type ConversationMessageWindowResult,
+  type ConversationTimelinePage,
+  createAgentRunError,
+  type CreateScheduledTaskInput,
+  type GetCompactionCandidatePageOptions,
+  type GetConversationEventPageOptions,
+  type GetConversationListPageOptions,
+  type GetConversationMessageWindowAroundOptions,
+  type GetConversationTimelinePageOptions,
+  type GetFullContentMessagePageOptions,
+  type GetMessagePageOptions,
+  type GetRetainedCompactionControlsOptions,
+  type ListScheduledTasksOptions,
+  type MemeLoopRunHandle,
+  type MemeLoopRunStatus,
+  type MemeLoopRuntime,
+  messageToConversationEvent,
+  type MessageVersionFrontier,
+  type MessageVersionFrontierCursor,
+  type MessageVersionFrontierPage,
+  projectConversationMessageForList,
+  projectTransientConversationMessageForList,
+  type PromptConcatStreamState,
+  type PromptPreviewAuditDetailChunk,
+  type PromptPreviewAuditDetailRequest,
+  type PromptPreviewAuditPage,
+  type PromptPreviewAuditPageRequest,
+  type PromptPreviewAuditReleaseRequest,
+  type PromptPreviewPreparedExecution,
+  type PromptPreviewPrepareRequest,
+  type RemoteAgentExecuteRequest,
+  resolveAgentToolLoopTerminalState,
+  type RetainedCompactionControlPage,
+  type ScheduledTask,
+  type ScheduledTaskPage,
+  type ScheduledTaskRpcScopedTaskRequest,
+  type ScheduledTaskRpcUpdatePatch,
+  storagePageToAgentConversationPage,
+  storageWindowToAgentConversationWindow,
+  type ToolApprovalResolution,
+} from 'memeloop';
+import type { ReadDesktopAgentAttachmentChunkInput } from './attachmentUploadProtocol';
+import {
+  type BeginDesktopAttachmentUploadInput,
+  type DesktopAttachmentUploadScope,
+  DesktopAttachmentUploadStore,
+  type WriteDesktopAttachmentChunkInput,
+} from './attachmentUploadStore';
+import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
 
-import { createDebouncedMessageUpdater, saveUserMessage as saveUserMessageHelper } from './agentMessagePersistence';
 import * as repo from './agentRepository';
-import { getActiveHeartbeatEntries, startHeartbeat, stopHeartbeat } from './heartbeatManager';
-import type {
-  AgentBackgroundTask,
-  AgentInstance,
-  AgentInstanceLatestStatus,
-  AgentInstanceMessage,
-  IAgentInstanceService,
-  SetBackgroundAlarmInput,
-  SetBackgroundHeartbeatInput,
-} from './interface';
+import type { IAgentInstanceService } from './interface';
+import { MemeLoopDesktopRuntime } from './runtime/runtime';
+import { createAgentDeviceRpcPendingUserMessage } from './runtime/userMessage';
+import { cleanupMCPClient } from './tools/modelContextProtocol';
+import { startHeartbeat, stopHeartbeat } from './tools/scheduledTaskManager';
 import {
   addTask as stmAddTask,
   cancelTasksForAgent,
   getActiveTasks as stmGetActiveTasks,
-  getActiveTasksForAgent as stmGetActiveTasksForAgent,
   getCronPreviewDates as stmGetCronPreviewDates,
+  getScheduledTaskPageForAgent as stmGetScheduledTaskPageForAgent,
+  getTaskByScope as stmGetTaskByScope,
   initScheduledTaskManager,
   removeTask as stmRemoveTask,
+  removeTaskScoped as stmRemoveTaskScoped,
   restoreScheduledTasks,
   updateTask as stmUpdateTask,
-} from './scheduledTaskManager';
-import type { CreateScheduledTaskInput, ScheduledTask, UpdateScheduledTaskInput } from './scheduledTaskTypes';
-import { cancelAlarm, getActiveAlarmEntries, scheduleAlarmTimer } from './tools/alarmClock';
-import { cleanupMCPClient } from './tools/modelContextProtocol';
+  updateTaskScoped as stmUpdateTaskScoped,
+} from './tools/scheduledTaskManager';
+
+/**
+ * Enforce Core's metadata-only renderer contract at runtime.
+ *
+ * TypeScript structural types are erased, so an AgentInstanceModel can reach
+ * this private boundary with an extra, unbounded `messages` property even
+ * though the declared input is AgentRuntimeView. Explicit selection keeps the
+ * subscription payload exact without mutating the caller's object.
+ */
+function projectAgentRuntimeView(agent: AgentRuntimeView): AgentRuntimeView {
+  return {
+    id: agent.id,
+    agentDefId: agent.agentDefId,
+    ...(agent.name === undefined ? {} : { name: agent.name }),
+    status: agent.status,
+    created: agent.created,
+    ...(agent.modified === undefined ? {} : { modified: agent.modified }),
+    ...(agent.modelConfig === undefined ? {} : { modelConfig: agent.modelConfig }),
+    ...(agent.avatarUrl === undefined ? {} : { avatarUrl: agent.avatarUrl }),
+    ...(agent.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: agent.agentFrameworkConfig }),
+    closed: agent.closed,
+    volatile: agent.volatile,
+    preview: agent.preview,
+    ...(agent.definition === undefined ? {} : { definition: agent.definition }),
+  };
+}
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
@@ -56,24 +166,40 @@ export class AgentInstanceService implements IAgentInstanceService {
   @inject(serviceIdentifier.AgentDefinition)
   private readonly agentDefinitionService!: IAgentDefinitionService;
 
+  @inject(serviceIdentifier.ExternalAPI)
+  private readonly externalAPIService!: IExternalAPIService;
+
+  @inject(serviceIdentifier.DeviceNetwork)
+  private readonly deviceNetworkService!: IDeviceNetworkService;
+
+  @inject(serviceIdentifier.Git)
+  private readonly gitService!: IGitService;
+
+  @inject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
   private dataSource: DataSource | null = null;
   private agentInstanceRepository: Repository<AgentInstanceEntity> | null = null;
   private agentMessageRepository: Repository<AgentInstanceMessageEntity> | null = null;
   private scheduledTaskRepositoryReady = false;
+  private attachmentUploadStore: DesktopAttachmentUploadStore | null = null;
 
-  private agentInstanceSubjects: Map<string, BehaviorSubject<AgentInstance | undefined>> = new Map();
+  private agentInstanceSubjects: Map<string, BehaviorSubject<AgentRuntimeView | undefined>> = new Map();
   private statusSubjects: Map<string, BehaviorSubject<AgentInstanceLatestStatus | undefined>> = new Map();
+  private conversationSubjects = new Map<string, Subject<AgentConversationUpdate>>();
+  private conversationInvalidationWatermarks = new Map<string, { revision: string; totalMessages: number }>();
+  private conversationInvalidationQueues = new Map<string, Promise<void>>();
 
-  private agentFrameworks: Map<string, AgentFramework> = new Map();
   private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
-  private cancelTokenMap: Map<string, { value: boolean }> = new Map();
-  private debouncedUpdateFunctions: Map<string, (message: AgentInstanceLatestStatus['message'] & { id: string }, agentId?: string) => void> = new Map();
+  private memeLoopRuntime: MemeLoopDesktopRuntime | null = null;
+  private activeDurableRunIds = new Map<string, Set<string>>();
+  private durableErrorPersistence = new Map<string, Promise<void>>();
 
   public async initialize(): Promise<void> {
     try {
       await this.initializeDatabase();
       await this.initializeFrameworks();
-      // Restore legacy heartbeat timers and alarms for active agents after DB + frameworks are ready
+      // Restore definition-owned heartbeat timers after DB + frameworks are ready.
       await this.restoreBackgroundTasks();
       // Restore unified ScheduledTaskManager tasks
       await this.restoreScheduledTaskManagerTasks();
@@ -86,13 +212,18 @@ export class AgentInstanceService implements IAgentInstanceService {
   private async initializeDatabase(): Promise<void> {
     try {
       // Database is already initialized in the agent definition service
-      this.dataSource = await this.databaseService.getDatabase('agent');
+      this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.agentInstanceRepository = this.dataSource.getRepository(AgentInstanceEntity);
       this.agentMessageRepository = this.dataSource.getRepository(AgentInstanceMessageEntity);
+      this.attachmentUploadStore = new DesktopAttachmentUploadStore(path.join(USER_DATA_FOLDER, 'meme-loop-attachments'));
+      await this.attachmentUploadStore.initialize();
 
       // Initialize the unified ScheduledTaskManager
       const stmRepo = this.dataSource.getRepository(ScheduledTaskEntity);
-      initScheduledTaskManager(stmRepo, this);
+      initScheduledTaskManager(stmRepo, this, async () => {
+        const identity = await this.deviceNetworkService.getLocalIdentity();
+        return { peerId: identity.peerId, deviceName: identity.deviceName };
+      });
       this.scheduledTaskRepositoryReady = true;
 
       logger.debug('AgentInstance repositories initialized');
@@ -104,9 +235,10 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async initializeFrameworks(): Promise<void> {
     try {
-      // Register tools to global registry once during initialization
-      await initializePluginSystem();
-      logger.debug('AgentInstance Tool system initialized and tools registered to global registry');
+      // Construct the one runtime-owned registry. Tool modules are pure
+      // definitions, so importing them never mutates another runtime.
+      this.getMemeLoopRuntime();
+      logger.debug('AgentInstance runtime-owned ToolDefinitionRegistry initialized');
 
       // Register built-in frameworks
       this.registerBuiltinFrameworks();
@@ -118,15 +250,84 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public registerBuiltinFrameworks(): void {
-    // Tools are already registered in initialize(), so we only register frameworks here
-    // Register basic prompt concatenation framework with its schema
-    this.registerFramework('basicPromptConcatHandler', basicPromptConcatHandler, getPromptConcatAgentFrameworkConfigJsonSchema());
+    const promptChildNodeSchema = {
+      type: 'object',
+      title: 'Prompt',
+      additionalProperties: true,
+      properties: {
+        id: { type: 'string', title: 'ID' },
+        caption: { type: 'string', title: 'Caption' },
+        role: { type: 'string', title: 'Role', enum: ['system', 'user', 'assistant', 'tool'] },
+        enabled: { type: 'boolean', title: 'Enabled', default: true },
+        dynamicPosition: { type: 'string', title: 'Dynamic Position', enum: ['deferToEnd'] },
+        tags: { type: 'array', title: 'Tags', items: { type: 'string' } },
+        text: { type: 'string', title: 'Text' },
+      },
+    };
+
+    const promptNodeSchema = {
+      type: 'object',
+      title: 'Prompt',
+      additionalProperties: true,
+      properties: {
+        id: { type: 'string', title: 'ID' },
+        caption: { type: 'string', title: 'Caption' },
+        role: { type: 'string', title: 'Role', enum: ['system', 'user', 'assistant', 'tool'] },
+        enabled: { type: 'boolean', title: 'Enabled', default: true },
+        dynamicPosition: { type: 'string', title: 'Dynamic Position', enum: ['deferToEnd'] },
+        tags: { type: 'array', title: 'Tags', items: { type: 'string' } },
+        text: { type: 'string', title: 'Text' },
+        children: {
+          type: 'array',
+          title: 'Children',
+          items: promptChildNodeSchema,
+        },
+      },
+    };
+
+    this.frameworkSchemas.set(AGENT_TOOL_LOOP_ID, {
+      type: 'object',
+      properties: {
+        prompts: { type: 'array', title: 'Prompts', items: promptNodeSchema },
+        response: { type: 'array', title: 'Response', items: { type: 'object', additionalProperties: true } },
+        plugins: {
+          type: 'array',
+          title: 'Plugins',
+          items: {
+            type: 'object',
+            title: 'Plugin',
+            additionalProperties: true,
+            properties: {
+              id: { type: 'string', title: 'ID' },
+              toolId: { type: 'string', title: 'Tool ID' },
+              enabled: { type: 'boolean', title: 'Enabled', default: true },
+            },
+          },
+        },
+      },
+      uiSchema: {
+        'ui:order': ['prompts', 'plugins', 'response'],
+        prompts: {
+          items: {
+            text: { 'ui:widget': 'textarea' },
+            tags: { 'ui:widget': 'TagsWidget' },
+            children: {
+              items: {
+                text: { 'ui:widget': 'textarea' },
+                tags: { 'ui:widget': 'TagsWidget' },
+              },
+            },
+          },
+        },
+      },
+    });
   }
 
   /**
-   * Restore heartbeat timers and alarm timers for active agents after app restart.
+   * Restore heartbeat timers for active agents after app restart.
    * Heartbeats: read from AgentDefinition.heartbeat for all non-closed instances.
-   * Alarms: read from AgentInstance.scheduledAlarm for all non-closed instances.
+   * One-shot and cron schedules are restored separately by the unified
+   * ScheduledTaskManager; this method only restores definition heartbeats.
    */
   private async restoreBackgroundTasks(): Promise<void> {
     if (!this.agentInstanceRepository) return;
@@ -138,44 +339,18 @@ export class AgentInstanceService implements IAgentInstanceService {
       });
 
       let heartbeatsRestored = 0;
-      let alarmsRestored = 0;
 
       for (const instance of activeInstances) {
         // Restore heartbeat from definition
         const heartbeatConfig = instance.agentDefinition?.heartbeat;
         if (heartbeatConfig?.enabled) {
-          startHeartbeat(instance.id, heartbeatConfig, this, { createdBy: 'agent-definition' });
+          startHeartbeat(instance.id, instance.agentDefId, heartbeatConfig, this, { createdBy: 'agent-definition' });
           heartbeatsRestored++;
-        }
-
-        // Restore persisted alarm
-        const alarm = instance.scheduledAlarm;
-        if (alarm?.wakeAtISO) {
-          const wakeAt = new Date(alarm.wakeAtISO);
-          const now = new Date();
-          // For one-shot alarms in the past, fire immediately
-          // For recurring alarms, always restore
-          if (alarm.repeatIntervalMinutes || wakeAt.getTime() > now.getTime()) {
-            scheduleAlarmTimer(instance.id, alarm.wakeAtISO, alarm.reminderMessage, alarm.repeatIntervalMinutes, {
-              createdBy: alarm.createdBy ?? 'restore',
-              runCount: alarm.runCount,
-              lastRunAtISO: alarm.lastRunAtISO,
-            });
-            alarmsRestored++;
-          } else {
-            // Past one-shot alarm — fire it now and clear
-            scheduleAlarmTimer(instance.id, new Date().toISOString(), alarm.reminderMessage, undefined, {
-              createdBy: alarm.createdBy ?? 'restore',
-              runCount: alarm.runCount,
-              lastRunAtISO: alarm.lastRunAtISO,
-            });
-            alarmsRestored++;
-          }
         }
       }
 
-      if (heartbeatsRestored > 0 || alarmsRestored > 0) {
-        logger.info('Background tasks restored', { heartbeatsRestored, alarmsRestored, totalInstances: activeInstances.length });
+      if (heartbeatsRestored > 0) {
+        logger.info('Background heartbeats restored', { heartbeatsRestored, totalInstances: activeInstances.length });
       }
     } catch (error) {
       logger.error('Failed to restore background tasks', { error });
@@ -202,19 +377,6 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   /**
-   * Register a framework with an optional schema
-   * @param frameworkId ID for the framework
-   * @param framework The framework function
-   * @param schema Optional JSON schema for the framework configuration
-   */
-  private registerFramework(frameworkId: string, framework: AgentFramework, schema?: Record<string, unknown>): void {
-    this.agentFrameworks.set(frameworkId, framework);
-    if (schema) {
-      this.frameworkSchemas.set(frameworkId, schema);
-    }
-  }
-
-  /**
    * Ensure repositories are initialized
    */
   private ensureRepositories(): void {
@@ -223,52 +385,638 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
+  private getAttachmentUploadStore(): DesktopAttachmentUploadStore {
+    if (!this.attachmentUploadStore) throw new Error('Agent attachment store not initialized');
+    return this.attachmentUploadStore;
+  }
+
+  public beginAgentAttachmentUpload(input: BeginDesktopAttachmentUploadInput): Promise<{ uploadId: string }> {
+    return this.getAttachmentUploadStore().begin(input);
+  }
+
+  public writeAgentAttachmentChunk(input: WriteDesktopAttachmentChunkInput): Promise<{ nextOffset: number }> {
+    return this.getAttachmentUploadStore().write(input);
+  }
+
+  public async commitAgentAttachmentUpload(input: DesktopAttachmentUploadScope): Promise<AgentCommittedAttachment> {
+    return { kind: 'committed', reference: await this.getAttachmentUploadStore().commit(input) };
+  }
+
+  public abortAgentAttachmentUpload(input: DesktopAttachmentUploadScope): Promise<void> {
+    return this.getAttachmentUploadStore().abort(input);
+  }
+
+  public async readAgentAttachmentChunk(input: ReadDesktopAgentAttachmentChunkInput): Promise<Uint8Array | null> {
+    await this.assertAgentAttachmentAuthorized(input.conversationId, input.reference, false);
+    return this.getAttachmentUploadStore().readRange(input.reference.contentHash, input.offset, input.maxBytes);
+  }
+
+  public preparePromptPreviewExecutionModelRequest(
+    input: PromptPreviewPrepareRequest,
+  ): Promise<PromptPreviewPreparedExecution> {
+    return this.getMemeLoopRuntime().preparePromptPreviewExecutionModelRequest(input);
+  }
+
+  public async cancelPromptPreview(requestId: string): Promise<void> {
+    this.getMemeLoopRuntime().cancelPromptPreview(requestId);
+  }
+
+  public async getPromptPreviewAuditPage(request: PromptPreviewAuditPageRequest): Promise<PromptPreviewAuditPage> {
+    return this.getMemeLoopRuntime().getPromptPreviewAuditPage(request);
+  }
+
+  public async getPromptPreviewAuditDetail(request: PromptPreviewAuditDetailRequest): Promise<PromptPreviewAuditDetailChunk> {
+    return this.getMemeLoopRuntime().getPromptPreviewAuditDetail(request);
+  }
+
+  public async releasePromptPreviewAuditSession(request: PromptPreviewAuditReleaseRequest): Promise<void> {
+    this.getMemeLoopRuntime().releasePromptPreviewAuditSession(request);
+  }
+
+  public getAgentAttachmentReference(contentHash: string, options?: { signal?: AbortSignal }): Promise<AttachmentReference | null> {
+    return this.getAttachmentUploadStore().getReference(contentHash, options);
+  }
+
+  public saveAgentAttachment(reference: AttachmentReference, data: Uint8Array, options?: { signal?: AbortSignal }): Promise<void> {
+    return this.getAttachmentUploadStore().save(reference, data, options);
+  }
+
+  public readAgentAttachmentRange(
+    contentHash: string,
+    offset: number,
+    maxBytes: number,
+    options?: { signal?: AbortSignal },
+  ): Promise<Uint8Array | null> {
+    return this.getAttachmentUploadStore().readRange(contentHash, offset, maxBytes, options);
+  }
+
+  private getMemeLoopRuntime(): MemeLoopDesktopRuntime {
+    if (!this.memeLoopRuntime) {
+      this.memeLoopRuntime = new MemeLoopDesktopRuntime({
+        agentInstanceService: this,
+        agentDefinitionService: this.agentDefinitionService,
+        externalAPIService: this.externalAPIService,
+        deviceNetworkService: this.deviceNetworkService,
+        notifyTransientMessage: (message) => this.publishConversationMessage(message, true),
+        dataSource: this.dataSource!,
+      });
+    }
+    return this.memeLoopRuntime;
+  }
+
+  /** Main-process durable runtime used by authenticated Device RPC. */
+  public getDurableAgentRuntime(): Promise<MemeLoopRuntime> {
+    this.ensureRepositories();
+    return this.getMemeLoopRuntime().getCoreRuntime(new DesktopAgentRunStateStore(this.dataSource!));
+  }
+
+  /** Idempotently materialize Core's requested conversation identity in the Desktop projection. */
+  public async ensureAgentConversation(definitionId: string, conversationId?: string): Promise<{ conversationId: string }> {
+    if (conversationId) {
+      const existing = await this.getAgentMetadata(conversationId);
+      if (existing) {
+        if (existing.agentDefId !== definitionId) throw new Error('agent conversation definition mismatch');
+        return { conversationId };
+      }
+    }
+    const created = await this.createAgent(definitionId, conversationId ? { id: conversationId } : undefined);
+    return { conversationId: created.id };
+  }
+
+  private async updateAgentStatusBestEffort(agentId: string, status: AgentInstanceLatestStatus): Promise<void> {
+    if (!this.agentInstanceRepository || !this.agentMessageRepository) {
+      return;
+    }
+
+    try {
+      await this.updateAgent(agentId, { status });
+    } catch (error) {
+      let currentAgent: AgentRuntimeView | undefined;
+      try {
+        currentAgent = await this.getAgentMetadata(agentId);
+      } catch (metadataError: unknown) {
+        logger.error('Failed to read agent metadata while recovering status persistence', {
+          agentId,
+          error: metadataError,
+        });
+        throw error;
+      }
+      if (!currentAgent) throw error;
+      this.notifyAgentUpdate(agentId, { ...currentAgent, status });
+      logger.warn('Failed to persist agent status during MemeLoop turn; continuing with bounded in-memory status', { error, agentId, state: status.state });
+    }
+  }
+
+  private persistDurableRunError(status: MemeLoopRunStatus): Promise<void> {
+    const runError = status.error;
+    if (!runError) return Promise.resolve();
+    const existing = this.durableErrorPersistence.get(status.runId);
+    if (existing) return existing;
+    const pending = (async () => {
+      const messageId = `agent-run-error:${status.runId}`;
+      const existingMessage = await this.getAgentMessage(messageId);
+      if (existingMessage?.conversationId === status.conversationId) return;
+      const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+      const event = await this.appendLocalConversationEvent({
+        kind: 'message',
+        eventId: messageId,
+        conversationId: status.conversationId,
+        originNodeId,
+        timestamp: status.finishedAt ?? status.updatedAt,
+        message: {
+          messageId,
+          turnId: status.turnId,
+          role: 'error',
+          content: runError.messageKey,
+          parts: [{ type: 'text', text: runError.messageKey }],
+          duration: 1,
+          metadata: { agentRunError: runError, runId: status.runId },
+        },
+      });
+      if (event.kind !== 'message') throw new Error('durable error append returned a non-message event');
+    })().catch((error: unknown) => {
+      logger.warn('Failed to persist durable MemeLoop error message', {
+        conversationId: status.conversationId,
+        runId: status.runId,
+        error,
+      });
+    });
+    this.durableErrorPersistence.set(status.runId, pending);
+    void pending.finally(() => {
+      if (this.durableErrorPersistence.get(status.runId) === pending) this.durableErrorPersistence.delete(status.runId);
+    });
+    return pending;
+  }
+
   /**
    * Clean up subscriptions for specific agent
    */
   private cleanupAgentSubscriptions(agentId: string): void {
-    if (this.agentInstanceSubjects.has(agentId)) {
-      this.agentInstanceSubjects.delete(agentId);
-    }
+    this.agentInstanceSubjects.get(agentId)?.complete();
+    this.agentInstanceSubjects.delete(agentId);
+    this.conversationSubjects.get(agentId)?.complete();
+    this.conversationSubjects.delete(agentId);
+    this.conversationInvalidationWatermarks.delete(agentId);
+    this.conversationInvalidationQueues.delete(agentId);
 
     // Clean up all status subscriptions related to this agent
     for (const [key, _] of this.statusSubjects.entries()) {
       if (key.startsWith(`${agentId}:`)) {
+        this.statusSubjects.get(key)?.complete();
         this.statusSubjects.delete(key);
-      }
-    }
-
-    // Cancel and remove all debounced update functions for this agent
-    for (const [key, debouncedFunction] of this.debouncedUpdateFunctions.entries()) {
-      if (key.startsWith(`${agentId}:`)) {
-        // Cancel pending writes — agent is being deleted/closed so data would be stale
-        (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
-        this.debouncedUpdateFunctions.delete(key);
       }
     }
   }
 
-  public async createAgent(agentDefinitionID?: string, options?: { preview?: boolean; volatile?: boolean }): Promise<AgentInstance> {
+  public async createAgent(agentDefinitionID?: string, options?: { id?: string; preview?: boolean; volatile?: boolean }): Promise<AgentRuntimeView> {
     this.ensureRepositories();
     try {
-      return await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
+      const agent = await repo.createAgent(this.agentInstanceRepository!, this.agentDefinitionService, agentDefinitionID, options);
+      const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+      await this.appendLocalConversationEvent({
+        kind: 'metadataPatch',
+        eventId: `metadata:create:${agent.id}`,
+        conversationId: agent.id,
+        originNodeId,
+        timestamp: agent.created.getTime(),
+        patch: {
+          title: agent.name ?? agent.agentDefId,
+          definitionId: agent.agentDefId,
+          isUserInitiated: !agent.volatile,
+        },
+      });
+      return agent;
     } catch (error) {
       logger.error('Failed to create agent instance', { error });
       throw error;
     }
   }
 
-  public async getAgent(agentId: string): Promise<AgentInstance | undefined> {
+  public async getAgentMetadata(agentId: string): Promise<AgentRuntimeView | undefined> {
     this.ensureRepositories();
-    try {
-      return await repo.getAgent(this.agentInstanceRepository!, agentId);
-    } catch (error) {
-      logger.error('Failed to get agent instance', { error });
-      throw error;
-    }
+    return repo.getAgentMetadata(this.agentInstanceRepository!, agentId);
   }
 
-  public async updateAgent(agentId: string, data: Partial<AgentInstance>): Promise<AgentInstance> {
+  public async getAgentMessagePage(
+    agentId: string,
+    options: AgentConversationMessagePageOptions,
+  ): Promise<AgentConversationMessagePage> {
+    const page = await this.getAgentStorageMessagePage(agentId, agentConversationPageOptionsToStorage(options));
+    return storagePageToAgentConversationPage(agentId, page, options);
+  }
+
+  public async getAgentStorageMessagePage(agentId: string, options: GetMessagePageOptions): Promise<ConversationMessagePage> {
+    this.ensureRepositories();
+    return repo.getMessagePage(this.agentMessageRepository!, agentId, options);
+  }
+
+  public async getAgentStorageFullContentMessagePage(
+    agentId: string,
+    options: GetFullContentMessagePageOptions,
+  ): Promise<ConversationFullContentMessagePage> {
+    this.ensureRepositories();
+    return repo.getFullContentMessagePage(this.agentMessageRepository!, agentId, options);
+  }
+
+  public async getAgentMessageIdentity(
+    agentId: string,
+    messageId: string,
+  ): Promise<ConversationMessageIdentity | null> {
+    this.ensureRepositories();
+    return repo.getMessageIdentity(this.dataSource!, agentId, messageId);
+  }
+
+  public async readAgentMessageDetailRange(
+    agentId: string,
+    messageId: string,
+    offset: number,
+    maxBytes: number,
+  ): Promise<ConversationMessageDetailRange> {
+    this.ensureRepositories();
+    return repo.readMessageDetailRange(this.dataSource!, agentId, messageId, offset, maxBytes);
+  }
+
+  public async readAgentMessageReasoningRange(
+    agentId: string,
+    messageId: string,
+    offset: number,
+    maxBytes: number,
+  ): Promise<ConversationMessageDetailRange> {
+    this.ensureRepositories();
+    return repo.readMessageReasoningRange(this.dataSource!, agentId, messageId, offset, maxBytes);
+  }
+
+  public async getAgentMessageWindowAround(
+    request: AgentConversationMessageWindowRequest,
+  ): Promise<AgentConversationMessageWindowResult> {
+    const result = await this.getAgentStorageMessageWindowAround(
+      request.conversationId,
+      agentConversationWindowRequestToStorage(request),
+    );
+    return storageWindowToAgentConversationWindow(request, result);
+  }
+
+  public async getAgentStorageMessageWindowAround(
+    agentId: string,
+    options: GetConversationMessageWindowAroundOptions,
+  ): Promise<ConversationMessageWindowResult> {
+    this.ensureRepositories();
+    return repo.getMessageWindowAround(this.dataSource!, agentId, options);
+  }
+
+  public async conversationReferencesAttachment(agentId: string, contentHash: string): Promise<boolean> {
+    this.ensureRepositories();
+    return repo.conversationReferencesAttachment(this.dataSource!, agentId, contentHash);
+  }
+
+  public async getAgentConversationListPage(
+    localNodeId: string,
+    options: GetConversationListPageOptions,
+  ): Promise<ConversationListPage> {
+    this.ensureRepositories();
+    return repo.getConversationListPage(this.dataSource!, localNodeId, options);
+  }
+
+  public async getAgentConversationMeta(localNodeId: string, conversationId: string): Promise<import('memeloop').ConversationMeta | null> {
+    this.ensureRepositories();
+    return repo.getConversationMeta(this.dataSource!, localNodeId, conversationId);
+  }
+
+  public async getAgentConversationListPageScoped(
+    localNodeId: string,
+    options: GetConversationListPageOptions,
+    scope: repo.ConversationListProjectionScope,
+  ): Promise<ConversationListPage> {
+    this.ensureRepositories();
+    return repo.getConversationListPage(this.dataSource!, localNodeId, options, scope);
+  }
+
+  public async getAgentConversationTimelinePage(
+    agentId: string,
+    options: GetConversationTimelinePageOptions,
+  ): Promise<ConversationTimelinePage> {
+    this.ensureRepositories();
+    return repo.getConversationTimelinePage(this.agentMessageRepository!, agentId, options);
+  }
+
+  public async getMaxAgentLamportClock(agentId: string): Promise<number> {
+    this.ensureRepositories();
+    return repo.getMaxLamportClock(this.agentMessageRepository!, agentId);
+  }
+
+  public async getExistingAgentMessageIds(agentId: string, messageIds: string[]): Promise<string[]> {
+    this.ensureRepositories();
+    return repo.getExistingMessageIds(this.agentMessageRepository!, agentId, messageIds);
+  }
+
+  public async getAgentMessage(messageId: string): Promise<ChatMessage | undefined> {
+    this.ensureRepositories();
+    return repo.getMessage(this.agentMessageRepository!, messageId);
+  }
+
+  public async getAgentTurnDetail(
+    request: AgentDeviceRpcGetTurnDetailRequest,
+  ): Promise<AgentDeviceRpcGetTurnDetailResponse> {
+    this.ensureRepositories();
+    return repo.getTurnDetail(this.agentMessageRepository!, request);
+  }
+
+  public async deleteConversationTurn(
+    request: AgentDeviceRpcDeleteTurnRequest,
+  ): Promise<AgentDeviceRpcDeleteTurnResponse> {
+    this.ensureRepositories();
+    const subjectActive = this.conversationSubjects.has(request.conversationId);
+    const previousState = subjectActive ? await this.getConversationState(request.conversationId) : { revision: '0', totalMessages: 0 };
+    const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+    const tombstone = await repo.appendDeleteTurnTombstoneAtomic(this.dataSource!, request, originNodeId);
+    if (subjectActive) {
+      await this.publishConversationInvalidation(request.conversationId, previousState, 'tombstone');
+    }
+    return {
+      ok: true,
+      conversationId: request.conversationId,
+      turnId: request.turnId,
+      requestId: request.requestId,
+      tombstone,
+    };
+  }
+
+  public async retryConversationTurn(
+    request: AgentDeviceRpcRetryTurnRequest,
+  ): Promise<AgentDeviceRpcRetryTurnResponse> {
+    this.ensureRepositories();
+    const subjectActive = this.conversationSubjects.has(request.conversationId);
+    const previousState = subjectActive ? await this.getConversationState(request.conversationId) : { revision: '0', totalMessages: 0 };
+    const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+    const result = await (await this.getDurableAgentRuntime()).retryTurn({ ...request, requestPeerId });
+    if (subjectActive) {
+      // Core's atomic retry writes directly through the run-state store, so it
+      // deliberately bypasses appendLocalConversationEventsAtomic. Publish one
+      // reset edge for the tombstone + replacement root before later run output.
+      await this.publishConversationInvalidation(request.conversationId, previousState, 'reset');
+    }
+    return {
+      ok: true,
+      ...result.handle,
+      tombstone: result.tombstone,
+      userEvent: result.userEvent,
+    };
+  }
+
+  public async getLatestContextCompactionSummary(agentId: string): Promise<ChatMessage | undefined> {
+    this.ensureRepositories();
+    return repo.getLatestContextCompactionSummary(this.agentMessageRepository!, agentId);
+  }
+
+  public async getAgentCompactionCandidatePage(
+    agentId: string,
+    options: GetCompactionCandidatePageOptions,
+  ): Promise<CompactionCandidatePage> {
+    this.ensureRepositories();
+    return repo.getCompactionCandidatePage(this.dataSource!, agentId, options);
+  }
+
+  public async getAgentRetainedCompactionControls(
+    agentId: string,
+    options: GetRetainedCompactionControlsOptions,
+  ): Promise<RetainedCompactionControlPage> {
+    this.ensureRepositories();
+    return repo.getRetainedCompactionControls(this.dataSource!, agentId, options);
+  }
+
+  /**
+   * Seed a realistically large durable transcript for packaged renderer E2E.
+   *
+   * This intentionally uses the same canonical remote-merge path as device
+   * sync. It therefore creates raw events, message/detail projections, sparse
+   * timeline checkpoints and revision invalidations exactly as production
+   * would. Only the small fixture request crosses IPC; transcript bytes are
+   * constructed and retained in the main process.
+   */
+  public async seedLongConversationForE2E(input: {
+    conversationId: string;
+    turnCount: number;
+  }): Promise<{
+    conversationId: string;
+    turnCount: number;
+    messageCount: number;
+    compactionCount: number;
+  }> {
+    if (!isTest || process.env.E2E_TEST !== 'true') {
+      throw new Error('seedLongConversationForE2E is available only in packaged E2E');
+    }
+    if (
+      typeof input?.conversationId !== 'string' || input.conversationId.length === 0 || input.conversationId.length > 512 ||
+      !Number.isSafeInteger(input.turnCount) || input.turnCount < 1 || input.turnCount > 20_000
+    ) {
+      throw new TypeError('invalid long-conversation E2E seed request');
+    }
+    this.ensureRepositories();
+    const owner = await this.agentInstanceRepository!.findOne({ where: { id: input.conversationId } });
+    if (!owner) throw new Error('long-conversation E2E seed owner was not found');
+
+    const previousState = await this.getConversationState(input.conversationId);
+    const baseTimestamp = 1_700_000_000_000;
+    const messageOrigins = Array.from(
+      { length: 3 },
+      (_, index) => `e2e-long-messages-${index + 1}:${input.conversationId}`,
+    );
+    const messageOriginSequences = [0, 0, 0];
+    const messageOriginTurnCounts = [0, 0, 0];
+    const compactionOrigin = `e2e-long-compactions:${input.conversationId}`;
+    const summaryTurnIndexes = [
+      ...new Set([
+        Math.min(input.turnCount - 1, Math.max(0, Math.ceil(input.turnCount / 3) - 1)),
+        Math.min(input.turnCount - 1, Math.max(0, Math.ceil(input.turnCount * 2 / 3) - 1)),
+        // Leave exactly the default 32-turn recent tail uncovered. This
+        // proves the model-request path combines retained semantic summaries
+        // with recent history without making an unrelated provider call.
+        Math.max(0, input.turnCount - 33),
+      ]),
+    ];
+    const summaryAt = new Map(summaryTurnIndexes.map((turnIndex, index) => [turnIndex, index]));
+    const events: ConversationEvent[] = [];
+
+    for (let turnIndex = 0; turnIndex < input.turnCount; turnIndex++) {
+      const originIndex = Math.min(2, Math.floor(turnIndex * 3 / input.turnCount));
+      const messageOrigin = messageOrigins[originIndex];
+      const number = turnIndex.toString().padStart(5, '0');
+      const turnId = `e2e-long-user:${input.conversationId}:${number}`;
+      const userSequence = messageOriginSequences[originIndex] + 1;
+      const assistantSequence = userSequence + 1;
+      messageOriginSequences[originIndex] = assistantSequence;
+      messageOriginTurnCounts[originIndex] += 1;
+      const timestamp = baseTimestamp + turnIndex * 4;
+      events.push(
+        {
+          kind: 'message',
+          eventId: `e2e-long-user:${input.conversationId}:${number}`,
+          conversationId: input.conversationId,
+          originNodeId: messageOrigin,
+          originSequence: userSequence,
+          lamportClock: turnIndex * 4 + 1,
+          timestamp,
+          message: {
+            messageId: `e2e-long-user:${input.conversationId}:${number}`,
+            turnId,
+            role: 'user',
+            content: `E2E long question ${number}`,
+            parts: [{ type: 'text', text: `E2E long question ${number}` }],
+          },
+        },
+        {
+          kind: 'message',
+          eventId: `e2e-long-assistant:${input.conversationId}:${number}`,
+          conversationId: input.conversationId,
+          originNodeId: messageOrigin,
+          originSequence: assistantSequence,
+          lamportClock: turnIndex * 4 + 2,
+          timestamp: timestamp + 1,
+          message: {
+            messageId: `e2e-long-assistant:${input.conversationId}:${number}`,
+            turnId,
+            role: 'assistant',
+            content: `E2E long answer ${number}`,
+            parts: [{ type: 'text', text: `E2E long answer ${number}` }],
+          },
+        },
+      );
+
+      const summaryIndex = summaryAt.get(turnIndex);
+      if (summaryIndex !== undefined) {
+        // Keep the three summaries causally incomparable (one origin each),
+        // exactly like concurrent compaction on independent devices. Core
+        // must retain and merge all three until a later semantic summary
+        // explicitly dominates them.
+        const coveredVersion = { [messageOrigin]: messageOriginSequences[originIndex] };
+        const coveredMessageCountByOrigin = { ...coveredVersion };
+        const coveredUserTurnCountByOrigin = { [messageOrigin]: messageOriginTurnCounts[originIndex] };
+        const droppedMessageCount = coveredMessageCountByOrigin[messageOrigin];
+        const droppedTurnCount = coveredUserTurnCountByOrigin[messageOrigin];
+        events.push({
+          kind: 'compaction',
+          mode: 'summary',
+          eventId: `e2e-long-compaction-event:${input.conversationId}:${summaryIndex + 1}`,
+          conversationId: input.conversationId,
+          originNodeId: compactionOrigin,
+          originSequence: summaryIndex + 1,
+          lamportClock: turnIndex * 4 + 3,
+          timestamp: timestamp + 2,
+          boundary: {
+            version: 2,
+            coveredVersion,
+            coveredMessageCountByOrigin,
+            coveredUserTurnCountByOrigin,
+            droppedMessageCount,
+            droppedTurnCount,
+          },
+          summary: {
+            turnId: `e2e-long-compaction-turn:${input.conversationId}:${summaryIndex + 1}`,
+            content: `E2E durable compaction summary ${summaryIndex + 1}`,
+          },
+        });
+      }
+    }
+
+    await repo.insertConversationEventsIfAbsent(this.dataSource!, events);
+    await this.publishConversationInvalidation(input.conversationId, previousState, 'reset');
+    return {
+      conversationId: input.conversationId,
+      turnCount: input.turnCount,
+      messageCount: input.turnCount * 2,
+      compactionCount: summaryTurnIndexes.length,
+    };
+  }
+
+  public async appendLocalConversationEvent(draft: ConversationEventDraft): Promise<ConversationEvent> {
+    this.ensureRepositories();
+    const subjectActive = this.conversationSubjects.has(draft.conversationId);
+    const previousState = subjectActive ? await this.getConversationState(draft.conversationId) : { revision: '0', totalMessages: 0 };
+    const event = await repo.appendLocalConversationEvent(this.dataSource!, draft);
+    if (subjectActive) {
+      if (event.kind === 'message') {
+        await this.publishConversationMessage(conversationEventToMessage(event), false, previousState);
+      } else if (event.kind === 'compaction') {
+        await this.publishConversationInvalidation(event.conversationId, previousState, 'compaction');
+      } else if (event.kind === 'tombstone') {
+        await this.publishConversationInvalidation(event.conversationId, previousState, 'tombstone');
+      }
+    }
+    return event;
+  }
+
+  public async appendLocalConversationEventsAtomic(drafts: readonly ConversationEventDraft[]): Promise<ConversationEvent[]> {
+    this.ensureRepositories();
+    const activeConversationIds = [...new Set(drafts.map(draft => draft.conversationId))]
+      .filter(conversationId => this.conversationSubjects.has(conversationId));
+    const previousStates = new Map(
+      await Promise.all(activeConversationIds.map(async conversationId =>
+        [
+          conversationId,
+          await this.getConversationState(conversationId),
+        ] as const
+      )),
+    );
+    const events = await repo.appendLocalConversationEventsAtomic(this.dataSource!, drafts);
+    await Promise.all(activeConversationIds.map(conversationId => this.publishConversationInvalidation(conversationId, previousStates.get(conversationId)!, 'append')));
+    return events;
+  }
+
+  public async insertConversationEventsIfAbsent(events: readonly ConversationEvent[]): Promise<void> {
+    this.ensureRepositories();
+    const activeConversationIds = [...new Set(events.map(event => event.conversationId))]
+      .filter(conversationId => this.conversationSubjects.has(conversationId));
+    const previousStates = new Map(
+      await Promise.all(activeConversationIds.map(async conversationId =>
+        [
+          conversationId,
+          await this.getConversationState(conversationId),
+        ] as const
+      )),
+    );
+    await repo.insertConversationEventsIfAbsent(this.dataSource!, events);
+    await Promise.all(activeConversationIds.map(conversationId => {
+      const conversationEvents = events.filter(event => event.conversationId === conversationId);
+      const appendOnly = conversationEvents.some(event => event.kind === 'message') &&
+        conversationEvents.every(event => event.kind === 'message' || event.kind === 'metadataPatch');
+      return this.publishConversationInvalidation(
+        conversationId,
+        previousStates.get(conversationId)!,
+        appendOnly ? 'append' : 'reset',
+      );
+    }));
+  }
+
+  public async getConversationEventPage(
+    agentId: string,
+    options: GetConversationEventPageOptions,
+  ): Promise<ConversationEventPage> {
+    this.ensureRepositories();
+    return repo.getConversationEventPage(this.dataSource!, agentId, options);
+  }
+
+  public async getConversationEventVersionFrontiers(agentIds?: readonly string[]): Promise<MessageVersionFrontier[]> {
+    this.ensureRepositories();
+    return repo.getEventVersionFrontiers(this.dataSource!, agentIds);
+  }
+
+  public async getConversationEventVersionFrontierPage(options: {
+    limit: number;
+    after?: MessageVersionFrontierCursor;
+    conversationIds?: readonly string[];
+  }): Promise<MessageVersionFrontierPage> {
+    this.ensureRepositories();
+    return repo.getEventVersionFrontierPage(this.dataSource!, options);
+  }
+
+  public async getConversationEventVersionFrontiersForKeys(
+    keys: readonly MessageVersionFrontierCursor[],
+  ): Promise<MessageVersionFrontier[]> {
+    this.ensureRepositories();
+    return repo.getEventVersionFrontiersForKeys(this.dataSource!, keys);
+  }
+
+  public async updateAgent(agentId: string, data: AgentInstanceMetadataUpdate): Promise<AgentRuntimeView> {
     this.ensureRepositories();
     try {
       const updatedAgent = await repo.updateAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId, data);
@@ -284,8 +1032,8 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
     try {
       stopHeartbeat(agentId);
-      cancelAlarm(agentId);
-      cancelTasksForAgent(agentId);
+      await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
+      await cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
       await repo.deleteAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId);
       this.cleanupAgentSubscriptions(agentId);
@@ -295,11 +1043,49 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
+  public async discardVolatileAgentPreview(input: repo.DiscardVolatileAgentPreviewInput): Promise<void> {
+    this.ensureRepositories();
+    const agentId = input.agentId?.trim();
+    const temporaryDefinitionId = input.temporaryDefinitionId?.trim();
+    try {
+      if (temporaryDefinitionId && !temporaryDefinitionId.startsWith('temp-')) {
+        throw new Error(`Refusing to discard non-temporary agent definition: ${temporaryDefinitionId}`);
+      }
+      // Fail before mutating runtime state when the renderer points at a
+      // durable conversation. The repository repeats this check atomically.
+      if (agentId) {
+        const instance = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
+        if (instance && (!instance.volatile || !instance.preview)) {
+          throw new Error(`Refusing to discard non-preview or non-volatile agent instance: ${agentId}`);
+        }
+        if (instance && temporaryDefinitionId && instance.agentDefId !== temporaryDefinitionId) {
+          throw new Error('Volatile preview does not belong to the supplied temporary definition');
+        }
+        if (instance) {
+          stopHeartbeat(agentId);
+          await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
+          await cancelTasksForAgent(agentId);
+          await cleanupMCPClient(agentId);
+          await this.attachmentUploadStore?.releaseConversationScope(agentId);
+        }
+      }
+
+      await repo.discardVolatileAgentPreview(this.dataSource!, input);
+      if (agentId) {
+        this.activeDurableRunIds.delete(agentId);
+        this.cleanupAgentSubscriptions(agentId);
+      }
+    } catch (error) {
+      logger.error('Failed to discard volatile agent preview', { error, ...input });
+      throw error;
+    }
+  }
+
   public async getAgents(
     page: number,
     pageSize: number,
     options?: { closed?: boolean; searchName?: string },
-  ): Promise<Omit<AgentInstance, 'messages'>[]> {
+  ): Promise<AgentInstanceMetadata[]> {
     this.ensureRepositories();
     try {
       return await repo.getAgents(this.agentInstanceRepository!, page, pageSize, options);
@@ -309,291 +1095,323 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async sendMsgToAgent(agentId: string, content: { text: string; file?: File; wikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }> }): Promise<void> {
+  public async executeLocalAgentMessage(
+    remoteRequest: RemoteAgentExecuteRequest,
+    options?: AgentManagementCallOptions,
+  ): Promise<MemeLoopRunStatus> {
+    if (remoteRequest.target.kind !== 'local') throw new Error('local agent execution requires a local target');
+    const { conversationId: agentId, definitionId, requestId, turnId } = remoteRequest.provenance;
+    const agent = await this.getAgentMetadata(agentId);
+    if (!agent) throw new Error(`Agent instance not found: ${agentId}`);
+    if (agent.agentDefId !== definitionId) throw new Error('agent conversation definition mismatch');
+    const definition = await this.agentDefinitionService.getAgentDef(agent.agentDefId);
+    if (!definition) throw new Error(`Agent definition not found: ${agent.agentDefId}`);
+    if (remoteRequest.attachment?.kind === 'committed') {
+      await this.assertAgentAttachmentAuthorized(agentId, remoteRequest.attachment.reference, false);
+    }
+
+    const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+    const existingUserRoot = await this.getAgentMessage(turnId);
+    const prepared = existingUserRoot?.conversationId === agentId && existingUserRoot.role === 'user'
+      ? this.runTurnRequestFromPersistedUserRoot({
+        conversationId: agentId,
+        definitionId: agent.agentDefId,
+        message: remoteRequest.message,
+        requestId,
+        turnId,
+      }, existingUserRoot)
+      : await this.createAgentDeviceRpcRunTurn(
+        remoteRequest,
+        await this.captureBeforeTurnCommitMap(agentId),
+      );
+
+    await this.updateAgentStatusBestEffort(agentId, { state: 'working', modified: new Date() });
+    let handle: MemeLoopRunHandle | undefined;
+    let terminalStatusPersisted = false;
+    const runTerminalStates = new Map<string, AgentInstanceState>();
+    const durableRuntime = await this.getDurableAgentRuntime();
+    const unsubscribeRuntime = durableRuntime.subscribeToUpdates(agentId, update => {
+      if (update.type !== 'agent-step' || update.runId === undefined) return;
+      const current = runTerminalStates.get(update.runId) ?? 'completed';
+      runTerminalStates.set(update.runId, resolveAgentToolLoopTerminalState(update.step, current));
+    });
     try {
-      // Get agent instance
-      const agentInstance = await this.getAgent(agentId);
-      if (!agentInstance) {
-        throw new Error(`Agent instance not found: ${agentId}`);
-      }
-
-      // Create user message
-      const messageId = nanoid();
-      const now = new Date();
-
-      // Get agent configuration
-      const agentDefinition = await this.agentDefinitionService.getAgentDef(agentInstance.agentDefId);
-      if (!agentDefinition) {
-        throw new Error(`Agent definition not found: ${agentInstance.agentDefId}`);
-      }
-
-      // Get appropriate framework, fall back to the default when older agent definitions lack this field
-      const agentFrameworkId = agentDefinition.agentFrameworkID ?? 'basicPromptConcatHandler';
-      if (!agentFrameworkId) {
-        throw new Error(`Agent framework ID not found in agent definition: ${agentDefinition.id}`);
-      }
-      const framework = this.agentFrameworks.get(agentFrameworkId);
-      if (!framework) {
-        throw new Error(`Framework not found: ${agentFrameworkId}`);
-      }
-
-      // Create framework context with temporary message added for processing
-      const cancelToken = { value: false };
-      this.cancelTokenMap.set(agentId, cancelToken);
-      const frameworkContext: AgentFrameworkContext = {
-        agent: {
-          ...agentInstance,
-          messages: [...agentInstance.messages],
-          status: {
-            state: 'working',
-            modified: now,
+      handle = await durableRuntime.sendMessage({
+        ...prepared,
+        requestPeerId,
+        ...(prepared.userMessage === undefined ? {} : {
+          userMessage: {
+            ...prepared.userMessage,
+            messageId: turnId,
+            turnId,
+            originNodeId: requestPeerId,
           },
-        },
-        agentDef: agentDefinition,
-        isCancelled: () => cancelToken.value,
-      };
-
-      // Create fresh hooks for this framework execution and register plugins based on frameworkConfig
-      const { hooks: frameworkHooks } = await createHooksWithPlugins(agentDefinition.agentFrameworkConfig || {});
-
-      // Record HEAD commit hashes for all wiki workspaces before the agent turn starts.
-      // This allows rollback by comparing with commits made during the turn.
-      const beforeCommitMap: Record<string, { wikiFolderLocation: string; commitHash: string }> = {};
-      try {
-        const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-        const gitService = container.get<IGitService>(serviceIdentifier.Git);
-        const workspaces = await workspaceService.getWorkspacesAsList();
-        for (const ws of workspaces) {
-          if (isWikiWorkspace(ws)) {
-            try {
-              const hash = await gitService.callGitOpForWorkspace(ws.id, 'getHeadCommitHash', ws.wikiFolderLocation);
-              beforeCommitMap[ws.id] = { wikiFolderLocation: ws.wikiFolderLocation, commitHash: hash };
-            } catch {
-              // Workspace may not have git initialized — skip silently
-            }
-          }
-        }
-        logger.debug('Recorded before-turn commit hashes', { agentId, workspaceCount: Object.keys(beforeCommitMap).length });
-      } catch (error) {
-        logger.warn('Failed to record before-turn commit hashes', { error });
-      }
-
-      // Trigger userMessageReceived hook with the configured tools
-      await frameworkHooks.userMessageReceived.promise({
-        agentFrameworkContext: frameworkContext,
-        content,
-        messageId,
-        timestamp: now,
+        }),
       });
-
-      // Attach beforeCommitMap to the user message metadata after it's created by the messagePersistence hook.
-      // This allows the frontend to know which commit hash to rollback to for this turn.
-      if (Object.keys(beforeCommitMap).length > 0) {
-        const userMessage = frameworkContext.agent.messages.find(m => m.id === messageId);
-        if (userMessage) {
-          userMessage.metadata = { ...userMessage.metadata, beforeCommitMap };
-          // Persist the updated metadata
-          void this.saveUserMessage(userMessage).catch((error: unknown) => {
-            logger.warn('Failed to persist beforeCommitMap metadata', { error, messageId });
-          });
+      this.trackDurableRun(agentId, handle.runId);
+      if (remoteRequest.attachment?.kind === 'committed') {
+        this.getAttachmentUploadStore().consumeCommittedScope(agentId, remoteRequest.attachment.reference);
+      }
+      const terminal = await this.waitForDurableRun(handle.runId, options?.signal);
+      if (terminal.state === 'failed') {
+        await this.updateAgentStatusBestEffort(agentId, { state: 'failed', modified: new Date() });
+        terminalStatusPersisted = true;
+        throw this.createDurableRunFailure(terminal);
+      }
+      if (terminal.state === 'cancelled') {
+        await this.updateAgentStatusBestEffort(agentId, { state: 'canceled', modified: new Date() });
+        terminalStatusPersisted = true;
+        throw new Error('agent_run_cancelled');
+      }
+      // The durable runtime keeps transport lifecycle states separate from
+      // Core's loop terminal state. Consume Core's canonical projection of
+      // the streamed steps so ask-question can remain input-required without
+      // teaching Desktop the shape of step payloads.
+      const completedState = runTerminalStates.get(handle.runId) ?? 'completed';
+      await this.updateAgentStatusBestEffort(agentId, { state: completedState, modified: new Date() });
+      if (definition.heartbeat?.enabled && !agent.volatile) {
+        startHeartbeat(agentId, definition.id, definition.heartbeat, this, { createdBy: 'agent-definition' });
+      }
+      return terminal;
+    } catch (error) {
+      if (!terminalStatusPersisted) {
+        if (options?.signal?.aborted) {
+          if (handle) await durableRuntime.cancelRun(handle.runId);
+          await this.updateAgentStatusBestEffort(agentId, { state: 'canceled', modified: new Date() });
+        } else {
+          await this.updateAgentStatusBestEffort(agentId, { state: 'failed', modified: new Date() });
         }
       }
-
-      // Notify agent update after user message is added
-      this.notifyAgentUpdate(agentId, frameworkContext.agent);
-
-      try {
-        // Create async generator
-        const generator = framework(frameworkContext);
-
-        // Track the last message for completion handling
-        let lastResult: AgentInstanceLatestStatus | undefined;
-
-        for await (const result of generator) {
-          // Update status subscribers for specific message
-          if (result.message) {
-            // Ensure message has correct modification timestamp
-            if (!result.message.modified) {
-              result.message.modified = new Date();
-            }
-
-            // Update status subscribers directly
-            const statusKey = `${agentId}:${result.message.id}`;
-            if (this.statusSubjects.has(statusKey)) {
-              this.statusSubjects.get(statusKey)?.next(result);
-            }
-
-            // Notify agent update with latest messages for real-time UI updates
-            // (even if content is empty — tool results and state changes need broadcasting)
-            this.notifyAgentUpdate(agentId, frameworkContext.agent);
-          }
-
-          // Store the last result for completion handling
-          lastResult = result;
-        }
-
-        // Handle stream completion
-        if (lastResult?.message) {
-          // Complete the message stream directly using the last message from the generator
-          const statusKey = `${agentId}:${lastResult.message.id}`;
-          const subject = this.statusSubjects.get(statusKey);
-          if (subject) {
-            const finalState = lastResult.state ?? 'completed';
-            logger.debug(`[${agentId}] Completing message stream`, { messageId: lastResult.message.id, finalState });
-            // Send final update with the actual terminal state from the generator
-            subject.next({
-              state: finalState,
-              message: lastResult.message,
-              modified: new Date(),
-            });
-            // Complete and clean up the Observable
-            // Use queueMicrotask to ensure IPC message delivery before completing subject
-            // This schedules the completion after the current synchronous code and pending microtasks
-            queueMicrotask(() => {
-              try {
-                subject.complete();
-                this.statusSubjects.delete(statusKey);
-                logger.debug(`[${agentId}] Subject completed and deleted`, { messageId: lastResult.message?.id });
-              } catch (error) {
-                logger.error(`[${agentId}] Error completing subject`, { messageId: lastResult.message?.id, error });
-              }
-            });
-          }
-
-          // Trigger agentStatusChanged hook with actual terminal state (completed, input-required, etc.)
-          const terminalState = (lastResult.state ?? 'completed') as 'working' | 'completed' | 'failed' | 'canceled';
-          await frameworkHooks.agentStatusChanged.promise({
-            agentFrameworkContext: frameworkContext,
-            status: {
-              state: terminalState,
-              modified: new Date(),
-            },
-          });
-
-          // Start heartbeat timer if the agent definition has heartbeat config
-          if (agentDefinition.heartbeat?.enabled && !agentInstance.volatile) {
-            startHeartbeat(agentId, agentDefinition.heartbeat, this, { createdBy: 'agent-definition' });
-          }
-        }
-
-        // Remove cancel token after generator completes
-        this.cancelTokenMap.delete(agentId);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error(`Agent handler execution failed: ${errorMessage}`);
-
-        // Clear any pending message subscriptions for this agent
-        for (const key of Array.from(this.statusSubjects.keys())) {
-          if (key.startsWith(`${agentId}:`)) {
-            const subject = this.statusSubjects.get(key);
-            if (subject) {
-              try {
-                subject.next({
-                  state: 'failed',
-                  message: {} as AgentInstanceMessage,
-                  modified: new Date(),
-                });
-                subject.complete();
-              } catch {
-                // ignore
-              }
-              this.statusSubjects.delete(key);
-            }
-          }
-        }
-
-        // Trigger agentStatusChanged hook for failure
-        await frameworkHooks.agentStatusChanged.promise({
-          agentFrameworkContext: frameworkContext,
-          status: {
-            state: 'failed',
-            modified: new Date(),
-          },
-        }).catch(() => {
-          // Ignore hook errors during error handling
-        });
-
-        // Remove cancel token
-        this.cancelTokenMap.delete(agentId);
-        throw error;
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to send message to agent: ${errorMessage}`);
       throw error;
+    } finally {
+      unsubscribeRuntime();
+      if (handle) {
+        runTerminalStates.delete(handle.runId);
+        this.untrackDurableRun(agentId, handle.runId);
+      }
     }
   }
 
-  public async cancelAgent(agentId: string): Promise<void> {
-    // Stop heartbeat on cancel
-    stopHeartbeat(agentId);
-
-    // Cancel any pending ask-question promises so the agent loop can exit
+  private async captureBeforeTurnCommitMap(agentId: string): Promise<Record<string, { wikiFolderLocation: string; commitHash: string }>> {
+    const beforeCommitMap: Record<string, { wikiFolderLocation: string; commitHash: string }> = {};
     try {
-      const { cancelPendingQuestions } = await import('./tools/askQuestionPending');
-      cancelPendingQuestions(agentId);
-    } catch {
-      // ignore if module not loaded
+      for (const workspace of await this.workspaceService.getWorkspacesAsList()) {
+        if (!isWikiWorkspace(workspace)) continue;
+        try {
+          const commitHash = await this.gitService.callGitOpForWorkspace(workspace.id, 'getHeadCommitHash', workspace.wikiFolderLocation);
+          beforeCommitMap[workspace.id] = { wikiFolderLocation: workspace.wikiFolderLocation, commitHash };
+        } catch (error: unknown) {
+          // A workspace without a Git HEAD cannot participate in rollback.
+          logger.debug('Skipping workspace without a Git HEAD during rollback snapshot', {
+            agentId,
+            workspaceId: workspace.id,
+            error,
+          });
+        }
+      }
+      logger.debug('Recorded before-turn commit hashes', { agentId, workspaceCount: Object.keys(beforeCommitMap).length });
+    } catch (error) {
+      logger.warn('Failed to record before-turn commit hashes', { agentId, error });
     }
+    return beforeCommitMap;
+  }
 
-    // Try to get cancel token
-    const cancelToken = this.cancelTokenMap.get(agentId);
+  private async waitForDurableRun(runId: string, signal?: AbortSignal): Promise<MemeLoopRunStatus> {
+    const runtime = await this.getDurableAgentRuntime();
+    let cancellationRequested = false;
+    const cancel = () => {
+      if (cancellationRequested) return;
+      cancellationRequested = true;
+      void runtime.cancelRun(runId);
+    };
+    signal?.addEventListener('abort', cancel, { once: true });
+    try {
+      for (;;) {
+        signal?.throwIfAborted();
+        const status = await runtime.getRunStatus(runId);
+        signal?.throwIfAborted();
+        if (!status) throw new Error('durable_agent_run_disappeared');
+        if (status.state === 'failed') await this.persistDurableRunError(status);
+        if (status.state === 'completed' || status.state === 'failed' || status.state === 'cancelled') return status;
+        await new Promise<void>((resolve, reject) => {
+          const onAbort = () => {
+            clearTimeout(timer);
+            reject(signal?.reason instanceof Error ? signal.reason : new DOMException('Aborted', 'AbortError'));
+          };
+          const timer = setTimeout(() => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+          }, 100);
+          signal?.addEventListener('abort', onAbort, { once: true });
+        });
+      }
+    } finally {
+      signal?.removeEventListener('abort', cancel);
+    }
+  }
 
-    if (cancelToken) {
-      // Set cancel flag
-      cancelToken.value = true;
+  private runTurnRequestFromPersistedUserRoot(
+    request: Omit<AgentDeviceRpcRunTurnRequest, 'userMessage'>,
+    message: ChatMessage,
+  ): AgentDeviceRpcRunTurnRequest {
+    return {
+      ...request,
+      message: message.content,
+      userMessage: agentDeviceRpcPendingUserMessageFromChatMessage(message),
+    };
+  }
 
+  private createDurableRunFailure(status: MemeLoopRunStatus): AgentRunFailure {
+    return new AgentRunFailure(
+      status.error ?? createAgentRunError({
+        code: 'INTERNAL',
+        messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.INTERNAL,
+        retryable: false,
+      }),
+    );
+  }
+
+  private agentRunError(detail: AgentRunError): AgentRunFailure {
+    return new AgentRunFailure(detail);
+  }
+
+  private trackDurableRun(conversationId: string, runId: string): void {
+    const runIds = this.activeDurableRunIds.get(conversationId) ?? new Set<string>();
+    runIds.add(runId);
+    this.activeDurableRunIds.set(conversationId, runIds);
+  }
+
+  private untrackDurableRun(conversationId: string, runId: string): void {
+    const runIds = this.activeDurableRunIds.get(conversationId);
+    runIds?.delete(runId);
+    if (runIds?.size === 0) this.activeDurableRunIds.delete(conversationId);
+  }
+
+  public async executeAgentRun(request: AgentDeviceRpcRunTurnRequest): Promise<MemeLoopRunHandle> {
+    const agent = await this.getAgentMetadata(request.conversationId);
+    if (!agent || agent.agentDefId !== request.definitionId) {
+      throw new Error('agent conversation definition mismatch');
+    }
+    const definition = await this.agentDefinitionService.getAgentDef(request.definitionId);
+    if (!definition) throw new Error('agent definition not found');
+    const instanceModel = agent.modelConfig;
+    if (instanceModel === undefined && definition.modelConfig === undefined) {
+      const globalModel = (await this.externalAPIService.getAIConfig()).default;
+      if (!globalModel?.providerId || !globalModel.modelId) {
+        throw this.agentRunError(createAgentRunError({
+          code: 'PROVIDER_CONFIGURATION_MISSING',
+          messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_CONFIGURATION_MISSING,
+          retryable: false,
+          localizedParams: { settingField: 'model' },
+          settingTarget: { kind: 'runtime', section: 'agent' },
+        }));
+      }
+    }
+    const requestPeerId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+    for (const reference of request.userMessage?.attachments ?? []) {
+      await this.assertAgentAttachmentAuthorized(request.conversationId, reference, false);
+    }
+    const handle = await (await this.getDurableAgentRuntime()).sendMessage({
+      ...request,
+      requestPeerId,
+      ...(request.userMessage === undefined
+        ? {}
+        : {
+          userMessage: {
+            ...request.userMessage,
+            messageId: request.turnId,
+            turnId: request.turnId,
+            originNodeId: requestPeerId,
+          },
+        }),
+    });
+    for (const reference of request.userMessage?.attachments ?? []) {
+      this.getAttachmentUploadStore().consumeCommittedScope(request.conversationId, reference);
+    }
+    return handle;
+  }
+
+  public async prepareAgentDeviceRpcRunTurn(request: RemoteAgentExecuteRequest): Promise<AgentDeviceRpcRunTurnRequest> {
+    const { provenance } = request;
+    const agent = await this.getAgentMetadata(provenance.conversationId);
+    if (!agent || agent.agentDefId !== provenance.definitionId) {
+      throw new Error('agent conversation definition mismatch');
+    }
+    if (request.attachment?.kind === 'source') {
+      throw new TypeError('attachment source must be committed before crossing the Desktop host boundary');
+    }
+    if (request.attachment?.kind === 'committed') {
+      await this.assertAgentAttachmentAuthorized(provenance.conversationId, request.attachment.reference, false);
+    }
+    return this.createAgentDeviceRpcRunTurn(request);
+  }
+
+  public async getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined> {
+    const status = await (await this.getDurableAgentRuntime()).getRunStatus(runId);
+    if (status?.state === 'failed') await this.persistDurableRunError(status);
+    return status;
+  }
+
+  public async cancelAgentRun(runId: string): Promise<boolean> {
+    return (await this.getDurableAgentRuntime()).cancelRun(runId);
+  }
+
+  private async assertAgentAttachmentAuthorized(
+    conversationId: string,
+    reference: AttachmentReference,
+    consumeCommittedScope: boolean,
+  ): Promise<void> {
+    this.ensureRepositories();
+    const storedReference = await this.getAttachmentUploadStore().getReference(reference.contentHash);
+    if (
+      !storedReference || storedReference.contentHash !== reference.contentHash ||
+      storedReference.filename !== reference.filename || storedReference.mimeType !== reference.mimeType ||
+      storedReference.size !== reference.size
+    ) throw new Error('attachment blob does not match its event-scoped reference');
+    const hasCommittedScope = consumeCommittedScope
+      ? this.getAttachmentUploadStore().consumeCommittedScope(conversationId, reference)
+      : this.getAttachmentUploadStore().hasCommittedScope(conversationId, reference);
+    const alreadyReferenced = hasCommittedScope
+      ? false
+      : await repo.conversationReferencesAttachment(this.dataSource!, conversationId, reference.contentHash, reference);
+    if (!hasCommittedScope && !alreadyReferenced) {
+      throw new Error('attachment is not authorized for this conversation');
+    }
+  }
+
+  private async createAgentDeviceRpcRunTurn(
+    request: RemoteAgentExecuteRequest,
+    beforeCommitMap?: Record<string, { wikiFolderLocation: string; commitHash: string }>,
+    metadata?: Readonly<Record<string, unknown>>,
+  ): Promise<AgentDeviceRpcRunTurnRequest> {
+    const { provenance } = request;
+    const userMessage = await createAgentDeviceRpcPendingUserMessage({
+      request,
+      beforeCommitMap,
+      metadata,
+    });
+    return {
+      conversationId: provenance.conversationId,
+      definitionId: provenance.definitionId,
+      requestId: provenance.requestId,
+      turnId: provenance.turnId,
+      message: userMessage.content ?? request.message,
+      userMessage,
+    };
+  }
+
+  public async cancelAgent(agentId: string): Promise<void> {
+    stopHeartbeat(agentId);
+    const durableRunIds = [...(this.activeDurableRunIds.get(agentId) ?? [])];
+    await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
+    if (durableRunIds.length > 0) {
       try {
-        // Update agent status to canceled
-        logger.debug(`cancelAgent called for ${agentId} - updating agent status to canceled`);
         await this.updateAgent(agentId, {
           status: {
             state: 'canceled',
             modified: new Date(),
           },
         });
-        logger.debug(`updateAgent returned for cancelAgent ${agentId}`);
-
-        // Propagate canceled status to any message-specific subscriptions so UI can react
-        try {
-          logger.debug('propagating canceled status to message-specific subscriptions', { function: 'cancelAgent', agentId });
-          const agent = await this.getAgent(agentId);
-          if (agent && agent.messages) {
-            for (const key of Array.from(this.statusSubjects.keys())) {
-              if (key.startsWith(`${agentId}:`)) {
-                const parts = key.split(':');
-                const messageId = parts[1];
-                const subject = this.statusSubjects.get(key);
-                const message = agent.messages.find(m => m.id === messageId);
-                if (subject) {
-                  try {
-                    const message_ = message || ({} as AgentInstanceMessage);
-                    logger.debug('propagate canceled to subscription', { function: 'cancelAgent', subscriptionKey: key });
-                    subject.next({
-                      state: 'canceled',
-                      message: message_,
-                      modified: new Date(),
-                    });
-                  } catch {
-                    // ignore
-                  }
-                  try {
-                    subject.complete();
-                  } catch {
-                    // ignore
-                  }
-                  this.statusSubjects.delete(key);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          logger.warn('Failed to propagate cancel status to message subscriptions', { function: 'cancelAgent', error });
-        }
-
-        // Remove cancel token from map
-        this.cancelTokenMap.delete(agentId);
-
         logger.info('Canceled agent instance', {
           function: 'cancelAgent',
           agentId,
@@ -616,8 +1434,8 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     try {
       stopHeartbeat(agentId);
-      cancelAlarm(agentId);
-      cancelTasksForAgent(agentId);
+      await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
+      await cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
 
       // Get agent instance
@@ -632,15 +1450,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Mark as closed
       instanceEntity.closed = true;
       await this.agentInstanceRepository!.save(instanceEntity);
-
-      // Cancel any ongoing operations
-      if (this.cancelTokenMap.has(agentId)) {
-        const token = this.cancelTokenMap.get(agentId);
-        if (token) {
-          token.value = true;
-        }
-        this.cancelTokenMap.delete(agentId);
-      }
 
       // Clean up subscriptions
       this.cleanupAgentSubscriptions(agentId);
@@ -659,72 +1468,34 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async resolveToolApproval(approvalId: string, decision: 'allow' | 'deny'): Promise<void> {
-    const { resolveApproval } = await import('./tools/approval');
-    resolveApproval(approvalId, decision);
+  public async resolveToolApproval(resolution: ToolApprovalResolution): Promise<boolean> {
+    return this.getMemeLoopRuntime().resolveToolApproval(resolution);
   }
 
-  public resolveAskQuestion(agentId: string, questionId: string, answer: string): void {
-    // Resolve ask-question by injecting the answer as a tool result and resuming the agent loop.
-    // This keeps the answer in the same turn (no new user message).
-    void this.resolveAskQuestionAsync(agentId, questionId, answer);
-  }
-
-  private async resolveAskQuestionAsync(agentId: string, questionId: string, answer: string): Promise<void> {
+  public async resolveAskQuestion(agentId: string, questionId: string, answer: string): Promise<void> {
     try {
-      // Reuse sendMsgToAgent with the answer text.
-      // The answer goes in as a user message so the framework can process it normally.
-      // The UI will display it as a regular message (not a tool result).
-      // This is the simplest approach that works with the existing framework architecture.
-      await this.sendMsgToAgent(agentId, { text: answer });
-      logger.debug('Ask-question resolved via sendMsgToAgent', { questionId, agentId });
+      const agent = await this.getAgentMetadata(agentId);
+      if (!agent) throw new Error(`Agent instance not found: ${agentId}`);
+      await this.executeLocalAgentMessage({
+        target: { kind: 'local' },
+        provenance: {
+          conversationId: agentId,
+          definitionId: agent.agentDefId,
+          requestId: `ask-question:${questionId}:request`,
+          turnId: `ask-question:${questionId}:turn`,
+        },
+        message: answer,
+      });
+      logger.debug('Ask-question resolved via durable local run', { questionId, agentId });
     } catch (error) {
       logger.error('Failed to resolve ask-question', { questionId, error });
-    }
-  }
-
-  public async deleteMessages(agentId: string, messageIds: string[]): Promise<void> {
-    if (!this.agentMessageRepository || !this.agentInstanceRepository) {
-      throw new Error('Database not initialized');
-    }
-    if (messageIds.length === 0) return;
-
-    // Cancel pending debounced writes for the deleted messages.
-    // Without this, a debounced update scheduled via debounceUpdateMessage can fire
-    // after the DB row is gone, enter the "create" branch, and re-create the message.
-    // The frontend would then re-add it via the onNewMessage callback, causing a
-    // duplicate React key and undoing the deletion.
-    for (const messageId of messageIds) {
-      const debounceKey = `${agentId}:${messageId}`;
-      const debouncedFunction = this.debouncedUpdateFunctions.get(debounceKey);
-      if (debouncedFunction) {
-        (debouncedFunction as unknown as { cancel?: () => void }).cancel?.();
-        this.debouncedUpdateFunctions.delete(debounceKey);
-      }
-    }
-
-    await this.agentMessageRepository.delete(messageIds);
-
-    // Also update the in-memory agent messages list
-    const agent = await this.agentInstanceRepository.findOne({
-      where: { id: agentId },
-      relations: { messages: true },
-    });
-    if (agent) {
-      const deletedSet = new Set(messageIds);
-      agent.messages = (agent.messages ?? []).filter(m => !deletedSet.has(m.id));
-      await this.agentInstanceRepository.save(agent);
+      throw error;
     }
   }
 
   public async getTurnChangedFiles(agentId: string, userMessageId: string): Promise<Array<{ path: string; status: string }>> {
-    const agent = await this.getAgent(agentId);
-    if (!agent) {
-      throw new Error(`Agent instance not found: ${agentId}`);
-    }
-
-    const userMessage = agent.messages.find(m => m.id === userMessageId);
-    if (!userMessage) {
+    const userMessage = await this.getAgentMessage(userMessageId);
+    if (!userMessage || userMessage.conversationId !== agentId) {
       throw new Error(`User message not found: ${userMessageId}`);
     }
 
@@ -734,11 +1505,9 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
 
     const allChangedFiles: Array<{ path: string; status: string }> = [];
-    const gitService = container.get<IGitService>(serviceIdentifier.Git);
-
-    for (const [workspaceID, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+    for (const [workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
       try {
-        const changedFiles = await gitService.callGitOpForWorkspace(workspaceID, 'getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        const changedFiles = await this.gitService.callGitOpForWorkspace(workspaceId, 'getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
         for (const file of changedFiles) {
           allChangedFiles.push({ path: file.path, status: file.status });
         }
@@ -751,13 +1520,8 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public async rollbackTurn(agentId: string, userMessageId: string): Promise<{ rolledBack: number; errors: string[] }> {
-    const agent = await this.getAgent(agentId);
-    if (!agent) {
-      throw new Error(`Agent instance not found: ${agentId}`);
-    }
-
-    const userMessage = agent.messages.find(m => m.id === userMessageId);
-    if (!userMessage) {
+    const userMessage = await this.getAgentMessage(userMessageId);
+    if (!userMessage || userMessage.conversationId !== agentId) {
       throw new Error(`User message not found: ${userMessageId}`);
     }
 
@@ -768,19 +1532,17 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     let rolledBack = 0;
     const errors: string[] = [];
-    const gitService = container.get<IGitService>(serviceIdentifier.Git);
-
-    for (const [workspaceID, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
+    for (const [workspaceId, { wikiFolderLocation, commitHash }] of Object.entries(beforeCommitMap)) {
       try {
         // Get the list of files that changed since the beforeCommitHash
-        const changedFiles = await gitService.callGitOpForWorkspace(workspaceID, 'getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
+        const changedFiles = await this.gitService.callGitOpForWorkspace(workspaceId, 'getChangedFilesBetweenCommits', wikiFolderLocation, commitHash);
 
         if (changedFiles.length === 0) continue;
 
         // Restore each file to its state at the beforeCommitHash
         for (const file of changedFiles) {
           try {
-            await gitService.callGitOpForWorkspace(workspaceID, 'restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
+            await this.gitService.callGitOpForWorkspace(workspaceId, 'restoreFileFromCommit', wikiFolderLocation, commitHash, file.path);
             rolledBack++;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -798,109 +1560,13 @@ export class AgentInstanceService implements IAgentInstanceService {
     // Mark the turn as rolled back in user message metadata.
     // Note: rollback restores files to working tree + staging area but does NOT create a new commit.
     // The next scheduled commitAndSync will commit the restored state as a new change.
-    userMessage.metadata = { ...userMessage.metadata, rolledBack: true, rollbackTimestamp: new Date().toISOString() };
-    await this.saveUserMessage(userMessage);
+    // Message events are immutable. A future annotation event can expose the
+    // rollback marker without rewriting the canonical user message.
 
     return { rolledBack, errors };
   }
 
-  public async getBackgroundTasks(): Promise<AgentBackgroundTask[]> {
-    const tasks: AgentBackgroundTask[] = [];
-
-    // Collect heartbeats from in-memory registry
-    const heartbeatEntries = getActiveHeartbeatEntries();
-    for (const heartbeatEntry of heartbeatEntries) {
-      const agentId = heartbeatEntry.agentId;
-      const agent = await this.getAgent(agentId);
-      const agentDefinition = agent?.agentDefId ? await this.agentDefinitionService.getAgentDef(agent.agentDefId) : undefined;
-      const heartbeatConfig = agentDefinition?.heartbeat;
-      tasks.push({
-        agentId,
-        agentName: agent?.name ?? agentDefinition?.name,
-        type: 'heartbeat',
-        intervalSeconds: heartbeatConfig?.intervalSeconds,
-        activeHoursStart: heartbeatConfig?.activeHoursStart,
-        activeHoursEnd: heartbeatConfig?.activeHoursEnd,
-        nextWakeAtISO: heartbeatEntry.nextWakeAtISO,
-        message: heartbeatConfig?.message,
-        createdBy: heartbeatEntry.createdBy,
-        lastRunAtISO: heartbeatEntry.lastRunAtISO,
-        runCount: heartbeatEntry.runCount,
-      });
-    }
-
-    // Collect alarms from in-memory registry
-    const alarmEntries = getActiveAlarmEntries();
-    for (const alarmEntry of alarmEntries) {
-      const agentId = alarmEntry.agentId;
-      const agent = await this.getAgent(agentId);
-      tasks.push({
-        agentId,
-        agentName: agent?.name,
-        type: 'alarm',
-        wakeAtISO: alarmEntry.wakeAtISO,
-        nextWakeAtISO: alarmEntry.nextWakeAtISO,
-        message: alarmEntry.reminderMessage,
-        repeatIntervalMinutes: alarmEntry.repeatIntervalMinutes,
-        createdBy: alarmEntry.createdBy,
-        lastRunAtISO: alarmEntry.lastRunAtISO,
-        runCount: alarmEntry.runCount,
-      });
-    }
-
-    return tasks;
-  }
-
-  public async cancelBackgroundTask(agentId: string, type: 'heartbeat' | 'alarm'): Promise<void> {
-    if (type === 'heartbeat') {
-      stopHeartbeat(agentId);
-    } else if (type === 'alarm') {
-      cancelAlarm(agentId);
-    }
-    logger.info('Background task cancelled from UI', { agentId, type });
-  }
-
-  public async setBackgroundAlarm(agentId: string, alarm: SetBackgroundAlarmInput): Promise<void> {
-    this.ensureRepositories();
-
-    const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
-    if (!entity) {
-      throw new Error(`Agent instance not found: ${agentId}`);
-    }
-
-    const parsedWakeAt = new Date(alarm.wakeAtISO);
-    if (Number.isNaN(parsedWakeAt.getTime())) {
-      throw new Error(`Invalid wakeAtISO: ${alarm.wakeAtISO}`);
-    }
-
-    const repeatIntervalMinutes = alarm.repeatIntervalMinutes && alarm.repeatIntervalMinutes > 0
-      ? alarm.repeatIntervalMinutes
-      : undefined;
-    const wakeAtISO = parsedWakeAt.toISOString();
-
-    scheduleAlarmTimer(agentId, wakeAtISO, alarm.message, repeatIntervalMinutes, {
-      createdBy: 'settings-ui',
-      runCount: 0,
-    });
-
-    await this.agentInstanceRepository!.update(agentId, {
-      scheduledAlarm: {
-        wakeAtISO,
-        reminderMessage: alarm.message,
-        repeatIntervalMinutes,
-        createdBy: 'settings-ui',
-        runCount: 0,
-      },
-    });
-
-    logger.info('Background alarm upserted from UI', {
-      agentId,
-      wakeAtISO,
-      repeatIntervalMinutes,
-    });
-  }
-
-  public async setBackgroundHeartbeat(agentId: string, heartbeat: SetBackgroundHeartbeatInput): Promise<void> {
+  public async setAgentHeartbeat(agentId: string, heartbeat: AgentHeartbeatConfig): Promise<void> {
     this.ensureRepositories();
 
     const entity = await this.agentInstanceRepository!.findOne({ where: { id: agentId } });
@@ -916,66 +1582,78 @@ export class AgentInstanceService implements IAgentInstanceService {
       throw new Error(`Agent definition not found: ${entity.agentDefId}`);
     }
 
-    const normalizedHeartbeat: AgentHeartbeatConfig = {
-      enabled: heartbeat.enabled,
-      intervalSeconds: Math.max(60, Math.round(heartbeat.intervalSeconds || 60)),
-      message: heartbeat.message?.trim() || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.',
-      activeHoursStart: heartbeat.activeHoursStart || undefined,
-      activeHoursEnd: heartbeat.activeHoursEnd || undefined,
-    };
+    if (!Number.isSafeInteger(heartbeat.intervalSeconds) || heartbeat.intervalSeconds < 60 || heartbeat.message.trim().length === 0) {
+      throw new TypeError('invalid agent heartbeat configuration');
+    }
 
     await this.agentDefinitionService.updateAgentDef({
       id: agentDefinition.id,
-      heartbeat: normalizedHeartbeat,
+      heartbeat,
     });
 
-    if (normalizedHeartbeat.enabled && !entity.volatile) {
-      startHeartbeat(agentId, normalizedHeartbeat, this, { createdBy: 'settings-ui' });
+    if (heartbeat.enabled && !entity.volatile) {
+      startHeartbeat(agentId, agentDefinition.id, heartbeat, this, { createdBy: 'settings-ui' });
     } else {
       stopHeartbeat(agentId);
     }
 
     logger.info('Background heartbeat upserted from UI', {
       agentId,
-      enabled: normalizedHeartbeat.enabled,
-      intervalSeconds: normalizedHeartbeat.intervalSeconds,
-      activeHoursStart: normalizedHeartbeat.activeHoursStart,
-      activeHoursEnd: normalizedHeartbeat.activeHoursEnd,
+      enabled: heartbeat.enabled,
+      intervalSeconds: heartbeat.intervalSeconds,
+      activeHoursStart: heartbeat.activeHoursStart,
+      activeHoursEnd: heartbeat.activeHoursEnd,
     });
   }
 
   // ── ScheduledTask CRUD ────────────────────────────────────────────────────
 
-  public async createScheduledTask(input: CreateScheduledTaskInput): Promise<ScheduledTask> {
-    return stmAddTask(input);
+  public async createScheduledTask(input: CreateScheduledTaskInput, options?: AgentManagementCallOptions): Promise<ScheduledTask> {
+    return stmAddTask(input, options);
   }
 
-  public async updateScheduledTask(input: UpdateScheduledTaskInput): Promise<ScheduledTask> {
-    return stmUpdateTask(input);
+  public async updateScheduledTask(taskId: string, patch: ScheduledTaskRpcUpdatePatch, options?: AgentManagementCallOptions): Promise<ScheduledTask> {
+    return stmUpdateTask(taskId, patch, options);
+  }
+
+  public async updateScheduledTaskScoped(
+    scope: ScheduledTaskRpcScopedTaskRequest,
+    patch: ScheduledTaskRpcUpdatePatch,
+    options?: AgentManagementCallOptions,
+  ): Promise<ScheduledTask> {
+    return stmUpdateTaskScoped(scope, patch, options);
   }
 
   public async deleteScheduledTask(taskId: string): Promise<void> {
     return stmRemoveTask(taskId);
   }
 
-  public async listScheduledTasks(): Promise<ScheduledTask[]> {
-    return stmGetActiveTasks();
+  public async deleteScheduledTaskScoped(scope: ScheduledTaskRpcScopedTaskRequest, options?: AgentManagementCallOptions): Promise<void> {
+    return stmRemoveTaskScoped(scope, options);
   }
 
-  public async listScheduledTasksForAgent(agentInstanceId: string): Promise<ScheduledTask[]> {
-    return stmGetActiveTasksForAgent(agentInstanceId);
+  public async getScheduledTaskByScope(scope: ScheduledTaskRpcScopedTaskRequest, options?: AgentManagementCallOptions): Promise<ScheduledTask | undefined> {
+    return stmGetTaskByScope(scope, options);
+  }
+
+  public async listScheduledTasks(options?: ListScheduledTasksOptions): Promise<ScheduledTask[]> {
+    return stmGetActiveTasks(options);
+  }
+
+  public async listScheduledTasksForAgent(agentInstanceId: string, options?: ListScheduledTasksOptions): Promise<ScheduledTaskPage> {
+    return stmGetScheduledTaskPageForAgent(agentInstanceId, options);
   }
 
   public async getCronPreviewDates(expression: string, timezone?: string, count = 3): Promise<string[]> {
     return stmGetCronPreviewDates(expression, timezone, count);
   }
 
-  public subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;
+  public subscribeToAgentUpdates(agentId: string): Observable<AgentRuntimeView | undefined>;
   /**
    * Subscribe to agent instance message status updates
    */
   public subscribeToAgentUpdates(agentId: string, messageId: string): Observable<AgentInstanceLatestStatus | undefined>;
-  public subscribeToAgentUpdates(agentId: string, messageId?: string): Observable<AgentInstance | AgentInstanceLatestStatus | undefined> {
+  public subscribeToAgentUpdates(agentId: string, messageId?: string): Observable<AgentRuntimeView | AgentInstanceLatestStatus | undefined> {
     // If messageId provided, subscribe to specific message status updates
     if (messageId) {
       const statusKey = `${agentId}:${messageId}`;
@@ -983,19 +1661,14 @@ export class AgentInstanceService implements IAgentInstanceService {
         this.statusSubjects.set(statusKey, new BehaviorSubject<AgentInstanceLatestStatus | undefined>(undefined));
 
         // Try to get initial status
-        this.getAgent(agentId).then(agent => {
-          if (agent) {
-            const message = agent.messages.find(m => m.id === messageId);
-            if (message) {
-              // 创建状态对象，注意不再检查 isComplete
-              const status: AgentInstanceLatestStatus = {
-                state: agent.status.state,
-                message,
-                modified: message.modified,
-              };
-
-              this.statusSubjects.get(statusKey)?.next(status);
-            }
+        Promise.all([this.getAgentMetadata(agentId), this.getAgentMessage(messageId)]).then(([agent, message]) => {
+          if (agent && message?.conversationId === agentId) {
+            const status: AgentInstanceLatestStatus = {
+              state: agent.status.state,
+              message,
+              modified: new Date(message.timestamp),
+            };
+            this.statusSubjects.get(statusKey)?.next(status);
           }
         }).catch((error: unknown) => {
           logger.error('Failed to get initial status for message', { function: 'subscribeToAgentUpdates', error });
@@ -1005,12 +1678,14 @@ export class AgentInstanceService implements IAgentInstanceService {
       return this.statusSubjects.get(statusKey)!.asObservable();
     }
 
-    // If no messageId provided, subscribe to entire agent instance updates
+    // If no messageId is provided, emit metadata plus message deltas. The
+    // renderer loads its initial bounded page explicitly; an observable must
+    // never replay a complete or 200-message snapshot on every token update.
     if (!this.agentInstanceSubjects.has(agentId)) {
-      this.agentInstanceSubjects.set(agentId, new BehaviorSubject<AgentInstance | undefined>(undefined));
+      this.agentInstanceSubjects.set(agentId, new BehaviorSubject<AgentRuntimeView | undefined>(undefined));
 
       // Try to get initial data
-      this.getAgent(agentId).then(agent => {
+      this.getAgentMetadata(agentId).then(agent => {
         this.agentInstanceSubjects.get(agentId)?.next(agent);
       }).catch((error: unknown) => {
         logger.error('Failed to get initial agent data', { function: 'subscribeToAgentUpdates', error });
@@ -1020,17 +1695,179 @@ export class AgentInstanceService implements IAgentInstanceService {
     return this.agentInstanceSubjects.get(agentId)!.asObservable();
   }
 
+  public subscribeToConversationUpdates(conversationId: string): Observable<AgentConversationUpdate> {
+    let subject = this.conversationSubjects.get(conversationId);
+    if (!subject) {
+      subject = new Subject<AgentConversationUpdate>();
+      this.conversationSubjects.set(conversationId, subject);
+    }
+    return subject.asObservable();
+  }
+
+  private async getConversationState(conversationId: string): Promise<{ revision: string; totalMessages: number }> {
+    this.ensureRepositories();
+    const state = await this.dataSource!.getRepository(ConversationTimelineStateEntity).findOne({
+      where: { conversationId },
+      select: { revision: true, totalMessages: true },
+    });
+    return { revision: String(state?.revision ?? 0), totalMessages: state?.totalMessages ?? 0 };
+  }
+
+  private async getConversationRevision(conversationId: string): Promise<string> {
+    return (await this.getConversationState(conversationId)).revision;
+  }
+
+  private toConversationProjection(message: ChatMessage, streaming = false): AgentConversationMessageProjection {
+    return streaming
+      ? projectTransientConversationMessageForList(message, 256 * 1024)
+      : projectConversationMessageForList(message, 256 * 1024);
+  }
+
+  private async serializeConversationPublication(
+    conversationId: string,
+    operation: () => Promise<void>,
+  ): Promise<void> {
+    const previousQueue = this.conversationInvalidationQueues.get(conversationId) ?? Promise.resolve();
+    const nextQueue = previousQueue.catch((error: unknown) => {
+      logger.error('Previous conversation publication failed before the queue recovered', {
+        conversationId,
+        error,
+        function: 'serializeConversationPublication',
+      });
+    }).then(operation);
+    this.conversationInvalidationQueues.set(conversationId, nextQueue);
+    try {
+      await nextQueue;
+    } finally {
+      if (this.conversationInvalidationQueues.get(conversationId) === nextQueue) {
+        this.conversationInvalidationQueues.delete(conversationId);
+      }
+    }
+  }
+
+  private async publishConversationMessage(
+    message: ChatMessage,
+    streaming: boolean,
+    previousState?: { revision: string; totalMessages: number },
+  ): Promise<void> {
+    if (!this.conversationSubjects.has(message.conversationId)) return;
+    const projection = this.toConversationProjection(message, streaming);
+    if (streaming) {
+      const subject = this.conversationSubjects.get(message.conversationId);
+      if (!subject) return;
+      subject.next({
+        kind: 'projection',
+        conversationId: message.conversationId,
+        revision: await this.getConversationRevision(message.conversationId),
+        streaming: true,
+        message: projection,
+      });
+      return;
+    }
+    await this.serializeConversationPublication(message.conversationId, async () => {
+      const subject = this.conversationSubjects.get(message.conversationId);
+      if (!subject) return;
+      const currentState = await this.getConversationState(message.conversationId);
+      const baseline = this.conversationInvalidationWatermarks.get(message.conversationId) ?? previousState ?? currentState;
+      if (Buffer.byteLength(JSON.stringify(projection), 'utf8') > 256 * 1024) {
+        logger.warn('Skipped oversized live conversation projection; durable paging remains available', {
+          conversationId: message.conversationId,
+          messageId: message.messageId,
+          streaming,
+        });
+        this.publishConversationInvalidationAtState(
+          subject,
+          message.conversationId,
+          baseline,
+          currentState,
+          'append',
+        );
+        return;
+      }
+      subject.next({
+        kind: 'projection',
+        conversationId: message.conversationId,
+        revision: currentState.revision,
+        streaming: false,
+        message: projection,
+      });
+      // A durable projection advances the same revision chain as an
+      // invalidation. Without this watermark, the next invalidation would
+      // advertise a stale previousRevision and force an avoidable reset.
+      this.conversationInvalidationWatermarks.set(message.conversationId, currentState);
+    });
+  }
+
+  private publishConversationInvalidationAtState(
+    subject: Subject<AgentConversationUpdate>,
+    conversationId: string,
+    baseline: { revision: string; totalMessages: number },
+    currentState: { revision: string; totalMessages: number },
+    reason: Extract<AgentConversationUpdate, { kind: 'invalidated' }>['reason'],
+  ): void {
+    if (currentState.revision === baseline.revision) return;
+    this.conversationInvalidationWatermarks.set(conversationId, currentState);
+    if (reason === 'append') {
+      const appendedMessageCount = currentState.totalMessages - baseline.totalMessages;
+      const baselineRevision = Number(baseline.revision);
+      const currentRevision = Number(currentState.revision);
+      const revisionDelta = currentRevision - baselineRevision;
+      if (
+        Number.isSafeInteger(appendedMessageCount) && appendedMessageCount > 0 && appendedMessageCount <= 1_000_000 &&
+        Number.isSafeInteger(baselineRevision) && Number.isSafeInteger(currentRevision) &&
+        revisionDelta === appendedMessageCount
+      ) {
+        subject.next({
+          kind: 'invalidated',
+          conversationId,
+          previousRevision: baseline.revision,
+          revision: currentState.revision,
+          reason,
+          appendedMessageCount,
+        });
+        return;
+      }
+      reason = 'reset';
+    }
+    subject.next({
+      kind: 'invalidated',
+      conversationId,
+      previousRevision: baseline.revision,
+      revision: currentState.revision,
+      reason,
+    });
+  }
+
+  private async publishConversationInvalidation(
+    conversationId: string,
+    previousState: { revision: string; totalMessages: number },
+    reason: Extract<AgentConversationUpdate, { kind: 'invalidated' }>['reason'],
+  ): Promise<void> {
+    if (!this.conversationSubjects.has(conversationId)) return;
+    await this.serializeConversationPublication(conversationId, async () => {
+      const subject = this.conversationSubjects.get(conversationId);
+      if (!subject) return;
+      const currentState = await this.getConversationState(conversationId);
+      const baseline = this.conversationInvalidationWatermarks.get(conversationId) ?? previousState;
+      this.publishConversationInvalidationAtState(subject, conversationId, baseline, currentState, reason);
+    });
+  }
+
   /**
    * Notify agent subscription of updates
    * @param agentId Agent ID
    * @param agentData Agent data to use for notification
    */
-  private notifyAgentUpdate(agentId: string, agentData: AgentInstance): void {
+  private notifyAgentUpdate(agentId: string, agentData: AgentRuntimeView): void {
     try {
       // Only notify if there are active subscriptions
       if (this.agentInstanceSubjects.has(agentId)) {
-        // Use the provided data for notification (no database query)
-        this.agentInstanceSubjects.get(agentId)?.next(agentData);
+        // Metadata subscriptions never carry transcript content. Conversation
+        // projections use subscribeToConversationUpdates with revision fences.
+        // Select the exact Core view instead of trusting TypeScript's erased
+        // structural type: callers can otherwise leak an AgentInstanceModel's
+        // unbounded `messages` array through this renderer IPC boundary.
+        this.agentInstanceSubjects.get(agentId)?.next(projectAgentRuntimeView(agentData));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1038,28 +1875,26 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
-  public async saveUserMessage(userMessage: AgentInstanceMessage): Promise<void> {
+  public async saveUserMessage(userMessage: ChatMessage): Promise<void> {
     this.ensureRepositories();
     try {
-      await saveUserMessageHelper(this.agentMessageRepository!, userMessage);
+      await this.insertConversationEventsIfAbsent([messageToConversationEvent(userMessage)]);
     } catch (error) {
       logger.error('Failed to save user message', {
         error,
-        messageId: userMessage.id,
-        agentId: userMessage.agentId,
+        messageId: userMessage.messageId,
+        agentId: userMessage.conversationId,
       });
       throw error;
     }
   }
 
   public debounceUpdateMessage(
-    message: AgentInstanceMessage,
+    message: ChatMessage,
     agentId?: string,
-    debounceMs = 300,
+    _debounceMs = 300,
   ): void {
-    const messageId = message.id;
-    // Use agentId:messageId as key so we can clean up by agentId prefix
-    const debounceKey = agentId ? `${agentId}:${messageId}` : messageId;
+    const messageId = message.messageId;
 
     // Update status subscribers for specific message if available
     if (agentId) {
@@ -1068,80 +1903,69 @@ export class AgentInstanceService implements IAgentInstanceService {
         this.statusSubjects.get(statusKey)?.next({
           state: 'working',
           message,
-          modified: message.modified ?? new Date(),
+          modified: new Date(message.timestamp),
         });
       }
     }
 
-    // Lazy-create debounced function for each message ID
-    if (!this.debouncedUpdateFunctions.has(debounceKey)) {
-      this.ensureRepositories();
-      const debouncedUpdate = createDebouncedMessageUpdater(
-        this.dataSource!,
-        messageId,
-        debounceMs,
-        (aid, updatedAgent) => {
-          if (this.agentInstanceSubjects.has(aid)) {
-            this.agentInstanceSubjects.get(aid)?.next(updatedAgent);
-            logger.debug(`Notified agent subscribers of new message: ${messageId}`, {
-              method: 'debounceUpdateMessage',
-              agentId: aid,
-            });
-          }
-        },
-      );
-      this.debouncedUpdateFunctions.set(debounceKey, debouncedUpdate);
-    }
-
-    const debouncedFunction = this.debouncedUpdateFunctions.get(debounceKey);
-    if (debouncedFunction) {
-      debouncedFunction(message, agentId);
+    // Streaming/interactive updates are transient renderer deltas. Completed
+    // immutable messages are persisted only by appendLocalEvent.
+    if (agentId) {
+      void this.publishConversationMessage(message, true)
+        .catch((error: unknown) => logger.warn('Failed to publish transient conversation projection', { agentId, messageId, error }));
     }
   }
 
-  public concatPrompt(promptDescription: Pick<AgentPromptDescription, 'agentFrameworkConfig'>, messages: AgentInstanceMessage[]): Observable<PromptConcatStreamState> {
-    logger.debug('AgentInstanceService.concatPrompt called', {
-      hasPromptConfig: !!promptDescription.agentFrameworkConfig,
-      promptConfigKeys: Object.keys(promptDescription.agentFrameworkConfig || {}),
-      messagesCount: messages.length,
-    });
-
-    return new Observable<PromptConcatStreamState>((observer) => {
+  public concatPromptPreview(input: {
+    sessionId: string;
+    expectedRevision: string;
+    agentFrameworkConfig: AgentFrameworkConfig;
+  }): Observable<PromptConcatStreamState> {
+    return new Observable<PromptConcatStreamState>(observer => {
+      const abortController = new AbortController();
       const processStream = async () => {
         try {
-          // Create a minimal framework context for prompt concatenation
-          const frameworkContext = {
-            agent: {
-              id: 'temp',
-              messages,
-              agentDefId: 'temp',
-              status: { state: 'working' as const, modified: new Date() },
-              created: new Date(),
-              agentFrameworkConfig: {},
-            },
-            agentDef: { id: 'temp', name: 'temp', agentFrameworkConfig: promptDescription.agentFrameworkConfig || {} },
-            isCancelled: () => false,
-          };
-
-          const streamGenerator = promptConcatStream(promptDescription, messages, frameworkContext);
-          for await (const state of streamGenerator) {
+          const generator = this.getMemeLoopRuntime().concatPromptPreview({
+            ...input,
+            signal: abortController.signal,
+          });
+          for await (const state of generator) {
+            if (abortController.signal.aborted || observer.closed) return;
+            assertPromptPreviewGeneratedResult({
+              flatPrompts: state.flatPrompts,
+              processedPrompts: state.processedPrompts,
+            });
             observer.next(state);
             if (state.isComplete) {
               observer.complete();
-              break;
+              return;
             }
           }
         } catch (error) {
-          logger.error('Error in AgentInstanceService.concatPrompt', {
-            error,
-            promptDescriptionId: (promptDescription as AgentPromptDescription).id,
-            messagesCount: messages.length,
-          });
-          observer.error(error);
+          if (!abortController.signal.aborted && !observer.closed) observer.error(error);
         }
       };
       void processStream();
+      return () => {
+        abortController.abort(new DOMException('Prompt preview closed', 'AbortError'));
+      };
     });
+  }
+
+  public async dispose(): Promise<void> {
+    await this.memeLoopRuntime?.dispose();
+    this.memeLoopRuntime = null;
+    for (const subject of this.agentInstanceSubjects.values()) subject.complete();
+    for (const subject of this.statusSubjects.values()) subject.complete();
+    for (const subject of this.conversationSubjects.values()) subject.complete();
+    this.agentInstanceSubjects.clear();
+    this.statusSubjects.clear();
+    this.conversationSubjects.clear();
+    this.conversationInvalidationWatermarks.clear();
+    this.conversationInvalidationQueues.clear();
+    this.durableErrorPersistence.clear();
+    await this.attachmentUploadStore?.dispose();
+    this.attachmentUploadStore = null;
   }
 
   public getFrameworkConfigSchema(frameworkId: string): Record<string, unknown> {

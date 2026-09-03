@@ -14,10 +14,12 @@ export type ExternalAPICallStatus = 'start' | 'update' | 'done' | 'error' | 'can
  * Minimal request metadata for logging purposes
  */
 export interface RequestMetadata {
-  /** Provider used for the request (e.g., 'openai', 'anthropic') */
-  provider: string;
-  /** Model used (e.g., 'gpt-4', 'claude-3') */
-  model: string;
+  /** Canonical provider account ID used for the request. */
+  providerId: string;
+  /** Canonical logical model route ID selected by the user/agent. */
+  logicalModelId: string;
+  /** Exact model identifier sent over the provider wire protocol. */
+  wireModelId?: string;
   /** Message count for chat requests */
   messageCount?: number;
   /** Input count for embedding requests */
@@ -92,7 +94,7 @@ export class ExternalAPILogEntity {
   errorDetail?: {
     name: string;
     code: string;
-    provider: string;
+    providerId: string;
     message?: string;
   };
 

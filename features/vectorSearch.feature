@@ -33,7 +33,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     And I should see a "search interface" element with selector ".aa-Autocomplete"
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     # Step 2: Create first note
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Agent Guide 的笔记，内容是：智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。" in "chat input" element with selector "[data-testid='agent-message-input']"

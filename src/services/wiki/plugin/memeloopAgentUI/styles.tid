@@ -1,0 +1,272 @@
+title: $:/plugins/linonetwo/memeloop-agent-ui/styles
+tags: $:/tags/Stylesheet
+type: text/css
+
+.memeloop-tw-host,
+.memeloop-tw-chat {
+  color: inherit;
+  min-width: 0;
+  width: 100%;
+}
+
+.memeloop-tw-host {
+  color-scheme: light;
+  display: flex;
+}
+
+.memeloop-tw-host[data-color-scheme="dark"] {
+  color-scheme: dark;
+}
+
+.memeloop-tw-chat {
+  container-name: memeloop-chat;
+  container-type: inline-size;
+  display: flex;
+  overflow: hidden;
+}
+
+.memeloop-tw-chat__header {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.4rem 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memeloop-tw-chat--loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.memeloop-tw-chat__selectors {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.memeloop-tw-chat__selector {
+  align-items: center;
+  display: flex;
+  flex: 1 1 8rem;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.memeloop-tw-chat__selector > span {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memeloop-tw-chat__selector select {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  color: inherit;
+  flex: 1 1 auto;
+  font: inherit;
+  min-height: 2rem;
+  min-width: 3rem;
+  max-width: 14rem;
+  padding-block: 0.2rem;
+  padding-inline: 0.35rem 1.4rem;
+}
+
+.memeloop-tw-chat__action {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-height: 2rem;
+  padding-inline: 0.5rem;
+}
+
+.memeloop-tw-chat__action:disabled,
+.memeloop-tw-chat__selector select:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.memeloop-tw-chat__control-status,
+.memeloop-tw-chat__control-error,
+.memeloop-tw-chat__status {
+  font-size: 0.75rem;
+}
+
+.memeloop-tw-chat__control-error {
+  color: #b3261e;
+}
+
+.memeloop-tw-chat__schedule {
+  border-block-start: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  flex: 0 0 auto;
+  max-height: min(60vh, 36rem);
+  overflow: auto;
+  padding: 0.35rem 0.75rem;
+}
+
+.memeloop-tw-chat__schedule > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 2rem;
+  padding-block: 0.35rem;
+}
+
+.memeloop-tw-chat__schedule-content {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.memeloop-tw-chat__preview-backdrop {
+  align-items: center;
+  background: rgb(0 0 0 / 45%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 1600;
+}
+
+.memeloop-tw-chat__preview {
+  background: Canvas;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 0.65rem;
+  color: CanvasText;
+  display: flex;
+  flex-direction: column;
+  max-height: min(90vh, 60rem);
+  max-width: 64rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.75rem;
+  width: min(92vw, 64rem);
+}
+
+.memeloop-tw-chat__preview-header {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.memeloop-tw-chat__preview-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.memeloop-tw-chat__preview-context {
+  border-block-start: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  margin-block-start: 1rem;
+}
+
+.memeloop-tw-chat__preview-entry {
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 0.35rem;
+  margin-block: 0.5rem;
+  overflow-wrap: anywhere;
+  padding: 0.5rem;
+}
+
+.memeloop-tw-chat__preview-entry p,
+.memeloop-tw-chat__preview-input {
+  margin-block: 0.25rem;
+  white-space: pre-wrap;
+}
+
+.memeloop-tw-chat--full {
+  height: min(76vh, 900px);
+  min-height: 32rem;
+}
+
+.memeloop-tw-chat--sidebar {
+  height: min(68vh, 720px);
+  max-width: 30rem;
+  min-height: 24rem;
+}
+
+.tc-sidebar-lists .memeloop-tw-chat {
+  margin-inline: -0.5rem;
+  width: calc(100% + 1rem);
+}
+
+@media (max-width: 40rem) {
+  .memeloop-tw-chat--full {
+    height: 72vh;
+    min-height: 26rem;
+  }
+
+  .memeloop-tw-chat__preview-backdrop {
+    padding: 0;
+  }
+
+  .memeloop-tw-chat__preview {
+    border: 0;
+    border-radius: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    width: 100vw;
+  }
+}
+
+@container memeloop-chat (max-width: 30rem) {
+  .memeloop-tw-chat__header {
+    padding-inline: 0.5rem;
+  }
+
+  .memeloop-tw-chat__selectors {
+    align-items: stretch;
+    flex-basis: 100%;
+    flex-direction: column;
+  }
+
+  .memeloop-tw-chat__selector {
+    flex: 0 0 auto;
+  }
+
+  .memeloop-tw-chat__selector > span {
+    flex: 0 0 4.5rem;
+  }
+
+  .memeloop-tw-chat__selector select {
+    max-width: none;
+  }
+
+  .memeloop-tw-chat__action {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .memeloop-tw-chat__schedule {
+    padding-inline: 0.5rem;
+  }
+}
+
+[dir="rtl"] .memeloop-tw-chat__selectors,
+[dir="rtl"] .memeloop-tw-chat__selector {
+  direction: rtl;
+}
+
+@media (pointer: coarse) {
+  .memeloop-tw-chat__action,
+  .memeloop-tw-chat__selector select,
+  .memeloop-tw-chat__schedule > summary {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memeloop-tw-chat *,
+  .memeloop-tw-chat *::before,
+  .memeloop-tw-chat *::after {
+    scroll-behavior: auto !important;
+  }
+}

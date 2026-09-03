@@ -32,7 +32,6 @@ export interface IWikiService {
    * create sub wiki in a parent folder, and link to a main wiki, and set tagName to filesystemPath.tid
    * @param parentFolderLocation
    * @param folderName
-   * @param mainWikiToLink
    * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
    */
   createSubWiki(parentFolderLocation: string, folderName: string, onlyLink?: boolean): Promise<void>;

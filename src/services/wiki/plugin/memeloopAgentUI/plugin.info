@@ -1,0 +1,11 @@
+{
+  "title": "$:/plugins/linonetwo/memeloop-agent-ui",
+  "name": "MemeLoop Agent UI",
+  "description": "Reusable MemeLoop Agent workspace for a TiddlyWiki tiddler or responsive sidebar tab",
+  "author": "LinOnetwo",
+  "core-version": ">=5.3.0",
+  "plugin-type": "plugin",
+  "stability": "STABILITY_2_STABLE",
+  "version": "0.1.0",
+  "list": "readme"
+}

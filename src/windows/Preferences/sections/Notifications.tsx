@@ -48,7 +48,7 @@ export function Notifications(props: ICustomSectionProps): React.JSX.Element {
                 <ListItemText primary={t('Preference.NotificationsDisableSchedule')} />
                 <TimePickerContainer>
                   <TimePicker
-                    label='from'
+                    label={t('Preference.TimeFrom')}
                     value={new Date(preference.pauseNotificationsByScheduleFrom)}
                     onChange={async (d: Date | null) => {
                       await window.service.preference.set('pauseNotificationsByScheduleFrom', (d ?? '').toString());
@@ -66,7 +66,7 @@ export function Notifications(props: ICustomSectionProps): React.JSX.Element {
                     }}
                   />
                   <TimePicker
-                    label='to'
+                    label={t('Preference.TimeTo')}
                     value={new Date(preference.pauseNotificationsByScheduleTo)}
                     onChange={async (d: Date | null) => {
                       await window.service.preference.set('pauseNotificationsByScheduleTo', (d ?? '').toString());
@@ -123,7 +123,7 @@ export function Notifications(props: ICustomSectionProps): React.JSX.Element {
                   />
                 }
               >
-                <ListItemText primary='Show unread count badge' />
+                <ListItemText primary={t('Preference.UnreadCountBadge')} />
               </ListItem>
               <Divider />
               <ListItemButton

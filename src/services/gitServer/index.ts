@@ -4,10 +4,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { container } from '@services/container';
+import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IGitServerService } from './interface';
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
 
 /**
  * Generic git primitives exposed to TiddlyWiki plugins.
@@ -44,8 +49,10 @@ export class GitServerService implements IGitServerService {
     }
     try {
       return await fs.readFile(fullPath, 'utf-8');
-    } catch {
-      return undefined;
+    } catch (error: unknown) {
+      if (isNodeError(error) && error.code === 'ENOENT') return undefined;
+      logger.warn('Failed to read workspace file', { workspaceId, relativePath, error });
+      throw error;
     }
   }
 
@@ -107,8 +114,10 @@ export class GitServerService implements IGitServerService {
     const filePath = path.join(repoPath, '.git', sanitized);
     try {
       await fs.unlink(filePath);
-    } catch {
-      // Ignore if file doesn't exist
+    } catch (error: unknown) {
+      if (isNodeError(error) && error.code === 'ENOENT') return;
+      logger.warn('Failed to delete temporary Git file', { workspaceId, fileName, error });
+      throw error;
     }
   }
 }
