@@ -86,7 +86,7 @@ export const zxScriptDefinition = defineDesktopTool({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'zx-script') return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('zx-script', executeZxScript);
   },
 });

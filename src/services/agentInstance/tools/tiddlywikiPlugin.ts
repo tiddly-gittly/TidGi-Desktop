@@ -258,7 +258,7 @@ export const tiddlyWikiPluginDefinition = defineDesktopTool({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'tiddlywiki-plugin') return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     // At this point, config should be available from the context
     const typedConfig = config as TiddlyWikiPluginParameter;

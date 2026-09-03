@@ -163,7 +163,7 @@ export const editTiddlerDefinition = defineDesktopTool({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'edit-tiddler') return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('edit-tiddler', executeEditTiddler);
   },
 });

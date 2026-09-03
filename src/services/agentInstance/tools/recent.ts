@@ -77,7 +77,7 @@ export const recentDefinition = defineDesktopTool({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-recent') return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('wiki-recent', executeRecent);
   },
 });

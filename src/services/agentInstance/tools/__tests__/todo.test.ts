@@ -14,6 +14,7 @@ function toolMessage(content: string): ChatMessage {
     lamportClock: 1,
     role: 'tool',
     content,
+    parts: [{ type: 'text', text: content }],
   };
 }
 
@@ -23,14 +24,30 @@ describe('persistent todo prompt state', () => {
     const payload = JSON.stringify({ type: 'todo-update', text });
 
     expect(extractLatestTodoText([
-      toolMessage(`Result from manage-todo: ${payload}`),
+      {
+        ...toolMessage(payload),
+        parts: [{
+          type: 'tool-result',
+          toolName: 'manage-todo',
+          result: payload,
+          payload: JSON.parse(payload),
+        }],
+      },
     ])).toBe(text);
   });
 
-  it('reads legacy result wrappers and ignores malformed results', () => {
+  it('ignores malformed or legacy text-only results', () => {
     expect(extractLatestTodoText([
       toolMessage('Result from manage-todo: {broken'),
-      toolMessage('Result: {"type":"todo-update","text":"- [ ] Legacy"}'),
-    ])).toBe('- [ ] Legacy');
+      {
+        ...toolMessage('{"type":"todo-update","text":"- [ ] Legacy"}'),
+        parts: [{
+          type: 'tool-result',
+          toolName: 'manage-todo',
+          result: '{broken',
+          payload: { type: 'todo-update' },
+        }],
+      },
+    ])).toBeUndefined();
   });
 });

@@ -121,7 +121,7 @@ export const spawnAgentDefinition = defineDesktopTool({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'spawn-agent') return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     const timeoutMs = config?.defaultTimeoutMs ?? 120000;
     await executeToolCall(

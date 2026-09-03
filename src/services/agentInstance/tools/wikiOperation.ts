@@ -222,7 +222,7 @@ export const wikiOperationDefinition = defineDesktopTool({
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-operation') return;
 
     // Check cancellation
-    if (agentFrameworkContext.isCancelled?.()) {
+    if (agentFrameworkContext.operationSignal?.aborted) {
       logger.debug('Wiki operation cancelled', { agentId: agentFrameworkContext.agent.id });
       return;
     }

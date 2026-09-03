@@ -109,7 +109,7 @@ export const listTiddlersDefinition = defineDesktopTool({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-list-tiddlers') return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('wiki-list-tiddlers', executeListTiddlers);
   },
 });

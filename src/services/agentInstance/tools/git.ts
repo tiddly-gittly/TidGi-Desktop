@@ -243,7 +243,7 @@ export const gitToolDefinition = defineDesktopTool({
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
     if (!toolCall.found) return;
-    if (agentFrameworkContext.isCancelled?.()) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     if (toolCall.toolId === 'git-log') {
       await executeToolCall('git-log', executeGitLog);

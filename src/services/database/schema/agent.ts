@@ -1,5 +1,5 @@
 import type { CreateScheduledTaskInput, ScheduledTaskState } from 'memeloop';
-import type { AgentDefinition, AgentHeartbeatConfig, AgentModelConfig, HostAgentToolConfig } from 'memeloop';
+import type { AgentDefinition, AgentDefinitionToolConfig, AgentHeartbeatConfig, AgentModelConfig } from 'memeloop';
 import type { AgentInstanceLatestStatus, AgentInstanceMetadata } from 'memeloop';
 import type { AgentFrameworkConfig, AttachmentReference, ChatMessage, ChatMessagePart, ChatRole, DetailReference, ToolCall } from 'memeloop';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
@@ -165,7 +165,7 @@ export class AgentDefinitionEntity implements AgentDefinition {
 
   /** Tools available to this agent */
   @Column({ type: 'simple-json', nullable: true })
-  agentTools?: HostAgentToolConfig[];
+  agentTools?: AgentDefinitionToolConfig[];
 
   /** Heartbeat configuration for periodic auto-wake */
   @Column({ type: 'simple-json', nullable: true })
@@ -292,7 +292,7 @@ export class AgentInstanceMessageEntity implements ChatMessage {
   content!: string;
 
   @Column({ type: 'simple-json', nullable: true })
-  parts?: ChatMessagePart[];
+  parts!: ChatMessagePart[];
 
   @Column({ type: 'simple-json', nullable: true })
   toolCalls?: ToolCall[];

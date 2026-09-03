@@ -362,7 +362,7 @@ export const wikiSearchDefinition = defineDesktopTool({
     if (!toolCall.found) return;
 
     // Check cancellation
-    if (agentFrameworkContext.isCancelled?.()) {
+    if (agentFrameworkContext.operationSignal?.aborted) {
       logger.debug('Wiki search cancelled', { agentId: agentFrameworkContext.agent.id });
       return;
     }
