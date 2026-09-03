@@ -1,5 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
+import { i18n } from '@services/libs/i18n';
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -45,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div style={{ padding: '20px', color: 'red' }}>
-          <h2>Something went wrong.</h2>
+          <h2>{i18n.t('Error.Generic', { defaultValue: 'Something went wrong.' })}</h2>
           <details style={{ whiteSpace: 'pre-wrap' }}>
             {this.state.error?.toString()}
             <br />

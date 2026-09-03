@@ -122,8 +122,12 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
   try {
     // MCP server may not be loaded if MCP is not configured
     try {
-      void stopMcpServer();
-    } catch { /* not loaded */ }
+      await stopMcpServer();
+    } catch (error: unknown) {
+      // MCP is optional during shutdown, but a rejected close still needs to
+      // remain observable before the logger is destroyed below.
+      logger.warn('MCP server cleanup failed during before-quit', { error });
+    }
     // Stop all wiki workers FIRST - must be sequential
     // Wiki workers might be using SQLite databases
     await wikiService.stopAllWiki();

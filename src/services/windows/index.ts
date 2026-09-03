@@ -40,6 +40,8 @@ export class Window implements IWindowService {
   private tidgiMiniWindowMenubar?: Menubar;
   /** Promise-based lock to serialize tidgi mini window operations */
   private tidgiMiniWindowOperationLock: Promise<void> | undefined;
+  /** Serialize open/close races so a window cannot be recreated twice while loading. */
+  private readonly windowOpenLocks = new Map<WindowNames, Promise<void>>();
   /** Debounce timer for main window state save on hide */
   private mainWindowHideSaveTimer?: ReturnType<typeof setTimeout>;
 
@@ -108,9 +110,21 @@ export class Window implements IWindowService {
   }
 
   public async close(windowName: WindowNames): Promise<void> {
-    this.get(windowName)?.close();
+    const pendingOpen = this.windowOpenLocks.get(windowName);
+    if (pendingOpen !== undefined) {
+      // The lock represents completion, not the open result, and therefore
+      // never rejects even when the guarded open operation fails.
+      await pendingOpen;
+    }
+    const windowToClose = this.get(windowName);
+    if (
+      windowToClose !== undefined &&
+      (typeof windowToClose.isDestroyed !== 'function' || !windowToClose.isDestroyed())
+    ) {
+      windowToClose.close();
+    }
     // remove the window instance, let it GC
-    this.windows.delete(windowName);
+    if (this.get(windowName) === windowToClose) this.windows.delete(windowName);
   }
 
   public async hide(windowName: WindowNames): Promise<void> {
@@ -169,16 +183,48 @@ export class Window implements IWindowService {
     config?: IWindowOpenConfig<N>,
     returnWindow?: boolean,
   ): Promise<undefined | BrowserWindow> {
+    return this.runWithWindowOpenLock(
+      windowName,
+      () => this.openInternal(windowName, meta, config, returnWindow),
+    );
+  }
+
+  private async openInternal<N extends WindowNames>(
+    windowName: N,
+    meta: WindowMeta[N],
+    config?: IWindowOpenConfig<N>,
+    returnWindow?: boolean,
+  ): Promise<undefined | BrowserWindow> {
     // `electron-window-state` validates saved bounds through `screen` as soon
     // as it is constructed. Keep this method safe even if a future deep-link,
     // test hook, or lifecycle listener bypasses mainApplication's activation
     // gate and asks for a window during module initialization.
     await app.whenReady();
     const { recreate = false, multiple = false, recreateUnlessWorkspaceID } = config ?? {};
-    const existedWindow = this.get(windowName);
+    let existedWindow = this.get(windowName);
+    // Electron can leave a destroyed BrowserWindow in a host-managed map for
+    // one event-loop turn. Treat it as absent before reading metadata or
+    // attempting to show/send to it; this avoids the preload startup race
+    // observed after repeated prompt-preview open/close cycles.
+    if (
+      existedWindow !== undefined &&
+      typeof existedWindow.isDestroyed === 'function' &&
+      existedWindow.isDestroyed()
+    ) {
+      if (this.get(windowName) === existedWindow) this.windows.delete(windowName);
+      existedWindow = undefined;
+    }
     // Read the OLD meta before overwriting — recreate() must compare old vs new to decide whether to close.
     const existedWindowMeta = await this.getWindowMeta(windowName);
     await this.setWindowMeta(windowName, meta);
+    if (
+      existedWindow !== undefined &&
+      typeof existedWindow.isDestroyed === 'function' &&
+      existedWindow.isDestroyed()
+    ) {
+      if (this.get(windowName) === existedWindow) this.windows.delete(windowName);
+      existedWindow = undefined;
+    }
 
     if (existedWindow !== undefined && !multiple) {
       const existedWorkspaceID = (existedWindowMeta as { workspaceID?: string } | undefined)?.workspaceID;
@@ -385,6 +431,26 @@ export class Window implements IWindowService {
     }
   }
 
+  private async runWithWindowOpenLock<T>(windowName: WindowNames, operation: () => Promise<T>): Promise<T> {
+    const previous = this.windowOpenLocks.get(windowName);
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.windowOpenLocks.set(windowName, current);
+    if (previous !== undefined) {
+      await previous;
+    }
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (this.windowOpenLocks.get(windowName) === current) {
+        this.windowOpenLocks.delete(windowName);
+      }
+    }
+  }
+
   public async isFullScreen(windowName = WindowNames.main): Promise<boolean | undefined> {
     return this.windows.get(windowName)?.isFullScreen();
   }
@@ -410,6 +476,8 @@ export class Window implements IWindowService {
    * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
    */
   private async pushWindowMetaToWindow(win: BrowserWindow, meta: unknown): Promise<void> {
+    if (typeof win.isDestroyed === 'function' && win.isDestroyed()) return;
+    if (typeof win.webContents.isDestroyed === 'function' && win.webContents.isDestroyed()) return;
     win.webContents.send(MetaDataChannel.pushViewMetaData, meta);
   }
 
@@ -532,8 +600,11 @@ export class Window implements IWindowService {
       if (previous !== undefined) {
         try {
           await previous;
-        } catch {
-          // await previous operation to complete, regardless of success or failure
+        } catch (error: unknown) {
+          // Awaiting a prior operation is a sequencing barrier, not an error
+          // propagation boundary. Keep the next operation moving while
+          // preserving the failure in lifecycle logs.
+          logger.debug('TidGi mini window operation lock predecessor failed', { error });
         }
       }
       return await operation();
@@ -592,7 +663,7 @@ export class Window implements IWindowService {
       const miniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
       const miniWindow = menuBar.window;
       if (miniView && miniWindow !== undefined && !miniWindow.isDestroyed()) {
-        const children = (miniWindow.contentView as unknown as { children?: typeof miniView[] }).children ?? [];
+        const children = miniWindow.contentView.children;
         const isAttached = children.some((child) => child === miniView);
         if (isAttached) {
           await viewService.realignView(targetWorkspaceId, WindowNames.tidgiMiniWindow);

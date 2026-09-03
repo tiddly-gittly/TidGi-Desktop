@@ -1,5 +1,4 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import SecurityIcon from '@mui/icons-material/Security';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItemButton } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +8,6 @@ import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import { ScheduledTasksPreferences } from './components/ScheduledTasksPreferences';
-import { ToolApprovalSettingsDialog } from './ExternalAPI/components/ToolApprovalSettingsDialog';
 
 interface AgentDatabaseRecoveryService {
   deleteDatabase: (key: string) => Promise<void>;
@@ -26,7 +24,6 @@ export async function clearAgentDatabase(
 export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation('agent');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [toolApprovalDialogOpen, setToolApprovalDialogOpen] = useState(false);
   const [agentInfo, setAgentInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
   useEffect(() => {
     const fetchInfo = async () => {
@@ -96,27 +93,9 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
               })}
             />
           </ListItemButton>
-          <ListItemButton
-            onClick={() => {
-              setToolApprovalDialogOpen(true);
-            }}
-          >
-            <SecurityIcon sx={{ mr: 1 }} color='action' />
-            <ListItemText
-              primary={t('ToolApproval.Title')}
-              secondary={`${t('ToolApproval.PerToolRules')} · ${t('ToolApproval.GlobalTimeout')} · ${t('ToolApproval.APIRetry')}`}
-            />
-            <ChevronRightIcon color='action' />
-          </ListItemButton>
         </List>
         <ScheduledTasksPreferences />
       </Paper>
-      <ToolApprovalSettingsDialog
-        open={toolApprovalDialogOpen}
-        onClose={() => {
-          setToolApprovalDialogOpen(false);
-        }}
-      />
       <Dialog
         open={deleteDialogOpen}
         onClose={() => {

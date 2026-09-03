@@ -99,7 +99,7 @@ export function ScheduledTasksPreferences(): React.JSX.Element {
                 select
                 fullWidth
                 size='small'
-                label={t('Chat.Agent')}
+                label={t('Chat.Actions.Agent')}
                 value={selectedDefinitionId}
                 onChange={event => {
                   setSelectedDefinitionId(event.target.value);

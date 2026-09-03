@@ -33,6 +33,21 @@ import { loadDefaultMenuTemplate } from './loadDefaultMenuTemplate';
 
 export const DEFERRED_MENU_PROPERTY_TIMEOUT_MS = 2000;
 
+function isIpcSafeMenuItem(value: unknown): value is IpcSafeMenuItem {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const item = Object.fromEntries(Object.entries(value));
+  if (typeof item.click !== 'string') return false;
+  if (item.label !== undefined && typeof item.label !== 'string') return false;
+  if (item.enabled !== undefined && typeof item.enabled !== 'boolean') return false;
+  if (item.type !== undefined && !['normal', 'separator', 'submenu', 'checkbox', 'radio', 'header', 'palette'].includes(String(item.type))) return false;
+  if (item.submenu !== undefined && (!Array.isArray(item.submenu) || !item.submenu.every(isIpcSafeMenuItem))) return false;
+  return true;
+}
+
+export function isIpcSafeMenuItems(template: unknown): template is IpcSafeMenuItem[] {
+  return Array.isArray(template) && template.length > 0 && template.every(isIpcSafeMenuItem);
+}
+
 @injectable()
 export class MenuService implements IMainMenuService {
   constructor(
@@ -457,9 +472,9 @@ export class MenuService implements IMainMenuService {
     // add custom menu items
     if (template !== undefined && Array.isArray(template) && template.length > 0) {
       // if our menu item config is pass from the renderer process, we reconstruct callback from the ipc.on channel id.
-      const menuItems = (typeof template[0]?.click === 'string'
-        ? mainMenuItemProxy(template as IpcSafeMenuItem[], webContents)
-        : template) as unknown as MenuItemConstructorOptions[];
+      const menuItems = isIpcSafeMenuItems(template)
+        ? mainMenuItemProxy(template, webContents)
+        : template;
       menu.insert(0, new MenuItem({ type: 'separator' }));
       // we are going to prepend items, so inverse first, so order will remain
       reverse(menuItems)

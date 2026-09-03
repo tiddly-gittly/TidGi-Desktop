@@ -45,7 +45,7 @@ vi.mock('../contextMenu/rendererMenuItemProxy', () => ({
   mainMenuItemProxy: vi.fn((items: unknown) => items),
 }));
 
-import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS, MenuService } from '..';
+import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS, isIpcSafeMenuItems, MenuService } from '..';
 
 const createMenuService = (): MenuService =>
   new MenuService(
@@ -120,5 +120,11 @@ describe('MenuService application lifecycle', () => {
     await vi.runAllTimersAsync();
     template = mocks.buildFromTemplate.mock.calls[1][0] as Array<{ submenu: Array<{ checked: boolean }> }>;
     expect(template[0].submenu[0].checked).toBe(true);
+  });
+
+  it('rejects malformed renderer menu entries before reconstructing callbacks', () => {
+    expect(isIpcSafeMenuItems([{ click: 'safe', submenu: [{ click: 'nested' }] }])).toBe(true);
+    expect(isIpcSafeMenuItems([{ click: 'safe', submenu: [{ click: 42 }] }])).toBe(false);
+    expect(isIpcSafeMenuItems([{ click: 'safe' }, { label: 'missing callback' }])).toBe(false);
   });
 });

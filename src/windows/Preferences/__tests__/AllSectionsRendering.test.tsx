@@ -131,19 +131,26 @@ describe('Preferences - All Sections Rendering', () => {
 
     Object.defineProperty(window.service.externalAPI, 'getProviderCatalog', {
       value: vi.fn().mockResolvedValue({
-        providers: [],
-        status: {
-          source: 'embedded',
-          catalogVersion: 'test',
+        catalog: {
+          schemaVersion: 1,
+          source: 'https://models.dev/api.json',
+          catalogVersion: 'test-catalog',
           fetchedAt: '2026-07-30T00:00:00.000Z',
+          providers: [],
         },
+        source: 'embedded',
+        stale: false,
       }),
       writable: true,
     });
 
     // database may not exist in the mock; ensure it's an object first
     if (!('database' in window.service)) {
-      (window.service as Record<string, unknown>).database = {};
+      Object.defineProperty(window.service, 'database', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
     }
     Object.defineProperty(window.service.database, 'getDatabaseInfo', {
       value: vi.fn().mockResolvedValue({ exists: false }),
@@ -170,7 +177,11 @@ describe('Preferences - All Sections Rendering', () => {
     });
 
     if (!('notification' in window.service)) {
-      (window.service as Record<string, unknown>).notification = {};
+      Object.defineProperty(window.service, 'notification', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
     }
     Object.defineProperty(window.service.notification, 'show', {
       value: vi.fn().mockResolvedValue(undefined),
@@ -179,7 +190,11 @@ describe('Preferences - All Sections Rendering', () => {
     });
 
     if (!('systemPreference' in window.service)) {
-      (window.service as Record<string, unknown>).systemPreference = {};
+      Object.defineProperty(window.service, 'systemPreference', {
+        value: {},
+        writable: true,
+        configurable: true,
+      });
     }
     Object.defineProperty(window.service.systemPreference, 'setSystemPreference', {
       value: vi.fn().mockResolvedValue(undefined),
@@ -403,6 +418,38 @@ describe('Preferences - Search Mode', () => {
     });
     Object.defineProperty(window.service.auth, 'get', {
       value: vi.fn().mockResolvedValue('TestUser'),
+      writable: true,
+    });
+
+    // Keep the custom ExternalAPI section on its canonical service contract;
+    // rendering all sections must not rely on a rejected catalog request.
+    Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
+      value: vi.fn().mockResolvedValue({}),
+      writable: true,
+    });
+    Object.defineProperty(window.service.externalAPI, 'getProviderAccounts', {
+      value: vi.fn().mockResolvedValue([]),
+      writable: true,
+    });
+    Object.defineProperty(window.service.externalAPI, 'getProviderCatalog', {
+      value: vi.fn().mockResolvedValue({
+        catalog: {
+          schemaVersion: 1,
+          source: 'https://models.dev/api.json',
+          catalogVersion: 'test-catalog',
+          fetchedAt: '2026-07-30T00:00:00.000Z',
+          providers: [],
+        },
+        source: 'embedded',
+        stale: false,
+      }),
+      writable: true,
+    });
+    Object.defineProperty(window.observables, 'externalAPI', {
+      value: {
+        defaultConfig$: new BehaviorSubject({}).asObservable(),
+        providerAccounts$: new BehaviorSubject([]).asObservable(),
+      },
       writable: true,
     });
   });

@@ -132,7 +132,15 @@ export class NativeService implements INativeService {
 
   public async openInEditor(filePath: string, editorName?: string): Promise<boolean> {
     // TODO: open vscode by default to speed up, support choose favorite editor later
-    let defaultEditor = await findEditorOrDefault('Visual Studio Code').catch(() => {});
+    let defaultEditor: Awaited<ReturnType<typeof findEditorOrDefault>>;
+    try {
+      defaultEditor = await findEditorOrDefault('Visual Studio Code');
+    } catch (error) {
+      logger.warn('Default editor discovery failed; trying the requested editor', {
+        error,
+        function: 'NativeService.openInEditor',
+      });
+    }
     if (defaultEditor === undefined) {
       defaultEditor = await findEditorOrDefault(editorName);
     }

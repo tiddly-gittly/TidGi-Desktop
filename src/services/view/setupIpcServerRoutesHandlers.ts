@@ -181,22 +181,19 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         normalizedPathname = parsedUrl.hash.slice(filesIndex);
       }
     }
-    let effectiveWorkspaceID = workspaceID;
-    if (workspaceIDFromHost.toLowerCase() !== workspaceID.toLowerCase()) {
-      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback, using URL-based ID', {
+    // The workspace ID is part of the tidgi:// origin.  Do not case-fold or
+    // otherwise resolve aliases here: accepting a different host can route a
+    // request through the view for another workspace.  A malformed/stale URL
+    // must fail closed and be reloaded by the caller with the canonical URL.
+    if (workspaceIDFromHost !== workspaceID) {
+      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
         workspaceIDFromHost,
         workspaceID,
       });
-      const workspaceFromHost = await workspaceService.get(workspaceIDFromHost);
-      if (workspaceFromHost) {
-        effectiveWorkspaceID = workspaceFromHost.id;
-      } else {
-        const allWorkspaces = await workspaceService.getWorkspacesAsList();
-        const matched = allWorkspaces.find(ws => ws.id.toLowerCase() === workspaceIDFromHost.toLowerCase());
-        effectiveWorkspaceID = matched?.id ?? workspaceIDFromHost;
-      }
+      return new Response(undefined, { status: 404, statusText: 'Workspace URL does not match the attached view' });
     }
+    const effectiveWorkspaceID = workspaceID;
     try {
       for (const route of methods) {
         if (request.method === route.method && route.path.test(normalizedPathname)) {

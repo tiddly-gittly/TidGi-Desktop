@@ -1,7 +1,7 @@
 import { findAvailablePort } from '@services/libs/port';
 import { format } from 'date-fns';
 import { app, dialog, session, shell, type UtilityProcess } from 'electron';
-import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
+import { createWorkerMethodProxy, terminateWorker } from 'electron-ipc-cat/host';
 import { attachUtilityProcess } from 'electron-ipc-cat/server';
 import { backOff } from 'exponential-backoff';
 import { copy, exists, mkdir, mkdirs, pathExists, readdir, readFile } from 'fs-extra';
@@ -21,6 +21,7 @@ import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IHtmlWikiService } from '@services/htmlWiki/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
+import { createUtilityProcessWorkerPeer } from '@services/libs/utilityProcessWorkerPeer';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
@@ -51,6 +52,24 @@ import { wikiWorkerStartedEventName } from './constants';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
+
+type WikiOperationFunction = (...arguments_: never[]) => unknown;
+
+/**
+ * Invoke a dynamically selected wiki operation without weakening the
+ * operation map's argument/return contract.  The generic helper keeps the
+ * tuple intact; the runtime handler checks in each caller remain the source
+ * of truth for malformed operation names received over IPC.
+ */
+function invokeWikiOperation<Operation extends WikiOperationFunction>(
+  operation: Operation,
+  arguments_: Parameters<Operation>,
+): ReturnType<Operation> {
+  // Reflect.apply is the only runtime operation that can invoke a function
+  // selected from a heterogeneous, validated operation map. Its generic
+  // return is tied to the same Operation type used for Parameters above.
+  return Reflect.apply(operation, undefined, arguments_) as ReturnType<Operation>;
+}
 
 /**
  * Utility processes can boot a wiki-local TiddlyWiki installation. Keep the
@@ -149,8 +168,9 @@ export class Wiki implements IWikiService {
               rss_MB = mem.rss_MB;
               heapUsed_MB = mem.heapUsed_MB;
               heapTotal_MB = mem.heapTotal_MB;
-            } catch {
-              // worker may be busy or not yet ready
+            } catch (error: unknown) {
+              // Worker may be busy or not yet ready while metrics are sampled.
+              logger.debug('Unable to read Wiki worker memory usage', { workspaceID: workspace.id, error });
             }
           }
           let cpu_percent: number | null = null;
@@ -262,9 +282,6 @@ export class Wiki implements IWikiService {
     }
     const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
 
-    const wikiInfoPath = path.resolve(wikiFolderLocation, 'tiddlywiki.info');
-    const useWikiFolderAsTiddlersPath = !(await pathExists(wikiInfoPath));
-
     // Get sub-wikis for this main wiki to load their tiddlers
     const configuredSubWikis = await workspaceService.getSubWorkspacesAsList(workspaceID);
     // The worker loads the main folder through its dedicated folder-storage
@@ -285,7 +302,6 @@ export class Wiki implements IWikiService {
       openDebugger: process.env.DEBUG_WORKER === 'true',
       readOnlyMode,
       rootTiddler,
-      useWikiFolderAsTiddlersPath,
       shouldUseDarkColors,
       subWikis,
       tiddlyWikiHost: defaultServerIP,
@@ -301,7 +317,6 @@ export class Wiki implements IWikiService {
       enableHTTPAPI,
       readOnlyMode,
       tokenAuth,
-      useWikiFolderAsTiddlersPath,
       wikiFolderLocation,
       workspaceName: workspace.name,
       function: 'Wiki.startWiki',
@@ -367,10 +382,16 @@ export class Wiki implements IWikiService {
       resolveStartWikiDeferred = resolve;
       rejectStartWikiDeferred = reject;
     });
-    void startWikiDeferred.catch(() => {});
+    void startWikiDeferred.catch((error: unknown) => {
+      logger.error('Wiki startup promise rejected', {
+        error,
+        function: 'startWiki',
+        workspaceID,
+      });
+    });
     this.startWikiPromises[workspaceID] = startWikiDeferred;
 
-    const worker = createWorkerMethodProxy<WikiWorker>(wikiWorker as unknown as WorkerPeer);
+    const worker = createWorkerMethodProxy<WikiWorker>(createUtilityProcessWorkerPeer(wikiWorker));
 
     logger.debug(`wikiWorker initialized`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = { booted: false, proxy: worker, nativeWorker: wikiWorker, detachWorker };
@@ -687,7 +708,7 @@ export class Wiki implements IWikiService {
       session: wikiBackendSession,
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
-    const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
+    const worker = createWorkerMethodProxy<WikiWorker>(createUtilityProcessWorkerPeer(nativeWorker));
 
     try {
       if (!isHtmlWiki(htmlWikiPath)) {
@@ -718,7 +739,7 @@ export class Wiki implements IWikiService {
       session: wikiBackendSession,
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
-    const worker = createWorkerMethodProxy<WikiWorker>(nativeWorker as unknown as WorkerPeer);
+    const worker = createWorkerMethodProxy<WikiWorker>(createUtilityProcessWorkerPeer(nativeWorker));
 
     try {
       await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLY_WIKI_BOOT_PATH: getTiddlyWikiBootPath(wikiFolderLocation) });
@@ -796,8 +817,10 @@ export class Wiki implements IWikiService {
       try {
         logger.info(`detachWorker for ${id}`);
         detachWorker();
-      } catch {
-        /* ignore */
+      } catch (error: unknown) {
+        // A worker may detach itself during termination. Keep shutdown
+        // idempotent while retaining a lifecycle diagnostic.
+        logger.debug('Wiki worker detach skipped during stop', { workspaceID: id, error });
       }
     }
     // Clean up event listeners registered in startWiki to prevent them from firing on a terminated worker.
@@ -1195,7 +1218,13 @@ export class Wiki implements IWikiService {
       const pendingStart = this.startWikiPromises[id];
       if (pendingStart) {
         logger.info(`restartWiki: waiting for in-flight startWiki for ${id}`, { function: 'restartWiki' });
-        await pendingStart.catch(() => {});
+        await pendingStart.catch((error: unknown) => {
+          logger.warn('restartWiki is recovering after an in-flight wiki startup failure', {
+            error,
+            function: 'restartWiki',
+            workspaceID: id,
+          });
+        });
       }
       await this.stopWiki(id);
       await this.startWiki(id, userName);
@@ -1207,7 +1236,7 @@ export class Wiki implements IWikiService {
     operationType: OP,
     workspaceID: string,
     arguments_: Parameters<ISendWikiOperationsToBrowser[OP]>,
-  ) {
+  ): Promise<Awaited<ReturnType<ISendWikiOperationsToBrowser[OP]>>> {
     // At least wait for wiki started. Otherwise some services like theme may try to call this method even on app start.
     await this.getWorkerEnsure(workspaceID);
     const viewService = container.get<IViewService>(serviceIdentifier.View);
@@ -1219,9 +1248,8 @@ export class Wiki implements IWikiService {
     if (!Array.isArray(arguments_)) {
       throw new TypeError(`${JSON.stringify((arguments_ as unknown) ?? '')} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
-    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-
-    return await (sendWikiOperationsToBrowser[operationType](...arguments_) as unknown as ReturnType<ISendWikiOperationsToBrowser[OP]>);
+    const operation = sendWikiOperationsToBrowser[operationType];
+    return await invokeWikiOperation(operation, arguments_);
   }
 
   public async wikiOperationInServer<OP extends keyof IWorkerWikiOperations>(
@@ -1234,7 +1262,7 @@ export class Wiki implements IWikiService {
     const worker = await this.getWorkerEnsure(workspaceID);
 
     logger.debug(`Get worker ${operationType}`, { workspaceID, hasWorker: worker !== undefined, method: 'wikiOperationInServer', arguments_ });
-    const result = await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);
+    const result = await worker.wikiOperation(operationType, ...arguments_);
     logger.debug(`Get result ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
     return result;
   }

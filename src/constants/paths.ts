@@ -90,7 +90,11 @@ function getSqliteBinaryPath(): string {
     try {
       const report = process.report?.getReport?.() as { header?: { glibcVersionRuntime?: string } } | undefined;
       isMusl = !report?.header?.glibcVersionRuntime;
-    } catch {
+    } catch (error: unknown) {
+      // `process.report.getReport()` is unavailable on a few embedded Node
+      // builds. Keep the deterministic glibc path for that expected probe
+      // failure, but do not hide unrelated thrown values.
+      if (!(error instanceof Error)) throw error;
       isMusl = false;
     }
   }
@@ -118,8 +122,11 @@ export function getTiddlyWikiBootPath(wikiFolderLocation: string): string {
     if (existsSync(localTiddlyWikiBootPath)) {
       return localTiddlyWikiBootPath;
     }
-  } catch {
-    // Fall through to use built-in version if check fails
+  } catch (error: unknown) {
+    // `existsSync` only throws for an invalid path argument. A normal missing
+    // local installation is represented by `false` above, so preserve that
+    // fallback while surfacing unexpected failures.
+    if (!(error instanceof TypeError)) throw error;
   }
   return TIDDLYWIKI_PACKAGE_FOLDER;
 }
@@ -129,13 +136,13 @@ export const LOCALIZATION_FOLDER = isPackaged
   ? path.resolve(process.resourcesPath, localizationFolderName) // Packaged: resources/localization
   : path.resolve(sourcePath, localizationFolderName); // Dev/Unit test: project/localization
 
-// Default wiki locations
-// For E2E tests with --test-scenario, use scenario-isolated directory
-// For E2E tests without scenario, use cwd/wiki-test (legacy)
+// Default wiki locations. Packaged test runs must provide their scenario via
+// the environment so every run gets an isolated workspace root.
 
 /**
- * Parse test scenario identifier from environment variable or CLI argument.
- * On Windows Electron rejects custom CLI flags, so E2E tests pass TIDGI_TEST_SCENARIO via env.
+ * Parse the test scenario identifier from the environment variable.
+ * On Windows Electron rejects custom CLI flags, so E2E tests pass
+ * TIDGI_TEST_SCENARIO via env.
  * Note: Cannot import slugify from helpers due to circular dependency,
  * so we use a local version. Consider restructuring imports if this becomes problematic.
  */
@@ -154,35 +161,23 @@ function getTestScenarioSlugForWiki(): string | undefined {
     return slug || undefined;
   }
 
-  // Fallback to CLI argument for legacy compatibility
-  const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
-  if (!scenarioArgument) return undefined;
-
-  const rawName = scenarioArgument.split('=')[1];
-  if (!rawName) return undefined;
-
-  let s = rawName.normalize('NFKC');
-  s = s.replace(/\./g, '');
-  let slug = s.replace(/[^\p{L}\p{N}\s\-_()]/gu, '-');
-  slug = slug.replace(/-+/g, '-');
-  slug = slug.replace(/\s+/g, ' ').trim();
-  slug = slug.replace(/^-+|-+$/g, '').replace(/^[\s]+|[\s]+$/g, '');
-  if (slug.length > 60) slug = slug.substring(0, 60).trim();
-  slug = slug.replace(/[-\s]+$/g, '');
-  return slug || undefined;
+  return undefined;
 }
 
 const TEST_SCENARIO_SLUG_WIKI = getTestScenarioSlugForWiki();
 
-export const DEFAULT_FIRST_WIKI_FOLDER_PATH = (isTest && isPackaged)
-  ? TEST_SCENARIO_SLUG_WIKI
-    ? path.resolve(process.cwd(), 'test-artifacts', TEST_SCENARIO_SLUG_WIKI, testWikiFolderName) // E2E with scenario: test-artifacts/{scenario}/wiki-test
-    : path.resolve(process.cwd(), testWikiFolderName) // E2E without scenario (legacy): cwd/wiki-test
-  : isTest
-  ? path.resolve(__dirname, '..', '..', testWikiFolderName) // E2E dev: project root
-  : isDevelopmentOrTest
-  ? path.resolve(sourcePath, developmentWikiFolderName) // Dev: use sourcePath
-  : DESKTOP_PATH; // Production: use desktop
+export const DEFAULT_FIRST_WIKI_FOLDER_PATH = (() => {
+  if (isTest && isPackaged) {
+    const scenarioSlug = TEST_SCENARIO_SLUG_WIKI;
+    if (scenarioSlug === undefined) {
+      throw new Error('TIDGI_TEST_SCENARIO is required for packaged test runs');
+    }
+    return path.resolve(process.cwd(), 'test-artifacts', scenarioSlug, testWikiFolderName);
+  }
+  if (isTest) return path.resolve(__dirname, '..', '..', testWikiFolderName);
+  if (isDevelopmentOrTest) return path.resolve(sourcePath, developmentWikiFolderName);
+  return DESKTOP_PATH;
+})();
 export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
 export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_FIRST_WIKI_FOLDER_PATH, DEFAULT_FIRST_WIKI_NAME);
 // TiddlyWiki template folder

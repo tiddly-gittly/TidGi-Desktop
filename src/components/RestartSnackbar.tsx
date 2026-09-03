@@ -119,7 +119,7 @@ export function useRestartSnackbar(
               {restartType === RestartSnackbarType.App ? t('Dialog.RestartAppNow') : t('Dialog.RestartWikiNow')}
             </RestartButton>
             <Tooltip title={<span>{t('Dialog.Later')}</span>}>
-              <IconButton size='small' aria-label='close' color='inherit' onClick={handleCancelRestart}>
+              <IconButton size='small' aria-label={t('Dialog.Close')} color='inherit' onClick={handleCancelRestart}>
                 <CloseIcon fontSize='small' />
               </IconButton>
             </Tooltip>

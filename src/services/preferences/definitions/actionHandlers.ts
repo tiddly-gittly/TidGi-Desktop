@@ -1,3 +1,4 @@
+import { i18n } from '@services/libs/i18n';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 /**
@@ -43,8 +44,8 @@ const explicitHandlers: Record<string, (...arguments_: string[]) => Promise<void
   },
   'notification.test': async () => {
     await window.service.notification.show({
-      title: 'Test Notification',
-      body: 'It is working!',
+      title: i18n.t('Preference.TestNotification'),
+      body: i18n.t('Preference.ItIsWorking'),
     });
   },
   'native.pickDirectory': async () => {
