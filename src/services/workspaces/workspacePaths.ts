@@ -57,10 +57,11 @@ export function getWorkspaceType(workspace: IWorkspace): WorkspaceType {
   if (!isWikiWorkspace(workspace)) {
     return WorkspaceType.folder;
   }
-  if (workspace.workspaceType === WorkspaceType.html) {
-    return WorkspaceType.html;
+  const workspaceType = workspace.workspaceType;
+  if (workspaceType !== WorkspaceType.folder && workspaceType !== WorkspaceType.html) {
+    throw new Error('workspace_invalid_workspace_type');
   }
-  return WorkspaceType.folder;
+  return workspaceType;
 }
 
 export function isHtmlWikiWorkspace(workspace: IWorkspace): workspace is IHtmlWikiWorkspace {
@@ -77,9 +78,9 @@ export interface IHtmlWikiWorkspace extends IWikiWorkspace {
   htmlFileLocation: string;
 }
 
-/** Folder wiki (default for legacy workspaces without workspaceType) */
+/** Folder wiki workspace */
 export interface IFolderWikiWorkspace extends IWikiWorkspace {
-  workspaceType?: WorkspaceType.folder;
+  workspaceType: WorkspaceType.folder;
 }
 
 export function getHtmlFileLocation(workspace: IWikiWorkspace): string | undefined {

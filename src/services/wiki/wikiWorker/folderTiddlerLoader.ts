@@ -1,4 +1,4 @@
-import { lstatSync, readdirSync, realpathSync } from 'node:fs';
+import { readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import type { ITiddlersInFile, TiddlyWiki } from 'tiddlywiki';
 
@@ -54,20 +54,9 @@ function durationBucket(durationMilliseconds: number): string {
   return '>=1 s';
 }
 
-/**
- * Legacy folder workspaces may either store tiddlers directly in their root or
- * retain the conventional `tiddlers/` directory after losing tiddlywiki.info.
- * Prefer the narrower conventional directory whenever it exists.
- */
+/** Return the canonical `tiddlers/` storage root for a folder workspace. */
 export function resolveFolderTiddlerStoragePath(workspacePath: string): string {
-  const conventionalStoragePath = path.join(workspacePath, 'tiddlers');
-  try {
-    const stat = lstatSync(conventionalStoragePath);
-    if (stat.isDirectory() && !stat.isSymbolicLink()) return realpathSync(conventionalStoragePath);
-  } catch {
-    // A direct-root folder workspace does not have a tiddlers directory.
-  }
-  return realpathSync(workspacePath);
+  return realpathSync(path.join(workspacePath, 'tiddlers'));
 }
 
 /**

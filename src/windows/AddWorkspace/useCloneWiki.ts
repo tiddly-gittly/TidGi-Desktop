@@ -28,9 +28,9 @@ export function useValidateCloneWiki(
       errorInWhichComponentSetter({ gitRepoUrl: true });
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.mainWikiToLink.wikiFolderLocation) {
+    } else if (!isCreateMainWorkspace && !form.mainWikiSelection.id) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
-      errorInWhichComponentSetter({ mainWikiToLink: true });
+      errorInWhichComponentSetter({ mainWikiSelection: true });
       hasErrorSetter(true);
     } else if (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken.length > 0)) {
       wikiCreationMessageSetter(t('AddWorkspace.NotLoggedIn'));
@@ -48,7 +48,7 @@ export function useValidateCloneWiki(
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink.wikiFolderLocation,
+    form.mainWikiSelection.id,
     form.tagNames,
     errorInWhichComponentSetter,
   ]);

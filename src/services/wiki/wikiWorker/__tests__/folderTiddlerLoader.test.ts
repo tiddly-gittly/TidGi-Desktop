@@ -49,8 +49,9 @@ afterEach(() => {
 });
 
 describe('folder-as-tiddlers loading', () => {
-  it('prefers an existing conventional tiddlers directory', () => {
+  it('requires the canonical tiddlers directory', () => {
     const root = createTemporaryDirectory();
+    expect(() => resolveFolderTiddlerStoragePath(root)).toThrow();
     mkdirSync(path.join(root, 'tiddlers'));
 
     expect(resolveFolderTiddlerStoragePath(root)).toBe(realpathSync(path.join(root, 'tiddlers')));
@@ -58,13 +59,13 @@ describe('folder-as-tiddlers loading', () => {
 
   it('skips infrastructure, metadata, and symlink cycles while loading nested tiddlers', () => {
     const root = createTemporaryDirectory();
-    const one = writeFixtureFile(root, 'one.tid');
-    const two = writeFixtureFile(root, 'nested/two.tid');
-    writeFixtureFile(root, 'one.tid.meta');
+    const one = writeFixtureFile(root, 'tiddlers/one.tid');
+    const two = writeFixtureFile(root, 'tiddlers/nested/two.tid');
+    writeFixtureFile(root, 'tiddlers/one.tid.meta');
     for (const excluded of ['.git', 'files', 'node_modules', 'output', 'cache', '.cache']) {
-      writeFixtureFile(root, `${excluded}/must-not-load.tid`);
+      writeFixtureFile(root, `tiddlers/${excluded}/must-not-load.tid`);
     }
-    symlinkSync(root, path.join(root, 'nested', 'cycle'), process.platform === 'win32' ? 'junction' : 'dir');
+    symlinkSync(path.join(root, 'tiddlers'), path.join(root, 'tiddlers', 'nested', 'cycle'), process.platform === 'win32' ? 'junction' : 'dir');
     const { loadTiddlersFromFile, wiki } = createFakeWiki();
 
     const result = scanFolderTiddlers(wiki, root);
@@ -75,8 +76,8 @@ describe('folder-as-tiddlers loading', () => {
 
   it('fails with a diagnostic error at the configured file boundary', () => {
     const root = createTemporaryDirectory();
-    writeFixtureFile(root, 'one.tid');
-    writeFixtureFile(root, 'two.tid');
+    writeFixtureFile(root, 'tiddlers/one.tid');
+    writeFixtureFile(root, 'tiddlers/two.tid');
     const { wiki } = createFakeWiki();
 
     expect(() => scanFolderTiddlers(wiki, root, { maxFiles: 1 })).toThrow(FolderTiddlerScanError);
@@ -85,7 +86,7 @@ describe('folder-as-tiddlers loading', () => {
 
   it('fails with a diagnostic error at the configured depth boundary', () => {
     const root = createTemporaryDirectory();
-    writeFixtureFile(root, 'nested/one.tid');
+    writeFixtureFile(root, 'tiddlers/nested/one.tid');
     const { wiki } = createFakeWiki();
 
     expect(() => scanFolderTiddlers(wiki, root, { maxDepth: 0 })).toThrow(/maximum depth 0/i);
@@ -93,18 +94,18 @@ describe('folder-as-tiddlers loading', () => {
 
   it('reports bounded progress without exposing file contents', () => {
     const root = createTemporaryDirectory();
-    writeFixtureFile(root, 'one.tid');
+    writeFixtureFile(root, 'tiddlers/one.tid');
     const { wiki } = createFakeWiki();
     const onProgress = vi.fn();
 
     scanFolderTiddlers(wiki, root, { onProgress });
 
-    expect(onProgress).toHaveBeenNthCalledWith(1, { scannedFileCount: 1, stage: 'before', storagePath: realpathSync(root) });
+    expect(onProgress).toHaveBeenNthCalledWith(1, { scannedFileCount: 1, stage: 'before', storagePath: realpathSync(path.join(root, 'tiddlers')) });
     expect(onProgress).toHaveBeenNthCalledWith(2, {
       durationBucket: expect.any(String),
       scannedFileCount: 1,
       stage: 'after',
-      storagePath: realpathSync(root),
+      storagePath: realpathSync(path.join(root, 'tiddlers')),
     });
     expect(onProgress).toHaveBeenCalledTimes(2);
   });
@@ -112,7 +113,7 @@ describe('folder-as-tiddlers loading', () => {
   it('samples folder parsing progress at the first and every hundredth file', () => {
     const root = createTemporaryDirectory();
     for (let index = 1; index <= 101; index += 1) {
-      writeFixtureFile(root, `${String(index).padStart(3, '0')}.tid`);
+      writeFixtureFile(root, `tiddlers/${String(index).padStart(3, '0')}.tid`);
     }
     const { wiki } = createFakeWiki();
     const progressEvents: FolderTiddlerScanProgress[] = [];
@@ -130,11 +131,11 @@ describe('folder-as-tiddlers loading', () => {
     ]);
   });
 
-  it('keeps standard and folder loading mutually exclusive and deduplicates physical roots', () => {
+  it('loads configured sub-wikis once and deduplicates physical roots', () => {
     const root = createTemporaryDirectory();
     const subWiki = createTemporaryDirectory();
     writeFixtureFile(root, 'tiddlers/main.tid');
-    writeFixtureFile(subWiki, 'sub.tid');
+    writeFixtureFile(subWiki, 'tiddlers/sub.tid');
     const { loadTiddlersFromFile, loadWikiTiddlers, wiki } = createFakeWiki();
     const duplicateSubWikis = [
       { wikiFolderLocation: root },
@@ -145,26 +146,25 @@ describe('folder-as-tiddlers loading', () => {
       wiki,
       root,
       duplicateSubWikis,
-      { folderAsTiddlerStorage: true },
       { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
       { logFor: vi.fn(async () => undefined) },
     );
 
     loader(root);
 
-    expect(loadWikiTiddlers).not.toHaveBeenCalled();
-    expect(loadTiddlersFromFile).toHaveBeenCalledTimes(2);
+    expect(loadWikiTiddlers).toHaveBeenCalledOnce();
+    expect(loadTiddlersFromFile).toHaveBeenCalledOnce();
   });
 
   it('uses the stock loader exactly once for a standard tiddlywiki.info workspace', () => {
     const root = createTemporaryDirectory();
     writeFixtureFile(root, 'tiddlywiki.info');
+    mkdirSync(path.join(root, 'tiddlers'));
     const { loadTiddlersFromFile, loadWikiTiddlers, wiki } = createFakeWiki();
     const loader = createLoadWikiTiddlersWithSubWikis(
       wiki,
       root,
       [{ wikiFolderLocation: root }] as IWikiWorkspace[],
-      { folderAsTiddlerStorage: false },
       { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
       { logFor: vi.fn(async () => undefined) },
     );
@@ -190,7 +190,6 @@ describe('folder-as-tiddlers loading', () => {
       wiki,
       root,
       [{ wikiFolderLocation: included }] as IWikiWorkspace[],
-      { folderAsTiddlerStorage: false },
       { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
       { logFor: vi.fn(async () => undefined) },
     );
@@ -205,14 +204,14 @@ describe('folder-as-tiddlers loading', () => {
   it('bounded-scans a configured sub-wiki once when stock loading returns null', () => {
     const root = createTemporaryDirectory();
     const subWiki = createTemporaryDirectory();
-    writeFixtureFile(subWiki, 'sub.tid');
+    writeFixtureFile(root, 'tiddlers/main.tid');
+    writeFixtureFile(subWiki, 'tiddlers/sub.tid');
     const { loadTiddlersFromFile, loadWikiTiddlers, wiki } = createFakeWiki();
     loadWikiTiddlers.mockImplementation((wikiPath: string) => wikiPath === root ? { plugins: [] } : null);
     const loader = createLoadWikiTiddlersWithSubWikis(
       wiki,
       root,
       [{ wikiFolderLocation: subWiki }, { wikiFolderLocation: subWiki }] as IWikiWorkspace[],
-      { folderAsTiddlerStorage: false },
       { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
       { logFor: vi.fn(async () => undefined) },
     );

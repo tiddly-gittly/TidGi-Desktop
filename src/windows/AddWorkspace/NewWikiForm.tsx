@@ -22,7 +22,7 @@ export function NewWikiForm({
   useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
 
   // Fetch all tags from main wiki for autocomplete suggestions
-  const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+  const availableTags = useAvailableTags(form.mainWikiSelection.id, !isCreateMainWorkspace);
 
   const tagHelperText = tagInputValue.trim().length > 0
     ? t('AddWorkspace.TagNameInputWarning')
@@ -122,18 +122,18 @@ export function NewWikiForm({
         <>
           <SoftLinkToMainWikiSelect
             select
-            error={errorInWhichComponent.mainWikiToLink}
+            error={errorInWhichComponent.mainWikiSelection}
             label={t('AddWorkspace.MainWorkspaceLocation')}
-            helperText={form.mainWikiToLink.wikiFolderLocation &&
+            helperText={form.mainWikiSelection.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${form.mainWikiToLink.wikiFolderLocation}`}
-            value={form.mainWikiToLinkIndex}
+                    ${form.mainWikiSelection.wikiFolderLocation}`}
+            value={form.mainWikiSelectionIndex}
             slotProps={{ htmlInput: { 'data-testid': 'main-wiki-select' } }}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = Number(event.target.value);
               const selectedWorkspace = form.mainWorkspaceList[index];
               if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
-                form.mainWikiToLinkSetter({
+                form.mainWikiSelectionSetter({
                   wikiFolderLocation: selectedWorkspace.wikiFolderLocation,
                   port: selectedWorkspace.port,
                   id: selectedWorkspace.id,

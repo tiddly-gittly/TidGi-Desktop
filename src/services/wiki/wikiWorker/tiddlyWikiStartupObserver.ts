@@ -17,6 +17,20 @@ interface ObservableBoot {
   remainingStartupModules?: StartupTask[];
 }
 
+function isCallable(value: unknown): value is (...arguments_: unknown[]) => unknown {
+  return typeof value === 'function';
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return value !== null && typeof value === 'object' && typeof Reflect.get(value, 'then') === 'function';
+}
+
+function isObservableBoot(value: unknown): value is ObservableBoot {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  return isCallable(Reflect.get(value, 'executeNextStartupTask')) &&
+    isCallable(Reflect.get(value, 'isStartupTaskEligible'));
+}
+
 function asError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
@@ -28,11 +42,10 @@ function observeMethod(
   trace: Trace,
   afterSuccess?: () => void,
 ): void {
-  const methods = target as Record<string, unknown>;
-  const original = methods[methodName];
-  if (typeof original !== 'function') return;
+  const original: unknown = Reflect.get(target, methodName);
+  if (!isCallable(original)) return;
   let invocation = 0;
-  methods[methodName] = function observedMethod(this: unknown, ...arguments_: unknown[]) {
+  Reflect.set(target, methodName, function observedMethod(this: unknown, ...arguments_: unknown[]) {
     const invocationLabel = typeof label === 'string' ? label : label(arguments_, ++invocation);
     trace('debug', `TiddlyWiki phase begin: ${invocationLabel}`);
     const pendingTimer = setTimeout(() => {
@@ -40,7 +53,7 @@ function observeMethod(
     }, 15_000);
     pendingTimer.unref();
     try {
-      const result = (original as (...parameters: unknown[]) => unknown).apply(this, arguments_);
+      const result = Reflect.apply(original, this, arguments_);
       clearTimeout(pendingTimer);
       trace('debug', `TiddlyWiki phase end: ${invocationLabel}`);
       afterSuccess?.();
@@ -50,7 +63,7 @@ function observeMethod(
       trace('warn', `TiddlyWiki phase rejected: ${invocationLabel}: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
-  };
+  });
 }
 
 function sanitizedFolderIdentifier(value: unknown): string {
@@ -89,8 +102,8 @@ export function installTiddlyWikiStartupObserver(
   let wikiObserversInstalled = false;
   const installWikiObservers = (): void => {
     if (wikiObserversInstalled) return;
-    const wikiStore = (wikiInstance as unknown as { wiki?: object }).wiki;
-    if (wikiStore === undefined) {
+    const wikiStore = Reflect.get(wikiInstance, 'wiki');
+    if (wikiStore === undefined || wikiStore === null || typeof wikiStore !== 'object') {
       trace('warn', 'TiddlyWiki store observers skipped after initStartup: wiki store unavailable');
       return;
     }
@@ -110,8 +123,9 @@ export function installTiddlyWikiStartupObserver(
   observeMethod(wikiInstance.boot, 'loadStartup', 'boot.loadStartup', trace);
   observeMethod(wikiInstance.boot, 'execStartup', 'boot.execStartup', trace);
 
-  const boot = wikiInstance.boot as unknown as ObservableBoot;
-  if (typeof boot.executeNextStartupTask !== 'function') return;
+  const bootValue: unknown = wikiInstance.boot;
+  if (!isObservableBoot(bootValue)) return;
+  const boot = bootValue;
   const originalExecuteNextStartupTask = boot.executeNextStartupTask.bind(boot);
   let activeTask: { name: string; pendingTimer: NodeJS.Timeout } | undefined;
   const finishActiveTask = (outcome: 'end' | 'rejected', error?: unknown): void => {
@@ -140,7 +154,7 @@ export function installTiddlyWikiStartupObserver(
         nextTask.startup = function observedStartup(this: unknown, ...arguments_: unknown[]) {
           try {
             const result = originalStartup.apply(this, arguments_);
-            if (typeof (result as PromiseLike<unknown> | undefined)?.then === 'function') {
+            if (isPromiseLike(result)) {
               return Promise.resolve(result).catch((error: unknown) => {
                 finishActiveTask('rejected', error);
                 reportFatal(error);

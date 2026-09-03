@@ -187,8 +187,8 @@ describe('FileSystemAdaptor - Save Operations', () => {
     });
   });
 
-  describe('saveTiddler - Async/Await Mode', () => {
-    it('should resolve successfully without callback', async () => {
+  describe('saveTiddler - Required Callback', () => {
+    it('should resolve successfully with callback', async () => {
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler' },
       } as Tiddler;
@@ -207,7 +207,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(null, fileInfo);
       });
 
-      await expect(adaptor.saveTiddler(tiddler)).resolves.toBeUndefined();
+      await expect(adaptor.saveTiddler(tiddler, vi.fn())).resolves.toBeUndefined();
       // @ts-expect-error - TiddlyWiki global
       expect(global.$tw.boot.files['TestTiddler']).toBeDefined();
     });
@@ -219,7 +219,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
 
       mockUtils.generateTiddlerFileInfo.mockReturnValue(null);
 
-      await expect(adaptor.saveTiddler(tiddler)).rejects.toThrow(
+      await expect(adaptor.saveTiddler(tiddler, vi.fn())).rejects.toThrow(
         'No fileInfo returned from getTiddlerFileInfo',
       );
     });
@@ -239,7 +239,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(new Error('Write failed'));
       });
 
-      await expect(adaptor.saveTiddler(tiddler)).rejects.toThrow();
+      await expect(adaptor.saveTiddler(tiddler, vi.fn())).rejects.toThrow();
     });
 
     it('should preserve isEditableFile from existing fileInfo', async () => {
@@ -262,7 +262,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(null, fileInfo);
       });
 
-      await adaptor.saveTiddler(tiddler);
+      await adaptor.saveTiddler(tiddler, vi.fn());
 
       // @ts-expect-error - TiddlyWiki global
       expect(global.$tw.boot.files['TestTiddler'].isEditableFile).toBe(false);
@@ -293,7 +293,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(null, fileInfo);
       });
 
-      await adaptor.saveTiddler(tiddler);
+      await adaptor.saveTiddler(tiddler, vi.fn());
 
       // Verify that generateTiddlerFileInfo was called with .tid extension filter
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
@@ -373,7 +373,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(null, fileInfo);
       });
 
-      await adaptor.saveTiddler(tiddler);
+      await adaptor.saveTiddler(tiddler, vi.fn());
 
       expect(attemptCount).toBe(2);
     });
@@ -422,7 +422,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(diskFullError);
       });
 
-      await expect(adaptor.saveTiddler(tiddler)).rejects.toThrow();
+      await expect(adaptor.saveTiddler(tiddler, vi.fn())).rejects.toThrow();
 
       // Should only try once for non-lock errors
       expect(mockUtils.saveTiddlerToFile).toHaveBeenCalledTimes(1);
@@ -444,7 +444,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
         cb(new Error('Test error'));
       });
 
-      await expect(adaptor.saveTiddler(tiddler)).rejects.toThrow();
+      await expect(adaptor.saveTiddler(tiddler, vi.fn())).rejects.toThrow();
 
       expect(mockWiki.addTiddler).toHaveBeenCalledWith(
         expect.objectContaining({

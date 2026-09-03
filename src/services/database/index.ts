@@ -54,6 +54,10 @@ export async function deleteSQLiteDatabaseFiles(databasePath: string): Promise<v
   }
 }
 
+function isSettingsObject(value: unknown): value is Partial<ISettingFile> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 @injectable()
 export class DatabaseService implements IDatabaseService {
   // Database connection pool
@@ -62,7 +66,7 @@ export class DatabaseService implements IDatabaseService {
   private readonly schemaRegistry = new Map<string, SchemaConfig>();
 
   // Settings related fields
-  private settingFileContent: ISettingFile | undefined;
+  private settingFileContent: Partial<ISettingFile> | undefined;
   private settingBackupStream: rotateFs.RotatingFileStream | undefined;
   private readonly settingsWriteQueue = new SettingsWriteQueue();
 
@@ -76,9 +80,7 @@ export class DatabaseService implements IDatabaseService {
     // Guard against corrupted settings files that contain a non-object root value (e.g. a JSON string).
     // Such files pass JSON.parse without error but cause "Cannot create property 'x' on string" when
     // setSetting() tries to write into them.
-    this.settingFileContent = (rawSettings !== null && typeof rawSettings === 'object' && !Array.isArray(rawSettings))
-      ? rawSettings as unknown as ISettingFile
-      : {} as ISettingFile;
+    this.settingFileContent = isSettingsObject(rawSettings) ? rawSettings : {};
     // Initialize settings backup stream
     try {
       this.settingBackupStream = rotateFs.createStream(`settings.json.bak`, {

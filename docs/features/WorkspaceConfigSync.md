@@ -41,7 +41,6 @@ These fields represent user preferences that should follow the wiki across devic
 | `tokenAuth`                  | Whether token authentication is enabled      |
 | `enableHTTPAPI`              | Whether HTTP API is enabled                  |
 | `enableFileSystemWatch`      | Whether file system watching is enabled      |
-| `ignoreSymlinks`             | Whether to ignore symlinks in file watching  |
 | `backupOnInterval`           | Whether to backup on interval                |
 | `syncOnInterval`             | Whether to sync on interval                  |
 | `syncOnStartup`              | Whether to sync on startup                   |

@@ -33,7 +33,13 @@ vi.mock('@services/container', async () => {
       get: vi.fn((identifier: symbol) => {
         const description = identifier.toString();
         if (description.includes('Symbol(Workspace)')) {
-          return { get: vi.fn().mockResolvedValue({ id: 'pending', wikiFolderLocation: '/wikis/pending' }) };
+          return {
+            get: vi.fn().mockResolvedValue({
+              id: 'pending',
+              wikiFolderLocation: '/wikis/pending',
+              workspaceType: 'folder',
+            }),
+          };
         }
         if (description.includes('Symbol(Sync)')) {
           return { stopIntervalSync: mocks.stopIntervalSync };

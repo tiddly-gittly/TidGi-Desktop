@@ -9,6 +9,18 @@ import { wikiOperationScripts } from './scripts/common';
 
 export type IWorkerWikiOperations = typeof wikiOperationsInWikiWorker.wikiOperationsInServer;
 
+type WikiOperationFunction = (...arguments_: never[]) => unknown;
+
+function invokeWikiOperation<Operation extends WikiOperationFunction>(
+  operation: Operation,
+  arguments_: Parameters<Operation>,
+): ReturnType<Operation> {
+  // Reflect.apply is the only runtime operation that can invoke a function
+  // selected from a heterogeneous, validated operation map. Its generic
+  // return is tied to the same Operation type used for Parameters above.
+  return Reflect.apply(operation, undefined, arguments_) as ReturnType<Operation>;
+}
+
 /**
  * Similar to src/preload/wikiOperation.ts , but runs on the server side.
  */
@@ -104,16 +116,15 @@ export class WikiOperationsInWikiWorker {
   public wikiOperation<OP extends keyof typeof this.wikiOperationsInServer>(
     operationType: OP,
     ...arguments_: Parameters<IWorkerWikiOperations[OP]>
-  ): undefined | ReturnType<IWorkerWikiOperations[OP]> {
+  ): ReturnType<IWorkerWikiOperations[OP]> {
     if (typeof this.wikiOperationsInServer[operationType] !== 'function') {
       throw new TypeError(`${operationType} gets no useful handler`);
     }
     if (!Array.isArray(arguments_)) {
       throw new TypeError(`${JSON.stringify((arguments_ as unknown) ?? '')} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
-    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-
-    return this.wikiOperationsInServer[operationType]<T>(...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>;
+    const operation = this.wikiOperationsInServer[operationType];
+    return invokeWikiOperation(operation, arguments_);
   }
 }
 

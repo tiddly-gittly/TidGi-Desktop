@@ -40,6 +40,10 @@ function normalizeIndexPath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
 }
 
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
+
 export interface IUpdatedTiddlers {
   deletions: string[];
   modifications: string[];
@@ -123,10 +127,6 @@ export class FileSystemWatcher {
   /** Timer for debouncing syncer trigger */
   private syncerTriggerTimer: NodeJS.Timeout | undefined;
 
-  /** Whether to ignore symlinks */
-  private ignoreSymlinks: boolean = true;
-  private readonly useWikiFolderAsTiddlersPath: boolean;
-
   /**
    * Collected file changes waiting to be processed by syncer.
    * The syncer will call getUpdatedTiddlers() to retrieve these.
@@ -154,9 +154,7 @@ export class FileSystemWatcher {
     this.logger = options.logger;
     this.workspaceID = options.workspaceID;
     this.workspaceConfig = options.workspaceConfig;
-    this.useWikiFolderAsTiddlersPath = this.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
-
-    const preferredWatchPath = this.useWikiFolderAsTiddlersPath ? this.boot.wikiPath : this.boot.wikiTiddlersPath;
+    const preferredWatchPath = this.boot.wikiTiddlersPath;
     if (preferredWatchPath) {
       this.watchPathBase = path.resolve(preferredWatchPath);
     } else {
@@ -168,7 +166,6 @@ export class FileSystemWatcher {
 
     // Load config from workspace
     if (this.workspaceConfig) {
-      this.ignoreSymlinks = this.workspaceConfig.ignoreSymlinks;
       const externalAttachmentsFolderConfig = this.wiki.getTiddlerText('$:/config/ExternalAttachments/WikiFolderToMove', 'files');
       this.externalAttachmentsFolder = externalAttachmentsFolderConfig;
     }
@@ -330,8 +327,13 @@ export class FileSystemWatcher {
         const normalizedPath = path.normalize(absoluteFilePath);
         const stat = fs.statSync(normalizedPath);
         this.lastWriteStats.set(normalizedPath, { mtime: stat.mtimeMs, size: stat.size });
-      } catch {
-        // File may not exist (e.g. after delete) — that's fine
+      } catch (error: unknown) {
+        // File may not exist (e.g. after delete) — that's fine. Preserve a
+        // diagnostic for unrelated filesystem failures while keeping the
+        // watcher alive.
+        if (!isNodeError(error) || error.code !== 'ENOENT') {
+          this.logger.alert('FileSystemWatcher failed to record write metadata:', error);
+        }
       }
       this.scheduleGitNotification();
     }
@@ -534,7 +536,7 @@ export class FileSystemWatcher {
           if (stats.isDirectory()) {
             continue;
           }
-          if (this.ignoreSymlinks && stats.isSymbolicLink()) {
+          if (stats.isSymbolicLink()) {
             continue;
           }
           // Skip our own write echoes: compare mtime+size recorded by markSaveComplete()
@@ -810,7 +812,7 @@ export class FileSystemWatcher {
     }
 
     this.gitNotificationTimer = setTimeout(() => {
-      const wikiFolderLocation = this.useWikiFolderAsTiddlersPath ? this.watchPathBase : path.dirname(this.watchPathBase);
+      const wikiFolderLocation = path.dirname(this.watchPathBase);
       void notifyGitFileChangeBestEffort(git, wikiFolderLocation);
       this.gitNotificationTimer = undefined;
     }, GIT_NOTIFICATION_DELAY_MS);

@@ -7,7 +7,6 @@ import { waitForTiddlyWikiStartup } from './tiddlyWikiStartup';
 import { installTiddlyWikiStartupObserver } from './tiddlyWikiStartupObserver';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
-import type { TidgiService } from '@/types/tidgi-tw';
 import { workspaceLogContext } from '@services/libs/log/schema';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
@@ -36,7 +35,6 @@ type BootContext = Pick<
   | 'lifecycleGeneration'
   | 'readOnlyMode'
   | 'rootTiddler'
-  | 'useWikiFolderAsTiddlersPath'
   | 'shouldUseDarkColors'
   | 'subWikis'
   | 'tiddlyWikiHost'
@@ -62,7 +60,6 @@ async function bootWiki(
     readOnlyMode,
     rootTiddler = '$:/core/save/all',
     shouldUseDarkColors,
-    useWikiFolderAsTiddlersPath = false,
     subWikis = [],
     tiddlyWikiHost,
     tiddlyWikiPort,
@@ -100,20 +97,19 @@ async function bootWiki(
   process.env.TIDDLYWIKI_PLUGIN_PATH = pluginPaths.join(pathSeparator);
   process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
 
-  if (useWikiFolderAsTiddlersPath || subWikis.length > 0) {
+  if (subWikis.length > 0) {
     wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
       wikiInstance,
       homePath,
       subWikis,
-      { folderAsTiddlerStorage: useWikiFolderAsTiddlersPath },
       logContext,
       native,
     );
   }
 
   // TiddlyWiki's HTTP server requires both official plugins. Do not rely on a
-  // workspace's tiddlywiki.info to load filesystem implicitly: folders created
-  // by older TidGi versions and folders without wiki.info may omit it.
+  // workspace's tiddlywiki.info to load filesystem implicitly: the canonical
+  // workspace template always includes the filesystem plugin declaration.
   wikiInstance.boot.extraPlugins = getNodeWikiExtraPlugins(enableHTTPAPI, readOnlyMode);
 
   const readonlyArguments = readOnlyMode === true
@@ -123,7 +119,6 @@ async function bootWiki(
   const infoTiddlerText = `exports.getInfoTiddlerFields = () => [
     {title: "$:/info/tidgi/readOnlyMode", text: "${readOnlyMode === true ? 'yes' : 'no'}"},
     {title: "$:/info/tidgi/workspaceID", text: ${JSON.stringify(workspace.id)}},
-    {title: "$:/info/tidgi/useWikiFolderAsTiddlersPath", text: "${useWikiFolderAsTiddlersPath ? 'yes' : 'no'}"},
   ]`;
   wikiInstance.preloadTiddler({
     title: '$:/core/modules/info/tidgi-server.js',
@@ -173,10 +168,14 @@ async function bootWiki(
   fullBootArgv.length = 0;
   fullBootArgv.push(...argv);
 
-  type TidgiContainer = { tidgi?: { service?: TidgiService } };
-  const wikiInstanceWithTidgi = wikiInstance as unknown as (typeof wikiInstance & TidgiContainer);
-  wikiInstanceWithTidgi.tidgi = wikiInstanceWithTidgi.tidgi ?? {};
-  wikiInstanceWithTidgi.tidgi.service = service as unknown as TidgiService;
+  // Worker proxies intentionally expose promise-based methods, while the
+  // shared TiddlyWiki declaration describes the logical service surface. Use
+  // an object merge at this process boundary so we preserve any plugin-owned
+  // `$tw.tidgi` fields without asserting an incompatible proxy type.
+  const tidgiCandidate: unknown = Reflect.get(wikiInstance, 'tidgi');
+  const tidgi = tidgiCandidate !== null && typeof tidgiCandidate === 'object' ? tidgiCandidate : {};
+  Object.assign(tidgi, { service });
+  Reflect.set(wikiInstance, 'tidgi', tidgi);
 
   installTiddlyWikiStartupObserver(wikiInstance, traceStartup, (error) => {
     const message = `TiddlyWiki startup task failed: ${error.message} ${error.stack ?? ''}`;

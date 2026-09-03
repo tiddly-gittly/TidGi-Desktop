@@ -717,7 +717,14 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         rollbackWorkspaces[id] = { ...nextWorkspaces[id], order: previousWorkspaceOrders[id] };
       });
       if (Object.keys(rollbackWorkspaces).length > 0) {
-        await window.service.workspace.setWorkspaces(rollbackWorkspaces).catch(() => {});
+        try {
+          await window.service.workspace.setWorkspaces(rollbackWorkspaces);
+        } catch (rollbackError) {
+          throw new AggregateError(
+            [error, rollbackError],
+            'workspace reorder failed and its rollback could not be persisted',
+          );
+        }
       }
       throw error;
     }
