@@ -56,7 +56,7 @@ function rootSelector(mode: WikiEntryMode): string {
 
 When('I open the packaged MemeLoop wiki main view and sidebar with a real draggable tiddler', async function(this: ApplicationWorld) {
   assertWikiApplication(this);
-  const result = await executeTiddlyWikiCode<{ error?: string; success?: boolean }>(
+  const result = await executeTiddlyWikiCode<{ error?: string; success?: boolean; diagnostics?: string[] }>(
     this.app,
     `(function() {
       const sourceTitle = ${JSON.stringify(SOURCE_TITLE)};
@@ -72,8 +72,14 @@ When('I open the packaged MemeLoop wiki main view and sidebar with a real dragga
         text: '<$draggable tiddler=' + JSON.stringify(sourceTitle) + ' class="memeloop-e2e-drag-source">Drag real tiddler: ' + sourceTitle + '</$draggable>',
         type: 'text/vnd.tiddlywiki'
       }));
+      const diagnostics = [];
+      const bestEffortMutation = (label, mutation) => {
+        try { mutation(); } catch (error) {
+          diagnostics.push(label + ': ' + String(error).slice(0, 160));
+        }
+      };
       for (const title of [harnessTitle, 'MemeLoop Agent']) {
-        try { $tw.wiki.removeFromStory(title); } catch {}
+        bestEffortMutation('removeFromStory:' + title, () => $tw.wiki.removeFromStory(title));
         $tw.wiki.addToStory(title, undefined, '$:/StoryList', { openLinkFromOutsideRiver: 'top' });
       }
       if ($tw.pageWidgetNode?.refresh) {
@@ -90,10 +96,13 @@ When('I open the packaged MemeLoop wiki main view and sidebar with a real dragga
         return { error: 'Packaged MemeLoop sidebar tab button was not rendered' };
       }
       sidebarButton.click();
-      return { success: true };
+      return { success: true, ...(diagnostics.length > 0 ? { diagnostics } : {}) };
     })()`,
     this.currentWindow,
   );
+  if (result?.diagnostics?.length) {
+    console.warn(`Best-effort MemeLoop wiki mutations reported: ${result.diagnostics.join('; ').slice(0, 512)}`);
+  }
   if (!result?.success) throw new Error(result?.error ?? 'Failed to prepare the packaged MemeLoop wiki plugin');
 });
 

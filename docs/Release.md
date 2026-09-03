@@ -50,7 +50,7 @@ When the Intel runner is no longer available, either use another Intel runner or
 
 ```yaml
 - name: Install dependencies
-  run: pnpm install
+  run: pnpm install --frozen-lockfile
   env:
     npm_config_arch: ${{ matrix.arch }}
 ```
