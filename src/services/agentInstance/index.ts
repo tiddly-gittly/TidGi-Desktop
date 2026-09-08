@@ -65,6 +65,7 @@ import {
   type ConversationTimelinePage,
   createAgentRunError,
   type CreateScheduledTaskInput,
+  extractAgentRunError,
   type GetCompactionCandidatePageOptions,
   type GetConversationEventPageOptions,
   type GetConversationListPageOptions,
@@ -112,7 +113,7 @@ import {
 import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
 
 import * as repo from './agentRepository';
-import type { IAgentInstanceService } from './interface';
+import type { IAgentInstanceService, RendererAgentRunResult } from './interface';
 import { MemeLoopDesktopRuntime } from './runtime/runtime';
 import { createAgentDeviceRpcPendingUserMessage } from './runtime/userMessage';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
@@ -1331,6 +1332,12 @@ export class AgentInstanceService implements IAgentInstanceService {
     return handle;
   }
 
+  public async executeAgentRunForRenderer(
+    request: AgentDeviceRpcRunTurnRequest,
+  ): Promise<RendererAgentRunResult<MemeLoopRunHandle>> {
+    return this.rendererAgentRunResult(() => this.executeAgentRun(request));
+  }
+
   public async prepareAgentDeviceRpcRunTurn(request: RemoteAgentExecuteRequest): Promise<AgentDeviceRpcRunTurnRequest> {
     const { provenance } = request;
     const agent = await this.getAgentMetadata(provenance.conversationId);
@@ -1344,6 +1351,22 @@ export class AgentInstanceService implements IAgentInstanceService {
       await this.assertAgentAttachmentAuthorized(provenance.conversationId, request.attachment.reference, false);
     }
     return this.createAgentDeviceRpcRunTurn(request);
+  }
+
+  public async prepareAgentDeviceRpcRunTurnForRenderer(
+    request: RemoteAgentExecuteRequest,
+  ): Promise<RendererAgentRunResult<AgentDeviceRpcRunTurnRequest>> {
+    return this.rendererAgentRunResult(() => this.prepareAgentDeviceRpcRunTurn(request));
+  }
+
+  private async rendererAgentRunResult<T>(operation: () => Promise<T>): Promise<RendererAgentRunResult<T>> {
+    try {
+      return { kind: 'success', value: await operation() };
+    } catch (error) {
+      const agentRunError = extractAgentRunError(error);
+      if (agentRunError) return { kind: 'agent-run-error', error: agentRunError };
+      throw error;
+    }
   }
 
   public async getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined> {

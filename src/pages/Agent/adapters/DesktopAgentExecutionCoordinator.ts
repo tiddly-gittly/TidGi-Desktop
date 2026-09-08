@@ -18,6 +18,7 @@ import type {
   RemoteAgentRetryRequest,
 } from 'memeloop';
 import {
+  AgentRunFailure,
   ATTACHMENT_UPLOAD_LIMITS,
   buildAttachmentUploadChunkRequest,
   createAgentDeviceRpcClient,
@@ -41,9 +42,9 @@ type DesktopAgentInstanceExecutionPort = Pick<
   | 'cancelAgentRun'
   | 'commitAgentAttachmentUpload'
   | 'deleteConversationTurn'
-  | 'executeAgentRun'
+  | 'executeAgentRunForRenderer'
   | 'getAgentRunStatus'
-  | 'prepareAgentDeviceRpcRunTurn'
+  | 'prepareAgentDeviceRpcRunTurnForRenderer'
   | 'readAgentAttachmentChunk'
   | 'retryConversationTurn'
   | 'writeAgentAttachmentChunk'
@@ -126,11 +127,13 @@ export function createDesktopAgentExecutionCoordinator(
   ): Promise<RemoteAgentExecutionResult> => {
     const staged = await stageAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
     try {
-      const runTurnRequest = await services.agentInstance.prepareAgentDeviceRpcRunTurn({
-        ...request,
-        ...(staged === undefined ? {} : { attachment: staged.attachment }),
-      });
-      const handle = await services.agentInstance.executeAgentRun(runTurnRequest);
+      const runTurnRequest = unwrapRendererAgentRunResult(
+        await services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer({
+          ...request,
+          ...(staged === undefined ? {} : { attachment: staged.attachment }),
+        }),
+      );
+      const handle = unwrapRendererAgentRunResult(await services.agentInstance.executeAgentRunForRenderer(runTurnRequest));
       assertRunHandleCorrelation(handle, request.provenance);
       await notifyRunAccepted(options, request.provenance, handle, services);
       await waitForAcceptedRun({
@@ -178,10 +181,12 @@ export function createDesktopAgentExecutionCoordinator(
             createId,
             callOptions.signal,
           );
-        const runTurnRequest = await services.agentInstance.prepareAgentDeviceRpcRunTurn({
-          ...request,
-          ...(forwardedAttachment === undefined ? {} : { attachment: forwardedAttachment }),
-        });
+        const runTurnRequest = unwrapRendererAgentRunResult(
+          await services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer({
+            ...request,
+            ...(forwardedAttachment === undefined ? {} : { attachment: forwardedAttachment }),
+          }),
+        );
         callOptions.signal.throwIfAborted();
         const handle = await client.runTurn(runTurnRequest);
         assertRunHandleCorrelation(handle, request.provenance);
@@ -507,6 +512,11 @@ function createRemoteExecutionFailure(
     });
   }
   return error;
+}
+
+function unwrapRendererAgentRunResult<T>(result: import('@/services/agentInstance/interface').RendererAgentRunResult<T>): T {
+  if (result.kind === 'success') return result.value;
+  throw new AgentRunFailure(result.error);
 }
 
 async function cancelTrackedRun(

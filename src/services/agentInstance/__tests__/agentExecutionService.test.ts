@@ -238,6 +238,19 @@ describe('AgentInstanceService durable execution IPC', () => {
         settingTarget: { kind: 'runtime', section: 'agent' },
       }),
     });
+    await expect(service.executeAgentRunForRenderer({
+      conversationId: 'conversation-1',
+      definitionId: 'definition-1',
+      message: 'hello',
+      requestId: 'request-2',
+      turnId: 'turn-2',
+    })).resolves.toMatchObject({
+      kind: 'agent-run-error',
+      error: expect.objectContaining({
+        code: 'PROVIDER_CONFIGURATION_MISSING',
+        settingTarget: { kind: 'runtime', section: 'agent' },
+      }),
+    });
     expect(sendMessage).not.toHaveBeenCalled();
   });
 

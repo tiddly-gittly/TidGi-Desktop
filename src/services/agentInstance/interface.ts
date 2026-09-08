@@ -19,6 +19,7 @@ import type {
   AgentInstanceMetadata,
   AgentInstanceMetadataUpdate,
   AgentManagementCallOptions,
+  AgentRunError,
   AgentRuntimeView,
   AttachmentReference,
   ChatMessage,
@@ -76,6 +77,11 @@ import type {
   WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadProtocol';
 
+/** Clone-safe renderer IPC outcome for a typed agent submission failure. */
+export type RendererAgentRunResult<T> =
+  | { kind: 'success'; value: T }
+  | { kind: 'agent-run-error'; error: AgentRunError };
+
 /**
  * Agent instance service to manage chat instances and messages
  */
@@ -108,6 +114,8 @@ export interface IAgentInstanceService {
 
   /** Accept one exact-identity durable local run for the shared execution coordinator. */
   executeAgentRun(request: AgentDeviceRpcRunTurnRequest): Promise<MemeLoopRunHandle>;
+  /** Renderer-facing clone-safe counterpart of executeAgentRun. */
+  executeAgentRunForRenderer(request: AgentDeviceRpcRunTurnRequest): Promise<RendererAgentRunResult<MemeLoopRunHandle>>;
   /** Read the restart-safe terminal/progress state of one durable local run. */
   getAgentRunStatus(runId: string): Promise<MemeLoopRunStatus | undefined>;
   /** Cancel one exact durable run without cancelling unrelated conversation work. */
@@ -119,6 +127,8 @@ export interface IAgentInstanceService {
   abortAgentAttachmentUpload(input: DesktopAttachmentUploadScope): Promise<void>;
   /** Prepare host-rendered wiki/attachment metadata without persisting a local turn. */
   prepareAgentDeviceRpcRunTurn(request: RemoteAgentExecuteRequest): Promise<AgentDeviceRpcRunTurnRequest>;
+  /** Renderer-facing clone-safe counterpart of prepareAgentDeviceRpcRunTurn. */
+  prepareAgentDeviceRpcRunTurnForRenderer(request: RemoteAgentExecuteRequest): Promise<RendererAgentRunResult<AgentDeviceRpcRunTurnRequest>>;
   /** Read only an attachment authorized for this exact conversation. */
   readAgentAttachmentChunk(input: ReadDesktopAgentAttachmentChunkInput): Promise<Uint8Array | null>;
   preparePromptPreviewExecutionModelRequest(input: PromptPreviewPrepareRequest): Promise<PromptPreviewPreparedExecution>;
@@ -428,6 +438,8 @@ export const AgentInstanceServiceIPCDescriptor = {
     resolveAskQuestion: ProxyPropertyType.Function,
     rollbackTurn: ProxyPropertyType.Function,
     executeAgentRun: ProxyPropertyType.Function,
+    executeAgentRunForRenderer: ProxyPropertyType.Function,
+    prepareAgentDeviceRpcRunTurnForRenderer: ProxyPropertyType.Function,
     releasePromptPreviewAuditSession: ProxyPropertyType.Function,
     subscribeToAgentUpdates: ProxyPropertyType.Function$,
     subscribeToConversationUpdates: ProxyPropertyType.Function$,

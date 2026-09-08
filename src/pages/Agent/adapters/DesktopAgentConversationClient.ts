@@ -1,4 +1,6 @@
-import type { AgentAttachmentInput, AgentConversationClient, AgentRuntimeView } from 'memeloop';
+import { type AgentAttachmentInput, type AgentConversationClient, AgentRunFailure, type AgentRuntimeView } from 'memeloop';
+
+import type { RendererAgentRunResult } from '@/services/agentInstance/interface';
 
 import { createSecureBrowserUuid } from './createSecureBrowserUuid';
 
@@ -95,20 +97,22 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
     throwIfAborted(options?.signal);
     const requestId = `conversation-client:request:${createSecureBrowserUuid()}`;
     const turnId = `conversation-client:turn:${createSecureBrowserUuid()}`;
-    const runTurnRequest = await window.service.agentInstance.prepareAgentDeviceRpcRunTurn({
-      target: { kind: 'local' },
-      provenance: {
-        conversationId,
-        definitionId: agent.agentDefId,
-        requestId,
-        turnId,
-      },
-      message: content,
-      ...(attachment === undefined ? {} : { attachment }),
-      ...(wikiTiddlers === undefined ? {} : { wikiTiddlers }),
-    });
+    const runTurnRequest = unwrapRendererAgentRunResult(
+      await window.service.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer({
+        target: { kind: 'local' },
+        provenance: {
+          conversationId,
+          definitionId: agent.agentDefId,
+          requestId,
+          turnId,
+        },
+        message: content,
+        ...(attachment === undefined ? {} : { attachment }),
+        ...(wikiTiddlers === undefined ? {} : { wikiTiddlers }),
+      }),
+    );
     throwIfAborted(options?.signal);
-    const handle = await window.service.agentInstance.executeAgentRun(runTurnRequest);
+    const handle = unwrapRendererAgentRunResult(await window.service.agentInstance.executeAgentRunForRenderer(runTurnRequest));
     if (handle.conversationId !== conversationId || handle.requestId !== requestId || handle.turnId !== turnId) {
       await window.service.agentInstance.cancelAgentRun(handle.runId);
       throw new Error('durable_agent_run_identity_mismatch');
@@ -139,3 +143,8 @@ export const createDesktopAgentConversationClient = (): AgentConversationClient 
     return response;
   },
 });
+
+function unwrapRendererAgentRunResult<T>(result: RendererAgentRunResult<T>): T {
+  if (result.kind === 'success') return result.value;
+  throw new AgentRunFailure(result.error);
+}

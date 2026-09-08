@@ -30,12 +30,12 @@ describe('DesktopAgentExecutionCoordinator', () => {
       message: 'hello',
     })).resolves.toEqual({ runId: 'run-1', synchronization: 'not-required' });
 
-    expect(services.agentInstance.prepareAgentDeviceRpcRunTurn).toHaveBeenCalledWith({
+    expect(services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer).toHaveBeenCalledWith({
       target: { kind: 'local' },
       provenance,
       message: 'hello',
     });
-    expect(services.agentInstance.executeAgentRun).toHaveBeenCalledWith({
+    expect(services.agentInstance.executeAgentRunForRenderer).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
       definitionId: 'definition-1',
       message: 'rendered:hello',
@@ -101,7 +101,7 @@ describe('DesktopAgentExecutionCoordinator', () => {
     });
     const serviceError = new Error(runError.code);
     Object.defineProperty(serviceError, 'agentRunError', { value: structuredClone(runError) });
-    services.agentInstance.executeAgentRun = vi.fn().mockRejectedValue(serviceError);
+    services.agentInstance.executeAgentRunForRenderer = vi.fn().mockResolvedValue({ kind: 'agent-run-error', error: runError });
     const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
       createId: sequentialIds(),
       pollIntervalMs: 1,
@@ -204,7 +204,7 @@ describe('DesktopAgentExecutionCoordinator', () => {
       'memeloop.agent.runTurn',
       'memeloop.agent.getRunStatus',
     ]);
-    expect(services.agentInstance.prepareAgentDeviceRpcRunTurn).toHaveBeenCalledWith(expect.objectContaining({
+    expect(services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer).toHaveBeenCalledWith(expect.objectContaining({
       target: { kind: 'remote', peerId: 'peer-remote' },
       attachment: { kind: 'committed', reference: attachmentReference() },
     }));
@@ -396,17 +396,20 @@ function createServices(): DesktopAgentExecutionCoordinatorServices {
       cancelAgentRun: vi.fn().mockResolvedValue(true),
       commitAgentAttachmentUpload: vi.fn().mockResolvedValue({ kind: 'committed', reference }),
       deleteConversationTurn: vi.fn().mockResolvedValue({ ok: true }),
-      executeAgentRun: vi.fn(async request => handle('run-1', request.turnId, request.requestId)),
+      executeAgentRunForRenderer: vi.fn(async request => ({ kind: 'success' as const, value: handle('run-1', request.turnId, request.requestId) })),
       getAgentRunStatus: vi.fn().mockResolvedValue(runStatus('completed')),
-      prepareAgentDeviceRpcRunTurn: vi.fn(async request => ({
-        conversationId: request.provenance.conversationId,
-        definitionId: request.provenance.definitionId,
-        message: `rendered:${request.message}`,
-        requestId: request.provenance.requestId,
-        turnId: request.provenance.turnId,
-        userMessage: {
-          content: `rendered:${request.message}`,
-          ...(request.attachment === undefined ? {} : { attachments: [request.attachment.reference] }),
+      prepareAgentDeviceRpcRunTurnForRenderer: vi.fn(async request => ({
+        kind: 'success' as const,
+        value: {
+          conversationId: request.provenance.conversationId,
+          definitionId: request.provenance.definitionId,
+          message: `rendered:${request.message}`,
+          requestId: request.provenance.requestId,
+          turnId: request.provenance.turnId,
+          userMessage: {
+            content: `rendered:${request.message}`,
+            ...(request.attachment === undefined ? {} : { attachments: [request.attachment.reference] }),
+          },
         },
       })),
       readAgentAttachmentChunk: vi.fn().mockResolvedValue(new TextEncoder().encode('hello attachment')),
