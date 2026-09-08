@@ -31,8 +31,8 @@ import {
   ToolApprovalBroker,
 } from 'memeloop';
 
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { disabledDesktopAgentToolIds, mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { hasUsableProviderCredentialReference } from '@services/externalAPI/providerCredentials';
