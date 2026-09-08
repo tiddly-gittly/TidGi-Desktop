@@ -1,4 +1,4 @@
-import { readdirSync, realpathSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import type { ITiddlersInFile, TiddlyWiki } from 'tiddlywiki';
 
@@ -54,9 +54,17 @@ function durationBucket(durationMilliseconds: number): string {
   return '>=1 s';
 }
 
-/** Return the canonical `tiddlers/` storage root for a folder workspace. */
+/**
+ * Resolve a folder workspace's tiddler storage. Simplified workspaces keep
+ * tiddlers at their root after `tiddlywiki.info` and `tiddlers/` are removed.
+ */
 export function resolveFolderTiddlerStoragePath(workspacePath: string): string {
-  return realpathSync(path.join(workspacePath, 'tiddlers'));
+  const conventionalStoragePath = path.join(workspacePath, 'tiddlers');
+  if (existsSync(conventionalStoragePath)) {
+    const stat = lstatSync(conventionalStoragePath);
+    if (stat.isDirectory() && !stat.isSymbolicLink()) return realpathSync(conventionalStoragePath);
+  }
+  return realpathSync(workspacePath);
 }
 
 /**

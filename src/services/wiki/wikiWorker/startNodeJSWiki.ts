@@ -10,6 +10,7 @@ import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { workspaceLogContext } from '@services/libs/log/schema';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
+import { existsSync } from 'node:fs';
 import type { Server } from 'node:http';
 import inspector from 'node:inspector';
 import path from 'path';
@@ -97,13 +98,18 @@ async function bootWiki(
   process.env.TIDDLYWIKI_PLUGIN_PATH = pluginPaths.join(pathSeparator);
   process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
 
-  if (subWikis.length > 0) {
+  // A simplified workspace intentionally has no `tiddlywiki.info` and stores
+  // tiddlers at its root. Detect that durable on-disk format instead of relying
+  // on a removed workspace-identity flag.
+  const folderAsTiddlerStorage = !existsSync(path.join(homePath, 'tiddlywiki.info'));
+  if (folderAsTiddlerStorage || subWikis.length > 0) {
     wikiInstance.loadWikiTiddlers = createLoadWikiTiddlersWithSubWikis(
       wikiInstance,
       homePath,
       subWikis,
       logContext,
       native,
+      { folderAsTiddlerStorage },
     );
   }
 

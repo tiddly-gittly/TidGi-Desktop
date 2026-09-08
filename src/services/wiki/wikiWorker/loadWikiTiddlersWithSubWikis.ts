@@ -15,7 +15,9 @@ export function createLoadWikiTiddlersWithSubWikis(
   subWikis: IWikiWorkspace[],
   logContext: LogContext,
   nativeLogger: WorkerLogSink,
+  options: { folderAsTiddlerStorage?: boolean } = {},
 ) {
+  const { folderAsTiddlerStorage = false } = options;
   const originalLoadWikiTiddlers = wikiInstance.loadWikiTiddlers.bind(wikiInstance);
   const loadedStorageRoots = new Set<string>();
 
@@ -60,11 +62,18 @@ export function createLoadWikiTiddlersWithSubWikis(
     wikiPath: string,
     loadOptions?: { parentPaths?: string[]; readOnly?: boolean },
   ) {
-    const wikiInfo = originalLoadWikiTiddlers(wikiPath, loadOptions);
-    // Stock includeWikis recursion also enters this wrapper. Register every
-    // successfully loaded physical wiki root so the same directory cannot be
-    // scanned again through TidGi's configured sub-wiki list.
-    if (wikiInfo !== null) loadedStorageRoots.add(resolveFolderTiddlerStoragePath(wikiPath));
+    let wikiInfo: ReturnType<typeof originalLoadWikiTiddlers>;
+    if (folderAsTiddlerStorage && wikiPath === homePath) {
+      wikiInstance.boot.wikiTiddlersPath = resolveFolderTiddlerStoragePath(homePath);
+      loadFolderRoot(homePath);
+      wikiInfo = null;
+    } else {
+      wikiInfo = originalLoadWikiTiddlers(wikiPath, loadOptions);
+      // Stock includeWikis recursion also enters this wrapper. Register every
+      // successfully loaded physical wiki root so the same directory cannot be
+      // scanned again through TidGi's configured sub-wiki list.
+      if (wikiInfo !== null) loadedStorageRoots.add(resolveFolderTiddlerStoragePath(wikiPath));
+    }
 
     // Included standard wikis recurse through this wrapper. Only the physical
     // home root may inject configured TidGi sub-wikis.

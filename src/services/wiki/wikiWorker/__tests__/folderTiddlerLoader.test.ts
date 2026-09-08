@@ -49,9 +49,13 @@ afterEach(() => {
 });
 
 describe('folder-as-tiddlers loading', () => {
-  it('requires the canonical tiddlers directory', () => {
+  it('uses the workspace root when a simplified wiki has no tiddlers directory', () => {
     const root = createTemporaryDirectory();
-    expect(() => resolveFolderTiddlerStoragePath(root)).toThrow();
+    expect(resolveFolderTiddlerStoragePath(root)).toBe(realpathSync(root));
+  });
+
+  it('prefers the canonical tiddlers directory for standard wikis', () => {
+    const root = createTemporaryDirectory();
     mkdirSync(path.join(root, 'tiddlers'));
 
     expect(resolveFolderTiddlerStoragePath(root)).toBe(realpathSync(path.join(root, 'tiddlers')));
@@ -154,6 +158,26 @@ describe('folder-as-tiddlers loading', () => {
 
     expect(loadWikiTiddlers).toHaveBeenCalledOnce();
     expect(loadTiddlersFromFile).toHaveBeenCalledOnce();
+  });
+
+  it('loads a simplified main workspace from its root and configures the adaptor path', () => {
+    const root = createTemporaryDirectory();
+    const tiddlerPath = writeFixtureFile(root, 'root.tid');
+    const { loadTiddlersFromFile, loadWikiTiddlers, wiki } = createFakeWiki();
+    const loader = createLoadWikiTiddlersWithSubWikis(
+      wiki,
+      root,
+      [],
+      { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
+      { logFor: vi.fn(async () => undefined) },
+      { folderAsTiddlerStorage: true },
+    );
+
+    loader(root);
+
+    expect(loadWikiTiddlers).not.toHaveBeenCalled();
+    expect(loadTiddlersFromFile).toHaveBeenCalledWith(realpathSync(tiddlerPath));
+    expect(wiki.boot.wikiTiddlersPath).toBe(realpathSync(root));
   });
 
   it('uses the stock loader exactly once for a standard tiddlywiki.info workspace', () => {
