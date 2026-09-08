@@ -85,6 +85,7 @@ describe('DesktopAgentExecutionCoordinator', () => {
     }
 
     expect(extractAgentRunError(received)).toEqual(runError);
+    expect(extractAgentRunError(JSON.parse(JSON.stringify(received)))).toEqual(runError);
     expect(coordinator.getSnapshot('conversation-1').error).toBe(received);
     await coordinator.dispose();
   });

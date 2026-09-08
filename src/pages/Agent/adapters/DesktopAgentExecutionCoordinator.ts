@@ -501,7 +501,9 @@ function createRemoteExecutionFailure(
   if (agentRunError) {
     Object.defineProperty(error, 'agentRunError', {
       value: agentRunError,
-      enumerable: false,
+      // The session controller serializes adapter failures before it builds its
+      // AgentRunFailure. Keep the public, bounded error contract visible there.
+      enumerable: true,
     });
   }
   return error;
