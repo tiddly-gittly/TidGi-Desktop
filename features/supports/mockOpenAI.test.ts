@@ -23,12 +23,18 @@ describe('Mock OpenAI Server', () => {
       },
       // Call 3: Wiki operation with default workspace (will fail)
       {
-        response: '<tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>',
+        toolCall: {
+          name: 'wiki-operation',
+          arguments: { workspaceName: 'default', operation: 'wiki-add-tiddler', title: 'testNote', text: 'test' },
+        },
         stream: false,
       },
       // Call 4: Wiki operation with wiki workspace (will succeed)
       {
-        response: '<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>',
+        toolCall: {
+          name: 'wiki-operation',
+          arguments: { workspaceName: 'wiki', operation: 'wiki-add-tiddler', title: 'test', text: '这是测试内容' },
+        },
         stream: false,
       },
       // Call 5: Wiki operation confirmation
@@ -112,7 +118,15 @@ describe('Mock OpenAI Server', () => {
           },
           {
             role: 'assistant',
-            content: '<tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>',
+            content: null,
+            tool_calls: [{
+              id: 'call_wiki_search',
+              type: 'function',
+              function: {
+                name: 'wiki-search',
+                arguments: JSON.stringify({ workspaceName: '-VPTqPdNOEZHGO5vkwllY', filter: '[title[Index]]' }),
+              },
+            }],
           },
           {
             role: 'tool',
@@ -156,8 +170,12 @@ describe('Mock OpenAI Server', () => {
     const data = await response.json();
     expect(data.model).toBe('custom-model-name');
     expect(data.choices[0].message.role).toBe('assistant');
-    // First call returns wiki-search tool use, not the Hello response
-    expect(data.choices[0].message.content).toContain('<tool_use name="wiki-search">');
+    // First call returns a native wiki-search tool call, not the Hello response.
+    expect(data.choices[0].message.content).toBeNull();
+    expect(data.choices[0].message.tool_calls[0].function).toEqual({
+      name: 'wiki-search',
+      arguments: JSON.stringify({ workspaceName: '-VPTqPdNOEZHGO5vkwllY', filter: '[title[Index]]' }),
+    });
   });
 
   it('should support streaming response (first API call)', async () => {
@@ -205,7 +223,7 @@ describe('Mock OpenAI Server', () => {
   });
 
   it('should reproduce exact three-call conversation (wiki search + wiki operation)', async () => {
-    // Call 1: First API call returns wiki search tool use
+    // Call 1: First API call returns a native wiki-search tool call.
     let res = await fetch(`${server.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-key' },
@@ -214,9 +232,11 @@ describe('Mock OpenAI Server', () => {
 
     expect(res.status).toBe(200);
     let data = await res.json();
-    expect(String(data.choices[0].message.content)).toBe(
-      '<tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>',
-    );
+    expect(data.choices[0].message.content).toBeNull();
+    expect(data.choices[0].message.tool_calls[0].function).toEqual({
+      name: 'wiki-search',
+      arguments: JSON.stringify({ workspaceName: '-VPTqPdNOEZHGO5vkwllY', filter: '[title[Index]]' }),
+    });
 
     // Call 2: Second API call returns explanation
     res = await fetch(`${server.baseUrl}/v1/chat/completions`, {
@@ -226,7 +246,18 @@ describe('Mock OpenAI Server', () => {
         model: 'test-model',
         messages: [
           { role: 'user', content: '搜索 wiki 中的 index 条目并解释' },
-          { role: 'assistant', content: '<tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>' },
+          {
+            role: 'assistant',
+            content: null,
+            tool_calls: [{
+              id: 'call_wiki_search',
+              type: 'function',
+              function: {
+                name: 'wiki-search',
+                arguments: JSON.stringify({ workspaceName: '-VPTqPdNOEZHGO5vkwllY', filter: '[title[Index]]' }),
+              },
+            }],
+          },
           { role: 'tool', content: 'Tool: wiki-search\nParameters: ...\nError: Workspace not found' },
         ],
       }),
@@ -236,7 +267,7 @@ describe('Mock OpenAI Server', () => {
     data = await res.json();
     expect(String(data.choices[0].message.content)).toContain('TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明');
 
-    // Call 3: Third API call (start wiki operation) returns default workspace tool use
+    // Call 3: Third API call returns a native wiki-operation call for the default workspace.
     res = await fetch(`${server.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-key' },
@@ -250,9 +281,11 @@ describe('Mock OpenAI Server', () => {
 
     expect(res.status).toBe(200);
     data = await res.json();
-    expect(String(data.choices[0].message.content)).toBe(
-      '<tool_use name="wiki-operation">{"workspaceName":"default","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>',
-    );
+    expect(data.choices[0].message.content).toBeNull();
+    expect(data.choices[0].message.tool_calls[0].function).toEqual({
+      name: 'wiki-operation',
+      arguments: JSON.stringify({ workspaceName: 'default', operation: 'wiki-add-tiddler', title: 'testNote', text: 'test' }),
+    });
   });
 
   it('integrates the mock server with the exact canonical account route', async () => {
