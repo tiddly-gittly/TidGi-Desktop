@@ -11,8 +11,9 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
 import type { AgentDefinition, PromptConcatStreamState } from 'memeloop';
-import { getBuiltinLoopProfiles, mergeAgentToolsIntoFrameworkConfig } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -68,7 +69,7 @@ describe('default agent tools -> prompt integration', () => {
     vi.spyOn(agentDefinitionService, 'getAgentDef').mockResolvedValue(definition);
 
     const agent = await agentInstanceService.createAgent(definition.id, { id: nanoid() });
-    const mergedConfig = mergeAgentToolsIntoFrameworkConfig(
+    const mergedConfig = mergeDesktopAgentToolsIntoFrameworkConfig(
       definition.agentFrameworkConfig,
       definition.agentTools,
     );
@@ -109,5 +110,56 @@ describe('default agent tools -> prompt integration', () => {
     expect(allContent).toContain('## ask-question');
     expect(allContent).toContain('manage-todo');
     expect(allContent).toContain('**Description**');
+  }, 30_000);
+
+  it('removes an explicitly disabled Desktop wiki tool from the generated request', async () => {
+    const profile = getBuiltinLoopProfiles().find(agent => agent.id === 'memeloop:general-assistant');
+    if (!profile) throw new Error('Missing built-in general assistant profile');
+    const definition: AgentDefinition = {
+      ...toAgentDefinition(profile),
+      modelConfig: { providerId: 'mock', modelId: 'mock-model' },
+      agentTools: [{ toolId: 'wikiSearch', enabled: true }],
+      agentFrameworkConfig: {
+        ...profile.agentFrameworkConfig,
+        plugins: [{ id: 'wiki-search-editor', toolId: 'wikiSearch', enabled: false }],
+      },
+    };
+    vi.spyOn(agentDefinitionService, 'getAgentDef').mockResolvedValue(definition);
+
+    const agent = await agentInstanceService.createAgent(definition.id, { id: nanoid() });
+    const mergedConfig = mergeDesktopAgentToolsIntoFrameworkConfig(
+      definition.agentFrameworkConfig,
+      definition.agentTools,
+    );
+    expect(mergedConfig.plugins.find(plugin => plugin.toolId === 'wikiSearch')).toMatchObject({ enabled: false });
+
+    const prepared = await agentInstanceService.preparePromptPreviewExecutionModelRequest({
+      requestId: `agent-tools-disabled:${nanoid()}`,
+      conversationId: agent.id,
+      inputText: '帮我搜一下 wiki 里的笔记',
+    });
+    let lastCompleteState: PromptConcatStreamState | undefined;
+    try {
+      await new Promise<void>((resolve, reject) => {
+        agentInstanceService.concatPromptPreview({
+          sessionId: prepared.sessionId,
+          expectedRevision: prepared.revision,
+          agentFrameworkConfig: mergedConfig,
+        }).subscribe({
+          next: state => {
+            if (state.isComplete) lastCompleteState = state;
+          },
+          error: reject,
+          complete: resolve,
+        });
+      });
+    } finally {
+      await agentInstanceService.releasePromptPreviewAuditSession({
+        sessionId: prepared.sessionId,
+        expectedRevision: prepared.revision,
+      });
+    }
+
+    expect(JSON.stringify(lastCompleteState?.flatPrompts)).not.toContain('wiki-search');
   }, 30_000);
 });

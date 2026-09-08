@@ -28,7 +28,7 @@ describe('agent definition framework config editing', () => {
     const customTool = editable.plugins?.find(plugin => plugin.toolId === 'customTool');
 
     expect(wikiSearch).toMatchObject({
-      enabled: true,
+      enabled: false,
       wikiSearchParam: { sourceType: 'custom-wiki' },
     });
     expect(customTool).toMatchObject({ enabled: false });

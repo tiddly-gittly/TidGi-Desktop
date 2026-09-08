@@ -1,7 +1,7 @@
 import type { AgentDefinition, AgentFrameworkConfig } from 'memeloop';
-import { mergeAgentToolsIntoFrameworkConfig } from 'memeloop/tools';
+import { mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
 
 /** Materialize host tool declarations in the editable prompt configuration. */
 export function createEditableAgentFrameworkConfig(definition: AgentDefinition): AgentFrameworkConfig {
-  return mergeAgentToolsIntoFrameworkConfig(definition.agentFrameworkConfig, definition.agentTools);
+  return mergeDesktopAgentToolsIntoFrameworkConfig(definition.agentFrameworkConfig, definition.agentTools);
 }

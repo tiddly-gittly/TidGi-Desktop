@@ -25,7 +25,6 @@ import {
   createAgentLoopRunner,
   createMemeLoopRuntime,
   materializeAgentInstanceModel,
-  mergeAgentToolsIntoFrameworkConfig,
   promptConcatStream,
   ProviderRegistry,
   registerBuiltinPromptPlugins,
@@ -33,6 +32,7 @@ import {
 } from 'memeloop';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { disabledDesktopAgentToolIds, mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { hasUsableProviderCredentialReference } from '@services/externalAPI/providerCredentials';
@@ -70,10 +70,15 @@ export async function resolveDesktopAgentDefinition(options: {
   const modelConfig = isMatchingInstance
     ? instance.modelConfig ?? definition.modelConfig
     : definition.modelConfig;
+  const effectiveFrameworkConfig = mergeDesktopAgentToolsIntoFrameworkConfig(frameworkConfig, definition.agentTools);
+  const disabledToolIds = disabledDesktopAgentToolIds(effectiveFrameworkConfig);
 
   return {
     ...definition,
-    agentFrameworkConfig: mergeAgentToolsIntoFrameworkConfig(frameworkConfig, definition.agentTools),
+    agentFrameworkConfig: effectiveFrameworkConfig,
+    ...(definition.agentTools === undefined ? {} : {
+      agentTools: definition.agentTools.filter(tool => !disabledToolIds.has(tool.toolId)),
+    }),
     ...(modelConfig === undefined ? {} : { modelConfig }),
   };
 }

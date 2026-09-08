@@ -152,7 +152,10 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   // Auto-save after edits settle. Cleanup is essential: a stale save must not
   // overwrite a newer prompt configuration after the preview has been created.
   useEffect(() => {
-    if (!agentDefinition) {
+    // A controlled text input transiently holds an empty name while the user
+    // replaces it. Do not persist that invalid intermediate definition or
+    // surface a misleading preview-agent creation failure.
+    if (!agentDefinition || !agentDefinition.name.trim()) {
       return;
     }
 
@@ -176,7 +179,7 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   // Create preview agent for testing - ensure latest config is saved first
   useEffect(() => {
     const createPreviewAgent = async () => {
-      if (!agentDefinition) {
+      if (!agentDefinition || !agentDefinition.name.trim()) {
         // No agent definition available
         return;
       }

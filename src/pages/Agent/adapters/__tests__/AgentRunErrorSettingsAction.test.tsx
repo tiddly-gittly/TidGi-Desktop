@@ -4,16 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { handleDesktopAgentErrorAction } from '../openAgentRunErrorSettings';
 
-// The package is linked from the Core worktree and therefore owns another React install.
-// Keep this Desktop integration test on one React renderer while exercising the real click contract and action handler.
-vi.mock('@memeloop/react-ui/agent', () => ({
-  AgentChatConfigError: ({ actionLabel, actionId, onAction }: {
-    actionLabel?: string;
-    actionId?: string;
-    onAction?: (actionId?: string) => Promise<void>;
-  }) => <button type='button' onClick={() => void onAction?.(actionId)}>{actionLabel}</button>,
-}));
-
 describe('Desktop Agent run error settings action', () => {
   afterEach(() => {
     vi.restoreAllMocks();

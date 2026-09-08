@@ -106,6 +106,38 @@ describe('resolveDesktopAgentDefinition', () => {
     expect(resolved?.agentFrameworkConfig?.prompts[0]?.text).toBe('definition prompt');
   });
 
+  it('keeps an explicit persisted tool disablement in the effective next-turn configuration', async () => {
+    const definition: AgentDefinition = {
+      id: 'definition-1',
+      name: 'Assistant',
+      description: 'Base definition',
+      systemPrompt: '',
+      tools: [],
+      version: '1',
+      agentFrameworkConfig: {
+        plugins: [{ id: 'wiki-search-editor', toolId: 'wikiSearch', enabled: false }],
+      },
+      agentTools: [{ toolId: 'wikiSearch', enabled: true, parameters: { wikiSearchParam: { sourceType: 'desktop' } } }],
+    };
+
+    const resolved = await resolveDesktopAgentDefinition({
+      agentId: 'conversation-1',
+      definitionId: definition.id,
+      agentDefinitionService: createDefinitionService({
+        getAgentDef: vi.fn(async () => definition),
+      }),
+      agentInstanceService: createInstanceService({
+        getAgentMetadata: vi.fn(async () => agentInstance({ agentDefId: definition.id })),
+      }),
+    });
+
+    expect(resolved?.agentFrameworkConfig?.plugins?.find(plugin => plugin.toolId === 'wikiSearch')).toMatchObject({
+      enabled: false,
+      wikiSearchParam: { sourceType: 'desktop' },
+    });
+    expect(resolved?.agentTools?.map(tool => tool.toolId)).not.toContain('wikiSearch');
+  });
+
   it('uses the per-turn conversation identity supplied by a shared Core runtime', async () => {
     const definition: AgentDefinition = {
       id: 'definition-1',
