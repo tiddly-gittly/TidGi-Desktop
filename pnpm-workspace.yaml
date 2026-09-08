@@ -54,7 +54,7 @@ allowBuilds:
 blockExoticSubdeps: false
 
 minimumReleaseAgeExclude:
-  - '@memeloop/react-ui@0.2.0'
+  - '@memeloop/react-ui@0.2.0 || 0.2.1'
   - '@typescript-eslint/eslint-plugin@8.61.0'
   - '@typescript-eslint/parser@8.61.0'
   - '@typescript-eslint/project-service@8.61.0'

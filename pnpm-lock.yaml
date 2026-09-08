@@ -63,8 +63,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(memeloop@0.3.0(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
       '@memeloop/react-ui':
-        specifier: ^0.2.0
-        version: 0.2.0(3941b3e0c900678eb0f597645a0716b5)
+        specifier: ^0.2.1
+        version: 0.2.1(3941b3e0c900678eb0f597645a0716b5)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(supports-color@10.2.2)(zod@4.4.3)
@@ -2181,8 +2181,8 @@ packages:
     peerDependencies:
       memeloop: ^0.3.0
 
-  '@memeloop/react-ui@0.2.0':
-    resolution: {integrity: sha512-vep80K2Fa3cvyTj4AJYsKtBkJ8cJI7VDxBe5wW2IyzvGY31Ae07WPpwNdUs620+xlylRfeCPsFoMjcN6ZU0ZiA==}
+  '@memeloop/react-ui@0.2.1':
+    resolution: {integrity: sha512-y8RMT4qQZBd9x9rEy8LG4zvd1JZorfxGl6pywq067luRwv4KnJOMWjS8C2MgmvIbblDuP4KFwRhhKlCsewBY4A==}
     peerDependencies:
       '@assistant-ui/react': ^0.15.16
       '@emotion/react': '>=11.0.0 <12.0.0'
@@ -11756,7 +11756,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@memeloop/react-ui@0.2.0(3941b3e0c900678eb0f597645a0716b5)':
+  '@memeloop/react-ui@0.2.1(3941b3e0c900678eb0f597645a0716b5)':
     dependencies:
       '@assistant-ui/react': 0.15.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(immer@11.1.15)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@emotion/react': 11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)
