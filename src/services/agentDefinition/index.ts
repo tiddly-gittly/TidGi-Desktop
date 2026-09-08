@@ -48,6 +48,10 @@ function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
     tools: [],
     version: '1',
     ...profile,
+    // Core profiles identify their execution loop canonically. Desktop owns
+    // the persisted editor field, so adapt the portable name at this boundary
+    // instead of requiring Core to retain a Desktop compatibility alias.
+    ...(profile.loopId === undefined ? {} : { agentFrameworkID: profile.loopId }),
   }));
   const desktopWikiTools = portableDefinitions
     .find(definition => definition.id === DESKTOP_WIKI_PROFILE_ID)
@@ -76,7 +80,7 @@ function projectAgentDefinition(entity: AgentDefinitionEntity): AgentDefinition 
     ...(entity.avatarUrl === undefined ? {} : { avatarUrl: entity.avatarUrl }),
     ...(entity.agentFrameworkID === undefined ? {} : { agentFrameworkID: entity.agentFrameworkID }),
     ...(entity.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
-    ...(entity.modelConfig === undefined ? {} : { modelConfig: entity.modelConfig }),
+    ...(entity.modelConfig == null ? {} : { modelConfig: entity.modelConfig }),
     ...(entity.agentTools === undefined ? {} : { agentTools: entity.agentTools }),
     ...(entity.heartbeat === undefined ? {} : { heartbeat: entity.heartbeat }),
   };

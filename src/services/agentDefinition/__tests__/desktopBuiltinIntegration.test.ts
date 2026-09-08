@@ -1,3 +1,4 @@
+import { AGENT_TOOL_LOOP_ID } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -23,6 +24,16 @@ describe('Desktop built-in general assistant integration', () => {
   it('resolves the fresh bundled definition and new instance with Desktop Wiki capabilities', async () => {
     const definitionId = getDefaultAgentDefinitionId();
     const definition = await definitions.getAgentDef(definitionId);
+    // Published Core profiles expose the canonical loopId. Desktop must map
+    // it into its persisted editor field so both prompt and plugin forms can
+    // request the matching schema.
+    expect(definition?.agentFrameworkID).toBe(AGENT_TOOL_LOOP_ID);
+    expect(instances.getFrameworkConfigSchema(definition?.agentFrameworkID ?? '')).toMatchObject({
+      properties: expect.objectContaining({
+        prompts: expect.any(Object),
+        plugins: expect.any(Object),
+      }),
+    });
     expect(definition?.agentTools?.map(tool => tool.toolId)).toEqual(expect.arrayContaining([
       'workspacesList',
       'wikiSearch',
