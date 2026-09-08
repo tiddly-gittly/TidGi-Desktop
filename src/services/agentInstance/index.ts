@@ -148,7 +148,7 @@ function projectAgentRuntimeView(agent: AgentRuntimeView): AgentRuntimeView {
     status: agent.status,
     created: agent.created,
     ...(agent.modified === undefined ? {} : { modified: agent.modified }),
-    ...(agent.modelConfig === undefined ? {} : { modelConfig: agent.modelConfig }),
+    ...(agent.modelConfig == null ? {} : { modelConfig: agent.modelConfig }),
     ...(agent.avatarUrl === undefined ? {} : { avatarUrl: agent.avatarUrl }),
     ...(agent.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: agent.agentFrameworkConfig }),
     closed: agent.closed,

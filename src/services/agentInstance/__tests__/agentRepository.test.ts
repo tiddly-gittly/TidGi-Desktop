@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstanceEntity } from '@services/database/schema/agent';
 import type { AgentDefinition } from 'memeloop';
-import { createAgent } from '../agentRepository';
+import { createAgent, getAgentMetadata } from '../agentRepository';
 
 describe('agentRepository.createAgent', () => {
   const mockDefinition: AgentDefinition = {
@@ -86,5 +86,26 @@ describe('agentRepository.createAgent', () => {
     expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: false }));
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits a persisted null model config so Core can use the definition or global selection', async () => {
+    const entity = {
+      id: 'agent-instance-1',
+      agentDefId: mockDefinition.id,
+      status: { state: 'idle' },
+      created: new Date(),
+      modelConfig: null,
+      closed: false,
+      volatile: false,
+      preview: false,
+    } as unknown as AgentInstanceEntity;
+    const repo = {
+      findOne: vi.fn(async () => entity),
+    } as unknown as Repository<AgentInstanceEntity>;
+
+    const metadata = await getAgentMetadata(repo, entity.id);
+
+    expect(metadata).toBeDefined();
+    expect(metadata).not.toHaveProperty('modelConfig');
   });
 });

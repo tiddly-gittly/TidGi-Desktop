@@ -193,7 +193,7 @@ function projectAgentInstanceMetadata(entity: AgentInstanceEntity): AgentInstanc
     status: entity.status,
     created: entity.created,
     ...(entity.modified === undefined ? {} : { modified: entity.modified }),
-    ...(entity.modelConfig === undefined ? {} : { modelConfig: entity.modelConfig }),
+    ...(entity.modelConfig == null ? {} : { modelConfig: entity.modelConfig }),
     ...(entity.avatarUrl === undefined ? {} : { avatarUrl: entity.avatarUrl }),
     ...(entity.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
     closed: entity.closed,
