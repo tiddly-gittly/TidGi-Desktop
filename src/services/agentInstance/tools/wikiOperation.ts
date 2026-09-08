@@ -14,6 +14,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
+import { createNativeModelToolDefinitions } from './nativeModelTools';
 
 /**
  * Wiki Operation Config Schema (user-configurable in UI)
@@ -201,7 +202,13 @@ export const wikiOperationDefinition = defineDesktopTool({
     'wiki-operation': WikiOperationToolSchema,
   },
 
-  onProcessPrompts({ config, toolConfig, injectToolList }) {
+  onProcessPrompts({ config, toolConfig, injectToolList, registerModelTool }) {
+    for (
+      const tool of createNativeModelToolDefinitions({
+        'wiki-operation': WikiOperationToolSchema,
+      })
+    ) registerModelTool(tool);
+
     const toolListPosition = config.toolListPosition;
     if (!toolListPosition?.targetId) return;
 

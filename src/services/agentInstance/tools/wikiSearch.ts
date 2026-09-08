@@ -16,6 +16,7 @@ import type { ModelAssignments, ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
+import { createNativeModelToolDefinitions } from './nativeModelTools';
 
 /**
  * Wiki Search Config Schema (user-configurable in UI)
@@ -340,7 +341,14 @@ export const wikiSearchDefinition = defineDesktopTool({
     'wiki-update-embeddings': WikiUpdateEmbeddingsToolSchema,
   },
 
-  onProcessPrompts({ config, toolConfig, injectToolList }) {
+  onProcessPrompts({ config, toolConfig, injectToolList, registerModelTool }) {
+    for (
+      const tool of createNativeModelToolDefinitions({
+        'wiki-search': WikiSearchToolSchema,
+        'wiki-update-embeddings': WikiUpdateEmbeddingsToolSchema,
+      })
+    ) registerModelTool(tool);
+
     const toolListPosition = config.toolListPosition;
     if (!toolListPosition?.targetId) return;
 
