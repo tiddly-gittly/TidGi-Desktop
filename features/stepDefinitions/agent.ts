@@ -250,6 +250,16 @@ Then('I should see {int} messages in chat history', async function(this: Applica
   });
 });
 
+Then('the last AI request tool message should contain {string}', function(this: ApplicationWorld, expectedText: string) {
+  const request = this.mockOpenAIServer?.getLastRequest();
+  if (!request) throw new Error('No AI request has been made yet');
+  const toolMessages = request.messages.filter(message => message.role === 'tool');
+  const lastToolMessage = toolMessages.at(-1);
+  if (!lastToolMessage?.content?.includes(expectedText)) {
+    throw new Error('The next model request did not receive the expected real tool output');
+  }
+});
+
 Then('the last AI request should contain system prompt {string}', async function(this: ApplicationWorld, expectedPrompt: string) {
   if (!this.mockOpenAIServer) {
     throw new Error('Mock OpenAI server is not running');

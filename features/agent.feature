@@ -21,7 +21,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     # Add scenario-specific responses to the mock server
     Given I add mock OpenAI responses:
       | response                                                                                                                                                             | stream | embedding | toolName | toolArguments |
-      |                                                                                                                                                                      | false  |           | wiki-search | {"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"} |
+      |                                                                                                                                                                      | false  |           | wiki-search | {"workspaceName":"wiki","filter":"[title[Index]]"} |
       | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |           |          | |
     # Proceed with agent workflow in main window
     # Step 1: Click new tab button
@@ -39,6 +39,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I type "搜索 wiki 中的 index 条目并解释" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 4 messages in chat history
+    And the last AI request tool message should contain "Index"
     # Verify the last message contains the AI explanation about Index
     And I should see "explanation in last message and explanation about edit" elements with selectors:
       | element description         | selector                                                    |
