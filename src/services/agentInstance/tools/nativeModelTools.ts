@@ -1,4 +1,4 @@
-import { toolSchemaToJsonSchema } from 'memeloop';
+import { assertPortableLlmJsonValue, toolSchemaToJsonSchema } from 'memeloop';
 
 import type { ToolSchema } from 'memeloop';
 
@@ -6,8 +6,9 @@ import type { ToolSchema } from 'memeloop';
 export function createNativeModelToolDefinitions(
   schemas: Record<string, ToolSchema>,
 ) {
-  return Object.entries(schemas).map(([name, schema]) => ({
-    name,
-    inputSchema: toolSchemaToJsonSchema(schema),
-  }));
+  return Object.entries(schemas).map(([name, schema]) => {
+    const inputSchema = toolSchemaToJsonSchema(schema);
+    assertPortableLlmJsonValue(inputSchema);
+    return { name, inputSchema };
+  });
 }
