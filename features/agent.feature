@@ -20,9 +20,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Wiki-search tool usage
     # Add scenario-specific responses to the mock server
     Given I add mock OpenAI responses:
-      | response                                                                                                                                                             | stream |
-      | <tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>                                                          | false  |
-      | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |
+      | response                                                                                                                                                             | stream | embedding | toolName | toolArguments |
+      |                                                                                                                                                                      | false  |           | wiki-search | {"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"} |
+      | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |           |          | |
     # Proceed with agent workflow in main window
     # Step 1: Click new tab button
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
@@ -49,10 +49,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
   Scenario: Wiki operation
     # Add scenario-specific responses to the mock server
     Given I add mock OpenAI responses:
-      | response                                                                                                                                                                                | stream |
-      | 先测试失败情况<tool_use name="wiki-operation">{"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"}</tool_use>                      | false  |
-      | 然后测试成功情况<tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"}</tool_use>使用启动时自动创建的 wiki 工作区 | false  |
-      | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |
+      | response                                                                                                                                                                                | stream | embedding | toolName | toolArguments |
+      |                                                                                                                                                                                         | false  |           | wiki-operation | {"workspaceName":"test-expected-to-fail","operation":"wiki-add-tiddler","title":"testNote","text":"test"} |
+      |                                                                                                                                                                                         | false  |           | wiki-operation | {"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"test","text":"这是测试内容"} |
+      | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |           |          | |
     # Step 1: Start a fresh tab and run the two-round wiki operation flow
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "search interface" element with selector ".aa-Autocomplete"

@@ -10,8 +10,11 @@ describe('Mock OpenAI Server', () => {
     const rules = [
       // Call 1: Wiki search tool use
       {
-        response: '<tool_use name="wiki-search">{"workspaceName":"-VPTqPdNOEZHGO5vkwllY","filter":"[title[Index]]"}</tool_use>',
         stream: false,
+        toolCall: {
+          name: 'wiki-search',
+          arguments: { workspaceName: '-VPTqPdNOEZHGO5vkwllY', filter: '[title[Index]]' },
+        },
       },
       // Call 2: Wiki search explanation
       {
@@ -81,11 +84,15 @@ describe('Mock OpenAI Server', () => {
     expect(data).toHaveProperty('choices');
     expect(data.choices).toHaveLength(1);
     expect(data.choices[0]).toHaveProperty('message');
-    expect(data.choices[0].message).toHaveProperty('content');
-    expect(data.choices[0].message.content).toContain('<tool_use name="wiki-search">');
-    expect(data.choices[0].message.content).toContain('workspaceName');
-    expect(data.choices[0].message.content).toContain('-VPTqPdNOEZHGO5vkwllY');
-    expect(data.choices[0].finish_reason).toBe('stop');
+    expect(data.choices[0].message).toHaveProperty('tool_calls');
+    expect(data.choices[0].message.tool_calls).toEqual([expect.objectContaining({
+      type: 'function',
+      function: {
+        name: 'wiki-search',
+        arguments: JSON.stringify({ workspaceName: '-VPTqPdNOEZHGO5vkwllY', filter: '[title[Index]]' }),
+      },
+    })]);
+    expect(data.choices[0].finish_reason).toBe('tool_calls');
   });
 
   it('should return valid chat completion with tool result response (second API call)', async () => {
@@ -120,9 +127,9 @@ describe('Mock OpenAI Server', () => {
 
     const data = await response.json();
     expect(data.choices[0].message.role).toBe('assistant');
-    // Each test is reset, so this is also the first call returning wiki-search tool use
-    expect(data.choices[0].message.content).toContain('<tool_use name="wiki-search">');
-    expect(data.choices[0].finish_reason).toBe('stop');
+    // Each test is reset, so this is also the first call returning wiki-search.
+    expect(data.choices[0].message.tool_calls[0].function.name).toBe('wiki-search');
+    expect(data.choices[0].finish_reason).toBe('tool_calls');
     expect(data.model).toBe('test-model'); // Verify it returns the requested model
   });
 
