@@ -93,6 +93,7 @@ describe('ProviderConfig', () => {
     renderProviderConfig([account], setAccounts);
 
     expect(screen.getByText('OpenAI Main')).toBeInTheDocument();
+    expect(screen.getByTestId('configured-provider-select')).toBeInTheDocument();
     expect(screen.getByTestId('model-chip-reasoning')).toHaveTextContent('Reasoning model');
     await waitFor(() => expect(screen.getByTestId('provider-api-key-input')).toHaveValue('sk-decrypted-test'));
     expect(screen.getByTestId('provider-api-key-input')).toHaveAttribute('type', 'text');
@@ -139,7 +140,9 @@ describe('ProviderConfig', () => {
     const user = userEvent.setup();
     renderProviderConfig([], setAccounts);
 
-    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    const addProviderButton = screen.getByRole('button', { name: 'Preference.AddNewProvider' });
+    expect(addProviderButton).toHaveAttribute('data-testid', 'add-new-provider-button');
+    await user.click(addProviderButton);
     await user.type(screen.getByTestId('new-provider-name-input'), providerId);
     await user.type(screen.getByTestId('new-provider-base-url-input'), 'https://models.example.test/v1');
     await user.click(screen.getByTestId('add-provider-submit-button'));

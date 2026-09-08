@@ -138,6 +138,7 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
           onChange={event => {
             setInputModalities(event.target.value);
           }}
+          slotProps={{ htmlInput: { 'data-testid': 'model-input-modalities-input' } }}
         />
         <TextField
           fullWidth
@@ -147,6 +148,7 @@ export function NewModelDialog({ open, route, model, onClose, onSave }: NewModel
           onChange={event => {
             setOutputModalities(event.target.value);
           }}
+          slotProps={{ htmlInput: { 'data-testid': 'model-output-modalities-input' } }}
         />
         <FormControlLabel
           control={

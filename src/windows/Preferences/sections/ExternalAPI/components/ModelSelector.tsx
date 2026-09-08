@@ -8,6 +8,7 @@ import { TextField } from '../../../PreferenceComponents';
 import { ModelFeatureChip } from './ModelFeatureChip';
 
 interface ModelSelectorProps {
+  testId: string;
   selectedModel: AgentModelConfig | undefined;
   modelOptions: Array<
     readonly [
@@ -20,7 +21,7 @@ interface ModelSelectorProps {
   onClear?: () => void;
 }
 
-export function ModelSelector({ selectedModel, modelOptions, onChange, onClear }: ModelSelectorProps) {
+export function ModelSelector({ testId, selectedModel, modelOptions, onChange, onClear }: ModelSelectorProps) {
   const { t } = useTranslation('agent');
   const selectedValue = selectedModel
     ? modelOptions.find(([account, route]) => account.providerId === selectedModel.providerId && route.modelId === selectedModel.modelId) ?? null
@@ -29,6 +30,7 @@ export function ModelSelector({ selectedModel, modelOptions, onChange, onClear }
 
   return (
     <Autocomplete
+      data-testid={testId}
       value={selectedValue}
       onChange={(_, value) => {
         if (value) {

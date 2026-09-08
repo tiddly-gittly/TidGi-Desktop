@@ -169,6 +169,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                       secondary={t('Preference.DefaultAIModelSelectionDescription')}
                     />
                     <ModelSelector
+                      testId='default-model-selector'
                       selectedModel={defaultModelConfig}
                       modelOptions={modelOptionsForAssignment(accounts, 'default')}
                       onChange={selection => {
@@ -184,6 +185,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                       secondary={t('Preference.DefaultEmbeddingModelSelectionDescription')}
                     />
                     <ModelSelector
+                      testId='embedding-model-selector'
                       selectedModel={embeddingConfig}
                       modelOptions={modelOptionsForAssignment(accounts, 'embedding')}
                       onChange={selection => {
@@ -199,6 +201,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                       secondary={t('Preference.DefaultSpeechModelSelectionDescription')}
                     />
                     <ModelSelector
+                      testId='speech-model-selector'
                       selectedModel={speechConfig}
                       modelOptions={modelOptionsForAssignment(accounts, 'speech')}
                       onChange={selection => {
@@ -214,6 +217,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                       secondary={t('Preference.DefaultImageGenerationModelSelectionDescription')}
                     />
                     <ModelSelector
+                      testId='image-generation-model-selector'
                       selectedModel={imageGenerationConfig}
                       modelOptions={modelOptionsForAssignment(accounts, 'imageGeneration')}
                       onChange={selection => {
@@ -229,6 +233,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                       secondary={t('Preference.DefaultTranscriptionsModelSelectionDescription')}
                     />
                     <ModelSelector
+                      testId='transcriptions-model-selector'
                       selectedModel={transcriptionsConfig}
                       modelOptions={modelOptionsForAssignment(accounts, 'transcriptions')}
                       onChange={selection => {
@@ -244,6 +249,7 @@ export function ExternalAPI(props: ICustomSectionProps): React.JSX.Element {
                       secondary={t('Preference.DefaultFreeModelSelectionDescription')}
                     />
                     <ModelSelector
+                      testId='free-model-selector'
                       selectedModel={freeModelConfig}
                       modelOptions={modelOptionsForAssignment(accounts, 'free')}
                       onChange={selection => {

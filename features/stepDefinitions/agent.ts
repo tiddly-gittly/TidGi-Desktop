@@ -9,7 +9,7 @@ import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getSettingsPath } from '../supports/paths';
-import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -370,24 +370,31 @@ Then('the last AI request user message should not contain {string}', async funct
 
 // Factory function to create scenario-specific provider config
 // Returns a new object each time to avoid state pollution between scenarios
+const TEST_MODEL_IDS = {
+  default: 'test-model',
+  embedding: 'test-embedding-model',
+  speech: 'test-speech-model',
+  imageGeneration: 'test-image-model',
+} as const;
+
 function createProviderConfig(): ProviderAccountConfig {
   return {
     providerId: 'test-provider',
     providerType: 'openai-compatible',
     baseUrl: 'http://127.0.0.1:1/v1', // Replaced with the mock server's actual port before launch.
     models: [
-      { modelId: 'test-model', wireModelId: 'test-model', apiMode: 'chat-completions' },
-      { modelId: 'test-embedding-model', wireModelId: 'test-embedding-model', apiMode: 'chat-completions' },
-      { modelId: 'test-speech-model', wireModelId: 'test-speech-model', apiMode: 'chat-completions' },
+      { modelId: TEST_MODEL_IDS.default, wireModelId: TEST_MODEL_IDS.default, apiMode: 'chat-completions' },
+      { modelId: TEST_MODEL_IDS.embedding, wireModelId: TEST_MODEL_IDS.embedding, apiMode: 'chat-completions' },
+      { modelId: TEST_MODEL_IDS.speech, wireModelId: TEST_MODEL_IDS.speech, apiMode: 'chat-completions' },
     ],
     enabled: true,
   };
 }
 
-function requiredModelId(account: ProviderAccountConfig, index: number): string {
-  const modelId = account.models[index]?.modelId;
-  if (modelId === undefined) throw new Error(`Missing test model route at index ${index}`);
-  return modelId;
+function requireModelRoute(account: ProviderAccountConfig, modelId: string): void {
+  if (!account.models.some(route => route.modelId === modelId)) {
+    throw new Error(`Missing test model route ${modelId} in provider ${account.providerId}`);
+  }
 }
 
 const desiredModelParameters = { temperature: 0.7, topP: 0.95 };
@@ -403,56 +410,68 @@ Given('I remove test ai settings', function(this: ApplicationWorld) {
   }
 });
 
-Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
+Given('I ensure test ai settings exists', async function(this: ApplicationWorld) {
   const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
-  const actual = parsed.aiSettings;
-
-  if (!actual) {
-    throw new Error('aiSettings not found in settings file');
-  }
-
-  const actualAccounts = actual.accounts;
-
-  // If providerConfig is set (from mock server), use it; otherwise create expected config
-  // and use the persisted exact account for UI-configured scenarios.
-  let providerConfig: ProviderAccountConfig;
   const providerName = 'test-provider';
-  const existingProvider = actualAccounts.find(account => account.providerId === providerName);
+  const requiredModelIds = [
+    TEST_MODEL_IDS.default,
+    TEST_MODEL_IDS.embedding,
+    TEST_MODEL_IDS.speech,
+    ...(!this.providerConfig ? [TEST_MODEL_IDS.imageGeneration] : []),
+  ];
+  const expectedAssignments = {
+    default: TEST_MODEL_IDS.default,
+    embedding: TEST_MODEL_IDS.embedding,
+    speech: TEST_MODEL_IDS.speech,
+    ...(!this.providerConfig ? { imageGeneration: TEST_MODEL_IDS.imageGeneration } : {}),
+  } as const;
 
-  if (this.providerConfig) {
-    // Use the mock server's providerConfig
-    providerConfig = this.providerConfig;
-  } else if (existingProvider) {
-    providerConfig = existingProvider;
-  } else {
-    providerConfig = createProviderConfig();
-  }
+  // Settings writes are intentionally debounced. Poll the durable file until
+  // the last accepted UI mutation is present; reading immediately after the
+  // renderer changes would only test an intermediate snapshot.
+  await backOff(async () => {
+    const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+    const actual = parsed.aiSettings;
+    if (!actual) throw new Error('aiSettings not found in settings file');
 
-  // Build expected aiSettings from providerConfig and compare with actual
-  const modelName = requiredModelId(providerConfig, 0);
+    const testProvider = actual.accounts.find(account => account.providerId === providerName);
+    if (!testProvider) {
+      throw new Error(`test-provider not found in accounts: ${JSON.stringify(actual.accounts)}`);
+    }
 
-  // Check test-provider exists
-  const testProvider = actualAccounts.find(account => account.providerId === providerName);
-  if (!testProvider) {
-    console.error('test-provider not found in actual accounts:', JSON.stringify(actualAccounts, null, 2));
-    throw new Error('test-provider not found in aiSettings');
-  }
+    // Mock-provider scenarios own one exact account fixture. UI configuration
+    // scenarios build richer catalog metadata, so assert their public contract
+    // explicitly instead of tautologically comparing the account to itself.
+    if (this.providerConfig && !isEqual(testProvider, this.providerConfig)) {
+      throw new Error(
+        `test-provider configuration mismatch: expected ${JSON.stringify(this.providerConfig)}, got ${JSON.stringify(testProvider)}`,
+      );
+    }
+    if (
+      !this.providerConfig &&
+      (testProvider.providerType !== 'openai-compatible' ||
+        testProvider.baseUrl !== 'http://127.0.0.1:15121/v1' ||
+        testProvider.enabled === false)
+    ) {
+      throw new Error(`UI-configured test provider has unexpected connection settings: ${JSON.stringify(testProvider)}`);
+    }
 
-  // Verify test-provider configuration
-  if (!isEqual(testProvider, providerConfig)) {
-    console.error('test-provider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
-    console.error('test-provider config actual:', JSON.stringify(testProvider, null, 2));
-    throw new Error('test-provider configuration does not match expected');
-  }
-
-  // Verify default config
-  const defaultModel = actual.modelAssignments.default;
-  if (defaultModel?.providerId !== providerName || defaultModel?.modelId !== modelName) {
-    console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
-    console.error('actual defaultModel:', JSON.stringify(defaultModel, null, 2));
-    throw new Error('Default configuration does not match expected');
-  }
+    for (const modelId of requiredModelIds) requireModelRoute(testProvider, modelId);
+    for (const [assignment, modelId] of Object.entries(expectedAssignments)) {
+      const actualAssignment = actual.modelAssignments[assignment as keyof typeof actual.modelAssignments];
+      if (actualAssignment?.providerId !== providerName || actualAssignment.modelId !== modelId) {
+        throw new Error(
+          `${assignment} configuration mismatch: expected ${providerName}/${modelId}, got ${JSON.stringify(actualAssignment)}`,
+        );
+      }
+    }
+  }, {
+    delayFirstAttempt: true,
+    maxDelay: 100,
+    numOfAttempts: Math.max(3, Math.ceil(PLAYWRIGHT_SHORT_TIMEOUT / 100)),
+    startingDelay: 100,
+    timeMultiple: 1,
+  });
 });
 
 // Version without datatable for simple cases
@@ -471,9 +490,9 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   }
   const providerConfig = this.providerConfig;
 
-  const modelName = requiredModelId(providerConfig, 0);
-  const embeddingModelName = requiredModelId(providerConfig, 1);
-  const speechModelName = requiredModelId(providerConfig, 2);
+  for (const modelId of [TEST_MODEL_IDS.default, TEST_MODEL_IDS.embedding, TEST_MODEL_IDS.speech]) {
+    requireModelRoute(providerConfig, modelId);
+  }
 
   const newAi: DesktopExternalAPISettings = {
     accounts: [providerConfig],
@@ -481,16 +500,16 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
     modelAssignments: {
       default: {
         providerId: providerConfig.providerId,
-        modelId: modelName,
+        modelId: TEST_MODEL_IDS.default,
         parameters: desiredModelParameters,
       },
       embedding: {
         providerId: providerConfig.providerId,
-        modelId: embeddingModelName,
+        modelId: TEST_MODEL_IDS.embedding,
       },
       speech: {
         providerId: providerConfig.providerId,
-        modelId: speechModelName,
+        modelId: TEST_MODEL_IDS.speech,
       },
     },
   };
@@ -516,9 +535,9 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   }
   const providerConfig = this.providerConfig;
 
-  const modelName = requiredModelId(providerConfig, 0);
-  const embeddingModelName = requiredModelId(providerConfig, 1);
-  const speechModelName = requiredModelId(providerConfig, 2);
+  for (const modelId of [TEST_MODEL_IDS.default, TEST_MODEL_IDS.embedding, TEST_MODEL_IDS.speech]) {
+    requireModelRoute(providerConfig, modelId);
+  }
 
   // Parse options from data table
   let freeModel: string | undefined;
@@ -536,7 +555,7 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
       if (key === 'freeModel') {
         // If value is 'true', enable freeModel using the same model as main model
         if (value === 'true') {
-          freeModel = modelName;
+          freeModel = TEST_MODEL_IDS.default;
         }
       } else if (key === 'aiGenerateBackupTitle') {
         aiGenerateBackupTitle = value === 'true';
@@ -552,16 +571,16 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
     modelAssignments: {
       default: {
         providerId: providerConfig.providerId,
-        modelId: modelName,
+        modelId: TEST_MODEL_IDS.default,
         parameters: desiredModelParameters,
       },
       embedding: {
         providerId: providerConfig.providerId,
-        modelId: embeddingModelName,
+        modelId: TEST_MODEL_IDS.embedding,
       },
       speech: {
         providerId: providerConfig.providerId,
-        modelId: speechModelName,
+        modelId: TEST_MODEL_IDS.speech,
       },
       ...(freeModel
         ? {

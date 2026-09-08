@@ -239,6 +239,7 @@ export function ProviderConfig({
         <FormControl fullWidth margin='normal'>
           <InputLabel id='configured-provider-label'>{t('Preference.ConfigureProvider', { provider: '' })}</InputLabel>
           <Select
+            data-testid='configured-provider-select'
             labelId='configured-provider-label'
             value={selectedProviderId}
             label={t('Preference.ConfigureProvider', { provider: '' })}
@@ -326,6 +327,7 @@ export function ProviderConfig({
         )
         : (
           <AddProviderButton
+            data-testid='add-new-provider-button'
             variant='outlined'
             startIcon={<AddIcon />}
             onClick={() => {
