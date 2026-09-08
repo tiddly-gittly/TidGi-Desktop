@@ -121,6 +121,7 @@ describe('default agent tools -> prompt integration', () => {
       agentTools: [{ toolId: 'wikiSearch', enabled: true }],
       agentFrameworkConfig: {
         ...profile.agentFrameworkConfig,
+        prompts: profile.agentFrameworkConfig?.prompts ?? [],
         plugins: [{ id: 'wiki-search-editor', toolId: 'wikiSearch', enabled: false }],
       },
     };

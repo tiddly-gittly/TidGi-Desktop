@@ -115,6 +115,7 @@ describe('resolveDesktopAgentDefinition', () => {
       tools: [],
       version: '1',
       agentFrameworkConfig: {
+        prompts: [],
         plugins: [{ id: 'wiki-search-editor', toolId: 'wikiSearch', enabled: false }],
       },
       agentTools: [{ toolId: 'wikiSearch', enabled: true, parameters: { wikiSearchParam: { sourceType: 'desktop' } } }],

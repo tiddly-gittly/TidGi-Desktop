@@ -10,7 +10,7 @@ import { mergeAgentToolsIntoFrameworkConfig } from 'memeloop/tools';
  */
 export function mergeDesktopAgentToolsIntoFrameworkConfig(
   frameworkConfig: AgentFrameworkConfig | undefined,
-  agentTools: readonly AgentDefinitionToolConfig[] | undefined,
+  agentTools: AgentDefinitionToolConfig[] | undefined,
 ): AgentFrameworkConfig {
   const merged = mergeAgentToolsIntoFrameworkConfig(frameworkConfig, agentTools);
   const configuredPlugins = Array.isArray(frameworkConfig?.plugins) ? frameworkConfig.plugins : [];
