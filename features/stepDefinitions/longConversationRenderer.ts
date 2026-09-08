@@ -107,7 +107,7 @@ Then(
     if (hostTimeline.items.length === 0 || hostTimeline.items.length > maximumMarkers) {
       throw new Error(`Host timeline returned ${hostTimeline.items.length} entries outside the 1-${maximumMarkers} page bound`);
     }
-    const expectedEntries = state.turnCount + state.compactionCount;
+    const expectedEntries = state.messageCount + state.compactionCount;
     if (hostTimeline.totalEntries !== expectedEntries) {
       throw new Error(`Expected ${expectedEntries} durable host timeline entries, found ${hostTimeline.totalEntries}`);
     }
@@ -136,15 +136,24 @@ Then(
 );
 
 Then(
-  'hovering the latest timeline marker should show the latest user and assistant previews',
+  'hovering the latest user and assistant timeline markers should show their previews',
   async function(this: ApplicationWorld) {
     const page = currentPage(this);
     const state = fixture(this);
     const lastNumber = (state.turnCount - 1).toString().padStart(5, '0');
-    const marker = page.locator(`[data-timeline-entry-index="${state.turnCount + state.compactionCount - 1}"]`);
-    await marker.hover();
     const tooltip = page.getByRole('tooltip');
+
+    // The durable timeline intentionally has one navigation marker per
+    // visible message, plus retained compaction summaries. The seed appends
+    // the final user/assistant pair after its last summary, so these are the
+    // final two absolute entries.
+    const totalEntries = state.messageCount + state.compactionCount;
+    const userMarker = page.locator(`[data-timeline-entry-index="${totalEntries - 2}"]`);
+    await userMarker.hover();
     await waitForText(tooltip, `E2E long question ${lastNumber}`);
+
+    const assistantMarker = page.locator(`[data-timeline-entry-index="${totalEntries - 1}"]`);
+    await assistantMarker.hover();
     await waitForText(tooltip, `E2E long answer ${lastNumber}`);
   },
 );
@@ -244,7 +253,13 @@ When('I open the generated model-request prompt audit', async function(this: App
   // the button event has completed. The dialog and every audit surface are
   // asserted explicitly below, so navigation waiting would add no coverage.
   await page.locator('[data-testid="prompt-preview-button"]').click({ noWaitAfter: true });
-  const dialog = page.getByRole('dialog');
+  // Desktop preview is deliberately hosted by its own BrowserWindow. The
+  // toolbar remains in the wiki renderer, so continuing to query `page`
+  // leaves this step polling a window that can never contain the preview.
+  const promptPreviewPage = await this.getWindow('promptPreview');
+  if (!promptPreviewPage) throw new Error('Prompt preview window did not open');
+  this.currentWindow = promptPreviewPage;
+  const dialog = promptPreviewPage.getByRole('dialog');
   await dialog.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
   const tabs = dialog.getByRole('tab');
   try {

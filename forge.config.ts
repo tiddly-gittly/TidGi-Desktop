@@ -82,6 +82,12 @@ const config: ForgeConfig = {
       NSCameraUsageDescription: 'TidGi uses the camera only when you scan a signed MemeLoop device pairing QR code.',
     },
     appBundleId: 'com.tidgi',
+    // Local/air-gapped verification can reuse an Electron archive that was
+    // already checksum-verified by @electron/get. CI and release builds leave
+    // this unset and retain the normal authenticated download path.
+    ...(process.env.TIDGI_ELECTRON_ZIP_DIR
+      ? { electronZipDir: path.resolve(process.env.TIDGI_ELECTRON_ZIP_DIR) }
+      : {}),
     ...getLocalAdHocMacSigningPackagerConfig(process.env),
   },
   hooks: {

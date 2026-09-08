@@ -2,11 +2,23 @@ import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
-import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 const UI_ACTION_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 1000);
 const UI_ASSERT_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
+
+async function getWindowSummary(page: NonNullable<ApplicationWorld['currentWindow']>): Promise<string> {
+  try {
+    const [title, meta] = await Promise.all([
+      page.title(),
+      page.evaluate(() => window.meta?.()),
+    ]);
+    return JSON.stringify({ url: page.url(), title, meta });
+  } catch (error) {
+    return JSON.stringify({ url: page.url(), diagnosticError: String(error) });
+  }
+}
 
 async function getControlSummaryForSelectorFailure(
   page: NonNullable<ApplicationWorld['currentWindow']>,
@@ -149,7 +161,6 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
   const rows = dataTable.raw();
   const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
-
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
@@ -295,7 +306,6 @@ When('I click on {string} elements with selectors:', async function(this: Applic
 
   const rows = dataTable.raw();
   const dataRows = parseDataTableRows(rows, 2);
-  const errors: string[] = [];
 
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
@@ -304,20 +314,22 @@ When('I click on {string} elements with selectors:', async function(this: Applic
   // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
   for (const [elementComment, selector] of dataRows) {
     try {
-      await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+      await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
       const isVisible = await targetWindow.isVisible(selector);
       if (!isVisible) {
-        errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
-        continue;
+        throw new Error(`Element is not visible`);
       }
       await targetWindow.click(selector);
     } catch (error) {
-      errors.push(`Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}`);
+      const [windowSummary, controlSummary] = await Promise.all([
+        getWindowSummary(targetWindow),
+        getControlSummaryForSelectorFailure(targetWindow, selector),
+      ]);
+      throw new Error(
+        `Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}\n` +
+          `Current window: ${windowSummary}\nVisible controls near target:\n${controlSummary}`,
+      );
     }
-  }
-
-  if (errors.length > 0) {
-    throw new Error(`Failed to click elements:\n${errors.join('\n')}`);
   }
 });
 
@@ -594,7 +606,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     // Try input first, then fall back to wrapper
     const hasDirectInput = await currentWindow.locator(directInputSelector).count() > 0;
     const containerSelector = hasDirectInput ? directInputSelector : wrapperSelector;
-    await currentWindow.waitForSelector(containerSelector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector(containerSelector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     // Click the combobox to open the dropdown
     const clicked = await currentWindow.evaluate((testId) => {
@@ -630,7 +642,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     }
 
     // Wait for the menu to appear
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     // Try to click on the option with the specified value (data-value attribute)
     // If not found, try to find by text content
@@ -671,7 +683,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     }
 
     // Wait for the menu to close
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
   } catch (error) {
     throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
   }

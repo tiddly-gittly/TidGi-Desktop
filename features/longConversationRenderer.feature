@@ -20,7 +20,7 @@ Feature: Bounded long-conversation renderer
 
     When I seed the active packaged agent with 2048 long-conversation turns and repeated compactions
     Then the long-conversation renderer should keep its initial DOM bounded at 50 messages and 50 timeline markers
-    And hovering the latest timeline marker should show the latest user and assistant previews
+    And hovering the latest user and assistant timeline markers should show their previews
 
     When I load one earlier resident message page
     Then the resident message window should move earlier while remaining bounded at 50 messages
