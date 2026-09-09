@@ -139,6 +139,39 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('create', () => {
+    it('generates unique lowercase host-safe IDs with the canonical length', async () => {
+      const service = new Workspace();
+      mockGetSetting.mockReturnValue({});
+
+      const createConfig = (wikiFolderLocation: string) => ({
+        name: 'Test Wiki',
+        wikiFolderLocation,
+        isSubWiki: false,
+        mainWikiID: null,
+        tagNames: [],
+        port: 5212,
+        storageService: SupportedStorageServices.local,
+        workspaceType: WorkspaceType.folder,
+        readOnlyMode: false,
+        tokenAuth: false,
+        enableFileSystemWatch: false,
+        gitUrl: null,
+      });
+
+      const firstWorkspace = await service.create(createConfig('/tmp/test-wiki-1'));
+      const secondWorkspace = await service.create(createConfig('/tmp/test-wiki-2'));
+
+      if (!isWikiWorkspace(firstWorkspace) || !isWikiWorkspace(secondWorkspace)) {
+        throw new Error('Creating folder wikis must return wiki workspaces');
+      }
+
+      expect(firstWorkspace.id).toMatch(/^[a-z0-9_-]{21}$/);
+      expect(secondWorkspace.id).toMatch(/^[a-z0-9_-]{21}$/);
+      expect(firstWorkspace.id).not.toBe(secondWorkspace.id);
+      expect(new URL(firstWorkspace.homeUrl).hostname).toBe(firstWorkspace.id);
+      expect(new URL(secondWorkspace.homeUrl).hostname).toBe(secondWorkspace.id);
+    });
+
     it('should set useTidgiConfigSync to true by default when creating workspace', async () => {
       const service = new Workspace();
       mockGetSetting.mockReturnValue({});

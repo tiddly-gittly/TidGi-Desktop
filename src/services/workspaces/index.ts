@@ -3,7 +3,7 @@ import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';
 import { Jimp } from 'jimp';
 import { isEqual, mapValues } from 'lodash';
-import { nanoid } from 'nanoid';
+import { customAlphabet, nanoid } from 'nanoid';
 import path from 'path';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -37,6 +37,11 @@ import { isWikiWorkspace, wikiWorkspaceDefaultValues, WorkspaceType } from './in
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utilities';
 import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePaths';
+
+// Workspace IDs are used as hosts in the privileged `tidgi://` scheme. Keep
+// generated IDs lowercase so the browser's host canonicalization cannot make
+// a valid workspace URL fail the view's exact identity check.
+const generateWorkspaceID = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz-_', 21);
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -622,7 +627,7 @@ export class Workspace implements IWorkspaceService {
   public async create(newWorkspaceConfig: INewWikiWorkspaceConfig): Promise<IWorkspace> {
     const isHtmlConfig = newWorkspaceConfig.workspaceType === WorkspaceType.html;
     const { useTidgiConfig = !isHtmlConfig, ...workspaceConfig } = newWorkspaceConfig;
-    const generatedID = nanoid();
+    const generatedID = generateWorkspaceID();
     let newID = generatedID;
 
     let normalizedHtmlPaths: ReturnType<typeof normalizeHtmlWorkspacePaths> | undefined;
