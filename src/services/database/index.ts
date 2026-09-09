@@ -228,7 +228,7 @@ export class DatabaseService implements IDatabaseService {
   /**
    * Get database connection for a given key
    */
-  public async getDatabase(key: string, options: DatabaseInitOptions = {}, isRetry = false): Promise<DataSource> {
+  public async getDatabase(key: string, options: DatabaseInitOptions = {}): Promise<DataSource> {
     if (!this.dataSources.has(key)) {
       try {
         const schemaConfig = this.getSchemaConfigForKey(key);
@@ -270,24 +270,8 @@ export class DatabaseService implements IDatabaseService {
         return dataSource;
       } catch (error) {
         logger.error(`Failed to get database for key: ${key}`, { error });
-
-        if (!isRetry) {
-          try {
-            // Try to fix database lock issue
-            await this.fixDatabaseLock(key);
-            return await this.getDatabase(key, {}, true);
-          } catch (retryError) {
-            logger.error(`Failed to retry getting database for key: ${key}`, { error: retryError });
-          }
-        }
-
-        try {
-          await this.dataSources.get(key)?.destroy();
-          this.dataSources.delete(key);
-        } catch (closeError) {
-          logger.error(`Failed to close database in error handler for key: ${key}`, { error: closeError });
-        }
-
+        // TypeORM.initialize() destroys the connection when schema setup fails.
+        // Preserve the original error so the host can run its recovery flow.
         throw error;
       }
     }
@@ -451,25 +435,6 @@ export class DatabaseService implements IDatabaseService {
       synchronize: false,
       migrationsRun: false,
     };
-  }
-
-  /**
-   * Fix database lock issue
-   */
-  private async fixDatabaseLock(key: string): Promise<void> {
-    const databasePath = this.getDatabasePathSync(key);
-    const temporaryPath = `${databasePath}.temp`;
-
-    try {
-      await fs.copy(databasePath, temporaryPath);
-      await fs.unlink(databasePath);
-      await fs.copy(temporaryPath, databasePath);
-      await fs.unlink(temporaryPath);
-      logger.info(`Fixed database lock for key: ${key}`);
-    } catch (error) {
-      logger.error(`Failed to fix database lock for key: ${key}`, { error });
-      throw error;
-    }
   }
 
   // Settings related methods
