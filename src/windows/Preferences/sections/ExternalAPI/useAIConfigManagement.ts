@@ -1,6 +1,4 @@
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { AIProviderConfig } from '@services/externalAPI/interface';
-import { cloneDeep } from 'lodash';
+import type { AgentModelConfig, ModelAssignments, ProviderAccountConfig } from 'memeloop';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseAIConfigManagementProps {
@@ -8,30 +6,47 @@ interface UseAIConfigManagementProps {
   agentId?: string;
 }
 
+export type AIConfigOperation = 'load' | 'update' | 'clear';
+
+export interface AIConfigFailure {
+  operation: AIConfigOperation;
+  error: Error;
+}
+
 interface UseAIConfigManagementResult {
   loading: boolean;
-  config: AiAPIConfig | null;
-  providers: AIProviderConfig[];
-  setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
-  handleModelChange: (provider: string, model: string) => Promise<void>;
-  handleEmbeddingModelChange: (provider: string, model: string) => Promise<void>;
-  handleSpeechModelChange: (provider: string, model: string) => Promise<void>;
-  handleImageGenerationModelChange: (provider: string, model: string) => Promise<void>;
-  handleTranscriptionsModelChange: (provider: string, model: string) => Promise<void>;
-  handleFreeModelChange: (provider: string, model: string) => Promise<void>;
-  handleConfigChange: (newConfig: AiAPIConfig) => Promise<void>;
+  config: ModelAssignments | null;
+  /** The last failed operation. The UI maps the operation to a localized message. */
+  error?: AIConfigFailure;
+  clearError?: () => void;
+  accounts: ProviderAccountConfig[];
+  setAccounts: React.Dispatch<React.SetStateAction<ProviderAccountConfig[]>>;
+  handleModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleEmbeddingModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleSpeechModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleImageGenerationModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleTranscriptionsModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleFreeModelChange: (selection: AgentModelConfig) => Promise<void>;
+  handleConfigChange: (newConfig: ModelAssignments) => Promise<void>;
+  handleFieldClear: (key: keyof ModelAssignments) => Promise<void>;
+}
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<AiAPIConfig | null>(null);
-  const [providers, setProviders] = useState<AIProviderConfig[]>([]);
+  const [config, setConfig] = useState<ModelAssignments | null>(null);
+  const [accounts, setAccounts] = useState<ProviderAccountConfig[]>([]);
+  const [error, setError] = useState<AIConfigFailure>();
 
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         setLoading(true);
-        let finalConfig: AiAPIConfig | null = null;
+        setError(undefined);
+        let agentModelConfig: AgentModelConfig | undefined;
 
         // Three-tier configuration hierarchy: global < definition < instance
         // Load global config as base
@@ -39,37 +54,34 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
 
         if (agentId) {
           // Get instance config first
-          const agentInstance = await window.service.agentInstance.getAgent(agentId);
-          if (agentInstance?.aiApiConfig && Object.keys(agentInstance.aiApiConfig).length > 0) {
-            finalConfig = agentInstance.aiApiConfig as AiAPIConfig;
+          const agentInstance = await window.service.agentInstance.getAgentMetadata(agentId);
+          if (agentInstance?.modelConfig) {
+            agentModelConfig = agentInstance.modelConfig;
           } else if (agentInstance?.agentDefId) {
             // Auto-resolve agentDefId from agentId and get definition config
             const agentDefinition = await window.service.agentDefinition.getAgentDef(agentInstance.agentDefId);
-            if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
-              finalConfig = agentDefinition.aiApiConfig as AiAPIConfig;
-            }
+            agentModelConfig = agentDefinition?.modelConfig;
           }
         } else if (agentDefId) {
           // Get definition config
           const agentDefinition = await window.service.agentDefinition.getAgentDef(agentDefId);
-          if (agentDefinition?.aiApiConfig && Object.keys(agentDefinition.aiApiConfig).length > 0) {
-            finalConfig = agentDefinition.aiApiConfig as AiAPIConfig;
-          }
+          agentModelConfig = agentDefinition?.modelConfig;
         }
 
-        // Fallback to global config if no specific config found
-        if (!finalConfig) {
-          finalConfig = globalConfig;
-        }
+        setConfig(agentModelConfig === undefined ? globalConfig : { ...globalConfig, default: agentModelConfig });
 
-        setConfig(finalConfig);
-
-        const providersData = await window.service.externalAPI.getAIProviders();
-        setProviders(providersData);
+        const providerAccounts = await window.service.externalAPI.getProviderAccounts();
+        setAccounts(providerAccounts);
 
         setLoading(false);
       } catch (error) {
-        void window.service.native.log('error', 'Failed to load AI configuration', { function: 'useAIConfigManagement.fetchConfig', error });
+        const normalizedError = toError(error);
+        setConfig(null);
+        setError({ operation: 'load', error: normalizedError });
+        void window.service.native.log('error', 'Failed to load AI configuration', {
+          function: 'useAIConfigManagement.fetchConfig',
+          error: normalizedError,
+        });
         setLoading(false);
       }
     };
@@ -84,25 +96,25 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       }
     });
 
-    const providersSubscription = window.observables.externalAPI.providers$.subscribe(updatedProviders => {
-      setProviders(updatedProviders);
+    const providerAccountsSubscription = window.observables.externalAPI.providerAccounts$.subscribe(updatedAccounts => {
+      setAccounts(updatedAccounts);
     });
 
     return () => {
       configSubscription.unsubscribe();
-      providersSubscription.unsubscribe();
+      providerAccountsSubscription.unsubscribe();
     };
   }, [agentDefId, agentId]);
 
-  const updateConfig = useCallback(async (updatedConfig: AiAPIConfig) => {
+  const updateConfig = useCallback(async (updatedConfig: ModelAssignments) => {
     if (agentId) {
-      // Direct update for instance config
-      await window.service.agentInstance.updateAgent(agentId, { aiApiConfig: updatedConfig });
+      if (!updatedConfig.default) throw new Error('Agent model selection is required');
+      await window.service.agentInstance.updateAgent(agentId, { modelConfig: updatedConfig.default });
     } else if (agentDefId) {
-      // Direct update for definition config
+      if (!updatedConfig.default) throw new Error('Agent model selection is required');
       await window.service.agentDefinition.updateAgentDef({
         id: agentDefId,
-        aiApiConfig: updatedConfig,
+        modelConfig: updatedConfig.default,
       });
     } else {
       // Update global config
@@ -110,119 +122,117 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     }
   }, [agentId, agentDefId]);
 
-  const handleModelChange = useCallback(async (provider: string, model: string) => {
+  const updateSelection = useCallback(async (
+    key: keyof ModelAssignments,
+    selection: AgentModelConfig,
+  ) => {
     if (!config) return;
-
+    const previousConfig = config;
+    const updatedConfig: ModelAssignments = { ...config, [key]: selection };
+    setConfig(updatedConfig);
+    setError(undefined);
     try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.default = { provider, model };
-
-      setConfig(updatedConfig);
       await updateConfig(updatedConfig);
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update model configuration', { function: 'useAIConfigManagement.handleModelChange', error });
-    }
-  }, [config, updateConfig]);
-
-  const handleEmbeddingModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.embedding = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update embedding model configuration', {
-        function: 'useAIConfigManagement.handleEmbeddingModelChange',
-        error,
+      const normalizedError = toError(error);
+      setConfig(previousConfig);
+      setError({ operation: 'update', error: normalizedError });
+      void window.service.native.log('error', 'Failed to update model assignment', {
+        function: 'useAIConfigManagement.updateSelection',
+        key,
+        error: normalizedError,
       });
+      throw normalizedError;
     }
   }, [config, updateConfig]);
 
-  const handleSpeechModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
+  const handleModelChange = useCallback(async (selection: AgentModelConfig) => {
+    await updateSelection('default', {
+      ...selection,
+      ...(config?.default?.parameters === undefined
+        ? {}
+        : { parameters: config.default.parameters }),
+    });
+  }, [config?.default?.parameters, updateSelection]);
+  const handleEmbeddingModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('embedding', selection),
+    [updateSelection],
+  );
+  const handleSpeechModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('speech', selection),
+    [updateSelection],
+  );
+  const handleImageGenerationModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('imageGeneration', selection),
+    [updateSelection],
+  );
+  const handleTranscriptionsModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('transcriptions', selection),
+    [updateSelection],
+  );
+  const handleFreeModelChange = useCallback(
+    (selection: AgentModelConfig) => updateSelection('free', selection),
+    [updateSelection],
+  );
 
+  const handleConfigChange = useCallback(async (newConfig: ModelAssignments) => {
+    const previousConfig = config;
+    setConfig(newConfig);
+    setError(undefined);
     try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.speech = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update speech model configuration', {
-        function: 'useAIConfigManagement.handleSpeechModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleImageGenerationModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.imageGeneration = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update image generation model configuration', {
-        function: 'useAIConfigManagement.handleImageGenerationModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleTranscriptionsModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.transcriptions = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update transcriptions model configuration', {
-        function: 'useAIConfigManagement.handleTranscriptionsModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleFreeModelChange = useCallback(async (provider: string, model: string) => {
-    if (!config) return;
-
-    try {
-      const updatedConfig = cloneDeep(config);
-      updatedConfig.free = { provider, model };
-
-      setConfig(updatedConfig);
-      await updateConfig(updatedConfig);
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to update free model configuration', {
-        function: 'useAIConfigManagement.handleFreeModelChange',
-        error,
-      });
-    }
-  }, [config, updateConfig]);
-
-  const handleConfigChange = useCallback(async (newConfig: AiAPIConfig) => {
-    try {
-      setConfig(newConfig);
       await updateConfig(newConfig);
     } catch (error) {
-      void window.service.native.log('error', 'Failed to update configuration', { function: 'useAIConfigManagement.handleConfigChange', error });
+      const normalizedError = toError(error);
+      if (previousConfig !== undefined) setConfig(previousConfig);
+      setError({ operation: 'update', error: normalizedError });
+      void window.service.native.log('error', 'Failed to update configuration', {
+        function: 'useAIConfigManagement.handleConfigChange',
+        error: normalizedError,
+      });
+      throw normalizedError;
     }
-  }, [updateConfig]);
+  }, [config, updateConfig]);
+
+  const handleFieldClear = useCallback(async (key: keyof ModelAssignments) => {
+    if (!config) return;
+    const previousConfig = config;
+    const updatedConfig = { ...config };
+    delete updatedConfig[key];
+    setError(undefined);
+    try {
+      // The dedicated global delete API intentionally bypasses automatic
+      // model auto-fill. Updating the whole assignment object here would
+      // immediately repopulate a field the user explicitly cleared.
+      if (!agentId && !agentDefId) {
+        await window.service.externalAPI.deleteFieldFromDefaultAIConfig(key);
+      } else {
+        await updateConfig(updatedConfig);
+      }
+      setConfig(updatedConfig);
+    } catch (error) {
+      const normalizedError = toError(error);
+      setConfig(previousConfig);
+      setError({ operation: 'clear', error: normalizedError });
+      void window.service.native.log('error', 'Failed to clear model assignment', {
+        function: 'useAIConfigManagement.handleFieldClear',
+        key,
+        error: normalizedError,
+      });
+      throw normalizedError;
+    }
+  }, [agentDefId, agentId, config, updateConfig]);
+
+  const clearError = useCallback(() => {
+    setError(undefined);
+  }, []);
 
   return {
     loading,
     config,
-    providers,
-    setProviders,
+    error,
+    clearError,
+    accounts,
+    setAccounts,
     handleModelChange,
     handleEmbeddingModelChange,
     handleSpeechModelChange,
@@ -230,5 +240,6 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     handleTranscriptionsModelChange,
     handleFreeModelChange,
     handleConfigChange,
+    handleFieldClear,
   };
 };

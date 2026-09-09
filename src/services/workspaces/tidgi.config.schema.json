@@ -14,11 +14,6 @@
       "description": "Configuration file format version",
       "const": 1
     },
-    "id": {
-      "type": "string",
-      "description": "Canonical workspace ID shared across devices",
-      "default": ""
-    },
     "name": {
       "type": "string",
       "description": "Custom display name for the workspace",
@@ -60,11 +55,6 @@
       "type": "boolean",
       "description": "Enable file system watching for automatic reload",
       "default": false
-    },
-    "ignoreSymlinks": {
-      "type": "boolean",
-      "description": "Ignore symbolic links when scanning wiki folder",
-      "default": true
     },
     "backupOnInterval": {
       "type": "boolean",

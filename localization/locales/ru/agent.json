@@ -1,8 +1,36 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "Выполнение отменено.",
+        "interrupted": "Выполнение прервано.",
+        "invalidRequest": "Запрос агента недействителен.",
+        "modelNotFound": "Модель {{modelId}} недоступна у {{providerId}}.",
+        "providerAuthMissing": "Данные авторизации {{providerId}} отсутствуют или недействительны.",
+        "providerConfigurationMissing": "Для {{providerId}} не задан обязательный параметр {{settingField}}.",
+        "providerUnavailable": "{{providerId}} временно недоступен.",
+        "rateLimited": "{{providerId}} ограничивает частоту запросов. Повторите попытку позже.",
+        "runnerUnavailable": "Нет доступного исполнителя агента.",
+        "storageUnavailable": "Хранилище агента недоступно.",
+        "deviceAuthRequired": "Перед запуском агента необходимо авторизовать это устройство.",
+        "devicePermissionDenied": "Этому устройству запрещено запускать данного агента.",
+        "networkUnavailable": "Сеть агентов недоступна.",
+        "userMessageTooLarge": "Сообщение пользователя слишком велико для этого запуска. Сократите его или отправьте большой объём данных во вложении.",
+        "userMessageTooLargeDetail": "Запрошено {{requested}} байт; предел — {{limit}} байт.",
+        "contextCompactionPending": "Длинный диалог всё ещё сжимается. Прогресс сохранён; повторите попытку чуть позже.",
+        "contextCompactionPendingProgress": "Обработано сообщений: {{processedMessages}}.",
+        "contextCompactionPendingProgressEstimate": "Обработано сообщений: {{processedMessages}}; осталось примерно {{remainingEstimate}}.",
+        "contextCompactionFailed": "Не удалось безопасно сжать длинный диалог.",
+        "contextBudgetExceeded": "Диалог превышает лимит контекста модели.",
+        "internal": "В агенте произошла внутренняя ошибка."
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "Показать журнал агента: {{agentId}}",
     "Description": "Журнал отладки вызовов внешнего API этого агента. Включите параметр 'Отладка внешнего API' в настройках, чтобы начать запись.",
     "ErrorDetails": "Подробности ошибки",
+    "Loading": "Загрузка журналов API…",
     "NoLogs": "API-журнал этого агента не найден.",
     "NoResponse": "не отвечает",
     "RequestDetails": "детали запроса",
@@ -26,6 +54,7 @@
     "EditTitle": "редактировать имя интеллектуального агента",
     "InvalidTabType": "Неверный тип вкладки. Требуется вкладка чата.",
     "LoadingChat": "Загрузка диалога...",
+    "SearchAgents": "Искать агентов…",
     "StartConversation": "начать диалог",
     "ThinkingProcess": "Размышляю",
     "Untitled": "без названия"
@@ -42,6 +71,39 @@
   },
   "Chat": {
     "Cancel": "Отмена",
+    "Attachment": {
+      "RemoveFile": "Удалить {{name}}",
+      "RemoveTiddler": "Удалить {{title}} из {{workspaceName}}"
+    },
+    "GenericError": "Агент не смог выполнить запрос. Повторите попытку.",
+    "OperationError": "Не удалось выполнить действие в чате. Повторите попытку.",
+    "ExecutionTarget": {
+      "NoActiveAgent": "Нет доступного активного агента.",
+      "Platform": {
+        "cli": "Командная строка",
+        "desktop": "Компьютер",
+        "mobile": "Мобильное устройство"
+      },
+      "Reachability": {
+        "connecting": "подключение",
+        "nearby": "рядом",
+        "offline": "не в сети",
+        "online": "в сети"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "Вложения пока не поддерживаются при удалённом выполнении. Переключитесь на это устройство или отправьте только текст.",
+      "RunOn": "Запустить на",
+      "Label": "Цель выполнения",
+      "RunOnTarget": "Запустить на {{target}}",
+      "ConfirmTitle": "Сменить цель выполнения?",
+      "ConfirmDescription": "Текущий ход ещё выполняется. При переходе на {{target}} он будет остановлен, а последний ход пользователя запущен там заново.",
+      "AnotherTarget": "другая цель",
+      "KeepRunning": "Продолжить выполнение",
+      "StopAndRestart": "Остановить и перезапустить",
+      "RunOnThisDesktop": "Запустить на этом компьютере",
+      "RunOnThisDesktopWithPeerId": "Запустить на этом компьютере ({{peerId}})",
+      "ThisDevice": "Это устройство"
+    },
     "ConfigError": {
       "AuthenticationError": "Ошибка аутентификации {{provider}}. Пожалуйста, проверьте API-ключ в настройках.",
       "AuthenticationFailed": "Ошибка аутентификации {{provider}}. Пожалуйста, проверьте API-ключ в настройках.",
@@ -51,7 +113,7 @@
       "MissingConfigError": "Провайдер AI или модель не настроены. Пожалуйста, настройте в настройках.",
       "MissingProviderError": "Провайдер {{provider}} недоступен. Пожалуйста, настройте его в настройках.",
       "NoDefaultModel": "Модель по умолчанию не настроена. Пожалуйста, выберите модель в настройках.",
-      "ModelNoVisionSupport": "Выбранная модель не поддерживает обработку изображений. Пожалуйста, выберите модель с поддержкой vision.",
+      "ModelNoVisionSupport": "Модель {{model}} не поддерживает обработку изображений. Выберите модель с поддержкой vision.",
       "ProviderNotFound": "Провайдер {{provider}} не найден. Пожалуйста, настройте его в настройках.",
       "Title": "Проблема с конфигурацией"
     },
@@ -60,7 +122,54 @@
       "TooLarge": "Размер файла {{size}}МБ превышает лимит ({{maxSize}}МБ). Пожалуйста, выберите файл меньшего размера."
     },
     "InputPlaceholder": "Введите сообщение, Ctrl+Enter для отправки",
-    "Send": "Отправить"
+    "Send": "Отправить",
+    "Actions": {
+      "Retry": "Повторить",
+      "DeleteTurn": "Удалить ход",
+      "Copy": "Копировать",
+      "CopyAll": "Копировать всё",
+      "User": "Пользователь",
+      "Agent": "Агент"
+    },
+    "Message": {
+      "AttachmentAlt": "Вложение",
+      "AttachmentLoadFailed": "Не удалось загрузить предварительный просмотр вложения.",
+      "NoDetails": "Подробности недоступны.",
+      "LoadDetails": "Загрузить подробности",
+      "ReloadDetails": "Перезагрузить подробности",
+      "HideDetails": "Скрыть подробности",
+      "ShowDetails": "Показать подробности",
+      "DetailTruncated": "Показан только ограниченный фрагмент. Экспортируйте диалог, чтобы получить полное содержимое.",
+      "DetailLoadFailed": "Не удалось загрузить подробности.",
+      "ExportFullMessage": "Экспортировать сообщение полностью",
+      "Reasoning": "Рассуждение",
+      "Thinking": "Размышляю…",
+      "ShowReasoning": "Показать рассуждение",
+      "HideReasoning": "Скрыть рассуждение",
+      "LoadMoreReasoning": "Загрузить продолжение рассуждения",
+      "ReasoningLoadFailed": "Не удалось загрузить рассуждение.",
+      "DetailLine": "{{role}}: {{content}}",
+      "Error": "Ошибка",
+      "ToolResult": "Результат инструмента",
+      "ToolCall": "Вызов инструмента: {{toolName}}",
+      "Truncated": "Сообщение сокращено для отображения (символов: {{count}}). Полный текст доступен в экспорте разговора или подробностях сообщения."
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "Ваш ответ…",
+      "Submit": "Отправить",
+      "ConfirmSelection": "Подтвердить выбор",
+      "Answered": "Отвечено"
+    },
+    "Timeline": {
+      "Navigation": "Хронология разговора",
+      "Message": "Сообщение {{index}} из {{total}} · {{role}}",
+      "Compacted": "Сжато предыдущих сообщений: {{count}}",
+      "LoadEarlier": "Загрузить предыдущие сообщения",
+      "LoadLater": "Загрузить следующие сообщения",
+      "Seek": "Перейти к ходу диалога",
+      "Close": "Закрыть шкалу диалога",
+      "NewMessages": "Новых сообщений: {{count}} — перейти к последним"
+    }
   },
   "Common": {
     "None": "не выбрано"
@@ -103,11 +212,84 @@
     "SetupAgentDescription": "Назовите своего агента и выберите шаблон в качестве отправной точки",
     "Title": "Создать нового интеллектуального агента"
   },
-  "WikiEmbed": {
-    "Error": "Не удалось встроить Wiki",
-    "Loading": "Загрузка Wiki..."
-  },
   "EditAgent": {
+    "ActiveHoursEnd": "Конец активного времени (необязательно)",
+    "ActiveHoursStart": "Начало активного времени (необязательно)",
+    "Hours": "Часы",
+    "Minutes": "Минуты",
+    "ScheduleCronLocale": {
+      "everyText": "Каждый",
+      "periodLabel": "Период",
+      "atEveryText": "В/Каждые",
+      "minuteLabel": "Минуты",
+      "atOptionLabel": "в",
+      "everyOptionLabel": "каждые",
+      "betweenText": "между",
+      "inText": "в",
+      "onText": "в",
+      "andText": "и",
+      "monthLabel": "Месяцы",
+      "dayOfWeekLabel": "День недели",
+      "onEveryText": "В/Каждый",
+      "multiDayOfMonthLabel": "День месяца",
+      "dayOfMonthLabel": "Дни",
+      "hourLabel": "Часы",
+      "weekDaysOptions": ["ВОСКРЕСЕНЬЕ", "ПОНЕДЕЛЬНИК", "ВТОРНИК", "СРЕДА", "ЧЕТВЕРГ", "ПЯТНИЦА", "СУББОТА"],
+      "periodOptions": ["час", "день", "неделя", "месяц", "год"],
+      "shortMonthOptions": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"],
+      "onOptionLabel": "в",
+      "lastDayOfMonthLabel": "Последний день месяца",
+      "scheduleTitle": "Расписание",
+      "nextRunsLabel": "Следующие запуски",
+      "noUpcomingRunsText": "Нет будущих запусков",
+      "noRunsOnDayText": "В этот день запусков нет",
+      "moreRunsText": "Ещё запусков: {count}",
+      "invalidScheduleText": "Введите корректное расписание",
+      "copyLabel": "Копировать",
+      "copiedText": "Скопировано!",
+      "resetLabel": "Сбросить",
+      "cronDescriptionText": "ru"
+    },
+    "ScheduleCron": "Расширенное выражение Cron",
+    "ScheduleCronExpr": "Выражение Cron",
+    "ScheduleCronHelp": "Cron из 5 полей: минута час день месяц день-недели",
+    "ScheduleCronPreview": "Следующие запуски:",
+    "ScheduleExecutionTarget": "Устройство выполнения",
+    "ScheduleExecutionTargetUnavailable": "Выбранное устройство недоступно. Перед изменением расписания выберите доступное устройство.",
+    "ScheduleIdentityLoading": "Загрузка защищённого идентификатора этого устройства…",
+    "ScheduleIdentityError": "Защищённый идентификатор этого устройства недоступен. Планирование отключено, пока сеть устройств не будет готова.",
+    "ScheduleConversation": "Диалог для расписания",
+    "ScheduleConversationRequired": "Создайте или откройте постоянный диалог с этим агентом перед настройкой задач. Предварительные диалоги временны и не могут владеть расписанием.",
+    "ScheduleDefaultTaskName": "Расписание: {{agentName}}",
+    "ScheduleInvalidCron": "Введите корректное расписание Cron.",
+    "ScheduleInvalidTimezone": "Выберите поддерживаемый часовой пояс.",
+    "ScheduleNoPreview": "Будущие запуски не найдены.",
+    "SchedulePreviewLoading": "Проверка расписания...",
+    "ScheduleDaily": "Ежедневно (в заданное время)",
+    "ScheduleDailyTime": "Время пробуждения",
+    "ScheduledWakeup": "Запланированное пробуждение",
+    "ScheduledWakeupDescription": "Настройте повторяющееся расписание для автоматического пробуждения агента и отправки напоминания.",
+    "ScheduleInterval": "Интервал (каждые N секунд/минут/часов)",
+    "ScheduleIntervalUnit": "Единица",
+    "ScheduleIntervalValue": "Каждые",
+    "ScheduleMessage": "Сообщение пробуждения",
+    "ScheduleMessagePlaceholder": "[Расписание] Периодическая проверка. Проверьте задачи и выполните ожидающие действия.",
+    "ScheduleMode": "Режим",
+    "ScheduleNone": "Нет (без запланированного пробуждения)",
+    "ScheduleSave": "Сохранить расписание",
+    "ScheduleSaveWait": "Загрузка агента предпросмотра...",
+    "ScheduleSaving": "Сохранение...",
+    "ScheduleTaskSelection": "Запланированная задача",
+    "ScheduleNewTask": "Новая запланированная задача",
+    "ScheduleOperationFailed": "Не удалось выполнить операцию с запланированной задачей.",
+    "ScheduleSourceIncomplete": "Некоторые устройства не предоставили полное актуальное расписание. Изменения отключены, пока не будут доступны все источники.",
+    "ScheduleSourceOnline": "{{executionTarget}} в сети.",
+    "ScheduleSourceOffline": "{{executionTarget}} не в сети.",
+    "ScheduleSourceDegraded": "{{executionTarget}} работает с ограничениями.",
+    "ScheduleSourceCached": "{{executionTarget}} показывает кэшированные данные расписания.",
+    "ScheduleTimezone": "Часовой пояс",
+    "ScheduleUpdate": "Обновить расписание",
+    "Seconds": "Секунды",
     "AgentDescription": "описание агента",
     "AgentDescriptionHelper": "Опишите функции и назначение вашего агента.",
     "AgentDescriptionPlaceholder": "Введите описание интеллектуального агента...",
@@ -159,6 +341,33 @@
     "AIAgentDescription": "Управление базой данных записей диалогов AI Agent",
     "AIAgentDescriptionDetail": "Здесь можно просмотреть и удалить информацию о размере и местоположении базы данных записей диалогов AI Agent.",
     "APIKey": "API ключ",
+    "ChatCompletions": "Chat Completions",
+    "ChatCompletionsReasoningEffort": "Chat Completions (reasoning_effort)",
+    "ContextWindow": "Контекстное окно / максимум входных токенов",
+    "ContextWindowDescription": "Положительное целое ограничение количества токенов входного контекста модели.",
+    "DefaultTopP": "top_p по умолчанию",
+    "DefaultTopPDescription": "Число от 0 до 1; значение topP в конкретном запросе имеет приоритет.",
+    "HideAPIKey": "Скрыть API-ключ",
+    "DefaultFreeModelSelection": "Бесплатная модель по умолчанию",
+    "DefaultFreeModelSelectionDescription": "Небольшая бесплатная модель для создания заголовков сводок и резервных заголовков",
+    "Logout": "Выйти",
+    "MaxOutputTokens": "Максимум выходных токенов",
+    "MaxOutputTokensDescription": "Положительное целое значение по умолчанию; явно заданное ограничение запроса имеет приоритет.",
+    "None": "Нет",
+    "OpenAIAPIMode": "Режим API OpenAI",
+    "BackgroundTasks": "Фоновые задачи",
+    "BackgroundTasksDescription": "Активные запланированные задачи агента (сигналы присутствия и будильники). Они автоматически пробуждают агентов по таймеру.",
+    "NoBackgroundTasks": "Нет активных фоновых задач.",
+    "CancelTask": "Отменить эту фоновую задачу",
+    "SaveToDefinition": "Сохранить в определении",
+    "SaveToDefinitionDescription": "Применить текущую конфигурацию подсказки к определению агента, чтобы новые экземпляры также использовали её",
+    "ProviderConfigurationTabs": "Вкладки настройки поставщика",
+    "ReasoningEffortFormat": "Формат уровня рассуждения",
+    "RefreshingOfficialModels": "Обновление…",
+    "ShowAPIKey": "Показать API-ключ",
+    "OpenAICompatibleBaseURLDescription": "Введите полный базовый URL API, включая /v1, если это требуется. /v1 не добавляется автоматически.",
+    "ResponsesAPI": "Responses",
+    "SupportedReasoningEffort": "Поддерживаемые уровни рассуждения",
     "AddNewModel": "Добавить новую модель",
     "AddNewProvider": "Добавить нового поставщика",
     "AddProvider": "Добавить поставщика",
@@ -197,6 +406,15 @@
     "FailedToAddProvider": "Не удалось добавить поставщика",
     "FailedToDeleteProvider": "Не удалось удалить поставщика {{providerName}}",
     "FailedToRemoveModel": "Не удалось удалить модель",
+    "FailedToRefreshOfficialModels": "Не удалось обновить список моделей",
+    "FailedToLoadAIConfig": "Не удалось загрузить настройки моделей ИИ",
+    "FailedToUpdateAIConfig": "Не удалось сохранить настройки моделей ИИ",
+    "FailedToClearAIConfig": "Не удалось очистить выбранную модель ИИ",
+    "FailedToLoadProviderCatalog": "Не удалось загрузить каталог моделей провайдеров",
+    "FailedToSaveModelParameters": "Не удалось сохранить параметры модели",
+    "FailedToLoadFrameworkConfig": "Не удалось загрузить настройки фреймворка агента",
+    "FailedToUpdateFrameworkConfig": "Не удалось сохранить настройки фреймворка агента",
+    "FailedToClearFrameworkConfig": "Не удалось очистить настройки фреймворка агента",
     "FailedToSaveSettings": "Не удалось сохранить настройки",
     "FailedToUpdateModel": "Не удалось обновить модель",
     "FailedToUpdateProviderStatus": "Не удалось обновить статус поставщика",
@@ -210,6 +428,17 @@
     "ModelFeatures": "Возможности модели",
     "ModelName": "Имя модели",
     "ModelNameRequired": "Имя модели обязательно",
+    "ModelIdInvalid": "Идентификатор модели не должен содержать пробелы по краям или управляющие символы и не должен превышать {{maxBytes}} байт UTF-8.",
+    "LogicalModelId": "Логический ID модели",
+    "WireModelId": "ID модели поставщика",
+    "WireModelIdDescription": "Точный идентификатор модели, отправляемый поставщику.",
+    "EditModel": "Изменить модель",
+    "APIMode": "Режим API",
+    "ChatCompletionsAPIMode": "Chat Completions",
+    "ResponsesAPIMode": "Responses",
+    "InputModalities": "Входные модальности",
+    "OutputModalities": "Выходные модальности",
+    "Attachments": "Вложения",
     "ModelParameters": "параметры модели",
     "ModelParametersDescription": "Настройка параметров поведения генеративных моделей ИИ, таких как температура, ограничение токенов и другие.",
     "ModelRemovedSuccessfully": "Модель успешно удалена",
@@ -217,12 +446,13 @@
     "Models": "Доступные модели",
     "NoPresetSelected": "Нет выбранной предустановленной модели",
     "NoProvidersAvailable": "Нет доступных поставщиков",
+    "OfficialModelsRefreshed": "Обновлено моделей: {{count}}",
     "OpenDatabaseFolder": "Открыть папку базы данных",
     "PresetModels": "Предустановленные модели",
     "PresetProvider": "Предустановленный поставщик",
     "ProviderAddedSuccessfully": "Поставщик успешно добавлен",
     "ProviderAlreadyExists": "Имя поставщика уже существует",
-    "ProviderClass": "Тип интерфейса поставщика",
+    "ProviderType": "Тип интерфейса поставщика",
     "ProviderConfiguration": "Конфигурация поставщика",
     "ProviderConfigurationDescription": "Настройте API ключ поставщика AI и другие настройки",
     "ProviderDeleted": "Провайдер {{providerName}} удален",
@@ -230,6 +460,8 @@
     "ProviderEnabled": "Поставщик включен",
     "ProviderName": "Имя поставщика",
     "ProviderNameRequired": "Имя поставщика обязательно",
+    "ProviderIdInvalid": "Идентификатор поставщика должен начинаться с буквы или цифры Unicode; далее допустимы буквы и цифры Unicode, точки, символы подчёркивания и дефисы (не более {{maxBytes}} байт UTF-8).",
+    "RefreshOfficialModels": "Обновить модели",
     "Search": "поиск и внедрение",
     "SearchEmbeddingDelete": "удалить",
     "SearchEmbeddingDeleteConfirm": "Вы уверены, что хотите удалить все векторные вложения рабочей области \"{{workspaceName}}\"? Это действие нельзя отменить.",
@@ -256,30 +488,68 @@
     "TemperatureDescription": "Низкие значения приводят к более детерминированным и сфокусированным ответам, а высокие — к более разнообразным и творческим.",
     "TopP": "Топ P",
     "TopPDescription": "Управление случайностью ответов. Низкие значения делают ответы более предсказуемыми, а высокие — допускают больше вариантов.",
+    "TokensUnit": "токенов",
     "WorkflowFile": "файл рабочего процесса",
     "WorkflowFileHelp": "Путь к JSON-файлу рабочего процесса ComfyUI",
     "WorkflowFilePath": "Путь к файлу рабочего процесса"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "Сводка сжатия",
+      "ConversationMessage": "Сообщение диалога",
+      "PreviewInput": "Текущий ввод",
+      "Prompt": "Подсказка",
+      "System": "Системная подсказка",
+      "Tool": "Сообщение инструмента"
+    },
     "AutoRefresh": "Предварительный просмотр автоматически обновляется при изменении введенного текста.",
     "CodeEditor": "Редактор кода",
+    "Close": "Закрыть предварительный просмотр подсказки",
+    "CompactionSummaryCount": "Сводки сжатия",
+    "ContextSegments": "Сегменты эффективного контекста",
+    "ContextStats": "Статистика эффективного контекста",
     "Edit": "редактирование подсказок",
+    "EditorModeTabs": "Вкладки режима редактора подсказки",
     "Enabled": "включить",
-    "EnterEditSideBySide": "Редактирование с разделенным экраном",
     "EnterFullScreen": "перейти в полноэкранный режим",
-    "EnterPreviewSideBySide": "Предварительный просмотр разделенного экрана",
     "ExitFullScreen": "выйти из полноэкранного режима",
-    "ExitSideBySide": "выход из разделенного экрана",
     "Flat": "плиточное представление",
     "FormEditor": "редактор форм",
+    "GeneratedTools": "Созданные подсказки инструментов",
     "LastUpdated": "Дата последнего обновления",
     "Loading": "Загрузка в предварительном просмотре...",
+    "MessageCount": "Сообщения контекста",
+    "ModelRequest": "Точный запрос к модели",
     "NoMessages": "Нет сообщений для предварительного просмотра",
+    "Progress": {
+      "Complete": "Завершено",
+      "Completing": "Завершение…",
+      "Error": "Произошла ошибка",
+      "Finalizing": "Финальная обработка подсказок…",
+      "Flattening": "Развёртывание дерева подсказок…",
+      "LivePreview": "⚡ Живой просмотр — загрузка ещё продолжается, результат не окончательный",
+      "ProcessingTool": "Обработка инструмента: {{plugin}}",
+      "Starting": "Запуск…",
+      "Timeout": "Время ожидания предварительного просмотра истекло",
+      "UnknownTool": "неизвестно"
+    },
     "Preview": "Предварительный просмотр подсказок",
+    "PreviewTabs": "Вкладки предварительного просмотра подсказки",
+    "Role": {
+      "assistant": "АССИСТЕНТ",
+      "error": "ОШИБКА",
+      "system": "СИСТЕМА",
+      "tool": "ИНСТРУМЕНТ",
+      "user": "ПОЛЬЗОВАТЕЛЬ"
+    },
     "SchemaNotProvided": "Формат не предоставлен.",
     "SchemaNotProvidedDescription": "Не предоставлена JSON Schema или не удалось её корректно получить. Форма редактирования не может быть отображена.",
+    "ShowEditor": "Показать редактор",
+    "ShowPreview": "Показать предпросмотр",
     "Tree": "Древовидное представление",
-    "ValidationErrors": "обнаружить ошибку"
+    "ValidationErrors": "обнаружить ошибку",
+    "NoPrompts": "Промпты не настроены",
+    "Prompt": "Промпт"
   },
   "PromptConfig": {
     "AddItem": "добавить проект",
@@ -297,9 +567,29 @@
       "HelperText": "После ввода нажмите Enter, чтобы добавить метку, или выберите из предопределенных меток.",
       "NoOptions": "Нет доступных тегов",
       "Placeholder": "Введите метку..."
-    }
+    },
+    "NoneOption": "Нет",
+    "ConfigurationSections": "Разделы конфигурации"
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM; пропускать запуски после этого времени.",
+      "ActiveHoursStartDescription": "HH:MM; пропускать запуски до этого времени.",
+      "AlarmDescription": "Задать одноразовое пробуждение и временно завершить цикл диалога. Для повторений используйте Cron.",
+      "EnabledDescription": "Включить или отключить задачу без удаления.",
+      "EnabledTitle": "Включено",
+      "KindDescription": "«at» выполняется один раз в дату ISO; «cron» задаёт повторяющееся расписание.",
+      "ListDescription": "Показать активные запланированные задачи этого агента.",
+      "MessageDescription": "Сообщение агенту при срабатывании расписания.",
+      "RemoveDescription": "Удалить активную запланированную задачу по ID.",
+      "TaskIdDescription": "ID задачи, полученный из list-schedules.",
+      "TaskIdTitle": "ID задачи",
+      "TaskNameDescription": "Понятное название этого расписания.",
+      "TaskNameTitle": "Название задачи",
+      "TimezoneDescription": "Часовой пояс IANA для Cron, например Europe/Moscow.",
+      "UpdateDescription": "Изменить состояние, сообщение или активные часы задачи.",
+      "WakeAtDescription": "Дата и время ISO 8601 для пробуждения агента."
+    },
     "AIConfig": {
       "Default": "модель диалога по умолчанию",
       "DefaultTitle": "модель по умолчанию",
@@ -403,14 +693,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -445,8 +731,7 @@
       "ProviderTitle": "провайдер",
       "Title": "выбор модели"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "настройка позиционных параметров",
       "TargetId": "ID целевого элемента",
@@ -480,8 +765,7 @@
       "TextTitle": "текст",
       "Title": "подсказка"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "Заголовок ответа, используемый для идентификации записи ответа.",
       "CaptionTitle": "заголовок",
@@ -645,6 +929,12 @@
     "NoTabs": "В разделенном экране нет вкладок."
   },
   "Tab": {
+    "Close": "Закрыть вкладку",
+    "ScheduledTaskCloseWarning": "У этого агента есть запланированные задачи. Следующее пробуждение: {{wakeTime}}. Закрытие вкладки не остановит запланированные пробуждения.",
+    "ScheduledTaskMore": "(+ ещё {{count}})",
+    "ScheduledTaskNextWake": "Следующее пробуждение: {{wakeTime}}",
+    "ScheduledTaskUnknownWake": "Неизвестно",
+    "TabList": "Вкладки",
     "Title": {
       "CreateNewAgent": "Создать нового интеллектуального агента",
       "EditAgentDefinition": "Редакторский интеллектуальный агент",
@@ -654,7 +944,41 @@
       "WikiEmbed": "Вики"
     }
   },
+  "ToolApproval": {
+    "Add": "Добавить",
+    "AddRule": "Добавить правило",
+    "Allow": "Разрешить",
+    "APIRetry": "Повторные запросы API (экспоненциальная задержка)",
+    "Cancel": "Отмена",
+    "Deny": "Запретить",
+    "GlobalSettings": "Общие настройки",
+    "GlobalTimeout": "Общий тайм-аут (мс)",
+    "GlobalTimeoutDescription": "Тайм-аут по умолчанию для всех запусков инструментов. 0 = без тайм-аута.",
+    "InitialDelay": "Начальная задержка (мс)",
+    "InitialDelayDescription": "Задержка перед первой повторной попыткой, удваиваемая при каждой попытке",
+    "MaxAttempts": "Максимум попыток",
+    "NoRetryDescription": "0 = без повторных попыток",
+    "NoRules": "Правила для отдельных инструментов не настроены. Все инструменты используют общий тайм-аут и автоматическое одобрение.",
+    "PatternsDescription": "Шаблоны запрета блокируют выполнение; шаблоны разрешения позволяют пропустить одобрение.",
+    "PerToolRules": "Правила для инструментов",
+    "RegexPlaceholder": "Регулярное выражение…",
+    "RequireApproval": "Требовать одобрение",
+    "Save": "Сохранить",
+    "Timeout": "Тайм-аут (мс)",
+    "Title": "Одобрение инструментов и тайм-ауты",
+    "Tool": "Инструмент"
+  },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "Активные запланированные задачи:\n{{summary}}",
+      "AlarmSet": "Будильник установлен на {{wakeAtISO}} (через {{delaySeconds}} с). Цикл завершён и продолжится при срабатывании.",
+      "NoActiveTasks": "Нет активных запланированных задач.",
+      "TaskCreated": "Запланированная задача создана (ID: {{taskId}}). Следующий запуск: {{nextRun}}.",
+      "TaskRemoved": "Запланированная задача {{taskId}} удалена.",
+      "TaskSummary": "[{{taskId}}] {{name}} — следующий: {{nextRun}} — запусков: {{runCount}}",
+      "TaskUpdated": "Запланированная задача {{taskId}} обновлена.",
+      "Unknown": "неизвестно"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "Название или идентификатор рабочей области \"{{workspaceName}}\" не существует"

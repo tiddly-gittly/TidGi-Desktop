@@ -54,6 +54,17 @@ export interface IMenuService {
     menuPartKey?: string,
   ): Promise<void>;
 }
+
+/** Main-process lifecycle methods that must not be exposed over renderer IPC. */
+export interface IMainMenuService extends IMenuService {
+  /**
+   * Allow application-menu builds after settings and workspace persistence are
+   * ready. Calls to buildMenu() before this point are coalesced into this first
+   * build instead of evaluating database-backed deferred menu properties.
+   */
+  initializeForApp(): Promise<void>;
+}
+
 export const MenuServiceIPCDescriptor = {
   channel: MenuChannel.name,
   properties: {

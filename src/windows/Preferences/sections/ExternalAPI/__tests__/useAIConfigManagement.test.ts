@@ -1,240 +1,235 @@
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { AIProviderConfig } from '@services/externalAPI/interface';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { AgentModelConfig, ModelAssignments, ProviderAccountConfig } from 'memeloop';
 import { BehaviorSubject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { useAIConfigManagement } from '../useAIConfigManagement';
 
-describe('useAIConfigManagement', () => {
-  const mockAIConfig: AiAPIConfig = {
-    default: {
-      provider: 'openai',
-      model: 'gpt-4',
-    },
-    modelParameters: {
+const assignments: ModelAssignments = {
+  default: {
+    providerId: 'openai-main',
+    modelId: 'reasoning',
+    parameters: {
       temperature: 0.7,
       topP: 0.95,
+      maxOutputTokens: 4096,
+      reasoningEffort: 'high',
     },
-  };
+  },
+};
 
-  const mockProviders: AIProviderConfig[] = [
-    {
-      provider: 'openai',
-      models: [{ name: 'gpt-4', features: ['language'] }],
-      apiKey: 'sk-test',
-    },
-  ];
+const accounts: ProviderAccountConfig[] = [{
+  providerId: 'openai-main',
+  providerType: 'openai',
+  enabled: true,
+  secretRef: 'desktop-keychain:openai-main',
+  models: [
+    { modelId: 'reasoning', wireModelId: 'gpt-5.6', apiMode: 'responses' },
+    { modelId: 'fast', wireModelId: 'gpt-5.6-mini', apiMode: 'responses' },
+  ],
+}];
+
+describe('useAIConfigManagement', () => {
+  let configSubject: BehaviorSubject<ModelAssignments>;
+  let accountsSubject: BehaviorSubject<ProviderAccountConfig[]>;
+  let getAIConfig: ReturnType<typeof vi.fn<() => Promise<ModelAssignments>>>;
+  let getProviderAccounts: ReturnType<typeof vi.fn<() => Promise<ProviderAccountConfig[]>>>;
+  let updateDefaultAIConfig: ReturnType<typeof vi.fn<(config: ModelAssignments) => Promise<void>>>;
+  let deleteFieldFromDefaultAIConfig: ReturnType<typeof vi.fn<(fieldPath: string) => Promise<void>>>;
+  let log: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    configSubject = new BehaviorSubject(assignments);
+    accountsSubject = new BehaviorSubject(accounts);
+    getAIConfig = vi.fn().mockResolvedValue(assignments);
+    getProviderAccounts = vi.fn().mockResolvedValue(accounts);
+    updateDefaultAIConfig = vi.fn().mockResolvedValue(undefined);
+    deleteFieldFromDefaultAIConfig = vi.fn().mockResolvedValue(undefined);
+    log = vi.fn();
 
-    // Create BehaviorSubjects for Observable testing
-    const configSubject = new BehaviorSubject(mockAIConfig);
-    const providersSubject = new BehaviorSubject(mockProviders);
-
-    // Mock externalAPI service methods
-    Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
-      value: vi.fn().mockResolvedValue(mockAIConfig),
-      writable: true,
+    Object.defineProperties(window.service.externalAPI, {
+      getAIConfig: { value: getAIConfig, writable: true },
+      getProviderAccounts: { value: getProviderAccounts, writable: true },
+      updateDefaultAIConfig: { value: updateDefaultAIConfig, writable: true },
+      deleteFieldFromDefaultAIConfig: { value: deleteFieldFromDefaultAIConfig, writable: true },
     });
-
-    Object.defineProperty(window.service.externalAPI, 'getAIProviders', {
-      value: vi.fn().mockResolvedValue(mockProviders),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'updateDefaultAIConfig', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    // Mock observables through window.observables instead of window.service
     Object.defineProperty(window.observables, 'externalAPI', {
       value: {
         defaultConfig$: configSubject,
-        providers$: providersSubject,
+        providerAccounts$: accountsSubject,
+      },
+      writable: true,
+    });
+    Object.defineProperty(window.service.native, 'log', { value: log, writable: true });
+  });
+
+  it('loads and observes exact provider accounts and model assignments', async () => {
+    const { result } = renderHook(() => useAIConfigManagement());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.config).toEqual(assignments);
+    expect(result.current.accounts).toEqual(accounts);
+    expect(getAIConfig).toHaveBeenCalledOnce();
+    expect(getProviderAccounts).toHaveBeenCalledOnce();
+
+    const updatedAccounts: ProviderAccountConfig[] = [{
+      providerId: '提供方2',
+      providerType: 'openai-compatible',
+      baseUrl: 'https://models.example.test/v1',
+      models: [{ modelId: 'logical', wireModelId: 'vendor/model-v2', apiMode: 'chat-completions' }],
+    }];
+    act(() => {
+      accountsSubject.next(updatedAccounts);
+    });
+    await waitFor(() => {
+      expect(result.current.accounts).toEqual(updatedAccounts);
+    });
+    expect(result.current.accounts[0]?.providerId).toBe('提供方2');
+  });
+
+  it('preserves parameters while changing only the canonical default selection', async () => {
+    const { result } = renderHook(() => useAIConfigManagement());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const selection: AgentModelConfig = { providerId: 'openai-main', modelId: 'fast' };
+    await act(async () => result.current.handleModelChange(selection));
+
+    const expected: ModelAssignments = {
+      default: {
+        ...selection,
+        parameters: assignments.default?.parameters,
+      },
+    };
+    expect(result.current.config).toEqual(expected);
+    expect(updateDefaultAIConfig).toHaveBeenCalledWith(expected);
+  });
+
+  it('rolls back a rejected model update and exposes an update failure', async () => {
+    updateDefaultAIConfig.mockRejectedValueOnce(new Error('backend rejected model update'));
+    const { result } = renderHook(() => useAIConfigManagement());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await expect(result.current.handleModelChange({ providerId: 'openai-main', modelId: 'fast' }))
+        .rejects.toThrow('backend rejected model update');
+    });
+
+    expect(result.current.config).toEqual(assignments);
+    expect(result.current.error).toMatchObject({
+      operation: 'update',
+      error: expect.any(Error),
+    });
+  });
+
+  it('rolls back a rejected model clear and exposes a clear failure', async () => {
+    deleteFieldFromDefaultAIConfig.mockRejectedValueOnce(new Error('backend rejected model clear'));
+    const { result } = renderHook(() => useAIConfigManagement());
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await expect(result.current.handleFieldClear('default')).rejects.toThrow('backend rejected model clear');
+    });
+
+    expect(result.current.config).toEqual(assignments);
+    expect(result.current.error).toMatchObject({
+      operation: 'clear',
+      error: expect.any(Error),
+    });
+    expect(updateDefaultAIConfig).not.toHaveBeenCalled();
+  });
+
+  it('persists an instance override as one canonical AgentModelConfig', async () => {
+    const updateAgent = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window.service, 'agentInstance', {
+      value: {
+        getAgentMetadata: vi.fn().mockResolvedValue({
+          id: 'conversation-1',
+          agentDefId: 'definition-1',
+          modelConfig: {
+            providerId: 'openai-main',
+            modelId: 'reasoning',
+            parameters: { temperature: 0.3, reasoningEffort: 'medium' },
+          },
+        }),
+        updateAgent,
       },
       writable: true,
     });
 
-    // Mock native.log
-    Object.defineProperty(window.service.native, 'log', {
-      value: vi.fn(),
+    const { result } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => result.current.handleModelChange({ providerId: 'openai-main', modelId: 'fast' }));
+    expect(updateAgent).toHaveBeenCalledWith('conversation-1', {
+      modelConfig: {
+        providerId: 'openai-main',
+        modelId: 'fast',
+        parameters: { temperature: 0.3, reasoningEffort: 'medium' },
+      },
+    });
+  });
+
+  it('does not let global observable updates overwrite an instance selection', async () => {
+    Object.defineProperty(window.service, 'agentInstance', {
+      value: {
+        getAgentMetadata: vi.fn().mockResolvedValue({
+          id: 'conversation-1',
+          modelConfig: { providerId: 'openai-main', modelId: 'reasoning' },
+        }),
+      },
       writable: true,
     });
+    const { result } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    act(() => {
+      configSubject.next({ default: { providerId: 'openai-main', modelId: 'fast' } });
+    });
+    expect(result.current.config?.default?.modelId).toBe('reasoning');
   });
 
-  describe('Observable subscription', () => {
-    it('should subscribe to config and providers observables on mount', async () => {
-      const { result } = renderHook(() => useAIConfigManagement());
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Verify initial config and providers are loaded
-      expect(result.current.config).toEqual(mockAIConfig);
-      expect(result.current.providers).toEqual(mockProviders);
+  it('unsubscribes both observables on unmount', async () => {
+    const configSubscribe = vi.spyOn(configSubject, 'subscribe');
+    const accountsSubscribe = vi.spyOn(accountsSubject, 'subscribe');
+    const { unmount } = renderHook(() => useAIConfigManagement());
+    await waitFor(() => {
+      expect(configSubscribe).toHaveBeenCalledOnce();
     });
 
-    it('should update config when defaultConfig$ observable emits', async () => {
-      const { result } = renderHook(() => useAIConfigManagement());
+    const configSubscription = configSubscribe.mock.results[0]?.value;
+    const accountsSubscription = accountsSubscribe.mock.results[0]?.value;
+    const configUnsubscribe = vi.spyOn(configSubscription, 'unsubscribe');
+    const accountsUnsubscribe = vi.spyOn(accountsSubscription, 'unsubscribe');
+    unmount();
 
-      // Wait for initial load
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Update the observable
-      const updatedConfig: AiAPIConfig = {
-        ...mockAIConfig,
-        default: mockAIConfig.default
-          ? {
-            ...mockAIConfig.default,
-            model: 'gpt-3.5-turbo',
-          }
-          : { provider: 'openai', model: 'gpt-3.5-turbo' },
-      };
-
-      act(() => {
-        window.observables.externalAPI.defaultConfig$.next(updatedConfig);
-      });
-
-      // Config should update from observable
-      await waitFor(() => {
-        expect(result.current.config?.default?.model).toBe('gpt-3.5-turbo');
-      });
-    });
-
-    it('should update providers when providers$ observable emits', async () => {
-      const { result } = renderHook(() => useAIConfigManagement());
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Update providers observable
-      const updatedProviders: AIProviderConfig[] = [
-        ...mockProviders,
-        {
-          provider: 'anthropic',
-          models: [{ name: 'claude-3', features: ['language'] }],
-          apiKey: 'sk-anthropic',
-        },
-      ];
-
-      act(() => {
-        window.observables.externalAPI.providers$.next(updatedProviders);
-      });
-
-      // Providers should update from observable
-      await waitFor(() => {
-        expect(result.current.providers).toHaveLength(2);
-        expect(result.current.providers[1].provider).toBe('anthropic');
-      });
-    });
-
-    it('should unsubscribe from observables on unmount', async () => {
-      const configSubject = window.observables.externalAPI.defaultConfig$;
-      const unsubscribeSpy = vi.spyOn(configSubject, 'subscribe');
-
-      const { unmount } = renderHook(() => useAIConfigManagement());
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(unsubscribeSpy).toHaveBeenCalled();
-      });
-
-      const subscription = unsubscribeSpy.mock.results[0].value;
-      const unsubscribeFn = vi.spyOn(subscription, 'unsubscribe');
-
-      unmount();
-
-      // Verify unsubscribe was called
-      expect(unsubscribeFn).toHaveBeenCalled();
-    });
+    expect(configUnsubscribe).toHaveBeenCalledOnce();
+    expect(accountsUnsubscribe).toHaveBeenCalledOnce();
   });
 
-  describe('handleModelChange', () => {
-    it('should update config when model changes', async () => {
-      const { result } = renderHook(() => useAIConfigManagement());
+  it('logs initialization failures and leaves loading state', async () => {
+    getAIConfig.mockRejectedValueOnce(new Error('Failed to load'));
+    const { result } = renderHook(() => useAIConfigManagement());
 
-      // Wait for initial load
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Change model
-      await act(async () => {
-        await result.current.handleModelChange('openai', 'gpt-3.5-turbo');
-      });
-
-      // Verify config was updated
-      expect(result.current.config?.default?.model).toBe('gpt-3.5-turbo');
-      expect(result.current.config?.default?.provider).toBe('openai');
-
-      // Verify backend was called
-      expect(window.service.externalAPI.updateDefaultAIConfig).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
-  });
-
-  describe('initialization', () => {
-    it('should load config on mount', async () => {
-      const { result } = renderHook(() => useAIConfigManagement());
-
-      // Should start loading
-      expect(result.current.loading).toBe(true);
-
-      // Wait for load to complete
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Verify config and providers are loaded
-      expect(result.current.config).toEqual(mockAIConfig);
-      expect(result.current.providers).toEqual(mockProviders);
-      expect(window.service.externalAPI.getAIConfig).toHaveBeenCalled();
-      expect(window.service.externalAPI.getAIProviders).toHaveBeenCalled();
-    });
-
-    it('should handle error during initialization gracefully', async () => {
-      const mockLog = vi.fn();
-      Object.defineProperty(window.service.native, 'log', {
-        value: mockLog,
-        writable: true,
-      });
-
-      // Reset and mock getAIConfig to throw error first time
-      let callCount = 0;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window.service.externalAPI.getAIConfig as any).mockImplementation(async () => {
-        callCount++;
-        if (callCount === 1) {
-          throw new Error('Failed to load');
-        }
-        // Return mock config from subscription
-        return mockAIConfig;
-      });
-
-      const { result } = renderHook(() => useAIConfigManagement());
-
-      // Wait for load to complete (even with error)
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      // Verify error was logged
-      expect(mockLog).toHaveBeenCalledWith(
-        'error',
-        'Failed to load AI configuration',
-        expect.any(Object),
-      );
-
-      // Config should still have default value from Observable
-      // (not null, since we subscribe to defaultConfig$ and providers$)
-      expect(result.current.config).toBeDefined();
-    });
+    expect(log).toHaveBeenCalledWith(
+      'error',
+      'Failed to load AI configuration',
+      expect.objectContaining({ function: 'useAIConfigManagement.fetchConfig' }),
+    );
   });
 });

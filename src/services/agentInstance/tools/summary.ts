@@ -5,7 +5,7 @@
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const SummaryParameterSchema = z.object({
   toolListPosition: z.object({
@@ -27,7 +27,7 @@ const SummaryToolSchema = z.object({
   examples: [{ text: '!! Task Complete\n\nI have created the tiddler "My Note" with the requested content.' }],
 });
 
-const summaryDefinition = registerToolDefinition({
+export const summaryDefinition = defineDesktopTool({
   toolId: 'summary',
   displayName: 'Summary (Finish)',
   description: 'Terminates the agent loop and presents a final summary to the user',
@@ -41,7 +41,7 @@ const summaryDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult }) {
-    if (!toolCall || toolCall.toolId !== 'summary') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'summary') return;
 
     const parameters = toolCall.parameters as z.infer<typeof SummaryToolSchema>;
     logger.debug('Summary tool called — agent loop will terminate', { textLength: parameters.text.length });
@@ -56,5 +56,3 @@ const summaryDefinition = registerToolDefinition({
     // Do NOT yieldToSelf — let the loop end naturally, yielding 'completed' status
   },
 });
-
-export const summaryTool = summaryDefinition.tool;

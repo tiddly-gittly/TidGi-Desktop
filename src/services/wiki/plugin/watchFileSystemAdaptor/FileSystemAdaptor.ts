@@ -8,9 +8,42 @@ import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 import type { Tiddler, Wiki } from 'tiddlywiki';
 import { moveExternalAttachmentIfNeeded } from './externalAttachmentUtilities';
+import { notifyGitFileChangeBestEffort } from './gitNotification';
 import type { ExtendedUtilities } from './routingUtilities.type';
 import type { ITiddlerRoutingInfo } from './tiddlerRoutingInfo';
 import { isFileLockError } from './utilities';
+
+/**
+ * Routing helpers are installed by the watch-filesystem plugin at runtime,
+ * rather than being part of TiddlyWiki's built-in `$tw.utils` type.  Keep the
+ * boundary explicit and fail closed when a wiki starts without the plugin.
+ */
+function isExtendedUtilities(value: unknown): value is ExtendedUtilities {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+
+  return [
+    'isWikiWorkspaceWithRouting',
+    'buildTiddlerRoutingInfo',
+    'matchTiddlerToWorkspace',
+  ].every(methodName => typeof Reflect.get(value, methodName) === 'function');
+}
+
+function getExtendedUtilities(): ExtendedUtilities {
+  const utilities: unknown = $tw.utils;
+  if (!isExtendedUtilities(utilities)) {
+    throw new Error('watch-filesystem routing utilities are unavailable');
+  }
+  return utilities;
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
+
+type SaveTiddlerCallback = (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void;
+type DeleteTiddlerCallback = (error: Error | null | string, adaptorInfo?: IFileInfo | null) => void;
 
 /**
  * Base filesystem adaptor that handles tiddler save/delete operations and sub-wiki routing.
@@ -28,7 +61,6 @@ export class FileSystemAdaptor {
   /** Cached extension filters from $:/config/FileSystemExtensions. Requires restart to reflect changes. */
   protected extensionFilters: string[] | undefined;
   protected watchPathBase!: string;
-  protected readonly useWikiFolderAsTiddlersPath: boolean;
 
   constructor(options: { boot?: typeof $tw.boot; wiki: Wiki }) {
     this.wiki = options.wiki;
@@ -41,9 +73,7 @@ export class FileSystemAdaptor {
 
     // Get workspace ID from preloaded tiddler
     this.workspaceID = this.wiki.getTiddlerText('$:/info/tidgi/workspaceID', '');
-    this.useWikiFolderAsTiddlersPath = this.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
-
-    const preferredWatchPath = this.useWikiFolderAsTiddlersPath ? this.boot.wikiPath : this.boot.wikiTiddlersPath;
+    const preferredWatchPath = this.boot.wikiTiddlersPath;
     if (preferredWatchPath) {
       $tw.utils.createDirectory(preferredWatchPath);
       this.watchPathBase = path.resolve(preferredWatchPath);
@@ -88,10 +118,11 @@ export class FileSystemAdaptor {
       }
 
       const allWorkspaces = await workspace.getWorkspacesAsList();
+      const routingUtilities = getExtendedUtilities();
 
       // Filter to wiki workspaces with routing config (main or sub-wikis)
       const workspacesWithRouting = allWorkspaces
-        .filter((w: IWorkspace): w is IWikiWorkspace => ($tw.utils as unknown as ExtendedUtilities).isWikiWorkspaceWithRouting(w, currentWorkspace.id))
+        .filter((w: IWorkspace): w is IWikiWorkspace => routingUtilities.isWikiWorkspaceWithRouting(w, currentWorkspace.id))
         .sort(workspaceSorter);
 
       this.wikisWithRouting = workspacesWithRouting;
@@ -106,10 +137,11 @@ export class FileSystemAdaptor {
    */
   public async getTiddlerRoutingInfo(tiddlerTitle: string): Promise<ITiddlerRoutingInfo> {
     await this.updateSubWikisCache();
+    const routingUtilities = getExtendedUtilities();
     // Use $tw.wiki (same as getTiddlerFileInfo / save routing) so tag index and filters stay consistent.
     const tiddler = $tw.wiki.getTiddler?.(tiddlerTitle) ?? this.wiki.getTiddler?.(tiddlerTitle);
     const tiddlerTags = tiddler?.fields.tags ?? [];
-    return ($tw.utils as unknown as ExtendedUtilities).buildTiddlerRoutingInfo(
+    return routingUtilities.buildTiddlerRoutingInfo(
       tiddlerTitle,
       tiddlerTags,
       this.wikisWithRouting,
@@ -166,7 +198,7 @@ export class FileSystemAdaptor {
       }
 
       // Find matching workspace using the routing logic
-      const matchingWiki = ($tw.utils as unknown as ExtendedUtilities).matchTiddlerToWorkspace(title, tags, this.wikisWithRouting, $tw.wiki, $tw.rootWidget);
+      const matchingWiki = getExtendedUtilities().matchTiddlerToWorkspace(title, tags, this.wikisWithRouting, $tw.wiki, $tw.rootWidget);
       const isMainWorkspaceMatch = matchingWiki?.id === this.workspaceID;
 
       // Determine the target directory based on routing
@@ -178,8 +210,12 @@ export class FileSystemAdaptor {
         // Resolve symlinks
         try {
           targetDirectory = fs.realpathSync(targetDirectory);
-        } catch {
-          // If realpath fails, use original
+        } catch (error: unknown) {
+          // A directory that has not been created yet has no realpath. Keep
+          // the original path for that expected case and report other probes.
+          if (!isNodeError(error) || error.code !== 'ENOENT') {
+            this.logger.alert('filesystem: Failed to resolve routed workspace path:', error);
+          }
         }
       } else {
         targetDirectory = this.watchPathBase;
@@ -242,9 +278,12 @@ export class FileSystemAdaptor {
     // (e.g., via the symlink path vs the real path)
     try {
       targetDirectory = fs.realpathSync(targetDirectory);
-    } catch {
-      // If realpath fails, use the original path
-      // This can happen if the directory doesn't exist yet
+    } catch (error: unknown) {
+      // A directory that does not exist yet has no realpath. Keep the original
+      // path for ENOENT and make other failures observable.
+      if (!isNodeError(error) || error.code !== 'ENOENT') {
+        this.logger.alert('filesystem: Failed to resolve sub-wiki path:', error);
+      }
     }
 
     $tw.utils.createDirectory(targetDirectory);
@@ -331,12 +370,11 @@ export class FileSystemAdaptor {
   }
 
   /**
-   * Save a tiddler to the filesystem
-   * Can be used with callback (legacy) or as async/await
+   * Save a tiddler to the filesystem and notify TiddlyWiki's syncer callback.
    */
   async saveTiddler(
     tiddler: Tiddler,
-    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
+    callback: SaveTiddlerCallback,
     _options?: { tiddlerInfo?: Record<string, unknown> },
   ): Promise<void> {
     try {
@@ -344,7 +382,7 @@ export class FileSystemAdaptor {
 
       if (!fileInfo) {
         const error = new Error('No fileInfo returned from getTiddlerFileInfo');
-        callback?.(error);
+        callback(error);
         throw error;
       }
 
@@ -381,15 +419,15 @@ export class FileSystemAdaptor {
         });
       });
 
-      callback?.(null, this.boot.files[tiddler.fields.title]);
+      callback(null, this.boot.files[tiddler.fields.title]);
 
       // Notify git log window to refresh (only if it's open). This covers the case where
       // enableFileSystemWatch is false and the watcher is not running.
-      const wikiFolderLocation = this.useWikiFolderAsTiddlersPath ? this.watchPathBase : path.dirname(this.watchPathBase);
-      void git.notifyFileChange(wikiFolderLocation, { onlyWhenGitLogOpened: true });
+      const wikiFolderLocation = path.dirname(this.watchPathBase);
+      void notifyGitFileChangeBestEffort(git, wikiFolderLocation);
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
-      callback?.(errorObject);
+      callback(errorObject);
       throw errorObject;
     }
   }
@@ -405,18 +443,17 @@ export class FileSystemAdaptor {
   }
 
   /**
-   * Delete a tiddler from the filesystem
-   * Can be used with callback (legacy) or as async/await
+   * Delete a tiddler from the filesystem and notify TiddlyWiki's syncer callback.
    */
   async deleteTiddler(
     title: string,
-    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null) => void,
+    callback: DeleteTiddlerCallback,
     _options?: unknown,
   ): Promise<void> {
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {
-      callback?.(null, null);
+      callback(null, null);
       return;
     }
 
@@ -428,7 +465,7 @@ export class FileSystemAdaptor {
             const errorSyscall = (error as NodeJS.ErrnoException).syscall;
             if ((errorCode === 'EPERM' || errorCode === 'EACCES') && errorSyscall === 'unlink') {
               this.logger.alert(`Server desynchronized. Error deleting file for deleted tiddler "${title}"`);
-              callback?.(null, deletedFileInfo);
+              callback(null, deletedFileInfo);
               resolve();
             } else {
               reject(error);
@@ -437,13 +474,13 @@ export class FileSystemAdaptor {
           }
 
           this.removeTiddlerFileInfo(title);
-          callback?.(null, null);
+          callback(null, null);
           resolve();
         });
       });
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
-      callback?.(errorObject);
+      callback(errorObject);
       throw errorObject;
     }
   }

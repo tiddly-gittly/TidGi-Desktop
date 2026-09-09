@@ -10,8 +10,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const GitToolParameterSchema = z.object({
   toolListPosition: z.object({
@@ -216,7 +217,7 @@ async function executeGitReadFile(parameters: GitReadFileParameters): Promise<To
   };
 }
 
-const gitToolDefinition = registerToolDefinition({
+export const gitToolDefinition = defineDesktopTool({
   toolId: 'git',
   displayName: t('Schema.Git.Title'),
   description: t('Schema.Git.Description'),
@@ -241,7 +242,8 @@ const gitToolDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall.found) return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     if (toolCall.toolId === 'git-log') {
       await executeToolCall('git-log', executeGitLog);
@@ -253,5 +255,3 @@ const gitToolDefinition = registerToolDefinition({
     }
   },
 });
-
-export const gitTool = gitToolDefinition.tool;

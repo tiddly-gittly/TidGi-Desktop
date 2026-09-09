@@ -1,8 +1,36 @@
 {
+  "agent": {
+    "run": {
+      "error": {
+        "cancelled": "L’exécution a été annulée.",
+        "interrupted": "L’exécution a été interrompue.",
+        "invalidRequest": "La requête de l’agent est invalide.",
+        "modelNotFound": "Le modèle {{modelId}} n’est pas disponible chez {{providerId}}.",
+        "providerAuthMissing": "L’authentification de {{providerId}} est absente ou invalide.",
+        "providerConfigurationMissing": "Le paramètre requis {{settingField}} manque pour {{providerId}}.",
+        "providerUnavailable": "{{providerId}} est temporairement indisponible.",
+        "rateLimited": "{{providerId}} limite les requêtes. Réessayez plus tard.",
+        "runnerUnavailable": "Aucun moteur d’agent n’est disponible.",
+        "storageUnavailable": "Le stockage de l’agent est indisponible.",
+        "deviceAuthRequired": "Cet appareil doit être autorisé avant d’exécuter l’agent.",
+        "devicePermissionDenied": "Cet appareil n’est pas autorisé à exécuter cet agent.",
+        "networkUnavailable": "Le réseau d’agents est indisponible.",
+        "userMessageTooLarge": "Le message utilisateur est trop volumineux pour cette exécution. Raccourcissez-le ou envoyez le contenu volumineux en pièce jointe.",
+        "userMessageTooLargeDetail": "Taille demandée : {{requested}} octets ; limite : {{limit}} octets.",
+        "contextCompactionPending": "La longue conversation est toujours en cours de compactage. La progression est enregistrée ; réessayez dans un instant.",
+        "contextCompactionPendingProgress": "{{processedMessages}} messages ont été traités.",
+        "contextCompactionPendingProgressEstimate": "{{processedMessages}} messages ont été traités ; environ {{remainingEstimate}} restent à traiter.",
+        "contextCompactionFailed": "Cette longue conversation n’a pas pu être compactée en toute sécurité.",
+        "contextBudgetExceeded": "La conversation dépasse la capacité de contexte du modèle.",
+        "internal": "L’agent a rencontré une erreur interne."
+      }
+    }
+  },
   "APILogs": {
     "CurrentAgent": "Afficher les journaux de l'agent intelligent : {{agentId}}",
     "Description": "Journal de débogage des appels API externes pour cet agent. Activez le 'Débogage des API externes' dans les préférences pour commencer l'enregistrement.",
     "ErrorDetails": "Détails de l'erreur",
+    "Loading": "Chargement des journaux API…",
     "NoLogs": "Journal des API de cet agent intelligent introuvable",
     "NoResponse": "pas de réponse",
     "RequestDetails": "Détails de la demande",
@@ -26,6 +54,7 @@
     "EditTitle": "Modifier le nom de l'agent intelligent",
     "InvalidTabType": "Type d'onglet non valide. Un onglet de chat est requis.",
     "LoadingChat": "Chargement de la conversation en cours...",
+    "SearchAgents": "Rechercher des agents…",
     "StartConversation": "commencer la conversation",
     "ThinkingProcess": "Réfléchir",
     "Untitled": "Sans titre"
@@ -42,6 +71,39 @@
   },
   "Chat": {
     "Cancel": "Annuler",
+    "Attachment": {
+      "RemoveFile": "Supprimer {{name}}",
+      "RemoveTiddler": "Supprimer {{title}} de {{workspaceName}}"
+    },
+    "GenericError": "L’agent n’a pas pu terminer cette demande. Veuillez réessayer.",
+    "OperationError": "L’opération de discussion a échoué. Veuillez réessayer.",
+    "ExecutionTarget": {
+      "NoActiveAgent": "Aucun agent actif n’est disponible.",
+      "Platform": {
+        "cli": "Ligne de commande",
+        "desktop": "Ordinateur",
+        "mobile": "Mobile"
+      },
+      "Reachability": {
+        "connecting": "connexion en cours",
+        "nearby": "à proximité",
+        "offline": "hors ligne",
+        "online": "en ligne"
+      },
+      "RemoteDeviceDescription": "{{platform}} · {{reachability}}",
+      "RemoteAttachmentsUnsupported": "Les pièces jointes ne sont pas encore prises en charge pour l’exécution distante. Utilisez cet appareil ou envoyez uniquement du texte.",
+      "RunOn": "Exécuter sur",
+      "Label": "Cible d’exécution",
+      "RunOnTarget": "Exécuter sur {{target}}",
+      "ConfirmTitle": "Changer de cible d’exécution ?",
+      "ConfirmDescription": "Le tour actuel est toujours en cours. Passer à {{target}} l’arrêtera et y relancera le dernier tour utilisateur.",
+      "AnotherTarget": "une autre cible",
+      "KeepRunning": "Continuer l’exécution",
+      "StopAndRestart": "Arrêter et relancer",
+      "RunOnThisDesktop": "Exécuter sur cet ordinateur",
+      "RunOnThisDesktopWithPeerId": "Exécuter sur cet ordinateur ({{peerId}})",
+      "ThisDevice": "Cet appareil"
+    },
     "ConfigError": {
       "AuthenticationError": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
       "AuthenticationFailed": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
@@ -52,7 +114,7 @@
       "MissingProviderError": "Le fournisseur {{provider}} n'est pas disponible. Veuillez le configurer dans les paramètres.",
       "ProviderNotFound": "Fournisseur {{provider}} introuvable. Veuillez le configurer dans les paramètres.",
       "NoDefaultModel": "Aucun modèle par défaut configuré. Veuillez sélectionner un modèle dans les paramètres.",
-      "ModelNoVisionSupport": "Le modèle sélectionné ne prend pas en charge la vision. Veuillez choisir un modèle compatible avec la vision dans les paramètres.",
+      "ModelNoVisionSupport": "Le modèle {{model}} ne prend pas en charge les images. Veuillez choisir un modèle compatible avec la vision dans les paramètres.",
       "Title": "Problème de configuration"
     },
     "FileValidation": {
@@ -60,7 +122,54 @@
       "TooLarge": "La taille du fichier {{size}}MB dépasse la limite ({{maxSize}}MB). Veuillez sélectionner un fichier plus petit."
     },
     "InputPlaceholder": "Tapez un message, Ctrl+Entrée pour envoyer",
-    "Send": "Envoyer"
+    "Send": "Envoyer",
+    "Actions": {
+      "Retry": "Réessayer",
+      "DeleteTurn": "Supprimer le tour",
+      "Copy": "Copier",
+      "CopyAll": "Tout copier",
+      "User": "Utilisateur",
+      "Agent": "Agent"
+    },
+    "Message": {
+      "AttachmentAlt": "Pièce jointe",
+      "AttachmentLoadFailed": "Impossible de charger l’aperçu de la pièce jointe.",
+      "NoDetails": "Aucun détail disponible.",
+      "LoadDetails": "Charger les détails",
+      "ReloadDetails": "Recharger les détails",
+      "HideDetails": "Masquer les détails",
+      "ShowDetails": "Afficher les détails",
+      "DetailTruncated": "Seul un extrait limité est affiché. Exportez la conversation pour obtenir le contenu complet.",
+      "DetailLoadFailed": "Impossible de charger les détails.",
+      "ExportFullMessage": "Exporter le message complet",
+      "Reasoning": "Raisonnement",
+      "Thinking": "Réflexion en cours…",
+      "ShowReasoning": "Afficher le raisonnement",
+      "HideReasoning": "Masquer le raisonnement",
+      "LoadMoreReasoning": "Charger plus de raisonnement",
+      "ReasoningLoadFailed": "Le raisonnement n’a pas pu être chargé.",
+      "DetailLine": "{{role}} : {{content}}",
+      "Error": "Erreur",
+      "ToolResult": "Résultat de l’outil",
+      "ToolCall": "Appel d’outil : {{toolName}}",
+      "Truncated": "Message raccourci pour l’affichage ({{count}} caractères). Utilisez l’export de la conversation ou les détails du message pour consulter le contenu complet."
+    },
+    "AskQuestion": {
+      "AnswerPlaceholder": "Votre réponse…",
+      "Submit": "Envoyer",
+      "ConfirmSelection": "Confirmer la sélection",
+      "Answered": "Répondu"
+    },
+    "Timeline": {
+      "Navigation": "Chronologie de la conversation",
+      "Message": "Message {{index}} sur {{total}} · {{role}}",
+      "Compacted": "{{count}} messages précédents compactés",
+      "LoadEarlier": "Charger les messages précédents",
+      "LoadLater": "Charger les messages suivants",
+      "Seek": "Aller à un tour de conversation",
+      "Close": "Fermer la chronologie",
+      "NewMessages": "{{count}} nouveaux messages — aller aux plus récents"
+    }
   },
   "Common": {
     "None": "non sélectionné"
@@ -103,11 +212,84 @@
     "SetupAgentDescription": "Nommez votre agent et choisissez un modèle comme point de départ",
     "Title": "Créer un nouvel agent intelligent"
   },
-  "WikiEmbed": {
-    "Error": "Échec de l’intégration du wiki",
-    "Loading": "Chargement du wiki..."
-  },
   "EditAgent": {
+    "ActiveHoursEnd": "Fin des heures actives (facultatif)",
+    "ActiveHoursStart": "Début des heures actives (facultatif)",
+    "Hours": "Heures",
+    "Minutes": "Minutes",
+    "ScheduleCronLocale": {
+      "everyText": "Chaque",
+      "periodLabel": "Période",
+      "atEveryText": "À/Chaque",
+      "minuteLabel": "Minute(s)",
+      "atOptionLabel": "à",
+      "everyOptionLabel": "chaque",
+      "betweenText": "entre",
+      "inText": "en",
+      "onText": "le",
+      "andText": "et",
+      "monthLabel": "Mois",
+      "dayOfWeekLabel": "Jour de la semaine",
+      "onEveryText": "Le/Chaque",
+      "multiDayOfMonthLabel": "Jour du mois",
+      "dayOfMonthLabel": "Jours",
+      "hourLabel": "Heure(s)",
+      "weekDaysOptions": ["DIMANCHE", "LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI"],
+      "periodOptions": ["heure", "jour", "semaine", "mois", "année"],
+      "shortMonthOptions": ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"],
+      "onOptionLabel": "le",
+      "lastDayOfMonthLabel": "Dernier jour du mois",
+      "scheduleTitle": "Planification",
+      "nextRunsLabel": "Prochaines exécutions",
+      "noUpcomingRunsText": "Aucune prochaine exécution",
+      "noRunsOnDayText": "Aucune exécution ce jour",
+      "moreRunsText": "{count} exécutions de plus",
+      "invalidScheduleText": "Saisissez une planification valide",
+      "copyLabel": "Copier",
+      "copiedText": "Copié !",
+      "resetLabel": "Réinitialiser",
+      "cronDescriptionText": "fr"
+    },
+    "ScheduleCron": "Expression Cron avancée",
+    "ScheduleCronExpr": "Expression Cron",
+    "ScheduleCronHelp": "Cron à 5 champs : minute heure jour mois jour-semaine",
+    "ScheduleCronPreview": "Prochaines exécutions :",
+    "ScheduleExecutionTarget": "Exécuter sur l’appareil",
+    "ScheduleExecutionTargetUnavailable": "L’appareil sélectionné est indisponible. Choisissez un appareil disponible avant de modifier cette planification.",
+    "ScheduleIdentityLoading": "Chargement de l’identité sécurisée de cet appareil…",
+    "ScheduleIdentityError": "L’identité sécurisée de cet appareil est indisponible. La planification reste désactivée jusqu’à ce que le réseau d’appareils soit prêt.",
+    "ScheduleConversation": "Conversation à planifier",
+    "ScheduleConversationRequired": "Créez ou ouvrez une conversation durable avec cet agent avant de planifier des tâches. Les conversations d’aperçu sont temporaires et ne peuvent pas posséder de planification.",
+    "ScheduleDefaultTaskName": "Planification de {{agentName}}",
+    "ScheduleInvalidCron": "Saisissez une planification Cron valide.",
+    "ScheduleInvalidTimezone": "Choisissez un fuseau horaire pris en charge.",
+    "ScheduleNoPreview": "Aucune prochaine exécution n’a été trouvée.",
+    "SchedulePreviewLoading": "Vérification de la planification...",
+    "ScheduleDaily": "Quotidien (à une heure précise)",
+    "ScheduleDailyTime": "Heure de réveil",
+    "ScheduledWakeup": "Réveil planifié",
+    "ScheduledWakeupDescription": "Configurez une planification récurrente pour réveiller automatiquement cet agent et envoyer un rappel.",
+    "ScheduleInterval": "Intervalle (toutes les N secondes/minutes/heures)",
+    "ScheduleIntervalUnit": "Unité",
+    "ScheduleIntervalValue": "Toutes les",
+    "ScheduleMessage": "Message de réveil",
+    "ScheduleMessagePlaceholder": "[Planifié] Vérification périodique. Examinez vos tâches et traitez celles en attente.",
+    "ScheduleMode": "Mode",
+    "ScheduleNone": "Aucun (pas de réveil planifié)",
+    "ScheduleSave": "Enregistrer la planification",
+    "ScheduleSaveWait": "Chargement de l’agent d’aperçu...",
+    "ScheduleSaving": "Enregistrement...",
+    "ScheduleTaskSelection": "Tâche planifiée",
+    "ScheduleNewTask": "Nouvelle tâche planifiée",
+    "ScheduleOperationFailed": "L’opération sur la tâche planifiée a échoué.",
+    "ScheduleSourceIncomplete": "Certains appareils n’ont pas fourni un planning en direct complet. Les modifications sont désactivées jusqu’à ce que toutes les sources soient disponibles.",
+    "ScheduleSourceOnline": "{{executionTarget}} est en ligne.",
+    "ScheduleSourceOffline": "{{executionTarget}} est hors ligne.",
+    "ScheduleSourceDegraded": "{{executionTarget}} est dégradé.",
+    "ScheduleSourceCached": "{{executionTarget}} affiche des données de planning en cache.",
+    "ScheduleTimezone": "Fuseau horaire",
+    "ScheduleUpdate": "Mettre à jour la planification",
+    "Seconds": "Secondes",
     "AgentDescription": "Description de l'agent intelligent",
     "AgentDescriptionHelper": "Décrivez les fonctionnalités et l'utilité de votre agent intelligent",
     "AgentDescriptionPlaceholder": "Entrez la description de l'agent intelligent...",
@@ -159,6 +341,33 @@
     "AIAgentDescription": "Gérer la base de données des enregistrements de conversation des agents IA",
     "AIAgentDescriptionDetail": "Ici, vous pouvez consulter et supprimer les informations sur la taille et l'emplacement de la base de données des historiques de conversation avec l'Agent IA.",
     "APIKey": "Clé API",
+    "ChatCompletions": "Chat Completions",
+    "ChatCompletionsReasoningEffort": "Chat Completions (reasoning_effort)",
+    "ContextWindow": "Fenêtre de contexte / nombre maximal de jetons d’entrée",
+    "ContextWindowDescription": "Limite entière positive du nombre de jetons du contexte d’entrée du modèle.",
+    "DefaultTopP": "top_p par défaut",
+    "DefaultTopPDescription": "Nombre compris entre 0 et 1 ; la valeur topP de la requête est prioritaire.",
+    "HideAPIKey": "Masquer la clé API",
+    "DefaultFreeModelSelection": "Sélection du modèle gratuit par défaut",
+    "DefaultFreeModelSelectionDescription": "Petit modèle gratuit utilisé pour générer les titres de résumé et les titres de secours",
+    "Logout": "Se déconnecter",
+    "MaxOutputTokens": "Nombre maximal de jetons de sortie",
+    "MaxOutputTokensDescription": "Valeur entière positive par défaut ; une limite explicite dans la requête est prioritaire.",
+    "None": "Aucun",
+    "OpenAIAPIMode": "Mode de l’API OpenAI",
+    "BackgroundTasks": "Tâches en arrière-plan",
+    "BackgroundTasksDescription": "Tâches d’agent planifiées actives (signaux de présence et alarmes). Elles réveillent automatiquement les agents selon une minuterie.",
+    "NoBackgroundTasks": "Aucune tâche active en arrière-plan.",
+    "CancelTask": "Annuler cette tâche en arrière-plan",
+    "SaveToDefinition": "Enregistrer dans la définition",
+    "SaveToDefinitionDescription": "Appliquer la configuration actuelle de l’invite à la définition de l’agent afin que les nouvelles instances l’utilisent également",
+    "ProviderConfigurationTabs": "Onglets de configuration du fournisseur",
+    "ReasoningEffortFormat": "Format de l’effort de raisonnement",
+    "RefreshingOfficialModels": "Actualisation…",
+    "ShowAPIKey": "Afficher la clé API",
+    "OpenAICompatibleBaseURLDescription": "Saisissez l’URL de base complète de l’API, avec /v1 si nécessaire. Ce suffixe n’est pas ajouté automatiquement.",
+    "ResponsesAPI": "Responses",
+    "SupportedReasoningEffort": "Efforts de raisonnement pris en charge",
     "AddNewModel": "Ajouter un nouveau modèle",
     "AddNewProvider": "Ajouter un nouveau fournisseur",
     "AddProvider": "Ajouter un fournisseur",
@@ -196,6 +405,15 @@
     "FailedToAddProvider": "Échec de l'ajout du fournisseur",
     "FailedToDeleteProvider": "Échec de la suppression du fournisseur {{providerName}}",
     "FailedToRemoveModel": "Échec de la suppression du modèle",
+    "FailedToRefreshOfficialModels": "Échec de l’actualisation des modèles",
+    "FailedToLoadAIConfig": "Échec du chargement des paramètres des modèles IA",
+    "FailedToUpdateAIConfig": "Échec de l’enregistrement des paramètres des modèles IA",
+    "FailedToClearAIConfig": "Échec de la suppression du modèle IA sélectionné",
+    "FailedToLoadProviderCatalog": "Échec du chargement du catalogue des modèles des fournisseurs",
+    "FailedToSaveModelParameters": "Échec de l’enregistrement des paramètres du modèle",
+    "FailedToLoadFrameworkConfig": "Échec du chargement des paramètres du framework de l’agent",
+    "FailedToUpdateFrameworkConfig": "Échec de l’enregistrement des paramètres du framework de l’agent",
+    "FailedToClearFrameworkConfig": "Échec de la suppression des paramètres du framework de l’agent",
     "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
     "FailedToUpdateModel": "Impossible de mettre à jour le modèle",
     "FailedToUpdateProviderStatus": "Échec de la mise à jour du statut du fournisseur",
@@ -209,6 +427,17 @@
     "ModelFeatures": "Fonctionnalités du modèle",
     "ModelName": "Nom du modèle",
     "ModelNameRequired": "Le nom du modèle est requis",
+    "ModelIdInvalid": "L’identifiant du modèle ne doit pas contenir d’espaces environnants ni de caractères de contrôle et ne doit pas dépasser {{maxBytes}} octets UTF-8.",
+    "LogicalModelId": "Identifiant logique du modèle",
+    "WireModelId": "Identifiant du modèle fournisseur",
+    "WireModelIdDescription": "Identifiant exact du modèle envoyé au fournisseur.",
+    "EditModel": "Modifier le modèle",
+    "APIMode": "Mode API",
+    "ChatCompletionsAPIMode": "Chat Completions",
+    "ResponsesAPIMode": "Responses",
+    "InputModalities": "Modalités d’entrée",
+    "OutputModalities": "Modalités de sortie",
+    "Attachments": "Pièces jointes",
     "ModelParameters": "paramètres du modèle",
     "ModelParametersDescription": "Configurer les paramètres de comportement des modèles d'IA générative, tels que la température et les limites de tokens.",
     "ModelRemovedSuccessfully": "Modèle supprimé avec succès",
@@ -216,12 +445,13 @@
     "Models": "Modèles disponibles",
     "NoPresetSelected": "Aucun modèle prédéfini sélectionné",
     "NoProvidersAvailable": "Aucun fournisseur disponible",
+    "OfficialModelsRefreshed": "{{count}} modèles actualisés",
     "OpenDatabaseFolder": "Ouvrir le dossier de la base de données",
     "PresetModels": "Modèles prédéfinis",
     "PresetProvider": "Fournisseur prédéfini",
     "ProviderAddedSuccessfully": "Fournisseur ajouté avec succès",
     "ProviderAlreadyExists": "Le nom du fournisseur existe déjà",
-    "ProviderClass": "Type d'interface du fournisseur",
+    "ProviderType": "Type d’interface du fournisseur",
     "ProviderConfiguration": "Configuration du fournisseur",
     "ProviderConfigurationDescription": "Configurer la clé API et d'autres paramètres pour les fournisseurs AI",
     "ProviderDeleted": "Le fournisseur {{providerName}} a été supprimé",
@@ -229,6 +459,8 @@
     "ProviderEnabled": "Fournisseur activé",
     "ProviderName": "Nom du fournisseur",
     "ProviderNameRequired": "Le nom du fournisseur est requis",
+    "ProviderIdInvalid": "L’identifiant du fournisseur doit commencer par une lettre ou un chiffre Unicode, puis utiliser des lettres ou chiffres Unicode, des points, des traits de soulignement ou des tirets ({{maxBytes}} octets UTF-8 maximum).",
+    "RefreshOfficialModels": "Actualiser les modèles",
     "Search": "recherche et intégration",
     "SearchEmbeddingDelete": "supprimer",
     "SearchEmbeddingDeleteConfirm": "Êtes-vous sûr de vouloir supprimer tous les vecteurs d'incorporation de l'espace de travail \"{{workspaceName}}\" ? Cette action est irréversible.",
@@ -255,30 +487,68 @@
     "TemperatureDescription": "Une valeur plus faible produit une réponse plus déterministe et concentrée, tandis qu'une valeur plus élevée génère une réponse plus diversifiée et créative.",
     "TopP": "Top P",
     "TopPDescription": "Contrôler l'aléatoire des réponses. Une valeur plus faible rend la réponse plus déterminée, tandis qu'une valeur plus élevée permet davantage de possibilités.",
+    "TokensUnit": "jetons",
     "WorkflowFile": "fichier de flux de travail",
     "WorkflowFileHelp": "Chemin du fichier JSON du flux de travail ComfyUI",
     "WorkflowFilePath": "chemin du fichier de flux de travail"
   },
   "Prompt": {
+    "AuditSource": {
+      "CompactionSummary": "Résumé de compactage",
+      "ConversationMessage": "Message de conversation",
+      "PreviewInput": "Saisie actuelle",
+      "Prompt": "Invite",
+      "System": "Invite système",
+      "Tool": "Message d’outil"
+    },
     "AutoRefresh": "L'aperçu se rafraîchit automatiquement en fonction des modifications du texte saisi.",
     "CodeEditor": "Éditeur de code",
+    "Close": "Fermer l’aperçu de l’invite",
+    "CompactionSummaryCount": "Résumés de compactage",
+    "ContextSegments": "Segments de contexte effectifs",
+    "ContextStats": "Statistiques du contexte effectif",
     "Edit": "Édition des mots-clés",
+    "EditorModeTabs": "Onglets du mode d’édition de l’invite",
     "Enabled": "activer",
-    "EnterEditSideBySide": "Édition en affichage partagé",
     "EnterFullScreen": "entrer en plein écran",
-    "EnterPreviewSideBySide": "Aperçu en mode écran partagé",
     "ExitFullScreen": "quitter le mode plein écran",
-    "ExitSideBySide": "quitter le mode d'écran partagé",
     "Flat": "vue en mosaïque",
     "FormEditor": "Éditeur de formulaire",
+    "GeneratedTools": "Invites d’outils générées",
     "LastUpdated": "Dernière mise à jour",
     "Loading": "Chargement de l'aperçu en cours...",
+    "MessageCount": "Messages du contexte",
+    "ModelRequest": "Requête exacte du modèle",
     "NoMessages": "Aucun message à prévisualiser pour le moment.",
+    "Progress": {
+      "Complete": "Terminé",
+      "Completing": "Finalisation…",
+      "Error": "Une erreur s’est produite",
+      "Finalizing": "Finalisation des invites…",
+      "Flattening": "Aplatissement de l’arborescence des invites…",
+      "LivePreview": "⚡ Aperçu en direct — chargement en cours, résultat non définitif",
+      "ProcessingTool": "Traitement de l’outil : {{plugin}}",
+      "Starting": "Démarrage…",
+      "Timeout": "Le délai de l’aperçu a expiré",
+      "UnknownTool": "inconnu"
+    },
     "Preview": "Aperçu des mots-clés",
+    "PreviewTabs": "Onglets d’aperçu de l’invite",
+    "Role": {
+      "assistant": "ASSISTANT",
+      "error": "ERREUR",
+      "system": "SYSTÈME",
+      "tool": "OUTIL",
+      "user": "UTILISATEUR"
+    },
     "SchemaNotProvided": "Format non fourni",
     "SchemaNotProvidedDescription": "Aucun schéma JSON n'a été fourni ou il n'a pas pu être obtenu correctement. Le formulaire d'édition ne peut pas être affiché.",
+    "ShowEditor": "Afficher l’éditeur",
+    "ShowPreview": "Afficher l’aperçu",
     "Tree": "vue arborescente",
-    "ValidationErrors": "détecter une erreur"
+    "ValidationErrors": "détecter une erreur",
+    "NoPrompts": "Aucun prompt configuré",
+    "Prompt": "Prompt"
   },
   "PromptConfig": {
     "AddItem": "ajouter un projet",
@@ -296,9 +566,29 @@
       "HelperText": "Appuyez sur Entrée après la saisie pour ajouter une étiquette, ou choisissez parmi les étiquettes prédéfinies.",
       "NoOptions": "aucune étiquette disponible",
       "Placeholder": "Entrer une étiquette..."
-    }
+    },
+    "NoneOption": "Aucun",
+    "ConfigurationSections": "Sections de configuration"
   },
   "Schema": {
+    "AlarmClock": {
+      "ActiveHoursEndDescription": "HH:MM ; ignorer les exécutions après cette heure.",
+      "ActiveHoursStartDescription": "HH:MM ; ignorer les exécutions avant cette heure.",
+      "AlarmDescription": "Définir un réveil unique et quitter temporairement la boucle de conversation. Utilisez Cron pour les tâches récurrentes.",
+      "EnabledDescription": "Activer ou désactiver la tâche sans la supprimer.",
+      "EnabledTitle": "Activée",
+      "KindDescription": "« at » s’exécute une fois à une date ISO ; « cron » définit une planification récurrente.",
+      "ListDescription": "Lister toutes les tâches planifiées actives de cet agent.",
+      "MessageDescription": "Message envoyé à l’agent lors de l’exécution.",
+      "RemoveDescription": "Supprimer une tâche planifiée active par son ID.",
+      "TaskIdDescription": "ID de la tâche renvoyé par list-schedules.",
+      "TaskIdTitle": "ID de tâche",
+      "TaskNameDescription": "Libellé lisible de cette planification.",
+      "TaskNameTitle": "Nom de la tâche",
+      "TimezoneDescription": "Fuseau horaire IANA pour Cron, par exemple Europe/Paris.",
+      "UpdateDescription": "Modifier l’état, le message ou les heures actives d’une tâche planifiée.",
+      "WakeAtDescription": "Date et heure ISO 8601 auxquelles réveiller l’agent."
+    },
     "AIConfig": {
       "Default": "modèle de dialogue utilisé par défaut",
       "DefaultTitle": "modèle par défaut",
@@ -402,14 +692,10 @@
         },
         "ReadFile": {
           "Parameters": {
-            "commitHash": {
-            },
-            "filePath": {
-            },
-            "maxLines": {
-            },
-            "workspaceName": {
-            }
+            "commitHash": {},
+            "filePath": {},
+            "maxLines": {},
+            "workspaceName": {}
           }
         }
       }
@@ -444,8 +730,7 @@
       "ProviderTitle": "fournisseur",
       "Title": "sélection de modèle"
     },
-    "Plugin": {
-    },
+    "Plugin": {},
     "Position": {
       "Description": "configuration des paramètres de position",
       "TargetId": "ID de l'élément cible",
@@ -479,8 +764,7 @@
       "TextTitle": "texte",
       "Title": "mot-clé"
     },
-    "ProviderModel": {
-    },
+    "ProviderModel": {},
     "Response": {
       "Caption": "En-tête de réponse, utilisé pour identifier cette entrée de réponse",
       "CaptionTitle": "titre",
@@ -644,6 +928,12 @@
     "NoTabs": "Aucun onglet dans la vue fractionnée."
   },
   "Tab": {
+    "Close": "Fermer l’onglet",
+    "ScheduledTaskCloseWarning": "Cet agent a des tâches planifiées. Prochain réveil : {{wakeTime}}. Fermer cet onglet n’arrêtera pas les réveils planifiés.",
+    "ScheduledTaskMore": "(+{{count}} de plus)",
+    "ScheduledTaskNextWake": "Prochain réveil : {{wakeTime}}",
+    "ScheduledTaskUnknownWake": "Inconnu",
+    "TabList": "Onglets",
     "Title": {
       "CreateNewAgent": "Créer un nouvel agent intelligent",
       "EditAgentDefinition": "Agent éditorial intelligent",
@@ -653,7 +943,41 @@
       "WikiEmbed": "Wiki"
     }
   },
+  "ToolApproval": {
+    "Add": "Ajouter",
+    "AddRule": "Ajouter une règle",
+    "Allow": "Autoriser",
+    "APIRetry": "Nouvelles tentatives API (temporisation exponentielle)",
+    "Cancel": "Annuler",
+    "Deny": "Refuser",
+    "GlobalSettings": "Paramètres globaux",
+    "GlobalTimeout": "Délai global (ms)",
+    "GlobalTimeoutDescription": "Délai par défaut de toutes les exécutions d’outils. 0 = aucun délai.",
+    "InitialDelay": "Délai initial (ms)",
+    "InitialDelayDescription": "Délai avant la première nouvelle tentative, doublé à chaque tentative",
+    "MaxAttempts": "Nombre maximal de tentatives",
+    "NoRetryDescription": "0 = aucune nouvelle tentative",
+    "NoRules": "Aucune règle par outil n’est configurée. Tous les outils utilisent le délai global et l’approbation automatique.",
+    "PatternsDescription": "Les motifs de refus bloquent l’exécution ; les motifs d’autorisation évitent la demande d’approbation.",
+    "PerToolRules": "Règles par outil",
+    "RegexPlaceholder": "Motif d’expression régulière…",
+    "RequireApproval": "Demander une approbation",
+    "Save": "Enregistrer",
+    "Timeout": "Délai (ms)",
+    "Title": "Approbation des outils et délais d’expiration",
+    "Tool": "Outil"
+  },
   "Tool": {
+    "AlarmClock": {
+      "ActiveTasks": "Tâches planifiées actives :\n{{summary}}",
+      "AlarmSet": "Alarme définie pour {{wakeAtISO}} (dans {{delaySeconds}} secondes). La boucle s’arrête et reprendra au déclenchement.",
+      "NoActiveTasks": "Aucune tâche planifiée active.",
+      "TaskCreated": "Tâche planifiée créée (ID : {{taskId}}). Prochaine exécution : {{nextRun}}.",
+      "TaskRemoved": "Tâche planifiée {{taskId}} supprimée.",
+      "TaskSummary": "[{{taskId}}] {{name}} — prochaine : {{nextRun}} — exécutions : {{runCount}}",
+      "TaskUpdated": "Tâche planifiée {{taskId}} mise à jour.",
+      "Unknown": "inconnue"
+    },
     "Git": {
       "Error": {
         "WorkspaceNotFound": "Le nom ou l'ID de l'espace de travail \"{{workspaceName}}\" n'existe pas."

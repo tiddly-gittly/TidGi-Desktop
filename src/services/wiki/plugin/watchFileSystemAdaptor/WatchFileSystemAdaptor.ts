@@ -102,16 +102,22 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    */
   override async saveTiddler(
     tiddler: Tiddler,
-    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
+    callback: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
     options?: { tiddlerInfo?: Record<string, unknown> },
   ): Promise<void> {
     const title = tiddler.fields.title;
+    let callbackResult: { error: Error | null | string; adaptorInfo?: IFileInfo | null; revision?: string } | undefined;
     try {
       // Mark as saving so watcher ignores events for this title
       this.watcher?.markSaving(title);
 
       // Call parent's saveTiddler (writes to disk)
-      await super.saveTiddler(tiddler, undefined, options);
+      // Defer the syncer callback until the inverse index and echo metadata
+      // have been updated, while still honoring the TiddlyWiki callback
+      // contract required by the parent adaptor.
+      await super.saveTiddler(tiddler, (error, adaptorInfo, revision) => {
+        callbackResult = { error, adaptorInfo, revision };
+      }, options);
 
       // Update inverse index after successful save
       const finalFileInfo = this.boot.files[title];
@@ -126,12 +132,12 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
         this.watcher?.markSaveComplete(title, '');
       }
 
-      callback?.(null, finalFileInfo);
+      if (callbackResult !== undefined) callback(callbackResult.error, callbackResult.adaptorInfo, callbackResult.revision);
     } catch (error) {
       // Clear saving flag on error so watcher isn't stuck
       this.watcher?.markSaveComplete(title, '');
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
-      callback?.(errorObject);
+      callback(errorObject);
       throw errorObject;
     }
   }
@@ -141,13 +147,13 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
    */
   override async deleteTiddler(
     title: string,
-    callback?: (error: Error | null | string, adaptorInfo?: IFileInfo | null) => void,
+    callback: (error: Error | null | string, adaptorInfo?: IFileInfo | null) => void,
     _options?: unknown,
   ): Promise<void> {
     const fileInfo = this.boot.files[title];
 
     if (!fileInfo) {
-      callback?.(null, null);
+      callback(null, null);
       return;
     }
 
@@ -156,17 +162,20 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
       this.watcher?.markSaving(title);
 
       // Call parent's deleteTiddler
-      await super.deleteTiddler(title, undefined, _options);
+      let callbackResult: { error: Error | null | string; adaptorInfo?: IFileInfo | null } | undefined;
+      await super.deleteTiddler(title, (error, adaptorInfo) => {
+        callbackResult = { error, adaptorInfo };
+      }, _options);
 
       // Update inverse index
       this.watcher?.removeFromIndex(fileInfo.filepath);
       this.watcher?.markSaveComplete(title, fileInfo.filepath);
 
-      callback?.(null, null);
+      if (callbackResult !== undefined) callback(callbackResult.error, callbackResult.adaptorInfo);
     } catch (error) {
       this.watcher?.markSaveComplete(title, fileInfo.filepath);
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');
-      callback?.(errorObject);
+      callback(errorObject);
       throw errorObject;
     }
   }

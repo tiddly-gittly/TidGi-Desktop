@@ -8,11 +8,13 @@ import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import WebIcon from '@mui/icons-material/Web';
 import { ButtonBase, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import type { ScheduledTask } from 'memeloop';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-import type { AgentBackgroundTask } from '@services/agentInstance/interface';
 import { useTabStore } from '../../store/tabStore';
 import { INewTabButton, TabItem as TabItemType, TabType } from '../../types/tab';
+import { formatScheduledTaskWakeTime, getScheduledTaskWakeAt, sortScheduledTasksByNextRun } from './scheduledTaskPresentation';
 
 interface TabItemProps {
   /** Tab data */
@@ -23,7 +25,7 @@ interface TabItemProps {
   onClick: () => void;
   /** Whether this is the new tab button */
   isNewTabButton?: boolean;
-  backgroundTasks?: AgentBackgroundTask[];
+  scheduledTasks?: readonly ScheduledTask[];
 }
 
 interface StyledTabProps {
@@ -112,40 +114,28 @@ const PinIndicator = styled('div')`
   color: ${props => props.theme.palette.text.secondary};
 `;
 
-const formatWakeTime = (iso?: string): string => {
-  if (!iso) return 'Unknown';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
-export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewTabButton = false, backgroundTasks = [] }) => {
+export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewTabButton = false, scheduledTasks = [] }) => {
+  const { i18n, t } = useTranslation('agent');
   const { closeTab, addTab } = useTabStore();
   const isChatTab = !isNewTabButton && tab.type === TabType.CHAT;
-  const hasBackgroundTasks = isChatTab && backgroundTasks.length > 0;
+  const hasScheduledTasks = isChatTab && scheduledTasks.length > 0;
 
-  const sortedTasks = [...backgroundTasks].sort((a, b) => {
-    const aWake = a.nextWakeAtISO ?? a.wakeAtISO;
-    const bWake = b.nextWakeAtISO ?? b.wakeAtISO;
-    const aTime = aWake ? new Date(aWake).getTime() : Number.MAX_SAFE_INTEGER;
-    const bTime = bWake ? new Date(bWake).getTime() : Number.MAX_SAFE_INTEGER;
-    return aTime - bTime;
-  });
+  const sortedTasks = sortScheduledTasksByNextRun(scheduledTasks);
 
   const nearestTask = sortedTasks[0];
-  const nearestWakeAt = nearestTask?.nextWakeAtISO ?? nearestTask?.wakeAtISO;
-  const scheduleIndicatorTooltip = hasBackgroundTasks
-    ? `Next wake: ${formatWakeTime(nearestWakeAt)}${backgroundTasks.length > 1 ? ` (+${backgroundTasks.length - 1} more)` : ''}`
+  const nearestWakeAt = nearestTask ? getScheduledTaskWakeAt(nearestTask) : undefined;
+  const formattedWakeTime = formatScheduledTaskWakeTime(
+    nearestWakeAt,
+    i18n.resolvedLanguage ?? i18n.language,
+    t('Tab.ScheduledTaskUnknownWake'),
+  );
+  const scheduleIndicatorTooltip = hasScheduledTasks
+    ? `${t('Tab.ScheduledTaskNextWake', { wakeTime: formattedWakeTime })}${scheduledTasks.length > 1 ? ` ${t('Tab.ScheduledTaskMore', { count: scheduledTasks.length - 1 })}` : ''}`
     : '';
 
-  const closeTooltip = hasBackgroundTasks
-    ? `This agent has active scheduled tasks. Next wake: ${formatWakeTime(nearestWakeAt)}. Closing this tab will not stop background wake-ups.`
-    : 'Close tab';
+  const closeTooltip = hasScheduledTasks
+    ? t('Tab.ScheduledTaskCloseWarning', { wakeTime: formattedWakeTime })
+    : t('Tab.Close');
 
   /** Handle tab close click event */
   const handleClose = (event: React.MouseEvent) => {
@@ -198,7 +188,7 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
           {tab.title}
         </TabLabel>
 
-        {hasBackgroundTasks && (
+        {hasScheduledTasks && (
           <Tooltip title={scheduleIndicatorTooltip} placement='top'>
             <ActionIcon
               data-testid='tab-scheduled-task-indicator'
