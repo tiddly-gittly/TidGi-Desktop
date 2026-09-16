@@ -34,6 +34,26 @@ function createBrowserWindowMock(overrides: Partial<{ destroyed: boolean; visibl
   };
 }
 
+function createInputWindowMock() {
+  const sendInputEvent = vi.fn();
+  const insertText = vi.fn(async () => undefined);
+  const webContents = {
+    isDestroyed: vi.fn(() => false),
+    focus: vi.fn(),
+    sendInputEvent,
+    insertText,
+  };
+  const browserWindow = {
+    isDestroyed: vi.fn(() => false),
+    isFocused: vi.fn(() => false),
+    focus: vi.fn(),
+    isVisible: vi.fn(() => true),
+    getTitle: vi.fn(() => 'TidGi [Input]'),
+    webContents,
+  };
+  return { browserWindow, webContents, sendInputEvent, insertText };
+}
+
 describe('MCP tools', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -193,6 +213,63 @@ describe('MCP tools', () => {
     expect(result).toHaveLength(5);
     expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
     expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
+  });
+
+  it('focuses the target before clicking so modal controls receive the pointer event', async () => {
+    const target = createInputWindowMock();
+    mockGet.mockReturnValue(target.browserWindow);
+
+    await callTool('ui_click', {
+      workspaceId: 'main-window',
+      x: 240,
+      y: 180,
+    });
+
+    expect(target.browserWindow.focus).toHaveBeenCalledTimes(1);
+    expect(target.webContents.focus).toHaveBeenCalledTimes(1);
+    expect(target.sendInputEvent.mock.calls).toEqual([
+      [{ type: 'mouseMove', x: 240, y: 180 }],
+      [{ type: 'mouseDown', x: 240, y: 180, button: 'left', clickCount: 1 }],
+      [{ type: 'mouseUp', x: 240, y: 180, button: 'left', clickCount: 1 }],
+    ]);
+  });
+
+  it('focuses before typing into a dialog field and waits for insertion', async () => {
+    const target = createInputWindowMock();
+    mockGet.mockReturnValue(target.browserWindow);
+
+    const result = await callTool('ui_type', {
+      workspaceId: 'main-window',
+      text: 'draft value',
+    });
+
+    expect(target.browserWindow.focus).toHaveBeenCalledTimes(1);
+    expect(target.webContents.focus).toHaveBeenCalledTimes(1);
+    expect(target.insertText).toHaveBeenCalledWith('draft value');
+    expect(result).toEqual({ success: true, length: 11 });
+  });
+
+  it('normalizes keyboard aliases and printable keys for dialog activation', async () => {
+    const target = createInputWindowMock();
+    mockGet.mockReturnValue(target.browserWindow);
+
+    await callTool('ui_key', {
+      workspaceId: 'main-window',
+      key: 'Control+s',
+    });
+    await callTool('ui_key', {
+      workspaceId: 'main-window',
+      key: 'Esc',
+    });
+
+    expect(target.browserWindow.focus).toHaveBeenCalledTimes(2);
+    expect(target.webContents.focus).toHaveBeenCalledTimes(2);
+    expect(target.sendInputEvent.mock.calls).toEqual([
+      [{ type: 'keyDown', keyCode: 'S', modifiers: ['control'] }],
+      [{ type: 'keyUp', keyCode: 'S', modifiers: ['control'] }],
+      [{ type: 'keyDown', keyCode: 'Escape', modifiers: [] }],
+      [{ type: 'keyUp', keyCode: 'Escape', modifiers: [] }],
+    ]);
   });
 
   it('rejects ui_navigate for app window targets', async () => {

@@ -4,6 +4,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { BrowserWindow } from 'electron';
 import { z } from 'zod';
 import type { McpToolDefinition, ToolInput } from './types';
 
@@ -399,7 +400,7 @@ async function getWebContents(workspaceId: string | undefined) {
     if (!win) throw new Error(`${workspaceId} not found.`);
     const { webContents } = win;
     if (webContents.isDestroyed()) throw new Error(`${workspaceId} webContents is destroyed.`);
-    return { webContents, wsId: workspaceId };
+    return { webContents, wsId: workspaceId, browserWindow: win };
   }
 
   // Wiki webview target
@@ -416,7 +417,72 @@ async function getWebContents(workspaceId: string | undefined) {
   if (!view) throw new Error(`No view found for workspace ${wsId}. It may not be loaded yet.`);
   const { webContents } = view;
   if (webContents.isDestroyed()) throw new Error(`WebContents for workspace ${wsId} is destroyed.`);
-  return { webContents, wsId };
+  return { webContents, wsId, browserWindow: BrowserWindow.fromWebContents(webContents) ?? undefined };
+}
+
+/**
+ * Electron's sendInputEvent only reaches a BrowserWindow when that window is
+ * focused. MCP requests can arrive while another window owns focus, so every
+ * input operation must establish focus itself instead of relying on the last
+ * user interaction. Focusing the WebContentsView as well is important for
+ * wiki workspaces hosted inside the main window.
+ */
+function focusInputTarget(target: Awaited<ReturnType<typeof getWebContents>>): void {
+  const { browserWindow, webContents } = target;
+  if (browserWindow !== undefined && !browserWindow.isDestroyed()) {
+    browserWindow.focus();
+  }
+  webContents.focus();
+}
+
+/** Let renderer input handlers and React state updates run before returning. */
+function waitForInputDispatch(): Promise<void> {
+  return new Promise(resolve => setImmediate(resolve));
+}
+
+const KEY_ALIASES: Record<string, string> = {
+  esc: 'Escape',
+  escape: 'Escape',
+  enter: 'Enter',
+  return: 'Enter',
+  tab: 'Tab',
+  space: 'Space',
+  spacebar: 'Space',
+  backspace: 'Backspace',
+  delete: 'Delete',
+  del: 'Delete',
+  insert: 'Insert',
+  home: 'Home',
+  end: 'End',
+  pageup: 'PageUp',
+  pagedown: 'PageDown',
+  left: 'Left',
+  right: 'Right',
+  up: 'Up',
+  down: 'Down',
+};
+
+/**
+ * Electron expects accelerator-style key names. Keep the public MCP spelling
+ * forgiving while ensuring printable keys and common aliases are dispatched
+ * consistently across platforms.
+ */
+function normalizeInputKey(key: string): string {
+  const trimmed = key.trim();
+  const aliasKey = trimmed.toLowerCase();
+  const alias = Object.prototype.hasOwnProperty.call(KEY_ALIASES, aliasKey)
+    ? KEY_ALIASES[aliasKey]
+    : undefined;
+  if (alias !== undefined) {
+    return alias;
+  }
+  if (trimmed.length === 1 && /[a-z]/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  if (/^f\d{1,2}$/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  return trimmed;
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -504,26 +570,37 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         button?: 'left' | 'right' | 'middle';
         clickCount?: number;
       };
-      const { webContents } = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId);
+      const { webContents } = target;
+      focusInputTarget(target);
+      // Move first so Chromium updates its hit-test/hover target before MUI's
+      // ButtonBase receives the press. This also mirrors a real pointer click.
+      webContents.sendInputEvent({ type: 'mouseMove', x, y });
       for (let index = 0; index < clickCount; index++) {
         webContents.sendInputEvent({ type: 'mouseDown', x, y, button, clickCount });
         webContents.sendInputEvent({ type: 'mouseUp', x, y, button, clickCount });
       }
+      await waitForInputDispatch();
       return { success: true, x, y };
     }
 
     case 'ui_type': {
       const { workspaceId, text } = input as { workspaceId?: string; text: string };
-      const { webContents } = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId);
+      const { webContents } = target;
+      focusInputTarget(target);
       await webContents.insertText(text);
+      await waitForInputDispatch();
       return { success: true, length: text.length };
     }
 
     case 'ui_key': {
       const { workspaceId, key } = input as { workspaceId?: string; key: string };
-      const { webContents } = await getWebContents(workspaceId);
-      const parts = key.split('+');
-      const mainKey = parts.at(-1) ?? key;
+      const target = await getWebContents(workspaceId);
+      const { webContents } = target;
+      focusInputTarget(target);
+      const parts = key.split('+').map(part => part.trim()).filter(Boolean);
+      const mainKey = normalizeInputKey(parts.at(-1) ?? key);
       const modifierMap: Record<string, 'shift' | 'control' | 'alt' | 'meta'> = {
         shift: 'shift',
         ctrl: 'control',
@@ -540,6 +617,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         .filter((m): m is 'shift' | 'control' | 'alt' | 'meta' => m !== undefined);
       webContents.sendInputEvent({ type: 'keyDown', keyCode: mainKey, modifiers });
       webContents.sendInputEvent({ type: 'keyUp', keyCode: mainKey, modifiers });
+      await waitForInputDispatch();
       return { success: true, key };
     }
 
