@@ -324,6 +324,11 @@ const commonInit = async (): Promise<void> => {
     logger.error('Failed to start DeviceNetworkService', { error });
   }
 
+  // A portable workspace can live on an offline filesystem. Start its
+  // best-effort config import only after the window, workspace views, MCP and
+  // device network are usable, never on the critical startup path.
+  workspaceService.startPortableConfigHydration();
+
   // Track app launch event
   void analyticsService.trackAppLaunch();
 };

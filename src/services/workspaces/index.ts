@@ -48,6 +48,11 @@ interface IPortableConfigHydration {
   generation: number;
 }
 
+interface IPortableConfigReadResult {
+  config: Awaited<ReturnType<typeof readTidgiConfig>>;
+  timedOut: boolean;
+}
+
 @injectable()
 export class Workspace implements IWorkspaceService {
   /**
@@ -69,6 +74,8 @@ export class Workspace implements IWorkspaceService {
   private readonly workspaceMutationQueues = new Map<string, Promise<void>>();
   private readonly portableConfigHydrations = new Map<string, IPortableConfigHydration>();
   private nextPortableConfigHydrationGeneration = 0;
+  private portableConfigHydrationStarted = false;
+  private portableConfigHydrationRunController: AbortController | undefined;
 
   /**
    * Initialize workspace menu after database is ready
@@ -200,7 +207,6 @@ export class Workspace implements IWorkspaceService {
     // store in memory to boost performance
     if (this.workspaces === undefined) {
       this.workspaces = this.getInitWorkspacesForCache();
-      this.schedulePortableConfigHydration(this.workspaces);
     }
     return this.workspaces;
   }
@@ -246,33 +252,56 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   * Start independent best-effort reads after the settings cache is available.
-   * No caller awaits this work: a single inaccessible workspace must neither
-   * delay other hydration reads nor application readiness.
+   * Import portable workspace config only after the application has finished
+   * its core startup. These reads intentionally run one at a time: an offline
+   * volume can leave a Node filesystem worker blocked even after its promise
+   * has timed out, so concurrent reads could exhaust the worker pool and stall
+   * unrelated startup work.
    */
-  private schedulePortableConfigHydration(workspaces: Record<string, IWorkspace>): void {
-    for (const workspace of Object.values(workspaces)) {
-      if (!isWikiWorkspace(workspace) || workspace.workspaceType === WorkspaceType.html || !workspace.useTidgiConfigSync) {
-        continue;
-      }
+  public startPortableConfigHydration(): void {
+    if (this.portableConfigHydrationStarted) return;
+    this.portableConfigHydrationStarted = true;
 
-      this.cancelPortableConfigHydrationForWorkspace(workspace.id);
-      const hydration: IPortableConfigHydration = {
-        controller: new AbortController(),
-        generation: ++this.nextPortableConfigHydrationGeneration,
-      };
-      this.portableConfigHydrations.set(workspace.id, hydration);
-      // Do not even begin an asynchronous filesystem operation until the
-      // settings-only cache constructor has returned to its caller.
-      queueMicrotask(() => {
+    const controller = new AbortController();
+    this.portableConfigHydrationRunController = controller;
+    const workspaceIDs = Object.keys(this.getWorkspacesSync());
+    void this.hydratePortableConfigsSerially(workspaceIDs, controller);
+  }
+
+  private async hydratePortableConfigsSerially(workspaceIDs: string[], runController: AbortController): Promise<void> {
+    try {
+      for (const workspaceID of workspaceIDs) {
+        if (runController.signal.aborted) return;
+
+        const workspace = this.workspaces?.[workspaceID];
         if (
-          hydration.controller.signal.aborted ||
-          this.portableConfigHydrations.get(workspace.id)?.generation !== hydration.generation
+          workspace === undefined ||
+          !isWikiWorkspace(workspace) ||
+          workspace.workspaceType === WorkspaceType.html ||
+          !workspace.useTidgiConfigSync
         ) {
+          continue;
+        }
+
+        this.cancelPortableConfigHydrationForWorkspace(workspace.id);
+        const hydration: IPortableConfigHydration = {
+          controller: new AbortController(),
+          generation: ++this.nextPortableConfigHydrationGeneration,
+        };
+        this.portableConfigHydrations.set(workspace.id, hydration);
+
+        const timedOut = await this.hydratePortableConfig(workspace, hydration, runController.signal);
+        if (timedOut) {
+          logger.warn('Portable workspace config hydration stopped after timeout to preserve filesystem worker capacity', {
+            workspaceID: workspace.id,
+          });
           return;
         }
-        void this.hydratePortableConfig(workspace, hydration);
-      });
+      }
+    } finally {
+      if (this.portableConfigHydrationRunController === runController) {
+        this.portableConfigHydrationRunController = undefined;
+      }
     }
   }
 
@@ -291,6 +320,8 @@ export class Workspace implements IWorkspaceService {
 
   /** Cancel all in-flight best-effort portable config reads, for app shutdown. */
   public cancelPortableConfigHydration(): void {
+    this.portableConfigHydrationRunController?.abort(new Error('Portable workspace config hydration was cancelled'));
+    this.portableConfigHydrationRunController = undefined;
     for (const workspaceID of [...this.portableConfigHydrations.keys()]) {
       this.cancelPortableConfigHydrationForWorkspace(workspaceID);
     }
@@ -299,10 +330,12 @@ export class Workspace implements IWorkspaceService {
   private async readPortableConfigWithTimeout(
     workspace: IWikiWorkspace,
     controller: AbortController,
-  ): Promise<ReturnType<typeof readTidgiConfig> extends Promise<infer T> ? T : never> {
+    runSignal: AbortSignal,
+  ): Promise<IPortableConfigReadResult> {
     const timeoutController = new AbortController();
-    const signal = AbortSignal.any([controller.signal, timeoutController.signal]);
+    const signal = AbortSignal.any([controller.signal, runSignal, timeoutController.signal]);
     let timeout: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
     let resolveWhenAborted: ((value: undefined) => void) | undefined;
     const aborted = new Promise<undefined>((resolve) => {
       resolveWhenAborted = resolve;
@@ -323,22 +356,31 @@ export class Workspace implements IWorkspaceService {
 
     try {
       timeout = setTimeout(() => {
+        timedOut = true;
         logger.warn('Portable workspace config hydration timed out', {
           timeoutMs: this.portableConfigHydrationTimeoutMs,
           workspaceID: workspace.id,
         });
         timeoutController.abort(new Error('Portable workspace config hydration timed out'));
       }, this.portableConfigHydrationTimeoutMs);
-      return await Promise.race([read, aborted]);
+      return { config: await Promise.race([read, aborted]), timedOut };
     } finally {
       if (timeout !== undefined) clearTimeout(timeout);
       signal.removeEventListener('abort', onAbort);
     }
   }
 
-  private async hydratePortableConfig(workspaceAtScheduling: IWikiWorkspace, hydration: IPortableConfigHydration): Promise<void> {
+  private async hydratePortableConfig(
+    workspaceAtScheduling: IWikiWorkspace,
+    hydration: IPortableConfigHydration,
+    runSignal: AbortSignal,
+  ): Promise<boolean> {
     try {
-      const portableConfig = await this.readPortableConfigWithTimeout(workspaceAtScheduling, hydration.controller);
+      const { config: portableConfig, timedOut } = await this.readPortableConfigWithTimeout(
+        workspaceAtScheduling,
+        hydration.controller,
+        runSignal,
+      );
       const currentWorkspace = this.workspaces?.[workspaceAtScheduling.id];
       if (
         portableConfig === undefined ||
@@ -347,7 +389,7 @@ export class Workspace implements IWorkspaceService {
         currentWorkspace !== workspaceAtScheduling ||
         !isWikiWorkspace(currentWorkspace)
       ) {
-        return;
+        return timedOut;
       }
 
       try {
@@ -367,6 +409,7 @@ export class Workspace implements IWorkspaceService {
           workspaceId: workspaceAtScheduling.id,
         });
       }
+      return timedOut;
     } finally {
       if (this.portableConfigHydrations.get(workspaceAtScheduling.id)?.generation === hydration.generation) {
         this.portableConfigHydrations.delete(workspaceAtScheduling.id);

@@ -446,6 +446,8 @@ export interface IWorkspaceService {
    * Called from main.ts after databaseService.initializeForApp()
    */
   initializeMenu(): Promise<void>;
+  /** Start deferred portable workspace config hydration after core startup. */
+  startPortableConfigHydration(): void;
   /** Cancel best-effort portable workspace config reads during shutdown. */
   cancelPortableConfigHydration(): void;
   /**
