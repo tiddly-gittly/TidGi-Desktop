@@ -191,6 +191,38 @@ describe('ProviderConfig', () => {
     });
   });
 
+  it('persists advanced manual-model metadata through the canonical provider account', async () => {
+    const user = userEvent.setup();
+    renderProviderConfig([account], setAccounts);
+    await user.click(screen.getByTestId('add-new-model-button'));
+
+    await user.type(await screen.findByTestId('new-model-name-input'), 'advanced-model');
+    await user.type(screen.getByTestId('model-context-window-input'), '128000');
+    await user.type(screen.getByTestId('model-max-input-input'), '120000');
+    await user.type(screen.getByTestId('model-max-output-input'), '8192');
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.Reasoning' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.StructuredOutput' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortMinimal' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortHigh' }));
+    await user.click(screen.getByTestId('save-new-model-button'));
+
+    await waitFor(() => {
+      expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
+        catalogProvider: expect.objectContaining({
+          models: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'advanced-model',
+              reasoning: true,
+              structuredOutput: true,
+              reasoningEfforts: ['minimal', 'high'],
+              limit: { context: 128_000, input: 120_000, output: 8192 },
+            }),
+          ]),
+        }),
+      }));
+    });
+  });
+
   it.each(['2', '0提供方', '提供方2', 'Mix提供方2'])('adds a model for a provider id containing Unicode/digits: %s', async providerId => {
     const user = userEvent.setup();
     const configuredAccount: ProviderAccountConfig = {

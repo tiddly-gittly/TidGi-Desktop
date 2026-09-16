@@ -26,18 +26,26 @@ const model: ModelCatalogModel = {
   attachment: true,
   reasoning: true,
   toolCall: true,
+  reasoningEfforts: ['minimal', 'high'],
+  structuredOutput: true,
+  temperature: true,
+  releaseDate: '2026-08-07',
+  lastUpdated: '2026-08-26',
+  status: 'beta',
   modalities: { input: ['text', 'image'], output: ['text'] },
+  limit: { context: 1_000_000, input: 900_000, output: 32_768 },
 };
 
 describe('NewModelDialog', () => {
   it('edits one exact logical-to-wire route with catalog metadata', () => {
+    const onSave = vi.fn();
     render(
       <NewModelDialog
         open
         route={route}
         model={model}
         onClose={vi.fn()}
-        onSave={vi.fn()}
+        onSave={onSave}
       />,
     );
 
@@ -46,11 +54,21 @@ describe('NewModelDialog', () => {
     expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ResponsesAPIMode');
     expect(screen.getByLabelText('Preference.InputModalities')).toHaveValue('text, image');
     expect(screen.getByLabelText('Preference.OutputModalities')).toHaveValue('text');
+    expect(screen.getByTestId('model-context-window-input')).toHaveValue(1_000_000);
+    expect(screen.getByTestId('model-max-input-input')).toHaveValue(900_000);
+    expect(screen.getByTestId('model-max-output-input')).toHaveValue(32_768);
     expect(screen.getByRole('checkbox', { name: 'Preference.Attachments' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Preference.Reasoning' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Preference.ToolCalling' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.StructuredOutput' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.TemperatureSupport' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortMinimal' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortLow' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortHigh' })).toBeChecked();
 
     expect(screen.getByTestId('save-new-model-button')).toBeEnabled();
+    fireEvent.click(screen.getByTestId('save-new-model-button'));
+    expect(onSave).toHaveBeenCalledWith(route, model);
   });
 
   it('saves newly entered logical and provider wire identifiers without exchanging them', async () => {
@@ -84,6 +102,37 @@ describe('NewModelDialog', () => {
     expect(screen.getByTestId('new-model-name-input')).toHaveValue('');
     expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('');
     expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ChatCompletionsAPIMode');
+  });
+
+  it('writes advanced token limits and capability metadata through the canonical catalog shape', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
+
+    await user.type(screen.getByTestId('new-model-name-input'), 'advanced-model');
+    await user.type(screen.getByTestId('model-context-window-input'), '128000');
+    await user.type(screen.getByTestId('model-max-input-input'), '120000');
+    await user.type(screen.getByTestId('model-max-output-input'), '8192');
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.Reasoning' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.StructuredOutput' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.TemperatureSupport' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortMinimal' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Preference.ReasoningEffortHigh' }));
+    await user.click(screen.getByTestId('save-new-model-button'));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        { modelId: 'advanced-model', wireModelId: 'advanced-model', apiMode: 'chat-completions' },
+        expect.objectContaining({
+          id: 'advanced-model',
+          reasoning: true,
+          structuredOutput: true,
+          temperature: true,
+          reasoningEfforts: ['minimal', 'high'],
+          limit: { context: 128_000, input: 120_000, output: 8192 },
+        }),
+      );
+    });
   });
 
   it('shows a required error instead of silently ignoring an empty logical id', async () => {
