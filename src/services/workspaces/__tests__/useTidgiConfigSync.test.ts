@@ -105,8 +105,8 @@ class TestableWorkspace extends Workspace {
     }
   }
 
-  public sanitizeWorkspaceForTest(workspace: IWorkspace, hydratePortableConfig = false): IWorkspace {
-    return this.sanitizeWorkspace(workspace, hydratePortableConfig);
+  public sanitizeWorkspaceForTest(workspace: IWorkspace): IWorkspace {
+    return this.sanitizeWorkspace(workspace);
   }
 }
 
@@ -324,8 +324,8 @@ describe('Workspace useTidgiConfigSync', () => {
     });
   });
 
-  describe('sanitizeWorkspace', () => {
-    it('hydrates portable workspace fields from tidgi.config.json during startup', async () => {
+  describe('startup portable config hydration', () => {
+    it('returns the settings cache before asynchronously hydrating portable workspace fields', async () => {
       const workspace = createWorkspace({
         useTidgiConfigSync: true,
         name: 'Local Name',
@@ -334,58 +334,131 @@ describe('Workspace useTidgiConfigSync', () => {
       });
       const service = new Workspace();
       mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
-      mockReadTidgiConfigSync.mockReturnValue({
-        name: 'Portable Name',
-        tagNames: [],
-        isSubWiki: true,
-        mainWikiID: 'root',
-      });
+      let completeRead: ((config: Record<string, unknown>) => void) | undefined;
+      mockReadTidgiConfig.mockImplementation(
+        () =>
+          new Promise<Record<string, unknown>>((resolve) => {
+            completeRead = resolve;
+          }),
+      );
 
-      const result = await service.getWorkspaces();
-
-      expect(mockReadTidgiConfigSync).toHaveBeenCalledWith(workspace.wikiFolderLocation);
+      const startup = service.getWorkspaces();
+      // The cache constructor only reads settings.json. Portable filesystem
+      // reads are deferred until after this synchronous startup boundary.
       expect(mockReadTidgiConfig).not.toHaveBeenCalled();
+      const result = await startup;
+
+      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockReadTidgiConfig).toHaveBeenCalledWith(workspace.wikiFolderLocation, {
+        signal: expect.any(AbortSignal),
+      });
       expect(result[workspace.id]).toMatchObject({
         id: workspace.id,
         homeUrl: `tidgi://${workspace.id}`,
         lastUrl: null,
-        name: 'Portable Name',
-        isSubWiki: true,
+        name: 'Local Name',
+        isSubWiki: false,
         mainWikiID: null,
       });
+
+      completeRead?.({ name: 'Portable Name', tagNames: [], isSubWiki: true, mainWikiID: 'root' });
+      await vi.waitFor(async () => {
+        await expect(service.get(workspace.id)).resolves.toMatchObject({
+          name: 'Portable Name',
+          isSubWiki: true,
+          mainWikiID: null,
+        });
+      });
+    });
+
+    it('hydrates normal workspaces while an offline config read remains pending, then times the pending read out', async () => {
+      vi.useFakeTimers();
+      try {
+        const slow = createWorkspace({ id: 'slow', wikiFolderLocation: '/wikis/slow', name: 'Slow settings name' });
+        const ready = createWorkspace({ id: 'ready', wikiFolderLocation: '/wikis/ready', name: 'Ready settings name' });
+        mockGetSetting.mockReturnValue({ [slow.id]: slow, [ready.id]: ready });
+        let slowSignal: AbortSignal | undefined;
+        mockReadTidgiConfig.mockImplementation((workspacePath: string, options?: { signal?: AbortSignal }) => {
+          if (workspacePath === slow.wikiFolderLocation) {
+            slowSignal = options?.signal;
+            return new Promise<Record<string, unknown>>(() => undefined);
+          }
+          return Promise.resolve({ name: 'Ready portable name' });
+        });
+
+        const service = new Workspace();
+        const result = await service.getWorkspaces();
+
+        expect(result.slow).toMatchObject({ name: 'Slow settings name' });
+        expect(result.ready).toMatchObject({ name: 'Ready settings name' });
+        await vi.advanceTimersByTimeAsync(0);
+        await expect(service.get(ready.id)).resolves.toMatchObject({ name: 'Ready portable name' });
+        expect(slowSignal?.aborted).toBe(false);
+
+        await vi.advanceTimersByTimeAsync(3_000);
+        expect(slowSignal?.aborted).toBe(true);
+        await expect(service.get(slow.id)).resolves.toMatchObject({ name: 'Slow settings name' });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not let an older hydration overwrite a later settings mutation', async () => {
+      const workspace = createWorkspace({ useTidgiConfigSync: true, name: 'Settings name' });
+      mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
+      let completeRead: ((config: Record<string, unknown>) => void) | undefined;
+      mockReadTidgiConfig.mockImplementation(
+        () =>
+          new Promise<Record<string, unknown>>((resolve) => {
+            completeRead = resolve;
+          }),
+      );
+      const service = new Workspace();
+
+      await service.getWorkspaces();
+      await service.set(workspace.id, { ...workspace, name: 'Newer settings name' });
+      completeRead?.({ name: 'Stale portable name' });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      await expect(service.get(workspace.id)).resolves.toMatchObject({ name: 'Newer settings name' });
     });
 
     it('uses portable subwiki metadata to resolve the hierarchy after every workspace is hydrated', async () => {
       const root = createWorkspace({
         id: 'root',
-        name: '',
+        name: 'Root settings name',
         wikiFolderLocation: '/wikis/root',
         useTidgiConfigSync: true,
       });
       const sub = createWorkspace({
         id: 'sub',
-        name: '',
+        name: 'Sub settings name',
         wikiFolderLocation: '/wikis/sub',
         useTidgiConfigSync: true,
       });
       mockGetSetting.mockReturnValue({ root, sub });
-      mockReadTidgiConfigSync.mockImplementation((workspacePath: string) =>
+      mockReadTidgiConfig.mockImplementation((workspacePath: string) =>
         workspacePath === root.wikiFolderLocation
-          ? { name: 'Root Wiki' }
-          : {
+          ? Promise.resolve({ name: 'Root Wiki' })
+          : Promise.resolve({
             name: 'Sub Wiki',
             isSubWiki: true,
             mainWikiID: root.id,
-          }
+          })
       );
 
-      const result = await new Workspace().getWorkspaces();
+      const service = new Workspace();
+      const result = await service.getWorkspaces();
 
-      expect(result.root).toMatchObject({ name: 'Root Wiki', isSubWiki: false });
-      expect(result.sub).toMatchObject({
-        name: 'Sub Wiki',
-        isSubWiki: true,
-        mainWikiID: root.id,
+      expect(result.root).toMatchObject({ name: 'Root settings name', isSubWiki: false });
+      await vi.waitFor(async () => {
+        await expect(service.get(root.id)).resolves.toMatchObject({ name: 'Root Wiki', isSubWiki: false });
+        await expect(service.get(sub.id)).resolves.toMatchObject({
+          name: 'Sub Wiki',
+          isSubWiki: true,
+          mainWikiID: root.id,
+        });
       });
     });
 
@@ -401,6 +474,7 @@ describe('Workspace useTidgiConfigSync', () => {
       const result = service.sanitizeWorkspaceForTest(workspace);
 
       expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockReadTidgiConfig).not.toHaveBeenCalled();
       if (!isWikiWorkspace(result)) {
         throw new Error('expected HTML workspace to retain wiki workspace shape');
       }
@@ -513,7 +587,8 @@ describe('Workspace useTidgiConfigSync', () => {
       expect((result[cycleA.id] as IWikiWorkspace).mainWikiID).toBeNull();
       expect((result[cycleB.id] as IWikiWorkspace).mainWikiID).toBeNull();
       expect((result[ambiguousSub.id] as IWikiWorkspace).mainWikiID).toBeNull();
-      expect(mockReadTidgiConfigSync).toHaveBeenCalledTimes(26);
+      expect(mockReadTidgiConfigSync).not.toHaveBeenCalled();
+      expect(mockReadTidgiConfig).toHaveBeenCalledTimes(26);
       expect(mockSetSetting).not.toHaveBeenCalled();
     });
 

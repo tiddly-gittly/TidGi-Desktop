@@ -160,6 +160,7 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
 installApplicationQuitLifecycle({
   abortStartup: () => {
     applicationStartupAbortController.abort(new ApplicationStartupCancelledError('Application startup cancelled because the app is quitting'));
+    workspaceService.cancelPortableConfigHydration();
     workspaceViewService.cancelWorkspaceStartup();
     logger.info('App before-quit - pending workspace startup cancelled');
   },

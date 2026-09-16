@@ -446,6 +446,8 @@ export interface IWorkspaceService {
    * Called from main.ts after databaseService.initializeForApp()
    */
   initializeMenu(): Promise<void>;
+  /** Cancel best-effort portable workspace config reads during shutdown. */
+  cancelPortableConfigHydration(): void;
   /**
    * Open a tiddler in the workspace, open workspace's tag by default.
    */
@@ -481,6 +483,7 @@ export interface IWorkspaceService {
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
   properties: {
+    cancelPortableConfigHydration: ProxyPropertyType.Function,
     clearActiveWorkspace: ProxyPropertyType.Function,
     countWorkspaces: ProxyPropertyType.Function,
     create: ProxyPropertyType.Function,

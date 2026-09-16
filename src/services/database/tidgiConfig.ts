@@ -13,6 +13,7 @@
  */
 import fs from 'fs-extra';
 import { isEqual, pickBy } from 'lodash';
+import { readFile as readFileNative } from 'node:fs/promises';
 import path from 'path';
 // CRITICAL: Import from syncableConfig.ts, NOT interface.ts (which imports electron-ipc-cat)
 import type { ISyncableWikiConfig, IWikiWorkspaceMinimal, SyncableConfigField } from '../workspaces/syncableConfig';
@@ -143,13 +144,16 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
  * Returns undefined if file doesn't exist or is invalid
  * Uses the same error recovery mechanism as settings.json
  */
-export async function readTidgiConfig(wikiFolderLocation: string): Promise<Partial<ISyncableWikiConfig> | undefined> {
+export async function readTidgiConfig(
+  wikiFolderLocation: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<Partial<ISyncableWikiConfig> | undefined> {
   const configPath = getTidgiConfigPath(wikiFolderLocation);
   try {
-    if (!(await fs.pathExists(configPath))) {
-      return undefined;
-    }
-    const content = await fs.readFile(configPath, 'utf-8');
+    // Read directly rather than checking existence first. Besides avoiding an
+    // extra filesystem round-trip, fs.readFile can observe AbortSignal while a
+    // config hydration is being cancelled or timed out.
+    const content = await readFileNative(configPath, { encoding: 'utf-8', signal: options.signal });
     const parsed = parseJsonWithRepair<ITidgiConfigFile>(content, configPath, { logPrefix: 'tidgi.config.json' });
     if (!parsed) return undefined;
 
@@ -159,6 +163,9 @@ export async function readTidgiConfig(wikiFolderLocation: string): Promise<Parti
     }
     return result;
   } catch (error) {
+    if (options.signal?.aborted || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined;
+    }
     getLogger().warn('Failed to read tidgi.config.json', { configPath, error: (error as Error).message });
     return undefined;
   }

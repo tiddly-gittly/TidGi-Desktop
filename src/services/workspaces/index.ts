@@ -20,7 +20,7 @@ import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { extractSyncableConfig, mergeWithSyncedConfig, readTidgiConfig, readTidgiConfigSync, writeTidgiConfig } from '../database/configSetting';
+import { extractSyncableConfig, mergeWithSyncedConfig, readTidgiConfig, writeTidgiConfig } from '../database/configSetting';
 import type {
   IDedicatedWorkspace,
   INewHtmlWikiWorkspaceConfig,
@@ -43,8 +43,20 @@ import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePat
 // a valid workspace URL fail the view's exact identity check.
 const generateWorkspaceID = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz-_', 21);
 
+interface IPortableConfigHydration {
+  controller: AbortController;
+  generation: number;
+}
+
 @injectable()
 export class Workspace implements IWorkspaceService {
+  /**
+   * Portable config is deliberately best-effort during startup. A mounted but
+   * unresponsive network or removable volume must not retain a hydration task
+   * indefinitely after the rest of the app has become usable.
+   */
+  protected readonly portableConfigHydrationTimeoutMs = 3_000;
+
   /**
    * Record from workspace id to workspace settings
    */
@@ -55,6 +67,8 @@ export class Workspace implements IWorkspaceService {
    * two partial updates must not both merge against the same stale snapshot.
    */
   private readonly workspaceMutationQueues = new Map<string, Promise<void>>();
+  private readonly portableConfigHydrations = new Map<string, IPortableConfigHydration>();
+  private nextPortableConfigHydrationGeneration = 0;
 
   /**
    * Initialize workspace menu after database is ready
@@ -141,7 +155,11 @@ export class Workspace implements IWorkspaceService {
         }
 
         try {
-          const sanitized = this.sanitizeWorkspace(workspace, true);
+          // This first pass is intentionally settings-only. In particular, do
+          // not synchronously inspect tidgi.config.json here: opening a path on
+          // an unavailable network/removable volume can stall Electron's main
+          // thread before the first window is usable.
+          const sanitized = this.sanitizeWorkspace(workspace);
           const normalizedID = sanitized.id;
           if (Object.hasOwn(sanitizedWorkspaces, normalizedID)) {
             logger.warn('getInitWorkspacesForCache: Ignoring duplicate workspace id', {
@@ -167,37 +185,7 @@ export class Workspace implements IWorkspaceService {
         }
       }
 
-      const resolveRootWorkspaceID = (subWorkspace: IWikiWorkspace): string | undefined => {
-        let targetID = subWorkspace.mainWikiID;
-        const visited = new Set([subWorkspace.id]);
-        while (targetID) {
-          if (visited.has(targetID)) return undefined;
-          visited.add(targetID);
-          const target = sanitizedWorkspaces[targetID];
-          if (!target || !isWikiWorkspace(target)) return undefined;
-          if (!target.isSubWiki) return target.id;
-          targetID = target.mainWikiID;
-        }
-        return undefined;
-      };
-
-      Object.values(sanitizedWorkspaces).forEach((workspace) => {
-        if (!isWikiWorkspace(workspace) || !workspace.isSubWiki) return;
-
-        const explicitRootID = resolveRootWorkspaceID(workspace);
-        if (explicitRootID) {
-          workspace.mainWikiID = explicitRootID;
-          return;
-        }
-
-        if (workspace.mainWikiID) {
-          logger.warn('getInitWorkspacesForCache: Clearing invalid subwiki link in memory', {
-            mainWikiID: workspace.mainWikiID,
-            workspaceID: workspace.id,
-          });
-        }
-        workspace.mainWikiID = null;
-      });
+      this.normalizeSubWikiLinks(sanitizedWorkspaces);
 
       return sanitizedWorkspaces;
     }
@@ -212,8 +200,178 @@ export class Workspace implements IWorkspaceService {
     // store in memory to boost performance
     if (this.workspaces === undefined) {
       this.workspaces = this.getInitWorkspacesForCache();
+      this.schedulePortableConfigHydration(this.workspaces);
     }
     return this.workspaces;
+  }
+
+  /**
+   * Normalize a subwiki link only after every currently known workspace has
+   * been considered. This is shared by the settings-only cache pass and each
+   * later portable-config hydration, so a portable isSubWiki/mainWikiID pair
+   * retains the same root-resolution semantics as it did at startup.
+   */
+  private normalizeSubWikiLinks(workspaces: Record<string, IWorkspace>): void {
+    const resolveRootWorkspaceID = (subWorkspace: IWikiWorkspace): string | undefined => {
+      let targetID = subWorkspace.mainWikiID;
+      const visited = new Set([subWorkspace.id]);
+      while (targetID) {
+        if (visited.has(targetID)) return undefined;
+        visited.add(targetID);
+        const target = workspaces[targetID];
+        if (!target || !isWikiWorkspace(target)) return undefined;
+        if (!target.isSubWiki) return target.id;
+        targetID = target.mainWikiID;
+      }
+      return undefined;
+    };
+
+    Object.values(workspaces).forEach((workspace) => {
+      if (!isWikiWorkspace(workspace) || !workspace.isSubWiki) return;
+
+      const explicitRootID = resolveRootWorkspaceID(workspace);
+      if (explicitRootID) {
+        workspace.mainWikiID = explicitRootID;
+        return;
+      }
+
+      if (workspace.mainWikiID) {
+        logger.warn('normalizeSubWikiLinks: Clearing invalid subwiki link in memory', {
+          mainWikiID: workspace.mainWikiID,
+          workspaceID: workspace.id,
+        });
+      }
+      workspace.mainWikiID = null;
+    });
+  }
+
+  /**
+   * Start independent best-effort reads after the settings cache is available.
+   * No caller awaits this work: a single inaccessible workspace must neither
+   * delay other hydration reads nor application readiness.
+   */
+  private schedulePortableConfigHydration(workspaces: Record<string, IWorkspace>): void {
+    for (const workspace of Object.values(workspaces)) {
+      if (!isWikiWorkspace(workspace) || workspace.workspaceType === WorkspaceType.html || !workspace.useTidgiConfigSync) {
+        continue;
+      }
+
+      this.cancelPortableConfigHydrationForWorkspace(workspace.id);
+      const hydration: IPortableConfigHydration = {
+        controller: new AbortController(),
+        generation: ++this.nextPortableConfigHydrationGeneration,
+      };
+      this.portableConfigHydrations.set(workspace.id, hydration);
+      // Do not even begin an asynchronous filesystem operation until the
+      // settings-only cache constructor has returned to its caller.
+      queueMicrotask(() => {
+        if (
+          hydration.controller.signal.aborted ||
+          this.portableConfigHydrations.get(workspace.id)?.generation !== hydration.generation
+        ) {
+          return;
+        }
+        void this.hydratePortableConfig(workspace, hydration);
+      });
+    }
+  }
+
+  /**
+   * A mutation has newer local intent than a startup read. Abort the read and
+   * advance its generation before persistence begins so a late result cannot
+   * restore stale portable values over the new setting.
+   */
+  private cancelPortableConfigHydrationForWorkspace(workspaceID: string): void {
+    const hydration = this.portableConfigHydrations.get(workspaceID);
+    if (hydration) {
+      hydration.controller.abort(new Error('Portable workspace config hydration was superseded'));
+      this.portableConfigHydrations.delete(workspaceID);
+    }
+  }
+
+  /** Cancel all in-flight best-effort portable config reads, for app shutdown. */
+  public cancelPortableConfigHydration(): void {
+    for (const workspaceID of [...this.portableConfigHydrations.keys()]) {
+      this.cancelPortableConfigHydrationForWorkspace(workspaceID);
+    }
+  }
+
+  private async readPortableConfigWithTimeout(
+    workspace: IWikiWorkspace,
+    controller: AbortController,
+  ): Promise<ReturnType<typeof readTidgiConfig> extends Promise<infer T> ? T : never> {
+    const timeoutController = new AbortController();
+    const signal = AbortSignal.any([controller.signal, timeoutController.signal]);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let resolveWhenAborted: ((value: undefined) => void) | undefined;
+    const aborted = new Promise<undefined>((resolve) => {
+      resolveWhenAborted = resolve;
+    });
+    const onAbort = (): void => resolveWhenAborted?.(undefined);
+    signal.addEventListener('abort', onAbort, { once: true });
+
+    // Catch here as well as in readTidgiConfig: this is a fire-and-forget task,
+    // and a mocked/alternate implementation must never create an unhandled
+    // rejection during application startup.
+    const read = readTidgiConfig(workspace.wikiFolderLocation, { signal }).catch((error: unknown) => {
+      logger.warn('Portable workspace config hydration failed', {
+        error: error instanceof Error ? error.message : String(error),
+        workspaceID: workspace.id,
+      });
+      return undefined;
+    });
+
+    try {
+      timeout = setTimeout(() => {
+        logger.warn('Portable workspace config hydration timed out', {
+          timeoutMs: this.portableConfigHydrationTimeoutMs,
+          workspaceID: workspace.id,
+        });
+        timeoutController.abort(new Error('Portable workspace config hydration timed out'));
+      }, this.portableConfigHydrationTimeoutMs);
+      return await Promise.race([read, aborted]);
+    } finally {
+      if (timeout !== undefined) clearTimeout(timeout);
+      signal.removeEventListener('abort', onAbort);
+    }
+  }
+
+  private async hydratePortableConfig(workspaceAtScheduling: IWikiWorkspace, hydration: IPortableConfigHydration): Promise<void> {
+    try {
+      const portableConfig = await this.readPortableConfigWithTimeout(workspaceAtScheduling, hydration.controller);
+      const currentWorkspace = this.workspaces?.[workspaceAtScheduling.id];
+      if (
+        portableConfig === undefined ||
+        hydration.controller.signal.aborted ||
+        this.portableConfigHydrations.get(workspaceAtScheduling.id)?.generation !== hydration.generation ||
+        currentWorkspace !== workspaceAtScheduling ||
+        !isWikiWorkspace(currentWorkspace)
+      ) {
+        return;
+      }
+
+      try {
+        this.workspaces![workspaceAtScheduling.id] = this.sanitizeWorkspace(mergeWithSyncedConfig(currentWorkspace, portableConfig));
+        this.normalizeSubWikiLinks(this.workspaces!);
+        this.updateWorkspaceSubject();
+        void this.updateWorkspaceMenuItems();
+        logger.debug('hydratePortableConfig: Hydrated portable config', {
+          fields: Object.keys(portableConfig),
+          workspaceId: workspaceAtScheduling.id,
+        });
+      } catch (error) {
+        // Settings already produced a usable workspace. A malformed portable
+        // config must not make it disappear after startup.
+        logger.warn('hydratePortableConfig: Ignoring invalid portable config', {
+          error: error instanceof Error ? error.message : String(error),
+          workspaceId: workspaceAtScheduling.id,
+        });
+      }
+    } finally {
+      if (this.portableConfigHydrations.get(workspaceAtScheduling.id)?.generation === hydration.generation) {
+        this.portableConfigHydrations.delete(workspaceAtScheduling.id);
+      }
+    }
   }
 
   public async countWorkspaces(): Promise<number> {
@@ -336,12 +494,14 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async set(id: string, workspace: IWorkspace, immediate?: boolean, skipUiUpdate = false): Promise<void> {
+    this.cancelPortableConfigHydrationForWorkspace(id);
     await this.runWorkspaceMutation(id, async () => {
       await this.setWithinMutation(id, workspace, immediate, skipUiUpdate);
     });
   }
 
   public async update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void> {
+    this.cancelPortableConfigHydrationForWorkspace(id);
     await this.runWorkspaceMutation(id, async () => {
       const workspace = this.getSync(id);
       if (workspace === undefined) {
@@ -370,13 +530,12 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   * Make sure workspace settings are internally consistent. Startup hydration
-   * may read the portable tidgi.config.json, but hierarchy resolution remains a
-   * separate second pass and therefore never recursively enters the cache.
+   * Make sure workspace settings are internally consistent. Portable config
+   * hydration is intentionally separate and asynchronous, so this method can
+   * always run safely during the synchronous startup cache construction.
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
-   * @param hydratePortableConfig Apply tidgi.config.json fields during initial cache construction only
    */
-  protected sanitizeWorkspace(workspaceToSanitize: IWorkspace, hydratePortableConfig = false): IWorkspace {
+  protected sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
     // For dedicated workspaces (help, guide, agent), no sanitization needed
     if (!isWikiWorkspace(workspaceToSanitize)) {
       return workspaceToSanitize;
@@ -399,21 +558,7 @@ export class Workspace implements IWorkspaceService {
     // HTML workspaces never sync from tidgi.config.json
     const isHtmlWorkspace = workspaceType === WorkspaceType.html;
 
-    let effectiveWorkspace = workspaceToSanitize;
-    // Master stores portable fields such as name and sub-wiki relationships in
-    // tidgi.config.json. Omitting this startup hydration silently replaces names
-    // with folder basenames and erases the hierarchy from the in-memory cache.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
-    if (hydratePortableConfig && !isHtmlWorkspace && workspaceToSanitize.useTidgiConfigSync !== false) {
-      const portableConfig = readTidgiConfigSync(workspaceToSanitize.wikiFolderLocation);
-      if (portableConfig !== undefined) {
-        effectiveWorkspace = mergeWithSyncedConfig(workspaceToSanitize, portableConfig);
-        logger.debug('sanitizeWorkspace: Hydrated portable config', {
-          fields: Object.keys(portableConfig),
-          workspaceId: workspaceToSanitize.id,
-        });
-      }
-    }
+    const effectiveWorkspace = workspaceToSanitize;
 
     const canonicalHomeUrl = getDefaultTidGiUrl(effectiveWorkspace.id);
     const hasCanonicalLastUrl = effectiveWorkspace.lastUrl === null || (
@@ -600,6 +745,7 @@ export class Workspace implements IWorkspaceService {
   public async remove(id: string): Promise<void> {
     const workspaces = this.getWorkspacesSync();
     if (id in workspaces) {
+      this.cancelPortableConfigHydrationForWorkspace(id);
       delete workspaces[id];
       const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
       const currentSettingsWorkspaces = databaseService.getSetting('workspaces') ?? {};
