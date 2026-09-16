@@ -85,6 +85,10 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+function storedCloudCredential(cloudUrl: string, accessToken: string): string {
+  return JSON.stringify({ version: 1, cloudUrl, accessToken });
+}
+
 function reservation(expiresAt: number): DeviceRelayReservationToken {
   return {
     issuer: 'memeloop-cloud',
@@ -368,6 +372,48 @@ describe('DeviceNetwork Cloud configuration', () => {
     expect(persisted?.cloudConfigurationV1?.cloudUrl).toBe('https://working.example.test');
   });
 
+  it('does not reload an old Cloud URL with a replacement token after settings persistence fails', async () => {
+    let persisted: DeviceNetworkPersistedSettings | undefined;
+    let rejectSettingsWrite = false;
+    const database = {
+      getSetting: vi.fn(() => persisted),
+      setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings) => {
+        if (rejectSettingsWrite) throw new Error('settings_write_failed');
+        persisted = value;
+      }),
+      immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
+    } as unknown as IDatabaseService;
+    const requests: Array<{ authorization: string | null; url: string }> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        requests.push({
+          authorization: new Headers(init?.headers).get('authorization'),
+          url: requestUrl(input),
+        });
+        return cloudResponse(requestUrl(input));
+      }),
+    );
+
+    const service = new DeviceNetworkService({} as never, database);
+    await service.configureCloud({ cloudUrl: 'https://a.example.test', accessToken: 'token-a' });
+    rejectSettingsWrite = true;
+    await expect(service.configureCloud({
+      cloudUrl: 'https://b.example.test',
+      accessToken: 'token-b',
+    })).rejects.toThrow('settings_write_failed');
+
+    expect(persisted?.cloudConfigurationV1).toEqual({ cloudUrl: 'https://a.example.test' });
+    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe(
+      storedCloudCredential('https://b.example.test', 'token-b'),
+    );
+
+    const reloaded = new DeviceNetworkService({} as never, database);
+    await expect(reloaded.getCloudConnectionStatus()).resolves.toEqual(createInitialDeviceCloudConnectionStatus());
+    expect((reloaded as unknown as { cloudClient?: CloudDeviceFetchClient }).cloudClient).toBeUndefined();
+    expect(requests.some(request => request.url.startsWith('https://a.example.test') && request.authorization === 'Bearer token-b')).toBe(false);
+  });
+
   it('lets only the latest concurrently validated configuration reach durable state', async () => {
     let persisted: DeviceNetworkPersistedSettings | undefined;
     const database = {
@@ -408,7 +454,9 @@ describe('DeviceNetwork Cloud configuration', () => {
     expect(persisted?.cloudConfigurationV1).toEqual({
       cloudUrl: 'https://latest.example.test',
     });
-    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe('latest-token');
+    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe(
+      storedCloudCredential('https://latest.example.test', 'latest-token'),
+    );
     expect(service.cloudStatus$.value).toMatchObject({
       cloudUrl: 'https://latest.example.test',
       status: 'offline',
@@ -469,7 +517,10 @@ describe('DeviceNetwork Cloud configuration', () => {
       }),
       immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
     } as unknown as IDatabaseService;
-    authStore.set('device-network.cloud-access-token.v1', 'device-cloud-token');
+    authStore.set(
+      'device-network.cloud-access-token.v1',
+      storedCloudCredential('https://cloud.example.test', 'device-cloud-token'),
+    );
     authStore.set('provider.unrelated', 'provider-token');
 
     const service = new DeviceNetworkService({} as never, database);
@@ -478,6 +529,9 @@ describe('DeviceNetwork Cloud configuration', () => {
     expect(persisted?.cloudConfigurationV1).toBeUndefined();
     expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBeUndefined();
     expect(authStore.secrets.get('provider.unrelated')).toBe('provider-token');
+
+    const reloaded = new DeviceNetworkService({} as never, database);
+    await expect(reloaded.getCloudConnectionStatus()).resolves.toEqual(createInitialDeviceCloudConnectionStatus());
   });
 
   it('reloads Device Cloud from its auth record without a provider configuration', async () => {
@@ -500,7 +554,9 @@ describe('DeviceNetwork Cloud configuration', () => {
     expect(persisted).toEqual({
       cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
     });
-    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe('device-cloud-token');
+    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe(
+      storedCloudCredential('https://cloud.example.test', 'device-cloud-token'),
+    );
 
     const reloaded = new DeviceNetworkService({} as never, database);
     await expect(reloaded.getCloudConnectionStatus()).resolves.toMatchObject({

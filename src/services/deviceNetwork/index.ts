@@ -70,6 +70,13 @@ interface DesktopCloudConfiguration {
   client: CloudDeviceFetchClient;
 }
 
+/** Keeps the endpoint and bearer token inseparable across separate durable stores. */
+interface StoredDesktopCloudCredential {
+  version: 1;
+  cloudUrl: string;
+  accessToken: string;
+}
+
 /** Serialized as one auth-file value so no identity material reaches settings. */
 interface StoredDesktopDeviceIdentity {
   peerId: string;
@@ -78,6 +85,16 @@ interface StoredDesktopDeviceIdentity {
   deviceName: string;
   platform: 'desktop';
   createdAt: number;
+}
+
+function isStoredDesktopCloudCredential(value: unknown): value is StoredDesktopCloudCredential {
+  const credential = value as Record<string, unknown> | undefined;
+  return Boolean(
+    credential &&
+      credential.version === 1 &&
+      typeof credential.cloudUrl === 'string' &&
+      typeof credential.accessToken === 'string',
+  );
 }
 
 function isStoredDesktopDeviceIdentity(value: unknown): value is StoredDesktopDeviceIdentity {
@@ -91,6 +108,26 @@ function isStoredDesktopDeviceIdentity(value: unknown): value is StoredDesktopDe
       identity.platform === 'desktop' &&
       typeof identity.createdAt === 'number' && Number.isFinite(identity.createdAt),
   );
+}
+
+function loadStoredCloudCredential(): StoredDesktopCloudCredential | undefined {
+  const serialized = getLocalAuthStore().get(CLOUD_ACCESS_TOKEN_SECRET_REF);
+  if (serialized === undefined) return undefined;
+  try {
+    const credential: unknown = JSON.parse(serialized);
+    return isStoredDesktopCloudCredential(credential) ? credential : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function saveCloudCredential(config: Pick<DesktopCloudConfiguration, 'cloudUrl' | 'accessToken'>): void {
+  const credential: StoredDesktopCloudCredential = {
+    version: 1,
+    cloudUrl: config.cloudUrl,
+    accessToken: config.accessToken,
+  };
+  getLocalAuthStore().set(CLOUD_ACCESS_TOKEN_SECRET_REF, JSON.stringify(credential));
 }
 
 function isTrustedDeviceRecord(value: unknown): value is TrustedDeviceRecord {
@@ -368,7 +405,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       if (request !== this.cloudConfigurationRequest) throw new Error('stale device cloud configuration');
       const shouldResumeCoordinator = this.started && this.cloudCoordinator !== undefined;
       if (shouldResumeCoordinator) await this.cloudCoordinator!.stop();
-      getLocalAuthStore().set(CLOUD_ACCESS_TOKEN_SECRET_REF, normalized.accessToken);
+      saveCloudCredential(normalized);
       const record: HostDeviceNetworkPersistedCloudConfiguration = { cloudUrl: normalized.cloudUrl };
       await this.settingsStore.update(settings => {
         settings.cloudConfigurationV1 = record;
@@ -763,13 +800,19 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   private async loadPersistedCloudConfiguration(): Promise<void> {
     if (this.cloudClient || this.cloudConfig) return;
     const stored = (await this.settingsStore.read()).cloudConfigurationV1;
-    const accessToken = getLocalAuthStore().get(CLOUD_ACCESS_TOKEN_SECRET_REF);
-    if (!stored || typeof stored.cloudUrl !== 'string' || accessToken === undefined) return;
+    const credential = loadStoredCloudCredential();
+    if (
+      !stored ||
+      typeof stored.cloudUrl !== 'string' ||
+      credential === undefined ||
+      credential.cloudUrl !== stored.cloudUrl
+    ) return;
     try {
       const normalized = validateCloudConfiguration({
         cloudUrl: stored.cloudUrl,
-        accessToken,
+        accessToken: credential.accessToken,
       });
+      if (normalized.cloudUrl !== credential.cloudUrl) return;
       const client = createDesktopCloudClient(normalized);
       this.cloudConfig = { ...normalized, client };
       this.cloudClient = client;
