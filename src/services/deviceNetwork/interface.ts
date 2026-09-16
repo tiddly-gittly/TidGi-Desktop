@@ -18,19 +18,12 @@ import type {
 import type { DeviceCloudConnectionSnapshot } from 'memeloop/device-network';
 import type { BehaviorSubject } from 'rxjs';
 
-export interface DeviceNetworkPersistedIdentity {
-  peerId: string;
-  publicKeyMultibase: string;
-  encryptedPrivateKey: string;
-  deviceName: string;
-  platform: 'desktop';
-  createdAt: number;
-}
-
-/** Host-only persisted Cloud settings; the access token is encrypted at rest. */
+/**
+ * Non-secret Cloud display/configuration metadata. The token and device
+ * identity live exclusively in the local auth file, never in settings.
+ */
 export interface HostDeviceNetworkPersistedCloudConfiguration {
   cloudUrl: string;
-  encryptedAccessToken: string;
 }
 
 /**
@@ -45,7 +38,6 @@ export interface DeviceNetworkPersistedSettings {
     generation: number;
   };
   cloudConfigurationV1?: HostDeviceNetworkPersistedCloudConfiguration;
-  identityV1?: DeviceNetworkPersistedIdentity;
   trustedDevicesV1?: TrustedDeviceRecord[];
 }
 

@@ -3,6 +3,7 @@ import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { safeStorage } from 'electron';
 import type { ILLMProvider, PortableLlmRequest, PortableLlmStreamPart, ProviderAccountConfig } from 'memeloop';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -114,23 +115,42 @@ describe('ExternalAPIService canonical provider persistence and logging', () => 
     });
   });
 
-  it('persists only encrypted credentials and publishes only an opaque secret reference', async () => {
+  it('persists no credentials in settings and does not call Electron safeStorage', async () => {
+    const safeStorageProbe = vi.spyOn(safeStorage, 'isEncryptionAvailable').mockImplementation(() => {
+      throw new Error('safeStorage must not be used for provider credentials');
+    });
+    await service.setProviderApiKey(providerId, 'unit-test-provider-secret');
+
     const serialized = JSON.stringify(database.getSetting('aiSettings'));
     expect(serialized).not.toContain('unit-test-provider-secret');
-    expect(serialized).toContain('encryptedApiKey');
+    expect(serialized).not.toContain('encryptedApiKey');
+    expect(serialized).not.toContain('providerCredentials');
 
     const exposed = (await service.getProviderAccounts()).find(account => account.providerId === providerId);
     expect(exposed).toMatchObject({
       providerId,
       providerType: 'openai-compatible',
       baseUrl: 'https://models.example.test/v1',
-      secretRef: `desktop-keychain:${providerId}`,
+      secretRef: `ai-provider/${providerId}`,
       models: [route],
     });
     expect(exposed).not.toHaveProperty('apiKey');
     expect(exposed).not.toHaveProperty('encryptedApiKey');
     expect(await service.getProviderApiKey(providerId)).toBe('unit-test-provider-secret');
+    expect(safeStorageProbe).not.toHaveBeenCalled();
     expect(JSON.stringify(await service.getAPILogs())).not.toContain('unit-test-provider-secret');
+  });
+
+  it('keeps an auth-file credential when an account is edited without a key', async () => {
+    await service.setProviderAccount({
+      ...account,
+      baseUrl: 'https://models.edited.example.test/v1',
+    });
+
+    expect(await service.getProviderApiKey(providerId)).toBe('unit-test-provider-secret');
+    expect(JSON.stringify(database.getSetting('aiSettings'))).not.toContain('unit-test-provider-secret');
+    expect((await service.getProviderAccounts()).find(candidate => candidate.providerId === providerId))
+      .toMatchObject({ secretRef: `ai-provider/${providerId}` });
   });
 
   it.each(['TestProvider', '0provider', '提供方'])('accepts a Unicode or digit provider ID: %s', async id => {

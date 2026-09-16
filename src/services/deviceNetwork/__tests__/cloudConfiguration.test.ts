@@ -27,6 +27,20 @@ import {
 import type { DeviceNetworkPersistedSettings } from '../interface';
 import { createInitialDeviceCloudConnectionStatus } from '../interface';
 
+const authStore = vi.hoisted(() => {
+  const secrets = new Map<string, string>();
+  return {
+    delete: (key: string) => secrets.delete(key),
+    get: (key: string) => secrets.get(key),
+    secrets,
+    set: (key: string, value: string) => secrets.set(key, value),
+  };
+});
+
+vi.mock('@services/libs/authFileStore', () => ({
+  getLocalAuthStore: () => authStore,
+}));
+
 vi.mock('@memeloop/libp2p', async (importOriginal) => ({
   ...await importOriginal<typeof import('@memeloop/libp2p')>(),
   signDeviceBinding: vi.fn(async () => 'binding-signature'),
@@ -51,6 +65,7 @@ function currentFence(generation = 1): DeviceCloudCommitFence {
 }
 
 afterEach(() => {
+  authStore.secrets.clear();
   vi.unstubAllGlobals();
 });
 
@@ -392,8 +407,8 @@ describe('DeviceNetwork Cloud configuration', () => {
     await olderRejection;
     expect(persisted?.cloudConfigurationV1).toEqual({
       cloudUrl: 'https://latest.example.test',
-      encryptedAccessToken: Buffer.from('encrypted:latest-token', 'utf8').toString('base64'),
     });
+    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe('latest-token');
     expect(service.cloudStatus$.value).toMatchObject({
       cloudUrl: 'https://latest.example.test',
       status: 'offline',
@@ -441,6 +456,84 @@ describe('DeviceNetwork Cloud configuration', () => {
 
     expect(persisted?.cloudConfigurationV1).toBeUndefined();
     expect(service.cloudStatus$.value).toEqual(createInitialDeviceCloudConnectionStatus());
+  });
+
+  it('clears only Device Cloud credentials from the auth file', async () => {
+    let persisted: DeviceNetworkPersistedSettings | undefined = {
+      cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
+    };
+    const database = {
+      getSetting: vi.fn(() => persisted),
+      setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings) => {
+        persisted = value;
+      }),
+      immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
+    } as unknown as IDatabaseService;
+    authStore.set('device-network.cloud-access-token.v1', 'device-cloud-token');
+    authStore.set('provider.unrelated', 'provider-token');
+
+    const service = new DeviceNetworkService({} as never, database);
+    await service.clearCloudConfiguration();
+
+    expect(persisted?.cloudConfigurationV1).toBeUndefined();
+    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBeUndefined();
+    expect(authStore.secrets.get('provider.unrelated')).toBe('provider-token');
+  });
+
+  it('reloads Device Cloud from its auth record without a provider configuration', async () => {
+    let persisted: DeviceNetworkPersistedSettings | undefined;
+    const database = {
+      getSetting: vi.fn(() => persisted),
+      setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings) => {
+        persisted = value;
+      }),
+      immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
+    } as unknown as IDatabaseService;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => cloudResponse(requestUrl(input))));
+
+    const configured = new DeviceNetworkService({} as never, database);
+    await configured.configureCloud({
+      cloudUrl: 'https://cloud.example.test',
+      accessToken: 'device-cloud-token',
+    });
+
+    expect(persisted).toEqual({
+      cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
+    });
+    expect(authStore.secrets.get('device-network.cloud-access-token.v1')).toBe('device-cloud-token');
+
+    const reloaded = new DeviceNetworkService({} as never, database);
+    await expect(reloaded.getCloudConnectionStatus()).resolves.toMatchObject({
+      cloudUrl: 'https://cloud.example.test',
+      status: 'offline',
+    });
+  });
+
+  it('creates and reloads a DeviceNetwork identity without provider credentials or settings secrets', async () => {
+    let persisted: DeviceNetworkPersistedSettings | undefined;
+    const database = {
+      getSetting: vi.fn(() => persisted),
+      setSetting: vi.fn((_key: 'deviceNetwork', value: DeviceNetworkPersistedSettings) => {
+        persisted = value;
+      }),
+      immediatelyStoreSettingsToFile: vi.fn(async () => undefined),
+    } as unknown as IDatabaseService;
+    authStore.set('provider.unrelated', 'provider-token');
+
+    const first = new DeviceNetworkService({} as never, database);
+    const created = await first.getLocalIdentity();
+    const serializedIdentity = authStore.secrets.get('device-network.identity.v1');
+
+    expect(serializedIdentity).toBeTypeOf('string');
+    expect(persisted).toBeUndefined();
+    expect(authStore.secrets.get('provider.unrelated')).toBe('provider-token');
+
+    const reloaded = new DeviceNetworkService({} as never, database);
+    await expect(reloaded.getLocalIdentity()).resolves.toMatchObject({
+      peerId: created.peerId,
+      publicKeyMultibase: created.publicKeyMultibase,
+      deviceName: created.deviceName,
+    });
   });
 
   it('merges a large Cloud directory from one consistent trust-store snapshot', async () => {
@@ -778,14 +871,9 @@ describe('DeviceNetwork settings persistence', () => {
   it('serializes independent updates without losing fields', async () => {
     const { readPersisted, store } = createSettingsStore();
 
-    const identityWrite = store.update(settings => {
-      settings.identityV1 = {
-        peerId: 'peer-1',
-        publicKeyMultibase: 'zPublicKey',
-        encryptedPrivateKey: 'encrypted',
-        deviceName: 'Desktop',
-        platform: 'desktop',
-        createdAt: 1,
+    const cloudWrite = store.update(settings => {
+      settings.cloudConfigurationV1 = {
+        cloudUrl: 'https://cloud.example.test',
       };
     });
     const trustWrite = store.update(settings => {
@@ -799,36 +887,26 @@ describe('DeviceNetwork settings persistence', () => {
       }];
     });
 
-    await Promise.all([identityWrite, trustWrite]);
+    await Promise.all([cloudWrite, trustWrite]);
 
     expect(readPersisted()).toMatchObject({
-      identityV1: { peerId: 'peer-1' },
+      cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
       trustedDevicesV1: [{ peerId: 'peer-2' }],
     });
   });
 
-  it('flushes durable identity and Cloud changes on request', async () => {
+  it('flushes durable non-secret Cloud metadata on request', async () => {
     const { immediatelyStoreSettingsToFile, store } = createSettingsStore();
 
     await store.update(settings => {
-      settings.identityV1 = {
-        peerId: 'peer-1',
-        publicKeyMultibase: 'zPublicKey',
-        encryptedPrivateKey: 'encrypted',
-        deviceName: 'Desktop',
-        platform: 'desktop',
-        createdAt: 1,
-      };
       settings.cloudConfigurationV1 = {
         cloudUrl: 'https://cloud.example.test',
-        encryptedAccessToken: 'encrypted-token',
       };
     }, true);
 
     expect(immediatelyStoreSettingsToFile).toHaveBeenCalledOnce();
     await expect(store.read()).resolves.toMatchObject({
       cloudConfigurationV1: { cloudUrl: 'https://cloud.example.test' },
-      identityV1: { peerId: 'peer-1' },
     });
   });
 });

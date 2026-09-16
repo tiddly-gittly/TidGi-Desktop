@@ -6,6 +6,17 @@ interface UseAIConfigManagementProps {
   agentId?: string;
 }
 
+type ScopedAIConfigManagementProps =
+  | { agentId: string; agentDefId?: string }
+  | { agentDefId: string; agentId?: string };
+
+/**
+ * Definitions and conversation instances persist one AgentModelConfig. They
+ * deliberately do not support auxiliary global assignments such as embedding
+ * or image generation models.
+ */
+type ScopedModelAssignments = Pick<ModelAssignments, 'default'>;
+
 export type AIConfigOperation = 'load' | 'update' | 'clear';
 
 export interface AIConfigFailure {
@@ -13,14 +24,17 @@ export interface AIConfigFailure {
   error: Error;
 }
 
-interface UseAIConfigManagementResult {
+interface AIConfigManagementBase {
   loading: boolean;
-  config: ModelAssignments | null;
   /** The last failed operation. The UI maps the operation to a localized message. */
   error?: AIConfigFailure;
   clearError?: () => void;
   accounts: ProviderAccountConfig[];
   setAccounts: React.Dispatch<React.SetStateAction<ProviderAccountConfig[]>>;
+}
+
+interface GlobalAIConfigManagementResult extends AIConfigManagementBase {
+  config: ModelAssignments | null;
   handleModelChange: (selection: AgentModelConfig) => Promise<void>;
   handleEmbeddingModelChange: (selection: AgentModelConfig) => Promise<void>;
   handleSpeechModelChange: (selection: AgentModelConfig) => Promise<void>;
@@ -31,11 +45,21 @@ interface UseAIConfigManagementResult {
   handleFieldClear: (key: keyof ModelAssignments) => Promise<void>;
 }
 
+/** The renderer API for a definition or instance model override. */
+interface ScopedAIConfigManagementResult extends AIConfigManagementBase {
+  config: ScopedModelAssignments | null;
+  handleModelChange: (selection: AgentModelConfig) => Promise<void>;
+}
+
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManagementProps = {}): UseAIConfigManagementResult => {
+export function useAIConfigManagement(): GlobalAIConfigManagementResult;
+export function useAIConfigManagement(props: ScopedAIConfigManagementProps): ScopedAIConfigManagementResult;
+export function useAIConfigManagement(props: UseAIConfigManagementProps): GlobalAIConfigManagementResult | ScopedAIConfigManagementResult;
+export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManagementProps = {}): GlobalAIConfigManagementResult | ScopedAIConfigManagementResult {
+  const isScoped = agentId !== undefined || agentDefId !== undefined;
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<ModelAssignments | null>(null);
   const [accounts, setAccounts] = useState<ProviderAccountConfig[]>([]);
@@ -68,7 +92,14 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
           agentModelConfig = agentDefinition?.modelConfig;
         }
 
-        setConfig(agentModelConfig === undefined ? globalConfig : { ...globalConfig, default: agentModelConfig });
+        // Definitions and instances persist only one AgentModelConfig. Do not
+        // merge auxiliary global assignments into this scoped view: doing so
+        // makes the UI look editable while updates can only save `default`.
+        setConfig(
+          isScoped
+            ? defaultOnlyAssignments(agentModelConfig ?? globalConfig.default)
+            : globalConfig,
+        );
 
         const providerAccounts = await window.service.externalAPI.getProviderAccounts();
         setAccounts(providerAccounts);
@@ -104,13 +135,15 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       configSubscription.unsubscribe();
       providerAccountsSubscription.unsubscribe();
     };
-  }, [agentDefId, agentId]);
+  }, [agentDefId, agentId, isScoped]);
 
   const updateConfig = useCallback(async (updatedConfig: ModelAssignments) => {
     if (agentId) {
+      assertDefaultOnlyScopedAssignments(updatedConfig);
       if (!updatedConfig.default) throw new Error('Agent model selection is required');
       await window.service.agentInstance.updateAgent(agentId, { modelConfig: updatedConfig.default });
     } else if (agentDefId) {
+      assertDefaultOnlyScopedAssignments(updatedConfig);
       if (!updatedConfig.default) throw new Error('Agent model selection is required');
       await window.service.agentDefinition.updateAgentDef({
         id: agentDefId,
@@ -127,6 +160,9 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     selection: AgentModelConfig,
   ) => {
     if (!config) return;
+    if (isScoped && key !== 'default') {
+      throw new Error('Scoped model overrides support only the default model');
+    }
     const previousConfig = config;
     const updatedConfig: ModelAssignments = { ...config, [key]: selection };
     setConfig(updatedConfig);
@@ -144,7 +180,7 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
       });
       throw normalizedError;
     }
-  }, [config, updateConfig]);
+  }, [config, isScoped, updateConfig]);
 
   const handleModelChange = useCallback(async (selection: AgentModelConfig) => {
     await updateSelection('default', {
@@ -226,13 +262,25 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     setError(undefined);
   }, []);
 
-  return {
+  const baseResult: AIConfigManagementBase = {
     loading,
-    config,
     error,
     clearError,
     accounts,
     setAccounts,
+  };
+
+  if (isScoped) {
+    return {
+      ...baseResult,
+      config: config === null ? null : defaultOnlyAssignments(config.default),
+      handleModelChange,
+    };
+  }
+
+  return {
+    ...baseResult,
+    config,
     handleModelChange,
     handleEmbeddingModelChange,
     handleSpeechModelChange,
@@ -242,4 +290,14 @@ export const useAIConfigManagement = ({ agentDefId, agentId }: UseAIConfigManage
     handleConfigChange,
     handleFieldClear,
   };
-};
+}
+
+function defaultOnlyAssignments(defaultModel: AgentModelConfig | undefined): ScopedModelAssignments {
+  return defaultModel === undefined ? {} : { default: defaultModel };
+}
+
+function assertDefaultOnlyScopedAssignments(assignments: ModelAssignments): void {
+  if (Object.keys(assignments).some(key => key !== 'default')) {
+    throw new Error('Scoped model overrides support only the default model');
+  }
+}

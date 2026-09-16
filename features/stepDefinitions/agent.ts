@@ -516,7 +516,6 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
 
   const newAi: DesktopExternalAPISettings = {
     accounts: [providerConfig],
-    providerCredentials: [],
     modelAssignments: {
       default: {
         providerId: providerConfig.providerId,
@@ -587,7 +586,6 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
 
   const newAi: DesktopExternalAPISettings = {
     accounts: [providerConfig],
-    providerCredentials: [],
     modelAssignments: {
       default: {
         providerId: providerConfig.providerId,

@@ -1,4 +1,4 @@
-import { app, safeStorage } from 'electron';
+import { app } from 'electron';
 import { inject, injectable } from 'inversify';
 import { nanoid } from 'nanoid';
 import path from 'node:path';
@@ -6,6 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 
 import type { IDatabaseService } from '@services/database/interface';
 import { ExternalAPICallType, ExternalAPILogEntity, RequestMetadata, ResponseMetadata } from '@services/database/schema/externalAPILog';
+import { getLocalAuthStore } from '@services/libs/authFileStore';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -33,7 +34,7 @@ import { extractErrorDetails } from './errorHandlers';
 import type { AIEmbeddingResponse, AIImageGenerationResponse, AISpeechResponse, AITranscriptionResponse, DesktopExternalAPISettings, IExternalAPIService } from './interface';
 import { discoverOfficialModelIds, mergeDiscoveredProviderRoutes } from './officialModels';
 import { createDesktopModelCatalogManager } from './providerCatalog';
-import { hasUsableProviderCredential } from './providerCredentials';
+import { hasUsableProviderCredential, hasUsableProviderCredentialReference } from './providerCredentials';
 import { desktopLlmProviderFactoryPort } from './providerFactory';
 
 /**
@@ -61,7 +62,6 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private userSettings: DesktopExternalAPISettings = {
     accounts: [],
-    providerCredentials: [],
     modelAssignments: {},
   };
 
@@ -125,12 +125,7 @@ export class ExternalAPIService implements IExternalAPIService {
   private getRuntimeProviderAccount(providerId: string): [ProviderAccountConfig, string] | undefined {
     const stored = this.userSettings.accounts.find(account => account.providerId === providerId);
     if (!stored) return undefined;
-    const credential = this.userSettings.providerCredentials.find(candidate => candidate.providerId === providerId);
-    let apiKey = '';
-    if (credential) {
-      if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
-      apiKey = safeStorage.decryptString(Buffer.from(credential.encryptedApiKey, 'base64'));
-    }
+    const apiKey = stored.secretRef === undefined ? '' : getLocalAuthStore().get(stored.secretRef) ?? '';
     return [normalizeProviderAccountConfig(stored), apiKey];
   }
 
@@ -156,12 +151,7 @@ export class ExternalAPIService implements IExternalAPIService {
     for (const account of accounts) {
       if (
         account.enabled === false ||
-        !hasUsableProviderCredential(
-          account,
-          this.userSettings.providerCredentials.find(
-            credential => credential.providerId === account.providerId,
-          )?.encryptedApiKey,
-        )
+        !hasUsableProviderCredentialReference(account)
       ) continue;
       for (const route of account.models) {
         const model = account.catalogProvider?.models.find(candidate => candidate.id === route.modelId || candidate.id === route.wireModelId);
@@ -337,13 +327,10 @@ export class ExternalAPIService implements IExternalAPIService {
     this.ensureSettingsLoaded();
     const accountIndex = this.userSettings.accounts.findIndex(account => account.providerId === providerId);
     if (accountIndex < 0) throw new Error(`Provider account not found: ${providerId}`);
-    const credentialIndex = this.userSettings.providerCredentials.findIndex(credential => credential.providerId === providerId);
+    const account = this.userSettings.accounts[accountIndex];
     const trimmed = apiKey.trim();
     if (trimmed === '') {
-      const providerCredentials = credentialIndex >= 0
-        ? this.userSettings.providerCredentials.filter(credential => credential.providerId !== providerId)
-        : this.userSettings.providerCredentials;
-      const account = this.userSettings.accounts[accountIndex];
+      if (account.secretRef !== undefined) getLocalAuthStore().delete(account.secretRef);
       const updatedAccount = normalizeProviderAccountConfig({
         ...account,
         secretRef: undefined,
@@ -351,26 +338,17 @@ export class ExternalAPIService implements IExternalAPIService {
       this.userSettings = {
         ...this.userSettings,
         accounts: replaceAt(this.userSettings.accounts, accountIndex, updatedAccount),
-        providerCredentials,
       };
     } else {
-      if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
-      const credential = {
-        providerId,
-        encryptedApiKey: safeStorage.encryptString(trimmed).toString('base64'),
-      };
-      const providerCredentials = credentialIndex >= 0
-        ? replaceAt(this.userSettings.providerCredentials, credentialIndex, credential)
-        : [...this.userSettings.providerCredentials, credential];
-      const account = this.userSettings.accounts[accountIndex];
+      const secretReference = providerCredentialReference(providerId);
+      getLocalAuthStore().set(secretReference, trimmed);
       const updatedAccount = normalizeProviderAccountConfig({
         ...account,
-        secretRef: providerCredentialReference(providerId),
+        secretRef: secretReference,
       });
       this.userSettings = {
         ...this.userSettings,
         accounts: replaceAt(this.userSettings.accounts, accountIndex, updatedAccount),
-        providerCredentials,
       };
     }
     this.userSettings = {
@@ -378,7 +356,6 @@ export class ExternalAPIService implements IExternalAPIService {
       modelAssignments: retainValidModelAssignments(
         this.userSettings.accounts,
         this.userSettings.modelAssignments,
-        this.userSettings.providerCredentials,
       ),
     };
     this.saveSettingsToDatabase();
@@ -456,8 +433,16 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async setProviderAccount(account: ProviderAccountConfig): Promise<void> {
     this.ensureSettingsLoaded();
-    const normalized = normalizeProviderAccountConfig(account);
-    const index = this.userSettings.accounts.findIndex(candidate => candidate.providerId === normalized.providerId);
+    const index = this.userSettings.accounts.findIndex(candidate => candidate.providerId === account.providerId);
+    const existing = index < 0 ? undefined : this.userSettings.accounts[index];
+    // Credentials are managed exclusively by setProviderApiKey. Preserve an
+    // existing opaque reference during edits, and never accept a renderer
+    // supplied reference for a new account.
+    const { secretRef: _ignoredSecretReference, ...withoutSecretReference } = account;
+    const normalized = normalizeProviderAccountConfig({
+      ...withoutSecretReference,
+      ...(existing?.secretRef === undefined ? {} : { secretRef: existing.secretRef }),
+    });
     const accounts = index >= 0
       ? replaceAt(this.userSettings.accounts, index, normalized)
       : [...this.userSettings.accounts, normalized];
@@ -467,7 +452,6 @@ export class ExternalAPIService implements IExternalAPIService {
       modelAssignments: retainValidModelAssignments(
         accounts,
         this.userSettings.modelAssignments,
-        this.userSettings.providerCredentials,
       ),
     };
     this.saveSettingsToDatabase();
@@ -478,18 +462,18 @@ export class ExternalAPIService implements IExternalAPIService {
     this.ensureSettingsLoaded();
     const index = this.userSettings.accounts.findIndex(account => account.providerId === providerId);
     if (index !== -1) {
+      const deletedAccount = this.userSettings.accounts[index];
       const accounts = this.userSettings.accounts.filter(account => account.providerId !== providerId);
+      if (deletedAccount.secretRef !== undefined) getLocalAuthStore().delete(deletedAccount.secretRef);
       this.userSettings = {
         ...this.userSettings,
         accounts,
-        providerCredentials: this.userSettings.providerCredentials.filter(credential => credential.providerId !== providerId),
       };
       this.userSettings = {
         ...this.userSettings,
         modelAssignments: retainValidModelAssignments(
           accounts,
           this.userSettings.modelAssignments,
-          this.userSettings.providerCredentials,
         ),
       };
       this.saveSettingsToDatabase();
@@ -507,7 +491,6 @@ export class ExternalAPIService implements IExternalAPIService {
       modelAssignments: retainValidModelAssignments(
         this.userSettings.accounts,
         normalized.modelAssignments,
-        this.userSettings.providerCredentials,
       ),
     };
     this.saveSettingsToDatabase();
@@ -1009,7 +992,7 @@ function normalizeDesktopExternalAPISettings(value: unknown): DesktopExternalAPI
   }
   const record = value as Record<string, unknown>;
   const keys = Reflect.ownKeys(record);
-  const allowed = ['accounts', 'modelAssignments', 'providerCredentials'];
+  const allowed = ['accounts', 'modelAssignments'];
   if (keys.some(key => typeof key !== 'string' || !allowed.includes(key))) {
     throw new TypeError('external API settings contain unknown fields');
   }
@@ -1023,56 +1006,17 @@ function normalizeDesktopExternalAPISettings(value: unknown): DesktopExternalAPI
     accounts: record.accounts,
     modelAssignments: record.modelAssignments,
   });
-  if (!Array.isArray(record.providerCredentials) || record.providerCredentials.length > 512) {
-    throw new TypeError('providerCredentials must be a bounded array');
-  }
-  const accountIds = new Set(providerSettings.accounts.map(account => account.providerId));
-  const providerCredentials = record.providerCredentials.map((value): { providerId: string; encryptedApiKey: string } => {
-    if (value === null || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) {
-      throw new TypeError('provider credential must be a plain object');
-    }
-    const credential = value as Record<string, unknown>;
-    const credentialKeys = Reflect.ownKeys(credential);
-    const expectedCredentialKeys = new Set(['providerId', 'encryptedApiKey']);
-    if (
-      credentialKeys.length !== expectedCredentialKeys.size ||
-      credentialKeys.some(key => typeof key !== 'string' || !expectedCredentialKeys.has(key))
-    ) {
-      throw new TypeError('provider credential contains unknown fields');
-    }
-    for (const key of credentialKeys) {
-      const descriptor = Object.getOwnPropertyDescriptor(credential, key);
-      if (descriptor === undefined || !('value' in descriptor) || !descriptor.enumerable) {
-        throw new TypeError('provider credential contains an accessor or hidden field');
-      }
-    }
-    if (
-      typeof credential.providerId !== 'string' || !accountIds.has(credential.providerId) ||
-      typeof credential.encryptedApiKey !== 'string' || credential.encryptedApiKey.length === 0 ||
-      credential.encryptedApiKey.length > 64 * 1024 ||
-      Buffer.from(credential.encryptedApiKey, 'base64').toString('base64') !== credential.encryptedApiKey
-    ) throw new TypeError('invalid provider credential');
-    return {
-      providerId: credential.providerId,
-      encryptedApiKey: credential.encryptedApiKey,
-    };
-  });
-  if (new Set(providerCredentials.map(credential => credential.providerId)).size !== providerCredentials.length) {
-    throw new TypeError('provider credential ids must be unique');
-  }
   return {
     accounts: [...providerSettings.accounts],
     modelAssignments: retainValidModelAssignments(
       providerSettings.accounts,
       providerSettings.modelAssignments,
-      providerCredentials,
     ),
-    providerCredentials,
   };
 }
 
 function providerCredentialReference(providerId: string): string {
-  return `desktop-keychain:${providerId}`;
+  return `ai-provider/${providerId}`;
 }
 
 function replaceAt<T>(values: readonly T[], index: number, value: T): T[] {
@@ -1082,7 +1026,6 @@ function replaceAt<T>(values: readonly T[], index: number, value: T): T[] {
 function retainValidModelAssignments(
   accounts: readonly ProviderAccountConfig[],
   assignments: ModelAssignments,
-  providerCredentials: readonly { providerId: string; encryptedApiKey: string }[] = [],
 ): ModelAssignments {
   const normalized = normalizeModelAssignments(assignments);
   const retained: ModelAssignments = {};
@@ -1094,11 +1037,7 @@ function retainValidModelAssignments(
   ) {
     const account = accounts.find(candidate => candidate.providerId === selection.providerId);
     const hasRoute = account?.models.some(route => route.modelId === selection.modelId) === true;
-    const credential = providerCredentials.find(candidate => candidate.providerId === selection.providerId);
-    const hasCredential = account !== undefined && hasUsableProviderCredential(
-      account,
-      credential?.encryptedApiKey,
-    );
+    const hasCredential = account !== undefined && hasUsableProviderCredentialReference(account);
     if (account?.enabled !== false && hasRoute && hasCredential) {
       retained[purpose] = selection;
     }

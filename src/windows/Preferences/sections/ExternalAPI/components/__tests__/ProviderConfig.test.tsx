@@ -42,7 +42,7 @@ const unicodeCatalogProvider: ModelCatalogProvider = {
 const account: ProviderAccountConfig = {
   providerId: 'openai-main',
   providerType: 'openai',
-  secretRef: 'desktop-keychain:openai-main',
+  secretRef: 'ai-provider/openai-main',
   enabled: true,
   models: [{ modelId: 'reasoning', wireModelId: 'gpt-5.6', apiMode: 'responses' }],
   catalogProvider,

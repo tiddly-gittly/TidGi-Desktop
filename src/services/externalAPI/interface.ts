@@ -115,16 +115,8 @@ export interface AIImageGenerationResponse {
   errorDetail?: AIErrorDetail;
 }
 
-/** Desktop-only encrypted bytes. Provider/model identity stays in Core types. */
-export interface ProviderCredentialState {
-  providerId: string;
-  encryptedApiKey: string;
-}
-
-/** Host persistence composed entirely from canonical Core provider/model types. */
-export interface DesktopExternalAPISettings extends ProviderAccountSettings {
-  providerCredentials: ProviderCredentialState[];
-}
+/** Host settings contain provider/model metadata only; secrets live in auth.json. */
+export type DesktopExternalAPISettings = ProviderAccountSettings;
 
 /**
  * External API service to manage AI providers and communication

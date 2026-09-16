@@ -22,7 +22,7 @@ const accounts: ProviderAccountConfig[] = [{
   providerId: 'openai-main',
   providerType: 'openai',
   enabled: true,
-  secretRef: 'desktop-keychain:openai-main',
+  secretRef: 'ai-provider/openai-main',
   models: [
     { modelId: 'reasoning', wireModelId: 'gpt-5.6', apiMode: 'responses' },
     { modelId: 'fast', wireModelId: 'gpt-5.6-mini', apiMode: 'responses' },
@@ -147,25 +147,28 @@ describe('useAIConfigManagement', () => {
     expect(updateDefaultAIConfig).not.toHaveBeenCalled();
   });
 
-  it('persists an instance override as one canonical AgentModelConfig', async () => {
-    const updateAgent = vi.fn().mockResolvedValue(undefined);
+  it('persists and reloads an instance override as one canonical AgentModelConfig', async () => {
+    let persistedModelConfig: AgentModelConfig | undefined = {
+      providerId: 'openai-main',
+      modelId: 'reasoning',
+      parameters: { temperature: 0.3, reasoningEffort: 'medium' },
+    };
+    const updateAgent = vi.fn(async (_agentId: string, update: { modelConfig?: AgentModelConfig }) => {
+      persistedModelConfig = update.modelConfig;
+    });
     Object.defineProperty(window.service, 'agentInstance', {
       value: {
-        getAgentMetadata: vi.fn().mockResolvedValue({
+        getAgentMetadata: vi.fn(async () => ({
           id: 'conversation-1',
           agentDefId: 'definition-1',
-          modelConfig: {
-            providerId: 'openai-main',
-            modelId: 'reasoning',
-            parameters: { temperature: 0.3, reasoningEffort: 'medium' },
-          },
-        }),
+          modelConfig: persistedModelConfig,
+        })),
         updateAgent,
       },
       writable: true,
     });
 
-    const { result } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    const { result, unmount } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
@@ -178,6 +181,20 @@ describe('useAIConfigManagement', () => {
         parameters: { temperature: 0.3, reasoningEffort: 'medium' },
       },
     });
+
+    unmount();
+    const reloaded = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    await waitFor(() => {
+      expect(reloaded.result.current.loading).toBe(false);
+    });
+    expect(reloaded.result.current.config).toEqual({
+      default: {
+        providerId: 'openai-main',
+        modelId: 'fast',
+        parameters: { temperature: 0.3, reasoningEffort: 'medium' },
+      },
+    });
+    expect('handleEmbeddingModelChange' in reloaded.result.current).toBe(false);
   });
 
   it('does not let global observable updates overwrite an instance selection', async () => {

@@ -1,4 +1,4 @@
-import { app, safeStorage } from 'electron';
+import { app } from 'electron';
 import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
 import { BehaviorSubject } from 'rxjs';
@@ -42,6 +42,7 @@ import {
 
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IDatabaseService } from '@services/database/interface';
+import { getLocalAuthStore } from '@services/libs/authFileStore';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
@@ -49,7 +50,6 @@ import type {
   DesktopDeviceConnectionOptions,
   DesktopDeviceSyncOptions,
   DeviceCloudConnectionStatus,
-  DeviceNetworkPersistedIdentity,
   DeviceNetworkPersistedSettings,
   HostDeviceNetworkPersistedCloudConfiguration,
   HostDeviceNetworkRuntimeOptions,
@@ -61,11 +61,36 @@ import { TrustedRpcGate } from './trustedRpcGate';
 const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
 export const CLOUD_DEVICE_FRESHNESS_MS = 3 * 60_000;
 const RELAY_RENEWAL_WINDOW_MS = 2 * 60_000;
+const CLOUD_ACCESS_TOKEN_SECRET_REF = 'device-network.cloud-access-token.v1';
+const DEVICE_IDENTITY_SECRET_REF = 'device-network.identity.v1';
 
 interface DesktopCloudConfiguration {
   cloudUrl: string;
   accessToken: string;
   client: CloudDeviceFetchClient;
+}
+
+/** Serialized as one auth-file value so no identity material reaches settings. */
+interface StoredDesktopDeviceIdentity {
+  peerId: string;
+  publicKeyMultibase: string;
+  privateKeyRawSeedBase64Url: string;
+  deviceName: string;
+  platform: 'desktop';
+  createdAt: number;
+}
+
+function isStoredDesktopDeviceIdentity(value: unknown): value is StoredDesktopDeviceIdentity {
+  const identity = value as Record<string, unknown> | undefined;
+  return Boolean(
+    identity &&
+      typeof identity.peerId === 'string' && identity.peerId.length > 0 &&
+      typeof identity.publicKeyMultibase === 'string' && identity.publicKeyMultibase.length > 0 &&
+      typeof identity.privateKeyRawSeedBase64Url === 'string' && identity.privateKeyRawSeedBase64Url.length > 0 &&
+      typeof identity.deviceName === 'string' &&
+      identity.platform === 'desktop' &&
+      typeof identity.createdAt === 'number' && Number.isFinite(identity.createdAt),
+  );
 }
 
 function isTrustedDeviceRecord(value: unknown): value is TrustedDeviceRecord {
@@ -82,11 +107,13 @@ function isTrustedDeviceRecord(value: unknown): value is TrustedDeviceRecord {
 }
 
 function clonePersistedSettings(settings: DeviceNetworkPersistedSettings | undefined): DeviceNetworkPersistedSettings {
+  const cloudUrl = settings?.cloudConfigurationV1?.cloudUrl;
   return {
-    ...settings,
-    cloudConfigurationV1: settings?.cloudConfigurationV1 && { ...settings.cloudConfigurationV1 },
+    // Deliberately reconstruct the known settings shape. This drops legacy
+    // credential and identity records rather than carrying secrets
+    // through a later unrelated settings write.
+    cloudConfigurationV1: typeof cloudUrl === 'string' ? { cloudUrl } : undefined,
     cloudTrustSnapshotV1: settings?.cloudTrustSnapshotV1 && { ...settings.cloudTrustSnapshotV1 },
-    identityV1: settings?.identityV1 && { ...settings.identityV1 },
     trustedDevicesV1: settings?.trustedDevicesV1?.map(record => ({ ...record })),
   };
 }
@@ -325,9 +352,6 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
   public async configureCloud(config: { cloudUrl: string; accessToken: string }): Promise<void> {
     const normalized = validateCloudConfiguration(config);
-    if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error('secure_storage_unavailable');
-    }
     const request = ++this.cloudConfigurationRequest;
     this.cloudValidationController.abort(new Error('device cloud validation superseded'));
     this.cloudValidationController = new AbortController();
@@ -344,10 +368,8 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       if (request !== this.cloudConfigurationRequest) throw new Error('stale device cloud configuration');
       const shouldResumeCoordinator = this.started && this.cloudCoordinator !== undefined;
       if (shouldResumeCoordinator) await this.cloudCoordinator!.stop();
-      const record: HostDeviceNetworkPersistedCloudConfiguration = {
-        cloudUrl: normalized.cloudUrl,
-        encryptedAccessToken: safeStorage.encryptString(normalized.accessToken).toString('base64'),
-      };
+      getLocalAuthStore().set(CLOUD_ACCESS_TOKEN_SECRET_REF, normalized.accessToken);
+      const record: HostDeviceNetworkPersistedCloudConfiguration = { cloudUrl: normalized.cloudUrl };
       await this.settingsStore.update(settings => {
         settings.cloudConfigurationV1 = record;
       }, true);
@@ -364,6 +386,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       await this.settingsStore.update(settings => {
         delete settings.cloudConfigurationV1;
       }, true);
+      getLocalAuthStore().delete(CLOUD_ACCESS_TOKEN_SECRET_REF);
       this.cloudConfig = undefined;
       this.cloudClient = undefined;
       this.lastCloudDevices = [];
@@ -727,35 +750,25 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
   private async ensureIdentity(): Promise<void> {
     if (this.identity) return;
-    const stored = (await this.settingsStore.read()).identityV1;
-    if (stored?.peerId && stored?.publicKeyMultibase && stored?.encryptedPrivateKey) {
-      const identity = this.tryLoadStoredIdentity(stored);
-      if (identity) {
-        this.identity = identity;
-        return;
-      }
+    const identity = this.tryLoadStoredIdentity();
+    if (identity) {
+      this.identity = identity;
+      return;
     }
-    const identity = await this.createIdentity();
-    await this.saveIdentity(identity);
-    this.identity = identity;
+    const createdIdentity = await this.createIdentity();
+    this.saveIdentity(createdIdentity);
+    this.identity = createdIdentity;
   }
 
   private async loadPersistedCloudConfiguration(): Promise<void> {
     if (this.cloudClient || this.cloudConfig) return;
     const stored = (await this.settingsStore.read()).cloudConfigurationV1;
-    if (
-      !stored ||
-      typeof stored.cloudUrl !== 'string' ||
-      typeof stored.encryptedAccessToken !== 'string'
-    ) return;
-    if (!safeStorage.isEncryptionAvailable()) {
-      logger.warn('DeviceNetworkService cannot load Cloud credentials because safeStorage is unavailable');
-      return;
-    }
+    const accessToken = getLocalAuthStore().get(CLOUD_ACCESS_TOKEN_SECRET_REF);
+    if (!stored || typeof stored.cloudUrl !== 'string' || accessToken === undefined) return;
     try {
       const normalized = validateCloudConfiguration({
         cloudUrl: stored.cloudUrl,
-        accessToken: safeStorage.decryptString(Buffer.from(stored.encryptedAccessToken, 'base64')),
+        accessToken,
       });
       const client = createDesktopCloudClient(normalized);
       this.cloudConfig = { ...normalized, client };
@@ -766,7 +779,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
         cloudUrl: normalized.cloudUrl,
       });
     } catch (error) {
-      logger.warn('DeviceNetworkService ignored invalid encrypted Cloud configuration', { error });
+      logger.warn('DeviceNetworkService ignored invalid persisted Cloud configuration', { error });
     }
   }
 
@@ -809,50 +822,41 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     });
   }
 
-  private tryLoadStoredIdentity(stored: DeviceNetworkPersistedIdentity): RawSeedDeviceIdentity | undefined {
-    if (!safeStorage.isEncryptionAvailable()) {
-      logger.warn('DeviceNetworkService safeStorage encryption unavailable; using an ephemeral device identity for this session');
-      return undefined;
-    }
+  private tryLoadStoredIdentity(): RawSeedDeviceIdentity | undefined {
+    const serialized = getLocalAuthStore().get(DEVICE_IDENTITY_SECRET_REF);
+    if (serialized === undefined) return undefined;
     try {
-      const encrypted = Buffer.from(stored.encryptedPrivateKey, 'base64');
-      const privateKeyRawSeedBase64Url = safeStorage.decryptString(encrypted);
+      const stored: unknown = JSON.parse(serialized);
+      if (!isStoredDesktopDeviceIdentity(stored)) throw new TypeError('invalid_device_identity');
       return {
         peerId: stored.peerId,
         publicKeyMultibase: stored.publicKeyMultibase,
         privateKeyRef: 'libp2p-raw-seed',
-        privateKeyRawSeedBase64Url,
+        privateKeyRawSeedBase64Url: stored.privateKeyRawSeedBase64Url,
         createdAt: stored.createdAt,
         deviceName: stored.deviceName,
         platform: 'desktop',
       };
     } catch (error) {
-      logger.warn('DeviceNetworkService failed to decrypt stored identity; rotating device identity', { error });
+      logger.warn('DeviceNetworkService ignored invalid local device identity', { error });
       return undefined;
     }
   }
 
   private async createIdentity(): Promise<RawSeedDeviceIdentity> {
-    return createDeviceIdentity('desktop', app.getName());
+    return createDeviceIdentity('desktop', app.getName?.() ?? app.name);
   }
 
-  private async saveIdentity(identity: RawSeedDeviceIdentity): Promise<void> {
-    if (!safeStorage.isEncryptionAvailable()) {
-      logger.warn('DeviceNetworkService safeStorage encryption unavailable; generated identity will not be persisted');
-      return;
-    }
-    const encrypted = safeStorage.encryptString(identity.privateKeyRawSeedBase64Url);
-    const record: DeviceNetworkPersistedIdentity = {
+  private saveIdentity(identity: RawSeedDeviceIdentity): void {
+    const record: StoredDesktopDeviceIdentity = {
       peerId: identity.peerId,
       publicKeyMultibase: identity.publicKeyMultibase,
-      encryptedPrivateKey: encrypted.toString('base64'),
+      privateKeyRawSeedBase64Url: identity.privateKeyRawSeedBase64Url,
       deviceName: identity.deviceName,
       platform: 'desktop',
       createdAt: identity.createdAt,
     };
-    await this.settingsStore.update(settings => {
-      settings.identityV1 = record;
-    }, true);
+    getLocalAuthStore().set(DEVICE_IDENTITY_SECRET_REF, JSON.stringify(record));
   }
 
   private async buildCapabilities(): Promise<DeviceCapabilities> {

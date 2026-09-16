@@ -22,7 +22,7 @@ describe('createDesktopModelBindings', () => {
       providerId: 'cpa',
       providerType: 'openai-compatible',
       baseUrl: 'https://models.example.test',
-      secretRef: 'desktop-keychain:cpa',
+      secretRef: 'ai-provider/cpa',
       enabled: true,
       models: [
         { modelId: 'gpt-5.6-sol', wireModelId: 'gpt-5.6-sol', apiMode: 'responses' },
