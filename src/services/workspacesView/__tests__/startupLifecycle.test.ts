@@ -102,6 +102,45 @@ describe('WorkspaceView startup lifecycle', () => {
     expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
   });
 
+  it('records an individual worker failure and continues the startup batch', async () => {
+    const workspaces = [createWorkspace('broken'), createWorkspace('healthy')];
+    mocks.getWorkspacesAsList.mockResolvedValue(workspaces);
+    const service = createService();
+    const initialize = vi.spyOn(service, 'initializeWorkspaceView').mockImplementation(async (workspace) => {
+      if (workspace.id === 'broken') throw new Error('worker startup timed out');
+    });
+
+    await expect(service.initializeAllWorkspaceView()).resolves.toBeUndefined();
+
+    expect(initialize.mock.calls.map(([workspace]) => workspace.id).sort()).toEqual(['broken', 'healthy']);
+    expect(mocks.updateMetaData).toHaveBeenCalledWith('broken', {
+      isLoading: false,
+      didFailLoadErrorMessage: 'worker startup timed out',
+    });
+    expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
+  });
+
+  it('continues startup when recording an individual worker failure also fails', async () => {
+    const workspaces = [createWorkspace('broken'), createWorkspace('healthy')];
+    mocks.getWorkspacesAsList.mockResolvedValue(workspaces);
+    mocks.updateMetaData.mockRejectedValueOnce(new Error('settings unavailable'));
+    const service = createService();
+    const initialize = vi.spyOn(service, 'initializeWorkspaceView').mockImplementation(async (workspace) => {
+      if (workspace.id === 'broken') throw new Error('worker startup timed out');
+    });
+
+    await expect(service.initializeAllWorkspaceView()).resolves.toBeUndefined();
+
+    expect(initialize.mock.calls.map(([workspace]) => workspace.id).sort()).toEqual(['broken', 'healthy']);
+    expect(mocks.updateMetaData).toHaveBeenCalledWith(
+      'broken',
+      expect.objectContaining({
+        didFailLoadErrorMessage: 'worker startup timed out',
+      }),
+    );
+    expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
+  });
+
   it('bounds concurrency and cancellation prevents queued work from starting', async () => {
     const workspaces = Array.from({ length: 8 }, (_, index) => createWorkspace(`workspace-${index}`));
     mocks.getWorkspacesAsList.mockResolvedValue(workspaces);
@@ -124,10 +163,34 @@ describe('WorkspaceView startup lifecycle', () => {
     releases.splice(0).forEach(resolve => {
       resolve();
     });
-    await startup;
+    await expect(startup).rejects.toThrow('Workspace startup cancelled because the application is quitting');
 
     expect(maximumActive).toBe(WORKSPACE_STARTUP_CONCURRENCY);
     expect(initialize).toHaveBeenCalledTimes(WORKSPACE_STARTUP_CONCURRENCY);
+    expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates cancellation instead of recording it as a failed workspace', async () => {
+    const workspace = createWorkspace('cancelled');
+    mocks.getWorkspacesAsList.mockResolvedValue([workspace]);
+    const service = createService();
+    let rejectStartup: ((error: Error) => void) | undefined;
+    vi.spyOn(service, 'initializeWorkspaceView').mockImplementation(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectStartup = reject;
+        }),
+    );
+
+    const startup = service.initializeAllWorkspaceView();
+    await vi.waitFor(() => {
+      expect(rejectStartup).toBeDefined();
+    });
+    service.cancelWorkspaceStartup();
+    rejectStartup?.(new Error('worker was stopped during shutdown'));
+
+    await expect(startup).rejects.toThrow('Workspace startup cancelled because the application is quitting');
+    expect(mocks.updateMetaData).not.toHaveBeenCalled();
     expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
   });
 });

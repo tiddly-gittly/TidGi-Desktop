@@ -49,6 +49,30 @@ export class WorkspaceView implements IWorkspaceViewService {
     this.startupAbortController?.abort(new Error('Workspace startup cancelled because the application is quitting'));
   }
 
+  /**
+   * Failure metadata is useful for the sidebar, but it is not a prerequisite
+   * for completing the rest of application startup. Keep a secondary settings
+   * failure from turning one inaccessible wiki into a global startup failure.
+   */
+  private async recordWorkspaceStartupFailure(
+    workspaceService: IWorkspaceService,
+    workspace: IWorkspace,
+    errorMessage: string,
+  ): Promise<void> {
+    try {
+      await workspaceService.updateMetaData(workspace.id, {
+        isLoading: false,
+        didFailLoadErrorMessage: errorMessage,
+      });
+    } catch (metadataError) {
+      logger.error('Failed to record workspace startup failure', {
+        error: metadataError,
+        function: 'initializeAllWorkspaceView',
+        workspaceId: workspace.id,
+      });
+    }
+  }
+
   public async initializeAllWorkspaceView(): Promise<void> {
     this.cancelWorkspaceStartup();
     const startupAbortController = new AbortController();
@@ -99,30 +123,28 @@ export class WorkspaceView implements IWorkspaceViewService {
         if (!entry) return;
         const { workspace } = entry;
         if (entry.conflict) {
+          startupAbortController.signal.throwIfAborted();
           logger.warn('Skipping conflicting workspace during application startup', {
             conflict: entry.conflict,
             function: 'initializeAllWorkspaceView',
             workspaceId: workspace.id,
           });
-          await workspaceService.updateMetaData(workspace.id, {
-            isLoading: false,
-            didFailLoadErrorMessage: entry.conflict,
-          });
+          await this.recordWorkspaceStartupFailure(workspaceService, workspace, entry.conflict);
           continue;
         }
         try {
           await this.initializeWorkspaceView(workspace);
         } catch (error) {
+          // Shutdown is intentionally propagated to the app lifecycle instead
+          // of being shown as a failed wiki. This also stops queued work.
+          startupAbortController.signal.throwIfAborted();
           // One unavailable workspace must not abort the entire Electron startup.
           logger.error('initializeWorkspaceView failed during application startup', {
             error,
             function: 'initializeAllWorkspaceView',
             workspaceId: workspace.id,
           });
-          await workspaceService.updateMetaData(workspace.id, {
-            isLoading: false,
-            didFailLoadErrorMessage: error instanceof Error ? error.message : String(error),
-          });
+          await this.recordWorkspaceStartupFailure(workspaceService, workspace, error instanceof Error ? error.message : String(error));
         }
       }
     };
@@ -139,7 +161,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       wikiService.setAllWikiStartLockOff();
     }
 
-    if (startupAbortController.signal.aborted) return;
+    startupAbortController.signal.throwIfAborted();
 
     // After all main workspaces have resolved their hibernated state,
     // sync sub-workspaces to match their main workspace.

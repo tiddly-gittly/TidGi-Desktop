@@ -12,11 +12,12 @@ import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import { initializeAgentServicesSafely } from '@services/bootstrap/agentRuntime';
 import { initializePreferenceReactions, initializeThemeReactions } from '@services/bootstrap/preferenceReactions';
+import { initializeWorkspaceStartupServices } from '@services/bootstrap/workspaceStartup';
 import { container } from '@services/container';
 import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
-import { initializeMcpServer, stopMcpServer } from '@services/mcpServer';
+import { stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 import { createApplicationActivationGate } from './applicationActivationGate';
 import { installApplicationQuitLifecycle } from './applicationQuitLifecycle';
@@ -265,6 +266,13 @@ const commonInit = async (): Promise<void> => {
   assertApplicationStartupActive();
 
   initializeObservables();
+  await initializeWorkspaceStartupServices({
+    assertStartupActive: assertApplicationStartupActive,
+    deviceNetworkService,
+    preferenceService,
+  });
+  assertApplicationStartupActive();
+
   // Auto-create default wiki workspace if none exists. Create wiki workspace first, so it is on first one
   await wikiGitWorkspaceService.initialize();
   // Create default page workspaces before initializing all workspace views
@@ -276,8 +284,9 @@ const commonInit = async (): Promise<void> => {
   await windowService.initializeTidgiMiniWindow();
   assertApplicationStartupActive();
 
-  // perform wiki startup and git sync for each workspace
-  // This will also create views for tidgi mini window (in addViewForAllBrowserViews)
+  // The availability services are already started, so this isolated batch can
+  // take time on an offline wiki without delaying MCP or device networking.
+  // It also creates views for the TidGi mini window via addViewForAllBrowserViews.
   await workspaceViewService.initializeAllWorkspaceView();
   assertApplicationStartupActive();
   logger.info('[test-id-ALL_WORKSPACE_VIEW_INITIALIZED] All workspace views initialized');
@@ -313,16 +322,6 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
-
-  // Initialize MCP server (CLI flags, env vars, or preferences)
-  await initializeMcpServer(preferenceService);
-
-  // Start device network service after all core services are ready.
-  try {
-    await deviceNetworkService.start();
-  } catch (error) {
-    logger.error('Failed to start DeviceNetworkService', { error });
-  }
 
   // A portable workspace can live on an offline filesystem. Start its
   // best-effort config import only after the window, workspace views, MCP and
@@ -360,7 +359,7 @@ app.on('ready', async () => {
     await updaterService.checkForUpdates();
   } catch (error) {
     applicationActivationGate.markInitializationFailed();
-    if (error instanceof ApplicationStartupCancelledError) {
+    if (error instanceof ApplicationStartupCancelledError || applicationStartupAbortController.signal.aborted) {
       logger.info('Application startup stopped because quit was requested');
       return;
     }
