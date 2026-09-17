@@ -15,6 +15,7 @@ function createSnapshotWindowMock(snapshot: unknown) {
     getTitle: vi.fn(() => 'TidGi [Snapshot]'),
     webContents: {
       isDestroyed: vi.fn(() => false),
+      executeJavaScript: vi.fn(async () => snapshot),
       debugger: {
         isAttached: vi.fn(() => false),
         attach: vi.fn(),
@@ -159,10 +160,11 @@ describe('MCP tools', () => {
   });
 
   it('returns a structural summary for oversized snapshots', async () => {
-    mockGet.mockReturnValue(createSnapshotWindowMock({
+    const target = createSnapshotWindowMock({
       nodes: Array.from({ length: 120 }, (_, index) => ({ nodeId: String(index), name: `node-${index}`, childIds: [index + 1] })),
       metadata: { title: 'Preferences' },
-    }));
+    });
+    mockGet.mockReturnValue(target);
 
     const result = await callTool('ui_snapshot', {
       workspaceId: 'main-window',
@@ -179,6 +181,8 @@ describe('MCP tools', () => {
       expect.objectContaining({ key: 'nodes', path: 'nodes' }),
       expect.objectContaining({ key: 'metadata', path: 'metadata' }),
     ]));
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+    expect(target.webContents.debugger.attach).not.toHaveBeenCalled();
   });
 
   it('supports drilling into an oversized array snapshot with slices', async () => {
@@ -213,6 +217,39 @@ describe('MCP tools', () => {
     expect(result).toHaveLength(5);
     expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
     expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
+  });
+
+  it('fails fast after a renderer command times out instead of queuing another command', async () => {
+    vi.useFakeTimers();
+    let settleSnapshot: ((snapshot: unknown) => void) | undefined;
+    const target = createSnapshotWindowMock(undefined);
+    target.webContents.executeJavaScript.mockImplementationOnce(() =>
+      new Promise((resolve) => {
+        settleSnapshot = resolve;
+      })
+    );
+    mockGet.mockReturnValue(target);
+
+    const timedOutSnapshot = callTool('ui_snapshot', { workspaceId: 'main-window' });
+    const timeoutExpectation = expect(timedOutSnapshot).rejects.toThrow('ui_snapshot timed out after 10000ms');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await timeoutExpectation;
+
+    await expect(callTool('ui_evaluate', {
+      workspaceId: 'main-window',
+      script: '1 + 1',
+    })).rejects.toThrow('ui_snapshot is still running');
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+
+    settleSnapshot?.({ title: 'Recovered' });
+    await vi.advanceTimersByTimeAsync(0);
+    target.webContents.executeJavaScript.mockResolvedValueOnce(JSON.stringify({ ok: true, value: 2 }));
+
+    await expect(callTool('ui_evaluate', {
+      workspaceId: 'main-window',
+      script: '1 + 1',
+    })).resolves.toBe(2);
+    vi.useRealTimers();
   });
 
   it('focuses the target before clicking so modal controls receive the pointer event', async () => {

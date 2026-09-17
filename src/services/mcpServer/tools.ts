@@ -4,7 +4,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, type WebContents } from 'electron';
 import { z } from 'zod';
 import type { McpToolDefinition, ToolInput } from './types';
 
@@ -25,8 +25,31 @@ const APP_WINDOW_NAMES = Object.values(WindowNames);
 const DEFAULT_SNAPSHOT_MAX_BYTES = 48 * 1024;
 const DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT = 50;
 const MAX_SNAPSHOT_SUMMARY_CHILDREN = 25;
+const RENDERER_COMMAND_TIMEOUT_MS = 10_000;
+const UI_EVALUATE_TIMEOUT_MS = 15_000;
+const SNAPSHOT_MAX_TEXT_LENGTH = 16 * 1024;
+const SNAPSHOT_MAX_INTERACTIVE_ELEMENTS = 200;
 
 type SnapshotPathSegment = string | number;
+
+interface RendererCommandState {
+  name: string;
+}
+
+/**
+ * A command which timed out may still be queued in Chromium. Sending another
+ * renderer-evaluation command in that state can make the target progressively
+ * less responsive. Keep the MCP HTTP server responsive and fail subsequent
+ * renderer commands fast until Chromium settles the original promise.
+ */
+const rendererCommandStates = new WeakMap<WebContents, RendererCommandState>();
+
+class RendererCommandTimeoutError extends Error {
+  constructor(name: string, ms: number) {
+    super(`${name} timed out after ${ms}ms`);
+    this.name = 'RendererCommandTimeoutError';
+  }
+}
 
 interface SnapshotSummaryChild {
   key: string;
@@ -303,7 +326,7 @@ export const TOOLS: McpToolDefinition[] = [
   {
     name: 'ui_snapshot',
     description:
-      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. For oversized results, the tool returns a structural summary and supports drilling into a path or array slice.',
+      'Get a bounded DOM/text snapshot: page title, URL, text, interactive controls, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. For oversized results, the tool returns a structural summary and supports drilling into a path or array slice.',
     inputSchema: {
       workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
       path: z.string().optional().describe('Optional dot path into the snapshot result, for example "nodes" or "nodes[0].childIds".'),
@@ -369,15 +392,162 @@ export const TOOLS: McpToolDefinition[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => {
-        reject(new Error(`${label} timed out after ${ms}ms`));
-      }, ms)
-    ),
-  ]);
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new RendererCommandTimeoutError(label, ms));
+    }, ms);
+
+    void promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    );
+  });
 }
+
+async function runRendererCommand<T>(
+  webContents: WebContents,
+  name: string,
+  timeoutMs: number,
+  command: () => Promise<T>,
+): Promise<T> {
+  const activeCommand = rendererCommandStates.get(webContents);
+  if (activeCommand !== undefined) {
+    throw new Error(
+      `${name} is unavailable because ${activeCommand.name} is still running for this window. ` +
+        'Reload or close the window before trying another renderer-evaluation command.',
+    );
+  }
+
+  const commandState: RendererCommandState = { name };
+  rendererCommandStates.set(webContents, commandState);
+  const execution = Promise.resolve().then(command);
+  void execution.then(
+    () => {
+      if (rendererCommandStates.get(webContents) === commandState) {
+        rendererCommandStates.delete(webContents);
+      }
+    },
+    () => {
+      if (rendererCommandStates.get(webContents) === commandState) {
+        rendererCommandStates.delete(webContents);
+      }
+    },
+  );
+
+  try {
+    return await withTimeout(execution, timeoutMs, name);
+  } catch (error) {
+    // A regular failure means Chromium has completed the command. A timeout is
+    // different: its promise can remain pending after the MCP response has
+    // returned, so retain the state to prevent an unbounded queue of commands.
+    if (!(error instanceof RendererCommandTimeoutError) && rendererCommandStates.get(webContents) === commandState) {
+      rendererCommandStates.delete(webContents);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Snapshot in the renderer instead of through Chromium's full accessibility
+ * tree. On macOS, Accessibility.getFullAXTree can enter a native wait that is
+ * not interruptible by Promise.race, blocking follow-up MCP traffic even after
+ * our JavaScript timeout fires. This bounded DOM read has no DevTools attach /
+ * detach lifecycle and keeps its result small before it crosses process IPC.
+ */
+const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
+  const maxTextLength = ${SNAPSHOT_MAX_TEXT_LENGTH};
+  const maxInteractiveElements = ${SNAPSHOT_MAX_INTERACTIVE_ELEMENTS};
+  const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+  const root = document.body || document.documentElement;
+  const textParts = [];
+  let textLength = 0;
+  let textTruncated = false;
+
+  if (root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const parent = node.parentElement;
+      if (!parent || /^(SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName)) continue;
+      const text = normalize(node.nodeValue);
+      if (!text) continue;
+      const remaining = maxTextLength - textLength;
+      if (remaining <= 0) {
+        textTruncated = true;
+        break;
+      }
+      const part = text.slice(0, remaining);
+      textParts.push(part);
+      textLength += part.length;
+      if (part.length < text.length) {
+        textTruncated = true;
+        break;
+      }
+    }
+  }
+
+  const interactive = [];
+  const selector = 'a,button,input,select,textarea,[role="button"],[role="link"],[role="menuitem"],[role="tab"],[contenteditable="true"]';
+  const elements = document.querySelectorAll(selector);
+  for (let index = 0; index < elements.length && interactive.length < maxInteractiveElements; index += 1) {
+    const element = elements[index];
+    const tag = element.tagName.toLowerCase();
+    const type = tag === 'input' ? String(element.getAttribute('type') || 'text').toLowerCase() : undefined;
+    const isPassword = type === 'password';
+    interactive.push({
+      tag,
+      type,
+      role: element.getAttribute('role') || undefined,
+      name: normalize(element.getAttribute('aria-label') || element.getAttribute('title') || element.getAttribute('name')) || undefined,
+      text: isPassword ? '[redacted]' : (normalize(element.textContent) || undefined),
+      id: element.id || undefined,
+      href: tag === 'a' ? element.getAttribute('href') || undefined : undefined,
+      disabled: 'disabled' in element ? Boolean(element.disabled) : undefined,
+    });
+  }
+
+  // Keep the top-level nodes contract used by the former CDP result. The
+  // compact nodes are intentionally not a complete AX tree, but existing MCP
+  // callers can continue to drill into nodes while newer callers can use
+  // the clearer text/interactive fields below.
+  const rootNode = {
+    nodeId: '0',
+    ignored: false,
+    role: { type: 'role', value: 'RootWebArea' },
+    name: { type: 'computedString', value: document.title },
+    properties: [
+      { name: 'url', value: { type: 'string', value: window.location.href } },
+      { name: 'text', value: { type: 'string', value: textParts.join(' ') } },
+    ],
+    childIds: interactive.map((_, index) => String(index + 1)),
+  };
+  const nodes = [rootNode, ...interactive.map((control, index) => ({
+    nodeId: String(index + 1),
+    ignored: false,
+    role: { type: 'role', value: control.role || (control.tag === 'a' ? 'link' : control.tag === 'input' ? 'textbox' : 'button') },
+    name: { type: 'computedString', value: control.name || control.text || '' },
+    properties: [
+      { name: 'tag', value: { type: 'string', value: control.tag } },
+      ...(control.disabled === undefined ? [] : [{ name: 'disabled', value: { type: 'boolean', value: control.disabled } }]),
+    ],
+  }))];
+
+  return {
+    nodes,
+    title: document.title,
+    url: window.location.href,
+    text: textParts.join(' '),
+    textTruncated,
+    interactive,
+    interactiveTruncated: elements.length > interactive.length,
+  };
+})()`;
 
 function assertWikiNavigateTarget(workspaceId: string | undefined): void {
   if (!workspaceId) {
@@ -537,22 +707,18 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         maxBytes?: number;
       };
       const { webContents } = await getWebContents(workspaceId);
-      if (!webContents.debugger.isAttached()) webContents.debugger.attach('1.3');
-      try {
-        const result = (await withTimeout(
-          webContents.debugger.sendCommand('Accessibility.getFullAXTree', {}),
-          10_000,
-          'ui_snapshot',
-        )) as unknown;
-        const selected = selectSnapshotValue(result, { path, sliceStart, sliceCount });
-        if (getSerializedBytes(selected.value) <= maxBytes) {
-          return selected.value;
-        }
-
-        return summarizeSnapshotValue(selected.value, selected.pathSegments, maxBytes, selected.arraySlice);
-      } finally {
-        if (webContents.debugger.isAttached()) webContents.debugger.detach();
+      const result = await runRendererCommand<unknown>(
+        webContents,
+        'ui_snapshot',
+        RENDERER_COMMAND_TIMEOUT_MS,
+        async (): Promise<unknown> => webContents.executeJavaScript(SNAPSHOT_RENDERER_SCRIPT, true),
+      );
+      const selected = selectSnapshotValue(result, { path, sliceStart, sliceCount });
+      if (getSerializedBytes(selected.value) <= maxBytes) {
+        return selected.value;
       }
+
+      return summarizeSnapshotValue(selected.value, selected.pathSegments, maxBytes, selected.arraySlice);
     }
 
     case 'ui_screenshot': {
@@ -645,10 +811,11 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 })()`;
       let raw: { ok: boolean; value?: unknown; error?: string; stack?: string };
       try {
-        const json = await withTimeout(
-          webContents.executeJavaScript(wrapped, true),
-          15_000,
+        const json = await runRendererCommand(
+          webContents,
           'ui_evaluate',
+          UI_EVALUATE_TIMEOUT_MS,
+          () => webContents.executeJavaScript(wrapped, true),
         ) as string;
         raw = JSON.parse(json) as typeof raw;
       } catch (execError) {
