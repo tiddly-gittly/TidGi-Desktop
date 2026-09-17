@@ -33,7 +33,7 @@ function createSnapshotWindowMock(snapshot: unknown) {
     removeListener: vi.fn((event: string, listener: () => void) => {
       listeners.get(event)?.delete(listener);
     }),
-    executeJavaScript: vi.fn(async () => snapshot),
+    executeJavaScript: vi.fn((_script: string, _userGesture?: boolean) => Promise.resolve(snapshot)),
     debugger: {
       isAttached: vi.fn(() => false),
       attach: vi.fn(),
@@ -281,9 +281,71 @@ describe('MCP tools', () => {
       true,
     );
     expect(target.webContents.executeJavaScript).toHaveBeenCalledWith(
-      expect.stringContaining('x: Math.round'),
+      expect.stringContaining('const x = Math.max'),
       true,
     );
+  });
+
+  it('omits offscreen interactive controls and rejects cached viewport-external clicks', async () => {
+    const target = createSnapshotWindowMock(undefined);
+    const widthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    const heightDescriptor = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    const elementFromPointDescriptor = Object.getOwnPropertyDescriptor(document, 'elementFromPoint');
+    const originalBody = document.body.innerHTML;
+    const boundingRect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
+      const top = this.id === 'offscreen' ? 900 : 100;
+      return {
+        x: 20,
+        y: top,
+        width: 120,
+        height: 40,
+        top,
+        right: 140,
+        bottom: top + 40,
+        left: 20,
+        toJSON: () => ({}),
+      };
+    });
+
+    try {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 400 });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: 300 });
+      document.body.innerHTML = '<button id="visible">Visible</button><button id="offscreen">Offscreen</button>';
+      const visible = document.getElementById('visible')!;
+      const elementFromPoint = vi.fn(() => visible);
+      Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: elementFromPoint });
+      // Execute the exact renderer payload against jsdom so this regression
+      // test covers the DOM geometry filter rather than only its source text.
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      const runRendererSnapshot = new Function('window', 'document', 'NodeFilter', 'script', 'return eval(script);');
+      target.webContents.executeJavaScript.mockImplementation((script: string) => Promise.resolve(runRendererSnapshot(window, document, NodeFilter, script)));
+      mockGet.mockReturnValue(target);
+
+      const snapshot = await callTool('ui_snapshot', { workspaceId: 'main-window' }) as {
+        interactive: Array<{ text: string; x: number; y: number }>;
+      };
+
+      expect(snapshot.interactive).toEqual([
+        expect.objectContaining({ text: 'Visible', x: 80, y: 120 }),
+      ]);
+      expect(elementFromPoint).toHaveBeenCalledWith(80, 120);
+      await expect(callTool('ui_click', {
+        workspaceId: 'main-window',
+        x: 400,
+        y: 120,
+      })).rejects.toThrow('outside the current viewport');
+      expect(target.sendInputEvent).not.toHaveBeenCalled();
+    } finally {
+      boundingRect.mockRestore();
+      if (widthDescriptor !== undefined) Object.defineProperty(window, 'innerWidth', widthDescriptor);
+      if (heightDescriptor !== undefined) Object.defineProperty(window, 'innerHeight', heightDescriptor);
+      if (elementFromPointDescriptor !== undefined) {
+        Object.defineProperty(document, 'elementFromPoint', elementFromPointDescriptor);
+      } else {
+        Reflect.deleteProperty(document, 'elementFromPoint');
+      }
+      document.body.innerHTML = originalBody;
+    }
   });
 
   it('invalidates a cached snapshot after an MCP UI mutation', async () => {

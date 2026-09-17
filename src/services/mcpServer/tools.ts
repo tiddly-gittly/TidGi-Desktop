@@ -514,6 +514,25 @@ function cacheSnapshot(webContents: WebContents, value: unknown): void {
   addSnapshotInvalidationListener(webContents, invalidationListener);
 }
 
+function getCachedSnapshotViewport(webContents: WebContents): { width: number; height: number } | undefined {
+  const cachedSnapshot = getCachedSnapshot(webContents)?.value;
+  if (cachedSnapshot === null || typeof cachedSnapshot !== 'object') {
+    return undefined;
+  }
+
+  const viewport = (cachedSnapshot as Record<string, unknown>).viewport;
+  if (viewport === null || typeof viewport !== 'object') {
+    return undefined;
+  }
+
+  const { width, height } = viewport as Record<string, unknown>;
+  if (typeof width !== 'number' || typeof height !== 'number' || !Number.isFinite(width) || !Number.isFinite(height)) {
+    return undefined;
+  }
+
+  return { width, height };
+}
+
 /**
  * Snapshot in the renderer instead of through Chromium's full accessibility
  * tree. On macOS, Accessibility.getFullAXTree can enter a native wait that is
@@ -524,6 +543,8 @@ function cacheSnapshot(webContents: WebContents, value: unknown): void {
 const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
   const maxTextLength = ${SNAPSHOT_MAX_TEXT_LENGTH};
   const maxInteractiveElements = ${SNAPSHOT_MAX_INTERACTIVE_ELEMENTS};
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
   const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
   const root = document.body || document.documentElement;
   const textParts = [];
@@ -562,9 +583,16 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
     const element = elements[index];
     candidateCount += 1;
     const rect = element.getBoundingClientRect();
+    const intersectsViewport = viewportWidth > 0 && viewportHeight > 0
+      && rect.bottom > 0 && rect.right > 0 && rect.top < viewportHeight && rect.left < viewportWidth;
+    if (!intersectsViewport) continue;
     const style = window.getComputedStyle(element);
     const visible = rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
     if (!visible) continue;
+    const x = Math.max(0, Math.min(viewportWidth - 1, Math.round(rect.left + rect.width / 2)));
+    const y = Math.max(0, Math.min(viewportHeight - 1, Math.round(rect.top + rect.height / 2)));
+    const hit = document.elementFromPoint(x, y);
+    if (!hit || (!element.contains(hit) && !hit.contains(element))) continue;
     const tag = element.tagName.toLowerCase();
     const type = tag === 'input' ? String(element.getAttribute('type') || 'text').toLowerCase() : undefined;
     const isPassword = type === 'password';
@@ -577,8 +605,8 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
       id: element.id || undefined,
       href: tag === 'a' ? element.getAttribute('href') || undefined : undefined,
       disabled: 'disabled' in element ? Boolean(element.disabled) : undefined,
-      x: Math.round(rect.left + rect.width / 2),
-      y: Math.round(rect.top + rect.height / 2),
+      x,
+      y,
     });
   }
 
@@ -612,6 +640,7 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
     nodes,
     title: document.title,
     url: window.location.href,
+    viewport: { width: viewportWidth, height: viewportHeight },
     text: textParts.join(' '),
     textTruncated,
     interactive,
@@ -819,6 +848,13 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       };
       const target = await getWebContents(workspaceId, true);
       const { webContents } = target;
+      const cachedViewport = getCachedSnapshotViewport(webContents);
+      if (cachedViewport !== undefined && (x < 0 || y < 0 || x >= cachedViewport.width || y >= cachedViewport.height)) {
+        throw new Error(
+          `ui_click coordinates (${x}, ${y}) are outside the current viewport ` +
+            `(${cachedViewport.width} × ${cachedViewport.height}). Take a new ui_snapshot before clicking.`,
+        );
+      }
       invalidateSnapshotCache(webContents);
       focusInputTarget(target);
       // Move first so Chromium updates its hit-test/hover target before MUI's
