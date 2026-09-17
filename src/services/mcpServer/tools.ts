@@ -29,11 +29,19 @@ const RENDERER_COMMAND_TIMEOUT_MS = 10_000;
 const UI_EVALUATE_TIMEOUT_MS = 15_000;
 const SNAPSHOT_MAX_TEXT_LENGTH = 16 * 1024;
 const SNAPSHOT_MAX_INTERACTIVE_ELEMENTS = 200;
+const SNAPSHOT_MAX_CANDIDATE_ELEMENTS = SNAPSHOT_MAX_INTERACTIVE_ELEMENTS * 5;
+const SNAPSHOT_CACHE_TTL_MS = 15_000;
 
 type SnapshotPathSegment = string | number;
 
 interface RendererCommandState {
   name: string;
+}
+
+interface SnapshotCacheEntry {
+  value: unknown;
+  expiresAt: number;
+  invalidationListeners: Array<{ event: 'did-start-loading' | 'did-navigate-in-page' | 'destroyed' | 'render-process-gone'; listener: () => void }>;
 }
 
 /**
@@ -43,6 +51,7 @@ interface RendererCommandState {
  * renderer commands fast until Chromium settles the original promise.
  */
 const rendererCommandStates = new WeakMap<WebContents, RendererCommandState>();
+const snapshotCache = new WeakMap<WebContents, SnapshotCacheEntry>();
 
 class RendererCommandTimeoutError extends Error {
   constructor(name: string, ms: number) {
@@ -453,6 +462,58 @@ async function runRendererCommand<T>(
   }
 }
 
+const SNAPSHOT_INVALIDATION_EVENTS = [
+  'did-start-loading',
+  'did-navigate-in-page',
+  'destroyed',
+  'render-process-gone',
+] as const;
+
+function invalidateSnapshotCache(webContents: WebContents): void {
+  const entry = snapshotCache.get(webContents);
+  if (entry === undefined) {
+    return;
+  }
+
+  snapshotCache.delete(webContents);
+  for (const { event, listener } of entry.invalidationListeners) {
+    webContents.removeListener(event, listener);
+  }
+}
+
+function getCachedSnapshot(webContents: WebContents): SnapshotCacheEntry | undefined {
+  const entry = snapshotCache.get(webContents);
+  if (entry === undefined) {
+    return undefined;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    invalidateSnapshotCache(webContents);
+    return undefined;
+  }
+
+  return entry;
+}
+
+function cacheSnapshot(webContents: WebContents, value: unknown): void {
+  invalidateSnapshotCache(webContents);
+  const invalidationListeners: SnapshotCacheEntry['invalidationListeners'] = [];
+  const entry: SnapshotCacheEntry = {
+    value,
+    expiresAt: Date.now() + SNAPSHOT_CACHE_TTL_MS,
+    invalidationListeners,
+  };
+  snapshotCache.set(webContents, entry);
+
+  for (const event of SNAPSHOT_INVALIDATION_EVENTS) {
+    const listener = () => {
+      invalidateSnapshotCache(webContents);
+    };
+    invalidationListeners.push({ event, listener });
+    webContents.once(event, listener);
+  }
+}
+
 /**
  * Snapshot in the renderer instead of through Chromium's full accessibility
  * tree. On macOS, Accessibility.getFullAXTree can enter a native wait that is
@@ -495,8 +556,15 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
   const interactive = [];
   const selector = 'a,button,input,select,textarea,[role="button"],[role="link"],[role="menuitem"],[role="tab"],[contenteditable="true"]';
   const elements = document.querySelectorAll(selector);
-  for (let index = 0; index < elements.length && interactive.length < maxInteractiveElements; index += 1) {
+  const maxCandidateElements = ${SNAPSHOT_MAX_CANDIDATE_ELEMENTS};
+  let candidateCount = 0;
+  for (let index = 0; index < elements.length && candidateCount < maxCandidateElements && interactive.length < maxInteractiveElements; index += 1) {
     const element = elements[index];
+    candidateCount += 1;
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    const visible = rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    if (!visible) continue;
     const tag = element.tagName.toLowerCase();
     const type = tag === 'input' ? String(element.getAttribute('type') || 'text').toLowerCase() : undefined;
     const isPassword = type === 'password';
@@ -509,6 +577,8 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
       id: element.id || undefined,
       href: tag === 'a' ? element.getAttribute('href') || undefined : undefined,
       disabled: 'disabled' in element ? Boolean(element.disabled) : undefined,
+      x: Math.round(rect.left + rect.width / 2),
+      y: Math.round(rect.top + rect.height / 2),
     });
   }
 
@@ -545,7 +615,7 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
     text: textParts.join(' '),
     textTruncated,
     interactive,
-    interactiveTruncated: elements.length > interactive.length,
+    interactiveTruncated: elements.length > candidateCount || interactive.length >= maxInteractiveElements,
   };
 })()`;
 
@@ -707,12 +777,19 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         maxBytes?: number;
       };
       const { webContents } = await getWebContents(workspaceId);
-      const result = await runRendererCommand<unknown>(
-        webContents,
-        'ui_snapshot',
-        RENDERER_COMMAND_TIMEOUT_MS,
-        async (): Promise<unknown> => webContents.executeJavaScript(SNAPSHOT_RENDERER_SCRIPT, true),
-      );
+      const cachedSnapshot = getCachedSnapshot(webContents);
+      let result: unknown;
+      if (cachedSnapshot === undefined) {
+        result = await runRendererCommand<unknown>(
+          webContents,
+          'ui_snapshot',
+          RENDERER_COMMAND_TIMEOUT_MS,
+          async (): Promise<unknown> => webContents.executeJavaScript(SNAPSHOT_RENDERER_SCRIPT, true),
+        );
+        cacheSnapshot(webContents, result);
+      } else {
+        result = cachedSnapshot.value;
+      }
       const selected = selectSnapshotValue(result, { path, sliceStart, sliceCount });
       if (getSerializedBytes(selected.value) <= maxBytes) {
         return selected.value;
@@ -738,6 +815,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       };
       const target = await getWebContents(workspaceId);
       const { webContents } = target;
+      invalidateSnapshotCache(webContents);
       focusInputTarget(target);
       // Move first so Chromium updates its hit-test/hover target before MUI's
       // ButtonBase receives the press. This also mirrors a real pointer click.
@@ -754,6 +832,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       const { workspaceId, text } = input as { workspaceId?: string; text: string };
       const target = await getWebContents(workspaceId);
       const { webContents } = target;
+      invalidateSnapshotCache(webContents);
       focusInputTarget(target);
       await webContents.insertText(text);
       await waitForInputDispatch();
@@ -764,6 +843,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       const { workspaceId, key } = input as { workspaceId?: string; key: string };
       const target = await getWebContents(workspaceId);
       const { webContents } = target;
+      invalidateSnapshotCache(webContents);
       focusInputTarget(target);
       const parts = key.split('+').map(part => part.trim()).filter(Boolean);
       const mainKey = normalizeInputKey(parts.at(-1) ?? key);
@@ -791,6 +871,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       const { workspaceId, url } = input as { workspaceId?: string; url: string };
       assertWikiNavigateTarget(workspaceId);
       const { webContents } = await getWebContents(workspaceId);
+      invalidateSnapshotCache(webContents);
       await withTimeout(webContents.loadURL(url), 15_000, 'ui_navigate');
       return { success: true, url };
     }
@@ -798,6 +879,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_evaluate': {
       const { workspaceId, script } = input as { workspaceId?: string; script: string };
       const { webContents } = await getWebContents(workspaceId);
+      invalidateSnapshotCache(webContents);
       // Wrap in async IIFE so:
       // 1. SyntaxErrors are caught by the outer try/catch inside the string (they surface as rejects from executeJavaScript)
       // 2. Runtime errors are returned as structured { ok, error } so the AI can read them

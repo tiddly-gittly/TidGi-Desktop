@@ -9,20 +9,47 @@ const mockOpen = vi.fn();
 const mockClose = vi.fn();
 
 function createSnapshotWindowMock(snapshot: unknown) {
+  const listeners = new Map<string, Set<() => void>>();
+  const emit = (event: string) => {
+    const eventListeners = listeners.get(event);
+    listeners.delete(event);
+    for (const listener of eventListeners ?? []) {
+      listener();
+    }
+  };
+  const sendInputEvent = vi.fn();
+  const insertText = vi.fn(async () => undefined);
+  const webContents = {
+    isDestroyed: vi.fn(() => false),
+    focus: vi.fn(),
+    sendInputEvent,
+    insertText,
+    loadURL: vi.fn(async () => undefined),
+    once: vi.fn((event: string, listener: () => void) => {
+      const eventListeners = listeners.get(event) ?? new Set<() => void>();
+      eventListeners.add(listener);
+      listeners.set(event, eventListeners);
+    }),
+    removeListener: vi.fn((event: string, listener: () => void) => {
+      listeners.get(event)?.delete(listener);
+    }),
+    executeJavaScript: vi.fn(async () => snapshot),
+    debugger: {
+      isAttached: vi.fn(() => false),
+      attach: vi.fn(),
+      detach: vi.fn(),
+      sendCommand: vi.fn(async () => snapshot),
+    },
+  };
   return {
     isDestroyed: vi.fn(() => false),
     isVisible: vi.fn(() => true),
     getTitle: vi.fn(() => 'TidGi [Snapshot]'),
-    webContents: {
-      isDestroyed: vi.fn(() => false),
-      executeJavaScript: vi.fn(async () => snapshot),
-      debugger: {
-        isAttached: vi.fn(() => false),
-        attach: vi.fn(),
-        detach: vi.fn(),
-        sendCommand: vi.fn(async () => snapshot),
-      },
-    },
+    focus: vi.fn(),
+    webContents,
+    emit,
+    sendInputEvent,
+    insertText,
   };
 }
 
@@ -217,6 +244,90 @@ describe('MCP tools', () => {
     expect(result).toHaveLength(5);
     expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
     expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
+  });
+
+  it('reuses a fresh root snapshot for interactive drilldown without another renderer command', async () => {
+    const target = createSnapshotWindowMock({
+      nodes: [{ nodeId: '0' }],
+      interactive: [
+        { text: 'Save', x: 240, y: 180 },
+        { text: 'Cancel', x: 320, y: 180 },
+      ],
+    });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', {
+      workspaceId: 'main-window',
+      maxBytes: 20_000,
+    });
+    const interactive = await callTool('ui_snapshot', {
+      workspaceId: 'main-window',
+      path: 'interactive',
+      sliceStart: 0,
+      sliceCount: 100,
+      maxBytes: 20_000,
+    });
+
+    expect(interactive).toEqual([
+      { text: 'Save', x: 240, y: 180 },
+      { text: 'Cancel', x: 320, y: 180 },
+    ]);
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+    expect(target.webContents.executeJavaScript.mock.calls[0][0]).toContain('getBoundingClientRect');
+    expect(target.webContents.executeJavaScript.mock.calls[0][0]).toContain('x: Math.round');
+  });
+
+  it('invalidates a cached snapshot after an MCP UI mutation', async () => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    await callTool('ui_click', { workspaceId: 'main-window', x: 240, y: 180 });
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['typing', async () => callTool('ui_type', { workspaceId: 'main-window', text: 'draft value' }), 2],
+    ['a keypress', async () => callTool('ui_key', { workspaceId: 'main-window', key: 'Enter' }), 2],
+    ['ui_evaluate', async (target: ReturnType<typeof createSnapshotWindowMock>) => {
+      target.webContents.executeJavaScript.mockResolvedValueOnce(JSON.stringify({ ok: true, value: 'read' }));
+      await callTool('ui_evaluate', { workspaceId: 'main-window', script: '"read"' });
+    }, 3],
+  ])('invalidates a cached snapshot after %s', async (_name, action, expectedRendererCommands) => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    await action(target);
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(expectedRendererCommands);
+  });
+
+  it('invalidates a cached snapshot when the renderer reloads', async () => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    target.emit('did-start-loading');
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+  });
+
+  it('expires a cached snapshot after its short drilldown window', async () => {
+    vi.useFakeTimers();
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    await vi.advanceTimersByTimeAsync(15_001);
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 
   it('fails fast after a renderer command times out instead of queuing another command', async () => {
