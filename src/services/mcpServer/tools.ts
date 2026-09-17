@@ -41,7 +41,7 @@ interface RendererCommandState {
 interface SnapshotCacheEntry {
   value: unknown;
   expiresAt: number;
-  invalidationListeners: Array<{ event: 'did-start-loading' | 'did-navigate-in-page' | 'destroyed' | 'render-process-gone'; listener: () => void }>;
+  invalidationListener: () => void;
 }
 
 /**
@@ -462,12 +462,19 @@ async function runRendererCommand<T>(
   }
 }
 
-const SNAPSHOT_INVALIDATION_EVENTS = [
-  'did-start-loading',
-  'did-navigate-in-page',
-  'destroyed',
-  'render-process-gone',
-] as const;
+function removeSnapshotInvalidationListener(webContents: WebContents, listener: () => void): void {
+  webContents.removeListener('did-start-loading', listener);
+  webContents.removeListener('did-navigate-in-page', listener);
+  webContents.removeListener('destroyed', listener);
+  webContents.removeListener('render-process-gone', listener);
+}
+
+function addSnapshotInvalidationListener(webContents: WebContents, listener: () => void): void {
+  webContents.once('did-start-loading', listener);
+  webContents.once('did-navigate-in-page', listener);
+  webContents.once('destroyed', listener);
+  webContents.once('render-process-gone', listener);
+}
 
 function invalidateSnapshotCache(webContents: WebContents): void {
   const entry = snapshotCache.get(webContents);
@@ -476,9 +483,7 @@ function invalidateSnapshotCache(webContents: WebContents): void {
   }
 
   snapshotCache.delete(webContents);
-  for (const { event, listener } of entry.invalidationListeners) {
-    webContents.removeListener(event, listener);
-  }
+  removeSnapshotInvalidationListener(webContents, entry.invalidationListener);
 }
 
 function getCachedSnapshot(webContents: WebContents): SnapshotCacheEntry | undefined {
@@ -497,21 +502,16 @@ function getCachedSnapshot(webContents: WebContents): SnapshotCacheEntry | undef
 
 function cacheSnapshot(webContents: WebContents, value: unknown): void {
   invalidateSnapshotCache(webContents);
-  const invalidationListeners: SnapshotCacheEntry['invalidationListeners'] = [];
+  const invalidationListener = () => {
+    invalidateSnapshotCache(webContents);
+  };
   const entry: SnapshotCacheEntry = {
     value,
     expiresAt: Date.now() + SNAPSHOT_CACHE_TTL_MS,
-    invalidationListeners,
+    invalidationListener,
   };
   snapshotCache.set(webContents, entry);
-
-  for (const event of SNAPSHOT_INVALIDATION_EVENTS) {
-    const listener = () => {
-      invalidateSnapshotCache(webContents);
-    };
-    invalidationListeners.push({ event, listener });
-    webContents.once(event, listener);
-  }
+  addSnapshotInvalidationListener(webContents, invalidationListener);
 }
 
 /**

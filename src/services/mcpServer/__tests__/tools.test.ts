@@ -276,8 +276,14 @@ describe('MCP tools', () => {
       { text: 'Cancel', x: 320, y: 180 },
     ]);
     expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
-    expect(target.webContents.executeJavaScript.mock.calls[0][0]).toContain('getBoundingClientRect');
-    expect(target.webContents.executeJavaScript.mock.calls[0][0]).toContain('x: Math.round');
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining('getBoundingClientRect'),
+      true,
+    );
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining('x: Math.round'),
+      true,
+    );
   });
 
   it('invalidates a cached snapshot after an MCP UI mutation', async () => {
