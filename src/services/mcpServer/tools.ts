@@ -631,7 +631,7 @@ function assertWikiNavigateTarget(workspaceId: string | undefined): void {
   }
 }
 
-async function getWebContents(workspaceId: string | undefined) {
+async function getWebContents(workspaceId: string | undefined, includeBrowserWindow = false) {
   // Special targets: app windows like main or preferences.
   if (workspaceId && WINDOW_TARGETS.has(workspaceId)) {
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
@@ -657,7 +657,11 @@ async function getWebContents(workspaceId: string | undefined) {
   if (!view) throw new Error(`No view found for workspace ${wsId}. It may not be loaded yet.`);
   const { webContents } = view;
   if (webContents.isDestroyed()) throw new Error(`WebContents for workspace ${wsId} is destroyed.`);
-  return { webContents, wsId, browserWindow: BrowserWindow.fromWebContents(webContents) ?? undefined };
+  return {
+    webContents,
+    wsId,
+    browserWindow: includeBrowserWindow ? BrowserWindow.fromWebContents(webContents) ?? undefined : undefined,
+  };
 }
 
 /**
@@ -813,7 +817,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         button?: 'left' | 'right' | 'middle';
         clickCount?: number;
       };
-      const target = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId, true);
       const { webContents } = target;
       invalidateSnapshotCache(webContents);
       focusInputTarget(target);
@@ -830,7 +834,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 
     case 'ui_type': {
       const { workspaceId, text } = input as { workspaceId?: string; text: string };
-      const target = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId, true);
       const { webContents } = target;
       invalidateSnapshotCache(webContents);
       focusInputTarget(target);
@@ -841,7 +845,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 
     case 'ui_key': {
       const { workspaceId, key } = input as { workspaceId?: string; key: string };
-      const target = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId, true);
       const { webContents } = target;
       invalidateSnapshotCache(webContents);
       focusInputTarget(target);

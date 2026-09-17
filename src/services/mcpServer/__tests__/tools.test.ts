@@ -100,6 +100,9 @@ describe('MCP tools', () => {
     if (container.isBound(serviceIdentifier.Window)) {
       container.unbind(serviceIdentifier.Window);
     }
+    if (container.isBound(serviceIdentifier.View)) {
+      container.unbind(serviceIdentifier.View);
+    }
   });
 
   it('exposes ui_window in MCP tool definitions', () => {
@@ -304,6 +307,20 @@ describe('MCP tools', () => {
     await callTool('ui_snapshot', { workspaceId: 'main-window' });
 
     expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(expectedRendererCommands);
+  });
+
+  it('invalidates a workspace snapshot before navigation', async () => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    container.bind(serviceIdentifier.View).toConstantValue({
+      getView: vi.fn(() => ({ webContents: target.webContents })),
+    });
+
+    await callTool('ui_snapshot', { workspaceId: 'workspace-id' });
+    await callTool('ui_navigate', { workspaceId: 'workspace-id', url: 'https://example.com' });
+    await callTool('ui_snapshot', { workspaceId: 'workspace-id' });
+
+    expect(target.webContents.loadURL).toHaveBeenCalledWith('https://example.com');
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
   });
 
   it('invalidates a cached snapshot when the renderer reloads', async () => {
