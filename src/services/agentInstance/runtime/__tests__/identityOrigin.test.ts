@@ -1,15 +1,20 @@
-import { type AgentInstanceModel, canonicalJsonBytes, type ChatMessage, createAtomicAgentRetryReplacementPayload, createChatMessage } from 'memeloop';
+import {
+  type AgentInstanceModel,
+  canonicalJsonBytes,
+  type ChatMessage,
+  type ConversationEvent,
+  type ConversationEventDraft,
+  createAtomicAgentRetryReplacementPayload,
+  createChatMessage,
+} from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AgentDefinitionService } from '@services/agentDefinition';
-import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { AgentInstanceService } from '../../index';
 import type { IAgentInstanceService } from '../../interface';
-import { MemeLoopDesktopStorage } from '../storage';
 
-type DefinitionServiceOverrides = Pick<IAgentDefinitionService, 'getAgentDef'>;
 type InstanceServiceOverrides = Pick<
   IAgentInstanceService,
+  | 'appendLocalConversationEvent'
   | 'getAgentMessage'
   | 'getAgentAttachmentReference'
   | 'readAgentAttachmentRange'
@@ -17,15 +22,15 @@ type InstanceServiceOverrides = Pick<
   | 'getAgentStorageFullContentMessagePage'
 >;
 
-function createDefinitionService(overrides: Partial<DefinitionServiceOverrides>): IAgentDefinitionService {
-  const service = new AgentDefinitionService();
-  Object.assign(service, overrides);
-  return service;
-}
-
-function createInstanceService(overrides: Partial<InstanceServiceOverrides>): IAgentInstanceService {
+function createInstanceService(
+  overrides: Partial<InstanceServiceOverrides>,
+  getLocalNodeId: () => Promise<string> = async () => 'desktop',
+): IAgentInstanceService {
   const service = new AgentInstanceService();
-  Object.assign(service, overrides);
+  Object.assign(service, {
+    agentDefinitionService: { getAgentDef: vi.fn(async () => undefined) },
+    deviceNetworkService: { getLocalIdentity: async () => ({ peerId: await getLocalNodeId() }) },
+  }, overrides);
   return service;
 }
 
@@ -45,34 +50,28 @@ function agent(): AgentInstanceModel {
 }
 
 describe('Desktop message origin identity', () => {
-  it('projects a TypeORM point read to a canonical plain retry source', async () => {
-    class TypeOrmMessageEntity implements ChatMessage {
-      public readonly agentInstance = { id: 'must-not-cross-storage-boundary' };
-
-      public readonly messageId = 'turn-source';
-      public readonly turnId = 'turn-source';
-      public readonly conversationId = 'conversation-1';
-      public readonly originNodeId = 'desktop';
-      public readonly originSequence = 1;
-      public readonly timestamp = 1;
-      public readonly lamportClock = 1;
-      public readonly role = 'user' as const;
-      public readonly content = 'retry me';
-      public readonly parts = [];
-      public readonly metadata = { source: 'typeorm' };
-    }
-    const storage = new MemeLoopDesktopStorage({
-      agentDefinitionService: createDefinitionService({ getAgentDef: vi.fn() }),
-      agentInstanceService: createInstanceService({
-        getAgentMessage: vi.fn(async () => new TypeOrmMessageEntity()),
-      }),
-      getLocalNodeId: vi.fn(async () => 'desktop'),
+  it('returns the repository canonical plain retry source without a second projection', async () => {
+    const repositoryMessage: ChatMessage = {
+      messageId: 'turn-source',
+      turnId: 'turn-source',
+      conversationId: 'conversation-1',
+      originNodeId: 'desktop',
+      originSequence: 1,
+      timestamp: 1,
+      lamportClock: 1,
+      role: 'user',
+      content: 'retry me',
+      parts: [],
+      metadata: { source: 'repository' },
+    };
+    const storage = createInstanceService({
+      getAgentMessage: vi.fn(async () => repositoryMessage),
     });
 
     const source = await storage.getMessageById('conversation-1', 'turn-source');
     expect(source).not.toBeNull();
     expect(Object.getPrototypeOf(source)).toBe(Object.prototype);
-    expect(source).not.toHaveProperty('agentInstance');
+    expect(source).toBe(repositoryMessage);
     expect(source?.parts).toEqual([]);
     expect(() => canonicalJsonBytes(source)).not.toThrow();
     const replacement = createAtomicAgentRetryReplacementPayload(source!, 'turn-replacement');
@@ -101,18 +100,14 @@ describe('Desktop message origin identity', () => {
   it('assembles model attachment bytes from bounded host range reads', async () => {
     const bytes = new Uint8Array(300_000).map((_, index) => index % 251);
     const readAgentAttachmentRange = vi.fn(async (_contentHash: string, offset: number, maxBytes: number) => bytes.slice(offset, Math.min(bytes.byteLength, offset + maxBytes)));
-    const storage = new MemeLoopDesktopStorage({
-      agentDefinitionService: createDefinitionService({ getAgentDef: vi.fn() }),
-      agentInstanceService: createInstanceService({
-        getAgentAttachmentReference: vi.fn(async () => ({
-          contentHash: `sha256:${'a'.repeat(64)}`,
-          filename: 'image.png',
-          mimeType: 'image/png',
-          size: bytes.byteLength,
-        })),
-        readAgentAttachmentRange,
-      }),
-      getLocalNodeId: vi.fn(async () => 'desktop'),
+    const storage = createInstanceService({
+      getAgentAttachmentReference: vi.fn(async () => ({
+        contentHash: `sha256:${'a'.repeat(64)}`,
+        filename: 'image.png',
+        mimeType: 'image/png',
+        size: bytes.byteLength,
+      })),
+      readAgentAttachmentRange,
     });
 
     await expect(storage.readAttachmentData(`sha256:${'a'.repeat(64)}`)).resolves.toEqual(bytes);
@@ -133,13 +128,9 @@ describe('Desktop message origin identity', () => {
       controller.abort(new Error('cancel model image'));
       return new Uint8Array(256 * 1_024);
     });
-    const storage = new MemeLoopDesktopStorage({
-      agentDefinitionService: createDefinitionService({ getAgentDef: vi.fn() }),
-      agentInstanceService: createInstanceService({
-        getAgentAttachmentReference: vi.fn(async () => reference),
-        readAgentAttachmentRange,
-      }),
-      getLocalNodeId: vi.fn(async () => 'desktop'),
+    const storage = createInstanceService({
+      getAgentAttachmentReference: vi.fn(async () => reference),
+      readAgentAttachmentRange,
     });
 
     await expect(storage.readAttachmentData(reference.contentHash, { signal: controller.signal })).rejects.toThrow(
@@ -163,15 +154,7 @@ describe('Desktop message origin identity', () => {
     };
     const getLocalNodeId = vi.fn(async () => '12D3KooWDesktopPeer');
     const getAgentConversationMeta = vi.fn(async () => canonicalMeta);
-    const storage = new MemeLoopDesktopStorage({
-      agentDefinitionService: createDefinitionService({
-        getAgentDef: vi.fn(async () => undefined),
-      }),
-      agentInstanceService: createInstanceService({
-        getAgentConversationMeta,
-      }),
-      getLocalNodeId,
-    });
+    const storage = createInstanceService({ getAgentConversationMeta }, getLocalNodeId);
 
     await expect(storage.getConversationMeta(currentAgent.id)).resolves.toMatchObject({
       originNodeId: '12D3KooWDesktopPeer',
@@ -179,6 +162,64 @@ describe('Desktop message origin identity', () => {
     });
     expect(getAgentConversationMeta).toHaveBeenCalledWith('12D3KooWDesktopPeer', currentAgent.id);
     expect(getLocalNodeId).toHaveBeenCalledOnce();
+  });
+
+  it('persists conversation and instance metadata as canonical events', async () => {
+    const appendLocalConversationEvent = vi.fn(async (draft: ConversationEventDraft): Promise<ConversationEvent> => ({
+      ...draft,
+      originSequence: 1,
+      lamportClock: 1,
+    }));
+    const storage = createInstanceService({ appendLocalConversationEvent });
+
+    await storage.upsertConversationMetadata({
+      conversationId: 'conversation-1',
+      title: 'Conversation',
+      lastMessagePreview: '',
+      lastMessageTimestamp: 0,
+      messageCount: 0,
+      originNodeId: 'desktop',
+      originClock: 0,
+      definitionId: 'definition-1',
+      instanceDelta: { systemPrompt: 'custom' },
+      isUserInitiated: true,
+    });
+    await storage.saveAgentInstance({
+      instanceId: 'conversation-1',
+      definitionId: 'definition-1',
+      nodeId: 'desktop',
+      conversationId: 'conversation-1',
+      createdAt: 1,
+      updatedAt: 2,
+      definitionDelta: { systemPrompt: 'custom' },
+    });
+
+    expect(appendLocalConversationEvent).toHaveBeenCalledTimes(2);
+    expect(appendLocalConversationEvent).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        kind: 'metadataPatch',
+        conversationId: 'conversation-1',
+        originNodeId: 'desktop',
+        patch: expect.objectContaining({
+          definitionId: 'definition-1',
+          instanceDelta: { systemPrompt: 'custom' },
+          title: 'Conversation',
+        }),
+      }),
+    );
+    expect(appendLocalConversationEvent).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        kind: 'metadataPatch',
+        conversationId: 'conversation-1',
+        timestamp: 2,
+        patch: {
+          definitionId: 'definition-1',
+          instanceDelta: { systemPrompt: 'custom' },
+        },
+      }),
+    );
   });
 
   it('uses the bounded message-page contract instead of loading a complete agent snapshot', async () => {
@@ -224,12 +265,8 @@ describe('Desktop message origin identity', () => {
       hasMoreBefore: true,
       hasMoreAfter: false,
     }));
-    const storage = new MemeLoopDesktopStorage({
-      agentDefinitionService: createDefinitionService({ getAgentDef: vi.fn() }),
-      agentInstanceService: createInstanceService({
-        getAgentStorageFullContentMessagePage,
-      }),
-      getLocalNodeId: vi.fn(async () => 'desktop'),
+    const storage = createInstanceService({
+      getAgentStorageFullContentMessagePage,
     });
 
     const options = {

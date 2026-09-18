@@ -30,6 +30,7 @@ import {
   agentConversationPageOptionsToStorage,
   type AgentConversationUpdate,
   agentConversationWindowRequestToStorage,
+  type AgentDefinition,
   type AgentDeviceRpcDeleteTurnRequest,
   type AgentDeviceRpcDeleteTurnResponse,
   type AgentDeviceRpcGetTurnDetailRequest,
@@ -41,6 +42,7 @@ import {
   type AgentFrameworkConfig,
   type AgentHeartbeatConfig,
   type AgentInstanceLatestStatus,
+  type AgentInstanceMeta,
   type AgentInstanceMetadata,
   type AgentInstanceMetadataUpdate,
   type AgentInstanceState,
@@ -58,11 +60,14 @@ import {
   conversationEventToMessage,
   type ConversationFullContentMessagePage,
   type ConversationListPage,
+  type ConversationListPageCallOptions,
   type ConversationMessageDetailRange,
   type ConversationMessageIdentity,
   type ConversationMessagePage,
   type ConversationMessageWindowResult,
+  type ConversationMeta,
   type ConversationTimelinePage,
+  type ConversationTimelinePageCallOptions,
   createAgentRunError,
   type CreateScheduledTaskInput,
   extractAgentRunError,
@@ -82,6 +87,7 @@ import {
   type MessageVersionFrontier,
   type MessageVersionFrontierCursor,
   type MessageVersionFrontierPage,
+  PORTABLE_LLM_REQUEST_LIMITS,
   projectConversationMessageForList,
   projectTransientConversationMessageForList,
   type PromptConcatStreamState,
@@ -449,6 +455,243 @@ export class AgentInstanceService implements IAgentInstanceService {
     options?: { signal?: AbortSignal },
   ): Promise<Uint8Array | null> {
     return this.getAttachmentUploadStore().readRange(contentHash, offset, maxBytes, options);
+  }
+
+  private async getLocalNodeId(): Promise<string> {
+    return (await this.deviceNetworkService.getLocalIdentity()).peerId;
+  }
+
+  public async listConversationsPage(
+    options: GetConversationListPageOptions,
+    callOptions?: ConversationListPageCallOptions,
+  ): Promise<ConversationListPage> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentConversationListPage(await this.getLocalNodeId(), options);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async getMessagePage(
+    conversationId: string,
+    options: GetMessagePageOptions,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessagePage> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentStorageMessagePage(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async getFullContentMessagePage(
+    conversationId: string,
+    options: GetFullContentMessagePageOptions,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationFullContentMessagePage> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentStorageFullContentMessagePage(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async getMessageById(
+    conversationId: string,
+    messageId: string,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ChatMessage | null> {
+    callOptions?.signal?.throwIfAborted();
+    const message = await this.getAgentMessage(messageId);
+    callOptions?.signal?.throwIfAborted();
+    return message?.conversationId === conversationId ? message : null;
+  }
+
+  public async getMessageIdentity(
+    conversationId: string,
+    messageId: string,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessageIdentity | null> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentMessageIdentity(conversationId, messageId);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async readMessageDetailRange(
+    conversationId: string,
+    messageId: string,
+    offset: number,
+    maxBytes: number,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessageDetailRange> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.readAgentMessageDetailRange(conversationId, messageId, offset, maxBytes);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async getMessageWindowAround(
+    conversationId: string,
+    options: GetConversationMessageWindowAroundOptions,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMessageWindowResult> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentStorageMessageWindowAround(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async getConversationTimelinePage(
+    conversationId: string,
+    options: GetConversationTimelinePageOptions,
+    callOptions?: ConversationTimelinePageCallOptions,
+  ): Promise<ConversationTimelinePage> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentConversationTimelinePage(conversationId, options);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public getCompactionCandidatePage(
+    conversationId: string,
+    options: GetCompactionCandidatePageOptions,
+  ): Promise<CompactionCandidatePage> {
+    return this.getAgentCompactionCandidatePage(conversationId, options);
+  }
+
+  public getRetainedCompactionControls(
+    conversationId: string,
+    options: GetRetainedCompactionControlsOptions,
+  ): Promise<RetainedCompactionControlPage> {
+    return this.getAgentRetainedCompactionControls(conversationId, options);
+  }
+
+  public appendLocalEvent(draft: ConversationEventDraft): Promise<ConversationEvent> {
+    return this.appendLocalConversationEvent(draft);
+  }
+
+  public appendLocalEventsAtomic(drafts: readonly ConversationEventDraft[]): Promise<ConversationEvent[]> {
+    return this.appendLocalConversationEventsAtomic(drafts);
+  }
+
+  public insertEventsIfAbsent(events: readonly ConversationEvent[]): Promise<void> {
+    return this.insertConversationEventsIfAbsent(events);
+  }
+
+  public async getEventVersionFrontierPage(options: {
+    limit: number;
+    after?: MessageVersionFrontierCursor;
+    conversationIds?: readonly string[];
+    signal?: AbortSignal;
+  }): Promise<MessageVersionFrontierPage> {
+    options.signal?.throwIfAborted();
+    const result = await this.getConversationEventVersionFrontierPage(options);
+    options.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async getEventVersionFrontiersForKeys(
+    keys: readonly MessageVersionFrontierCursor[],
+    options?: { signal?: AbortSignal },
+  ): Promise<MessageVersionFrontier[]> {
+    options?.signal?.throwIfAborted();
+    const result = await this.getConversationEventVersionFrontiersForKeys(keys);
+    options?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public getAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<AttachmentReference | null> {
+    return this.getAgentAttachmentReference(contentHash, options);
+  }
+
+  public saveAttachment(reference: AttachmentReference, data: Uint8Array): Promise<void> {
+    return this.saveAgentAttachment(reference, data);
+  }
+
+  public readAttachmentRange(
+    contentHash: string,
+    offset: number,
+    maxBytes: number,
+    options?: { signal?: AbortSignal },
+  ): Promise<Uint8Array | null> {
+    return this.readAgentAttachmentRange(contentHash, offset, maxBytes, options);
+  }
+
+  public async readAttachmentData(contentHash: string, options?: { signal?: AbortSignal }): Promise<Uint8Array | null> {
+    options?.signal?.throwIfAborted();
+    const reference = await this.getAgentAttachmentReference(contentHash, options);
+    options?.signal?.throwIfAborted();
+    if (!reference) return null;
+    if (
+      reference.contentHash !== contentHash || !Number.isSafeInteger(reference.size) || reference.size < 1 ||
+      reference.size > PORTABLE_LLM_REQUEST_LIMITS.fileBytes
+    ) {
+      throw new RangeError('model attachment exceeds the portable per-file limit');
+    }
+    const result = new Uint8Array(reference.size);
+    const chunkBytes = 256 * 1_024;
+    let offset = 0;
+    while (offset < reference.size) {
+      options?.signal?.throwIfAborted();
+      const requestedBytes = Math.min(chunkBytes, reference.size - offset);
+      const chunk = await this.readAgentAttachmentRange(contentHash, offset, requestedBytes, options);
+      options?.signal?.throwIfAborted();
+      if (!chunk || chunk.byteLength < 1 || chunk.byteLength > requestedBytes) {
+        throw new Error('model attachment range is incomplete');
+      }
+      result.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return result;
+  }
+
+  public async getAgentDefinition(id: string): Promise<AgentDefinition | null> {
+    return (await this.agentDefinitionService.getAgentDef(id)) ?? null;
+  }
+
+  public getMaxLamportClockForConversation(conversationId: string): Promise<number> {
+    return this.getMaxAgentLamportClock(conversationId);
+  }
+
+  public async upsertConversationMetadata(meta: ConversationMeta): Promise<void> {
+    const originNodeId = await this.getLocalNodeId();
+    await this.appendLocalConversationEvent({
+      kind: 'metadataPatch',
+      eventId: `metadata:upsert:${crypto.randomUUID()}`,
+      conversationId: meta.conversationId,
+      originNodeId,
+      timestamp: Date.now(),
+      patch: {
+        title: meta.title,
+        definitionId: meta.definitionId,
+        isUserInitiated: meta.isUserInitiated,
+        ...(meta.instanceDelta === undefined ? {} : { instanceDelta: meta.instanceDelta }),
+        ...(meta.sourceChannel === undefined ? {} : { sourceChannel: meta.sourceChannel }),
+      },
+    });
+  }
+
+  public async getConversationMeta(
+    conversationId: string,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ConversationMeta | null> {
+    callOptions?.signal?.throwIfAborted();
+    const result = await this.getAgentConversationMeta(await this.getLocalNodeId(), conversationId);
+    callOptions?.signal?.throwIfAborted();
+    return result;
+  }
+
+  public async saveAgentInstance(meta: AgentInstanceMeta): Promise<void> {
+    const originNodeId = await this.getLocalNodeId();
+    await this.appendLocalConversationEvent({
+      kind: 'metadataPatch',
+      eventId: `agent-instance:save:${crypto.randomUUID()}`,
+      conversationId: meta.conversationId,
+      originNodeId,
+      timestamp: meta.updatedAt,
+      patch: {
+        definitionId: meta.definitionId,
+        ...(meta.definitionDelta === undefined ? {} : { instanceDelta: meta.definitionDelta }),
+      },
+    });
   }
 
   private getMemeLoopRuntime(): MemeLoopDesktopRuntime {

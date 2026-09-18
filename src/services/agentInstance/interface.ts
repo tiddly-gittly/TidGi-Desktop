@@ -20,6 +20,7 @@ import type {
   AgentInstanceMetadataUpdate,
   AgentManagementCallOptions,
   AgentRunError,
+  AgentRuntimeRpcStorage,
   AgentRuntimeView,
   AttachmentReference,
   ChatMessage,
@@ -85,7 +86,15 @@ export type RendererAgentRunResult<T> =
 /**
  * Agent instance service to manage chat instances and messages
  */
-export interface IAgentInstanceService {
+export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
+  /** Canonical repository point read used by retry and on-demand detail paths. */
+  getMessageById(
+    conversationId: string,
+    messageId: string,
+    callOptions?: { signal?: AbortSignal },
+  ): Promise<ChatMessage | null>;
+  /** Trusted bounded attachment assembly used by model requests. */
+  readAttachmentData(contentHash: string, options?: { signal?: AbortSignal }): Promise<Uint8Array | null>;
   /**
    * Initialize the service on application startup
    */

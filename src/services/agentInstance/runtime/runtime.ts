@@ -42,7 +42,6 @@ import type { IAgentInstanceService } from '../interface';
 import { DesktopPromptPreviewService } from '../promptPreview';
 import { MemeLoopDesktopLLMProvider } from './llmProvider';
 import { DesktopLoopCheckpointStore } from './loopCheckpointStore';
-import { MemeLoopDesktopStorage } from './storage';
 import { MemeLoopDesktopToolRegistry } from './toolRegistry';
 
 /**
@@ -99,7 +98,7 @@ export function createDesktopAgentDefinitionResolver(options: {
 }
 
 export class MemeLoopDesktopRuntime {
-  private readonly storage: MemeLoopDesktopStorage;
+  private readonly storage: IAgentInstanceService;
   private readonly toolRegistry = new MemeLoopDesktopToolRegistry();
   private readonly promptPreviewService: DesktopPromptPreviewService;
   private readonly toolApprovals = new ToolApprovalBroker({ runtimeId: crypto.randomUUID() });
@@ -116,11 +115,7 @@ export class MemeLoopDesktopRuntime {
       dataSource: DataSource;
     },
   ) {
-    this.storage = new MemeLoopDesktopStorage({
-      agentInstanceService: options.agentInstanceService,
-      agentDefinitionService: options.agentDefinitionService,
-      getLocalNodeId: async () => (await options.deviceNetworkService.getLocalIdentity()).peerId,
-    });
+    this.storage = options.agentInstanceService;
     this.promptPreviewService = new DesktopPromptPreviewService({
       createContext: (conversationId, signal) => this.createContext(conversationId, undefined, signal),
     });

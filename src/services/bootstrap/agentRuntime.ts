@@ -1,7 +1,6 @@
 import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
-import { MemeLoopDesktopStorage } from '@services/agentInstance/runtime/storage';
 import { container } from '@services/container';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import { logger } from '@services/libs/log';
@@ -37,11 +36,6 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
   await agentInstanceService.initialize();
 
   const identity = await deviceNetworkService.getLocalIdentity();
-  const storage = new MemeLoopDesktopStorage({
-    agentInstanceService,
-    agentDefinitionService,
-    getLocalNodeId: async () => identity.peerId,
-  });
   const durableRuntime = await agentInstanceService.getDurableAgentRuntime();
 
   const agentRpcHandler = createAgentRuntimeDeviceRpcHandler({
@@ -54,7 +48,7 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
       getRunStatus: runId => durableRuntime.getRunStatus(runId),
       cancelRun: runId => durableRuntime.cancelRun(runId),
     },
-    storage,
+    storage: agentInstanceService,
     projections: createDesktopAgentRuntimeProjectionStore(agentInstanceService, identity.peerId),
     scheduledTaskHandler: createDesktopScheduledTaskRpcHandler(agentInstanceService, identity.peerId),
     retryTurn: (request, requestPeerId) => durableRuntime.retryTurn({ ...request, requestPeerId }),
@@ -63,7 +57,7 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
   });
   deviceNetworkService.configureRuntime({
     buildCapabilities: async () => buildDeviceNetworkCapabilities(workspaceService),
-    syncStorage: storage,
+    syncStorage: agentInstanceService,
     rpcHandler: protectRemoteAgentRpcHandler(agentRpcHandler),
   });
 
