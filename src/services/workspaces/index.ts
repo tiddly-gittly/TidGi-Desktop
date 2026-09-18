@@ -166,7 +166,7 @@ export class Workspace implements IWorkspaceService {
           // not synchronously inspect tidgi.config.json here: opening a path on
           // an unavailable network/removable volume can stall Electron's main
           // thread before the first window is usable.
-          const sanitized = this.sanitizeWorkspace(workspace);
+          const sanitized = this.sanitizeWorkspace(workspace, false);
           const normalizedID = sanitized.id;
           if (Object.hasOwn(sanitizedWorkspaces, normalizedID)) {
             logger.warn('getInitWorkspacesForCache: Ignoring duplicate workspace id', {
@@ -393,8 +393,17 @@ export class Workspace implements IWorkspaceService {
       }
 
       try {
-        this.workspaces![workspaceAtScheduling.id] = this.sanitizeWorkspace(mergeWithSyncedConfig(currentWorkspace, portableConfig));
+        const hydratedWorkspace = this.sanitizeWorkspace(mergeWithSyncedConfig(currentWorkspace, portableConfig));
+        this.workspaces![workspaceAtScheduling.id] = hydratedWorkspace;
         this.normalizeSubWikiLinks(this.workspaces!);
+        // settings.json is the non-blocking last-known-good startup cache;
+        // tidgi.config.json is the portable authority. Refresh the cache after
+        // a successful import so the next launch can restore names and
+        // sub-wiki relationships without filesystem I/O on the critical path.
+        const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+        const persistedWorkspaces = databaseService.getSetting('workspaces') ?? {};
+        persistedWorkspaces[workspaceAtScheduling.id] = hydratedWorkspace;
+        databaseService.setSetting('workspaces', persistedWorkspaces);
         this.updateWorkspaceSubject();
         void this.updateWorkspaceMenuItems();
         logger.debug('hydratePortableConfig: Hydrated portable config', {
@@ -577,8 +586,13 @@ export class Workspace implements IWorkspaceService {
    * hydration is intentionally separate and asynchronous, so this method can
    * always run safely during the synchronous startup cache construction.
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
+   * @param requirePortableFields Whether fields stored in tidgi.config.json must
+   * already be present. The settings-only startup pass deliberately sets this
+   * to false because portable config hydration runs after the application is
+   * usable; local workspace identity and sub-wiki links must remain available
+   * in the meantime.
    */
-  protected sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
+  protected sanitizeWorkspace(workspaceToSanitize: IWorkspace, requirePortableFields = true): IWorkspace {
     // For dedicated workspaces (help, guide, agent), no sanitization needed
     if (!isWikiWorkspace(workspaceToSanitize)) {
       return workspaceToSanitize;
@@ -593,7 +607,24 @@ export class Workspace implements IWorkspaceService {
       wikiFolderLocation: workspaceToSanitize.wikiFolderLocation,
     });
 
-    const workspaceType = workspaceToSanitize.workspaceType;
+    // The retired singular field is not part of either current persistence
+    // half. Reject it explicitly instead of letting object spread carry an
+    // untyped alias into the in-memory model.
+    if (requirePortableFields && 'tagName' in workspaceToSanitize) {
+      throw new Error('workspace_invalid_canonical_fields');
+    }
+
+    // settings.json intentionally stores only local workspace fields, while
+    // tidgi.config.json owns the syncable fields. Apply canonical defaults
+    // before validating either half of that representation. This is normal
+    // decoding of the current sparse format, not an old-field compatibility
+    // mapping.
+    const settingsCandidate = { ...workspaceToSanitize } as IWikiWorkspace & { tagName?: unknown };
+    // The settings-only cache may contain retired properties from a previous
+    // installation. Discard them; never translate them into canonical fields.
+    if (!requirePortableFields) delete settingsCandidate.tagName;
+    const effectiveWorkspace = { ...wikiWorkspaceDefaultValues, ...settingsCandidate };
+    const workspaceType = effectiveWorkspace.workspaceType;
     if (workspaceType !== WorkspaceType.folder && workspaceType !== WorkspaceType.html) {
       throw new Error('workspace_invalid_workspace_type');
     }
@@ -601,21 +632,22 @@ export class Workspace implements IWorkspaceService {
     // HTML workspaces never sync from tidgi.config.json
     const isHtmlWorkspace = workspaceType === WorkspaceType.html;
 
-    const effectiveWorkspace = workspaceToSanitize;
-
     const canonicalHomeUrl = getDefaultTidGiUrl(effectiveWorkspace.id);
     const hasCanonicalLastUrl = effectiveWorkspace.lastUrl === null || (
       typeof effectiveWorkspace.lastUrl === 'string' &&
       effectiveWorkspace.lastUrl.startsWith(canonicalHomeUrl)
     );
-    const hasHtmlFileLocation = typeof effectiveWorkspace.htmlFileLocation === 'string' && effectiveWorkspace.htmlFileLocation.trim() !== '';
+    const htmlFileLocationCandidate: unknown = Reflect.get(effectiveWorkspace, 'htmlFileLocation');
+    const hasHtmlFileLocation = typeof htmlFileLocationCandidate === 'string' && htmlFileLocationCandidate.trim() !== '';
     if (
       typeof effectiveWorkspace.id !== 'string' ||
       effectiveWorkspace.id.trim() === '' ||
-      typeof effectiveWorkspace.name !== 'string' ||
-      effectiveWorkspace.name.trim() === '' ||
-      !Array.isArray(effectiveWorkspace.tagNames) ||
-      !effectiveWorkspace.tagNames.every((tag) => typeof tag === 'string') ||
+      (requirePortableFields && (
+        typeof effectiveWorkspace.name !== 'string' ||
+        effectiveWorkspace.name.trim() === '' ||
+        !Array.isArray(effectiveWorkspace.tagNames) ||
+        !effectiveWorkspace.tagNames.every((tag) => typeof tag === 'string')
+      )) ||
       effectiveWorkspace.homeUrl !== canonicalHomeUrl ||
       !hasCanonicalLastUrl ||
       (isHtmlWorkspace ? !hasHtmlFileLocation : hasHtmlFileLocation)
@@ -649,7 +681,7 @@ export class Workspace implements IWorkspaceService {
       }
     }
     // Apply creation defaults, then canonical workspace data, then normalized values.
-    const result = { ...wikiWorkspaceDefaultValues, ...effectiveWorkspace, ...fixingValues };
+    const result = { ...effectiveWorkspace, ...fixingValues };
     logger.debug('sanitizeWorkspace: Complete', {
       workspaceId: result.id,
       finalName: result.name,

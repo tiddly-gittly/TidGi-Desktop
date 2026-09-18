@@ -59,7 +59,7 @@ Feature: Sub-Wiki Functionality
   Scenario: Sub-wiki tiddlers are loaded on initial wiki startup
     # Setup: Create sub-wiki folder and settings BEFORE launching the app
     Given I cleanup test wiki so it could create a new one on start
-    And I setup a sub-wiki "SubWikiPreload" with tag "PreloadTag" and tiddlers:
+    And I setup a sparse-cache sub-wiki "SubWikiPreload" with tag "PreloadTag" and tiddlers:
       | title               | tags       | content                                     |
       | PreExistingTiddler  | PreloadTag | Content from pre-existing sub-wiki tiddler  |
     # Now launch the app - it should load both main wiki and sub-wiki tiddlers

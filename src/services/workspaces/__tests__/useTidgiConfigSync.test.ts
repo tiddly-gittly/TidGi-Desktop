@@ -371,6 +371,12 @@ describe('Workspace useTidgiConfigSync', () => {
           mainWikiID: null,
         });
       });
+      expect(mockSetSetting).toHaveBeenCalledWith(
+        'workspaces',
+        expect.objectContaining({
+          [workspace.id]: expect.objectContaining({ name: 'Portable Name' }),
+        }),
+      );
     });
 
     it('hydrates serially and stops before another read when an offline config read times out', async () => {
@@ -522,12 +528,41 @@ describe('Workspace useTidgiConfigSync', () => {
       expect(result.useTidgiConfigSync).toBe(false);
     });
 
-    it('rejects a workspace without its canonical workspace type', () => {
+    it('decodes an omitted default workspace type from the sparse settings representation', () => {
       const workspace = createWorkspace({});
       Reflect.deleteProperty(workspace, 'workspaceType');
       const service = new TestableWorkspace();
 
-      expect(() => service.sanitizeWorkspaceForTest(workspace)).toThrow('workspace_invalid_workspace_type');
+      const result = service.sanitizeWorkspaceForTest(workspace);
+
+      expect(isWikiWorkspace(result) && result.workspaceType).toBe(WorkspaceType.folder);
+    });
+
+    it('keeps sparse sub-wiki links during the settings-only startup pass', async () => {
+      const root = createWorkspace({ id: 'root', homeUrl: 'tidgi://root', lastUrl: null });
+      const child = createWorkspace({
+        id: 'child',
+        homeUrl: 'tidgi://child',
+        isSubWiki: true,
+        lastUrl: null,
+        mainWikiID: root.id,
+        wikiFolderLocation: '/tmp/child',
+      });
+      for (const field of ['name', 'tagNames', 'workspaceType'] as const) {
+        Reflect.deleteProperty(child, field);
+      }
+      Object.assign(child, { tagName: 'retired-local-cache-value' });
+      mockGetSetting.mockReturnValue({ [root.id]: root, [child.id]: child });
+
+      const workspaces = await new Workspace().getWorkspaces();
+
+      expect(workspaces.child).toMatchObject({
+        id: 'child',
+        isSubWiki: true,
+        mainWikiID: 'root',
+        workspaceType: WorkspaceType.folder,
+      });
+      expect(workspaces.child).not.toHaveProperty('tagName');
     });
 
     it.each([
@@ -542,13 +577,16 @@ describe('Workspace useTidgiConfigSync', () => {
       expect(() => service.sanitizeWorkspaceForTest(workspace)).toThrow('workspace_invalid_canonical_fields');
     });
 
-    it('rejects the retired tagName alias through the public startup path', async () => {
+    it('discards the retired tagName alias from the settings cache without translating it', async () => {
       const workspace = createWorkspace({});
       Reflect.deleteProperty(workspace, 'tagNames');
       Object.assign(workspace, { tagName: 'Legacy' });
       mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
 
-      await expect(new Workspace().getWorkspaces()).resolves.toEqual({});
+      const result = await new Workspace().getWorkspaces();
+
+      expect(result[workspace.id]).not.toHaveProperty('tagName');
+      expect(result[workspace.id]).toMatchObject({ id: workspace.id, tagNames: [] });
       expect(mockSetSetting).not.toHaveBeenCalled();
     });
 
@@ -559,7 +597,7 @@ describe('Workspace useTidgiConfigSync', () => {
       await expect(service.get('workspace-case')).resolves.toBeUndefined();
     });
 
-    it('does not synthesize a missing name from the folder path during startup', async () => {
+    it('keeps a portable name pending without synthesizing it from the folder path', async () => {
       const workspace = createWorkspace({ name: '' });
       Reflect.deleteProperty(workspace, 'name');
       mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
@@ -567,7 +605,11 @@ describe('Workspace useTidgiConfigSync', () => {
       const service = new Workspace();
       const result = await service.getWorkspaces();
 
-      expect(result).toEqual({});
+      expect(result[workspace.id]).toMatchObject({
+        id: workspace.id,
+        name: '',
+        wikiFolderLocation: workspace.wikiFolderLocation,
+      });
       expect(mockSetSetting).not.toHaveBeenCalled();
     });
 

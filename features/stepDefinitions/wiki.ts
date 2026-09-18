@@ -1400,6 +1400,7 @@ async function setupSubWiki(
   options: {
     includeTagTree?: boolean;
     fileSystemPathFilter?: string;
+    sparseLocalCache?: boolean;
   },
   tiddlers: Record<string, string>[],
 ) {
@@ -1558,6 +1559,17 @@ ${tiddler.content}
     enableFileSystemWatch: true,
   }, { spaces: 2 });
 
+  if (options.sparseLocalCache) {
+    // Reproduce the split persistence shape from real installations: local
+    // identity/routing is available immediately, while portable presentation
+    // fields arrive from tidgi.config.json after startup.
+    const sparseWorkspace = settings.workspaces[subWikiId] as unknown as Record<string, unknown>;
+    delete sparseWorkspace.name;
+    delete sparseWorkspace.tagNames;
+    delete sparseWorkspace.workspaceType;
+    sparseWorkspace.tagName = tagName;
+  }
+
   await fs.writeJson(settingsPath, settings, { spaces: 2 });
 }
 
@@ -1572,6 +1584,16 @@ Given('I setup a sub-wiki {string} with tag {string} and tiddlers:', async funct
 ) {
   const rows = dataTable.hashes();
   await setupSubWiki(this.scenarioSlug, subWikiName, tagName, {}, rows);
+});
+
+Given('I setup a sparse-cache sub-wiki {string} with tag {string} and tiddlers:', async function(
+  this: ApplicationWorld,
+  subWikiName: string,
+  tagName: string,
+  dataTable: DataTable,
+) {
+  const rows = dataTable.hashes();
+  await setupSubWiki(this.scenarioSlug, subWikiName, tagName, { sparseLocalCache: true }, rows);
 });
 
 /**
