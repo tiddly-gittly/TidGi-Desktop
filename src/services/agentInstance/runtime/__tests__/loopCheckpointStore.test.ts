@@ -2,11 +2,12 @@
 import 'reflect-metadata';
 
 import { DataSource } from 'typeorm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@/services/database/schema/agent';
 import {
   AgentLoopCheckpointEntity,
+  AgentLoopCheckpointExecutionLeaseEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
   ConversationEventSequenceEntity,
@@ -30,6 +31,7 @@ afterEach(async () => {
   if (secondDataSource?.isInitialized) await secondDataSource.destroy();
   dataSource = undefined;
   secondDataSource = undefined;
+  vi.restoreAllMocks();
 });
 
 describe('DesktopLoopCheckpointStore', () => {
@@ -42,6 +44,7 @@ describe('DesktopLoopCheckpointStore', () => {
         AgentInstanceEntity,
         AgentInstanceMessageEntity,
         AgentLoopCheckpointEntity,
+        AgentLoopCheckpointExecutionLeaseEntity,
         ConversationAttachmentReferenceEntity,
         ConversationEventEntity,
         ConversationEventSequenceEntity,
@@ -133,6 +136,7 @@ describe('DesktopLoopCheckpointStore', () => {
       AgentInstanceEntity,
       AgentInstanceMessageEntity,
       AgentLoopCheckpointEntity,
+      AgentLoopCheckpointExecutionLeaseEntity,
       ConversationAttachmentReferenceEntity,
       ConversationEventEntity,
       ConversationEventSequenceEntity,
@@ -155,10 +159,16 @@ describe('DesktopLoopCheckpointStore', () => {
       runId: 'handoff-run',
     };
     const sourceStore = new DesktopLoopCheckpointStore(dataSource, async () => 'source');
+    const sourceFence = await sourceStore.checkpointFenceStore.acquireCheckpointFence(
+      scope.runId!,
+      'source-runtime',
+      60_000,
+    );
     await sourceStore.saveCheckpoint('handoff-conversation', 'phase', { value: 'fenced' }, {
       scope,
       fencingEpoch: 2,
       expectedRevision: 0,
+      leasePrecondition: sourceFence,
     });
     const sourceRow = await dataSource.getRepository(ConversationEventEntity).findOneOrFail({
       where: { conversationId: 'handoff-conversation', kind: 'loopCheckpoint' },
@@ -191,5 +201,88 @@ describe('DesktopLoopCheckpointStore', () => {
     }]);
     await expect(targetStore.loadCheckpoint('handoff-conversation', 'phase', { scope }))
       .resolves.toEqual({ value: 'fenced' });
+  });
+
+  it('atomically rejects stale, released, expired, and taken-over fences for fresh and existing keys', async () => {
+    dataSource = new DataSource({
+      type: 'better-sqlite3',
+      database: ':memory:',
+      entities: [
+        AgentDefinitionEntity,
+        AgentInstanceEntity,
+        AgentInstanceMessageEntity,
+        AgentLoopCheckpointEntity,
+        AgentLoopCheckpointExecutionLeaseEntity,
+        ConversationAttachmentReferenceEntity,
+        ConversationEventEntity,
+        ConversationEventSequenceEntity,
+        ConversationListStateEntity,
+        ConversationMessageDetailEntity,
+        ConversationMetadataFieldEntity,
+        ConversationTimelineEntryEntity,
+        ConversationTimelineRankCheckpointEntity,
+        ConversationTimelineStateEntity,
+        ConversationTurnTombstoneEntity,
+      ],
+      synchronize: true,
+    });
+    await dataSource.initialize();
+    let now = 1_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const store = new DesktopLoopCheckpointStore(dataSource, async () => 'desktop');
+    const scope: LoopCheckpointScope = {
+      scriptDigest: `sha256:${'3'.repeat(64)}`,
+      apiVersion: 'loops.memeloop.io/v1alpha1',
+      schemaVersion: '1',
+      runId: 'run-fenced-checkpoint',
+    };
+    const first = await store.checkpointFenceStore.acquireCheckpointFence(scope.runId!, 'runtime-a', 100);
+    await expect(store.saveCheckpoint('conversation-fenced', 'fresh-without-fence', { value: 0 }, {
+      scope,
+      expectedRevision: 0,
+    })).rejects.toMatchObject({ code: 'STALE_EPOCH' });
+    await store.saveCheckpoint('conversation-fenced', 'existing', { value: 1 }, {
+      scope,
+      expectedRevision: 0,
+      leasePrecondition: first,
+    });
+
+    await store.checkpointFenceStore.releaseCheckpointFence(first);
+    await expect(store.compareAndSetCheckpoint('conversation-fenced', 'existing', 1, { value: 2 }, {
+      scope,
+      leasePrecondition: first,
+    })).rejects.toMatchObject({ code: 'STALE_EPOCH' });
+    await expect(store.saveCheckpoint('conversation-fenced', 'fresh-after-release', { value: 1 }, {
+      scope,
+      expectedRevision: 0,
+      leasePrecondition: first,
+    })).rejects.toMatchObject({ code: 'STALE_EPOCH' });
+
+    const takeover = await store.checkpointFenceStore.acquireCheckpointFence(scope.runId!, 'runtime-b', 100);
+    expect(takeover.epoch).not.toBe(first.epoch);
+    await expect(store.saveCheckpoint('conversation-fenced', 'fresh-after-takeover', { value: 1 }, {
+      scope,
+      expectedRevision: 0,
+      leasePrecondition: first,
+    })).rejects.toMatchObject({ code: 'STALE_EPOCH' });
+    await store.saveCheckpoint('conversation-fenced', 'existing', { value: 2 }, {
+      scope,
+      expectedRevision: 1,
+      leasePrecondition: takeover,
+    });
+
+    now = 1_101;
+    await expect(store.saveCheckpoint('conversation-fenced', 'fresh-after-expiry', { value: 1 }, {
+      scope,
+      expectedRevision: 0,
+      leasePrecondition: takeover,
+    })).rejects.toMatchObject({ code: 'STALE_EPOCH' });
+    const afterExpiry = await store.checkpointFenceStore.acquireCheckpointFence(scope.runId!, 'runtime-c', 100);
+    await store.saveCheckpoint('conversation-fenced', 'fresh-after-expiry', { value: 1 }, {
+      scope,
+      expectedRevision: 0,
+      leasePrecondition: afterExpiry,
+    });
+    await expect(store.loadCheckpoint('conversation-fenced', 'existing', { scope })).resolves.toEqual({ value: 2 });
   });
 });

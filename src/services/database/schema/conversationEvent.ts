@@ -158,6 +158,22 @@ export class AgentRunStateEntity {
   error?: AgentRunError;
 }
 
+/** Durable execution fence for one Agent run. Expired rows retain the epoch. */
+@Entity('agent_run_execution_leases')
+export class AgentRunExecutionLeaseEntity {
+  @PrimaryColumn()
+  runId!: string;
+
+  @Column()
+  ownerId!: string;
+
+  @Column({ type: 'integer' })
+  fencingEpoch!: number;
+
+  @Column({ type: 'integer' })
+  expiresAt!: number;
+}
+
 /** Append-derived turn visibility projection. Rows are never used as sync truth. */
 @Entity('conversation_turn_tombstones')
 export class ConversationTurnTombstoneEntity {
@@ -305,6 +321,26 @@ export class AgentLoopCheckpointEntity {
 
   @Column({ type: 'integer', default: 0 })
   fencingEpoch!: number;
+}
+
+/** Backend-authoritative execution fence checked atomically with checkpoint writes. */
+@Entity('agent_loop_checkpoint_execution_leases')
+export class AgentLoopCheckpointExecutionLeaseEntity {
+  @PrimaryColumn()
+  name!: string;
+
+  @Column()
+  holder!: string;
+
+  @Column()
+  leaseId!: string;
+
+  /** Stored as decimal text because the portable ControlStore epoch is opaque. */
+  @Column()
+  epoch!: string;
+
+  @Column({ type: 'integer' })
+  expiresAt!: number;
 }
 
 /** Singleton invalidation token for revisioned conversation directory pages. */

@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@/services/database/schema/agent';
 import {
+  AgentRunExecutionLeaseEntity,
   AgentRunStateEntity,
   ConversationAttachmentReferenceEntity,
   ConversationEventEntity,
@@ -54,6 +55,7 @@ const ATOMIC_RETRY_ENTITIES = [
   AgentInstanceMessageEntity,
   ConversationAttachmentReferenceEntity,
   AgentRunStateEntity,
+  AgentRunExecutionLeaseEntity,
   ConversationMessageDetailEntity,
   ConversationEventEntity,
   ConversationEventSequenceEntity,
@@ -113,7 +115,7 @@ describe('DesktopAgentRunStateStore', () => {
     dataSource = new DataSource({
       type: 'better-sqlite3',
       database: ':memory:',
-      entities: [AgentRunStateEntity],
+      entities: [AgentRunStateEntity, AgentRunExecutionLeaseEntity],
       synchronize: true,
     });
     await dataSource.initialize();
@@ -122,6 +124,7 @@ describe('DesktopAgentRunStateStore', () => {
 
   afterEach(async () => {
     await dataSource.destroy();
+    vi.restoreAllMocks();
   });
 
   it('drives a real Core run from acceptance to a durable terminal state', async () => {
@@ -179,7 +182,7 @@ describe('DesktopAgentRunStateStore', () => {
     await runtime.dispose();
   });
 
-  it('marks an active record interrupted when a new Core runtime opens the same store', async () => {
+  it('keeps an active record durable when its user root is not locally readable yet', async () => {
     const now = Date.now();
     await store.createOrGet({
       runId: 'run-before-restart',
@@ -196,11 +199,8 @@ describe('DesktopAgentRunStateStore', () => {
     });
 
     const runtime = createMemeLoopRuntime(createRuntimeContext(async function*() {}), { runStateStore: store });
-    await expect(runtime.getRunStatus('run-before-restart')).resolves.toMatchObject({
-      state: 'failed',
-      error: { code: 'INTERRUPTED', retryable: true },
-    });
-    expect((await store.get('run-before-restart'))?.finishedAt).toEqual(expect.any(Number));
+    await expect(runtime.getRunStatus('run-before-restart')).resolves.toMatchObject({ state: 'running' });
+    expect((await store.get('run-before-restart'))?.finishedAt).toBeUndefined();
     await runtime.dispose();
   });
 
@@ -221,6 +221,71 @@ describe('DesktopAgentRunStateStore', () => {
     await expect(store.createOrGet(record)).resolves.toMatchObject(record);
     await expect(store.createOrGet({ ...record, runId: 'run-replayed' })).resolves.toMatchObject({ runId: record.runId });
     await expect(store.createOrGet({ ...record, payloadDigest: 'c'.repeat(64) })).rejects.toThrow('payload drift');
+  });
+
+  it('atomically fences lifecycle transitions after release, expiry, and takeover', async () => {
+    let now = 1_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const acceptedAt = 1_000;
+    const accepted = {
+      runId: 'run-fenced',
+      conversationId: 'conversation-fenced',
+      definitionId: 'definition-1',
+      turnId: 'turn-fenced',
+      requestPeerId: 'peer-remote',
+      requestId: 'request-fenced',
+      payloadDigest: 'd'.repeat(64),
+      state: 'accepted' as const,
+      acceptedAt,
+      updatedAt: acceptedAt,
+    };
+    await store.createOrGet(accepted);
+
+    const first = await store.claimExecution(accepted.runId, 'runtime-a', 1_000, 100);
+    expect(first).toBeDefined();
+    if (!first) throw new Error('expected first execution lease');
+    const queued = { ...accepted, state: 'queued' as const, updatedAt: 1_001 };
+    await expect(store.transition(accepted.runId, ['accepted'], queued)).resolves.toBe(false);
+    await expect(store.transition(accepted.runId, ['accepted'], queued, { executionLease: first })).resolves.toBe(true);
+
+    const renewed = await store.renewExecution(first, 1_050, 100);
+    now = 1_050;
+    expect(renewed).toMatchObject({ ownerId: 'runtime-a', fencingEpoch: first.fencingEpoch });
+    if (!renewed) throw new Error('expected renewed execution lease');
+    await expect(store.transition(
+      accepted.runId,
+      ['queued'],
+      { ...queued, state: 'running', startedAt: 1_051, updatedAt: 1_051 },
+      { executionLease: first },
+    )).resolves.toBe(false);
+
+    await store.releaseExecution(renewed);
+    await expect(store.transition(
+      accepted.runId,
+      ['queued'],
+      { ...queued, state: 'running', startedAt: 1_052, updatedAt: 1_052 },
+      { executionLease: renewed },
+    )).resolves.toBe(false);
+
+    const takeover = await store.claimExecution(accepted.runId, 'runtime-b', 1_060, 100);
+    now = 1_060;
+    expect(takeover?.fencingEpoch).toBe(first.fencingEpoch + 1);
+    if (!takeover) throw new Error('expected execution lease takeover');
+    await expect(store.transition(
+      accepted.runId,
+      ['queued'],
+      { ...queued, state: 'running', startedAt: 1_061, updatedAt: 1_061 },
+      { executionLease: renewed },
+    )).resolves.toBe(false);
+    await expect(store.transition(
+      accepted.runId,
+      ['queued'],
+      { ...queued, state: 'running', startedAt: 1_061, updatedAt: 1_061 },
+      { executionLease: takeover },
+    )).resolves.toBe(true);
+
+    now = 1_161;
+    await expect(store.renewExecution(takeover, now, 100)).resolves.toBeUndefined();
   });
 });
 

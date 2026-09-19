@@ -1,7 +1,9 @@
 import {
+  type AgentRunExecutionLease,
   type AgentRunRecord,
   AgentRunRequestConflictError,
   type AgentRunState,
+  type AgentRunTransitionOptions,
   assertAgentRunError,
   assertAtomicAgentRetryResult,
   assertAtomicAgentRetrySourceMessage,
@@ -22,7 +24,7 @@ import type { DataSource, EntityManager, Repository } from 'typeorm';
 import { In, LessThan } from 'typeorm';
 
 import { appendLocalConversationEventsInTransaction } from '@/services/agentInstance/agentRepository';
-import { AgentRunStateEntity, ConversationEventEntity } from '@/services/database/schema/conversationEvent';
+import { AgentRunExecutionLeaseEntity, AgentRunStateEntity, ConversationEventEntity } from '@/services/database/schema/conversationEvent';
 
 const ACTIVE_STATES: readonly AgentRunState[] = ['accepted', 'queued', 'running'];
 const TERMINAL_STATES: readonly AgentRunState[] = ['completed', 'failed', 'cancelled'];
@@ -31,6 +33,27 @@ const LEGAL_NEXT: Readonly<Record<'accepted' | 'queued' | 'running', readonly Ag
   queued: ['running', 'failed', 'cancelled'],
   running: ['completed', 'failed', 'cancelled'],
 };
+const runtimeTransactionTails = new WeakMap<DataSource, Promise<void>>();
+
+/** better-sqlite3 has one connection, so runtime-owned transactions must not overlap. */
+export async function withDesktopAgentRuntimeTransaction<T>(
+  dataSource: DataSource,
+  operation: (manager: EntityManager) => Promise<T>,
+): Promise<T> {
+  const previous = runtimeTransactionTails.get(dataSource);
+  let release!: () => void;
+  const current = new Promise<void>(resolve => {
+    release = resolve;
+  });
+  runtimeTransactionTails.set(dataSource, current);
+  if (previous) await previous;
+  try {
+    return await dataSource.transaction(operation);
+  } finally {
+    release();
+    if (runtimeTransactionTails.get(dataSource) === current) runtimeTransactionTails.delete(dataSource);
+  }
+}
 
 /** TypeORM/SQLite implementation of Core's durable run idempotency port. */
 export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
@@ -38,7 +61,10 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
 
   public async createOrGet(input: AgentRunRecord): Promise<AgentRunRecord> {
     const record = normalizeRecord(input);
-    return this.dataSource.transaction(async manager => (await createOrGetWithManager(manager, record)).run);
+    return withDesktopAgentRuntimeTransaction(
+      this.dataSource,
+      async manager => (await createOrGetWithManager(manager, record)).run,
+    );
   }
 
   public async get(runId: string): Promise<AgentRunRecord | undefined> {
@@ -78,7 +104,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
   public async retryTurnAtomic(input: AtomicAgentRetryInput): Promise<AtomicAgentRetryResult> {
     const candidateRun = normalizeAtomicRetryCandidate(input);
     const originNodeId = assertIdentifier(input.originNodeId, 'originNodeId');
-    return this.dataSource.transaction(async manager => {
+    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
       const existingEntity = await findRequestOrRun(manager, candidateRun);
       if (existingEntity) {
         const run = assertMatchingRequest(existingEntity, candidateRun);
@@ -122,6 +148,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
     runId: string,
     expectedStates: readonly AgentRunState[],
     input: AgentRunRecord,
+    options: AgentRunTransitionOptions = {},
   ): Promise<boolean> {
     assertIdentifier(runId, 'runId');
     if (expectedStates.length === 0 || expectedStates.some(state => !isRunState(state))) {
@@ -129,7 +156,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
     }
     const next = normalizeRecord(input);
     if (next.runId !== runId) throw new Error('agent_run_immutable_identity_changed');
-    return this.dataSource.transaction(async manager => {
+    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
       const repository = manager.getRepository(AgentRunStateEntity);
       const existing = await repository.findOneBy({ runId });
       if (!existing || !expectedStates.includes(existing.state)) return false;
@@ -137,12 +164,92 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
       if (TERMINAL_STATES.includes(existing.state)) return false;
       const activeState = existing.state as keyof typeof LEGAL_NEXT;
       if (!LEGAL_NEXT[activeState].includes(next.state)) return false;
+      if (next.state !== 'cancelled') {
+        const lease = options.executionLease;
+        if (!lease || lease.runId !== runId) return false;
+        const persistedLease = await manager.getRepository(AgentRunExecutionLeaseEntity).findOneBy({ runId });
+        if (!isExactCurrentExecutionLease(persistedLease, lease, Date.now())) return false;
+      }
       const result = await manager.update(
         AgentRunStateEntity,
         { runId, state: In([...expectedStates]) },
         toEntity(next),
       );
+      if (result.affected === 1 && TERMINAL_STATES.includes(next.state)) {
+        await manager.update(AgentRunExecutionLeaseEntity, { runId }, { expiresAt: 0 });
+      }
       return result.affected === 1;
+    });
+  }
+
+  public async claimExecution(
+    runId: string,
+    ownerId: string,
+    now: number,
+    leaseMs: number,
+  ): Promise<AgentRunExecutionLease | undefined> {
+    assertIdentifier(runId, 'runId');
+    assertIdentifier(ownerId, 'executionOwnerId');
+    assertLeaseTime(now, leaseMs);
+    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+      const run = await manager.getRepository(AgentRunStateEntity).findOneBy({ runId });
+      if (!run || !ACTIVE_STATES.includes(run.state)) return undefined;
+      const repository = manager.getRepository(AgentRunExecutionLeaseEntity);
+      const existing = await repository.findOneBy({ runId });
+      if (existing && existing.expiresAt > now && existing.ownerId !== ownerId) return undefined;
+      const fencingEpoch = existing && existing.expiresAt > now && existing.ownerId === ownerId
+        ? existing.fencingEpoch
+        : (existing?.fencingEpoch ?? 0) + 1;
+      const lease: AgentRunExecutionLease = {
+        runId,
+        ownerId,
+        fencingEpoch,
+        expiresAt: now + leaseMs,
+      };
+      await repository.save(Object.assign(new AgentRunExecutionLeaseEntity(), lease));
+      return lease;
+    });
+  }
+
+  public async renewExecution(
+    lease: AgentRunExecutionLease,
+    now: number,
+    leaseMs: number,
+  ): Promise<AgentRunExecutionLease | undefined> {
+    assertExecutionLease(lease);
+    assertLeaseTime(now, leaseMs);
+    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+      const run = await manager.getRepository(AgentRunStateEntity).findOneBy({ runId: lease.runId });
+      if (!run || !ACTIVE_STATES.includes(run.state)) return undefined;
+      const repository = manager.getRepository(AgentRunExecutionLeaseEntity);
+      const existing = await repository.findOneBy({ runId: lease.runId });
+      if (!isExactCurrentExecutionLease(existing, lease, now)) return undefined;
+      const renewed = { ...lease, expiresAt: now + leaseMs };
+      const result = await repository.update(
+        {
+          runId: lease.runId,
+          ownerId: lease.ownerId,
+          fencingEpoch: lease.fencingEpoch,
+          expiresAt: lease.expiresAt,
+        },
+        { expiresAt: renewed.expiresAt },
+      );
+      return result.affected === 1 ? renewed : undefined;
+    });
+  }
+
+  public async releaseExecution(lease: AgentRunExecutionLease): Promise<void> {
+    assertExecutionLease(lease);
+    await withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+      await manager.getRepository(AgentRunExecutionLeaseEntity).update(
+        {
+          runId: lease.runId,
+          ownerId: lease.ownerId,
+          fencingEpoch: lease.fencingEpoch,
+          expiresAt: lease.expiresAt,
+        },
+        { expiresAt: 0 },
+      );
     });
   }
 
@@ -162,7 +269,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
     if (!Number.isSafeInteger(options.maxRecords) || options.maxRecords < 1 || options.maxRecords > 100_000) {
       throw new TypeError('invalid agent run prune record limit');
     }
-    await this.dataSource.transaction(async manager => {
+    await withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
       const repository = manager.getRepository(AgentRunStateEntity);
       await repository.delete({ finishedAt: LessThan(options.finishedBefore) });
       for (;;) {
@@ -178,6 +285,9 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
         if (rows.length === 0) break;
         await repository.delete({ runId: In(rows.map(row => row.runId)) });
       }
+      await manager.query(
+        'DELETE FROM agent_run_execution_leases WHERE runId NOT IN (SELECT runId FROM agent_run_states)',
+      );
     });
   }
 
@@ -441,6 +551,34 @@ function assertRunState(value: AgentRunState): AgentRunState {
 function assertTimestamp(value: number, field: string): number {
   if (!Number.isSafeInteger(value) || value < 0) throw new TypeError(`invalid agent run ${field}`);
   return value;
+}
+
+function assertLeaseTime(now: number, leaseMs: number): void {
+  assertTimestamp(now, 'executionLeaseNow');
+  if (!Number.isSafeInteger(leaseMs) || leaseMs < 1 || now + leaseMs > Number.MAX_SAFE_INTEGER) {
+    throw new TypeError('invalid agent run execution lease duration');
+  }
+}
+
+function assertExecutionLease(lease: AgentRunExecutionLease): void {
+  assertIdentifier(lease.runId, 'executionLeaseRunId');
+  assertIdentifier(lease.ownerId, 'executionLeaseOwnerId');
+  if (!Number.isSafeInteger(lease.fencingEpoch) || lease.fencingEpoch < 1) {
+    throw new TypeError('invalid agent run execution lease epoch');
+  }
+  assertTimestamp(lease.expiresAt, 'executionLeaseExpiresAt');
+}
+
+function isExactCurrentExecutionLease(
+  persisted: AgentRunExecutionLeaseEntity | null,
+  expected: AgentRunExecutionLease,
+  now: number,
+): boolean {
+  return persisted !== null &&
+    persisted.ownerId === expected.ownerId &&
+    persisted.fencingEpoch === expected.fencingEpoch &&
+    persisted.expiresAt === expected.expiresAt &&
+    persisted.expiresAt > now;
 }
 
 function cloneError(value: AgentRunRecord['error']): NonNullable<AgentRunRecord['error']> {
