@@ -122,7 +122,11 @@ export class MemeLoopDesktopRuntime {
     registerBuiltinPromptPlugins(this.toolRegistry.getPromptPlugins());
   }
 
-  /** One durable Core runtime shared by local UI and authenticated Device RPC. */
+  /**
+   * One process-local Core coordinator shared by local UI and authenticated
+   * Device RPC. Its run records and script checkpoints are host-durable, but
+   * the coordinator and active loop generators are not resumable objects.
+   */
   public getCoreRuntime(runStateStore: AgentRunStateStore): Promise<MemeLoopRuntime> {
     if (this.coreRuntimePromise) return this.coreRuntimePromise;
     const pending = (async () => {
