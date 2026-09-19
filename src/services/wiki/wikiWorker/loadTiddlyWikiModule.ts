@@ -9,11 +9,14 @@ interface TiddlyWikiPackageManifest {
   version: string;
 }
 
-function readTiddlyWikiManifest(packagePath: string): TiddlyWikiPackageManifest {
+function readTiddlyWikiManifest(
+  packagePath: string,
+  readManifestFile: typeof readFileSync = readFileSync,
+): TiddlyWikiPackageManifest {
   const manifestPath = path.join(packagePath, 'package.json');
   let manifest: unknown;
   try {
-    manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as unknown;
+    manifest = JSON.parse(readManifestFile(manifestPath, 'utf8')) as unknown;
   } catch (error) {
     throw new Error(`Unable to read the TiddlyWiki package manifest at ${manifestPath}`, { cause: error });
   }
@@ -39,6 +42,7 @@ export function authTokenIsProvided(providedToken: string | undefined): provided
 
 interface TiddlyWikiModuleLoaderDependencies {
   createRequire?: typeof createRequire;
+  readFileSync?: typeof readFileSync;
 }
 
 /**
@@ -79,8 +83,12 @@ export async function loadTiddlyWikiModule(
   const bootPath = realpathSync(path.resolve(TIDDLY_WIKI_BOOT_PATH));
   const packagePath = path.dirname(bootPath);
   const manifestPath = path.join(packagePath, 'package.json');
+  onPhase?.('require-host-begin');
+  const packageRequire = (dependencies.createRequire ?? createRequire)(getTiddlyWikiRequireAnchor());
+  onPhase?.('require-host-end');
+  const readManifestFile = dependencies.readFileSync ?? electronOriginalReadFileSync(packageRequire);
   onPhase?.('manifest-begin');
-  const manifest = readTiddlyWikiManifest(packagePath);
+  const manifest = readTiddlyWikiManifest(packagePath, readManifestFile);
   onPhase?.('manifest-end');
   // The manifest is validated below to resolve to this package's exact
   // boot/boot.js entry. Avoid Node's package resolver here: Electron utility
@@ -103,9 +111,6 @@ export async function loadTiddlyWikiModule(
   // The entry is absolute and already contained/validated, so its require host
   // must not be anchored inside a wiki-local node_modules tree. That anchor can
   // block in Electron utility processes on macOS before require is even called.
-  onPhase?.('require-host-begin');
-  const packageRequire = (dependencies.createRequire ?? createRequire)(getTiddlyWikiRequireAnchor());
-  onPhase?.('require-host-end');
   onPhase?.('require-begin');
   const loadedModule = packageRequire(entryPath) as unknown;
   onPhase?.('require-end');
@@ -113,4 +118,14 @@ export async function loadTiddlyWikiModule(
     throw new Error(`Invalid TiddlyWiki module at ${entryPath}: expected a TiddlyWiki function export`);
   }
   return loadedModule as typeof import('tiddlywiki');
+}
+
+/** Electron patches node:fs for ASAR. Use its unpatched bridge for external wiki-local packages. */
+function electronOriginalReadFileSync(packageRequire: NodeJS.Require): typeof readFileSync {
+  if (process.versions.electron === undefined) return readFileSync;
+  const originalFs = packageRequire('original-fs') as Partial<typeof import('node:fs')>;
+  if (typeof originalFs.readFileSync !== 'function') {
+    throw new Error('Electron original-fs does not expose readFileSync');
+  }
+  return originalFs.readFileSync;
 }

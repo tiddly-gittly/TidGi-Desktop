@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -88,6 +88,7 @@ describe('loadTiddlyWikiModule', () => {
     const linkedPackagePath = path.join(resourcesPath, 'node_modules', 'tiddlywiki');
     symlinkSync(path.relative(path.dirname(linkedPackagePath), packagePath), linkedPackagePath, 'dir');
     const requiredIdentifiers: string[] = [];
+    const manifestPaths: string[] = [];
     const actualRequire = createRequire(import.meta.url);
 
     const { TiddlyWiki } = await loadTiddlyWikiModule(path.join(linkedPackagePath, 'boot'), undefined, {
@@ -101,11 +102,16 @@ describe('loadTiddlyWikiModule', () => {
           anchoredRequire,
         ) as NodeJS.Require;
       },
+      readFileSync: ((filePath: Parameters<typeof readFileSync>[0], options: Parameters<typeof readFileSync>[1]) => {
+        manifestPaths.push(String(filePath));
+        return readFileSync(filePath, options as never);
+      }) as typeof readFileSync,
     });
 
     expect(TiddlyWiki()).toEqual({ fixture: true });
     expect(requiredIdentifiers).toEqual([realpathSync(path.join(bootPath, 'boot.js'))]);
     expect(requiredIdentifiers[0]).not.toContain(linkedPackagePath);
+    expect(manifestPaths).toEqual([realpathSync(path.join(packagePath, 'package.json'))]);
   });
 
   it('preserves a valid require anchor in the CommonJS utility-process bundle', async () => {
