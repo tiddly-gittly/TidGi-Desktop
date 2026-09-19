@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -68,6 +68,44 @@ describe('loadTiddlyWikiModule', () => {
     expect(String(requireAnchors[0])).toBe(getTiddlyWikiRequireAnchor());
     expect(path.isAbsolute(String(requireAnchors[0]))).toBe(true);
     expect(String(requireAnchors[0])).not.toContain(bootPath);
+  });
+
+  it('canonicalizes a wiki-local pnpm symlink before manifest IO and require', async () => {
+    const resourcesPath = mkdtempSync(path.join(tmpdir(), 'tidgi-wiki-local-'));
+    temporaryDirectories.push(resourcesPath);
+    const packagePath = path.join(resourcesPath, 'node_modules', '.pnpm', 'tiddlywiki@5.4.1', 'node_modules', 'tiddlywiki');
+    const bootPath = path.join(packagePath, 'boot');
+    mkdirSync(bootPath, { recursive: true });
+    writeFileSync(
+      path.join(packagePath, 'package.json'),
+      JSON.stringify({
+        name: 'tiddlywiki',
+        version: '5.4.1',
+        main: './boot/boot.js',
+      }),
+    );
+    writeFileSync(path.join(bootPath, 'boot.js'), 'module.exports = { TiddlyWiki: () => ({ fixture: true }) };');
+    const linkedPackagePath = path.join(resourcesPath, 'node_modules', 'tiddlywiki');
+    symlinkSync(path.relative(path.dirname(linkedPackagePath), packagePath), linkedPackagePath, 'dir');
+    const requiredIdentifiers: string[] = [];
+    const actualRequire = createRequire(import.meta.url);
+
+    const { TiddlyWiki } = await loadTiddlyWikiModule(path.join(linkedPackagePath, 'boot'), undefined, {
+      createRequire: anchor => {
+        const anchoredRequire = createRequire(anchor);
+        return Object.assign(
+          (identifier: string): unknown => {
+            requiredIdentifiers.push(identifier);
+            return actualRequire(identifier) as unknown;
+          },
+          anchoredRequire,
+        ) as NodeJS.Require;
+      },
+    });
+
+    expect(TiddlyWiki()).toEqual({ fixture: true });
+    expect(requiredIdentifiers).toEqual([realpathSync(path.join(bootPath, 'boot.js'))]);
+    expect(requiredIdentifiers[0]).not.toContain(linkedPackagePath);
   });
 
   it('preserves a valid require anchor in the CommonJS utility-process bundle', async () => {

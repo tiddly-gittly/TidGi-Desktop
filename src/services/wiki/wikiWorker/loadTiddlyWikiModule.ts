@@ -72,7 +72,11 @@ export async function loadTiddlyWikiModule(
   onPhase?: (phase: string) => void,
   dependencies: TiddlyWikiModuleLoaderDependencies = {},
 ) {
-  const bootPath = path.resolve(TIDDLY_WIKI_BOOT_PATH);
+  // Canonicalize wiki-local pnpm/npm links before any manifest IO. Electron's
+  // macOS utility-process fs bridge can stall while opening a package through
+  // a workspace node_modules symlink even though the same canonical path is
+  // immediately readable.
+  const bootPath = realpathSync(path.resolve(TIDDLY_WIKI_BOOT_PATH));
   const packagePath = path.dirname(bootPath);
   const manifestPath = path.join(packagePath, 'package.json');
   onPhase?.('manifest-begin');
