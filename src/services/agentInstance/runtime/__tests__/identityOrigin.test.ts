@@ -4,6 +4,7 @@ import {
   type ChatMessage,
   type ConversationEvent,
   type ConversationEventDraft,
+  type ConversationMeta,
   createAtomicAgentRetryReplacementPayload,
   createChatMessage,
 } from 'memeloop';
@@ -139,9 +140,9 @@ describe('Desktop message origin identity', () => {
     expect(readAgentAttachmentRange).toHaveBeenCalledOnce();
   });
 
-  it('uses the local libp2p PeerId for conversation metadata', async () => {
+  it('passes repository canonical conversation metadata through unchanged', async () => {
     const currentAgent = agent();
-    const canonicalMeta = {
+    const canonicalMeta: ConversationMeta = {
       conversationId: currentAgent.id,
       title: currentAgent.name!,
       lastMessagePreview: 'remote',
@@ -156,10 +157,7 @@ describe('Desktop message origin identity', () => {
     const getAgentConversationMeta = vi.fn(async () => canonicalMeta);
     const storage = createInstanceService({ getAgentConversationMeta }, getLocalNodeId);
 
-    await expect(storage.getConversationMeta(currentAgent.id)).resolves.toMatchObject({
-      originNodeId: '12D3KooWDesktopPeer',
-      originClock: 3,
-    });
+    await expect(storage.getConversationMeta(currentAgent.id)).resolves.toBe(canonicalMeta);
     expect(getAgentConversationMeta).toHaveBeenCalledWith('12D3KooWDesktopPeer', currentAgent.id);
     expect(getLocalNodeId).toHaveBeenCalledOnce();
   });
