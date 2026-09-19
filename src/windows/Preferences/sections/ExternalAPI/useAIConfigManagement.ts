@@ -10,13 +10,6 @@ type ScopedAIConfigManagementProps =
   | { agentId: string; agentDefId?: string }
   | { agentDefId: string; agentId?: string };
 
-/**
- * Definitions and conversation instances persist one AgentModelConfig. They
- * deliberately do not support auxiliary global assignments such as embedding
- * or image generation models.
- */
-type ScopedModelAssignments = Pick<ModelAssignments, 'default'>;
-
 export type AIConfigOperation = 'load' | 'update' | 'clear';
 
 export interface AIConfigFailure {
@@ -47,7 +40,7 @@ interface GlobalAIConfigManagementResult extends AIConfigManagementBase {
 
 /** The renderer API for a definition or instance model override. */
 interface ScopedAIConfigManagementResult extends AIConfigManagementBase {
-  config: ScopedModelAssignments | null;
+  config: AgentModelConfig | null;
   handleModelChange: (selection: AgentModelConfig) => Promise<void>;
 }
 
@@ -61,7 +54,8 @@ export function useAIConfigManagement(props: UseAIConfigManagementProps): Global
 export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManagementProps = {}): GlobalAIConfigManagementResult | ScopedAIConfigManagementResult {
   const isScoped = agentId !== undefined || agentDefId !== undefined;
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<ModelAssignments | null>(null);
+  const [globalConfig, setGlobalConfig] = useState<ModelAssignments | null>(null);
+  const [scopedConfig, setScopedConfig] = useState<AgentModelConfig | null>(null);
   const [accounts, setAccounts] = useState<ProviderAccountConfig[]>([]);
   const [error, setError] = useState<AIConfigFailure>();
 
@@ -95,11 +89,11 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
         // Definitions and instances persist only one AgentModelConfig. Do not
         // merge auxiliary global assignments into this scoped view: doing so
         // makes the UI look editable while updates can only save `default`.
-        setConfig(
-          isScoped
-            ? defaultOnlyAssignments(agentModelConfig ?? globalConfig.default)
-            : globalConfig,
-        );
+        if (isScoped) {
+          setScopedConfig(agentModelConfig ?? globalConfig.default ?? null);
+        } else {
+          setGlobalConfig(globalConfig);
+        }
 
         const providerAccounts = await window.service.externalAPI.getProviderAccounts();
         setAccounts(providerAccounts);
@@ -107,7 +101,8 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
         setLoading(false);
       } catch (error) {
         const normalizedError = toError(error);
-        setConfig(null);
+        setGlobalConfig(null);
+        setScopedConfig(null);
         setError({ operation: 'load', error: normalizedError });
         void window.service.native.log('error', 'Failed to load AI configuration', {
           function: 'useAIConfigManagement.fetchConfig',
@@ -123,7 +118,7 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
     const configSubscription = window.observables.externalAPI.defaultConfig$.subscribe(updatedConfig => {
       // Only update if we're using global config (not agent-specific config)
       if (!agentId && !agentDefId) {
-        setConfig(updatedConfig);
+        setGlobalConfig(updatedConfig);
       }
     });
 
@@ -137,41 +132,31 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
     };
   }, [agentDefId, agentId, isScoped]);
 
-  const updateConfig = useCallback(async (updatedConfig: ModelAssignments) => {
+  const updateScopedConfig = useCallback(async (updatedConfig: AgentModelConfig) => {
     if (agentId) {
-      assertDefaultOnlyScopedAssignments(updatedConfig);
-      if (!updatedConfig.default) throw new Error('Agent model selection is required');
-      await window.service.agentInstance.updateAgent(agentId, { modelConfig: updatedConfig.default });
+      await window.service.agentInstance.updateAgent(agentId, { modelConfig: updatedConfig });
     } else if (agentDefId) {
-      assertDefaultOnlyScopedAssignments(updatedConfig);
-      if (!updatedConfig.default) throw new Error('Agent model selection is required');
       await window.service.agentDefinition.updateAgentDef({
         id: agentDefId,
-        modelConfig: updatedConfig.default,
+        modelConfig: updatedConfig,
       });
-    } else {
-      // Update global config
-      await window.service.externalAPI.updateDefaultAIConfig(updatedConfig);
     }
   }, [agentId, agentDefId]);
 
-  const updateSelection = useCallback(async (
+  const updateGlobalSelection = useCallback(async (
     key: keyof ModelAssignments,
     selection: AgentModelConfig,
   ) => {
-    if (!config) return;
-    if (isScoped && key !== 'default') {
-      throw new Error('Scoped model overrides support only the default model');
-    }
-    const previousConfig = config;
-    const updatedConfig: ModelAssignments = { ...config, [key]: selection };
-    setConfig(updatedConfig);
+    if (!globalConfig) return;
+    const previousConfig = globalConfig;
+    const updatedConfig: ModelAssignments = { ...globalConfig, [key]: selection };
+    setGlobalConfig(updatedConfig);
     setError(undefined);
     try {
-      await updateConfig(updatedConfig);
+      await window.service.externalAPI.updateDefaultAIConfig(updatedConfig);
     } catch (error) {
       const normalizedError = toError(error);
-      setConfig(previousConfig);
+      setGlobalConfig(previousConfig);
       setError({ operation: 'update', error: normalizedError });
       void window.service.native.log('error', 'Failed to update model assignment', {
         function: 'useAIConfigManagement.updateSelection',
@@ -180,46 +165,67 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
       });
       throw normalizedError;
     }
-  }, [config, isScoped, updateConfig]);
+  }, [globalConfig]);
 
-  const handleModelChange = useCallback(async (selection: AgentModelConfig) => {
-    await updateSelection('default', {
+  const handleGlobalModelChange = useCallback(async (selection: AgentModelConfig) => {
+    await updateGlobalSelection('default', {
       ...selection,
-      ...(config?.default?.parameters === undefined
+      ...(globalConfig?.default?.parameters === undefined
         ? {}
-        : { parameters: config.default.parameters }),
+        : { parameters: globalConfig.default.parameters }),
     });
-  }, [config?.default?.parameters, updateSelection]);
+  }, [globalConfig?.default?.parameters, updateGlobalSelection]);
+  const handleScopedModelChange = useCallback(async (selection: AgentModelConfig) => {
+    const previousConfig = scopedConfig;
+    const updatedConfig: AgentModelConfig = {
+      ...selection,
+      ...(scopedConfig?.parameters === undefined ? {} : { parameters: scopedConfig.parameters }),
+    };
+    setScopedConfig(updatedConfig);
+    setError(undefined);
+    try {
+      await updateScopedConfig(updatedConfig);
+    } catch (error) {
+      const normalizedError = toError(error);
+      setScopedConfig(previousConfig);
+      setError({ operation: 'update', error: normalizedError });
+      void window.service.native.log('error', 'Failed to update model assignment', {
+        function: 'useAIConfigManagement.handleScopedModelChange',
+        error: normalizedError,
+      });
+      throw normalizedError;
+    }
+  }, [scopedConfig, updateScopedConfig]);
   const handleEmbeddingModelChange = useCallback(
-    (selection: AgentModelConfig) => updateSelection('embedding', selection),
-    [updateSelection],
+    (selection: AgentModelConfig) => updateGlobalSelection('embedding', selection),
+    [updateGlobalSelection],
   );
   const handleSpeechModelChange = useCallback(
-    (selection: AgentModelConfig) => updateSelection('speech', selection),
-    [updateSelection],
+    (selection: AgentModelConfig) => updateGlobalSelection('speech', selection),
+    [updateGlobalSelection],
   );
   const handleImageGenerationModelChange = useCallback(
-    (selection: AgentModelConfig) => updateSelection('imageGeneration', selection),
-    [updateSelection],
+    (selection: AgentModelConfig) => updateGlobalSelection('imageGeneration', selection),
+    [updateGlobalSelection],
   );
   const handleTranscriptionsModelChange = useCallback(
-    (selection: AgentModelConfig) => updateSelection('transcriptions', selection),
-    [updateSelection],
+    (selection: AgentModelConfig) => updateGlobalSelection('transcriptions', selection),
+    [updateGlobalSelection],
   );
   const handleFreeModelChange = useCallback(
-    (selection: AgentModelConfig) => updateSelection('free', selection),
-    [updateSelection],
+    (selection: AgentModelConfig) => updateGlobalSelection('free', selection),
+    [updateGlobalSelection],
   );
 
   const handleConfigChange = useCallback(async (newConfig: ModelAssignments) => {
-    const previousConfig = config;
-    setConfig(newConfig);
+    const previousConfig = globalConfig;
+    setGlobalConfig(newConfig);
     setError(undefined);
     try {
-      await updateConfig(newConfig);
+      await window.service.externalAPI.updateDefaultAIConfig(newConfig);
     } catch (error) {
       const normalizedError = toError(error);
-      if (previousConfig !== undefined) setConfig(previousConfig);
+      if (previousConfig !== undefined) setGlobalConfig(previousConfig);
       setError({ operation: 'update', error: normalizedError });
       void window.service.native.log('error', 'Failed to update configuration', {
         function: 'useAIConfigManagement.handleConfigChange',
@@ -227,27 +233,20 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
       });
       throw normalizedError;
     }
-  }, [config, updateConfig]);
+  }, [globalConfig]);
 
   const handleFieldClear = useCallback(async (key: keyof ModelAssignments) => {
-    if (!config) return;
-    const previousConfig = config;
-    const updatedConfig = { ...config };
+    if (!globalConfig) return;
+    const previousConfig = globalConfig;
+    const updatedConfig = { ...globalConfig };
     delete updatedConfig[key];
     setError(undefined);
     try {
-      // The dedicated global delete API intentionally bypasses automatic
-      // model auto-fill. Updating the whole assignment object here would
-      // immediately repopulate a field the user explicitly cleared.
-      if (!agentId && !agentDefId) {
-        await window.service.externalAPI.deleteFieldFromDefaultAIConfig(key);
-      } else {
-        await updateConfig(updatedConfig);
-      }
-      setConfig(updatedConfig);
+      await window.service.externalAPI.deleteFieldFromDefaultAIConfig(key);
+      setGlobalConfig(updatedConfig);
     } catch (error) {
       const normalizedError = toError(error);
-      setConfig(previousConfig);
+      setGlobalConfig(previousConfig);
       setError({ operation: 'clear', error: normalizedError });
       void window.service.native.log('error', 'Failed to clear model assignment', {
         function: 'useAIConfigManagement.handleFieldClear',
@@ -256,7 +255,7 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
       });
       throw normalizedError;
     }
-  }, [agentDefId, agentId, config, updateConfig]);
+  }, [globalConfig]);
 
   const clearError = useCallback(() => {
     setError(undefined);
@@ -273,15 +272,15 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
   if (isScoped) {
     return {
       ...baseResult,
-      config: config === null ? null : defaultOnlyAssignments(config.default),
-      handleModelChange,
+      config: scopedConfig,
+      handleModelChange: handleScopedModelChange,
     };
   }
 
   return {
     ...baseResult,
-    config,
-    handleModelChange,
+    config: globalConfig,
+    handleModelChange: handleGlobalModelChange,
     handleEmbeddingModelChange,
     handleSpeechModelChange,
     handleImageGenerationModelChange,
@@ -290,14 +289,4 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
     handleConfigChange,
     handleFieldClear,
   };
-}
-
-function defaultOnlyAssignments(defaultModel: AgentModelConfig | undefined): ScopedModelAssignments {
-  return defaultModel === undefined ? {} : { default: defaultModel };
-}
-
-function assertDefaultOnlyScopedAssignments(assignments: ModelAssignments): void {
-  if (Object.keys(assignments).some(key => key !== 'default')) {
-    throw new Error('Scoped model overrides support only the default model');
-  }
 }

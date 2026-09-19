@@ -23,6 +23,7 @@ import {
   type PortableLlmRequest,
   type PortableLlmStreamPart,
   type ProviderAccountConfig,
+  type ProviderAccountSettings,
 } from 'memeloop';
 import { DataSource, Repository } from 'typeorm';
 import { generateEmbeddingsFromProvider } from './callEmbeddingAPI';
@@ -31,7 +32,7 @@ import { resolveProviderModelRoute } from './callProviderAPI';
 import { generateSpeechFromProvider } from './callSpeechAPI';
 import { generateTranscriptionFromProvider } from './callTranscriptionsAPI';
 import { extractErrorDetails } from './errorHandlers';
-import type { AIEmbeddingResponse, AIImageGenerationResponse, AISpeechResponse, AITranscriptionResponse, DesktopExternalAPISettings, IExternalAPIService } from './interface';
+import type { AIEmbeddingResponse, AIImageGenerationResponse, AISpeechResponse, AITranscriptionResponse, IExternalAPIService } from './interface';
 import { discoverOfficialModelIds, mergeDiscoveredProviderRoutes } from './officialModels';
 import { createDesktopModelCatalogManager } from './providerCatalog';
 import { hasUsableProviderCredential, hasUsableProviderCredentialReference } from './providerCredentials';
@@ -60,7 +61,7 @@ export class ExternalAPIService implements IExternalAPIService {
   private settingsLoaded = false;
   private modelCatalogManager: ModelCatalogManager | undefined;
 
-  private userSettings: DesktopExternalAPISettings = {
+  private userSettings: ProviderAccountSettings = {
     accounts: [],
     modelAssignments: {},
   };
@@ -93,15 +94,15 @@ export class ExternalAPIService implements IExternalAPIService {
     const savedSettings = this.databaseService.getSetting('aiSettings');
     if (savedSettings !== undefined) {
       try {
-        this.userSettings = normalizeDesktopExternalAPISettings(savedSettings);
+        this.userSettings = normalizeProviderAccountSettings(savedSettings);
       } catch (error) {
-        logger.warn('Ignoring invalid or obsolete external API settings', error);
+        logger.warn('Ignoring invalid external API settings', error);
       }
     }
     this.settingsLoaded = true;
 
     // Update Observables with loaded settings
-    this.defaultConfig$.next(normalizeModelAssignments(this.userSettings.modelAssignments));
+    this.defaultConfig$.next(this.userSettings.modelAssignments);
     this.providerAccounts$.next(this.getPublicProviderAccounts());
   }
 
@@ -114,19 +115,19 @@ export class ExternalAPIService implements IExternalAPIService {
   private saveSettingsToDatabase(): void {
     this.databaseService.setSetting('aiSettings', this.userSettings);
     // Emit updated config and providers to subscribers
-    this.defaultConfig$.next(normalizeModelAssignments(this.userSettings.modelAssignments));
+    this.defaultConfig$.next(this.userSettings.modelAssignments);
     this.providerAccounts$.next(this.getPublicProviderAccounts());
   }
 
   private getPublicProviderAccounts(): ProviderAccountConfig[] {
-    return this.userSettings.accounts.map(account => normalizeProviderAccountConfig(account));
+    return [...this.userSettings.accounts];
   }
 
   private getRuntimeProviderAccount(providerId: string): [ProviderAccountConfig, string] | undefined {
     const stored = this.userSettings.accounts.find(account => account.providerId === providerId);
     if (!stored) return undefined;
     const apiKey = stored.secretRef === undefined ? '' : getLocalAuthStore().get(stored.secretRef) ?? '';
-    return [normalizeProviderAccountConfig(stored), apiKey];
+    return [stored, apiKey];
   }
 
   /**
@@ -213,13 +214,13 @@ export class ExternalAPIService implements IExternalAPIService {
 
     // Only save if we actually changed something
     if (configChanged) {
-      this.userSettings = {
-        ...this.userSettings,
+      this.userSettings = normalizeProviderAccountSettings({
+        accounts,
         modelAssignments: normalizeModelAssignments(defaultConfig),
-      };
+      });
       // Save without triggering reactToConfigChange again (use internal save)
       this.databaseService.setSetting('aiSettings', this.userSettings);
-      this.defaultConfig$.next(normalizeModelAssignments(this.userSettings.modelAssignments));
+      this.defaultConfig$.next(this.userSettings.modelAssignments);
       this.providerAccounts$.next(this.getPublicProviderAccounts());
     }
   }
@@ -318,9 +319,9 @@ export class ExternalAPIService implements IExternalAPIService {
     return this.getPublicProviderAccounts();
   }
 
-  async getProviderApiKey(providerName: string): Promise<string> {
+  async getProviderApiKey(providerId: string): Promise<string> {
     this.ensureSettingsLoaded();
-    return this.getRuntimeProviderAccount(providerName)?.[1] ?? '';
+    return this.getRuntimeProviderAccount(providerId)?.[1] ?? '';
   }
 
   async setProviderApiKey(providerId: string, apiKey: string): Promise<void> {
@@ -335,10 +336,10 @@ export class ExternalAPIService implements IExternalAPIService {
         ...account,
         secretRef: undefined,
       });
-      this.userSettings = {
-        ...this.userSettings,
+      this.userSettings = normalizeProviderAccountSettings({
         accounts: replaceAt(this.userSettings.accounts, accountIndex, updatedAccount),
-      };
+        modelAssignments: this.userSettings.modelAssignments,
+      });
     } else {
       const secretReference = providerCredentialReference(providerId);
       getLocalAuthStore().set(secretReference, trimmed);
@@ -346,18 +347,18 @@ export class ExternalAPIService implements IExternalAPIService {
         ...account,
         secretRef: secretReference,
       });
-      this.userSettings = {
-        ...this.userSettings,
+      this.userSettings = normalizeProviderAccountSettings({
         accounts: replaceAt(this.userSettings.accounts, accountIndex, updatedAccount),
-      };
+        modelAssignments: this.userSettings.modelAssignments,
+      });
     }
-    this.userSettings = {
-      ...this.userSettings,
+    this.userSettings = normalizeProviderAccountSettings({
+      accounts: this.userSettings.accounts,
       modelAssignments: retainValidModelAssignments(
         this.userSettings.accounts,
         this.userSettings.modelAssignments,
       ),
-    };
+    });
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
   }
@@ -371,21 +372,21 @@ export class ExternalAPIService implements IExternalAPIService {
       : this.modelCatalogManager.resolve();
   }
 
-  async refreshProviderAccountModels(providerName: string): Promise<ProviderAccountConfig> {
+  async refreshProviderAccountModels(providerId: string): Promise<ProviderAccountConfig> {
     this.ensureSettingsLoaded();
-    const accountIndex = this.userSettings.accounts.findIndex(candidate => candidate.providerId === providerName);
-    if (accountIndex < 0) throw new Error(`Provider account not found: ${providerName}`);
+    const accountIndex = this.userSettings.accounts.findIndex(candidate => candidate.providerId === providerId);
+    if (accountIndex < 0) throw new Error(`Provider account not found: ${providerId}`);
     const account = this.userSettings.accounts[accountIndex];
-    const apiKey = this.getRuntimeProviderAccount(providerName)?.[1] ?? '';
+    const apiKey = this.getRuntimeProviderAccount(providerId)?.[1] ?? '';
     const discoveredIds = await discoverOfficialModelIds(account, apiKey);
     const resolution = await this.getProviderCatalog(false);
-    const catalogProvider = resolution.catalog.providers.find(candidate => candidate.id === providerName) ??
+    const catalogProvider = resolution.catalog.providers.find(candidate => candidate.id === providerId) ??
       account.catalogProvider;
     const updated = mergeDiscoveredProviderRoutes(account, discoveredIds, catalogProvider);
-    this.userSettings = {
-      ...this.userSettings,
+    this.userSettings = normalizeProviderAccountSettings({
       accounts: replaceAt(this.userSettings.accounts, accountIndex, updated),
-    };
+      modelAssignments: this.userSettings.modelAssignments,
+    });
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
     return updated;
@@ -393,7 +394,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async getAIConfig(): Promise<ModelAssignments> {
     this.ensureSettingsLoaded();
-    return normalizeModelAssignments(this.userSettings.modelAssignments);
+    return this.userSettings.modelAssignments;
   }
 
   async isAIAvailable(): Promise<boolean> {
@@ -426,9 +427,9 @@ export class ExternalAPIService implements IExternalAPIService {
   /**
    * Get provider configuration by provider name
    */
-  private async getProviderAccount(providerName: string): Promise<[ProviderAccountConfig, string] | undefined> {
+  private async getProviderAccount(providerId: string): Promise<[ProviderAccountConfig, string] | undefined> {
     this.ensureSettingsLoaded();
-    return this.getRuntimeProviderAccount(providerName);
+    return this.getRuntimeProviderAccount(providerId);
   }
 
   async setProviderAccount(account: ProviderAccountConfig): Promise<void> {
@@ -446,14 +447,13 @@ export class ExternalAPIService implements IExternalAPIService {
     const accounts = index >= 0
       ? replaceAt(this.userSettings.accounts, index, normalized)
       : [...this.userSettings.accounts, normalized];
-    this.userSettings = {
-      ...this.userSettings,
+    this.userSettings = normalizeProviderAccountSettings({
       accounts,
       modelAssignments: retainValidModelAssignments(
         accounts,
         this.userSettings.modelAssignments,
       ),
-    };
+    });
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
   }
@@ -465,17 +465,13 @@ export class ExternalAPIService implements IExternalAPIService {
       const deletedAccount = this.userSettings.accounts[index];
       const accounts = this.userSettings.accounts.filter(account => account.providerId !== providerId);
       if (deletedAccount.secretRef !== undefined) getLocalAuthStore().delete(deletedAccount.secretRef);
-      this.userSettings = {
-        ...this.userSettings,
+      this.userSettings = normalizeProviderAccountSettings({
         accounts,
-      };
-      this.userSettings = {
-        ...this.userSettings,
         modelAssignments: retainValidModelAssignments(
           accounts,
           this.userSettings.modelAssignments,
         ),
-      };
+      });
       this.saveSettingsToDatabase();
     }
   }
@@ -486,33 +482,25 @@ export class ExternalAPIService implements IExternalAPIService {
       accounts: this.userSettings.accounts,
       modelAssignments: config,
     });
-    this.userSettings = {
-      ...this.userSettings,
+    this.userSettings = normalizeProviderAccountSettings({
+      accounts: this.userSettings.accounts,
       modelAssignments: retainValidModelAssignments(
         this.userSettings.accounts,
         normalized.modelAssignments,
       ),
-    };
+    });
     this.saveSettingsToDatabase();
     this.reactToConfigChange();
   }
 
-  async deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void> {
+  async deleteFieldFromDefaultAIConfig(field: keyof ModelAssignments): Promise<void> {
     this.ensureSettingsLoaded();
-
-    const selectionKeys = [
-      'default',
-      'embedding',
-      'speech',
-      'imageGeneration',
-      'transcriptions',
-      'free',
-    ] as const;
-    const selectionKey = selectionKeys.find(key => key === fieldPath);
-    if (selectionKey === undefined) return;
     const modelAssignments = normalizeModelAssignments(this.userSettings.modelAssignments);
-    delete modelAssignments[selectionKey];
-    this.userSettings = { ...this.userSettings, modelAssignments };
+    delete modelAssignments[field];
+    this.userSettings = normalizeProviderAccountSettings({
+      accounts: this.userSettings.accounts,
+      modelAssignments,
+    });
     this.saveSettingsToDatabase();
   }
 
@@ -984,35 +972,6 @@ export class ExternalAPIService implements IExternalAPIService {
 function isPortableStream(value: unknown): value is AsyncIterable<PortableLlmStreamPart> {
   return value !== null && typeof value === 'object' &&
     typeof (value as AsyncIterable<unknown>)[Symbol.asyncIterator] === 'function';
-}
-
-function normalizeDesktopExternalAPISettings(value: unknown): DesktopExternalAPISettings {
-  if (value === null || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) {
-    throw new TypeError('external API settings must be a plain object');
-  }
-  const record = value as Record<string, unknown>;
-  const keys = Reflect.ownKeys(record);
-  const allowed = ['accounts', 'modelAssignments'];
-  if (keys.some(key => typeof key !== 'string' || !allowed.includes(key))) {
-    throw new TypeError('external API settings contain unknown fields');
-  }
-  for (const key of keys) {
-    const descriptor = Object.getOwnPropertyDescriptor(record, key);
-    if (descriptor === undefined || !('value' in descriptor) || !descriptor.enumerable) {
-      throw new TypeError('external API settings contain an accessor or hidden field');
-    }
-  }
-  const providerSettings = normalizeProviderAccountSettings({
-    accounts: record.accounts,
-    modelAssignments: record.modelAssignments,
-  });
-  return {
-    accounts: [...providerSettings.accounts],
-    modelAssignments: retainValidModelAssignments(
-      providerSettings.accounts,
-      providerSettings.modelAssignments,
-    ),
-  };
 }
 
 function providerCredentialReference(providerId: string): string {

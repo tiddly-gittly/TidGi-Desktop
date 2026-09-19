@@ -1,15 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Alert, Button, FormControl, InputLabel, MenuItem, Select, Snackbar } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import {
-  isProviderId,
-  type ModelCatalogModel,
-  type ModelCatalogProvider,
-  normalizeProviderAccountConfig,
-  PROVIDER_ID_MAX_UTF8_BYTES,
-  type ProviderAccountConfig,
-  type ProviderModelRoute,
-} from 'memeloop';
+import { isProviderId, type ModelCatalogModel, type ModelCatalogProvider, PROVIDER_ID_MAX_UTF8_BYTES, type ProviderAccountConfig, type ProviderModelRoute } from 'memeloop';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -96,15 +88,14 @@ export function ProviderConfig({
     ].sort(), [catalogProviders]);
 
   const persistAccount = async (account: ProviderAccountConfig) => {
-    const normalized = normalizeProviderAccountConfig(account);
-    await window.service.externalAPI.setProviderAccount(normalized);
+    await window.service.externalAPI.setProviderAccount(account);
     setAccounts(current => {
-      const index = current.findIndex(candidate => candidate.providerId === normalized.providerId);
+      const index = current.findIndex(candidate => candidate.providerId === account.providerId);
       return index < 0
-        ? [...current, normalized]
-        : current.map((candidate, candidateIndex) => candidateIndex === index ? normalized : candidate);
+        ? [...current, account]
+        : current.map((candidate, candidateIndex) => candidateIndex === index ? account : candidate);
     });
-    return normalized;
+    return account;
   };
 
   const addProvider = async () => {
@@ -136,7 +127,7 @@ export function ProviderConfig({
           apiMode: newProviderForm.providerType === 'openai' ? 'responses' : 'chat-completions',
         })) ?? [],
         ...(newProviderForm.baseUrl.trim() ? { baseUrl: newProviderForm.baseUrl.trim() } : {}),
-        ...(catalogProvider ? { catalogProvider: { ...catalogProvider, id: providerId } } : {}),
+        ...(catalogProvider ? { catalogProvider } : {}),
       });
       setSelectedProviderId(account.providerId);
       setShowAddProviderForm(false);

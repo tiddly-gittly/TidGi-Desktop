@@ -59,10 +59,14 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorElement);
   const searchInputReference = useRef<HTMLInputElement>(null);
-  const { accounts, config, handleModelChange } = useAIConfigManagement({
+  const configManagement = useAIConfigManagement({
     agentId,
     agentDefId,
   });
+  const { accounts, handleModelChange } = configManagement;
+  const config = 'handleEmbeddingModelChange' in configManagement
+    ? configManagement.config?.default
+    : configManagement.config;
 
   const modelOptions: ModelOption[] = [];
   for (const account of accounts) {
@@ -74,20 +78,20 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
         value: {
           providerId: account.providerId,
           modelId: route.modelId,
-          ...(config?.default?.parameters === undefined ? {} : { parameters: config.default.parameters }),
+          ...(config?.parameters === undefined ? {} : { parameters: config.parameters }),
         },
       });
     }
   }
 
-  const selectedModel = config?.default
-    ? modelOptions.find(option => option.value.providerId === config.default?.providerId && option.value.modelId === config.default?.modelId)
+  const selectedModel = config
+    ? modelOptions.find(option => option.value.providerId === config.providerId && option.value.modelId === config.modelId)
     : undefined;
 
   const displayName = selectedModel
     ? modelDisplayName(selectedModel)
-    : (config?.default
-      ? `${config.default.providerId} - ${config.default.modelId}`
+    : (config
+      ? `${config.providerId} - ${config.modelId}`
       : t('ModelSelector.NoModelSelected'));
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {

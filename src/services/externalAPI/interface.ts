@@ -3,7 +3,7 @@ import type { BehaviorSubject } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
 import type { ExternalAPILogEntity } from '@services/database/schema/externalAPILog';
-import type { ModelAssignments, ModelCatalogResolution, PortableLlmRequest, PortableLlmStreamPart, ProviderAccountConfig, ProviderAccountSettings } from 'memeloop';
+import type { ModelAssignments, ModelCatalogResolution, PortableLlmRequest, PortableLlmStreamPart, ProviderAccountConfig } from 'memeloop';
 
 /**
  * Shared error detail structure used across all AI responses
@@ -114,9 +114,6 @@ export interface AIImageGenerationResponse {
    */
   errorDetail?: AIErrorDetail;
 }
-
-/** Host settings contain provider/model metadata only; secrets live in auth.json. */
-export type DesktopExternalAPISettings = ProviderAccountSettings;
 
 /**
  * External API service to manage AI providers and communication
@@ -277,11 +274,8 @@ export interface IExternalAPIService {
    */
   updateDefaultAIConfig(config: ModelAssignments): Promise<void>;
 
-  /**
-   * Delete a field from default AI configuration
-   * @param fieldPath - Dot-separated path to the field (e.g., 'embedding', 'speech', 'default')
-   */
-  deleteFieldFromDefaultAIConfig(fieldPath: string): Promise<void>;
+  /** Delete one canonical model assignment. */
+  deleteFieldFromDefaultAIConfig(field: keyof ModelAssignments): Promise<void>;
 
   /**
    * Get API call logs for debugging purposes (only available when externalAPIDebug is enabled)

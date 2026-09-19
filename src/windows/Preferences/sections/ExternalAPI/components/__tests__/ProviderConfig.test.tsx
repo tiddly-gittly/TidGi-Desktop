@@ -255,6 +255,24 @@ describe('ProviderConfig', () => {
     expect(screen.getByRole('option', { name: 'OpenAI Main' })).toHaveAttribute('data-value', 'openai-main');
   });
 
+  it('passes a selected catalog provider through unchanged', async () => {
+    const user = userEvent.setup();
+    renderProviderConfig([], setAccounts, [catalogProvider]);
+
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    fireEvent.change(screen.getByTestId('new-provider-preset-select').querySelector('input')!, {
+      target: { value: catalogProvider.id },
+    });
+    await waitFor(() => expect(screen.getByTestId('new-provider-name-input')).toHaveValue(catalogProvider.id));
+    expect(screen.getByTestId('new-provider-name-input')).toBeDisabled();
+    await user.click(screen.getByTestId('add-provider-submit-button'));
+
+    await waitFor(() => {
+      expect(setProviderAccount).toHaveBeenCalledOnce();
+    });
+    expect(setProviderAccount.mock.calls[0]?.[0]?.catalogProvider).toBe(catalogProvider);
+  });
+
   it('preserves a Unicode/digit catalog display name while keeping its canonical provider id', async () => {
     const user = userEvent.setup();
     renderProviderConfig([], setAccounts, [unicodeCatalogProvider]);

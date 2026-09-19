@@ -1,10 +1,9 @@
 import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
-import type { DesktopExternalAPISettings } from '@services/externalAPI/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
-import type { ProviderAccountConfig } from 'memeloop';
+import type { ProviderAccountConfig, ProviderAccountSettings } from 'memeloop';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
@@ -514,7 +513,7 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
     requireModelRoute(providerConfig, modelId);
   }
 
-  const newAi: DesktopExternalAPISettings = {
+  const newAi: ProviderAccountSettings = {
     accounts: [providerConfig],
     modelAssignments: {
       default: {
@@ -584,7 +583,7 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
     }
   }
 
-  const newAi: DesktopExternalAPISettings = {
+  const newAi: ProviderAccountSettings = {
     accounts: [providerConfig],
     modelAssignments: {
       default: {

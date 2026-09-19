@@ -35,7 +35,7 @@ describe('useAIConfigManagement', () => {
   let getAIConfig: ReturnType<typeof vi.fn<() => Promise<ModelAssignments>>>;
   let getProviderAccounts: ReturnType<typeof vi.fn<() => Promise<ProviderAccountConfig[]>>>;
   let updateDefaultAIConfig: ReturnType<typeof vi.fn<(config: ModelAssignments) => Promise<void>>>;
-  let deleteFieldFromDefaultAIConfig: ReturnType<typeof vi.fn<(fieldPath: string) => Promise<void>>>;
+  let deleteFieldFromDefaultAIConfig: ReturnType<typeof vi.fn<(field: keyof ModelAssignments) => Promise<void>>>;
   let log: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -188,11 +188,9 @@ describe('useAIConfigManagement', () => {
       expect(reloaded.result.current.loading).toBe(false);
     });
     expect(reloaded.result.current.config).toEqual({
-      default: {
-        providerId: 'openai-main',
-        modelId: 'fast',
-        parameters: { temperature: 0.3, reasoningEffort: 'medium' },
-      },
+      providerId: 'openai-main',
+      modelId: 'fast',
+      parameters: { temperature: 0.3, reasoningEffort: 'medium' },
     });
     expect('handleEmbeddingModelChange' in reloaded.result.current).toBe(false);
   });
@@ -215,7 +213,7 @@ describe('useAIConfigManagement', () => {
     act(() => {
       configSubject.next({ default: { providerId: 'openai-main', modelId: 'fast' } });
     });
-    expect(result.current.config?.default?.modelId).toBe('reasoning');
+    expect(result.current.config?.modelId).toBe('reasoning');
   });
 
   it('unsubscribes both observables on unmount', async () => {

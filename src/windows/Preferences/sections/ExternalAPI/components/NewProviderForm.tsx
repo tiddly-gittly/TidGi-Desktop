@@ -52,6 +52,7 @@ export function NewProviderForm({
         }}
         fullWidth
         margin='normal'
+        disabled={selectedCatalogProviderId !== ''}
         placeholder='my-ai-provider'
         slotProps={{ htmlInput: { 'data-testid': 'new-provider-name-input' } }}
       />
