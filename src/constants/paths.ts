@@ -109,13 +109,19 @@ function getSqliteBinaryPath(): string {
 export const SQLITE_BINARY_PATH = getSqliteBinaryPath();
 
 /**
- * Check if a wiki folder has its own TiddlyWiki installation and return the appropriate boot path.
- * Prefers wiki-folder-local installation over the built-in version to support custom TW versions.
+ * Return the TiddlyWiki boot path for the current runtime.
+ *
+ * Packaged utility processes must only execute the bundled installation. On
+ * macOS, an installed app's provenance sandbox can block forever while opening
+ * JavaScript from a wiki-local node_modules tree. Development keeps the local
+ * override so custom TiddlyWiki versions remain easy to test.
  *
  * @param wikiFolderLocation - The path to the wiki folder
+ * @param runtimeIsPackaged - Defaults to the detected runtime; injectable for deterministic tests
  * @returns The path to TiddlyWiki boot folder (local if exists, otherwise built-in)
  */
-export function getTiddlyWikiBootPath(wikiFolderLocation: string): string {
+export function getTiddlyWikiBootPath(wikiFolderLocation: string, runtimeIsPackaged: boolean = Boolean(isPackaged)): string {
+  if (runtimeIsPackaged) return TIDDLYWIKI_PACKAGE_FOLDER;
   const localTiddlyWikiBootPath = path.resolve(wikiFolderLocation, 'node_modules', 'tiddlywiki', 'boot');
   try {
     // Check if local TiddlyWiki exists synchronously since this is a critical path
