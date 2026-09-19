@@ -9,18 +9,18 @@ Feature: Vector Search - Embedding Generation and Semantic Search
   @vectorSearch @mockOpenAI
   Scenario: Agent workflow - Create notes, update embeddings, then search
     Given I have started the mock OpenAI server
-      | response                                                                                                                                                                                                        | stream | embedding   |
-      | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"AI Agent Guide","text":"智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。"}</tool_use>   | false  |             |
-      | 已成功在工作区 wiki 中创建条目 "AI Agent Guide"。                                                                                                                                                               | false  |             |
-      | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"Vector Database Tutorial","text":"向量数据库用于存储和检索高维向量数据，支持语义搜索和相似度匹配。"}</tool_use> | false  |             |
-      | 已成功在工作区 wiki 中创建条目 "Vector Database Tutorial"。                                                                                                                                                     | false  |             |
-      | <tool_use name="wiki-update-embeddings">{"workspaceName":"wiki","forceUpdate":false}</tool_use>                                                                                                                 | false  |             |
-      |                                                                                                                                                                                                                 | false  | note1       |
-      |                                                                                                                                                                                                                 | false  | note2       |
-      | 已成功为工作区 wiki 生成向量嵌入索引。总计2个笔记，2个嵌入向量。                                                                                                                                                | false  |             |
-      | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"如何使用AI智能体","limit":5,"threshold":0.7}</tool_use>                                                                     | false  |             |
-      |                                                                                                                                                                                                                 | false  | query-note1 |
-      | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Agent Guide** (Similarity: 95.0%)\n这篇笔记介绍了AI智能体的基本概念和使用方法。                                                           | false  |             |
+      | response                                                                                                                                                                                                        | stream | embedding   | toolName | toolArguments |
+      |                                                                                                                                                                                                                 | false  |             | wiki-operation | {"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"AI Agent Guide","text":"智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。"} |
+      | 已成功在工作区 wiki 中创建条目 "AI Agent Guide"。                                                                                                                                                               | false  |             |          | |
+      |                                                                                                                                                                                                                 | false  |             | wiki-operation | {"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"Vector Database Tutorial","text":"向量数据库用于存储和检索高维向量数据，支持语义搜索和相似度匹配。"} |
+      | 已成功在工作区 wiki 中创建条目 "Vector Database Tutorial"。                                                                                                                                                     | false  |             |          | |
+      |                                                                                                                                                                                                                 | false  |             | wiki-update-embeddings | {"workspaceName":"wiki","forceUpdate":false} |
+      |                                                                                                                                                                                                                 | false  | note1       |          | |
+      |                                                                                                                                                                                                                 | false  | note2       |          | |
+      | 已成功为工作区 wiki 生成向量嵌入索引。总计2个笔记，2个嵌入向量。                                                                                                                                                | false  |             |          | |
+      |                                                                                                                                                                                                                 | false  |             | wiki-search | {"workspaceName":"wiki","searchType":"vector","query":"如何使用AI智能体","limit":5,"threshold":0.7} |
+      |                                                                                                                                                                                                                 | false  | query-note1 |          | |
+      | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Agent Guide** (Similarity: 95.0%)\n这篇笔记介绍了AI智能体的基本概念和使用方法。                                                           | false  |             |          | |
     # Launch application after mock server is ready
     Then I launch the TidGi application
     And I wait for the page to load completely
@@ -33,7 +33,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     And I should see a "search interface" element with selector ".aa-Autocomplete"
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     # Step 2: Create first note
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Agent Guide 的笔记，内容是：智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -62,13 +62,13 @@ Feature: Vector Search - Embedding Generation and Semantic Search
   @vectorSearch @mockOpenAI
   Scenario: UI workflow - Generate embeddings via preferences, then search
     Given I have started the mock OpenAI server
-      | response                                                                                                                                                                                                       | stream | embedding   |
-      | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"Machine Learning Basics","text":"机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。"}</tool_use> | false  |             |
-      | 已成功在工作区 wiki 中创建条目 "Machine Learning Basics"。                                                                                                                                                     | false  |             |
-      |                                                                                                                                                                                                                | false  | note3       |
-      | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"机器学习","limit":5,"threshold":0.7}</tool_use>                                                                            | false  |             |
-      |                                                                                                                                                                                                                | false  | query-note3 |
-      | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: Machine Learning Basics** (Similarity: 98.0%)\n这篇笔记介绍了机器学习的基本概念。                                                           | false  |             |
+      | response                                                                                                                                                                                                       | stream | embedding   | toolName | toolArguments |
+      |                                                                                                                                                                                                                | false  |             | wiki-operation | {"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"Machine Learning Basics","text":"机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。"} |
+      | 已成功在工作区 wiki 中创建条目 "Machine Learning Basics"。                                                                                                                                                     | false  |             |          | |
+      |                                                                                                                                                                                                                | false  | note3       |          | |
+      |                                                                                                                                                                                                                | false  |             | wiki-search | {"workspaceName":"wiki","searchType":"vector","query":"机器学习","limit":5,"threshold":0.7} |
+      |                                                                                                                                                                                                                | false  | query-note3 |          | |
+      | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: Machine Learning Basics** (Similarity: 98.0%)\n这篇笔记介绍了机器学习的基本概念。                                                           | false  |             |          | |
     # Launch application after mock server is ready
     Then I launch the TidGi application
     And I wait for the page to load completely
@@ -106,21 +106,21 @@ Feature: Vector Search - Embedding Generation and Semantic Search
   @vectorSearch @mockOpenAI
   Scenario: Vector search with low similarity - No results below threshold, then lower threshold
     Given I have started the mock OpenAI server
-      | response                                                                                                                                                       | stream | embedding |
-      | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"AI Technology","text":"人工智能技术正在改变世界。"}</tool_use> | false  |           |
-      | 已成功在工作区 wiki 中创建条目 "AI Technology"。                                                                                                               | false  |           |
-      | <tool_use name="wiki-operation">{"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"Machine Learning","text":"机器学习算法和应用。"}</tool_use>    | false  |           |
-      | 已成功在工作区 wiki 中创建条目 "Machine Learning"。                                                                                                            | false  |           |
-      | <tool_use name="wiki-update-embeddings">{"workspaceName":"wiki","forceUpdate":false}</tool_use>                                                                | false  |           |
-      |                                                                                                                                                                | false  | note4     |
-      |                                                                                                                                                                | false  | note5     |
-      | 已成功为工作区 wiki 生成向量嵌入索引。总计2个笔记，2个嵌入向量。                                                                                               | false  |           |
-      | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"天气预报","limit":5,"threshold":0.7}</tool_use>                            | false  |           |
-      |                                                                                                                                                                | false  | unrelated |
-      | 在Wiki工作空间"wiki"中未找到符合条件的向量搜索结果（相似度阈值：0.7）。                                                                                        | false  |           |
-      | <tool_use name="wiki-search">{"workspaceName":"wiki","searchType":"vector","query":"天气预报","limit":5,"threshold":0.1}</tool_use>                            | false  |           |
-      |                                                                                                                                                                | false  | unrelated |
-      | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Technology** (Similarity: 15.0%)\n低相似度结果。                                         | false  |           |
+      | response                                                                                                                                                       | stream | embedding | toolName | toolArguments |
+      |                                                                                                                                                                | false  |           | wiki-operation | {"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"AI Technology","text":"人工智能技术正在改变世界。"} |
+      | 已成功在工作区 wiki 中创建条目 "AI Technology"。                                                                                                               | false  |           |          | |
+      |                                                                                                                                                                | false  |           | wiki-operation | {"workspaceName":"wiki","operation":"wiki-add-tiddler","title":"Machine Learning","text":"机器学习算法和应用。"} |
+      | 已成功在工作区 wiki 中创建条目 "Machine Learning"。                                                                                                            | false  |           |          | |
+      |                                                                                                                                                                | false  |           | wiki-update-embeddings | {"workspaceName":"wiki","forceUpdate":false} |
+      |                                                                                                                                                                | false  | note4     |          | |
+      |                                                                                                                                                                | false  | note5     |          | |
+      | 已成功为工作区 wiki 生成向量嵌入索引。总计2个笔记，2个嵌入向量。                                                                                               | false  |           |          | |
+      |                                                                                                                                                                | false  |           | wiki-search | {"workspaceName":"wiki","searchType":"vector","query":"天气预报","limit":5,"threshold":0.7} |
+      |                                                                                                                                                                | false  | unrelated |          | |
+      | 在Wiki工作空间"wiki"中未找到符合条件的向量搜索结果（相似度阈值：0.7）。                                                                                        | false  |           |          | |
+      |                                                                                                                                                                | false  |           | wiki-search | {"workspaceName":"wiki","searchType":"vector","query":"天气预报","limit":5,"threshold":0.1} |
+      |                                                                                                                                                                | false  | unrelated |          | |
+      | 根据向量搜索结果，在工作区 wiki 中找到以下相关内容：\n\n**Tiddler: AI Technology** (Similarity: 15.0%)\n低相似度结果。                                         | false  |           |          | |
     # Launch application after mock server is ready
     Then I launch the TidGi application
     And I wait for the page to load completely

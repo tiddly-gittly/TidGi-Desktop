@@ -9,14 +9,4 @@ export default defineConfig({
       '@services': path.resolve(__dirname, './src/services'),
     },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        entryFileNames: 'preload.js',
-      },
-      external: [
-        'electron',
-      ],
-    },
-  },
 });

@@ -8,9 +8,10 @@ import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import { firstValueFrom, toArray } from 'rxjs';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const ZxScriptParameterSchema = z.object({
   toolListPosition: z.object({
@@ -70,7 +71,7 @@ async function executeZxScript(parameters: z.infer<typeof ZxScriptToolSchema>): 
   }
 }
 
-const zxScriptDefinition = registerToolDefinition({
+export const zxScriptDefinition = defineDesktopTool({
   toolId: 'zxScript',
   displayName: 'ZX Script',
   description: 'Execute zx scripts in wiki worker context for automation',
@@ -84,10 +85,8 @@ const zxScriptDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'zx-script') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'zx-script') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('zx-script', executeZxScript);
   },
 });
-
-export const zxScriptTool = zxScriptDefinition.tool;

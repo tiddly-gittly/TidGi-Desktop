@@ -28,8 +28,8 @@ export function getMainWindowEntry(): string {
  * - Production: preload is packaged in resources/app/.vite/build/preload.js
  */
 export function getPreloadPath(): string {
-  // Preload is emitted as preload.js to avoid clashing with main's index.js
-  const preloadPath = path.join(__dirname, 'preload.js');
+  // @electron-forge/plugin-vite emits the preload script as index.js in .vite/build
+  const preloadPath = path.join(__dirname, 'index.js');
   console.log('[viteEntry] Preload path:', preloadPath, '__dirname:', __dirname);
   return preloadPath;
 }

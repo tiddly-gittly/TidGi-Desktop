@@ -13,10 +13,17 @@ const baseWorkspace = {
   storageService: SupportedStorageServices.local,
   isSubWiki: false,
   mainWikiID: null,
-  mainWikiToLink: null,
 } as const;
 
 describe('tidgiConfig syncable fields for git repo scope', () => {
+  it('preserves a non-default symlink watcher policy across portable config sync', () => {
+    const workspace = { ...baseWorkspace, ignoreSymlinks: false };
+
+    expect(extractSyncableConfig(workspace).ignoreSymlinks).toBe(false);
+    expect(removeSyncableFields(workspace)).not.toHaveProperty('ignoreSymlinks');
+    expect(mergeWithSyncedConfig(baseWorkspace, { ignoreSymlinks: false }).ignoreSymlinks).toBe(false);
+  });
+
   it('extractSyncableConfig includes gitRepoPath and gitManagedRelativePath when set', () => {
     const workspace = { ...baseWorkspace, gitRepoPath: '..', gitManagedRelativePath: 'wiki' };
     const extracted = extractSyncableConfig(workspace);

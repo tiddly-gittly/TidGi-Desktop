@@ -25,6 +25,8 @@ export enum WindowNames {
   tidgiMiniWindow = 'tidgiMiniWindow',
   notifications = 'notifications',
   preferences = 'preferences',
+  /** Independent live prompt preview and editor workspace. */
+  promptPreview = 'promptPreview',
   /**
    * Second wiki window in a popup window.
    */
@@ -89,6 +91,10 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     width: 960,
     height: 800,
   },
+  [WindowNames.promptPreview]: {
+    width: 1400,
+    height: 900,
+  },
   [WindowNames.notifications]: {
     width: 400,
     height: 585,
@@ -101,6 +107,11 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
 
 export interface IPreferenceWindowMeta {
   preferenceGotoTab?: PreferenceSections;
+  preferenceFocus?: {
+    providerId: string;
+    modelId?: string;
+    field: 'apiKey' | 'baseUrl' | 'model' | 'apiMode';
+  };
   preventClosingWindow?: boolean;
 }
 
@@ -120,6 +131,12 @@ export interface WindowMeta {
   [WindowNames.tidgiMiniWindow]: undefined;
   [WindowNames.notifications]: undefined;
   [WindowNames.preferences]: IPreferenceWindowMeta;
+  [WindowNames.promptPreview]: {
+    agentId: string;
+    agentDefinitionId: string;
+    inputText?: string;
+    initialBaseMode?: 'preview' | 'edit';
+  };
   [WindowNames.spellcheck]: undefined;
   [WindowNames.secondary]: undefined;
   [WindowNames.view]: IBrowserViewMetaData;

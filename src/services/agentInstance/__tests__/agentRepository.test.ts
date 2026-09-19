@@ -1,18 +1,23 @@
 import { Repository } from 'typeorm';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AgentDefinition, IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { AgentInstanceEntity } from '@services/database/schema/agent';
-import { createAgent } from '../agentRepository';
+import type { AgentDefinition } from 'memeloop';
+import { createAgent, getAgentMetadata } from '../agentRepository';
 
 describe('agentRepository.createAgent', () => {
   const mockDefinition: AgentDefinition = {
     id: 'agent-def-1',
     name: 'Test Agent',
+    description: '',
+    systemPrompt: '',
+    tools: [],
+    version: '1',
     avatarUrl: 'avatar.png',
-    aiApiConfig: { default: { provider: 'openai', model: 'gpt-5.3-codex' } },
-    agentFrameworkID: 'basicPromptConcatHandler',
-    agentFrameworkConfig: {},
+    modelConfig: { providerId: 'openai', modelId: 'gpt-5.3-codex' },
+    agentFrameworkID: 'agent-tool-loop',
+    agentFrameworkConfig: { prompts: [], plugins: [] },
   };
 
   const createMockRepo = () => {
@@ -44,6 +49,8 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).toBe(true);
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: false }));
+    expect(created.modelConfig).toEqual(mockDefinition.modelConfig);
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
   });
@@ -60,6 +67,7 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).toBe(true);
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: true }));
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
   });
@@ -75,7 +83,29 @@ describe('agentRepository.createAgent', () => {
     );
 
     expect(created.volatile).not.toBe(true);
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ preview: false }));
     expect(createMock).toHaveBeenCalledTimes(1);
     expect(saveMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits a persisted null model config so Core can use the definition or global selection', async () => {
+    const entity = {
+      id: 'agent-instance-1',
+      agentDefId: mockDefinition.id,
+      status: { state: 'idle' },
+      created: new Date(),
+      modelConfig: null,
+      closed: false,
+      volatile: false,
+      preview: false,
+    } as unknown as AgentInstanceEntity;
+    const repo = {
+      findOne: vi.fn(async () => entity),
+    } as unknown as Repository<AgentInstanceEntity>;
+
+    const metadata = await getAgentMetadata(repo, entity.id);
+
+    expect(metadata).toBeDefined();
+    expect(metadata).not.toHaveProperty('modelConfig');
   });
 });

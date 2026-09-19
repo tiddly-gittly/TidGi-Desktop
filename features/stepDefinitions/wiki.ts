@@ -4,8 +4,10 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { execSync } from 'node:child_process';
 import path from 'path';
+import { SupportedStorageServices } from '../../src/services/types';
 import { WindowNames } from '../../src/services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
+import { WorkspaceType } from '../../src/services/workspaces/workspaceType';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getLogPath, getSettingsPath, getWikiTestRootPath, getWikiTestWikiPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
@@ -1398,6 +1400,7 @@ async function setupSubWiki(
   options: {
     includeTagTree?: boolean;
     fileSystemPathFilter?: string;
+    sparseLocalCache?: boolean;
   },
   tiddlers: Record<string, string>[],
 ) {
@@ -1425,10 +1428,6 @@ ${tiddler.content}
 `;
     await fs.writeFile(tiddlerFilePath, tiddlerFileContent, 'utf-8');
   }
-
-  // 2.5. Create tidgi.config.json for sub-wiki (so step can find workspace by name)
-  const subWikiTidgiConfigPath = path.join(subWikiPath, 'tidgi.config.json');
-  await fs.writeJson(subWikiTidgiConfigPath, { name: subWikiName }, { spaces: 2 });
 
   // 3. Create main wiki folder structure (if not exists)
   const mainWikiPath = wikiTestWikiPath;
@@ -1464,11 +1463,17 @@ ${tiddler.content}
 
   if (!existingMainWiki) {
     settings.workspaces[mainWikiId] = {
+      workspaceType: WorkspaceType.folder,
+      useTidgiConfigSync: true,
+      disableAudio: false,
+      disableNotifications: false,
+      storageService: SupportedStorageServices.local,
+      gitRepoPath: null,
+      gitManagedRelativePath: null,
       id: mainWikiId,
       name: 'wiki',
       wikiFolderLocation: mainWikiPath,
       isSubWiki: false,
-      storageService: 'local',
       backupOnInterval: true,
       excludedPlugins: [],
       enableHTTPAPI: false,
@@ -1481,10 +1486,9 @@ ${tiddler.content}
       port: 5212,
       readOnlyMode: false,
       tokenAuth: false,
-      tagName: null,
-      mainWikiToLink: null,
       mainWikiID: null,
       enableFileSystemWatch: true,
+      ignoreSymlinks: true,
       lastNodeJSArgv: [],
       homeUrl: `tidgi://${mainWikiId}`,
       gitUrl: null,
@@ -1496,18 +1500,27 @@ ${tiddler.content}
       syncOnInterval: false,
       syncOnStartup: true,
       transparentBackground: false,
-    } as unknown as IWorkspace;
+    } satisfies IWikiWorkspace;
+    await fs.writeJson(path.join(mainWikiPath, 'tidgi.config.json'), {
+      name: 'wiki',
+      enableFileSystemWatch: true,
+    }, { spaces: 2 });
   }
 
   // Create sub-wiki workspace with optional settings
   settings.workspaces[subWikiId] = {
+    workspaceType: WorkspaceType.folder,
+    useTidgiConfigSync: true,
+    disableAudio: false,
+    disableNotifications: false,
+    storageService: SupportedStorageServices.local,
+    gitRepoPath: null,
+    gitManagedRelativePath: null,
     id: subWikiId,
     name: subWikiName,
     wikiFolderLocation: subWikiPath,
     isSubWiki: true,
-    mainWikiToLink: mainWikiPath,
     mainWikiID: mainWikiIdToUse,
-    storageService: 'local',
     backupOnInterval: true,
     excludedPlugins: [],
     enableHTTPAPI: false,
@@ -1521,6 +1534,7 @@ ${tiddler.content}
     readOnlyMode: false,
     tokenAuth: false,
     enableFileSystemWatch: true,
+    ignoreSymlinks: true,
     lastNodeJSArgv: [],
     homeUrl: `tidgi://${subWikiId}`,
     gitUrl: null,
@@ -1532,7 +1546,30 @@ ${tiddler.content}
     syncOnInterval: false,
     syncOnStartup: true,
     transparentBackground: false,
-  } as unknown as IWorkspace;
+  } satisfies IWikiWorkspace;
+
+  // Startup hydrates portable fields from this file. Persist the same
+  // canonical relationship/routing configuration that a real user creates.
+  await fs.writeJson(path.join(subWikiPath, 'tidgi.config.json'), {
+    name: subWikiName,
+    isSubWiki: true,
+    mainWikiID: mainWikiIdToUse,
+    tagNames: [tagName],
+    includeTagTree: options.includeTagTree ?? false,
+    fileSystemPathFilterEnable: Boolean(options.fileSystemPathFilter),
+    fileSystemPathFilter: options.fileSystemPathFilter ?? null,
+    enableFileSystemWatch: true,
+  }, { spaces: 2 });
+
+  if (options.sparseLocalCache) {
+    // Reproduce the split persistence shape from real installations: local
+    // identity/routing is available immediately, while portable presentation
+    // fields arrive from tidgi.config.json after startup.
+    const sparseWorkspace = settings.workspaces[subWikiId] as unknown as Record<string, unknown>;
+    delete sparseWorkspace.name;
+    delete sparseWorkspace.tagNames;
+    delete sparseWorkspace.workspaceType;
+  }
 
   await fs.writeJson(settingsPath, settings, { spaces: 2 });
 }
@@ -1548,6 +1585,16 @@ Given('I setup a sub-wiki {string} with tag {string} and tiddlers:', async funct
 ) {
   const rows = dataTable.hashes();
   await setupSubWiki(this.scenarioSlug, subWikiName, tagName, {}, rows);
+});
+
+Given('I setup a sparse-cache sub-wiki {string} with tag {string} and tiddlers:', async function(
+  this: ApplicationWorld,
+  subWikiName: string,
+  tagName: string,
+  dataTable: DataTable,
+) {
+  const rows = dataTable.hashes();
+  await setupSubWiki(this.scenarioSlug, subWikiName, tagName, { sparseLocalCache: true }, rows);
 });
 
 /**

@@ -7,8 +7,9 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { AgentFrameworkConfig } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const EditAgentDefinitionParameterSchema = z.object({
   toolListPosition: z.object({
@@ -24,11 +25,11 @@ const EditHeartbeatToolSchema = z.object({
     title: 'Enabled',
     description: 'Enable or disable the heartbeat schedule.',
   }),
-  intervalSeconds: z.number().optional().meta({
+  intervalSeconds: z.number().int().min(60).meta({
     title: 'Interval (seconds)',
     description: 'How often to fire the heartbeat. Minimum 60.',
   }),
-  message: z.string().optional().meta({
+  message: z.string().min(1).meta({
     title: 'Message',
     description: 'Message sent to the agent on each heartbeat.',
   }),
@@ -45,7 +46,7 @@ const EditHeartbeatToolSchema = z.object({
   description: "Modify this agent's heartbeat (periodic self-wake) configuration. Requires user approval.",
   examples: [
     { enabled: true, intervalSeconds: 300, message: 'Periodic check-in. Review tasks and take pending actions.' },
-    { enabled: false },
+    { enabled: false, intervalSeconds: 300, message: 'Periodic check-in. Review tasks and take pending actions.' },
   ],
 });
 
@@ -63,7 +64,7 @@ const EditAgentPromptToolSchema = z.object({
   description: "Modify a field in this agent's framework configuration (e.g. system prompt customization). Requires user approval.",
 });
 
-const editAgentDefinitionDefinition = registerToolDefinition({
+export const editAgentDefinitionDefinition = defineDesktopTool({
   toolId: 'editAgentDefinition',
   displayName: 'Edit Agent Definition',
   description: 'Modify own heartbeat schedule and framework configuration',
@@ -81,15 +82,16 @@ const editAgentDefinitionDefinition = registerToolDefinition({
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
     if (!toolCall) return;
+    if (!toolCall.found) return;
     const agentId = agentFrameworkContext.agent.id;
 
     if (toolCall.toolId === 'edit-heartbeat') {
       await executeToolCall('edit-heartbeat', async (parameters) => {
         const agentInstanceService = container.get<import('../interface').IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-        await agentInstanceService.setBackgroundHeartbeat(agentId, {
+        await agentInstanceService.setAgentHeartbeat(agentId, {
           enabled: parameters.enabled,
-          intervalSeconds: Math.max(60, parameters.intervalSeconds ?? 300),
+          intervalSeconds: parameters.intervalSeconds,
           message: parameters.message,
           activeHoursStart: parameters.activeHoursStart,
           activeHoursEnd: parameters.activeHoursEnd,
@@ -98,7 +100,7 @@ const editAgentDefinitionDefinition = registerToolDefinition({
         return {
           success: true,
           data: parameters.enabled
-            ? `Heartbeat enabled — will fire every ${parameters.intervalSeconds ?? 300}s.`
+            ? `Heartbeat enabled — will fire every ${parameters.intervalSeconds}s.`
             : 'Heartbeat disabled.',
         };
       });
@@ -109,7 +111,7 @@ const editAgentDefinitionDefinition = registerToolDefinition({
       await executeToolCall('edit-agent-prompt-config', async (parameters) => {
         const agentInstanceService = container.get<import('../interface').IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
-        const agent = await agentInstanceService.getAgent(agentId);
+        const agent = await agentInstanceService.getAgentMetadata(agentId);
         if (!agent) throw new Error(`Agent not found: ${agentId}`);
 
         const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
@@ -117,8 +119,10 @@ const editAgentDefinitionDefinition = registerToolDefinition({
         const agentDefinition = await agentDefinitionService.getAgentDef(agent.agentDefId);
         if (!agentDefinition) throw new Error(`Agent definition not found: ${agent.agentDefId}`);
 
-        const updatedConfig = {
-          ...(agentDefinition.agentFrameworkConfig ?? {}),
+        const updatedConfig: AgentFrameworkConfig = {
+          prompts: agentDefinition.agentFrameworkConfig?.prompts ?? [],
+          plugins: agentDefinition.agentFrameworkConfig?.plugins ?? [],
+          response: agentDefinition.agentFrameworkConfig?.response,
           [parameters.field]: parameters.value,
         };
 
@@ -132,5 +136,3 @@ const editAgentDefinitionDefinition = registerToolDefinition({
     }
   },
 });
-
-export const editAgentDefinitionTool = editAgentDefinitionDefinition.tool;

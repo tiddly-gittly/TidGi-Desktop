@@ -10,7 +10,8 @@
   "compilerOptions": {
     "paths": {
       "@services/*": ["./src/services/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // @memeloop/react-ui resolved through workspace node_modules (file: dependency)
     },
     "skipLibCheck": true,
     /* Basic Options */

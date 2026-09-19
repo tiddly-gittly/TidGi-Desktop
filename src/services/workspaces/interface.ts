@@ -72,7 +72,6 @@ export const syncableConfigDefaultValues = {
   https: undefined as { enabled: boolean; tlsCert?: string; tlsKey?: string } | undefined,
   isSubWiki: false,
   mainWikiID: null as string | null,
-  mainWikiToLink: null as string | null,
   gitRepoPath: null as string | null,
   gitManagedRelativePath: null as string | null,
 } as const;
@@ -87,16 +86,15 @@ export const localConfigDefaultValues = {
   homeUrl: '',
   authToken: undefined as string | undefined,
   picturePath: null as string | null,
+  workspaceType: WorkspaceType.folder,
   pageType: null as PageType.wiki | null,
   port: 5212,
   useTidgiConfigSync: true,
 } as const;
 
 /**
- * Default values for IWikiWorkspace fields. These are used for:
- * 1. Initializing new workspaces
- * 2. Providing default values when fields are missing from persisted config
- * 3. Determining which fields need to be saved (only non-default values are persisted)
+ * Default values for IWikiWorkspace fields used when creating new workspaces
+ * and determining which fields need to be saved (only non-default values are persisted).
  */
 export const wikiWorkspaceDefaultValues = {
   ...localConfigDefaultValues,
@@ -147,6 +145,11 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
   disableNotifications: boolean;
   enableHTTPAPI: boolean;
   /**
+   * Skip symbolic links while processing watcher events. This defaults to true
+   * for safety, but existing workspaces may opt in to watching file symlinks.
+   */
+  ignoreSymlinks: boolean;
+  /**
    * List of plugins excluded on startup, for example `['$:/plugins/bimlas/kin-filter', '$:/plugins/dullroar/sitemap']`
    */
   excludedPlugins: string[];
@@ -190,10 +193,6 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    * ID of main wiki of the sub-wiki. Only useful when isSubWiki === true
    */
   mainWikiID: string | null;
-  /**
-   * Absolute path of main wiki of the sub-wiki. Only useful when isSubWiki === true , this is the wiki repo that this subwiki's folder soft links to
-   */
-  mainWikiToLink: string | null;
   /**
    * For wiki workspaces, pageType is restricted to wiki type or null for regular wiki workspaces
    */
@@ -270,7 +269,7 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
   /**
    * Content kind: folder-based wiki (default) or single-file HTML wiki.
    */
-  workspaceType?: WorkspaceType;
+  workspaceType: WorkspaceType;
   /**
    * Absolute path to the managed HTML file when workspaceType is html.
    */
@@ -286,15 +285,9 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
    */
   enableFileSystemWatch: boolean;
   /**
-   * Symlinks are similar to shortcuts. The old version used them to implement sub-wiki functionality,
-   * but the new version no longer needs them.You can manually delete legacy symlinks.
-   * When enabled, the file system watcher will skip symlinks to avoid redundant file sync operations.
-   */
-  ignoreSymlinks: boolean;
-  /**
    * Git repository root path relative to `wikiFolderLocation`, used when the wiki folder lives inside
    * an ancestor Git repo (to avoid creating a nested repo). Uses OS-style relative segments (e.g. "..", "../..").
-   * null/undefined means the wiki folder itself is the Git repo (default, backward-compatible behavior).
+   * null/undefined means the wiki folder itself is the Git repo (the default behavior).
    * Synced via tidgi.config.json so it follows the wiki across devices.
    */
   gitRepoPath: string | null;
@@ -377,9 +370,9 @@ export type INewWikiWorkspaceConfig =
     | 'hibernateWhenUnused'
     | 'userName'
     | 'order'
-    | 'ignoreSymlinks'
     | 'backupOnInterval'
     | 'enableHTTPAPI'
+    | 'ignoreSymlinks'
     | 'excludedPlugins'
     | 'includeTagTree'
     | 'fileSystemPathFilterEnable'
@@ -460,6 +453,10 @@ export interface IWorkspaceService {
    * Called from main.ts after databaseService.initializeForApp()
    */
   initializeMenu(): Promise<void>;
+  /** Start deferred portable workspace config hydration after core startup. */
+  startPortableConfigHydration(): void;
+  /** Cancel best-effort portable workspace config reads during shutdown. */
+  cancelPortableConfigHydration(): void;
   /**
    * Open a tiddler in the workspace, open workspace's tag by default.
    */
@@ -495,6 +492,7 @@ export interface IWorkspaceService {
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
   properties: {
+    cancelPortableConfigHydration: ProxyPropertyType.Function,
     clearActiveWorkspace: ProxyPropertyType.Function,
     countWorkspaces: ProxyPropertyType.Function,
     create: ProxyPropertyType.Function,
@@ -539,13 +537,3 @@ export const WorkspaceServiceIPCDescriptor = {
     groups$: ProxyPropertyType.Value$,
   },
 };
-
-/**
- * Apply default values to a wiki workspace, using the centralized defaults from wikiWorkspaceDefaultValues.
- * This ensures that missing fields get their default values when loading from persisted config.
- * @param workspace The workspace object that may have missing fields
- * @returns A new workspace object with defaults applied to missing fields
- */
-export function applyWorkspaceDefaults(workspace: IWikiWorkspace): IWikiWorkspace {
-  return { ...wikiWorkspaceDefaultValues, ...workspace };
-}

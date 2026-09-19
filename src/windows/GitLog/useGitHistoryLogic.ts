@@ -1,6 +1,8 @@
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { IWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import type { GitLogEntry, ISearchParameters } from './types';
 
 interface ISnackbarState {
@@ -72,7 +74,7 @@ interface IUseSyncHandlerReturn {
 }
 
 interface IUseSyncHandlerProps {
-  workspaceInfo: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  workspaceInfo: IWorkspace | null;
   isSyncing: boolean;
   showSnackbar: (message: string, severity?: 'success' | 'error' | 'info') => void;
 }
@@ -81,11 +83,10 @@ export function useSyncHandler({ workspaceInfo, isSyncing, showSnackbar }: IUseS
   const { t } = useTranslation();
 
   const handleSyncClick = useCallback(async () => {
-    if (isSyncing || !workspaceInfo || !('wikiFolderLocation' in workspaceInfo)) return;
+    if (isSyncing || workspaceInfo === null || !isWikiWorkspace(workspaceInfo)) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      await (window.service as any).sync.syncWikiIfNeeded(workspaceInfo); // eslint-disable-line @typescript-eslint/no-explicit-any
+      await window.service.sync.syncWikiIfNeeded(workspaceInfo);
       showSnackbar(t('Sync.Success'), 'success');
     } catch (error) {
       console.error('Failed to sync:', error);

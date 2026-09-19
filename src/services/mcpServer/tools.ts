@@ -4,6 +4,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { BrowserWindow, type WebContents } from 'electron';
 import { z } from 'zod';
 import type { McpToolDefinition, ToolInput } from './types';
 
@@ -24,8 +25,40 @@ const APP_WINDOW_NAMES = Object.values(WindowNames);
 const DEFAULT_SNAPSHOT_MAX_BYTES = 48 * 1024;
 const DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT = 50;
 const MAX_SNAPSHOT_SUMMARY_CHILDREN = 25;
+const RENDERER_COMMAND_TIMEOUT_MS = 10_000;
+const UI_EVALUATE_TIMEOUT_MS = 15_000;
+const SNAPSHOT_MAX_TEXT_LENGTH = 16 * 1024;
+const SNAPSHOT_MAX_INTERACTIVE_ELEMENTS = 200;
+const SNAPSHOT_MAX_CANDIDATE_ELEMENTS = SNAPSHOT_MAX_INTERACTIVE_ELEMENTS * 5;
+const SNAPSHOT_CACHE_TTL_MS = 15_000;
 
 type SnapshotPathSegment = string | number;
+
+interface RendererCommandState {
+  name: string;
+}
+
+interface SnapshotCacheEntry {
+  value: unknown;
+  expiresAt: number;
+  invalidationListener: () => void;
+}
+
+/**
+ * A command which timed out may still be queued in Chromium. Sending another
+ * renderer-evaluation command in that state can make the target progressively
+ * less responsive. Keep the MCP HTTP server responsive and fail subsequent
+ * renderer commands fast until Chromium settles the original promise.
+ */
+const rendererCommandStates = new WeakMap<WebContents, RendererCommandState>();
+const snapshotCache = new WeakMap<WebContents, SnapshotCacheEntry>();
+
+class RendererCommandTimeoutError extends Error {
+  constructor(name: string, ms: number) {
+    super(`${name} timed out after ${ms}ms`);
+    this.name = 'RendererCommandTimeoutError';
+  }
+}
 
 interface SnapshotSummaryChild {
   key: string;
@@ -302,7 +335,7 @@ export const TOOLS: McpToolDefinition[] = [
   {
     name: 'ui_snapshot',
     description:
-      'Get a DOM/text snapshot: page title, URL, visible text, interactive elements with center coordinates, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. For oversized results, the tool returns a structural summary and supports drilling into a path or array slice.',
+      'Get a bounded DOM/text snapshot: page title, URL, text, interactive controls, and links. workspaceId targets a wiki webview; use "main-window" for the main React UI or "preferences-window" for Settings. For oversized results, the tool returns a structural summary and supports drilling into a path or array slice.',
     inputSchema: {
       workspaceId: z.string().optional().describe('Workspace ID, or "main-window" / "preferences-window" for app windows. Omit to use active workspace.'),
       path: z.string().optional().describe('Optional dot path into the snapshot result, for example "nodes" or "nodes[0].childIds".'),
@@ -368,15 +401,252 @@ export const TOOLS: McpToolDefinition[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => {
-        reject(new Error(`${label} timed out after ${ms}ms`));
-      }, ms)
-    ),
-  ]);
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new RendererCommandTimeoutError(label, ms));
+    }, ms);
+
+    void promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    );
+  });
 }
+
+async function runRendererCommand<T>(
+  webContents: WebContents,
+  name: string,
+  timeoutMs: number,
+  command: () => Promise<T>,
+): Promise<T> {
+  const activeCommand = rendererCommandStates.get(webContents);
+  if (activeCommand !== undefined) {
+    throw new Error(
+      `${name} is unavailable because ${activeCommand.name} is still running for this window. ` +
+        'Reload or close the window before trying another renderer-evaluation command.',
+    );
+  }
+
+  const commandState: RendererCommandState = { name };
+  rendererCommandStates.set(webContents, commandState);
+  const execution = Promise.resolve().then(command);
+  void execution.then(
+    () => {
+      if (rendererCommandStates.get(webContents) === commandState) {
+        rendererCommandStates.delete(webContents);
+      }
+    },
+    () => {
+      if (rendererCommandStates.get(webContents) === commandState) {
+        rendererCommandStates.delete(webContents);
+      }
+    },
+  );
+
+  try {
+    return await withTimeout(execution, timeoutMs, name);
+  } catch (error) {
+    // A regular failure means Chromium has completed the command. A timeout is
+    // different: its promise can remain pending after the MCP response has
+    // returned, so retain the state to prevent an unbounded queue of commands.
+    if (!(error instanceof RendererCommandTimeoutError) && rendererCommandStates.get(webContents) === commandState) {
+      rendererCommandStates.delete(webContents);
+    }
+    throw error;
+  }
+}
+
+function removeSnapshotInvalidationListener(webContents: WebContents, listener: () => void): void {
+  webContents.removeListener('did-start-loading', listener);
+  webContents.removeListener('did-navigate-in-page', listener);
+  webContents.removeListener('destroyed', listener);
+  webContents.removeListener('render-process-gone', listener);
+}
+
+function addSnapshotInvalidationListener(webContents: WebContents, listener: () => void): void {
+  webContents.once('did-start-loading', listener);
+  webContents.once('did-navigate-in-page', listener);
+  webContents.once('destroyed', listener);
+  webContents.once('render-process-gone', listener);
+}
+
+function invalidateSnapshotCache(webContents: WebContents): void {
+  const entry = snapshotCache.get(webContents);
+  if (entry === undefined) {
+    return;
+  }
+
+  snapshotCache.delete(webContents);
+  removeSnapshotInvalidationListener(webContents, entry.invalidationListener);
+}
+
+function getCachedSnapshot(webContents: WebContents): SnapshotCacheEntry | undefined {
+  const entry = snapshotCache.get(webContents);
+  if (entry === undefined) {
+    return undefined;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    invalidateSnapshotCache(webContents);
+    return undefined;
+  }
+
+  return entry;
+}
+
+function cacheSnapshot(webContents: WebContents, value: unknown): void {
+  invalidateSnapshotCache(webContents);
+  const invalidationListener = () => {
+    invalidateSnapshotCache(webContents);
+  };
+  const entry: SnapshotCacheEntry = {
+    value,
+    expiresAt: Date.now() + SNAPSHOT_CACHE_TTL_MS,
+    invalidationListener,
+  };
+  snapshotCache.set(webContents, entry);
+  addSnapshotInvalidationListener(webContents, invalidationListener);
+}
+
+function getCachedSnapshotViewport(webContents: WebContents): { width: number; height: number } | undefined {
+  const cachedSnapshot = getCachedSnapshot(webContents)?.value;
+  if (cachedSnapshot === null || typeof cachedSnapshot !== 'object') {
+    return undefined;
+  }
+
+  const viewport = (cachedSnapshot as Record<string, unknown>).viewport;
+  if (viewport === null || typeof viewport !== 'object') {
+    return undefined;
+  }
+
+  const { width, height } = viewport as Record<string, unknown>;
+  if (typeof width !== 'number' || typeof height !== 'number' || !Number.isFinite(width) || !Number.isFinite(height)) {
+    return undefined;
+  }
+
+  return { width, height };
+}
+
+/**
+ * Snapshot in the renderer instead of through Chromium's full accessibility
+ * tree. On macOS, Accessibility.getFullAXTree can enter a native wait that is
+ * not interruptible by Promise.race, blocking follow-up MCP traffic even after
+ * our JavaScript timeout fires. This bounded DOM read has no DevTools attach /
+ * detach lifecycle and keeps its result small before it crosses process IPC.
+ */
+const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
+  const maxTextLength = ${SNAPSHOT_MAX_TEXT_LENGTH};
+  const maxInteractiveElements = ${SNAPSHOT_MAX_INTERACTIVE_ELEMENTS};
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const normalize = (value) => String(value ?? '').replace(/\s+/g, ' ').trim();
+  const root = document.body || document.documentElement;
+  const textParts = [];
+  let textLength = 0;
+  let textTruncated = false;
+
+  if (root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const parent = node.parentElement;
+      if (!parent || /^(SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName)) continue;
+      const text = normalize(node.nodeValue);
+      if (!text) continue;
+      const remaining = maxTextLength - textLength;
+      if (remaining <= 0) {
+        textTruncated = true;
+        break;
+      }
+      const part = text.slice(0, remaining);
+      textParts.push(part);
+      textLength += part.length;
+      if (part.length < text.length) {
+        textTruncated = true;
+        break;
+      }
+    }
+  }
+
+  const interactive = [];
+  const selector = 'a,button,input,select,textarea,[role="button"],[role="link"],[role="menuitem"],[role="tab"],[contenteditable="true"]';
+  const elements = document.querySelectorAll(selector);
+  const maxCandidateElements = ${SNAPSHOT_MAX_CANDIDATE_ELEMENTS};
+  let candidateCount = 0;
+  for (let index = 0; index < elements.length && candidateCount < maxCandidateElements && interactive.length < maxInteractiveElements; index += 1) {
+    const element = elements[index];
+    candidateCount += 1;
+    const rect = element.getBoundingClientRect();
+    const intersectsViewport = viewportWidth > 0 && viewportHeight > 0
+      && rect.bottom > 0 && rect.right > 0 && rect.top < viewportHeight && rect.left < viewportWidth;
+    if (!intersectsViewport) continue;
+    const style = window.getComputedStyle(element);
+    const visible = rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    if (!visible) continue;
+    const x = Math.max(0, Math.min(viewportWidth - 1, Math.round(rect.left + rect.width / 2)));
+    const y = Math.max(0, Math.min(viewportHeight - 1, Math.round(rect.top + rect.height / 2)));
+    const hit = document.elementFromPoint(x, y);
+    if (!hit || (!element.contains(hit) && !hit.contains(element))) continue;
+    const tag = element.tagName.toLowerCase();
+    const type = tag === 'input' ? String(element.getAttribute('type') || 'text').toLowerCase() : undefined;
+    const isPassword = type === 'password';
+    interactive.push({
+      tag,
+      type,
+      role: element.getAttribute('role') || undefined,
+      name: normalize(element.getAttribute('aria-label') || element.getAttribute('title') || element.getAttribute('name')) || undefined,
+      text: isPassword ? '[redacted]' : (normalize(element.textContent) || undefined),
+      id: element.id || undefined,
+      href: tag === 'a' ? element.getAttribute('href') || undefined : undefined,
+      disabled: 'disabled' in element ? Boolean(element.disabled) : undefined,
+      x,
+      y,
+    });
+  }
+
+  // Keep the top-level nodes contract used by the former CDP result. The
+  // compact nodes are intentionally not a complete AX tree, but existing MCP
+  // callers can continue to drill into nodes while newer callers can use
+  // the clearer text/interactive fields below.
+  const rootNode = {
+    nodeId: '0',
+    ignored: false,
+    role: { type: 'role', value: 'RootWebArea' },
+    name: { type: 'computedString', value: document.title },
+    properties: [
+      { name: 'url', value: { type: 'string', value: window.location.href } },
+      { name: 'text', value: { type: 'string', value: textParts.join(' ') } },
+    ],
+    childIds: interactive.map((_, index) => String(index + 1)),
+  };
+  const nodes = [rootNode, ...interactive.map((control, index) => ({
+    nodeId: String(index + 1),
+    ignored: false,
+    role: { type: 'role', value: control.role || (control.tag === 'a' ? 'link' : control.tag === 'input' ? 'textbox' : 'button') },
+    name: { type: 'computedString', value: control.name || control.text || '' },
+    properties: [
+      { name: 'tag', value: { type: 'string', value: control.tag } },
+      ...(control.disabled === undefined ? [] : [{ name: 'disabled', value: { type: 'boolean', value: control.disabled } }]),
+    ],
+  }))];
+
+  return {
+    nodes,
+    title: document.title,
+    url: window.location.href,
+    viewport: { width: viewportWidth, height: viewportHeight },
+    text: textParts.join(' '),
+    textTruncated,
+    interactive,
+    interactiveTruncated: elements.length > candidateCount || interactive.length >= maxInteractiveElements,
+  };
+})()`;
 
 function assertWikiNavigateTarget(workspaceId: string | undefined): void {
   if (!workspaceId) {
@@ -390,7 +660,7 @@ function assertWikiNavigateTarget(workspaceId: string | undefined): void {
   }
 }
 
-async function getWebContents(workspaceId: string | undefined) {
+async function getWebContents(workspaceId: string | undefined, includeBrowserWindow = false) {
   // Special targets: app windows like main or preferences.
   if (workspaceId && WINDOW_TARGETS.has(workspaceId)) {
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
@@ -399,7 +669,7 @@ async function getWebContents(workspaceId: string | undefined) {
     if (!win) throw new Error(`${workspaceId} not found.`);
     const { webContents } = win;
     if (webContents.isDestroyed()) throw new Error(`${workspaceId} webContents is destroyed.`);
-    return { webContents, wsId: workspaceId };
+    return { webContents, wsId: workspaceId, browserWindow: win };
   }
 
   // Wiki webview target
@@ -416,7 +686,76 @@ async function getWebContents(workspaceId: string | undefined) {
   if (!view) throw new Error(`No view found for workspace ${wsId}. It may not be loaded yet.`);
   const { webContents } = view;
   if (webContents.isDestroyed()) throw new Error(`WebContents for workspace ${wsId} is destroyed.`);
-  return { webContents, wsId };
+  return {
+    webContents,
+    wsId,
+    browserWindow: includeBrowserWindow ? BrowserWindow.fromWebContents(webContents) ?? undefined : undefined,
+  };
+}
+
+/**
+ * Electron's sendInputEvent only reaches a BrowserWindow when that window is
+ * focused. MCP requests can arrive while another window owns focus, so every
+ * input operation must establish focus itself instead of relying on the last
+ * user interaction. Focusing the WebContentsView as well is important for
+ * wiki workspaces hosted inside the main window.
+ */
+function focusInputTarget(target: Awaited<ReturnType<typeof getWebContents>>): void {
+  const { browserWindow, webContents } = target;
+  if (browserWindow !== undefined && !browserWindow.isDestroyed()) {
+    browserWindow.focus();
+  }
+  webContents.focus();
+}
+
+/** Let renderer input handlers and React state updates run before returning. */
+function waitForInputDispatch(): Promise<void> {
+  return new Promise(resolve => setImmediate(resolve));
+}
+
+const KEY_ALIASES: Record<string, string> = {
+  esc: 'Escape',
+  escape: 'Escape',
+  enter: 'Enter',
+  return: 'Enter',
+  tab: 'Tab',
+  space: 'Space',
+  spacebar: 'Space',
+  backspace: 'Backspace',
+  delete: 'Delete',
+  del: 'Delete',
+  insert: 'Insert',
+  home: 'Home',
+  end: 'End',
+  pageup: 'PageUp',
+  pagedown: 'PageDown',
+  left: 'Left',
+  right: 'Right',
+  up: 'Up',
+  down: 'Down',
+};
+
+/**
+ * Electron expects accelerator-style key names. Keep the public MCP spelling
+ * forgiving while ensuring printable keys and common aliases are dispatched
+ * consistently across platforms.
+ */
+function normalizeInputKey(key: string): string {
+  const trimmed = key.trim();
+  const aliasKey = trimmed.toLowerCase();
+  const alias = Object.prototype.hasOwnProperty.call(KEY_ALIASES, aliasKey)
+    ? KEY_ALIASES[aliasKey]
+    : undefined;
+  if (alias !== undefined) {
+    return alias;
+  }
+  if (trimmed.length === 1 && /[a-z]/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  if (/^f\d{1,2}$/i.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  return trimmed;
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -471,22 +810,25 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         maxBytes?: number;
       };
       const { webContents } = await getWebContents(workspaceId);
-      if (!webContents.debugger.isAttached()) webContents.debugger.attach('1.3');
-      try {
-        const result = (await withTimeout(
-          webContents.debugger.sendCommand('Accessibility.getFullAXTree', {}),
-          10_000,
+      const cachedSnapshot = getCachedSnapshot(webContents);
+      let result: unknown;
+      if (cachedSnapshot === undefined) {
+        result = await runRendererCommand<unknown>(
+          webContents,
           'ui_snapshot',
-        )) as unknown;
-        const selected = selectSnapshotValue(result, { path, sliceStart, sliceCount });
-        if (getSerializedBytes(selected.value) <= maxBytes) {
-          return selected.value;
-        }
-
-        return summarizeSnapshotValue(selected.value, selected.pathSegments, maxBytes, selected.arraySlice);
-      } finally {
-        if (webContents.debugger.isAttached()) webContents.debugger.detach();
+          RENDERER_COMMAND_TIMEOUT_MS,
+          async (): Promise<unknown> => webContents.executeJavaScript(SNAPSHOT_RENDERER_SCRIPT, true),
+        );
+        cacheSnapshot(webContents, result);
+      } else {
+        result = cachedSnapshot.value;
       }
+      const selected = selectSnapshotValue(result, { path, sliceStart, sliceCount });
+      if (getSerializedBytes(selected.value) <= maxBytes) {
+        return selected.value;
+      }
+
+      return summarizeSnapshotValue(selected.value, selected.pathSegments, maxBytes, selected.arraySlice);
     }
 
     case 'ui_screenshot': {
@@ -504,26 +846,47 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         button?: 'left' | 'right' | 'middle';
         clickCount?: number;
       };
-      const { webContents } = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId, true);
+      const { webContents } = target;
+      const cachedViewport = getCachedSnapshotViewport(webContents);
+      if (cachedViewport !== undefined && (x < 0 || y < 0 || x >= cachedViewport.width || y >= cachedViewport.height)) {
+        throw new Error(
+          `ui_click coordinates (${x}, ${y}) are outside the current viewport ` +
+            `(${cachedViewport.width} × ${cachedViewport.height}). Take a new ui_snapshot before clicking.`,
+        );
+      }
+      invalidateSnapshotCache(webContents);
+      focusInputTarget(target);
+      // Move first so Chromium updates its hit-test/hover target before MUI's
+      // ButtonBase receives the press. This also mirrors a real pointer click.
+      webContents.sendInputEvent({ type: 'mouseMove', x, y });
       for (let index = 0; index < clickCount; index++) {
         webContents.sendInputEvent({ type: 'mouseDown', x, y, button, clickCount });
         webContents.sendInputEvent({ type: 'mouseUp', x, y, button, clickCount });
       }
+      await waitForInputDispatch();
       return { success: true, x, y };
     }
 
     case 'ui_type': {
       const { workspaceId, text } = input as { workspaceId?: string; text: string };
-      const { webContents } = await getWebContents(workspaceId);
+      const target = await getWebContents(workspaceId, true);
+      const { webContents } = target;
+      invalidateSnapshotCache(webContents);
+      focusInputTarget(target);
       await webContents.insertText(text);
+      await waitForInputDispatch();
       return { success: true, length: text.length };
     }
 
     case 'ui_key': {
       const { workspaceId, key } = input as { workspaceId?: string; key: string };
-      const { webContents } = await getWebContents(workspaceId);
-      const parts = key.split('+');
-      const mainKey = parts.at(-1) ?? key;
+      const target = await getWebContents(workspaceId, true);
+      const { webContents } = target;
+      invalidateSnapshotCache(webContents);
+      focusInputTarget(target);
+      const parts = key.split('+').map(part => part.trim()).filter(Boolean);
+      const mainKey = normalizeInputKey(parts.at(-1) ?? key);
       const modifierMap: Record<string, 'shift' | 'control' | 'alt' | 'meta'> = {
         shift: 'shift',
         ctrl: 'control',
@@ -540,6 +903,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
         .filter((m): m is 'shift' | 'control' | 'alt' | 'meta' => m !== undefined);
       webContents.sendInputEvent({ type: 'keyDown', keyCode: mainKey, modifiers });
       webContents.sendInputEvent({ type: 'keyUp', keyCode: mainKey, modifiers });
+      await waitForInputDispatch();
       return { success: true, key };
     }
 
@@ -547,6 +911,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
       const { workspaceId, url } = input as { workspaceId?: string; url: string };
       assertWikiNavigateTarget(workspaceId);
       const { webContents } = await getWebContents(workspaceId);
+      invalidateSnapshotCache(webContents);
       await withTimeout(webContents.loadURL(url), 15_000, 'ui_navigate');
       return { success: true, url };
     }
@@ -554,6 +919,7 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
     case 'ui_evaluate': {
       const { workspaceId, script } = input as { workspaceId?: string; script: string };
       const { webContents } = await getWebContents(workspaceId);
+      invalidateSnapshotCache(webContents);
       // Wrap in async IIFE so:
       // 1. SyntaxErrors are caught by the outer try/catch inside the string (they surface as rejects from executeJavaScript)
       // 2. Runtime errors are returned as structured { ok, error } so the AI can read them
@@ -567,10 +933,11 @@ export async function callTool(name: string, input: ToolInput): Promise<unknown>
 })()`;
       let raw: { ok: boolean; value?: unknown; error?: string; stack?: string };
       try {
-        const json = await withTimeout(
-          webContents.executeJavaScript(wrapped, true),
-          15_000,
+        const json = await runRendererCommand(
+          webContents,
           'ui_evaluate',
+          UI_EVALUATE_TIMEOUT_MS,
+          () => webContents.executeJavaScript(wrapped, true),
         ) as string;
         raw = JSON.parse(json) as typeof raw;
       } catch (execError) {

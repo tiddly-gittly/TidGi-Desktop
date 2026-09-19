@@ -304,8 +304,15 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
   }
 }
 
+function isCallableGitOperation(value: unknown): value is (...parameters: unknown[]) => unknown {
+  return typeof value === 'function';
+}
+
 async function runGitOperation(method: keyof typeof gitOperations, arguments_: unknown[]): Promise<unknown> {
-  const operation = gitOperations[method] as unknown as (...parameters: unknown[]) => unknown;
+  const operation = gitOperations[method];
+  if (!isCallableGitOperation(operation)) {
+    throw new Error(`Git operation '${method}' is not callable`);
+  }
   return await operation(...arguments_);
 }
 

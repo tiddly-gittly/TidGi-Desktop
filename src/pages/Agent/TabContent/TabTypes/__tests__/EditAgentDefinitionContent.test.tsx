@@ -5,6 +5,21 @@ import '@testing-library/jest-dom/vitest';
 import { type IEditAgentDefinitionTab, TabState, TabType } from '@/pages/Agent/types/tab';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from '@services/theme/defaultTheme';
+
+// This suite verifies the editor's state and service interactions. The live
+// chat, JSON-schema renderer, and cron editor have their own focused suites;
+// importing those full graphs here makes Vitest collect the entire agent
+// runtime and RJSF stack before the first test can start.
+vi.mock('@memeloop/react-ui/agent/prompts', () => ({
+  PromptConfigForm: () => <div data-testid='mock-prompt-config-form' />,
+}));
+vi.mock('../../../adapters', () => ({
+  DesktopAgentChatTab: () => <div data-testid='mock-desktop-agent-chat' />,
+}));
+vi.mock('../ScheduledWakeupEditor', () => ({
+  ScheduledWakeupEditor: () => <div data-testid='mock-scheduled-wakeup-editor' />,
+}));
+
 import { EditAgentDefinitionContent } from '../EditAgentDefinitionContent';
 
 // Mock backend services
@@ -15,10 +30,13 @@ const mockAddTab = vi.fn();
 const mockCloseTab = vi.fn();
 const mockCreateAgent = vi.fn();
 const mockDeleteAgent = vi.fn();
+const mockDiscardVolatileAgentPreview = vi.fn();
 const mockGetAgentDef = vi.fn();
 const mockUpdateAgentDef = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
 const mockLog = vi.fn();
+const mockListScheduledTasksForAgent = vi.fn();
+const mockGetCronPreviewDates = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -33,7 +51,10 @@ Object.defineProperty(window, 'service', {
     agentInstance: {
       createAgent: mockCreateAgent,
       deleteAgent: mockDeleteAgent,
+      discardVolatileAgentPreview: mockDiscardVolatileAgentPreview,
       getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
+      listScheduledTasksForAgent: mockListScheduledTasksForAgent,
+      getCronPreviewDates: mockGetCronPreviewDates,
     },
     agentDefinition: {
       getAgentDef: mockGetAgentDef,
@@ -81,6 +102,9 @@ describe('EditAgentDefinitionContent', () => {
       title: 'Test Chat',
     });
     mockUpdateAgentDef.mockResolvedValue(mockAgentDefinition);
+    mockListScheduledTasksForAgent.mockResolvedValue([]);
+    mockGetCronPreviewDates.mockResolvedValue([]);
+    mockDiscardVolatileAgentPreview.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -291,6 +315,20 @@ describe('EditAgentDefinitionContent', () => {
     await waitFor(() => {
       expect(mockCreateAgent).toHaveBeenCalledWith('test-agent-def-id', { preview: true });
     });
+  });
+
+  it('discards its volatile preview without deleting the permanent definition', async () => {
+    const { unmount } = await renderComponent();
+    await waitFor(() => {
+      expect(mockCreateAgent).toHaveBeenCalledWith('test-agent-def-id', { preview: true });
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(mockDiscardVolatileAgentPreview).toHaveBeenCalledWith({ agentId: 'test-agent-id' });
+    });
+    expect(mockDeleteAgent).not.toHaveBeenCalled();
   });
 
   it('should handle save action', async () => {

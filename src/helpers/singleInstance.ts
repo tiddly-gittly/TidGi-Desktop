@@ -10,7 +10,7 @@ import { app } from 'electron';
  * based on the app name/executable. The comment below is kept for historical context but is incorrect.
  *
  * In test mode, we skip the lock because:
- * 1. Each test scenario has its own isolated userData directory (--test-scenario=xxx)
+ * 1. Each packaged test scenario has its own isolated userData directory (TIDGI_TEST_SCENARIO=xxx)
  * 2. Tests may need to run in parallel or sequentially without blocking each other
  * 3. The lock would prevent valid test scenarios from running
  *
