@@ -445,9 +445,11 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       );
     });
 
-    it('keeps main-wiki routing in its configured tiddlers directory', async () => {
+    it('routes a simplified main wiki to its storage root without a legacy info tiddler', async () => {
       // @ts-expect-error - TiddlyWiki global
       global.$tw.boot.wikiPath = '/test/wiki';
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.boot.wikiTiddlersPath = '/test/wiki';
 
       const mainWiki = {
         id: 'test-workspace',
@@ -463,7 +465,6 @@ describe('FileSystemAdaptor - Routing Logic', () => {
       const wikiUsingRootAsTiddlers = {
         getTiddlerText: vi.fn((title) => {
           if (title === '$:/info/tidgi/workspaceID') return 'test-workspace';
-          if (title === '$:/info/tidgi/useWikiFolderAsTiddlersPath') return 'yes';
           return '';
         }),
         tiddlerExists: vi.fn(() => false),
@@ -486,7 +487,7 @@ describe('FileSystemAdaptor - Routing Logic', () => {
 
       expect(mockUtils.generateTiddlerFileInfo).toHaveBeenCalledWith(
         tiddler,
-        expect.objectContaining({ directory: RESOLVED_TIDDLERS_PATH }),
+        expect.objectContaining({ directory: path.resolve('/test/wiki') }),
       );
     });
   });

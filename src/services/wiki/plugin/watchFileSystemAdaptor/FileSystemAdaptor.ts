@@ -155,6 +155,15 @@ export class FileSystemAdaptor {
     return true;
   }
 
+  /**
+   * TiddlyWiki exposes the actual storage directory in `wikiTiddlersPath`,
+   * which is the workspace root for simplified wikis. Git notifications,
+   * however, are scoped to the wiki root in both storage layouts.
+   */
+  protected getWikiRootPath(): string {
+    return this.boot.wikiPath ? path.resolve(this.boot.wikiPath) : path.dirname(this.watchPathBase);
+  }
+
   getTiddlerInfo(tiddler: Tiddler): IFileInfo | undefined {
     const title = tiddler.fields.title;
     return this.boot.files[title];
@@ -423,7 +432,7 @@ export class FileSystemAdaptor {
 
       // Notify git log window to refresh (only if it's open). This covers the case where
       // enableFileSystemWatch is false and the watcher is not running.
-      const wikiFolderLocation = path.dirname(this.watchPathBase);
+      const wikiFolderLocation = this.getWikiRootPath();
       void notifyGitFileChangeBestEffort(git, wikiFolderLocation);
     } catch (error) {
       const errorObject = error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown error');

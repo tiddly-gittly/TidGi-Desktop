@@ -1,4 +1,4 @@
-import { workspace } from '@services/wiki/wikiWorker/services';
+import { git, workspace } from '@services/wiki/wikiWorker/services';
 import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
@@ -43,6 +43,7 @@ const mockUtils = {
 global.$tw = {
   node: true,
   boot: {
+    wikiPath: '/test/wiki',
     wikiTiddlersPath: '/test/wiki/tiddlers',
     files: {} as Record<string, IFileInfo>,
   },
@@ -58,6 +59,10 @@ describe('FileSystemAdaptor - Save Operations', () => {
 
     // @ts-expect-error - TiddlyWiki global
     global.$tw.boot.files = {};
+    // @ts-expect-error - TiddlyWiki global
+    global.$tw.boot.wikiPath = '/test/wiki';
+    // @ts-expect-error - TiddlyWiki global
+    global.$tw.boot.wikiTiddlersPath = '/test/wiki/tiddlers';
 
     mockWiki = {
       getTiddlerText: vi.fn(() => ''),
@@ -83,6 +88,34 @@ describe('FileSystemAdaptor - Save Operations', () => {
   });
 
   describe('saveTiddler - Callback Mode', () => {
+    it('notifies Git with the workspace root for simplified root storage', async () => {
+      // @ts-expect-error - TiddlyWiki global
+      global.$tw.boot.wikiTiddlersPath = '/test/wiki';
+      adaptor = new FileSystemAdaptor({
+        wiki: mockWiki,
+        // @ts-expect-error - TiddlyWiki global
+        boot: global.$tw.boot,
+      });
+      const fileInfo: IFileInfo = {
+        filepath: '/test/wiki/note.tid',
+        type: 'application/x-tiddler',
+        hasMetaFile: false,
+      };
+      mockUtils.generateTiddlerFileInfo.mockReturnValue(fileInfo);
+      mockUtils.saveTiddlerToFile.mockImplementation((_t, _f, callback) => {
+        callback(null, fileInfo);
+      });
+      mockUtils.cleanupTiddlerFiles.mockImplementation((_options, callback) => {
+        callback(null, fileInfo);
+      });
+
+      await adaptor.saveTiddler({ fields: { title: 'Note' } } as Tiddler, vi.fn());
+
+      await vi.waitFor(() => {
+        expect(git.notifyFileChange).toHaveBeenCalledWith('/test/wiki', { onlyWhenGitLogOpened: true });
+      });
+    });
+
     it('should save tiddler and call callback on success', async () => {
       const tiddler: Tiddler = {
         fields: { title: 'TestTiddler', text: 'Test content' },

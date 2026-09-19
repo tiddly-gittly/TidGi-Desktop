@@ -55,6 +55,7 @@ export const syncableConfigDefaultValues = {
   tokenAuth: false,
   enableHTTPAPI: false,
   enableFileSystemWatch: false,
+  ignoreSymlinks: true,
   backupOnInterval: true,
   syncOnInterval: false,
   syncOnStartup: true,
@@ -143,6 +144,11 @@ export interface IWikiWorkspace extends IDedicatedWorkspace {
   disableAudio: boolean;
   disableNotifications: boolean;
   enableHTTPAPI: boolean;
+  /**
+   * Skip symbolic links while processing watcher events. This defaults to true
+   * for safety, but existing workspaces may opt in to watching file symlinks.
+   */
+  ignoreSymlinks: boolean;
   /**
    * List of plugins excluded on startup, for example `['$:/plugins/bimlas/kin-filter', '$:/plugins/dullroar/sitemap']`
    */
@@ -366,6 +372,7 @@ export type INewWikiWorkspaceConfig =
     | 'order'
     | 'backupOnInterval'
     | 'enableHTTPAPI'
+    | 'ignoreSymlinks'
     | 'excludedPlugins'
     | 'includeTagTree'
     | 'fileSystemPathFilterEnable'

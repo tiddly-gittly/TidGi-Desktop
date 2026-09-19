@@ -551,7 +551,6 @@ describe('Workspace useTidgiConfigSync', () => {
       for (const field of ['name', 'tagNames', 'workspaceType'] as const) {
         Reflect.deleteProperty(child, field);
       }
-      Object.assign(child, { tagName: 'retired-local-cache-value' });
       mockGetSetting.mockReturnValue({ [root.id]: root, [child.id]: child });
 
       const workspaces = await new Workspace().getWorkspaces();
@@ -562,7 +561,6 @@ describe('Workspace useTidgiConfigSync', () => {
         mainWikiID: 'root',
         workspaceType: WorkspaceType.folder,
       });
-      expect(workspaces.child).not.toHaveProperty('tagName');
     });
 
     it.each([
@@ -575,19 +573,6 @@ describe('Workspace useTidgiConfigSync', () => {
       const service = new TestableWorkspace();
 
       expect(() => service.sanitizeWorkspaceForTest(workspace)).toThrow('workspace_invalid_canonical_fields');
-    });
-
-    it('discards the retired tagName alias from the settings cache without translating it', async () => {
-      const workspace = createWorkspace({});
-      Reflect.deleteProperty(workspace, 'tagNames');
-      Object.assign(workspace, { tagName: 'Legacy' });
-      mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
-
-      const result = await new Workspace().getWorkspaces();
-
-      expect(result[workspace.id]).not.toHaveProperty('tagName');
-      expect(result[workspace.id]).toMatchObject({ id: workspace.id, tagNames: [] });
-      expect(mockSetSetting).not.toHaveBeenCalled();
     });
 
     it('does not resolve workspace IDs through a case-insensitive alias', async () => {

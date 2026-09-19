@@ -127,6 +127,9 @@ export class FileSystemWatcher {
   /** Timer for debouncing syncer trigger */
   private syncerTriggerTimer: NodeJS.Timeout | undefined;
 
+  /** Preserve the workspace-level symlink policy; default safely for older config files. */
+  private readonly ignoreSymlinks: boolean;
+
   /**
    * Collected file changes waiting to be processed by syncer.
    * The syncer will call getUpdatedTiddlers() to retrieve these.
@@ -154,6 +157,7 @@ export class FileSystemWatcher {
     this.logger = options.logger;
     this.workspaceID = options.workspaceID;
     this.workspaceConfig = options.workspaceConfig;
+    this.ignoreSymlinks = options.workspaceConfig?.ignoreSymlinks ?? true;
     const preferredWatchPath = this.boot.wikiTiddlersPath;
     if (preferredWatchPath) {
       this.watchPathBase = path.resolve(preferredWatchPath);
@@ -198,6 +202,11 @@ export class FileSystemWatcher {
 
     // Setup nsfw watcher
     await this.setupNsfwWatcher();
+  }
+
+  /** The Git repository is rooted at the wiki directory, not necessarily above its tiddler storage. */
+  private getWikiRootPath(): string {
+    return this.boot.wikiPath ? path.resolve(this.boot.wikiPath) : path.dirname(this.watchPathBase);
   }
 
   /**
@@ -532,13 +541,14 @@ export class FileSystemWatcher {
       // Skip directories
       if (action === nsfw.actions.CREATED || action === nsfw.actions.MODIFIED) {
         try {
-          const stats = fs.statSync(fileAbsolutePath);
-          if (stats.isDirectory()) {
+          const linkStats = fs.lstatSync(fileAbsolutePath);
+          if (this.ignoreSymlinks && linkStats.isSymbolicLink()) {
             continue;
           }
-          if (stats.isSymbolicLink()) {
-            continue;
-          }
+          // statSync follows an allowed symlink so the normal directory and
+          // mtime checks continue to apply to its target.
+          const stats = linkStats.isSymbolicLink() ? fs.statSync(fileAbsolutePath) : linkStats;
+          if (stats.isDirectory()) continue;
           // Skip our own write echoes: compare mtime+size recorded by markSaveComplete()
           const lastWrite = this.lastWriteStats.get(fileAbsolutePath);
           if (lastWrite !== undefined) {
@@ -812,7 +822,7 @@ export class FileSystemWatcher {
     }
 
     this.gitNotificationTimer = setTimeout(() => {
-      const wikiFolderLocation = path.dirname(this.watchPathBase);
+      const wikiFolderLocation = this.getWikiRootPath();
       void notifyGitFileChangeBestEffort(git, wikiFolderLocation);
       this.gitNotificationTimer = undefined;
     }, GIT_NOTIFICATION_DELAY_MS);

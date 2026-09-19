@@ -54,5 +54,12 @@ export const subWikiSection: IGenericSectionDefinition = {
       titleKey: 'AddWorkspace.FilterExpression',
       descriptionKey: 'AddWorkspace.FilterExpressionHelp',
     },
+    {
+      type: 'preference-boolean',
+      key: 'ignoreSymlinks',
+      titleKey: 'EditWorkspace.IgnoreSymlinks',
+      descriptionKey: 'EditWorkspace.IgnoreSymlinksDescription',
+      needsRestart: true,
+    },
   ],
 };

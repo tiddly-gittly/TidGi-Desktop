@@ -44,6 +44,7 @@ export const syncableConfigFields = [
   'tokenAuth',
   'enableHTTPAPI',
   'enableFileSystemWatch',
+  'ignoreSymlinks',
   'backupOnInterval',
   'syncOnInterval',
   'syncOnStartup',
@@ -90,6 +91,7 @@ export const syncableConfigDefaultValues = {
   tokenAuth: false,
   enableHTTPAPI: false,
   enableFileSystemWatch: false,
+  ignoreSymlinks: true,
   backupOnInterval: true,
   syncOnInterval: false,
   syncOnStartup: true,
@@ -122,6 +124,7 @@ export type ISyncableWikiConfig = {
   tokenAuth: boolean;
   enableHTTPAPI: boolean;
   enableFileSystemWatch: boolean;
+  ignoreSymlinks: boolean;
   backupOnInterval: boolean;
   syncOnInterval: boolean;
   syncOnStartup: boolean;

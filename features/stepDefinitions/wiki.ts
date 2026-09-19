@@ -1488,6 +1488,7 @@ ${tiddler.content}
       tokenAuth: false,
       mainWikiID: null,
       enableFileSystemWatch: true,
+      ignoreSymlinks: true,
       lastNodeJSArgv: [],
       homeUrl: `tidgi://${mainWikiId}`,
       gitUrl: null,
@@ -1533,6 +1534,7 @@ ${tiddler.content}
     readOnlyMode: false,
     tokenAuth: false,
     enableFileSystemWatch: true,
+    ignoreSymlinks: true,
     lastNodeJSArgv: [],
     homeUrl: `tidgi://${subWikiId}`,
     gitUrl: null,
@@ -1567,7 +1569,6 @@ ${tiddler.content}
     delete sparseWorkspace.name;
     delete sparseWorkspace.tagNames;
     delete sparseWorkspace.workspaceType;
-    sparseWorkspace.tagName = tagName;
   }
 
   await fs.writeJson(settingsPath, settings, { spaces: 2 });

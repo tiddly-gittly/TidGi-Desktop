@@ -180,6 +180,31 @@ describe('folder-as-tiddlers loading', () => {
     expect(wiki.boot.wikiTiddlersPath).toBe(realpathSync(root));
   });
 
+  it('loads sparse root sub-wiki tiddlers alongside a simplified main workspace', () => {
+    const root = createTemporaryDirectory();
+    const subWiki = createTemporaryDirectory();
+    const mainTiddlerPath = writeFixtureFile(root, 'main.tid');
+    const subWikiTiddlerPath = writeFixtureFile(subWiki, 'sub.tid');
+    const { addTiddlers, wiki } = createFakeWiki();
+    const loader = createLoadWikiTiddlersWithSubWikis(
+      wiki,
+      root,
+      [{ wikiFolderLocation: subWiki }] as IWikiWorkspace[],
+      { process: 'wiki-worker', scope: { kind: 'workspace', workspaceID: 'fixture' } },
+      { logFor: vi.fn(async () => undefined) },
+      { folderAsTiddlerStorage: true },
+    );
+
+    loader(root);
+
+    expect(addTiddlers).toHaveBeenCalledWith([{ title: path.basename(mainTiddlerPath) }]);
+    expect(addTiddlers).toHaveBeenCalledWith([{ title: path.basename(subWikiTiddlerPath) }]);
+    expect(wiki.boot.files).toMatchObject({
+      [path.basename(mainTiddlerPath)]: { filepath: realpathSync(mainTiddlerPath) },
+      [path.basename(subWikiTiddlerPath)]: { filepath: realpathSync(subWikiTiddlerPath) },
+    });
+  });
+
   it('uses the stock loader exactly once for a standard tiddlywiki.info workspace', () => {
     const root = createTemporaryDirectory();
     writeFixtureFile(root, 'tiddlywiki.info');

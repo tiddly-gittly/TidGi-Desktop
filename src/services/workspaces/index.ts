@@ -607,22 +607,12 @@ export class Workspace implements IWorkspaceService {
       wikiFolderLocation: workspaceToSanitize.wikiFolderLocation,
     });
 
-    // The retired singular field is not part of either current persistence
-    // half. Reject it explicitly instead of letting object spread carry an
-    // untyped alias into the in-memory model.
-    if (requirePortableFields && 'tagName' in workspaceToSanitize) {
-      throw new Error('workspace_invalid_canonical_fields');
-    }
-
     // settings.json intentionally stores only local workspace fields, while
     // tidgi.config.json owns the syncable fields. Apply canonical defaults
     // before validating either half of that representation. This is normal
     // decoding of the current sparse format, not an old-field compatibility
     // mapping.
-    const settingsCandidate = { ...workspaceToSanitize } as IWikiWorkspace & { tagName?: unknown };
-    // The settings-only cache may contain retired properties from a previous
-    // installation. Discard them; never translate them into canonical fields.
-    if (!requirePortableFields) delete settingsCandidate.tagName;
+    const settingsCandidate = { ...workspaceToSanitize };
     const effectiveWorkspace = { ...wikiWorkspaceDefaultValues, ...settingsCandidate };
     const workspaceType = effectiveWorkspace.workspaceType;
     if (workspaceType !== WorkspaceType.folder && workspaceType !== WorkspaceType.html) {
