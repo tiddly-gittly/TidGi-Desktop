@@ -59,6 +59,46 @@ describe('DesktopAttachmentUploadStore', () => {
     expect(store.consumeCommittedScope('conversation-1', reference)).toBe(false);
   });
 
+  it('serializes concurrent chunks so every accepted offset is hashed and persisted in order', async () => {
+    const data = bytes(1, 2);
+    const scope = {
+      ...(await store.begin({
+        conversationId: 'conversation-1',
+        filename: 'concurrent.bin',
+        mimeType: 'application/octet-stream',
+        totalBytes: data.byteLength,
+      })),
+      conversationId: 'conversation-1',
+    };
+
+    const first = store.write({ ...scope, offset: 0, data: data.slice(0, 1) });
+    const second = store.write({ ...scope, offset: 1, data: data.slice(1) });
+
+    await expect(Promise.all([first, second])).resolves.toEqual([{ nextOffset: 1 }, { nextOffset: 2 }]);
+    const reference = await store.commit(scope);
+    expect(reference.contentHash).toBe(digest(data));
+    await expect(store.readRange(reference.contentHash, 0, data.byteLength)).resolves.toEqual(data);
+  });
+
+  it('waits for a queued final chunk before committing', async () => {
+    const data = bytes(4);
+    const scope = {
+      ...(await store.begin({
+        conversationId: 'conversation-1',
+        filename: 'queued-commit.bin',
+        mimeType: 'application/octet-stream',
+        totalBytes: data.byteLength,
+      })),
+      conversationId: 'conversation-1',
+    };
+
+    const write = store.write({ ...scope, offset: 0, data });
+    const commit = store.commit(scope);
+
+    await expect(write).resolves.toEqual({ nextOffset: data.byteLength });
+    await expect(commit).resolves.toMatchObject({ contentHash: digest(data), size: data.byteLength });
+  });
+
   it('rejects oversized chunks, total sizes and non-contiguous offsets', async () => {
     const maximum = await store.begin({
       conversationId: 'conversation-1',

@@ -30,6 +30,7 @@ interface ActiveUpload {
   handle: FileHandle;
   temporaryPath: string;
   closed: boolean;
+  operation: Promise<void>;
 }
 
 interface AttachmentMetadata extends AttachmentReference {
@@ -93,6 +94,7 @@ export class DesktopAttachmentUploadStore {
       handle,
       temporaryPath,
       closed: false,
+      operation: Promise.resolve(),
     };
     this.active.set(uploadId, upload);
     if (options?.signal?.aborted) {
@@ -104,79 +106,83 @@ export class DesktopAttachmentUploadStore {
 
   public async write(input: WriteDesktopAttachmentChunkInput, options?: { signal?: AbortSignal }): Promise<{ nextOffset: number }> {
     options?.signal?.throwIfAborted();
-    const upload = this.requireUpload(input);
-    if (!(input.data instanceof Uint8Array) || input.data.byteLength < 1 || input.data.byteLength > DESKTOP_ATTACHMENT_UPLOAD_LIMITS.chunkBytes) {
-      throw new RangeError('attachment chunk size is invalid');
-    }
-    if (input.offset !== upload.receivedBytes || input.offset + input.data.byteLength > upload.totalBytes) {
-      throw new RangeError('attachment chunk offset is invalid');
-    }
-    const { bytesWritten } = await upload.handle.write(input.data, 0, input.data.byteLength, input.offset);
-    if (bytesWritten !== input.data.byteLength) {
-      await this.abort(input);
-      throw new Error('attachment chunk write was incomplete');
-    }
-    upload.hash.update(input.data);
-    upload.receivedBytes += bytesWritten;
-    if (options?.signal?.aborted) {
-      await this.abort(input);
-      options.signal.throwIfAborted();
-    }
-    return { nextOffset: upload.receivedBytes };
+    return this.withUploadLock(input, async () => {
+      options?.signal?.throwIfAborted();
+      const upload = this.requireUpload(input);
+      if (!(input.data instanceof Uint8Array) || input.data.byteLength < 1 || input.data.byteLength > DESKTOP_ATTACHMENT_UPLOAD_LIMITS.chunkBytes) {
+        throw new RangeError('attachment chunk size is invalid');
+      }
+      if (input.offset !== upload.receivedBytes || input.offset + input.data.byteLength > upload.totalBytes) {
+        throw new RangeError('attachment chunk offset is invalid');
+      }
+      const { bytesWritten } = await upload.handle.write(input.data, 0, input.data.byteLength, input.offset);
+      if (bytesWritten !== input.data.byteLength) {
+        await this.releaseActiveUpload(upload);
+        throw new Error('attachment chunk write was incomplete');
+      }
+      upload.hash.update(input.data);
+      upload.receivedBytes += bytesWritten;
+      if (options?.signal?.aborted) {
+        await this.releaseActiveUpload(upload);
+        options.signal.throwIfAborted();
+      }
+      return { nextOffset: upload.receivedBytes };
+    });
   }
 
   public async commit(scope: DesktopAttachmentUploadScope, options?: { signal?: AbortSignal }): Promise<AttachmentReference> {
     options?.signal?.throwIfAborted();
-    const upload = this.requireUpload(scope);
-    if (upload.receivedBytes !== upload.totalBytes) throw new Error('attachment upload is incomplete');
-    const digest = upload.hash.digest('hex');
-    upload.closed = true;
-    await upload.handle.sync();
-    await upload.handle.close();
-    if (upload.expectedSha256 !== undefined && upload.expectedSha256 !== digest) {
-      this.active.delete(upload.uploadId);
-      await unlink(upload.temporaryPath).catch(() => undefined);
-      throw new Error('attachment sha256 mismatch');
-    }
-    options?.signal?.throwIfAborted();
-    const reference: AttachmentReference = Object.freeze({
-      contentHash: `sha256:${digest}`,
-      filename: upload.filename,
-      mimeType: upload.mimeType,
-      size: upload.totalBytes,
+    return this.withUploadLock(scope, async () => {
+      options?.signal?.throwIfAborted();
+      const upload = this.requireUpload(scope);
+      if (upload.receivedBytes !== upload.totalBytes) throw new Error('attachment upload is incomplete');
+      const digest = upload.hash.digest('hex');
+      upload.closed = true;
+      try {
+        await upload.handle.sync();
+        await upload.handle.close();
+        if (upload.expectedSha256 !== undefined && upload.expectedSha256 !== digest) {
+          throw new Error('attachment sha256 mismatch');
+        }
+        options?.signal?.throwIfAborted();
+        const reference: AttachmentReference = Object.freeze({
+          contentHash: `sha256:${digest}`,
+          filename: upload.filename,
+          mimeType: upload.mimeType,
+          size: upload.totalBytes,
+        });
+        await this.publishTemporaryBlob(upload.temporaryPath, digest, upload.totalBytes);
+        options?.signal?.throwIfAborted();
+        await this.writeMetadata(reference);
+        options?.signal?.throwIfAborted();
+        this.committedUploads.set(upload.uploadId, {
+          conversationId: upload.conversationId,
+          reference,
+        });
+        return reference;
+      } finally {
+        this.active.delete(upload.uploadId);
+        await upload.handle.close().catch(() => undefined);
+        await unlink(upload.temporaryPath).catch(() => undefined);
+      }
     });
-    try {
-      await this.publishTemporaryBlob(upload.temporaryPath, digest, upload.totalBytes);
-      options?.signal?.throwIfAborted();
-      await this.writeMetadata(reference);
-      options?.signal?.throwIfAborted();
-      this.committedUploads.set(upload.uploadId, {
-        conversationId: upload.conversationId,
-        reference,
-      });
-      return reference;
-    } finally {
-      this.active.delete(upload.uploadId);
-      await unlink(upload.temporaryPath).catch(() => undefined);
-    }
   }
 
   public async abort(scope: DesktopAttachmentUploadScope): Promise<void> {
     const upload = this.active.get(scope.uploadId);
     if (!upload) {
-      const committed = this.committedUploads.get(scope.uploadId);
-      if (!committed) return;
-      if (committed.conversationId !== scope.conversationId) throw new Error('attachment upload scope mismatch');
-      this.committedUploads.delete(scope.uploadId);
+      this.abortCommittedUpload(scope);
       return;
     }
     if (upload.conversationId !== scope.conversationId) throw new Error('attachment upload scope mismatch');
-    this.active.delete(upload.uploadId);
-    if (!upload.closed) {
-      upload.closed = true;
-      await upload.handle.close().catch(() => undefined);
-    }
-    await unlink(upload.temporaryPath).catch(() => undefined);
+    await this.withUploadLock(scope, async () => {
+      const active = this.active.get(scope.uploadId);
+      if (!active) {
+        this.abortCommittedUpload(scope);
+        return;
+      }
+      await this.releaseActiveUpload(active);
+    });
   }
 
   /**
@@ -279,6 +285,39 @@ export class DesktopAttachmentUploadStore {
     if (!upload || upload.closed) throw new Error('attachment upload is unavailable');
     if (upload.conversationId !== scope.conversationId) throw new Error('attachment upload scope mismatch');
     return upload;
+  }
+
+  /** Serialize all stateful operations for one untrusted renderer capability. */
+  private async withUploadLock<T>(scope: DesktopAttachmentUploadScope, operation: () => Promise<T>): Promise<T> {
+    const upload = this.requireUpload(scope);
+    let release!: () => void;
+    const next = new Promise<void>(resolve => {
+      release = resolve;
+    });
+    const previous = upload.operation;
+    upload.operation = next;
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
+  }
+
+  private async releaseActiveUpload(upload: ActiveUpload): Promise<void> {
+    this.active.delete(upload.uploadId);
+    if (!upload.closed) {
+      upload.closed = true;
+      await upload.handle.close().catch(() => undefined);
+    }
+    await unlink(upload.temporaryPath).catch(() => undefined);
+  }
+
+  private abortCommittedUpload(scope: DesktopAttachmentUploadScope): void {
+    const committed = this.committedUploads.get(scope.uploadId);
+    if (!committed) return;
+    if (committed.conversationId !== scope.conversationId) throw new Error('attachment upload scope mismatch');
+    this.committedUploads.delete(scope.uploadId);
   }
 
   private async publishTemporaryBlob(temporaryPath: string, digest: string, expectedSize: number): Promise<void> {
