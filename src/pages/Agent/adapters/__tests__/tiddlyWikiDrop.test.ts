@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseTiddlyWikiDrop, parseTiddlyWikiDropResult, resolveTiddlyWikiDrop, TIDDLYWIKI_DROP_LIMITS, TiddlyWikiDropValidationError } from './dropPayload';
+import { parseTiddlyWikiDrop, parseTiddlyWikiDropResult, resolveTiddlyWikiDrop, TIDDLYWIKI_DROP_LIMITS, TiddlyWikiDropValidationError } from '../tiddlyWikiDrop';
 
 const snapshot = (stringData: Record<string, string>) => ({ stringData });
 

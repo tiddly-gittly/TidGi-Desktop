@@ -64,39 +64,6 @@ const nativeNodeModulesPlugin = {
 };
 
 /**
- * tw-react's npm package contains its compiled widget implementation but not
- * the plugin metadata or browser-side React modules from its release bundle.
- * Bundle that implementation into our browser plugin so it shares the exact
- * React instance used by @memeloop/react-ui and has no unresolved bare-module
- * dependency inside TiddlyWiki.
- */
-const bundledTwReactWidgetPlugin = {
-  name: 'bundled-tw-react-widget',
-  setup(build) {
-    build.onResolve({ filter: /^\$:\/plugins\/linonetwo\/tw-react\/widget\.js$/ }, () => ({
-      path: path.join(__dirname, '../node_modules/tw-react/dist/plugins/linonetwo/tw-react/widget.js'),
-    }));
-  },
-};
-
-/**
- * tw-react 0.6.4 still imports `react-dom` and calls `createRoot` on it. React
- * 19 exposes that API only from `react-dom/client`, so keep the compatibility
- * seam local to the bundled third-party widget instead of patching React or
- * leaking a second React root implementation into the Wiki at runtime.
- */
-const twReactReact19Plugin = {
-  name: 'tw-react-react-19-client-entry',
-  setup(build) {
-    build.onResolve({ filter: /^react-dom$/ }, args => {
-      const normalizedImporter = args.importer.replaceAll('\\', '/');
-      if (!normalizedImporter.endsWith('/tw-react/dist/plugins/linonetwo/tw-react/widget.js')) return undefined;
-      return { path: path.join(__dirname, '../node_modules/react-dom/client.js') };
-    });
-  },
-};
-
-/**
  * Configuration for all plugins to build
  */
 const PLUGINS = [
@@ -124,16 +91,6 @@ const PLUGINS = [
       'WatchFileSystemAdaptor.ts',
       'routingUtilities.ts',
     ],
-  },
-  {
-    name: 'memeloop-agent-ui',
-    sourceFolder: '../src/services/wiki/plugin/memeloopAgentUI',
-    entryPoints: ['components.tsx', 'widget.ts'],
-    buildOptions: {
-      platform: 'browser',
-      format: 'cjs',
-      plugins: [bundledTwReactWidgetPlugin, twReactReact19Plugin, nativeNodeModulesPlugin],
-    },
   },
 ];
 
@@ -268,10 +225,11 @@ async function buildPlugin(plugin) {
 async function main() {
   console.log('Starting plugin compilation...\n');
 
-  // Older builds copied an incomplete tw-react npm folder into TiddlyWiki's
-  // plugin path. It is now bundled into memeloop-agent-ui and must not remain
-  // as a discoverable-but-unloadable sibling plugin.
-  await Promise.all(getPluginOutputDirs('tw-react').map(async outputDirectory => await rimraf(outputDirectory)));
+  // These reusable plugins are installed in template/wiki. Remove any output
+  // left by an older Desktop build so afterPack cannot ship a second copy.
+  for (const pluginName of ['memeloop-agent-ui', 'tw-react']) {
+    await Promise.all(getPluginOutputDirs(pluginName).map(async outputDirectory => await rimraf(outputDirectory)));
+  }
 
   for (const plugin of PLUGINS) {
     await buildPlugin(plugin);

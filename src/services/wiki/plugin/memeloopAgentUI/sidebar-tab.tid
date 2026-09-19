@@ -1,7 +1,0 @@
-title: $:/plugins/linonetwo/memeloop-agent-ui/sidebar-tab
-caption: {{$:/core/images/chat-bubble}} MemeLoop
-tags: $:/tags/SideBar
-list-after: $:/core/ui/SideBar/Recent
-type: text/vnd.tiddlywiki
-
-<$memeloopAgentChat mode="sidebar" />
