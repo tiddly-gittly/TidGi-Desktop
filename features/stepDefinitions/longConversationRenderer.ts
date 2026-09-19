@@ -86,7 +86,22 @@ Given(
       compactionCount: result.compactionCount,
     });
     const lastNumber = (turnCount - 1).toString().padStart(5, '0');
-    await waitForText(page.locator('[data-testid="conversation-viewport"]'), `E2E long answer ${lastNumber}`);
+    try {
+      await waitForText(page.locator('[data-testid="conversation-viewport"]'), `E2E long answer ${lastNumber}`);
+    } catch (error) {
+      const diagnostics = await page.evaluate(async conversationId => {
+        const tail = await window.service.agentInstance.getAgentMessagePage(conversationId, {
+          limit: 2,
+          direction: 'backward',
+          maxBytes: 64 * 1024,
+        });
+        return {
+          viewportText: document.querySelector('[data-testid="conversation-viewport"]')?.textContent ?? null,
+          tail,
+        };
+      }, result.conversationId);
+      throw new Error(`${error instanceof Error ? error.message : String(error)}; diagnostics=${JSON.stringify(diagnostics)}`);
+    }
   },
 );
 

@@ -131,10 +131,9 @@ function DesktopAgentChatSession({ tab, isSplitView }: { tab: ActiveChatTab; isS
     }), [conversationClient, instanceClient, tab.agentId, timelineClient]);
 
   useEffect(() => {
+    const release = sessionViewModel.acquire();
     void sessionViewModel.start({ agentId: tab.agentId, conversationId: tab.agentId });
-    return () => {
-      sessionViewModel.dispose();
-    };
+    return release;
   }, [sessionViewModel, tab.agentId]);
 
   return (

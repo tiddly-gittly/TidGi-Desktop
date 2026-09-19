@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import React from 'react';
+import React, { StrictMode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { type IChatTab, TabState, TabType } from '@/pages/Agent/types/tab';
@@ -103,27 +103,50 @@ describe('DesktopAgentChatTab lifecycle', () => {
     expect(resolveAskQuestion).toHaveBeenCalledWith('agent-1', 'question-1', 'Approach A');
   });
 
-  it('disposes the old timeline on conversation switch and again on unmount', async () => {
+  it('survives the StrictMode lifecycle probe and disposes only replaced or unmounted sessions', async () => {
     lifecycle.sessions.length = 0;
     lifecycle.sessionOptions.length = 0;
     lifecycle.timelines.length = 0;
     const first = tab('agent-1');
-    const view = render(<DesktopAgentChatTab tab={first} />);
-    expect(lifecycle.sessions).toHaveLength(1);
-    expect(lifecycle.timelines).toHaveLength(1);
-    expect(lifecycle.sessions[0]?.start).toHaveBeenCalledWith({ agentId: 'agent-1', conversationId: 'agent-1' });
+    const view = render(
+      <StrictMode>
+        <DesktopAgentChatTab tab={first} />
+      </StrictMode>,
+    );
+    expect(lifecycle.sessions).toHaveLength(2);
+    expect(lifecycle.timelines).toHaveLength(2);
+    const committedSession = lifecycle.sessions[0];
+    const committedTimeline = lifecycle.timelines[0];
+    expect(lifecycle.sessions[1]?.start).not.toHaveBeenCalled();
+    expect(committedSession.start).toHaveBeenCalledTimes(2);
+    expect(committedSession.start).toHaveBeenLastCalledWith({ agentId: 'agent-1', conversationId: 'agent-1' });
+    expect(committedTimeline.dispose).not.toHaveBeenCalled();
     expect(lifecycle.sessionOptions[0]).not.toHaveProperty('maxResidentMessages');
     expect(lifecycle.sessionOptions[0]).not.toHaveProperty('maxResidentBytes');
 
-    view.rerender(<DesktopAgentChatTab tab={{ ...first, agentId: 'agent-2' }} />);
-    expect(lifecycle.sessions[0]?.stop).toHaveBeenCalledOnce();
-    expect(lifecycle.timelines[0]?.dispose).toHaveBeenCalledOnce();
-    expect(lifecycle.sessions).toHaveLength(2);
-    expect(lifecycle.timelines).toHaveLength(2);
+    view.rerender(
+      <StrictMode>
+        <DesktopAgentChatTab tab={{ ...first, agentId: 'agent-2' }} />
+      </StrictMode>,
+    );
+    await new Promise<void>(resolve => {
+      queueMicrotask(resolve);
+    });
+    expect(committedSession.stop).toHaveBeenCalledTimes(3);
+    expect(committedTimeline.dispose).toHaveBeenCalledOnce();
+    expect(lifecycle.sessions).toHaveLength(4);
+    expect(lifecycle.timelines).toHaveLength(4);
+    const replacementIndex = lifecycle.sessions.findIndex((session, index) => index >= 2 && session.start.mock.calls.length > 0);
+    expect(replacementIndex).toBeGreaterThanOrEqual(2);
 
     view.unmount();
-    expect(lifecycle.sessions[1]?.stop).toHaveBeenCalledOnce();
-    expect(lifecycle.timelines[1]?.dispose).toHaveBeenCalledOnce();
+    await new Promise<void>(resolve => {
+      queueMicrotask(resolve);
+    });
+    expect(lifecycle.sessions[replacementIndex]?.stop).toHaveBeenCalledTimes(
+      lifecycle.sessions[replacementIndex].start.mock.calls.length + 1,
+    );
+    expect(lifecycle.timelines[replacementIndex]?.dispose).toHaveBeenCalledOnce();
   });
 });
 
