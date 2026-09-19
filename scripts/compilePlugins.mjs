@@ -227,7 +227,9 @@ async function main() {
 
   // These reusable plugins are installed in template/wiki. Remove any output
   // left by an older Desktop build so afterPack cannot ship a second copy.
-  for (const pluginName of ['memeloop-agent-ui', 'tw-react']) {
+  // `memeloop-agent-ui` was a short-lived incorrect identity; keep cleaning it
+  // so upgrades cannot retain both it and the canonical tidgi-language-model.
+  for (const pluginName of ['tidgi-language-model', 'memeloop-agent-ui', 'tw-react']) {
     await Promise.all(getPluginOutputDirs(pluginName).map(async outputDirectory => await rimraf(outputDirectory)));
   }
 

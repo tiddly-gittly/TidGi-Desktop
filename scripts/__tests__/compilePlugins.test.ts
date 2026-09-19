@@ -8,6 +8,7 @@ const watchPluginOutput = path.resolve(
   projectRoot,
   'node_modules/tiddlywiki/plugins/linonetwo/watch-filesystem-adaptor/WatchFileSystemAdaptor.js',
 );
+const reusablePluginRoot = path.resolve(projectRoot, 'node_modules/tiddlywiki/plugins/linonetwo');
 
 describe('compiled filesystem watcher native module loading', () => {
   it('passes the explicit nsfw binary env through the wiki worker factory', () => {
@@ -25,6 +26,9 @@ describe('compiled filesystem watcher native module loading', () => {
     expect(compiledSource).toContain('TIDGI_NSFW_BINARY_PATH');
     expect(compiledSource).toContain('must be an absolute path to nsfw.node');
     expect(compiledSource).not.toMatch(/require\(\s*["']nsfw\/build\/Release\/nsfw\.node["']\s*\)/);
+    expect(existsSync(path.join(reusablePluginRoot, 'tidgi-language-model'))).toBe(false);
+    expect(existsSync(path.join(reusablePluginRoot, 'memeloop-agent-ui'))).toBe(false);
+    expect(existsSync(path.join(reusablePluginRoot, 'tw-react'))).toBe(false);
   }, 30_000);
 
   it('keeps the compiled binary location aligned with afterPack output', () => {
