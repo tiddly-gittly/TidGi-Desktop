@@ -3,7 +3,6 @@ import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown
 import { DesktopAgentSessionViewModel } from '@/pages/Agent/store/agentSessionViewModel';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import type { IChatTab, TabItem } from '@/pages/Agent/types/tab';
-import { parseTiddlyWikiDrop } from './tiddlyWikiDrop';
 import {
   type AgentChatErrorPresentation,
   AgentChatShell,
@@ -37,6 +36,7 @@ import { useExecutionTargets } from './hooks/useExecutionTargets';
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { localizeAgentRunError } from './localizeAgentRunError';
 import { handleDesktopAgentErrorAction, openAgentRunErrorSettings } from './openAgentRunErrorSettings';
+import { parseTiddlyWikiDrop } from './tiddlyWikiDrop';
 import { isChatTab } from './utils/tabTypeGuards';
 
 interface DesktopAgentChatTabProps {

@@ -8,7 +8,6 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { createAgentRuntimeDeviceRpcHandler, type DeviceCapabilities } from 'memeloop';
-import { createDesktopAgentRuntimeProjectionStore } from './agentRuntimeProjectionStore';
 import { protectRemoteAgentRpcHandler } from './remoteAgentRpcPolicy';
 import { createDesktopScheduledTaskRpcHandler } from './scheduledTaskRpcStore';
 
@@ -49,7 +48,6 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
       cancelRun: runId => durableRuntime.cancelRun(runId),
     },
     storage: agentInstanceService,
-    projections: createDesktopAgentRuntimeProjectionStore(agentInstanceService, identity.peerId),
     scheduledTaskHandler: createDesktopScheduledTaskRpcHandler(agentInstanceService, identity.peerId),
     retryTurn: (request, requestPeerId) => durableRuntime.retryTurn({ ...request, requestPeerId }),
     getAgentDefinitions: () => agentDefinitionService.getAgentDefs(),
