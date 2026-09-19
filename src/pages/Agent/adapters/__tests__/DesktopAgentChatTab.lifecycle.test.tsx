@@ -6,7 +6,13 @@ import { type IChatTab, TabState, TabType } from '@/pages/Agent/types/tab';
 import { createDesktopMessageLabels, DesktopAgentChatTab, resolveDesktopAskQuestion } from '../DesktopAgentChatTab';
 
 const lifecycle = vi.hoisted(() => ({
-  sessions: [] as Array<{ start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> }>,
+  sessions: [] as Array<{
+    start: ReturnType<typeof vi.fn>;
+    stop: ReturnType<typeof vi.fn>;
+    getSnapshot: () => unknown;
+    subscribe: () => () => void;
+  }>,
+  sessionOptions: [] as unknown[],
   timelines: [] as Array<{ dispose: ReturnType<typeof vi.fn> }>,
 }));
 
@@ -14,7 +20,24 @@ vi.mock('memeloop', () => ({
   AgentSessionController: class {
     start = vi.fn(async () => undefined);
     stop = vi.fn();
-    constructor() {
+    getSnapshot() {
+      return {
+        agent: null,
+        loading: false,
+        loadingMoreBefore: false,
+        loadingMoreAfter: false,
+        error: null,
+        messages: [],
+        orderedMessageIds: [],
+        streamingMessageIds: new Set(),
+        pendingNewMessageCount: 0,
+      };
+    }
+    subscribe() {
+      return () => {};
+    }
+    constructor(options: unknown) {
+      lifecycle.sessionOptions.push(options);
       lifecycle.sessions.push(this);
     }
   },
@@ -82,12 +105,15 @@ describe('DesktopAgentChatTab lifecycle', () => {
 
   it('disposes the old timeline on conversation switch and again on unmount', async () => {
     lifecycle.sessions.length = 0;
+    lifecycle.sessionOptions.length = 0;
     lifecycle.timelines.length = 0;
     const first = tab('agent-1');
     const view = render(<DesktopAgentChatTab tab={first} />);
     expect(lifecycle.sessions).toHaveLength(1);
     expect(lifecycle.timelines).toHaveLength(1);
     expect(lifecycle.sessions[0]?.start).toHaveBeenCalledWith({ agentId: 'agent-1', conversationId: 'agent-1' });
+    expect(lifecycle.sessionOptions[0]).not.toHaveProperty('maxResidentMessages');
+    expect(lifecycle.sessionOptions[0]).not.toHaveProperty('maxResidentBytes');
 
     view.rerender(<DesktopAgentChatTab tab={{ ...first, agentId: 'agent-2' }} />);
     expect(lifecycle.sessions[0]?.stop).toHaveBeenCalledOnce();

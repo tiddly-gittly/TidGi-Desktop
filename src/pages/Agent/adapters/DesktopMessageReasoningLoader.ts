@@ -1,6 +1,6 @@
 import { type MemeLoopMessageReasoningLoader, messageHydrationIdentity } from '@memeloop/react-ui/chat';
 
-import { assertDesktopMessageIdentity } from './DesktopMessageDetailLoader';
+import { assertDesktopMessageIdentity } from './DesktopMessageDetailViewModel';
 
 /** Identity-fenced bridge to Desktop's reasoning-only UTF-8 range query. */
 export function createDesktopMessageReasoningLoader(): MemeLoopMessageReasoningLoader {

@@ -6,17 +6,29 @@ import {
   messageHydrationIdentity,
 } from '@memeloop/react-ui/chat';
 
-import { assertDesktopMessageHydrationIdentity, assertDesktopMessageIdentity, canonicalMessageHydrationIdentity, loadDesktopCanonicalMessage } from './DesktopMessageDetailLoader';
+import {
+  assertDesktopMessageHydrationIdentity,
+  assertDesktopMessageIdentity,
+  canonicalMessageHydrationIdentity,
+  createDesktopMessageDetailViewModel,
+  type DesktopMessageDetailViewModel,
+} from './DesktopMessageDetailViewModel';
 
 /**
  * Renderer-side bounded loader. Main process re-authorizes every range against
  * the exact conversation, so no bare content-hash read crosses IPC.
  */
-export function createDesktopVisibleAttachmentLoader(): MemeLoopVisibleAttachmentLoader {
+export function createDesktopVisibleAttachmentLoader(
+  viewModel: DesktopMessageDetailViewModel = createDesktopMessageDetailViewModel(),
+): MemeLoopVisibleAttachmentLoader {
   return async request => {
     request.signal.throwIfAborted();
     assertDesktopMessageHydrationIdentity(messageHydrationIdentity(request.message), request.identity);
-    const canonical = await loadDesktopCanonicalMessage(request.message, request.signal);
+    const canonical = await viewModel.loadCanonicalMessage(
+      request.message,
+      request.signal,
+      MEMELOOP_VISIBLE_ATTACHMENT_CHUNK_BYTES,
+    );
     if (!canonical) return null;
     const canonicalIdentity = canonicalMessageHydrationIdentity(canonical);
     assertDesktopMessageHydrationIdentity(canonicalIdentity, request.identity);

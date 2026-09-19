@@ -1,5 +1,6 @@
 import { WikiChannel } from '@/constants/channels';
 import { TabListDropdown } from '@/pages/Agent/components/TabBar/TabListDropdown';
+import { DesktopAgentSessionViewModel } from '@/pages/Agent/store/agentSessionViewModel';
 import { useTabStore } from '@/pages/Agent/store/tabStore';
 import type { IChatTab, TabItem } from '@/pages/Agent/types/tab';
 import { parseTiddlyWikiDrop } from '@/services/wiki/plugin/memeloopAgentUI/dropPayload';
@@ -15,7 +16,7 @@ import { ConversationTimelineWindowController, type MemeLoopMessageLabels, type 
 import TuneIcon from '@mui/icons-material/Tune';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import type { TFunction } from 'i18next';
-import { AgentSessionController, type ConversationMessageListProjection, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
+import { type ConversationMessageListProjection, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -29,6 +30,7 @@ import { createDesktopFileAttachmentSource } from './DesktopAgentExecutionCoordi
 import { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
 import { createDesktopConversationTimelineClient } from './DesktopConversationTimelineClient';
 import { createDesktopMessageDetailLoader } from './DesktopMessageDetailLoader';
+import { createDesktopMessageDetailViewModel } from './DesktopMessageDetailViewModel';
 import { createDesktopMessageReasoningLoader } from './DesktopMessageReasoningLoader';
 import { createDesktopVisibleAttachmentLoader } from './DesktopVisibleAttachmentLoader';
 import { useExecutionTargets } from './hooks/useExecutionTargets';
@@ -121,33 +123,27 @@ function DesktopAgentChatSession({ tab, isSplitView }: { tab: ActiveChatTab; isS
   const conversationClient = useMemo(createDesktopAgentConversationClient, []);
   const instanceClient = useMemo(createDesktopAgentInstanceClient, []);
   const timelineClient = useMemo(createDesktopConversationTimelineClient, []);
-  const controller = useMemo(() =>
-    new AgentSessionController({
+  const sessionViewModel = useMemo(() =>
+    new DesktopAgentSessionViewModel({
       agentInstanceClient: instanceClient,
       conversationClient,
-      maxResidentMessages: 50,
-      maxResidentBytes: 256 * 1024,
-    }), [conversationClient, instanceClient, tab.agentId]);
-  const timelineController = useMemo(
-    () => new ConversationTimelineWindowController(timelineClient),
-    [tab.agentId, timelineClient],
-  );
+      timelineClient,
+    }), [conversationClient, instanceClient, tab.agentId, timelineClient]);
 
   useEffect(() => {
-    void controller.start({ agentId: tab.agentId, conversationId: tab.agentId });
+    void sessionViewModel.start({ agentId: tab.agentId, conversationId: tab.agentId });
     return () => {
-      controller.stop();
-      timelineController.dispose();
+      sessionViewModel.dispose();
     };
-  }, [controller, tab.agentId, timelineController]);
+  }, [sessionViewModel, tab.agentId]);
 
   return (
-    <AgentSessionProvider controller={controller}>
+    <AgentSessionProvider controller={sessionViewModel}>
       <DesktopAgentChatView
         tab={tab}
         isSplitView={isSplitView}
         instanceClient={instanceClient}
-        timelineController={timelineController}
+        timelineController={sessionViewModel.timelineController}
       />
     </AgentSessionProvider>
   );
@@ -173,9 +169,10 @@ function DesktopAgentChatView({
       error: snapshot.error,
     });
   }, [snapshot.error, tab.agentId]);
-  const detailLoader = useMemo(createDesktopMessageDetailLoader, []);
+  const detailViewModel = useMemo(createDesktopMessageDetailViewModel, []);
+  const detailLoader = useMemo(() => createDesktopMessageDetailLoader(detailViewModel), [detailViewModel]);
   const reasoningLoader = useMemo(createDesktopMessageReasoningLoader, []);
-  const visibleAttachmentLoader = useMemo(createDesktopVisibleAttachmentLoader, []);
+  const visibleAttachmentLoader = useMemo(() => createDesktopVisibleAttachmentLoader(detailViewModel), [detailViewModel]);
   const baseAdapter = useAgentSessionChatAdapter({
     conversationId: tab.agentId,
     timelineController,

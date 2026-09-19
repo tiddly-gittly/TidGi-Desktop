@@ -52,10 +52,11 @@ function projection(message: ChatMessage): ConversationMessageListProjection {
   };
 }
 
-function request(signal = new AbortController().signal) {
+function request(signal = new AbortController().signal, cursor?: string) {
   return {
     limit: MEMELOOP_MESSAGE_DETAIL_LIMIT,
     maxBytes: MEMELOOP_MESSAGE_DETAIL_MAX_BYTES,
+    ...(cursor === undefined ? {} : { cursor }),
     signal,
   } as const;
 }
@@ -111,6 +112,58 @@ describe('DesktopMessageDetailLoader', () => {
 
     expect(page?.truncated).toBe(true);
     expect(new TextEncoder().encode(JSON.stringify(page)).byteLength).toBeLessThanOrEqual(MEMELOOP_MESSAGE_DETAIL_MAX_BYTES);
+  });
+
+  it('pages an arbitrarily long canonical detail through its opaque cursor until complete', async () => {
+    const canonical = fullMessage('🙂'.repeat(MEMELOOP_MESSAGE_DETAIL_MAX_BYTES));
+    const bytes = new TextEncoder().encode(JSON.stringify(canonical));
+    mutableService.agentInstance = {
+      getAgentMessageIdentity: vi.fn(async () => identity(canonical)),
+      readAgentMessageDetailRange: vi.fn(async (_conversationId: string, _messageId: string, offset: number, maxBytes: number) => ({
+        found: true as const,
+        offset,
+        totalBytes: bytes.byteLength,
+        bytes: bytes.slice(offset, offset + maxBytes),
+      })),
+    };
+
+    const loader = createDesktopMessageDetailLoader();
+    const pages: string[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await loader(projection(canonical), request(new AbortController().signal, cursor));
+      if (!page) throw new Error('canonical detail unexpectedly missing');
+      pages.push(page.text);
+      cursor = page.nextCursor;
+    } while (cursor !== undefined);
+
+    expect(pages.join('')).toContain(canonical.content);
+    expect(pages.length).toBeGreaterThan(1);
+  });
+
+  it('does not reject a canonical message merely because its total bytes exceed a former local cap', async () => {
+    const canonical = fullMessage('x'.repeat(3 * 1024 * 1024 + 1));
+    const bytes = new TextEncoder().encode(JSON.stringify(canonical));
+    const readAgentMessageDetailRange = vi.fn(async (_conversationId: string, _messageId: string, offset: number, maxBytes: number) => ({
+      found: true as const,
+      offset,
+      totalBytes: bytes.byteLength,
+      bytes: bytes.slice(offset, offset + maxBytes),
+    }));
+    mutableService.agentInstance = {
+      getAgentMessageIdentity: vi.fn(async () => identity(canonical)),
+      readAgentMessageDetailRange,
+    };
+
+    const page = await createDesktopMessageDetailLoader()(projection(canonical), request());
+
+    expect(page?.nextCursor).toMatch(/^desktop-message-detail:v1:/u);
+    expect(readAgentMessageDetailRange).toHaveBeenCalledWith(
+      canonical.conversationId,
+      canonical.messageId,
+      0,
+      MEMELOOP_MESSAGE_DETAIL_MAX_BYTES,
+    );
   });
 
   it('fences cancellation between main-process range reads', async () => {
