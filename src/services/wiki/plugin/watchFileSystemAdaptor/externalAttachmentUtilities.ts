@@ -3,32 +3,46 @@ import fs from 'fs';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
 
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
+
+/**
+ * `startsWith()` cannot distinguish `/wiki/tiddlers` from
+ * `/wiki/tiddlers-backup`. Keep root resolution segment-aware so an attachment
+ * is never moved for a neighbouring workspace.
+ */
+function isPathWithin(directoryPath: string, rootPath: string): boolean {
+  const relativePath = path.relative(path.resolve(rootPath), path.resolve(directoryPath));
+  return relativePath === '' || (
+    relativePath !== '..' &&
+    !relativePath.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relativePath)
+  );
+}
+
 /**
  * External attachment utilities for moving files when tiddlers are routed between workspaces.
  */
 
 /**
  * Determine wiki root folder from a tiddler file path.
- * Main wiki stores tiddlers in /tiddlers subfolder, sub-wikis store directly in root.
+ * Conventional main wikis store tiddlers in /tiddlers; simplified main wikis
+ * and sub-wikis store tiddlers directly in their roots.
  */
 export function getWikiRootFromTiddlerPath(
   tiddlerDirectory: string,
   wikisWithRouting: IWikiWorkspace[],
 ): string | undefined {
   const wikiTiddlersPath = $tw.boot.wikiTiddlersPath;
-  const useWikiFolderAsTiddlersPath = $tw.wiki.getTiddlerText('$:/info/tidgi/useWikiFolderAsTiddlersPath', 'no') === 'yes';
-  const wikiRootPath = $tw.boot.wikiPath === undefined ? undefined : path.resolve($tw.boot.wikiPath);
+  const mainWikiRoot = $tw.boot.wikiPath === undefined ? undefined : path.resolve($tw.boot.wikiPath);
+  const matchingRoots: string[] = [];
 
-  if (useWikiFolderAsTiddlersPath) {
-    if (wikiRootPath !== undefined && path.normalize(tiddlerDirectory).startsWith(path.normalize(wikiRootPath))) {
-      return wikiRootPath;
-    }
-  }
-
-  // Check if this is the main wiki's tiddlers folder
-  if (wikiTiddlersPath && path.normalize(tiddlerDirectory).startsWith(path.normalize(wikiTiddlersPath))) {
-    // Main wiki: tiddlers are in /wiki/tiddlers, wiki root is /wiki
-    return path.dirname(wikiTiddlersPath);
+  // `wikiTiddlersPath` is either the conventional /tiddlers directory or the
+  // workspace root for simplified wikis. `wikiPath` remains the authoritative
+  // attachment root in both formats.
+  if (wikiTiddlersPath && isPathWithin(tiddlerDirectory, wikiTiddlersPath)) {
+    matchingRoots.push(mainWikiRoot ?? path.dirname(wikiTiddlersPath));
   }
 
   // Check sub-wikis
@@ -36,15 +50,20 @@ export function getWikiRootFromTiddlerPath(
     let subWikiPath = subWiki.wikiFolderLocation;
     try {
       subWikiPath = fs.realpathSync(subWikiPath);
-    } catch {
-      // Use original if realpath fails
+    } catch (error: unknown) {
+      // A workspace can be created before its directory exists; retain the
+      // configured path for ENOENT and surface other realpath failures.
+      if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
     }
-    if (path.normalize(tiddlerDirectory).startsWith(path.normalize(subWikiPath))) {
-      return subWikiPath;
+    if (isPathWithin(tiddlerDirectory, subWikiPath)) {
+      matchingRoots.push(subWikiPath);
     }
   }
 
-  return undefined;
+  // A simplified main wiki may contain a configured sub-wiki. Prefer the most
+  // specific matching root instead of incorrectly treating its attachment as
+  // belonging to the parent wiki.
+  return matchingRoots.sort((left, right) => right.length - left.length)[0];
 }
 
 /**

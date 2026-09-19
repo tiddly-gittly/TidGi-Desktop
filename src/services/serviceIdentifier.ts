@@ -7,6 +7,7 @@ export default {
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),
   DeepLink: Symbol.for('DeepLinkService'),
+  DeviceNetwork: Symbol.for('DeviceNetworkService'),
   ExternalAPI: Symbol.for('ExternalAPI'),
   Git: Symbol.for('Git'),
   GitServer: Symbol.for('GitServer'),

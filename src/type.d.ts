@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // `?utilityProcess` import — emits the module as a separate chunk and returns
 // a factory that calls `utilityProcess.fork(path)`. See vite.main.config.ts
 // `utilityProcessPlugin` for the implementation.
@@ -20,56 +18,14 @@ declare module 'errio' {
   export function register(error: ErrorConstructor): void;
 }
 
-declare module 'espree' {
-  // https://github.com/eslint/espree#options
-  export interface Options {
-    comment?: boolean;
-    ecmaFeatures?: {
-      globalReturn?: boolean;
-      impliedStrict?: boolean;
-      jsx?: boolean;
-    };
-    ecmaVersion?:
-      | 3
-      | 5
-      | 6
-      | 7
-      | 8
-      | 9
-      | 10
-      | 11
-      | 12
-      | 2015
-      | 2016
-      | 2017
-      | 2018
-      | 2019
-      | 2020
-      | 2021
-      | 2022
-      | 'latest';
-    loc?: boolean;
-    range?: boolean;
-    sourceType?: 'script' | 'module';
-    tokens?: boolean;
-  }
-  // https://github.com/eslint/espree#options
-  export function parse(code: string, options?: Options): any;
-  // https://github.com/eslint/espree#tokenize
-  export function tokenize(code: string, options?: Options): any;
-}
-
-declare module 'threads-plugin' {
-  const value: any;
-  export default value;
-}
 declare module 'v8-compile-cache-lib' {
-  export namespace __TEST__ {
-    export function getMainName(): string;
-    // eslint-disable-next-line unicorn/prevent-abbreviations
-    export function getCacheDir(): string;
-    export function supportsCachedData(): boolean;
+  export interface V8CompileCacheTestApi {
+    getMainName(): string;
+    getCacheDir(): string;
+    supportsCachedData(): boolean;
   }
+
+  export const __TEST__: V8CompileCacheTestApi;
   export function install(options?: {
     cacheDir?: string;
     prefix?: string;
@@ -77,10 +33,7 @@ declare module 'v8-compile-cache-lib' {
     uninstall(): void;
   } | undefined;
 }
-declare module 'webpack2-externals-plugin' {
-  const value: any;
-  export default value;
-}
+
 declare module '*.png' {
   const value: string;
   export default value;

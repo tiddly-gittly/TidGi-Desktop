@@ -6,6 +6,7 @@
  */
 import { logger } from '@services/libs/log';
 import { backOff } from 'exponential-backoff';
+import { getProviderHttpStatus } from './errors';
 
 /**
  * Retry configuration (stored in agent settings / global preferences)
@@ -39,8 +40,7 @@ function isRetryableError(error: unknown, config: RetryConfig): boolean {
   if (!error) return false;
 
   // Check for HTTP status code in error
-  const statusCode = (error as { status?: number; statusCode?: number }).status ??
-    (error as { status?: number; statusCode?: number }).statusCode;
+  const statusCode = getProviderHttpStatus(error);
   if (statusCode && config.retryableStatusCodes.includes(statusCode)) {
     return true;
   }
@@ -48,12 +48,6 @@ function isRetryableError(error: unknown, config: RetryConfig): boolean {
   // Check for common retryable error codes
   const code = (error as { code?: string }).code;
   if (code && ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EPIPE'].includes(code)) {
-    return true;
-  }
-
-  // Check for rate limit headers (429)
-  const message = (error as Error).message?.toLowerCase() ?? '';
-  if (message.includes('rate limit') || message.includes('too many requests') || message.includes('429')) {
     return true;
   }
 

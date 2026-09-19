@@ -30,9 +30,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const TiddlyWikiPluginParameterSchema = z.object({
   workspaceNameOrID: z.string().default('wiki').meta({
@@ -156,7 +157,7 @@ async function executeTiddlyWikiPlugin(parameters: TiddlyWikiPluginParameters, c
   };
 }
 
-const tiddlyWikiPluginDefinition = registerToolDefinition({
+export const tiddlyWikiPluginDefinition = defineDesktopTool({
   toolId: 'tiddlywikiPlugin',
   displayName: t('Schema.TiddlyWikiPlugin.Title'),
   description: t('Schema.TiddlyWikiPlugin.Description'),
@@ -256,13 +257,11 @@ const tiddlyWikiPluginDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext, config }) {
-    if (!toolCall || toolCall.toolId !== 'tiddlywiki-plugin') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'tiddlywiki-plugin') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     // At this point, config should be available from the context
     const typedConfig = config as TiddlyWikiPluginParameter;
     await executeToolCall('tiddlywiki-plugin', (parameters) => executeTiddlyWikiPlugin(parameters, typedConfig));
   },
 });
-
-export const tiddlywikiPluginTool = tiddlyWikiPluginDefinition.tool;

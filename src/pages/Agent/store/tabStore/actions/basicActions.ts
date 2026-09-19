@@ -10,7 +10,7 @@ import { TabsState } from '../types';
  */
 export const createBasicActions = (): Pick<
   TabsState,
-  'addTab' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'
+  'addTab' | 'acknowledgeInitialMessage' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'
 > => ({
   // Add new tab
   addTab: async (tabType: TabType, initialData = {}) => {
@@ -55,14 +55,8 @@ export const createBasicActions = (): Pick<
         agentDefId: agent.agentDefId,
         agentId: agent.id,
         initialMessage: chatData.initialMessage,
+        initialWikiTiddlers: chatData.initialWikiTiddlers,
       } as IChatTab;
-      // If there's an initial message, send it to the agent after creation
-      if (chatData.initialMessage && agent.id) {
-        // Use setTimeout to ensure the tab is fully created before sending message
-        setTimeout(() => {
-          void window.service.agentInstance.sendMsgToAgent(agent.id, { text: chatData.initialMessage! });
-        }, 100);
-      }
     } else if (tabType === TabType.CREATE_NEW_AGENT) {
       newTab = {
         ...tabBase,
@@ -163,6 +157,8 @@ export const createBasicActions = (): Pick<
       return false;
     }
   },
+
+  acknowledgeInitialMessage: async (tabId, agentId, expectedMessage) => window.service.agentBrowser.acknowledgeInitialMessage(tabId, agentId, expectedMessage),
 
   // Transform tab type
   transformTabType: async (tabId, newType, initialData = {}) => {
@@ -267,7 +263,7 @@ export const basicActionsMiddleware: StateCreator<
   TabsState,
   [],
   [],
-  Pick<TabsState, 'addTab' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'>
+  Pick<TabsState, 'addTab' | 'acknowledgeInitialMessage' | 'closeTab' | 'setActiveTab' | 'pinTab' | 'updateTabData' | 'transformTabType'>
 > = (set, _get) => {
   // Create a single instance of basicActions for reuse
   const basicActions = createBasicActions();
@@ -375,6 +371,14 @@ export const basicActionsMiddleware: StateCreator<
       } catch (error) {
         console.error('Failed to update tab data:', error);
       }
+    },
+
+    acknowledgeInitialMessage: async (tabId: string, agentId: string, expectedMessage: string) => {
+      const acknowledged = await window.service.agentBrowser.acknowledgeInitialMessage(tabId, agentId, expectedMessage);
+      if (!acknowledged) return false;
+      const tabs = await window.service.agentBrowser.getAllTabs();
+      set({ tabs });
+      return true;
     },
 
     // Transform tab type

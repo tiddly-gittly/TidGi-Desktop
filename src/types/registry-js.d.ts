@@ -1,6 +1,6 @@
 /**
  * Ambient types for registry-js when the native package is not installed
- * (non-Windows CI skips installing registry-js via .pnpmfile.cjs).
+ * (non-Windows — registry-js is an optionalDependency that fails to build on Linux).
  */
 declare module 'registry-js' {
   export enum HKEY {

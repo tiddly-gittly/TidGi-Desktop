@@ -9,6 +9,7 @@ import * as sqliteVec from 'sqlite-vec';
 import { DataSource } from 'typeorm';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { isTest } from '@/constants/environment';
 import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { SQLITE_BINARY_PATH } from '@/constants/paths';
@@ -18,9 +19,24 @@ import { ensureSettingFolderExist, fixSettingFileWhenError, readTidgiConfig } fr
 import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
+import {
+  AgentLoopCheckpointEntity,
+  AgentRunStateEntity,
+  ConversationAttachmentReferenceEntity,
+  ConversationEventEntity,
+  ConversationEventSequenceEntity,
+  ConversationListStateEntity,
+  ConversationMessageDetailEntity,
+  ConversationMetadataFieldEntity,
+  ConversationTimelineEntryEntity,
+  ConversationTimelineRankCheckpointEntity,
+  ConversationTimelineStateEntity,
+  ConversationTurnTombstoneEntity,
+} from './schema/conversationEvent';
 import { ExternalAPILogEntity } from './schema/externalAPILog';
 import { WikiTiddler } from './schema/wiki';
 import { WikiEmbeddingEntity, WikiEmbeddingStatusEntity } from './schema/wikiEmbedding';
+import { SettingsWriteQueue, writeSettingsFile } from './settingsFileIO';
 
 // Schema config interface
 interface SchemaConfig {
@@ -28,6 +44,18 @@ interface SchemaConfig {
   migrations?: BaseDataSourceOptions['migrations'];
   synchronize: boolean;
   migrationsRun: boolean;
+}
+
+export async function deleteSQLiteDatabaseFiles(databasePath: string): Promise<void> {
+  for (const filePath of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
+    if (await fs.pathExists(filePath)) {
+      await fs.unlink(filePath);
+    }
+  }
+}
+
+function isSettingsObject(value: unknown): value is Partial<ISettingFile> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 @injectable()
@@ -38,9 +66,9 @@ export class DatabaseService implements IDatabaseService {
   private readonly schemaRegistry = new Map<string, SchemaConfig>();
 
   // Settings related fields
-  private settingFileContent: ISettingFile | undefined;
+  private settingFileContent: Partial<ISettingFile> | undefined;
   private settingBackupStream: rotateFs.RotatingFileStream | undefined;
-  private storeSettingsToFileLock = false;
+  private readonly settingsWriteQueue = new SettingsWriteQueue();
 
   async initializeForApp(): Promise<void> {
     logger.debug('starting', {
@@ -52,9 +80,7 @@ export class DatabaseService implements IDatabaseService {
     // Guard against corrupted settings files that contain a non-object root value (e.g. a JSON string).
     // Such files pass JSON.parse without error but cause "Cannot create property 'x' on string" when
     // setSetting() tries to write into them.
-    this.settingFileContent = (rawSettings !== null && typeof rawSettings === 'object' && !Array.isArray(rawSettings))
-      ? rawSettings as unknown as ISettingFile
-      : {} as ISettingFile;
+    this.settingFileContent = isSettingsObject(rawSettings) ? rawSettings : {};
     // Initialize settings backup stream
     try {
       this.settingBackupStream = rotateFs.createStream(`settings.json.bak`, {
@@ -86,13 +112,25 @@ export class DatabaseService implements IDatabaseService {
       synchronize: true,
       migrationsRun: false,
     });
-    this.registerSchema('agent', {
+    this.registerSchema(MEME_LOOP_DATABASE_KEY, {
       entities: [
         AgentDefinitionEntity,
         AgentInstanceEntity,
         AgentInstanceMessageEntity,
         AgentBrowserTabEntity,
         ScheduledTaskEntity,
+        ConversationAttachmentReferenceEntity,
+        AgentRunStateEntity,
+        ConversationMessageDetailEntity,
+        ConversationEventEntity,
+        ConversationEventSequenceEntity,
+        ConversationTurnTombstoneEntity,
+        ConversationMetadataFieldEntity,
+        ConversationListStateEntity,
+        ConversationTimelineStateEntity,
+        ConversationTimelineEntryEntity,
+        ConversationTimelineRankCheckpointEntity,
+        AgentLoopCheckpointEntity,
       ],
       synchronize: true,
       migrationsRun: false,
@@ -190,7 +228,7 @@ export class DatabaseService implements IDatabaseService {
   /**
    * Get database connection for a given key
    */
-  public async getDatabase(key: string, options: DatabaseInitOptions = {}, isRetry = false): Promise<DataSource> {
+  public async getDatabase(key: string, options: DatabaseInitOptions = {}): Promise<DataSource> {
     if (!this.dataSources.has(key)) {
       try {
         const schemaConfig = this.getSchemaConfigForKey(key);
@@ -232,24 +270,8 @@ export class DatabaseService implements IDatabaseService {
         return dataSource;
       } catch (error) {
         logger.error(`Failed to get database for key: ${key}`, { error });
-
-        if (!isRetry) {
-          try {
-            // Try to fix database lock issue
-            await this.fixDatabaseLock(key);
-            return await this.getDatabase(key, {}, true);
-          } catch (retryError) {
-            logger.error(`Failed to retry getting database for key: ${key}`, { error: retryError });
-          }
-        }
-
-        try {
-          await this.dataSources.get(key)?.destroy();
-          this.dataSources.delete(key);
-        } catch (closeError) {
-          logger.error(`Failed to close database in error handler for key: ${key}`, { error: closeError });
-        }
-
+        // TypeORM.initialize() destroys the connection when schema setup fails.
+        // Preserve the original error so the host can run its recovery flow.
         throw error;
       }
     }
@@ -300,9 +322,9 @@ export class DatabaseService implements IDatabaseService {
       }
 
       const databasePath = this.getDatabasePathSync(key);
-      if (databasePath !== ':memory:' && (await fs.pathExists(databasePath))) {
-        await fs.unlink(databasePath);
-        logger.info(`Database file deleted for key: ${key}`);
+      if (databasePath !== ':memory:') {
+        await deleteSQLiteDatabaseFiles(databasePath);
+        logger.info(`Database file and SQLite sidecars deleted for key: ${key}`);
       }
     } catch (error) {
       logger.error(`deleteDatabase failed for key: ${key}`, { error });
@@ -415,25 +437,6 @@ export class DatabaseService implements IDatabaseService {
     };
   }
 
-  /**
-   * Fix database lock issue
-   */
-  private async fixDatabaseLock(key: string): Promise<void> {
-    const databasePath = this.getDatabasePathSync(key);
-    const temporaryPath = `${databasePath}.temp`;
-
-    try {
-      await fs.copy(databasePath, temporaryPath);
-      await fs.unlink(databasePath);
-      await fs.copy(temporaryPath, databasePath);
-      await fs.unlink(temporaryPath);
-      logger.info(`Fixed database lock for key: ${key}`);
-    } catch (error) {
-      logger.error(`Failed to fix database lock for key: ${key}`, { error });
-      throw error;
-    }
-  }
-
   // Settings related methods
   public setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
     if (!this.settingFileContent) {
@@ -513,22 +516,21 @@ export class DatabaseService implements IDatabaseService {
   }
 
   public async immediatelyStoreSettingsToFile() {
-    /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
     if (!this.settingFileContent) {
       logger.error('immediatelyStoreSettingsToFile called before initializeForApp()');
       return;
     }
-    try {
-      if (this.storeSettingsToFileLock) return;
-      this.storeSettingsToFileLock = true;
-      await settings.set(this.settingFileContent as any);
-    } catch (error) {
-      logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
-      ensureSettingFolderExist();
-      fixSettingFileWhenError(error as Error);
-      fs.writeJSONSync(settings.file(), this.settingFileContent);
-    } finally {
-      this.storeSettingsToFileLock = false;
-    }
+    await this.settingsWriteQueue.enqueue(async () => {
+      try {
+        // Serialize the full in-memory object at write time. This preserves
+        // fields introduced by newer versions that this process does not know.
+        await writeSettingsFile(settings.file(), this.settingFileContent, process.platform);
+      } catch (error) {
+        logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error });
+        ensureSettingFolderExist();
+        fixSettingFileWhenError(error as Error);
+        await writeSettingsFile(settings.file(), this.settingFileContent, process.platform);
+      }
+    });
   }
 }

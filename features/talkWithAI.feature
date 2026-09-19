@@ -51,7 +51,7 @@ Feature: Talk with AI from Wiki Selection
       | element description | selector                                                      |
       | new tab button      | [data-tab-id='new-tab-button']                                |
       | search input        | .aa-Input                                                     |
-      | agent suggestion    | [data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper |
+      | agent suggestion    | [data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"] |
     When I send ask AI with selection message with text "First question" and workspace "wiki"
     Then I should see a "split view container" element with selector "[data-testid='split-view-container']"
     # Should see only 2 messages (new tab was created, not reused)
@@ -61,7 +61,7 @@ Feature: Talk with AI from Wiki Selection
     # Create another regular chat tab (split into individual clicks for CI reliability)
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     And I click on a "search input" element with selector ".aa-Input"
-    And I click on an "agent suggestion" element with selector "[data-autocomplete-source-id='agentsSource'] .aa-ItemWrapper"
+    And I click on an "agent suggestion" element with selector "[data-autocomplete-source-id='agentsSource'] [data-agent-definition-id='memeloop:general-assistant']"
     # Now in regular chat tab - split view and browser view should not be visible
     Then I should not see a "split view container" element with selector "[data-testid='split-view-container']"
     And I confirm the "main" window browser view is not positioned within visible window bounds
@@ -130,7 +130,7 @@ Feature: Talk with AI from Wiki Selection
     And I should see a "search interface" element with selector ".aa-Autocomplete"
     When I click on a "search input box" element with selector ".aa-Input"
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
     # Click attachment button to open autocomplete

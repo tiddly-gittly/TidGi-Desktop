@@ -1,20 +1,112 @@
+import { readFileSync, realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'path';
+import semver from 'semver';
+
+interface TiddlyWikiPackageManifest {
+  main: string;
+  name: string;
+  version: string;
+}
+
+function readTiddlyWikiManifest(packagePath: string): TiddlyWikiPackageManifest {
+  const manifestPath = path.join(packagePath, 'package.json');
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as unknown;
+  } catch (error) {
+    throw new Error(`Unable to read the TiddlyWiki package manifest at ${manifestPath}`, { cause: error });
+  }
+  if (typeof manifest !== 'object' || manifest === null) {
+    throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: expected an object`);
+  }
+  const candidate = manifest as Partial<TiddlyWikiPackageManifest>;
+  if (candidate.name !== 'tiddlywiki') {
+    throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: expected package name "tiddlywiki"`);
+  }
+  if (typeof candidate.version !== 'string' || semver.valid(candidate.version) === null) {
+    throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: expected a semantic version`);
+  }
+  if (typeof candidate.main !== 'string' || candidate.main.length === 0) {
+    throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: expected a CommonJS main entry`);
+  }
+  return candidate as TiddlyWikiPackageManifest;
+}
 
 export function authTokenIsProvided(providedToken: string | undefined): providedToken is string {
   return typeof providedToken === 'string' && providedToken.length > 0;
 }
 
+interface TiddlyWikiModuleLoaderDependencies {
+  createRequire?: typeof createRequire;
+}
+
 /**
- * Dynamically load the TiddlyWiki module from wiki-local installation if available,
- * otherwise fall back to the built-in version shipped with TidGi.
- * Must be dynamic because static `import { TiddlyWiki } from 'tiddlywiki'`
- * always resolves to the built-in version at module load time.
+ * Return a real absolute filename for Node's CommonJS resolver.
+ *
+ * Utility-process bundles are CommonJS. Rolldown cannot preserve
+ * `import.meta.url` there and currently compiles it to `{}.url`, while
+ * `__filename` is likewise a bundler-provided implementation detail. The
+ * executable directory is absolute in both Electron and plain Node, and is
+ * deliberately outside any wiki-local node_modules tree.
  */
-export async function loadTiddlyWikiModule(TIDDLY_WIKI_BOOT_PATH: string) {
-  const tiddlyWikiPackagePath = path.resolve(TIDDLY_WIKI_BOOT_PATH, '..');
-  try {
-    return await import(tiddlyWikiPackagePath) as typeof import('tiddlywiki');
-  } catch {
-    return await import('tiddlywiki') as typeof import('tiddlywiki');
+export function getTiddlyWikiRequireAnchor(executablePath: string = process.execPath): string {
+  if (!path.isAbsolute(executablePath)) {
+    throw new Error(`Unable to create the TiddlyWiki require host: executable path must be absolute, received ${executablePath}`);
   }
+  return path.join(path.dirname(executablePath), 'tidgi-wiki-worker-require-anchor.cjs');
+}
+
+/**
+ * Load the exact TiddlyWiki CommonJS entry selected by the host. A package may
+ * be wiki-local or copied to Resources/node_modules in a packaged application.
+ *
+ * Do not use ESM directory import here. Node's ESM resolver can repeatedly scan
+ * package directories when it is called from an Electron UtilityProcess and the
+ * target package lives outside app.asar. TiddlyWiki publishes a CommonJS boot
+ * entry, so resolve that entry from its installed manifest and load it through
+ * the UtilityProcess CJS host instead.
+ */
+export async function loadTiddlyWikiModule(
+  TIDDLY_WIKI_BOOT_PATH: string,
+  onPhase?: (phase: string) => void,
+  dependencies: TiddlyWikiModuleLoaderDependencies = {},
+) {
+  const bootPath = path.resolve(TIDDLY_WIKI_BOOT_PATH);
+  const packagePath = path.dirname(bootPath);
+  const manifestPath = path.join(packagePath, 'package.json');
+  onPhase?.('manifest-begin');
+  const manifest = readTiddlyWikiManifest(packagePath);
+  onPhase?.('manifest-end');
+  // The manifest is validated below to resolve to this package's exact
+  // boot/boot.js entry. Avoid Node's package resolver here: Electron utility
+  // processes can block indefinitely while resolving a wiki-local package on
+  // macOS, even though loading the already validated absolute CJS file works.
+  const entryPath = path.resolve(packagePath, manifest.main);
+  onPhase?.('entry-resolved');
+  // realpath canonicalizes symlinks (notably /var -> /private/var on macOS),
+  // so compare canonical paths on both sides of the package boundary.
+  const canonicalPackagePath = realpathSync(packagePath);
+  const canonicalEntryPath = realpathSync(entryPath);
+  const relativeEntryPath = path.relative(canonicalPackagePath, canonicalEntryPath);
+  if (relativeEntryPath.startsWith(`..${path.sep}`) || path.isAbsolute(relativeEntryPath)) {
+    throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: main entry is outside the package directory`);
+  }
+  const expectedBootEntryPath = path.join(bootPath, 'boot.js');
+  if (canonicalEntryPath !== realpathSync(expectedBootEntryPath)) {
+    throw new Error(`Invalid TiddlyWiki package manifest at ${manifestPath}: main entry must resolve to ${expectedBootEntryPath}`);
+  }
+  // The entry is absolute and already contained/validated, so its require host
+  // must not be anchored inside a wiki-local node_modules tree. That anchor can
+  // block in Electron utility processes on macOS before require is even called.
+  onPhase?.('require-host-begin');
+  const packageRequire = (dependencies.createRequire ?? createRequire)(getTiddlyWikiRequireAnchor());
+  onPhase?.('require-host-end');
+  onPhase?.('require-begin');
+  const loadedModule = packageRequire(entryPath) as unknown;
+  onPhase?.('require-end');
+  if (typeof loadedModule !== 'object' || loadedModule === null || typeof (loadedModule as { TiddlyWiki?: unknown }).TiddlyWiki !== 'function') {
+    throw new Error(`Invalid TiddlyWiki module at ${entryPath}: expected a TiddlyWiki function export`);
+  }
+  return loadedModule as typeof import('tiddlywiki');
 }

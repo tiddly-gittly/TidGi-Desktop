@@ -30,34 +30,34 @@ These fields are device-specific and should NOT be synced:
 
 These fields represent user preferences that should follow the wiki across devices:
 
-| Field                        | Description                                  |
-| ---------------------------- | -------------------------------------------- |
-| `name`                       | Display name for the workspace               |
-| `port`                       | Server port number                           |
-| `gitUrl`                     | Git repository URL for syncing               |
-| `storageService`             | Storage service type (github, gitlab, local) |
-| `userName`                   | Git username for this workspace              |
-| `readOnlyMode`               | Whether wiki is in readonly mode             |
-| `tokenAuth`                  | Whether token authentication is enabled      |
-| `enableHTTPAPI`              | Whether HTTP API is enabled                  |
-| `enableFileSystemWatch`      | Whether file system watching is enabled      |
-| `ignoreSymlinks`             | Whether to ignore symlinks in file watching  |
-| `backupOnInterval`           | Whether to backup on interval                |
-| `syncOnInterval`             | Whether to sync on interval                  |
-| `syncOnStartup`              | Whether to sync on startup                   |
-| `disableAudio`               | Whether audio is disabled                    |
-| `disableNotifications`       | Whether notifications are disabled           |
-| `hibernateWhenUnused`        | Whether to hibernate when unused             |
-| `transparentBackground`      | Whether background is transparent            |
-| `excludedPlugins`            | List of plugins to exclude on startup        |
-| `tagNames`                   | Tag names for sub-wiki routing               |
-| `includeTagTree`             | Whether to include tag tree for routing      |
-| `fileSystemPathFilterEnable` | Whether path filter is enabled               |
-| `fileSystemPathFilter`       | Path filter expressions                      |
-| `rootTiddler`                | Root tiddler for lazy loading                |
-| `https`                      | HTTPS configuration                          |
+| Field                        | Description                                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| `name`                       | Display name for the workspace                                                    |
+| `port`                       | Server port number                                                                |
+| `gitUrl`                     | Git repository URL for syncing                                                    |
+| `storageService`             | Storage service type (github, gitlab, local)                                      |
+| `userName`                   | Git username for this workspace                                                   |
+| `readOnlyMode`               | Whether wiki is in readonly mode                                                  |
+| `tokenAuth`                  | Whether token authentication is enabled                                           |
+| `enableHTTPAPI`              | Whether HTTP API is enabled                                                       |
+| `enableFileSystemWatch`      | Whether file system watching is enabled                                           |
+| `ignoreSymlinks`             | Whether to ignore symlinks in file watching                                       |
+| `backupOnInterval`           | Whether to backup on interval                                                     |
+| `syncOnInterval`             | Whether to sync on interval                                                       |
+| `syncOnStartup`              | Whether to sync on startup                                                        |
+| `disableAudio`               | Whether audio is disabled                                                         |
+| `disableNotifications`       | Whether notifications are disabled                                                |
+| `hibernateWhenUnused`        | Whether to hibernate when unused                                                  |
+| `transparentBackground`      | Whether background is transparent                                                 |
+| `excludedPlugins`            | List of plugins to exclude on startup                                             |
+| `tagNames`                   | Tag names for sub-wiki routing                                                    |
+| `includeTagTree`             | Whether to include tag tree for routing                                           |
+| `fileSystemPathFilterEnable` | Whether path filter is enabled                                                    |
+| `fileSystemPathFilter`       | Path filter expressions                                                           |
+| `rootTiddler`                | Root tiddler for lazy loading                                                     |
+| `https`                      | HTTPS configuration                                                               |
 | `gitRepoPath`                | Git repo root relative to wiki folder (e.g. `..`); null = wiki folder is the repo |
-| `gitManagedRelativePath`     | Wiki folder path relative to repo root; null = track whole repo |
+| `gitManagedRelativePath`     | Wiki folder path relative to repo root; null = track whole repo                   |
 
 ## File Location
 

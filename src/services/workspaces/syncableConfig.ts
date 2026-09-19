@@ -116,7 +116,6 @@ export const syncableConfigDefaultValues = {
  * Type for syncable config - used by tidgiConfig.ts
  */
 export type ISyncableWikiConfig = {
-  id?: string;
   name: string;
   gitUrl: string | null;
   storageService: string;

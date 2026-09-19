@@ -1,0 +1,6 @@
+title: MemeLoop Agent
+caption: MemeLoop Agent
+tags: MemeLoop
+type: text/vnd.tiddlywiki
+
+<$memeloopAgentChat mode="full" />
