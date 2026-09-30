@@ -128,10 +128,10 @@ importers:
         version: 4.0.0
       electron-ipc-cat:
         specifier: 2.6.0
-        version: 2.6.0(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2)
+        version: 2.6.0(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2)
       electron-settings:
         specifier: 5.0.0
-        version: 5.0.0(electron@43.2.0(supports-color@10.2.2))
+        version: 5.0.0(electron@43.5.0(supports-color@10.2.2))
       electron-unhandled:
         specifier: 5.0.0
         version: 5.0.0
@@ -188,7 +188,7 @@ importers:
         version: 5.3.7(@mui/material@9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(react@19.2.8)
       menubar:
         specifier: 9.5.2
-        version: 9.5.2(electron@43.2.0(supports-color@10.2.2))
+        version: 9.5.2(electron@43.5.0(supports-color@10.2.2))
       monaco-editor:
         specifier: ^0.56.0
         version: 0.56.0
@@ -269,7 +269,7 @@ importers:
         version: 5.4.1
       tidgi-shared:
         specifier: 0.1.6
-        version: 0.1.6(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2)
+        version: 0.1.6(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2)
       type-fest:
         specifier: 5.8.0
         version: 5.8.0
@@ -410,8 +410,8 @@ importers:
         specifier: ^0.55.2
         version: 0.55.2
       electron:
-        specifier: 43.2.0
-        version: 43.2.0(supports-color@10.2.2)
+        specifier: 43.5.0
+        version: 43.5.0(supports-color@10.2.2)
       electron-chrome-web-store:
         specifier: ^0.13.0
         version: 0.13.0(supports-color@10.2.2)
@@ -490,7 +490,7 @@ importers:
     dependencies:
       electron-ipc-cat:
         specifier: ^2.1.0
-        version: 2.4.0(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2)
+        version: 2.4.0(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2)
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -1183,8 +1183,8 @@ packages:
     resolution: {integrity: sha512-69/l4+0bvCi1x1TO3l40jHj5bi2YNLgS6zFGGdagF3FBSPbNEgZBZl4SwrbGD6D1TaRWYjuQDPDfad113o011g==}
     engines: {node: '>= 22.12.0'}
 
-  '@electron-internal/extract-zip@1.0.2':
-    resolution: {integrity: sha512-VJuNETNPEhrmQEZezeTZO5TZMV+dobBRyJ7zHjGJWIhMS7m7W1UeClt69u4hkUxv9ZZVxuli/E9Yvc4gDNHGsg==}
+  '@electron-internal/extract-zip@1.0.5':
+    resolution: {integrity: sha512-+bqFCP98pLI0Tt0XQo1TmlXtwjWchISndDOxCkEcIuUgXWpBnLyRI+2DU+mesvnMMX6L1XDqYNA0lXNDHd/yiA==}
     engines: {node: '>=22.12.0'}
 
   '@electron/asar@3.2.1':
@@ -1215,8 +1215,12 @@ packages:
     resolution: {integrity: sha512-pjoBpru1KdEtcExBnuHAP1cAc/5faoedw0hzJkL3o4/IJp7HNF1+fbrdxT3gMYRX2oJfvnA/WXeCTVQpYYxyJA==}
     engines: {node: '>=22.12.0'}
 
+  '@electron/get@5.1.0':
+    resolution: {integrity: sha512-3kSBtG8ObcTVfXanm5vVJ6UnBLEVmVsRk1M+vGqCuMBV+XLCbJYuWQful+yIy0GQDsSlK0kHEriEHn7SPk4EnA==}
+    engines: {node: '>=22.12.0'}
+
   '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2':
-    resolution: {gitHosted: true, tarball: https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2}
+    resolution: {gitHosted: true, integrity: sha512-MXgzlTDEEndJB3TBbvd5uFQO/8gaINo1Hfen8vef5rq/VHVPeB63uuv/uO5+8GFsAJ/rauu6XB79S6K4+aXc+w==, tarball: https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2}
     version: 10.2.0-electron.1
     engines: {node: '>=12.13.0'}
     hasBin: true
@@ -2934,6 +2938,9 @@ packages:
   '@types/node@24.13.1':
     resolution: {integrity: sha512-RSpUJGmvsJ1ZeBehQZFhIdpsz+bIpES0nIQXko4Ybq+N+kX6XvOq3Jo+iJ82FWLdblFq85AsMikd3m35jgezYg==}
 
+  '@types/node@24.19.0':
+    resolution: {integrity: sha512-zY+5tKxXdhGh1PYI0ac+7juvEu4OI6vWtVVoj5i2m42jxAY1U+zHGt6QCyOFwykdP62sM3MJ9stoYYUw5aCWew==}
+
   '@types/node@26.1.1':
     resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
 
@@ -3327,6 +3334,7 @@ packages:
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -4249,8 +4257,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@43.2.0:
-    resolution: {integrity: sha512-80zvrgG7ZRXD+tD0IyLvrnN9n+veSxadMRsMaC9wKKP3iUbtC7rGM8+dVuCmOb0Rrwwv8ESW4awnUZh9Hbp1fA==}
+  electron@43.5.0:
+    resolution: {integrity: sha512-nV2aWuKatmUrxrAWP2pNIynNX7dy83TCAz+6KnsbK7hDVLE+6fa2iouOtir41AboZTa+J5w2UgicWHAqUaaUJw==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -7663,6 +7671,9 @@ packages:
   undici-types@7.18.2:
     resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
+  undici-types@7.24.6:
+    resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
@@ -7672,6 +7683,10 @@ packages:
 
   undici@7.27.2:
     resolution: {integrity: sha512-uZsKNuzQxDMUY6M3pIMvy5tvlGmtq8XJ2oLAkfRKGNu+1VQAIvLy2xIVG5ATZl5wDXl/tddByAWCizRbOme+TA==}
+    engines: {node: '>=20.18.1'}
+
+  undici@7.30.0:
+    resolution: {integrity: sha512-dkrQXeHSaoamnItlYbmzG0wFYrM0ZwDxCIg0A7aKjTyyhh9svRzCNFEzV+Vm05/yehjCzjDZ31KXfGEjYSztDQ==}
     engines: {node: '>=20.18.1'}
 
   unicorn-magic@0.4.0:
@@ -8936,7 +8951,7 @@ snapshots:
     dependencies:
       chrome-trace-event: 1.0.4
 
-  '@electron-internal/extract-zip@1.0.2': {}
+  '@electron-internal/extract-zip@1.0.5': {}
 
   '@electron/asar@3.2.1':
     dependencies:
@@ -8992,6 +9007,19 @@ snapshots:
       sumchecker: 3.0.1(supports-color@10.2.2)
     optionalDependencies:
       undici: 7.27.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@electron/get@5.1.0(supports-color@10.2.2)':
+    dependencies:
+      debug: 4.4.3(supports-color@10.2.2)
+      env-paths: 3.0.0
+      graceful-fs: 4.2.11
+      progress: 2.0.3
+      semver: 7.8.5
+      sumchecker: 3.0.1(supports-color@10.2.2)
+    optionalDependencies:
+      undici: 7.30.0
     transitivePeerDependencies:
       - supports-color
 
@@ -9072,9 +9100,9 @@ snapshots:
 
   '@electron/packager@20.0.1(supports-color@10.2.2)':
     dependencies:
-      '@electron-internal/extract-zip': 1.0.2
+      '@electron-internal/extract-zip': 1.0.5
       '@electron/asar': 4.2.0
-      '@electron/get': 5.0.0(supports-color@10.2.2)
+      '@electron/get': 5.1.0(supports-color@10.2.2)
       '@electron/notarize': 3.1.1(supports-color@10.2.2)
       '@electron/osx-sign': 2.4.0(supports-color@10.2.2)
       '@electron/universal': 3.0.4(supports-color@10.2.2)
@@ -10689,6 +10717,10 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  '@types/node@24.19.0':
+    dependencies:
+      undici-types: 7.24.6
+
   '@types/node@26.1.1':
     dependencies:
       undici-types: 8.3.0
@@ -12084,23 +12116,23 @@ snapshots:
       - supports-color
     optional: true
 
-  electron-ipc-cat@2.4.0(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2):
+  electron-ipc-cat@2.4.0(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2):
     dependencies:
-      electron: 43.2.0(supports-color@10.2.2)
+      electron: 43.5.0(supports-color@10.2.2)
       memize: 2.1.1
       rxjs: 7.8.2
       serialize-error: 12.0.0
 
-  electron-ipc-cat@2.5.0(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2):
+  electron-ipc-cat@2.5.0(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2):
     dependencies:
-      electron: 43.2.0(supports-color@10.2.2)
+      electron: 43.5.0(supports-color@10.2.2)
       memize: 2.1.1
       rxjs: 7.8.2
       serialize-error: 12.0.0
 
-  electron-ipc-cat@2.6.0(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2):
+  electron-ipc-cat@2.6.0(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2):
     dependencies:
-      electron: 43.2.0(supports-color@10.2.2)
+      electron: 43.5.0(supports-color@10.2.2)
       memize: 2.1.1
       rxjs: 7.8.2
       serialize-error: 12.0.0
@@ -12109,10 +12141,10 @@ snapshots:
 
   electron-positioner@4.1.0: {}
 
-  electron-settings@5.0.0(electron@43.2.0(supports-color@10.2.2)):
+  electron-settings@5.0.0(electron@43.5.0(supports-color@10.2.2)):
     dependencies:
       atomically: 2.1.1
-      electron: 43.2.0(supports-color@10.2.2)
+      electron: 43.5.0(supports-color@10.2.2)
       lodash.get: 4.4.2
       lodash.has: 4.5.2
       lodash.set: 4.3.2
@@ -12158,11 +12190,11 @@ snapshots:
       - supports-color
     optional: true
 
-  electron@43.2.0(supports-color@10.2.2):
+  electron@43.5.0(supports-color@10.2.2):
     dependencies:
-      '@electron-internal/extract-zip': 1.0.2
-      '@electron/get': 5.0.0(supports-color@10.2.2)
-      '@types/node': 24.13.1
+      '@electron-internal/extract-zip': 1.0.5
+      '@electron/get': 5.1.0(supports-color@10.2.2)
+      '@types/node': 24.19.0
     transitivePeerDependencies:
       - supports-color
 
@@ -14110,9 +14142,9 @@ snapshots:
       errno: 0.1.8
       readable-stream: 2.3.8
 
-  menubar@9.5.2(electron@43.2.0(supports-color@10.2.2)):
+  menubar@9.5.2(electron@43.5.0(supports-color@10.2.2)):
     dependencies:
-      electron: 43.2.0(supports-color@10.2.2)
+      electron: 43.5.0(supports-color@10.2.2)
       electron-positioner: 4.1.0
 
   merge-descriptors@2.0.0: {}
@@ -15732,9 +15764,9 @@ snapshots:
 
   tiddlywiki@5.4.1: {}
 
-  tidgi-shared@0.1.6(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2):
+  tidgi-shared@0.1.6(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2):
     dependencies:
-      electron-ipc-cat: 2.5.0(electron@43.2.0(supports-color@10.2.2))(rxjs@7.8.2)
+      electron-ipc-cat: 2.5.0(electron@43.5.0(supports-color@10.2.2))(rxjs@7.8.2)
     optionalDependencies:
       rxjs: 7.8.2
     transitivePeerDependencies:
@@ -16024,11 +16056,16 @@ snapshots:
 
   undici-types@7.18.2: {}
 
+  undici-types@7.24.6: {}
+
   undici-types@8.3.0: {}
 
   undici@6.26.0: {}
 
   undici@7.27.2: {}
+
+  undici@7.30.0:
+    optional: true
 
   unicorn-magic@0.4.0: {}
 
