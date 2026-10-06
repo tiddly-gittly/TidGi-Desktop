@@ -22,9 +22,7 @@ These fields are device-specific and should NOT be synced:
 | `authToken`          | Security token, should not be synced               |
 | `picturePath`        | Local file path to workspace icon                  |
 | `wikiFolderLocation` | Absolute path, different per device                |
-| `mainWikiToLink`     | Absolute path to main wiki                         |
-| `mainWikiID`         | References local workspace id                      |
-| `isSubWiki`          | Structural relationship, set during creation       |
+| `port`              | Available HTTP port on this device                 |
 
 ### Syncable Fields (stored in tidgi.config.json)
 
@@ -33,7 +31,8 @@ These fields represent user preferences that should follow the wiki across devic
 | Field                        | Description                                                                       |
 | ---------------------------- | --------------------------------------------------------------------------------- |
 | `name`                       | Display name for the workspace                                                    |
-| `port`                       | Server port number                                                                |
+| `isSubWiki`                  | Whether this workspace is a sub-wiki                                              |
+| `mainWikiID`                 | Explicit link to the main workspace, validated against the local registry          |
 | `gitUrl`                     | Git repository URL for syncing                                                    |
 | `storageService`             | Storage service type (github, gitlab, local)                                      |
 | `userName`                   | Git username for this workspace                                                   |
@@ -85,7 +84,6 @@ For sub-wikis, this is in the sub-wiki folder (alongside tiddler files).
   "$schema": "https://tidgi.app/schemas/tidgi.config.schema.json",
   "version": 1,
   "name": "My Wiki",
-  "port": 5212,
   "storageService": "github",
   "gitUrl": "https://github.com/user/wiki.git",
   "readOnlyMode": false,
@@ -99,10 +97,11 @@ Only non-default values are saved to keep the file minimal. When loading, missin
 
 When loading a workspace:
 
-1. Read local config from database (includes device-specific fields)
-2. Read `tidgi.config.json` from wiki folder (if exists)
-3. Merge syncable config over local config
-4. Apply default values for any missing fields
+1. Decode the settings cache without reading wiki files synchronously.
+2. Open the main window and start MCP and device networking.
+3. Read `tidgi.config.json` files asynchronously, one at a time, with a bounded timeout.
+4. Merge valid portable fields into the cache and resolve sub-wiki links.
+5. Start wiki workers with the hydrated names, routing settings, and child list.
 
 This ensures synced preferences take precedence over stale local values.
 
@@ -110,20 +109,16 @@ This ensures synced preferences take precedence over stale local values.
 
 When saving workspace config:
 
-1. Separate fields into local and syncable categories
-2. Save local fields to database (only non-default values)
-3. Save syncable fields to `tidgi.config.json` (only non-default values)
+1. Persist explicit updates to the settings cache, keeping it usable without wiki filesystem access.
+2. Write changed syncable fields to `tidgi.config.json` (only non-default values).
+3. Publish the new in-memory state after persistence succeeds.
 
-## Migration
+## Unavailable or Invalid Config
 
-For existing workspaces without `tidgi.config.json`:
-
-1. On first load, create `tidgi.config.json` with current syncable values
-2. This happens automatically when workspace is loaded or saved
-3. Existing local database config is preserved
+Missing or invalid files leave cached settings in place. Config files require a numeric `version`; a partial JSON object without it is not a valid portable config. A timed-out read stops the serial import to avoid exhausting filesystem workers. The application window and AI services remain available.
 
 ## Related Code
 
 - [src/services/workspaces/interface.ts](../../src/services/workspaces/interface.ts) - Type definitions
 - [src/services/workspaces/index.ts](../../src/services/workspaces/index.ts) - WorkspaceService implementation
-- [src/services/workspaces/configSync.ts](../../src/services/workspaces/configSync.ts) - Config sync utilities
+- [src/services/database/tidgiConfig.ts](../../src/services/database/tidgiConfig.ts) - Portable config encoding and I/O

@@ -74,7 +74,7 @@ export class Workspace implements IWorkspaceService {
   private readonly workspaceMutationQueues = new Map<string, Promise<void>>();
   private readonly portableConfigHydrations = new Map<string, IPortableConfigHydration>();
   private nextPortableConfigHydrationGeneration = 0;
-  private portableConfigHydrationStarted = false;
+  private portableConfigHydrationPromise: Promise<void> | undefined;
   private portableConfigHydrationRunController: AbortController | undefined;
 
   /**
@@ -252,20 +252,21 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   * Import portable workspace config only after the application has finished
-   * its core startup. These reads intentionally run one at a time: an offline
+   * Import portable workspace config after the window and availability
+   * services are ready, before wiki workers consume the workspace hierarchy.
+   * These reads intentionally run one at a time: an offline
    * volume can leave a Node filesystem worker blocked even after its promise
    * has timed out, so concurrent reads could exhaust the worker pool and stall
    * unrelated startup work.
    */
-  public startPortableConfigHydration(): void {
-    if (this.portableConfigHydrationStarted) return;
-    this.portableConfigHydrationStarted = true;
+  public startPortableConfigHydration(): Promise<void> {
+    if (this.portableConfigHydrationPromise) return this.portableConfigHydrationPromise;
 
     const controller = new AbortController();
     this.portableConfigHydrationRunController = controller;
     const workspaceIDs = Object.keys(this.getWorkspacesSync());
-    void this.hydratePortableConfigsSerially(workspaceIDs, controller);
+    this.portableConfigHydrationPromise = this.hydratePortableConfigsSerially(workspaceIDs, controller);
+    return this.portableConfigHydrationPromise;
   }
 
   private async hydratePortableConfigsSerially(workspaceIDs: string[], runController: AbortController): Promise<void> {

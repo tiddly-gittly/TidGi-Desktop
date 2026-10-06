@@ -279,6 +279,12 @@ const commonInit = async (): Promise<void> => {
   await workspaceService.initializeDefaultPageWorkspaces();
   assertApplicationStartupActive();
 
+  // Sparse settings entries need their portable names and sub-wiki links before
+  // workers snapshot the hierarchy. The main window, MCP and device network are
+  // already usable; config reads are asynchronous, serial and timeout-bounded.
+  await workspaceService.startPortableConfigHydration();
+  assertApplicationStartupActive();
+
   // Initialize tidgi mini window if enabled (must be done BEFORE initializeAllWorkspaceView)
   // This only creates the window, views will be created by initializeAllWorkspaceView
   await windowService.initializeTidgiMiniWindow();
@@ -322,11 +328,6 @@ const commonInit = async (): Promise<void> => {
   }
   // trigger whenTrulyReady
   ipcMain.emit(MainChannel.commonInitFinished);
-
-  // A portable workspace can live on an offline filesystem. Start its
-  // best-effort config import only after the window, workspace views, MCP and
-  // device network are usable, never on the critical startup path.
-  workspaceService.startPortableConfigHydration();
 
   // Track app launch event
   void analyticsService.trackAppLaunch();

@@ -4,6 +4,7 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { execSync } from 'node:child_process';
 import path from 'path';
+import { TIDGI_CONFIG_VERSION } from '../../src/services/database/tidgiConfig';
 import { SupportedStorageServices } from '../../src/services/types';
 import { WindowNames } from '../../src/services/windows/WindowProperties';
 import type { IWikiWorkspace, IWorkspace } from '../../src/services/workspaces/interface';
@@ -1502,6 +1503,7 @@ ${tiddler.content}
       transparentBackground: false,
     } satisfies IWikiWorkspace;
     await fs.writeJson(path.join(mainWikiPath, 'tidgi.config.json'), {
+      version: TIDGI_CONFIG_VERSION,
       name: 'wiki',
       enableFileSystemWatch: true,
     }, { spaces: 2 });
@@ -1551,6 +1553,7 @@ ${tiddler.content}
   // Startup hydrates portable fields from this file. Persist the same
   // canonical relationship/routing configuration that a real user creates.
   await fs.writeJson(path.join(subWikiPath, 'tidgi.config.json'), {
+    version: TIDGI_CONFIG_VERSION,
     name: subWikiName,
     isSubWiki: true,
     mainWikiID: mainWikiIdToUse,
@@ -1564,7 +1567,7 @@ ${tiddler.content}
   if (options.sparseLocalCache) {
     // Reproduce the split persistence shape from real installations: local
     // identity/routing is available immediately, while portable presentation
-    // fields arrive from tidgi.config.json after startup.
+    // fields arrive from tidgi.config.json before wiki workers start.
     const sparseWorkspace = settings.workspaces[subWikiId] as unknown as Record<string, unknown>;
     delete sparseWorkspace.name;
     delete sparseWorkspace.tagNames;
