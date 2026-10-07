@@ -936,6 +936,9 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.error('showWorkspaceView: workspace not found', { workspaceID });
       return;
     }
+    // App pages render in the main window itself. Restoring a foreground window
+    // must not create a wiki view over their UI (or request tidgi://agent).
+    if (workspace.pageType) return;
 
     // If view doesn't exist yet, create it; otherwise just show it
     const existingMainView = viewService.getView(workspaceID, WindowNames.main);

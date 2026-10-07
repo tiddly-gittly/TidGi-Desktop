@@ -1,6 +1,7 @@
+import { PageType } from '@/constants/pageTypes';
 import { SupportedStorageServices } from '@services/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type IWikiWorkspace, wikiWorkspaceDefaultValues } from '../../workspaces/interface';
+import { type IDedicatedWorkspace, type IWikiWorkspace, wikiWorkspaceDefaultValues } from '../../workspaces/interface';
 
 const mocks = vi.hoisted(() => ({
   getWorkspacesAsList: vi.fn(),
@@ -8,6 +9,12 @@ const mocks = vi.hoisted(() => ({
   setWikiStartLockOn: vi.fn(),
   updateMetaData: vi.fn().mockResolvedValue(undefined),
   update: vi.fn().mockResolvedValue(undefined),
+  getActiveWorkspace: vi.fn(),
+  get: vi.fn(),
+  getView: vi.fn(),
+  addView: vi.fn().mockResolvedValue(undefined),
+  showView: vi.fn().mockResolvedValue(undefined),
+  buildMenu: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('electron', () => ({
@@ -29,8 +36,12 @@ vi.mock('@services/container', async () => {
             getWorkspacesAsList: mocks.getWorkspacesAsList,
             updateMetaData: mocks.updateMetaData,
             update: mocks.update,
+            getActiveWorkspace: mocks.getActiveWorkspace,
+            get: mocks.get,
           };
         }
+        if (description === 'Symbol(View)') return { getView: mocks.getView, addView: mocks.addView, showView: mocks.showView };
+        if (description === 'Symbol(MenuService)') return { buildMenu: mocks.buildMenu };
         if (description.includes('Symbol(Wiki)')) {
           return {
             setAllWikiStartLockOff: mocks.setAllWikiStartLockOff,
@@ -62,7 +73,7 @@ function createWorkspace(id: string, overrides: Partial<IWikiWorkspace> = {}): I
 function createService(): WorkspaceView {
   return new WorkspaceView(
     {} as never,
-    {} as never,
+    { get: vi.fn().mockResolvedValue(false) } as never,
   );
 }
 
@@ -83,6 +94,36 @@ describe('WorkspaceView startup lifecycle', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it.each([PageType.agent, PageType.help, PageType.guide, PageType.add])('does not overlay a wiki view when the window is shown on the %s page', async (pageType) => {
+    const workspace = { id: pageType, name: pageType, pageType, active: true, order: 0, picturePath: null } satisfies IDedicatedWorkspace;
+    mocks.getActiveWorkspace.mockResolvedValue(workspace);
+    mocks.get.mockResolvedValue(workspace);
+
+    await expect(createService().refreshActiveWorkspaceView()).resolves.toBeUndefined();
+
+    expect(mocks.addView).not.toHaveBeenCalled();
+    expect(mocks.showView).not.toHaveBeenCalled();
+    expect(mocks.buildMenu).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([true, false])('still restores a real wiki when a view already exists: %s', async (existing) => {
+    const workspace = createWorkspace('wiki', { active: true });
+    mocks.getActiveWorkspace.mockResolvedValue(workspace);
+    mocks.get.mockResolvedValue(workspace);
+    mocks.getView.mockReturnValueOnce(existing ? {} : undefined);
+
+    await createService().refreshActiveWorkspaceView();
+
+    if (existing) {
+      expect(mocks.showView).toHaveBeenCalledWith('wiki', 'main');
+      expect(mocks.addView).not.toHaveBeenCalled();
+    } else {
+      expect(mocks.addView).toHaveBeenCalledWith(workspace, 'main');
+      expect(mocks.showView).not.toHaveBeenCalled();
+    }
+    expect(mocks.buildMenu).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a navigation persistence failure from rejecting an Electron event listener', async () => {
