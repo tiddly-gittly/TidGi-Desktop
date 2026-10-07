@@ -1,5 +1,6 @@
 import { WebContentsView } from 'electron';
 
+import { isTidGiUrlForWorkspace } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -181,11 +182,11 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         normalizedPathname = parsedUrl.hash.slice(filesIndex);
       }
     }
-    // The workspace ID is part of the tidgi:// origin.  Do not case-fold or
-    // otherwise resolve aliases here: accepting a different host can route a
-    // request through the view for another workspace.  A malformed/stale URL
-    // must fail closed and be reloaded by the caller with the canonical URL.
-    if (workspaceIDFromHost !== workspaceID) {
+    // Chromium lowercases standard-scheme hosts. Match the attached view's
+    // URL host, but keep its original opaque ID for all service calls. Never
+    // resolve the request host through another workspace or accept credentials,
+    // ports or prefix matches as the attached workspace's origin.
+    if (!isTidGiUrlForWorkspace(parsedUrl, workspaceID)) {
       logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
         workspaceIDFromHost,

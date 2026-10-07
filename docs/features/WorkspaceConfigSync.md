@@ -14,6 +14,7 @@ These fields are device-specific and should NOT be synced:
 | -------------------- | -------------------------------------------------- |
 | `id`                 | Unique identifier, different per installation      |
 | `order`              | User preference for sidebar order, device-specific |
+| `groupId`            | Membership in this installation's workspace groups |
 | `active`             | Current active state, runtime only                 |
 | `hibernated`         | Current hibernation state, runtime only            |
 | `lastUrl`            | Last visited URL, device-specific                  |
@@ -104,6 +105,12 @@ When loading a workspace:
 5. Start wiki workers with the hydrated names, routing settings, and child list.
 
 This ensures synced preferences take precedence over stale local values.
+
+Workspace IDs are opaque and remain unchanged. Chromium lowercases the host in
+`tidgi://` URLs, so saved navigation URLs and the attached view's protocol handler
+compare hosts case-insensitively while dispatching operations with the original
+workspace ID. This must not hide grouped workspaces with mixed-case IDs. Other
+hosts, ports, credentials and schemes do not match the workspace origin.
 
 ## Saving Behavior
 

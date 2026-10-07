@@ -615,6 +615,36 @@ describe('Workspace useTidgiConfigSync', () => {
       await expect(service.get('workspace-case')).resolves.toBeUndefined();
     });
 
+    it('retains grouped workspaces when Chromium lowercases the saved URL host', async () => {
+      const workspace = createWorkspace({
+        id: 'Workspace-Case',
+        lastUrl: 'tidgi://workspace-case/#:Index',
+        groupId: 'original-group',
+      });
+      mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
+
+      const workspaces = await new Workspace().getWorkspaces();
+
+      expect(workspaces[workspace.id]).toMatchObject({
+        id: workspace.id,
+        groupId: 'original-group',
+        lastUrl: 'tidgi://workspace-case/#:Index',
+      });
+      expect(mockSetSetting).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      'tidgi://workspace-1-extra/#:Index',
+      'tidgi://workspace-1:5212/#:Index',
+      'tidgi://user@workspace-1/#:Index',
+      'tidgi://different-workspace/#:Index',
+      'not a URL',
+    ])('rejects a saved URL outside the workspace origin: %s', (lastUrl) => {
+      const service = new TestableWorkspace();
+      expect(() => service.sanitizeWorkspaceForTest(createWorkspace({ lastUrl })))
+        .toThrow('workspace_invalid_canonical_fields');
+    });
+
     it('keeps a portable name pending without synthesizing it from the folder path', async () => {
       const workspace = createWorkspace({ name: '' });
       Reflect.deleteProperty(workspace, 'name');

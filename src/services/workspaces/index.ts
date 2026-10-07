@@ -10,7 +10,7 @@ import { map } from 'rxjs/operators';
 
 import { WikiChannel } from '@/constants/channels';
 import { defaultCreatedPageTypes, PageType } from '@/constants/pageTypes';
-import { getDefaultTidGiUrl } from '@/constants/urls';
+import { getDefaultTidGiUrl, isTidGiUrlForWorkspace } from '@/constants/urls';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -626,7 +626,7 @@ export class Workspace implements IWorkspaceService {
     const canonicalHomeUrl = getDefaultTidGiUrl(effectiveWorkspace.id);
     const hasCanonicalLastUrl = effectiveWorkspace.lastUrl === null || (
       typeof effectiveWorkspace.lastUrl === 'string' &&
-      effectiveWorkspace.lastUrl.startsWith(canonicalHomeUrl)
+      isTidGiUrlForWorkspace(effectiveWorkspace.lastUrl, effectiveWorkspace.id)
     );
     const htmlFileLocationCandidate: unknown = Reflect.get(effectiveWorkspace, 'htmlFileLocation');
     const hasHtmlFileLocation = typeof htmlFileLocationCandidate === 'string' && htmlFileLocationCandidate.trim() !== '';

@@ -77,8 +77,9 @@ describe('setupIpcServerRoutesHandlers workspace identity', () => {
     );
   });
 
-  it('rejects a host whose case differs from the attached workspace ID', async () => {
+  it('accepts Chromium host normalization without changing the attached workspace ID', async () => {
     const workspaceID = 'Abcdefghijklmnopqrstu';
+    (workspaceService.get as ReturnType<typeof vi.fn>).mockResolvedValue(createWorkspace(workspaceID));
     registerHandler(workspaceID);
 
     // Electron canonicalizes a standard custom-scheme host before invoking
@@ -88,6 +89,19 @@ describe('setupIpcServerRoutesHandlers workspace identity', () => {
       url: `tidgi://${workspaceID.toLowerCase()}/`,
     } as unknown as Request);
 
+    expect(response.status).toBe(200);
+    expect(callWikiIpcServerRoute).toHaveBeenCalledWith(workspaceID, 'getIndex', '$:/core/save/lazy-images');
+  });
+
+  it.each([
+    'tidgi://another-workspace/',
+    'tidgi://attached-extra/',
+    'tidgi://attached:5212/',
+    'tidgi://user@attached/',
+    'https://attached/',
+  ])('rejects a different origin without dispatching wiki operations: %s', async (url) => {
+    registerHandler('attached');
+    const response = await protocolHandler({ method: 'GET', url } as unknown as Request);
     expect(response.status).toBe(404);
     expect(callWikiIpcServerRoute).not.toHaveBeenCalled();
   });
