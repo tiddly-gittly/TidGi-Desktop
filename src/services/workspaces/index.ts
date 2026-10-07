@@ -35,6 +35,7 @@ import type {
 } from './interface';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues, WorkspaceType } from './interface';
 import { registerMenu } from './registerMenu';
+import { syncableConfigFields } from './syncableConfig';
 import { workspaceSorter } from './utilities';
 import { isHtmlWikiWorkspace, normalizeHtmlWorkspacePaths } from './workspacePaths';
 
@@ -498,7 +499,13 @@ export class Workspace implements IWorkspaceService {
     persistedPatch?: Partial<IWorkspace>,
   ): Promise<void> {
     const workspaces = this.getWorkspacesSync();
-    const workspaceToSave = this.sanitizeWorkspace(workspace);
+    // A local runtime patch must work even when an unavailable portable file
+    // leaves its name pending. It must not publish default/empty portable
+    // fields back to disk. Full saves and portable edits remain strict.
+    const changesPortableConfig = persistedPatch === undefined ||
+      (isWikiWorkspace(workspace) && Reflect.get(persistedPatch, 'useTidgiConfigSync') === true) ||
+      syncableConfigFields.some(field => Object.hasOwn(persistedPatch, field));
+    const workspaceToSave = this.sanitizeWorkspace(workspace, changesPortableConfig);
 
     // Capture previous in-memory state for precise syncable-field diffing.
     const previousWorkspace = workspaces[id];
@@ -509,7 +516,7 @@ export class Workspace implements IWorkspaceService {
     const shouldSyncToTidgiConfig = isWikiWorkspace(workspaceToSave) && workspaceToSave.useTidgiConfigSync;
 
     // Write tidgi.config.json only when syncable fields actually changed AND workspace uses tidgi.config.json sync.
-    if (shouldSyncToTidgiConfig) {
+    if (shouldSyncToTidgiConfig && changesPortableConfig) {
       const newSyncableConfig = extractSyncableConfig(workspaceToSave);
       const previousSyncableConfig = previousWorkspace !== undefined && isWikiWorkspace(previousWorkspace)
         ? extractSyncableConfig(previousWorkspace)

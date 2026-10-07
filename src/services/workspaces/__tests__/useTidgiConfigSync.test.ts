@@ -322,6 +322,34 @@ describe('Workspace useTidgiConfigSync', () => {
       expect(persisted).not.toHaveProperty('name');
       expect(persisted).not.toHaveProperty('useTidgiConfigSync');
     });
+
+    it.each([
+      { hibernated: true },
+      { lastUrl: 'tidgi://workspace-1/#:Index' },
+      { groupId: 'retained-group' },
+    ])('allows a local patch with pending portable fields without rewriting the portable file: %j', async (patch) => {
+      const workspace = createWorkspace({ useTidgiConfigSync: true });
+      Reflect.deleteProperty(workspace, 'name');
+      Reflect.deleteProperty(workspace, 'tagNames');
+      mockGetSetting.mockReturnValue({ [workspace.id]: workspace });
+      const service = new Workspace();
+
+      await expect(service.update(workspace.id, patch)).resolves.toBeUndefined();
+
+      const saved = mockSetSetting.mock.calls[0][1][workspace.id] as IWikiWorkspace;
+      expect(saved).toMatchObject(patch);
+      expect(saved).not.toHaveProperty('name');
+      expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
+    });
+
+    it('still rejects portable edits with an empty name', async () => {
+      const workspace = createWorkspace({ name: '', useTidgiConfigSync: true });
+      const service = createWorkspaceService(workspace);
+      await expect(service.update(workspace.id, { readOnlyMode: true }))
+        .rejects.toThrow('workspace_invalid_canonical_fields');
+      expect(mockSetSetting).not.toHaveBeenCalled();
+      expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
+    });
   });
 
   describe('startup portable config hydration', () => {

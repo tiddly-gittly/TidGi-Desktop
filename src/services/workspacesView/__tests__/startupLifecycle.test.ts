@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   setAllWikiStartLockOff: vi.fn(),
   setWikiStartLockOn: vi.fn(),
   updateMetaData: vi.fn().mockResolvedValue(undefined),
+  update: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('electron', () => ({
@@ -27,6 +28,7 @@ vi.mock('@services/container', async () => {
           return {
             getWorkspacesAsList: mocks.getWorkspacesAsList,
             updateMetaData: mocks.updateMetaData,
+            update: mocks.update,
           };
         }
         if (description.includes('Symbol(Wiki)')) {
@@ -81,6 +83,25 @@ describe('WorkspaceView startup lifecycle', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('keeps a navigation persistence failure from rejecting an Electron event listener', async () => {
+    const service = createService();
+    mocks.update.mockRejectedValueOnce(new Error('settings write failed'));
+    const view = {
+      webContents: { getURL: () => 'tidgi://workspace/#:Index', isDestroyed: () => false },
+    };
+
+    await expect(service.updateLastUrl('workspace', view as never)).resolves.toBeUndefined();
+    expect(mocks.update).toHaveBeenCalledWith('workspace', { lastUrl: 'tidgi://workspace/#:Index' });
+  });
+
+  it('ignores navigation callbacks for an already destroyed view', async () => {
+    const service = createService();
+    const getURL = vi.fn();
+    await service.updateLastUrl('workspace', { webContents: { getURL, isDestroyed: () => true } } as never);
+    expect(getURL).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it('fails duplicate folder and HTTP-port resources before starting workers', async () => {

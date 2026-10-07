@@ -120,6 +120,12 @@ When saving workspace config:
 2. Write changed syncable fields to `tidgi.config.json` (only non-default values).
 3. Publish the new in-memory state after persistence succeeds.
 
+Local partial updates (such as hibernation, navigation history and group
+membership) can be saved while portable fields are pending. They never rewrite
+the portable file with empty defaults. Full saves and portable edits still require
+valid portable fields. Navigation-history persistence failures are logged without
+rejecting Electron event listeners or blocking the loaded wiki.
+
 ## Unavailable or Invalid Config
 
 Missing or invalid files leave cached settings in place. Config files require a numeric `version`; a partial JSON object without it is not a valid portable config. A timed-out read stops the serial import to avoid exhausting filesystem workers. The application window and AI services remain available.

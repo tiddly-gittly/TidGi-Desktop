@@ -403,18 +403,25 @@ export class WorkspaceView implements IWorkspaceViewService {
     workspaceID: string,
     view: Electron.CrossProcessExports.WebContentsView | undefined = container.get<IViewService>(serviceIdentifier.View).getView(workspaceID, WindowNames.main),
   ): Promise<void> {
-    if (view?.webContents) {
-      const currentUrl = view.webContents.getURL();
-      logger.debug('Updating lastUrl for workspace', {
-        workspaceID,
-        currentUrl,
-        function: 'updateLastUrl',
-      });
-      await container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
-        lastUrl: currentUrl,
-      });
-    } else {
-      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
+    try {
+      if (view?.webContents && !view.webContents.isDestroyed()) {
+        const currentUrl = view.webContents.getURL();
+        logger.debug('Updating lastUrl for workspace', {
+          workspaceID,
+          currentUrl,
+          function: 'updateLastUrl',
+        });
+        await container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
+          lastUrl: currentUrl,
+        });
+      } else {
+        logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
+      }
+    } catch (error) {
+      // Navigation events do not await async listeners. A non-critical history
+      // write must not become an unhandled rejection or block the app with a
+      // native error dialog; keep the loaded wiki usable and retain diagnostics.
+      logger.warn('Could not persist workspace navigation', { workspaceID, error, function: 'updateLastUrl' });
     }
   }
 
