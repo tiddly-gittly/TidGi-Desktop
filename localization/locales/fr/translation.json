@@ -451,6 +451,8 @@
   },
   "LinOnetwo": "Lin Onetwo",
   "Loading": "Chargement",
+  "WaitingForFolderAccess": "En attente de l’accès au dossier. Autorisez l’accès dans la boîte de dialogue macOS ; cette étape n’a pas de limite de temps.",
+  "FolderAccessDenied": "Impossible d’accéder à {{folderPath}}. Autorisez cette application dans Réglages Système → Confidentialité et sécurité → Fichiers et dossiers, puis redémarrez cet espace de travail.",
   "Log": {
     "AddComplete": "Ajout Git réussi",
     "AddingFiles": "Commencer à ajouter vos fichiers à sauvegarder avec Git",

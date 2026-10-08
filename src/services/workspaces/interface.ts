@@ -340,6 +340,8 @@ export interface IWorkspaceMetaData {
    * indicating server or webpage is still loading
    */
   isLoading?: boolean;
+  /** Human-paced macOS consent, not a timed wiki boot. Never persisted. */
+  isWaitingForFolderAccess?: boolean;
   /**
    * Is restarting service for this workspace.
    */
@@ -455,6 +457,8 @@ export interface IWorkspaceService {
   initializeMenu(): Promise<void>;
   /** Import portable config after core startup, before starting wiki workers. */
   startPortableConfigHydration(): Promise<void>;
+  /** Await macOS protected-folder consent before timed config/worker reads. */
+  ensureWikiFolderAccess(workspace: IWikiWorkspace, signal?: AbortSignal): Promise<void>;
   /** Cancel best-effort portable workspace config reads during shutdown. */
   cancelPortableConfigHydration(): void;
   /**

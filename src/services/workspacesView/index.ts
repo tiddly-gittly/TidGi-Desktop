@@ -192,6 +192,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const shouldBeMainWiki = isWikiWorkspace(workspace) && !workspace.isSubWiki;
     const strategy = getWorkspaceStrategy(workspace);
+    if (isWikiWorkspace(workspace)) {
+      await workspaceService.ensureWikiFolderAccess(workspace, this.startupAbortController?.signal);
+    }
     logger.info('checking wiki existence', {
       workspaceId: workspace.id,
       shouldBeMainWiki,

@@ -15,7 +15,9 @@ import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
+import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
+import { macFolderAccessGate } from '@services/libs/macFolderAccess';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -279,11 +281,21 @@ export class Workspace implements IWorkspaceService {
         if (
           workspace === undefined ||
           !isWikiWorkspace(workspace) ||
-          workspace.workspaceType === WorkspaceType.html ||
-          !workspace.useTidgiConfigSync
+          workspace.workspaceType === WorkspaceType.html
         ) {
           continue;
         }
+
+        try {
+          if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) !== undefined) {
+            await this.ensureWikiFolderAccess(workspace, runController.signal);
+          }
+        } catch (error) {
+          if (runController.signal.aborted) return;
+          logger.warn('Workspace folder access was not granted', { workspaceID, error });
+          continue;
+        }
+        if (!workspace.useTidgiConfigSync) continue;
 
         this.cancelPortableConfigHydrationForWorkspace(workspace.id);
         const hydration: IPortableConfigHydration = {
@@ -304,6 +316,21 @@ export class Workspace implements IWorkspaceService {
       if (this.portableConfigHydrationRunController === runController) {
         this.portableConfigHydrationRunController = undefined;
       }
+    }
+  }
+
+  public async ensureWikiFolderAccess(workspace: IWikiWorkspace, signal?: AbortSignal): Promise<void> {
+    if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) === undefined) return;
+    await this.updateMetaData(workspace.id, { isLoading: true, isWaitingForFolderAccess: true });
+    try {
+      await macFolderAccessGate.waitForAccess(workspace.wikiFolderLocation, signal);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      const message = i18n.t('FolderAccessDenied', { folderPath: workspace.wikiFolderLocation });
+      await this.updateMetaData(workspace.id, { isLoading: false, didFailLoadErrorMessage: message });
+      throw new Error(message, { cause: error });
+    } finally {
+      await this.updateMetaData(workspace.id, { isWaitingForFolderAccess: false });
     }
   }
 

@@ -23,6 +23,7 @@ export default function WikiBackground(): React.JSX.Element {
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
     .find((workspace) => workspace.active);
   const activeWorkspace = workspacesList?.find((workspace) => workspace.active);
+  const waitingForFolderAccess = workspacesList?.some((workspace) => workspace.metadata.isWaitingForFolderAccess === true) === true;
   const hasError = typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
     activeWorkspaceMetadata.didFailLoadErrorMessage.length > 0 &&
     activeWorkspaceMetadata.isLoading === false;
@@ -33,7 +34,9 @@ export default function WikiBackground(): React.JSX.Element {
         {Array.isArray(workspacesList) && activeWorkspace !== undefined && workspacesList.length > 0 && hasError && (
           <ViewLoadErrorMessages activeWorkspace={activeWorkspace} activeWorkspaceMetadata={activeWorkspaceMetadata} />
         )}
-        {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && <Typography color='textSecondary'>{t('Loading')}</Typography>}
+        {Array.isArray(workspacesList) && workspacesList.length > 0 && (activeWorkspaceMetadata?.isLoading === true || waitingForFolderAccess) && (
+          <Typography color='textSecondary'>{t(waitingForFolderAccess ? 'WaitingForFolderAccess' : 'Loading')}</Typography>
+        )}
       </InnerContentRoot>
     </>
   );

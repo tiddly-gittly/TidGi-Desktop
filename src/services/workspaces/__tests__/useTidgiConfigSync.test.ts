@@ -1,3 +1,4 @@
+import { macFolderAccessGate } from '@services/libs/macFolderAccess';
 import { SupportedStorageServices } from '@services/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Workspace } from '../index';
@@ -353,6 +354,31 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('startup portable config hydration', () => {
+    it('waits for human consent before starting the portable-config deadline', async () => {
+      vi.useFakeTimers();
+      const consent = { resolve: () => {} };
+      const pending = new Promise<void>((resolve) => {
+        consent.resolve = resolve;
+      });
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockReturnValue(pending);
+      try {
+        const service = createWorkspaceService(createWorkspace({ useTidgiConfigSync: true }));
+        const hydration = service.startPortableConfigHydration();
+        await vi.advanceTimersByTimeAsync(120_000);
+        expect(mockReadTidgiConfig).not.toHaveBeenCalled();
+        await expect(service.getMetaData('workspace-1')).resolves.toMatchObject({ isLoading: true, isWaitingForFolderAccess: true });
+        consent.resolve();
+        await hydration;
+        expect(mockReadTidgiConfig).toHaveBeenCalledTimes(1);
+        await expect(service.getMetaData('workspace-1')).resolves.toMatchObject({ isWaitingForFolderAccess: false });
+      } finally {
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+        vi.useRealTimers();
+      }
+    });
+
     it('awaits portable names and child links before a worker snapshots sparse workspace settings', async () => {
       const root = createWorkspace({ id: 'root', wikiFolderLocation: '/wikis/root' });
       const child = createWorkspace({ id: 'child', wikiFolderLocation: '/wikis/calendar' });

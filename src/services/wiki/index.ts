@@ -54,6 +54,7 @@ import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWiki
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 
 type WikiOperationFunction = (...arguments_: never[]) => unknown;
+const WORKER_AVAILABILITY_TIMEOUT_MS = 10_000;
 
 /**
  * Invoke a dynamically selected wiki operation without weakening the
@@ -229,6 +230,10 @@ export class Wiki implements IWikiService {
     if (isHtmlWikiWorkspace(workspace)) {
       logger.debug('skip startWiki for HTML wiki workspace', { workspaceID });
       return;
+    }
+    await workspaceService.ensureWikiFolderAccess(workspace);
+    if (this.stoppingAllWiki) {
+      throw new Error(`Wiki ${workspaceID} startup cancelled because the application is shutting down`);
     }
     const { rootTiddler, readOnlyMode, tokenAuth, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
     let { port } = workspace;
@@ -634,16 +639,34 @@ export class Wiki implements IWikiService {
   }
 
   /**
-   * Ensure you get a started worker. If not stated, it will await for it to start.
+   * Wait briefly for an in-flight startup, never forever after a failed boot.
    * @param workspaceID
    */
   private async getWorkerEnsure(workspaceID: string): Promise<WikiWorker> {
     let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
+      const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+      const workspace = await workspaceService.get(workspaceID);
+      if (workspace !== undefined && isWikiWorkspace(workspace) && !isHtmlWikiWorkspace(workspace)) {
+        await workspaceService.ensureWikiFolderAccess(workspace);
+      }
+      // A worker may have started while the user was granting access.
+      worker = this.getWorker(workspaceID);
+    }
+    if (worker === undefined) {
       // wait for wiki worker started
-      await new Promise<void>(resolve => {
-        this.wikiWorkerStartedEventTarget.addEventListener(wikiWorkerStartedEventName(workspaceID), () => {
+      await new Promise<void>((resolve, reject) => {
+        const eventName = wikiWorkerStartedEventName(workspaceID);
+        const onStarted = () => {
+          clearTimeout(timer);
           resolve();
+        };
+        const timer = setTimeout(() => {
+          this.wikiWorkerStartedEventTarget.removeEventListener(eventName, onStarted);
+          reject(new Error(`Wiki worker unavailable for workspace ${workspaceID}`));
+        }, WORKER_AVAILABILITY_TIMEOUT_MS);
+        this.wikiWorkerStartedEventTarget.addEventListener(eventName, onStarted, {
+          once: true,
         });
       });
     } else {
@@ -691,7 +714,9 @@ export class Wiki implements IWikiService {
         const observable = worker.getWikiChangeObserver();
         observable.subscribe(observer);
       };
-      void getWikiChangeObserverIIFE();
+      void getWikiChangeObserverIIFE().catch((error: unknown) => {
+        observer.error(error);
+      });
     });
   }
 

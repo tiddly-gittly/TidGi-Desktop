@@ -1,11 +1,13 @@
+import { WikiChannel } from '@/constants/channels';
 import { EventEmitter } from 'node:events';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   detachWorker: vi.fn(),
   stopIntervalSync: vi.fn(),
   terminateWorker: vi.fn().mockResolvedValue(undefined),
   workerKill: vi.fn(),
+  ensureWikiFolderAccess: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('electron', () => ({
@@ -34,6 +36,7 @@ vi.mock('@services/container', async () => {
         const description = identifier.toString();
         if (description.includes('Symbol(Workspace)')) {
           return {
+            ensureWikiFolderAccess: mocks.ensureWikiFolderAccess,
             get: vi.fn().mockResolvedValue({
               id: 'pending',
               wikiFolderLocation: '/wikis/pending',
@@ -52,6 +55,8 @@ vi.mock('@services/container', async () => {
 });
 
 import { Wiki } from '..';
+import { wikiWorkerStartedEventName } from '../constants';
+import type { WikiWorker } from '../wikiWorker';
 
 function createWikiService(): Wiki {
   return new Wiki(
@@ -66,6 +71,66 @@ describe('Wiki shutdown lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.terminateWorker.mockResolvedValue(undefined);
+    mocks.ensureWikiFolderAccess.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('bounds missing-worker waits and removes the stale startup listener', async () => {
+    vi.useFakeTimers();
+    const wiki = createWikiService();
+    const events = (wiki as unknown as { wikiWorkerStartedEventTarget: EventTarget }).wikiWorkerStartedEventTarget;
+    const remove = vi.spyOn(events, 'removeEventListener');
+    const pending = wiki.wikiOperationInServer(WikiChannel.runFilter, 'failed', ['[all[tiddlers]]']);
+    const failure = expect(pending).rejects.toThrow('Wiki worker unavailable for workspace failed');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await failure;
+    expect(remove).toHaveBeenCalledWith(wikiWorkerStartedEventName('failed'), expect.any(Function));
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('allows a worker that starts during the wait and clears the deadline', async () => {
+    vi.useFakeTimers();
+    const wiki = createWikiService();
+    const getWorker = vi.spyOn(wiki, 'getWorker').mockReturnValue(undefined);
+    const pending = wiki.wikiOperationInServer(WikiChannel.runFilter, 'starting', ['[all[tiddlers]]']);
+    await vi.advanceTimersByTimeAsync(0);
+    const wikiOperation = vi.fn().mockResolvedValue(['Loaded']);
+    getWorker.mockReturnValue({ wikiOperation } as unknown as WikiWorker);
+    const events = (wiki as unknown as { wikiWorkerStartedEventTarget: EventTarget }).wikiWorkerStartedEventTarget;
+    events.dispatchEvent(new Event(wikiWorkerStartedEventName('starting')));
+    await expect(pending).resolves.toEqual(['Loaded']);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('reports missing-worker failures to change observers without an unhandled rejection', async () => {
+    vi.useFakeTimers();
+    const wiki = createWikiService();
+    const error = vi.fn();
+    wiki.getWikiChangeObserver$('failed').subscribe({ error });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(error).toHaveBeenCalledWith(expect.objectContaining({ message: 'Wiki worker unavailable for workspace failed' }));
+  });
+
+  it('does not charge permission-wait time to the worker availability deadline', async () => {
+    vi.useFakeTimers();
+    let grant!: () => void;
+    mocks.ensureWikiFolderAccess.mockReturnValue(
+      new Promise<void>((resolve) => {
+        grant = resolve;
+      }),
+    );
+    const wiki = createWikiService();
+    const getWorker = vi.spyOn(wiki, 'getWorker').mockReturnValue(undefined);
+    const pending = wiki.wikiOperationInServer(WikiChannel.runFilter, 'pending', ['[all[tiddlers]]']);
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(vi.getTimerCount()).toBe(0);
+    getWorker.mockReturnValue({ wikiOperation: vi.fn().mockResolvedValue(['Loaded']) } as unknown as WikiWorker);
+    grant();
+    await expect(pending).resolves.toEqual(['Loaded']);
   });
 
   it('cancels a pending boot before terminating and skips beforeExit for an unbooted worker', async () => {

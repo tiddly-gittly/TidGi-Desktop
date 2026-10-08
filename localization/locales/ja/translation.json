@@ -451,6 +451,8 @@
   },
   "LinOnetwo": "林一二",
   "Loading": "読み込み中",
+  "WaitingForFolderAccess": "フォルダへのアクセス許可を待っています。macOS のダイアログで許可してください。この手順に時間制限はありません。",
+  "FolderAccessDenied": "{{folderPath}} にアクセスできません。システム設定 → プライバシーとセキュリティ → ファイルとフォルダでこのアプリを許可し、ワークスペースを再起動してください。",
   "Log": {
     "AddComplete": "追加(Git Add)成功",
     "AddingFiles": "バックアップ対象のファイルを追加開始（Git Add）",

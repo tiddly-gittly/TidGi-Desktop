@@ -451,6 +451,8 @@
   },
   "LinOnetwo": "Lin Onetwo",
   "Loading": "Loading",
+  "WaitingForFolderAccess": "Waiting for folder access. Please allow access in the macOS permission dialog; there is no time limit.",
+  "FolderAccessDenied": "Cannot access {{folderPath}}. Allow this app in System Settings → Privacy & Security → Files and Folders, then restart this workspace.",
   "Log": {
     "AddComplete": "Git Add successful",
     "AddingFiles": "Start Git Add your files that needs backed up",

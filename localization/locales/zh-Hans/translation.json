@@ -451,6 +451,8 @@
   },
   "LinOnetwo": "林一二",
   "Loading": "加载中",
+  "WaitingForFolderAccess": "等待文件夹访问权限。请在 macOS 权限弹框中允许访问；此步骤没有时间限制。",
+  "FolderAccessDenied": "无法访问 {{folderPath}}。请在系统设置 → 隐私与安全性 → 文件与文件夹中允许本应用访问，然后重启此工作区。",
   "Log": {
     "AddComplete": "添加(Git Add)成功",
     "AddingFiles": "开始添加(Git Add)待备份的文件",

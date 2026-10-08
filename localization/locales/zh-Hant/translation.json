@@ -451,6 +451,8 @@
   },
   "LinOnetwo": "林一二",
   "Loading": "載入中",
+  "WaitingForFolderAccess": "等待資料夾存取權限。請在 macOS 權限對話框中允許存取；此步驟沒有時間限制。",
+  "FolderAccessDenied": "無法存取 {{folderPath}}。請在系統設定 → 隱私權與安全性 → 檔案與資料夾中允許本應用程式存取，然後重新啟動此工作區。",
   "Log": {
     "AddComplete": "添加(Git Add)成功",
     "AddingFiles": "開始添加(Git Add)待備份的文件",
