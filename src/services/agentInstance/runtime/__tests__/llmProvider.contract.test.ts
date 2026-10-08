@@ -66,6 +66,36 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
   });
 
   it.each([
+    { code: 'PROVIDER_UNAVAILABLE', createError: () => new Error('transport failed') },
+    { code: 'RATE_LIMITED', createError: () => Object.assign(new Error('rate limited'), { status: 429 }) },
+  ])('preserves localization parameters for $code', async ({ code, createError }) => {
+    const provider = new MemeLoopDesktopLLMProvider({
+      providerId: 'cpa',
+      externalAPIService: {
+        generatePortableLlm: async function*() {
+          yield { type: 'text-delta' as const, id: 'partial', text: '' };
+          throw createError();
+        },
+      } as unknown as IExternalAPIService,
+    });
+    let received: unknown;
+    try {
+      for await (const _part of provider.chat(request()) as AsyncIterable<PortableLlmStreamPart>) {
+        // Consume until the structured failure is raised.
+      }
+    } catch (error) {
+      received = error;
+    }
+    expect(extractAgentRunError(received)).toEqual(expect.objectContaining({
+      code,
+      retryable: true,
+      providerId: 'cpa',
+      modelId: 'logical-model',
+      localizedParams: { providerId: 'cpa', modelId: 'logical-model' },
+    }));
+  });
+
+  it.each([
     {
       createError: () => new MissingAPIKeyError('cpa'),
       code: 'PROVIDER_AUTH_MISSING',

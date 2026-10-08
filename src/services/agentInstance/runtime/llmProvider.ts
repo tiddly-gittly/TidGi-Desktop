@@ -31,8 +31,8 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
   private async *chatImpl(request: PortableLlmRequest): AsyncGenerator<PortableLlmStreamPart, void, unknown> {
     assertPortableLlmRequest(request);
     const { conversationId } = request;
-    if (!conversationId) throw typedRuntimeError('INVALID_REQUEST', false);
-    if (request.providerId !== this.name) throw typedRuntimeError('INVALID_REQUEST', false);
+    if (!conversationId) throw typedRuntimeError('INVALID_REQUEST', false, request);
+    if (request.providerId !== this.name) throw typedRuntimeError('INVALID_REQUEST', false, request);
     let chunkCount = 0;
     try {
       for await (
@@ -59,11 +59,15 @@ export class MemeLoopDesktopLLMProvider implements ILLMProvider {
 function typedRuntimeError(
   code: 'INVALID_REQUEST' | 'PROVIDER_UNAVAILABLE' | 'RATE_LIMITED',
   retryable: boolean,
+  request: PortableLlmRequest,
 ): AgentRunFailure {
   return new AgentRunFailure(createAgentRunError({
     code,
     messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS[code],
     retryable,
+    providerId: request.providerId,
+    modelId: request.logicalModelId,
+    localizedParams: { providerId: request.providerId, modelId: request.logicalModelId },
   }));
 }
 
@@ -101,8 +105,8 @@ function providerRunFailure(
         settingTarget: { kind: 'model', providerId, modelId },
       }));
     case 'RATE_LIMIT_EXCEEDED':
-      return typedRuntimeError('RATE_LIMITED', true);
+      return typedRuntimeError('RATE_LIMITED', true, request);
     default:
-      return typedRuntimeError('PROVIDER_UNAVAILABLE', true);
+      return typedRuntimeError('PROVIDER_UNAVAILABLE', true, request);
   }
 }
