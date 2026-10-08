@@ -581,36 +581,28 @@ When('I hide the main window as if closing with runOnBackground', async function
  * calls `windowService.open(WindowNames.main)` → `existedWindow.show()` → 'show' event
  * → `refreshActiveWorkspaceView()`.
  */
-When('I reopen the main window as second instance would', async function(this: ApplicationWorld) {
-  if (!this.app) throw new Error('Application is not launched');
-  await this.app.evaluate(({ app, BrowserWindow }) => {
+async function dispatchSecondInstance(world: ApplicationWorld, commandLine: string[]): Promise<void> {
+  if (!world.app) throw new Error('Application is not launched');
+  await world.app.evaluate(({ app, BrowserWindow }, argv: string[]) => {
     // Trigger the same handler that a real second-instance launch fires.
     // Electron event listeners for 'second-instance' receive: (event, argv, workingDirectory, additionalData).
-    // We must pass a fake Event object first so that DeepLinkService's `(_event, commandLine)` handler
-    // receives an empty array as commandLine, not our workingDirectory string.
-    app.emit('second-instance', /* event */ {}, /* argv */ [], /* workingDirectory */ '', /* additionalData */ {});
-    // In test mode, window.open() intentionally skips existedWindow.show() to avoid UI popups.
-    // Show all surviving windows explicitly so the recreated main window is guaranteed visible.
-    // This avoids brittle heuristics that try to distinguish main vs tidgi mini window by size.
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed()) {
-        win.show();
+    // Return the inspector evaluation before native show/navigation re-enters
+    // Chromium and invalidates its execution context. Subsequent UI assertions
+    // wait for the requested page, rather than sleeping in another evaluation.
+    setImmediate(() => {
+      app.emit('second-instance', /* event */ {}, argv, /* workingDirectory */ '', /* additionalData */ {});
+      // Test mode skips existedWindow.show(), so mirror the real foregrounding.
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) win.show();
       }
-    }
-  });
-  // Wait for show → refreshActiveWorkspaceView → buildMenu to complete.
-  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
+    });
+  }, commandLine);
+}
+
+When('I reopen the main window as second instance would', async function(this: ApplicationWorld) {
+  await dispatchSecondInstance(this, []);
 });
 
 When('I trigger deep link {string} as second instance would', async function(this: ApplicationWorld, deepLink: string) {
-  if (!this.app) throw new Error('Application is not launched');
-  await this.app.evaluate(({ app, BrowserWindow }, url: string) => {
-    app.emit('second-instance', /* event */ {}, /* argv */ [url], /* workingDirectory */ '', /* additionalData */ {});
-    for (const win of BrowserWindow.getAllWindows()) {
-      if (!win.isDestroyed()) {
-        win.show();
-      }
-    }
-  }, deepLink);
-  await this.app.evaluate(async () => new Promise<void>(resolve => setTimeout(resolve, 500)));
+  await dispatchSecondInstance(this, [deepLink]);
 });
