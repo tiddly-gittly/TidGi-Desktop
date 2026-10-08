@@ -2,17 +2,19 @@
 // or whose types are too heavy to include as dependencies.
 
 declare module 'v8-compile-cache-lib' {
-  export const __TEST__: any;
-  export function install(options?: any): { uninstall: () => void } | undefined;
-  export function uninstall(): void;
-}
+  export interface V8CompileCacheTestApi {
+    getMainName(): string;
+    getCacheDir(): string;
+    supportsCachedData(): boolean;
+  }
 
-declare module 'espree' {
-  export function parse(code: string, options?: any): any;
-  export function tokenize(code: string, options?: any): any;
-  export const version: string;
-  export const latestEcmaVersion: number;
-  export const supportedEcmaVersions: number[];
+  export const __TEST__: V8CompileCacheTestApi;
+  export function install(options?: {
+    cacheDir?: string;
+    prefix?: string;
+  }): {
+    uninstall(): void;
+  } | undefined;
 }
 
 declare module 'git-sync-js' {

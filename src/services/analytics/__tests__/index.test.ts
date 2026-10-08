@@ -1,15 +1,12 @@
-import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
-import serviceIdentifier from '@services/serviceIdentifier';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AnalyticsService } from '../index';
 
 describe('AnalyticsService', () => {
   let preferenceStore: Record<string, unknown>;
   let preferenceService: { get: ReturnType<typeof vi.fn>; set: ReturnType<typeof vi.fn> };
   let mockDatabase: IDatabaseService;
-  let originalDatabase: unknown;
 
   beforeEach(() => {
     preferenceStore = {};
@@ -24,12 +21,6 @@ describe('AnalyticsService', () => {
       setSetting: vi.fn(),
       immediatelyStoreSettingsToFile: vi.fn().mockResolvedValue(undefined),
     } as unknown as IDatabaseService;
-    originalDatabase = container.get(serviceIdentifier.Database);
-    container.rebind(serviceIdentifier.Database).toConstantValue(mockDatabase);
-  });
-
-  afterEach(() => {
-    container.rebind(serviceIdentifier.Database).toConstantValue(originalDatabase);
   });
 
   it('isEnabled returns false when analyticsEnabled preference is false', async () => {
@@ -37,7 +28,7 @@ describe('AnalyticsService', () => {
     preferenceStore.analyticsHost = 'https://analytics.tidgi.fun';
     preferenceStore.analyticsHostname = 'desktop.tidgi.fun';
     preferenceStore.analyticsSiteId = '189dd97a8d37';
-    const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
+    const service = new AnalyticsService(mockDatabase, preferenceService as unknown as IPreferenceService);
     expect(await service.isEnabled()).toBe(false);
   });
 
@@ -46,20 +37,20 @@ describe('AnalyticsService', () => {
     preferenceStore.analyticsHost = 'https://analytics.tidgi.fun';
     preferenceStore.analyticsHostname = 'desktop.tidgi.fun';
     preferenceStore.analyticsSiteId = '189dd97a8d37';
-    const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
+    const service = new AnalyticsService(mockDatabase, preferenceService as unknown as IPreferenceService);
     expect(await service.isEnabled()).toBe(true);
   });
 
   it('track does nothing when disabled', async () => {
     preferenceStore.analyticsEnabled = false;
-    const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
+    const service = new AnalyticsService(mockDatabase, preferenceService as unknown as IPreferenceService);
     await service.track('app.launched');
     expect(preferenceService.get).toHaveBeenCalledWith('analyticsEnabled');
   });
 
   it('trackError does nothing when disabled', async () => {
     preferenceStore.analyticsEnabled = false;
-    const service = new AnalyticsService(preferenceService as unknown as IPreferenceService);
+    const service = new AnalyticsService(mockDatabase, preferenceService as unknown as IPreferenceService);
     service.trackError(new Error('test'), 'test-source');
     // trackError is fire-and-forget; wait a tick
     await new Promise(resolve => setTimeout(resolve, 0));

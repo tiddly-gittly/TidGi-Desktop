@@ -3,6 +3,13 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isXDisplayReachable, isXvfbRunAvailable, reExecuteCurrentScriptUnderXvfb, requiresVirtualXDisplay } from './xDisplay';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// X Display auto-detection — re-exec under xvfb-run when no DISPLAY is set.
+// Prevents "Missing X server or $DISPLAY" errors on headless/SSH/CI machines.
+// ═══════════════════════════════════════════════════════════════════════════
+const XVFB_WRAPPED_ENV = 'TIDGI_E2E_XVFB_WRAPPED';
 
 export class E2EArgsValidationError extends Error {
   constructor(
@@ -238,6 +245,17 @@ function isDirectExecution(): boolean {
 if (isDirectExecution()) {
   const cucumberArguments: string[] = process.argv.slice(2);
   process.env.NODE_ENV = 'test';
+
+  // Auto-wrap under xvfb-run when no X display is available (headless/SSH/CI).
+  if (process.env[XVFB_WRAPPED_ENV] !== '1' && requiresVirtualXDisplay(process.platform, isXDisplayReachable(process.env.DISPLAY))) {
+    if (isXvfbRunAvailable()) {
+      console.warn('[run-e2e] No X display detected — re-executing under xvfb-run');
+      reExecuteCurrentScriptUnderXvfb(XVFB_WRAPPED_ENV);
+    } else {
+      console.error('[run-e2e] No X display and xvfb-run not found. Install xvfb: sudo apt install xvfb');
+      process.exit(1);
+    }
+  }
 
   try {
     validateCucumberArguments(cucumberArguments);

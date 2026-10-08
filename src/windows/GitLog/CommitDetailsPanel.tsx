@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SupportedStorageServices } from '@services/types';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import { getFileStatusStyles, type GitFileStatus } from './fileStatusStyles';
 import type { GitLogEntry } from './types';
 
@@ -212,7 +213,7 @@ export function CommitDetailsPanel(
     setIsUndoing(true);
     try {
       const workspace = await window.service.workspace.get(workspaceID);
-      if (!workspace || !('wikiFolderLocation' in workspace)) return;
+      if (!workspace || !isWikiWorkspace(workspace)) return;
 
       // Pass hashes newest-first (committedSelections is derived from entries which are newest-first).
       await window.service.git.undoCommits(
@@ -332,7 +333,7 @@ export function CommitDetailsPanel(
       }
       void window.service.native.log('info', 'GitLog handleSyncToRemote: calling syncWikiIfNeeded', {
         workspaceID,
-        storageService: String((workspace as unknown as Record<string, unknown>).storageService),
+        storageService: workspace.storageService,
       });
       // Pass force:true so user-explicit sync always bypasses the draft check.
       await window.service.sync.syncWikiIfNeeded(workspace, { commitMessage: t('LOG.CommitBackupMessage'), force: true });

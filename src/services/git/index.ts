@@ -1,5 +1,5 @@
 import { app, dialog, net, type UtilityProcess } from 'electron';
-import { createWorkerMethodProxy, terminateWorker, type WorkerPeer } from 'electron-ipc-cat/host';
+import { createWorkerMethodProxy, terminateWorker } from 'electron-ipc-cat/host';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import path from 'node:path';
@@ -14,6 +14,7 @@ import { container } from '@services/container';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { i18n } from '@services/libs/i18n';
 import { getLogger, logger, workspaceLogContext } from '@services/libs/log';
+import { createUtilityProcessWorkerPeer } from '@services/libs/utilityProcessWorkerPeer';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import { createNetworkProxyEnvironment } from '@services/preferences/networkProxy';
@@ -171,7 +172,7 @@ export class Git implements IGitService {
       env: createNetworkProxyEnvironment(this.preferenceService.getPreferences(), 'git'),
       allowLoadingUnsignedLibraries: process.platform === 'darwin',
     });
-    const proxy = createWorkerMethodProxy<GitWorker>(child as unknown as WorkerPeer);
+    const proxy = createWorkerMethodProxy<GitWorker>(createUtilityProcessWorkerPeer(child));
     const ready = new Promise<void>((resolve, reject) => {
       child.once('spawn', resolve);
       child.once('exit', code => {
@@ -226,8 +227,10 @@ export class Git implements IGitService {
         heapUsed_MB = mem.heapUsed_MB;
         heapTotal_MB = mem.heapTotal_MB;
         rss_MB = mem.rss_MB;
-      } catch {
-        // Worker may be busy or exiting.
+      } catch (error: unknown) {
+        // Worker may be busy or exiting while metrics are sampled. Keep the
+        // fallback values, but retain the diagnostic for lifecycle debugging.
+        logger.debug('Unable to read Git worker memory usage', { workspaceID, error });
       }
       if (rss_MB === null && metric) rss_MB = Math.round(metric.memory.workingSetSize / 1024);
       const workspace = workspaceID === '__global__' ? undefined : await this.getWorkspaceByID(workspaceID);

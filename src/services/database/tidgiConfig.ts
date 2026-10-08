@@ -13,6 +13,7 @@
  */
 import fs from 'fs-extra';
 import { isEqual, pickBy } from 'lodash';
+import { readFile as readFileNative } from 'node:fs/promises';
 import path from 'path';
 // CRITICAL: Import from syncableConfig.ts, NOT interface.ts (which imports electron-ipc-cat)
 import type { ISyncableWikiConfig, IWikiWorkspaceMinimal, SyncableConfigField } from '../workspaces/syncableConfig';
@@ -94,7 +95,7 @@ export function getTidgiConfigPath(wikiFolderLocation: string): string {
  * Extract syncable config fields from a workspace
  */
 export function extractSyncableConfig(workspace: IWikiWorkspaceMinimal): Partial<ISyncableWikiConfig> {
-  const syncableConfig: Partial<ISyncableWikiConfig> = { id: workspace.id };
+  const syncableConfig: Partial<ISyncableWikiConfig> = {};
   for (const field of syncableConfigFields) {
     if (field in workspace) {
       // Only include non-default values to keep the file minimal
@@ -130,9 +131,6 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
   }
 
   const result: Partial<ISyncableWikiConfig> = {};
-  if (typeof parsed.id === 'string' && parsed.id.length > 0) {
-    result.id = parsed.id;
-  }
   for (const field of syncableConfigFields) {
     if (field in parsed && parsed[field] !== undefined) {
       (result as Record<string, unknown>)[field] = parsed[field];
@@ -146,13 +144,16 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
  * Returns undefined if file doesn't exist or is invalid
  * Uses the same error recovery mechanism as settings.json
  */
-export async function readTidgiConfig(wikiFolderLocation: string): Promise<Partial<ISyncableWikiConfig> | undefined> {
+export async function readTidgiConfig(
+  wikiFolderLocation: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<Partial<ISyncableWikiConfig> | undefined> {
   const configPath = getTidgiConfigPath(wikiFolderLocation);
   try {
-    if (!(await fs.pathExists(configPath))) {
-      return undefined;
-    }
-    const content = await fs.readFile(configPath, 'utf-8');
+    // Read directly rather than checking existence first. Besides avoiding an
+    // extra filesystem round-trip, fs.readFile can observe AbortSignal while a
+    // config hydration is being cancelled or timed out.
+    const content = await readFileNative(configPath, { encoding: 'utf-8', signal: options.signal });
     const parsed = parseJsonWithRepair<ITidgiConfigFile>(content, configPath, { logPrefix: 'tidgi.config.json' });
     if (!parsed) return undefined;
 
@@ -162,6 +163,9 @@ export async function readTidgiConfig(wikiFolderLocation: string): Promise<Parti
     }
     return result;
   } catch (error) {
+    if (options.signal?.aborted || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined;
+    }
     getLogger().warn('Failed to read tidgi.config.json', { configPath, error: (error as Error).message });
     return undefined;
   }
@@ -205,9 +209,6 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
 
     // Filter out default values
     const nonDefaultConfig = pickBy(config, (value, key) => {
-      if (key === 'id') {
-        return typeof value === 'string' && value.length > 0;
-      }
       const defaultValue = syncableConfigDefaultValues[key as SyncableConfigField];
       return !isEqual(value, defaultValue);
     });
@@ -224,10 +225,6 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
         delete (mergedConfig as Record<string, unknown>)[field];
       }
     }
-    if (!('id' in nonDefaultConfig)) {
-      delete (mergedConfig as Record<string, unknown>).id;
-    }
-
     const remainingFields = Object.keys(mergedConfig).filter((key) => key !== '$schema' && key !== 'version');
     if (remainingFields.length === 0) {
       if (await fs.pathExists(configPath)) {
@@ -259,9 +256,6 @@ export function mergeWithSyncedConfig<T extends IWikiWorkspaceMinimal>(
 
   // Apply synced config over local, with defaults for missing fields
   const merged = { ...localWorkspace };
-  if (typeof syncedConfig.id === 'string' && syncedConfig.id.length > 0) {
-    (merged as Record<string, unknown>).id = syncedConfig.id;
-  }
   for (const field of syncableConfigFields) {
     if (field in syncedConfig) {
       (merged as Record<string, unknown>)[field] = syncedConfig[field];

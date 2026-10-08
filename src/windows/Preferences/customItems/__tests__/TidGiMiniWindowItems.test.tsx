@@ -29,7 +29,6 @@ const mockWorkspaces: IWorkspace[] = [
     homeUrl: 'http://localhost:5212/',
     port: 5212,
     isSubWiki: false,
-    mainWikiToLink: null,
     tagNames: [],
     lastUrl: null,
     active: true,

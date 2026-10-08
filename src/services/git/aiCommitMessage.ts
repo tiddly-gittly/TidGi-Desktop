@@ -126,7 +126,7 @@ export async function generateAICommitMessage(wikiFolderPath: string, source: st
     const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
     const aiConfig = await externalAPIService.getAIConfig();
 
-    if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
+    if (!aiConfig?.free?.modelId || !aiConfig?.free?.providerId) {
       return undefined;
     }
 

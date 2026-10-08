@@ -83,9 +83,7 @@ export function SubWikiMainWorkspaceItem(_props: ICustomItemProps): React.JSX.El
 
   if (!isSubWiki) return null;
 
-  const selectedMainWorkspace = mainWorkspaceList.find(
-    (candidate) => candidate.id === workspace.mainWikiID || candidate.wikiFolderLocation === workspace.mainWikiToLink,
-  );
+  const selectedMainWorkspace = mainWorkspaceList.find((candidate) => candidate.id === workspace.mainWikiID);
 
   return (
     <ListItem>
@@ -103,7 +101,6 @@ export function SubWikiMainWorkspaceItem(_props: ICustomItemProps): React.JSX.El
           workspaceSetter({
             ...workspace,
             mainWikiID: nextMainWorkspace?.id ?? null,
-            mainWikiToLink: nextMainWorkspace?.wikiFolderLocation ?? null,
           }, true);
         }}
       >

@@ -6,10 +6,14 @@
  * Each agent instance creates its own MCP client connection(s).
  * Connections are managed per-instance and cleaned up when the agent closes.
  */
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
+import { assertPortableLlmJsonValue, type PortableLlmJsonValue, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 /**
  * Model Context Protocol Parameter Schema
@@ -26,10 +30,10 @@ export const ModelContextProtocolParameterSchema = z.object({
     title: 'Command arguments',
     description: 'Arguments to pass to the MCP server command',
   }),
-  /** URL for SSE transport */
+  /** URL for Streamable HTTP transport. */
   serverUrl: z.string().optional().meta({
-    title: 'Server URL (SSE)',
-    description: 'URL for SSE-based MCP server. e.g. "http://localhost:3001/sse"',
+    title: 'Server URL (HTTP)',
+    description: 'URL for an MCP Streamable HTTP endpoint (for example http://localhost:3001/mcp)',
   }),
   /** Timeout for MCP operations in seconds */
   timeoutSecond: z.number().optional().default(30).meta({
@@ -61,57 +65,102 @@ interface MCPClientState {
   /** Available tools from the MCP server */
   tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
   /** Client connection (lazy-loaded to avoid import issues if SDK not installed) */
-  client: unknown;
+  client: {
+    callTool: (parameters: {
+      name: string;
+      arguments: Record<string, unknown>;
+    }) => Promise<{ content: unknown[] }>;
+    close: () => Promise<void>;
+  };
   /** Transport */
   transport: unknown;
   /** Whether the client is connected */
   connected: boolean;
+  timeoutMs: number;
+}
+
+function normalizeMCPInputSchema(value: unknown): Record<string, PortableLlmJsonValue> {
+  const schema = value ?? { type: 'object', additionalProperties: true };
+  assertPortableLlmJsonValue(schema);
+  if (schema === null || Array.isArray(schema) || typeof schema !== 'object') {
+    throw new TypeError('MCP tool input schema must be a JSON object');
+  }
+  return schema;
+}
+
+export function createMCPModelToolDefinitions(
+  tools: MCPClientState['tools'],
+): Array<{ name: string; description?: string; inputSchema: Record<string, PortableLlmJsonValue> }> {
+  return tools.map(tool => ({
+    name: `mcp-${tool.name}`,
+    ...(tool.description === undefined ? {} : { description: tool.description }),
+    inputSchema: normalizeMCPInputSchema(tool.inputSchema),
+  }));
 }
 
 const clientStates = new Map<string, MCPClientState>();
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(
+          () => {
+            reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
+          },
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 /**
  * Try to connect to MCP server and list available tools.
  * Returns tool list on success, empty array on failure.
  */
 async function connectAndListTools(config: ModelContextProtocolParameter, agentId: string): Promise<MCPClientState['tools']> {
+  const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
   try {
-    // Dynamic import to handle cases where SDK isn't installed.
-    // Use /* @vite-ignore */ so Vite/Vitest don't try to resolve the path at build time.
-    const { Client } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/index.js');
-
-    const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
-
     let transport: unknown;
 
     if (config.command) {
-      // Stdio transport
-      const { StdioClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/stdio.js');
       transport = new StdioClientTransport({ command: config.command, args: config.args ?? [] });
     } else if (config.serverUrl) {
-      // SSE transport
-      const { SSEClientTransport } = await import(/* @vite-ignore */ '@modelcontextprotocol/sdk/client/sse.js');
-      transport = new SSEClientTransport(new URL(config.serverUrl));
+      const serverURL = new URL(config.serverUrl);
+      transport = new StreamableHTTPClientTransport(serverURL);
     } else {
       logger.warn('MCP: No command or serverUrl configured', { agentId });
       return [];
     }
 
-    await client.connect(transport);
+    const timeoutMs = Math.max(1, config.timeoutSecond ?? 30) * 1000;
+    await withTimeout(client.connect(transport), timeoutMs, 'MCP connection');
 
     // List available tools
-    const toolsResult = await client.listTools();
+    const toolsResult = await withTimeout(client.listTools(), timeoutMs, 'MCP tool discovery');
     const tools = (toolsResult.tools ?? []).map((t: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
     }));
 
-    clientStates.set(agentId, { tools, client, transport, connected: true });
+    clientStates.set(agentId, {
+      tools,
+      client: client as MCPClientState['client'],
+      transport,
+      connected: true,
+      timeoutMs,
+    });
 
     logger.info('MCP connected', { agentId, toolCount: tools.length, tools: tools.map((t: { name: string }) => t.name) });
     return tools;
   } catch (error) {
+    if (client.close) await client.close().catch(() => undefined);
     logger.error('MCP connection failed', { error, agentId });
     return [];
   }
@@ -127,8 +176,11 @@ async function callMCPTool(agentId: string, toolName: string, arguments_: Record
   }
 
   try {
-    const client = state.client as { callTool: (parameters: { name: string; arguments: Record<string, unknown> }) => Promise<{ content: unknown[] }> };
-    const result = await client.callTool({ name: toolName, arguments: arguments_ });
+    const result = await withTimeout(
+      state.client.callTool({ name: toolName, arguments: arguments_ }),
+      state.timeoutMs,
+      `MCP tool "${toolName}"`,
+    );
     const contentParts = (result.content ?? []) as Array<{ type: string; text?: string }>;
     const textContent = contentParts
       .filter((c) => c.type === 'text' && c.text)
@@ -137,6 +189,9 @@ async function callMCPTool(agentId: string, toolName: string, arguments_: Record
 
     return { success: true, data: textContent || JSON.stringify(result.content), metadata: { toolName } };
   } catch (error) {
+    state.connected = false;
+    clientStates.delete(agentId);
+    await state.client.close().catch(() => undefined);
     return { success: false, error: `MCP tool "${toolName}" failed: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
@@ -161,15 +216,16 @@ export async function cleanupMCPClient(agentId: string): Promise<void> {
 /**
  * MCP Tool Definition — dynamically creates tool schemas based on connected server's tools.
  */
-const mcpDefinition = registerToolDefinition({
-  toolId: 'modelContextProtocol',
+export const mcpDefinition = defineDesktopTool({
+  toolId: 'mcpClient',
   displayName: 'MCP (Model Context Protocol)',
   description: 'Connect to external MCP servers and use their tools',
   configSchema: ModelContextProtocolParameterSchema,
   // No static llmToolSchemas — MCP tools are dynamic
 
-  async onProcessPrompts({ config, agentFrameworkContext, injectContent }) {
-    const agentId = agentFrameworkContext.agent.id;
+  async onProcessPrompts({ config, agentFrameworkContext, injectContent, registerModelTool }) {
+    const agentId = agentFrameworkContext?.agent?.id;
+    if (!agentId) return;
 
     // Connect if not already connected
     let state = clientStates.get(agentId);
@@ -181,30 +237,21 @@ const mcpDefinition = registerToolDefinition({
 
     if (!state?.tools.length) return;
 
-    // Build tool descriptions for prompt injection
-    const toolDescriptions = state.tools.map((tool) => {
-      const schemaString = tool.inputSchema ? JSON.stringify(tool.inputSchema, null, 2) : '{}';
-      return `Tool: mcp-${tool.name}\nDescription: ${tool.description ?? 'No description'}\nParameters schema:\n${schemaString}`;
-    }).join('\n\n');
-
-    const content = `MCP Server Tools (use <tool_use name="mcp-TOOLNAME">{params}</tool_use> to call):\n\n${toolDescriptions}`;
+    for (const tool of createMCPModelToolDefinitions(state.tools)) registerModelTool(tool);
 
     const pos = config.toolListPosition;
     if (pos?.targetId) {
       injectContent({
         targetId: pos.targetId,
         position: pos.position || 'after',
-        content,
+        content: `MCP native tools available: ${state.tools.map(tool => `mcp-${tool.name}`).join(', ')}`,
         caption: 'MCP Tools',
       });
     }
   },
 
-  async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext, hooks, requestId }) {
-    if (!toolCall) return;
-
-    // MCP tools are prefixed with "mcp-"
-    if (!toolCall.toolId?.startsWith('mcp-')) return;
+  async onResponseComplete({ toolCall, addToolResult, agentFrameworkContext, hooks, requestId, yieldToSelf }) {
+    if (!toolCall || !toolCall.found || !toolCall.toolId.startsWith('mcp-')) return;
 
     const agentId = agentFrameworkContext.agent.id;
     const mcpToolName = toolCall.toolId.replace(/^mcp-/, '');
@@ -228,10 +275,6 @@ const mcpDefinition = registerToolDefinition({
       toolInfo: { toolId: toolCall.toolId, parameters: toolCall.parameters ?? {}, originalText: toolCall.originalText },
       requestId,
     });
-
-    // Continue processing
-    // (yieldToSelf would be called by the caller if needed)
+    yieldToSelf();
   },
 });
-
-export const modelContextProtocolTool = mcpDefinition.tool;

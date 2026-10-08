@@ -26,8 +26,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { type ChatMessage, isToolResultPart, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 /* ------------------------------------------------------------------ */
 /*  Config schema                                                      */
@@ -96,6 +97,27 @@ function todoTiddlerTitle(agentId: string): string {
   return `$:/ai/todo/${agentId}`;
 }
 
+export function extractLatestTodoText(messages: ChatMessage[]): string | undefined {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message.role !== 'tool' || !message.parts) continue;
+    for (let partIndex = message.parts.length - 1; partIndex >= 0; partIndex--) {
+      const part = message.parts[partIndex];
+      if (!isToolResultPart(part) || part.toolName !== 'manage-todo') continue;
+      const payload = part.payload;
+      if (
+        payload !== null && typeof payload === 'object' && !Array.isArray(payload) &&
+        (payload as { type?: unknown }).type === 'todo-update' &&
+        typeof (payload as { text?: unknown }).text === 'string' &&
+        (payload as { text: string }).text.length > 0
+      ) {
+        return (payload as { text: string }).text;
+      }
+    }
+  }
+  return undefined;
+}
+
 async function resolveWorkspace(workspaceName: string) {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const list = await workspaceService.getWorkspacesAsList();
@@ -154,8 +176,8 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
 /*  Registration                                                       */
 /* ------------------------------------------------------------------ */
 
-const todoDefinition = registerToolDefinition({
-  toolId: 'todo',
+export const todoDefinition = defineDesktopTool({
+  toolId: 'todoWrite',
   displayName: 'Todo / Plan List',
   description: 'Persistent todo list that the agent uses to track progress — auto-injected into every prompt',
   configSchema: TodoParameterSchema,
@@ -175,25 +197,7 @@ const todoDefinition = registerToolDefinition({
 
     // Read the todo tiddler synchronously from the last-known messages (avoid async in processPrompts)
     // We look for the most recent tool result that contains a todo-update JSON
-    const messages = agentFrameworkContext.agent.messages;
-    let latestTodoText: string | undefined;
-    for (let index = messages.length - 1; index >= 0; index--) {
-      const message = messages[index];
-      if (message.role === 'tool' && message.content.includes('"type":"todo-update"')) {
-        try {
-          const match = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(message.content);
-          if (match) {
-            const parsed = JSON.parse(match[1]) as { type: string; text?: string };
-            if (parsed.type === 'todo-update' && parsed.text) {
-              latestTodoText = parsed.text;
-              break;
-            }
-          }
-        } catch {
-          // ignore parse errors
-        }
-      }
-    }
+    const latestTodoText = extractLatestTodoText(agentFrameworkContext.agent.messages);
 
     if (latestTodoText) {
       injectContent({
@@ -210,8 +214,8 @@ const todoDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'manage-todo') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'manage-todo') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     const agentId = agentFrameworkContext.agent.id;
     await executeToolCall('manage-todo', async (parameters) => {
@@ -219,5 +223,3 @@ const todoDefinition = registerToolDefinition({
     });
   },
 });
-
-export const todoTool = todoDefinition.tool;

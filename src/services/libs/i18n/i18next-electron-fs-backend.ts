@@ -1,6 +1,6 @@
 import { I18NChannels } from '@/constants/channels';
 import type { BackendModule, InitOptions, MultiReadCallback, ReadCallback, Services } from 'i18next';
-import { cloneDeep, merge, Object } from 'lodash';
+import { cloneDeep, merge } from 'lodash';
 
 // CONFIGS
 const defaultOptions = {
@@ -27,8 +27,11 @@ function safeInterpolate(interpolator: unknown, template: string, variables: { [
   if (hasInterpolate(interpolator)) {
     try {
       return interpolator.interpolate(template, variables);
-    } catch {
-      // fallthrough to naive replacement
+    } catch (error: unknown) {
+      // Interpolator implementations may reject malformed templates. The
+      // fallback below handles ordinary Error failures; preserve unknown
+      // thrown values so the backend boundary cannot hide contract drift.
+      if (!(error instanceof Error)) throw error;
     }
   }
   // naive replacement for common tokens
@@ -65,6 +68,65 @@ export interface ReadCallbackEntry {
 export interface I18NextElectronBackendAdaptor {
   onReceive(channel: string, callback: (arguments_: unknown) => void): void;
   send(channel: string, payload: unknown): void;
+}
+
+interface ReadFileResponse {
+  key?: string;
+  error?: unknown;
+  data?: string;
+  filename?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isI18nBackendAdaptor(value: unknown): value is I18NextElectronBackendAdaptor {
+  if (!isRecord(value)) return false;
+  return typeof value.onReceive === 'function' && typeof value.send === 'function';
+}
+
+function getI18nBackendFromWindow(): I18NextElectronBackendAdaptor | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const bridge: unknown = Reflect.get(window, 'i18n');
+  if (!isRecord(bridge)) return undefined;
+  const backend: unknown = Reflect.get(bridge, 'i18nextElectronBackend');
+  return isI18nBackendAdaptor(backend) ? backend : undefined;
+}
+
+function parseReadFileResponse(value: unknown): ReadFileResponse | undefined {
+  if (!isRecord(value)) return undefined;
+  if (value.key !== undefined && typeof value.key !== 'string') return undefined;
+  if (value.data !== undefined && typeof value.data !== 'string') return undefined;
+  if (value.filename !== undefined && typeof value.filename !== 'string') return undefined;
+  return {
+    key: value.key,
+    error: value.error,
+    data: value.data,
+    filename: value.filename,
+  };
+}
+
+function isI18nResourceData(value: unknown): value is string | Record<string, unknown> | boolean | null | undefined {
+  return value === undefined || value === null || typeof value === 'string' || typeof value === 'boolean' || isRecord(value);
+}
+
+function describeUnknown(value: unknown): string {
+  if (value instanceof Error) return value.message;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return value.toString();
+  if (typeof value === 'symbol') return value.description === undefined ? 'Symbol' : `Symbol(${value.description})`;
+  try {
+    return JSON.stringify(value) ?? '<unknown error>';
+  } catch {
+    return '<unknown error>';
+  }
+}
+
+function toCallbackError(value: unknown): Error | string | null {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Error || typeof value === 'string') return value;
+  return new Error(describeUnknown(value));
 }
 
 export class Backend implements BackendModule {
@@ -105,16 +167,15 @@ export class Backend implements BackendModule {
   }
 
   init(services: Services, backendOptions: Record<string, unknown>, i18nextOptions: InitOptions<Record<string, unknown>>) {
-    // safely access window.i18n without using `any`
-    const maybeI18n = typeof window !== 'undefined' ? (window as unknown as { i18n?: { i18nextElectronBackend?: unknown } }).i18n : undefined;
-    if (typeof window !== 'undefined' && maybeI18n?.i18nextElectronBackend === undefined) {
+    const maybeBackend = getI18nBackendFromWindow();
+    if (typeof window !== 'undefined' && maybeBackend === undefined) {
       throw new TypeError("'window.i18n.i18nextElectronBackend' is not defined! Be sure you are setting up your BrowserWindow's preload script properly!");
     }
     this.services = services;
     this.backendOptions = {
       ...defaultOptions,
       ...backendOptions,
-      i18nextElectronBackend: maybeI18n?.i18nextElectronBackend as I18NextElectronBackendAdaptor | undefined,
+      i18nextElectronBackend: maybeBackend,
     };
     this.i18nextOptions = i18nextOptions;
     // log-related
@@ -131,7 +192,8 @@ export class Backend implements BackendModule {
     if (!i18nextElectronBackend) return;
 
     i18nextElectronBackend.onReceive(I18NChannels.readFileResponse, (arguments_: unknown) => {
-      const payload = arguments_ as { key?: string; error?: unknown; data?: string; filename?: string };
+      const payload = parseReadFileResponse(arguments_);
+      if (payload === undefined) return;
       // args:
       // {
       //   key
@@ -160,7 +222,7 @@ export class Backend implements BackendModule {
         try {
           result = JSON.parse(payload.data ?? 'null');
         } catch (parseError) {
-          const parseError_ = parseError as Error;
+          const parseError_ = parseError instanceof Error ? parseError : new Error(String(parseError));
           parseError_.message = `Error parsing '${String(payload.filename)}'. Message: '${String(parseError)}'.`;
           const entry = this.readCallbacks[payload.key];
           const callback__ = entry?.callback;
@@ -282,12 +344,15 @@ export class Backend implements BackendModule {
     const loadPathString = this.backendOptions.loadPath ?? defaultOptions.loadPath;
     const filename = safeInterpolate(this.services.interpolator, loadPathString, { lng: language, ns: namespace });
     this.requestFileRead(filename, (error?: unknown, data?: unknown) => {
-      type ReadCallbackParameters = Parameters<ReadCallback>;
       if (error) {
-        callback(error as unknown as ReadCallbackParameters[0], false);
+        callback(toCallbackError(error), false);
         return;
       }
-      callback(null, data as ReadCallbackParameters[1]);
+      if (!isI18nResourceData(data)) {
+        callback(new Error(`Translation backend returned invalid data for '${filename}'`), false);
+        return;
+      }
+      callback(null, data);
     });
   }
 

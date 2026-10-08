@@ -25,6 +25,16 @@ if (typeof document !== 'undefined') {
       window.clearTimeout(id);
     };
   }
+
+  // @assistant-ui/react uses ResizeObserver — provide a stub for jsdom
+  if (typeof window.ResizeObserver === 'undefined') {
+    class ResizeObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    window.ResizeObserver = ResizeObserverStub;
+  }
 }
 
 import './__mocks__/services-container';
@@ -102,6 +112,11 @@ vi.mock('electron', () => {
     // Also provide named export `app` to satisfy `import { app } from 'electron'`
     app: mockApp,
     net: { fetch: vi.fn() },
+    safeStorage: {
+      isEncryptionAvailable: () => true,
+      encryptString: (value: string) => Buffer.from(`encrypted:${value}`, 'utf8'),
+      decryptString: (value: Buffer) => value.toString('utf8').replace(/^encrypted:/, ''),
+    },
   };
 });
 

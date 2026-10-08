@@ -1,6 +1,6 @@
-import { mapSeries } from 'bluebird';
 import { app, dialog, session } from 'electron';
 import { inject, injectable } from 'inversify';
+import path from 'path';
 
 import { WikiChannel } from '@/constants/channels';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
@@ -23,28 +23,65 @@ import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interfa
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceStrategy } from '@services/workspaces/strategies';
 
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { ISyncService } from '@services/sync/interface';
 import { workspaceSorter } from '@services/workspaces/utilities';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 import { getTidgiMiniWindowTargetWorkspace } from './utilities';
 
+export const WORKSPACE_STARTUP_CONCURRENCY = 3;
+
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
-  ) {
-    setTimeout(() => {
-      void registerMenu();
-    }, DELAY_MENU_REGISTER);
+  ) {}
+
+  /** Register menu contributions only from the application-ready boundary. */
+  public async initializeMenu(): Promise<void> {
+    await registerMenu();
+  }
+
+  private startupAbortController: AbortController | undefined;
+
+  public cancelWorkspaceStartup(): void {
+    this.startupAbortController?.abort(new Error('Workspace startup cancelled because the application is quitting'));
+  }
+
+  /**
+   * Failure metadata is useful for the sidebar, but it is not a prerequisite
+   * for completing the rest of application startup. Keep a secondary settings
+   * failure from turning one inaccessible wiki into a global startup failure.
+   */
+  private async recordWorkspaceStartupFailure(
+    workspaceService: IWorkspaceService,
+    workspace: IWorkspace,
+    errorMessage: string,
+  ): Promise<void> {
+    try {
+      await workspaceService.updateMetaData(workspace.id, {
+        isLoading: false,
+        didFailLoadErrorMessage: errorMessage,
+      });
+    } catch (metadataError) {
+      logger.error('Failed to record workspace startup failure', {
+        error: metadataError,
+        function: 'initializeAllWorkspaceView',
+        workspaceId: workspace.id,
+      });
+    }
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {
+    this.cancelWorkspaceStartup();
+    const startupAbortController = new AbortController();
+    this.startupAbortController = startupAbortController;
     logger.info('starting', { function: 'initializeAllWorkspaceView' });
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspacesList = await workspaceService.getWorkspacesAsList();
+    const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+    startupAbortController.signal.throwIfAborted();
     logger.info(`Found ${workspacesList.length} workspaces to initialize`, {
       workspaces: workspacesList.map(w => ({ id: w.id, name: w.name, isSubWiki: isWikiWorkspace(w) ? w.isSubWiki : false, pageType: w.pageType })),
     }, { function: 'initializeAllWorkspaceView' });
@@ -58,9 +95,78 @@ export class WorkspaceView implements IWorkspaceViewService {
       .sort(workspaceSorter)
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
       .sort((a, b) => (isWikiWorkspace(a) && a.isSubWiki && (!isWikiWorkspace(b) || !b.isSubWiki) ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
-    await mapSeries(sortedList, async (workspace) => {
-      await this.initializeWorkspaceView(workspace);
+    const scheduledFolderPaths = new Map<string, string>();
+    const scheduledHTTPPorts = new Map<number, string>();
+    const startupQueue = sortedList.map((workspace) => {
+      if (!isWikiWorkspace(workspace) || workspace.isSubWiki || workspace.pageType || !getWorkspaceStrategy(workspace).runtime.usesNodeWikiWorker) {
+        return { workspace };
+      }
+
+      const absoluteFolderPath = path.resolve(workspace.wikiFolderLocation).normalize('NFC');
+      const folderKey = process.platform === 'linux' ? absoluteFolderPath : absoluteFolderPath.toLowerCase();
+      const duplicateFolderWorkspaceID = scheduledFolderPaths.get(folderKey);
+      // Sleeping workspaces do not start a server. Their saved preferred port
+      // must not claim a startup resource or turn normal hibernation into failure.
+      const startsHTTPServer = workspace.enableHTTPAPI && !((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active);
+      const duplicatePortWorkspaceID = startsHTTPServer ? scheduledHTTPPorts.get(workspace.port) : undefined;
+      if (duplicateFolderWorkspaceID || duplicatePortWorkspaceID) {
+        const conflict = duplicateFolderWorkspaceID
+          ? `wiki folder already scheduled by workspace ${duplicateFolderWorkspaceID}`
+          : `HTTP port ${workspace.port} already scheduled by workspace ${duplicatePortWorkspaceID}`;
+        return { conflict, workspace };
+      }
+      scheduledFolderPaths.set(folderKey, workspace.id);
+      if (startsHTTPServer) scheduledHTTPPorts.set(workspace.port, workspace.id);
+      return { workspace };
     });
+
+    let nextQueueIndex = 0;
+    const runStartupQueue = async (): Promise<void> => {
+      while (!startupAbortController.signal.aborted) {
+        const queueIndex = nextQueueIndex++;
+        const entry = startupQueue[queueIndex];
+        if (!entry) return;
+        const { workspace } = entry;
+        if (entry.conflict) {
+          startupAbortController.signal.throwIfAborted();
+          logger.warn('Skipping conflicting workspace during application startup', {
+            conflict: entry.conflict,
+            function: 'initializeAllWorkspaceView',
+            workspaceId: workspace.id,
+          });
+          await this.recordWorkspaceStartupFailure(workspaceService, workspace, entry.conflict);
+          continue;
+        }
+        try {
+          await this.initializeWorkspaceView(workspace);
+        } catch (error) {
+          // Shutdown is intentionally propagated to the app lifecycle instead
+          // of being shown as a failed wiki. This also stops queued work.
+          startupAbortController.signal.throwIfAborted();
+          // One unavailable workspace must not abort the entire Electron startup.
+          logger.error('initializeWorkspaceView failed during application startup', {
+            error,
+            function: 'initializeAllWorkspaceView',
+            workspaceId: workspace.id,
+          });
+          await this.recordWorkspaceStartupFailure(workspaceService, workspace, error instanceof Error ? error.message : String(error));
+        }
+      }
+    };
+
+    try {
+      await Promise.all(Array.from(
+        { length: Math.min(WORKSPACE_STARTUP_CONCURRENCY, startupQueue.length) },
+        async () => runStartupQueue(),
+      ));
+    } finally {
+      if (this.startupAbortController === startupAbortController) {
+        this.startupAbortController = undefined;
+      }
+      wikiService.setAllWikiStartLockOff();
+    }
+
+    startupAbortController.signal.throwIfAborted();
 
     // After all main workspaces have resolved their hibernated state,
     // sync sub-workspaces to match their main workspace.
@@ -74,8 +180,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         await workspaceService.update(workspace.id, { hibernated: mainWorkspace.hibernated });
       }
     }
-
-    wikiService.setAllWikiStartLockOff();
   }
 
   public async initializeWorkspaceView(workspace: IWorkspace, options: IInitializeWorkspaceOptions = {}): Promise<void> {
@@ -93,6 +197,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const shouldBeMainWiki = isWikiWorkspace(workspace) && !workspace.isSubWiki;
     const strategy = getWorkspaceStrategy(workspace);
+    if (isWikiWorkspace(workspace)) {
+      await workspaceService.ensureWikiFolderAccess(workspace, this.startupAbortController?.signal);
+    }
     logger.info('checking wiki existence', {
       workspaceId: workspace.id,
       shouldBeMainWiki,
@@ -304,18 +411,25 @@ export class WorkspaceView implements IWorkspaceViewService {
     workspaceID: string,
     view: Electron.CrossProcessExports.WebContentsView | undefined = container.get<IViewService>(serviceIdentifier.View).getView(workspaceID, WindowNames.main),
   ): Promise<void> {
-    if (view?.webContents) {
-      const currentUrl = view.webContents.getURL();
-      logger.debug('Updating lastUrl for workspace', {
-        workspaceID,
-        currentUrl,
-        function: 'updateLastUrl',
-      });
-      await container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
-        lastUrl: currentUrl,
-      });
-    } else {
-      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
+    try {
+      if (view?.webContents && !view.webContents.isDestroyed()) {
+        const currentUrl = view.webContents.getURL();
+        logger.debug('Updating lastUrl for workspace', {
+          workspaceID,
+          currentUrl,
+          function: 'updateLastUrl',
+        });
+        await container.get<IWorkspaceService>(serviceIdentifier.Workspace).update(workspaceID, {
+          lastUrl: currentUrl,
+        });
+      } else {
+        logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
+      }
+    } catch (error) {
+      // Navigation events do not await async listeners. A non-critical history
+      // write must not become an unhandled rejection or block the app with a
+      // native error dialog; keep the loaded wiki usable and retain diagnostics.
+      logger.warn('Could not persist workspace navigation', { workspaceID, error, function: 'updateLastUrl' });
     }
   }
 
@@ -830,6 +944,9 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.error('showWorkspaceView: workspace not found', { workspaceID });
       return;
     }
+    // App pages render in the main window itself. Restoring a foreground window
+    // must not create a wiki view over their UI (or request tidgi://agent).
+    if (workspace.pageType) return;
 
     // If view doesn't exist yet, create it; otherwise just show it
     const existingMainView = viewService.getView(workspaceID, WindowNames.main);

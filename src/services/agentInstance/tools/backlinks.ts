@@ -9,8 +9,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const BacklinksParameterSchema = z.object({
   toolListPosition: z.object({
@@ -58,7 +59,7 @@ async function executeBacklinks(parameters: z.infer<typeof BacklinksToolSchema>)
   };
 }
 
-const backlinksDefinition = registerToolDefinition({
+export const backlinksDefinition = defineDesktopTool({
   toolId: 'backlinks',
   displayName: 'Wiki Backlinks',
   description: 'Find tiddlers that link to a given tiddler',
@@ -72,10 +73,8 @@ const backlinksDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-backlinks') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-backlinks') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('wiki-backlinks', executeBacklinks);
   },
 });
-
-export const backlinksTool = backlinksDefinition.tool;

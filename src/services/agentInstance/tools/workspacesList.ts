@@ -9,7 +9,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { identity } from 'lodash';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 const t = identity;
 
@@ -39,7 +39,7 @@ export function getWorkspacesListParameterSchema() {
 /**
  * Workspaces List Tool Definition
  */
-const workspacesListDefinition = registerToolDefinition({
+export const workspacesListDefinition = defineDesktopTool({
   toolId: 'workspacesList',
   displayName: t('Schema.WorkspacesList.Title'),
   description: t('Schema.WorkspacesList.Description'),
@@ -59,7 +59,10 @@ const workspacesListDefinition = registerToolDefinition({
 
     // Get available wikis
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-    const workspaces = await workspaceService.getWorkspacesAsList();
+    // Startup and tests can briefly observe the service before its workspace
+    // cache is populated. Treat that as an empty list instead of aborting every
+    // prompt-processing hook for the Agent.
+    const workspaces = await workspaceService.getWorkspacesAsList() ?? [];
     const wikiWorkspaces = workspaces.filter(isWikiWorkspace);
 
     if (wikiWorkspaces.length === 0) {
@@ -97,5 +100,3 @@ const workspacesListDefinition = registerToolDefinition({
     });
   },
 });
-
-export const workspacesListTool = workspacesListDefinition.tool;

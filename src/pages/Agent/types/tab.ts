@@ -52,6 +52,8 @@ export interface IChatTab extends ITab {
   agentDefId?: string;
   /** Initial message to send when tab is created (e.g., from wiki selection) */
   initialMessage?: string;
+  /** Host-native wiki inputs retained until the same initial run is durably accepted. */
+  initialWikiTiddlers?: Array<{ workspaceName: string; tiddlerTitle: string }>;
 }
 
 /**

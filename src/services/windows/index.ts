@@ -15,7 +15,6 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { TIDGI_APP_ICON_PATH } from '@/constants/paths';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isLinux, isMac } from '@/helpers/system';
@@ -41,16 +40,24 @@ export class Window implements IWindowService {
   private tidgiMiniWindowMenubar?: Menubar;
   /** Promise-based lock to serialize tidgi mini window operations */
   private tidgiMiniWindowOperationLock: Promise<void> | undefined;
+  /** Serialize open/close races so a window cannot be recreated twice while loading. */
+  private readonly windowOpenLocks = new Map<WindowNames, Promise<void>>();
   /** Debounce timer for main window state save on hide */
   private mainWindowHideSaveTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
-  ) {
-    setTimeout(() => {
-      void registerMenu();
-    }, DELAY_MENU_REGISTER);
+  ) {}
+
+  /**
+   * Register window menu contributions at the explicit application-ready
+   * boundary. Service construction happens while mainApplication is imported;
+   * scheduling Electron work from the constructor can therefore run before
+   * `app.whenReady()` on a slow macOS launch.
+   */
+  public async initializeMenu(): Promise<void> {
+    await registerMenu();
   }
 
   public async findInPage(text: string, forward?: boolean): Promise<void> {
@@ -103,9 +110,21 @@ export class Window implements IWindowService {
   }
 
   public async close(windowName: WindowNames): Promise<void> {
-    this.get(windowName)?.close();
+    const pendingOpen = this.windowOpenLocks.get(windowName);
+    if (pendingOpen !== undefined) {
+      // The lock represents completion, not the open result, and therefore
+      // never rejects even when the guarded open operation fails.
+      await pendingOpen;
+    }
+    const windowToClose = this.get(windowName);
+    if (
+      windowToClose !== undefined &&
+      (typeof windowToClose.isDestroyed !== 'function' || !windowToClose.isDestroyed())
+    ) {
+      windowToClose.close();
+    }
     // remove the window instance, let it GC
-    this.windows.delete(windowName);
+    if (this.get(windowName) === windowToClose) this.windows.delete(windowName);
   }
 
   public async hide(windowName: WindowNames): Promise<void> {
@@ -164,11 +183,48 @@ export class Window implements IWindowService {
     config?: IWindowOpenConfig<N>,
     returnWindow?: boolean,
   ): Promise<undefined | BrowserWindow> {
+    return this.runWithWindowOpenLock(
+      windowName,
+      () => this.openInternal(windowName, meta, config, returnWindow),
+    );
+  }
+
+  private async openInternal<N extends WindowNames>(
+    windowName: N,
+    meta: WindowMeta[N],
+    config?: IWindowOpenConfig<N>,
+    returnWindow?: boolean,
+  ): Promise<undefined | BrowserWindow> {
+    // `electron-window-state` validates saved bounds through `screen` as soon
+    // as it is constructed. Keep this method safe even if a future deep-link,
+    // test hook, or lifecycle listener bypasses mainApplication's activation
+    // gate and asks for a window during module initialization.
+    await app.whenReady();
     const { recreate = false, multiple = false, recreateUnlessWorkspaceID } = config ?? {};
-    const existedWindow = this.get(windowName);
+    let existedWindow = this.get(windowName);
+    // Electron can leave a destroyed BrowserWindow in a host-managed map for
+    // one event-loop turn. Treat it as absent before reading metadata or
+    // attempting to show/send to it; this avoids the preload startup race
+    // observed after repeated prompt-preview open/close cycles.
+    if (
+      existedWindow !== undefined &&
+      typeof existedWindow.isDestroyed === 'function' &&
+      existedWindow.isDestroyed()
+    ) {
+      if (this.get(windowName) === existedWindow) this.windows.delete(windowName);
+      existedWindow = undefined;
+    }
     // Read the OLD meta before overwriting — recreate() must compare old vs new to decide whether to close.
     const existedWindowMeta = await this.getWindowMeta(windowName);
     await this.setWindowMeta(windowName, meta);
+    if (
+      existedWindow !== undefined &&
+      typeof existedWindow.isDestroyed === 'function' &&
+      existedWindow.isDestroyed()
+    ) {
+      if (this.get(windowName) === existedWindow) this.windows.delete(windowName);
+      existedWindow = undefined;
+    }
 
     if (existedWindow !== undefined && !multiple) {
       const existedWorkspaceID = (existedWindowMeta as { workspaceID?: string } | undefined)?.workspaceID;
@@ -237,6 +293,7 @@ export class Window implements IWindowService {
       [WindowNames.tidgiMiniWindow]: 'TidGi [Mini Window]',
       [WindowNames.secondary]: 'TidGi [Secondary Window]',
       [WindowNames.preferences]: 'TidGi [Preferences]',
+      [WindowNames.promptPreview]: 'TidGi [Prompt Workspace]',
       [WindowNames.addWorkspace]: 'TidGi [Add Workspace]',
       [WindowNames.editWorkspace]: 'TidGi [Edit Workspace]',
       [WindowNames.about]: 'TidGi [About]',
@@ -247,7 +304,7 @@ export class Window implements IWindowService {
       [WindowNames.auth]: 'TidGi [Auth]',
       [WindowNames.any]: 'TidGi [Browser]',
     };
-    const shouldKeepWindowPaintableForE2E = isTest && (process.platform === 'win32' || isLinux) && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW && [
+    const shouldKeepWindowPaintableForE2E = isTest && process.env.E2E_TEST === 'true' && !process.env.SHOW_E2E_WINDOW && [
       WindowNames.main,
       WindowNames.secondary,
       WindowNames.tidgiMiniWindow,
@@ -265,8 +322,9 @@ export class Window implements IWindowService {
       titleBarStyle: hideTitleBar ? 'hidden' : 'default',
       // Keep the window hidden during E2E tests so it won't steal focus from the developer.
       // Set SHOW_E2E_WINDOW=1 to override and show windows during manual E2E observation.
-      // On Windows, paintWhenInitiallyHidden defaults to true, but WebContentsView hosts need a shown
-      // BrowserWindow to expose reliable bounds during E2E — so we show it offscreen.
+      // WebContentsView hosts need a shown BrowserWindow to expose reliable bounds and renderer
+      // visibility during E2E, so we create it offscreen and use showInactive() later to avoid
+      // stealing focus.
       ...(isTest && !process.env.SHOW_E2E_WINDOW
         ? shouldKeepWindowPaintableForE2E
           ? { show: true, x: -3000, y: -1000 }
@@ -318,6 +376,12 @@ export class Window implements IWindowService {
         newWindow.setMenuBarVisibility(false);
       }
     }
+    if (shouldKeepWindowPaintableForE2E) {
+      // Show the window offscreen without stealing focus. This lets Playwright see a visible
+      // renderer/document while keeping the window out of the developer's way.
+      newWindow.setBounds({ x: -3000, y: -1000, width: newWindow.getBounds().width, height: newWindow.getBounds().height });
+      newWindow.showInactive();
+    }
     windowWithBrowserViewState?.manage(newWindow);
     // When runOnBackground=true the main window is hidden rather than destroyed, so 'closed' never
     // fires and electron-window-state never writes the state file. Save explicitly on 'hide'.
@@ -367,6 +431,26 @@ export class Window implements IWindowService {
     }
   }
 
+  private async runWithWindowOpenLock<T>(windowName: WindowNames, operation: () => Promise<T>): Promise<T> {
+    const previous = this.windowOpenLocks.get(windowName);
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    this.windowOpenLocks.set(windowName, current);
+    if (previous !== undefined) {
+      await previous;
+    }
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (this.windowOpenLocks.get(windowName) === current) {
+        this.windowOpenLocks.delete(windowName);
+      }
+    }
+  }
+
   public async isFullScreen(windowName = WindowNames.main): Promise<boolean | undefined> {
     return this.windows.get(windowName)?.isFullScreen();
   }
@@ -392,6 +476,8 @@ export class Window implements IWindowService {
    * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
    */
   private async pushWindowMetaToWindow(win: BrowserWindow, meta: unknown): Promise<void> {
+    if (typeof win.isDestroyed === 'function' && win.isDestroyed()) return;
+    if (typeof win.webContents.isDestroyed === 'function' && win.webContents.isDestroyed()) return;
     win.webContents.send(MetaDataChannel.pushViewMetaData, meta);
   }
 
@@ -514,8 +600,11 @@ export class Window implements IWindowService {
       if (previous !== undefined) {
         try {
           await previous;
-        } catch {
-          // await previous operation to complete, regardless of success or failure
+        } catch (error: unknown) {
+          // Awaiting a prior operation is a sequencing barrier, not an error
+          // propagation boundary. Keep the next operation moving while
+          // preserving the failure in lifecycle logs.
+          logger.debug('TidGi mini window operation lock predecessor failed', { error });
         }
       }
       return await operation();
@@ -574,7 +663,7 @@ export class Window implements IWindowService {
       const miniView = viewService.getView(targetWorkspaceId, WindowNames.tidgiMiniWindow);
       const miniWindow = menuBar.window;
       if (miniView && miniWindow !== undefined && !miniWindow.isDestroyed()) {
-        const children = (miniWindow.contentView as unknown as { children?: typeof miniView[] }).children ?? [];
+        const children = miniWindow.contentView.children;
         const isAttached = children.some((child) => child === miniView);
         if (isAttached) {
           await viewService.realignView(targetWorkspaceId, WindowNames.tidgiMiniWindow);

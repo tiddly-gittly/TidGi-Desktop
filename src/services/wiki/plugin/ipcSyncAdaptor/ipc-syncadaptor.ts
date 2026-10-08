@@ -1,6 +1,7 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
 import type { ITidGiChangedTiddlers, IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import type { ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
 
@@ -93,7 +94,7 @@ class TidGiIPCSyncAdaptor {
     }
     this.workspaceID = workspaceID;
     const metaWorkspace = (typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace;
-    this.isSubWiki = Boolean(metaWorkspace && (metaWorkspace as unknown as { isSubWiki?: boolean }).isSubWiki);
+    this.isSubWiki = metaWorkspace !== undefined && isWikiWorkspace(metaWorkspace) && metaWorkspace.isSubWiki;
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();

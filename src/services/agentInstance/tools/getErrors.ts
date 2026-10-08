@@ -7,8 +7,9 @@ import { t } from '@services/libs/i18n/placeholder';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const GetErrorsParameterSchema = z.object({
   toolListPosition: z.object({
@@ -95,7 +96,7 @@ async function executeGetErrors(parameters: z.infer<typeof GetErrorsToolSchema>)
   }
 }
 
-const getErrorsDefinition = registerToolDefinition({
+export const getErrorsDefinition = defineDesktopTool({
   toolId: 'getErrors',
   displayName: 'Wiki Get Errors',
   description: 'Render a tiddler and check for rendering errors or warnings',
@@ -109,10 +110,8 @@ const getErrorsDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-get-errors') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-get-errors') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('wiki-get-errors', executeGetErrors);
   },
 });
-
-export const getErrorsTool = getErrorsDefinition.tool;

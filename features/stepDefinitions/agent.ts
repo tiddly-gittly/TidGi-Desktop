@@ -1,14 +1,14 @@
 import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
-import { AIGlobalSettings, AIProviderConfig } from '@services/externalAPI/interface';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
+import type { ProviderAccountConfig, ProviderAccountSettings } from 'memeloop';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
 import { getSettingsPath } from '../supports/paths';
-import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
 // Backoff configuration for retries
@@ -65,7 +65,7 @@ function generateSemanticEmbedding(tag: string): number[] {
 // Helper function to start mock OpenAI server and update settings
 async function startMockOpenAIServerAndUpdateSettings(
   world: ApplicationWorld,
-  rules: Array<{ response: string; stream?: boolean; embedding?: number[] }>,
+  rules: Array<{ response?: string; stream?: boolean; embedding?: number[]; toolCall?: { name: string; arguments: Record<string, unknown> } }>,
 ): Promise<void> {
   // Use dynamic port (0) to allow parallel test execution
   world.mockOpenAIServer = new MockOpenAIServer(0, rules);
@@ -73,15 +73,21 @@ async function startMockOpenAIServerAndUpdateSettings(
 
   await world.mockOpenAIServer.start();
 
-  // Update provider config with actual mock server URL
-  world.providerConfig.baseURL = `${world.mockOpenAIServer.baseUrl}/v1`;
+  // Update the canonical provider account with the actual mock server URL.
+  world.providerConfig = {
+    ...world.providerConfig,
+    baseUrl: `${world.mockOpenAIServer.baseUrl}/v1`,
+  };
 
-  // Update AI settings in settings.json with the correct baseURL
+  // Update the persisted canonical account with the correct base URL.
   const settingsPath = getSettingsPath(world);
   if (fs.existsSync(settingsPath)) {
     const settings = fs.readJsonSync(settingsPath) as ISettingFile;
-    if (settings.aiSettings?.providers?.[0]) {
-      settings.aiSettings.providers[0].baseURL = world.providerConfig.baseURL;
+    if (settings.aiSettings?.accounts[0]) {
+      settings.aiSettings = {
+        ...settings.aiSettings,
+        accounts: [world.providerConfig, ...settings.aiSettings.accounts.slice(1)],
+      };
       fs.writeJsonSync(settingsPath, settings, { spaces: 2 });
     }
   }
@@ -109,7 +115,7 @@ Given('I have started the mock OpenAI server without rules', function(this: Appl
  */
 Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
   try {
-    const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
+    const rules: Array<{ response?: string; stream?: boolean; embedding?: number[]; toolCall?: { name: string; arguments: Record<string, unknown> } }> = [];
     if (dataTable && typeof dataTable.raw === 'function') {
       const rows = dataTable.raw();
       // Skip header row
@@ -118,6 +124,8 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
         const response = (row[0] ?? '').trim();
         const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
         const embeddingTag = (row[2] ?? '').trim();
+        const toolName = (row[3] ?? '').trim();
+        const toolArgumentsText = (row[4] ?? '').trim();
 
         // Generate embedding from semantic tag if provided
         let embedding: number[] | undefined;
@@ -126,7 +134,10 @@ Given('I have started the mock OpenAI server', function(this: ApplicationWorld, 
         }
 
         // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
-        if (response || embedding) rules.push({ response, stream, embedding });
+        const toolCall = toolName
+          ? { name: toolName, arguments: JSON.parse(toolArgumentsText || '{}') as Record<string, unknown> }
+          : undefined;
+        if (response || embedding || toolCall) rules.push({ response, stream, embedding, toolCall });
       }
     }
 
@@ -151,7 +162,7 @@ Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable
     throw new Error('Mock OpenAI server is not running. Use "I have started the mock OpenAI server" first.');
   }
 
-  const rules: Array<{ response: string; stream?: boolean; embedding?: number[] }> = [];
+  const rules: Array<{ response?: string; stream?: boolean; embedding?: number[]; toolCall?: { name: string; arguments: Record<string, unknown> } }> = [];
   if (dataTable && typeof dataTable.raw === 'function') {
     const rows = dataTable.raw();
     // Skip header row
@@ -160,6 +171,8 @@ Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable
       const response = (row[0] ?? '').trim();
       const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
       const embeddingTag = (row[2] ?? '').trim();
+      const toolName = (row[3] ?? '').trim();
+      const toolArgumentsText = (row[4] ?? '').trim();
 
       // Generate embedding from semantic tag if provided
       let embedding: number[] | undefined;
@@ -168,7 +181,10 @@ Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable
       }
 
       // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
-      if (response || embedding) rules.push({ response, stream, embedding });
+      const toolCall = toolName
+        ? { name: toolName, arguments: JSON.parse(toolArgumentsText || '{}') as Record<string, unknown> }
+        : undefined;
+      if (response || embedding || toolCall) rules.push({ response, stream, embedding, toolCall });
     }
   }
 
@@ -226,10 +242,21 @@ Then('I should see {int} messages in chat history', async function(this: Applica
     try {
       const finalCount = await currentWindow.locator(messageSelector).count();
       throw new Error(`Could not find expected ${expectedCount} messages. Found ${finalCount}. Error: ${(error as Error).message}`);
-    } catch {
+    } catch (rethrow) {
+      if (rethrow instanceof Error && rethrow.message.startsWith('Could not find')) throw rethrow;
       throw new Error(`Could not find expected ${expectedCount} messages. Error: ${(error as Error).message}`);
     }
   });
+});
+
+Then('the last AI request tool message should contain {string}', function(this: ApplicationWorld, expectedText: string) {
+  const request = this.mockOpenAIServer?.getLastRequest();
+  if (!request) throw new Error('No AI request has been made yet');
+  const toolMessages = request.messages.filter(message => message.role === 'tool');
+  const lastToolMessage = toolMessages.at(-1);
+  if (!lastToolMessage?.content?.includes(expectedText)) {
+    throw new Error('The next model request did not receive the expected real tool output');
+  }
 });
 
 Then('the last AI request should contain system prompt {string}', async function(this: ApplicationWorld, expectedPrompt: string) {
@@ -237,20 +264,35 @@ Then('the last AI request should contain system prompt {string}', async function
     throw new Error('Mock OpenAI server is not running');
   }
 
-  const lastRequest = this.mockOpenAIServer.getLastRequest();
-  if (!lastRequest) {
-    throw new Error('No AI request has been made yet');
-  }
+  let lastSystemPrompt = '';
+  await backOff(
+    async () => {
+      const lastRequest = this.mockOpenAIServer!.getLastRequest();
+      if (!lastRequest) {
+        throw new Error('No AI request has been made yet');
+      }
 
-  // Find system message in the request
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
-    throw new Error('No system message found in the AI request');
-  }
+      const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+      if (systemMessages.length === 0) {
+        throw new Error('No system message found in the AI request');
+      }
 
-  if (!systemMessage.content || !systemMessage.content.includes(expectedPrompt)) {
-    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${systemMessage.content}"`);
-  }
+      lastSystemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+      if (!lastSystemPrompt.includes(expectedPrompt)) {
+        throw new Error(`System prompt does not contain expected text yet`);
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  ).catch(() => {
+    const requestPrompts = this.mockOpenAIServer!.getAllRequests().map((request, index) => {
+      const content = request.messages
+        .filter(message => message.role === 'system')
+        .map(message => message.content ?? '')
+        .join('\n');
+      return `${index + 1}: ${content.slice(0, 300)}`;
+    }).join('\n');
+    throw new Error(`Expected system prompt to contain "${expectedPrompt}", but got: "${lastSystemPrompt}"\nAll request system prompts:\n${requestPrompts}`);
+  });
 });
 
 Then('the last AI request system prompt should not contain {string}', async function(this: ApplicationWorld, unexpectedText: string) {
@@ -263,14 +305,15 @@ Then('the last AI request system prompt should not contain {string}', async func
     throw new Error('No AI request has been made yet');
   }
 
-  const systemMessage = lastRequest.messages.find(message => message.role === 'system');
-  if (!systemMessage) {
+  const systemMessages = lastRequest.messages.filter(message => message.role === 'system');
+  if (systemMessages.length === 0) {
     // No system message means it definitely doesn't contain the text
     return;
   }
 
-  if (systemMessage.content && systemMessage.content.includes(unexpectedText)) {
-    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemMessage.content.substring(0, 300)}..."`);
+  const systemPrompt = systemMessages.map(message => message.content ?? '').join('\n');
+  if (systemPrompt.includes(unexpectedText)) {
+    throw new Error(`Expected system prompt NOT to contain "${unexpectedText}", but it was found in: "${systemPrompt.substring(0, 300)}..."`);
   }
 });
 
@@ -346,23 +389,34 @@ Then('the last AI request user message should not contain {string}', async funct
 
 // Factory function to create scenario-specific provider config
 // Returns a new object each time to avoid state pollution between scenarios
-function createProviderConfig(): AIProviderConfig {
+const TEST_MODEL_IDS = {
+  default: 'test-model',
+  embedding: 'test-embedding-model',
+  speech: 'test-speech-model',
+  imageGeneration: 'test-image-model',
+} as const;
+
+function createProviderConfig(): ProviderAccountConfig {
   return {
-    provider: 'TestProvider',
-    baseURL: 'http://127.0.0.1:0/v1', // Will be updated with actual port when mock server starts
-    apiKey: 'test-api-key', // Required by isAIAvailable() for non-Ollama providers
+    providerId: 'test-provider',
+    providerType: 'openai-compatible',
+    baseUrl: 'http://127.0.0.1:1/v1', // Replaced with the mock server's actual port before launch.
     models: [
-      { name: 'test-model', features: ['language'] },
-      { name: 'test-embedding-model', features: ['language', 'embedding'] },
-      { name: 'test-speech-model', features: ['speech'] },
+      { modelId: TEST_MODEL_IDS.default, wireModelId: TEST_MODEL_IDS.default, apiMode: 'chat-completions' },
+      { modelId: TEST_MODEL_IDS.embedding, wireModelId: TEST_MODEL_IDS.embedding, apiMode: 'chat-completions' },
+      { modelId: TEST_MODEL_IDS.speech, wireModelId: TEST_MODEL_IDS.speech, apiMode: 'chat-completions' },
     ],
-    providerClass: 'openAICompatible',
-    isPreset: false,
     enabled: true,
   };
 }
 
-const desiredModelParameters = { temperature: 0.7, systemPrompt: 'You are a helpful assistant.', topP: 0.95 };
+function requireModelRoute(account: ProviderAccountConfig, modelId: string): void {
+  if (!account.models.some(route => route.modelId === modelId)) {
+    throw new Error(`Missing test model route ${modelId} in provider ${account.providerId}`);
+  }
+}
+
+const desiredModelParameters = { temperature: 0.7, topP: 0.95 };
 
 // Step to remove AI settings for testing config errors
 Given('I remove test ai settings', function(this: ApplicationWorld) {
@@ -375,86 +429,68 @@ Given('I remove test ai settings', function(this: ApplicationWorld) {
   }
 });
 
-Given('I ensure test ai settings exists', function(this: ApplicationWorld) {
+Given('I ensure test ai settings exists', async function(this: ApplicationWorld) {
   const settingsPath = path.resolve(process.cwd(), 'test-artifacts', this.scenarioSlug, 'userData-test', 'settings', 'settings.json');
-  const parsed = fs.readJsonSync(settingsPath) as Record<string, unknown>;
-  const actual = (parsed.aiSettings as Record<string, unknown> | undefined) || null;
+  const providerName = 'test-provider';
+  const requiredModelIds = [
+    TEST_MODEL_IDS.default,
+    TEST_MODEL_IDS.embedding,
+    TEST_MODEL_IDS.speech,
+    ...(!this.providerConfig ? [TEST_MODEL_IDS.imageGeneration] : []),
+  ];
+  const expectedAssignments = {
+    default: TEST_MODEL_IDS.default,
+    embedding: TEST_MODEL_IDS.embedding,
+    speech: TEST_MODEL_IDS.speech,
+    ...(!this.providerConfig ? { imageGeneration: TEST_MODEL_IDS.imageGeneration } : {}),
+  } as const;
 
-  if (!actual) {
-    throw new Error('aiSettings not found in settings file');
-  }
+  // Settings writes are intentionally debounced. Poll the durable file until
+  // the last accepted UI mutation is present; reading immediately after the
+  // renderer changes would only test an intermediate snapshot.
+  await backOff(async () => {
+    const parsed = fs.readJsonSync(settingsPath) as ISettingFile;
+    const actual = parsed.aiSettings;
+    if (!actual) throw new Error('aiSettings not found in settings file');
 
-  const actualProviders = (actual.providers as Array<Record<string, unknown>>) || [];
-
-  // If providerConfig is set (from mock server), use it; otherwise create expected config
-  // and use actual baseURL from settings (for UI-configured scenarios)
-  let providerConfig: AIProviderConfig;
-  const providerName = 'TestProvider';
-  const existingProvider = actualProviders.find(p => p.provider === providerName) as AIProviderConfig | undefined;
-
-  if (this.providerConfig) {
-    // Use the mock server's providerConfig
-    providerConfig = this.providerConfig;
-  } else if (existingProvider) {
-    // For UI-configured scenarios: build expected config using actual baseURL
-    providerConfig = createProviderConfig();
-    providerConfig.baseURL = existingProvider.baseURL ?? providerConfig.baseURL;
-    // UI-created providers won't have an apiKey — align expected with actual
-    if (!existingProvider.apiKey) {
-      delete (providerConfig as unknown as Record<string, unknown>).apiKey;
+    const testProvider = actual.accounts.find(account => account.providerId === providerName);
+    if (!testProvider) {
+      throw new Error(`test-provider not found in accounts: ${JSON.stringify(actual.accounts)}`);
     }
-  } else {
-    providerConfig = createProviderConfig();
-  }
 
-  // Build expected aiSettings from providerConfig and compare with actual
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
+    // Mock-provider scenarios own one exact account fixture. UI configuration
+    // scenarios build richer catalog metadata, so assert their public contract
+    // explicitly instead of tautologically comparing the account to itself.
+    if (this.providerConfig && !isEqual(testProvider, this.providerConfig)) {
+      throw new Error(
+        `test-provider configuration mismatch: expected ${JSON.stringify(this.providerConfig)}, got ${JSON.stringify(testProvider)}`,
+      );
+    }
+    if (
+      !this.providerConfig &&
+      (testProvider.providerType !== 'openai-compatible' ||
+        testProvider.baseUrl !== 'http://127.0.0.1:15121/v1' ||
+        testProvider.enabled === false)
+    ) {
+      throw new Error(`UI-configured test provider has unexpected connection settings: ${JSON.stringify(testProvider)}`);
+    }
 
-  // Check TestProvider exists
-  const testProvider = actualProviders.find(p => p.provider === providerName);
-  if (!testProvider) {
-    console.error('TestProvider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
-    throw new Error('TestProvider not found in aiSettings');
-  }
-
-  // Verify TestProvider configuration
-  if (!isEqual(testProvider, providerConfig)) {
-    console.error('TestProvider config mismatch. expected:', JSON.stringify(providerConfig, null, 2));
-    console.error('TestProvider config actual:', JSON.stringify(testProvider, null, 2));
-    throw new Error('TestProvider configuration does not match expected');
-  }
-
-  // Check ComfyUI provider exists
-  const comfyuiProvider = actualProviders.find(p => p.provider === 'comfyui');
-  if (!comfyuiProvider) {
-    console.error('ComfyUI provider not found in actual providers:', JSON.stringify(actualProviders, null, 2));
-    throw new Error('ComfyUI provider not found in aiSettings');
-  }
-
-  // Verify ComfyUI has test-flux model with workflow path
-  const comfyuiModels = (comfyuiProvider.models as Array<Record<string, unknown>>) || [];
-  const testFluxModel = comfyuiModels.find(m => m.name === 'test-flux');
-  if (!testFluxModel) {
-    console.error('test-flux model not found in ComfyUI models:', JSON.stringify(comfyuiModels, null, 2));
-    throw new Error('test-flux model not found in ComfyUI provider');
-  }
-
-  // Verify workflow path
-  const parameters = testFluxModel.parameters as Record<string, unknown> | undefined;
-  if (!parameters || parameters.workflowPath !== 'C:/test/mock/workflow.json') {
-    console.error('Workflow path mismatch. expected: C:/test/mock/workflow.json, actual:', parameters?.workflowPath);
-    throw new Error('Workflow path not correctly saved');
-  }
-
-  // Verify default config
-  const defaultConfig = actual.defaultConfig as Record<string, unknown>;
-  const defaultModel = defaultConfig.default as Record<string, unknown>;
-  if (defaultModel?.provider !== providerName || defaultModel?.model !== modelName) {
-    console.error('Default config mismatch. expected provider:', providerName, 'model:', modelName);
-    console.error('actual defaultModel:', JSON.stringify(defaultModel, null, 2));
-    throw new Error('Default configuration does not match expected');
-  }
+    for (const modelId of requiredModelIds) requireModelRoute(testProvider, modelId);
+    for (const [assignment, modelId] of Object.entries(expectedAssignments)) {
+      const actualAssignment = actual.modelAssignments[assignment as keyof typeof actual.modelAssignments];
+      if (actualAssignment?.providerId !== providerName || actualAssignment.modelId !== modelId) {
+        throw new Error(
+          `${assignment} configuration mismatch: expected ${providerName}/${modelId}, got ${JSON.stringify(actualAssignment)}`,
+        );
+      }
+    }
+  }, {
+    delayFirstAttempt: true,
+    maxDelay: 100,
+    numOfAttempts: Math.max(3, Math.ceil(PLAYWRIGHT_SHORT_TIMEOUT / 100)),
+    startingDelay: 100,
+    timeMultiple: 1,
+  });
 });
 
 // Version without datatable for simple cases
@@ -473,27 +509,26 @@ Given('I add test ai settings', async function(this: ApplicationWorld) {
   }
   const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+  for (const modelId of [TEST_MODEL_IDS.default, TEST_MODEL_IDS.embedding, TEST_MODEL_IDS.speech]) {
+    requireModelRoute(providerConfig, modelId);
+  }
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
+  const newAi: ProviderAccountSettings = {
+    accounts: [providerConfig],
+    modelAssignments: {
       default: {
-        provider: providerConfig.provider,
-        model: modelName,
+        providerId: providerConfig.providerId,
+        modelId: TEST_MODEL_IDS.default,
+        parameters: desiredModelParameters,
       },
       embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
+        providerId: providerConfig.providerId,
+        modelId: TEST_MODEL_IDS.embedding,
       },
       speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
+        providerId: providerConfig.providerId,
+        modelId: TEST_MODEL_IDS.speech,
       },
-      modelParameters: desiredModelParameters,
     },
   };
 
@@ -518,10 +553,9 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
   }
   const providerConfig = this.providerConfig;
 
-  const modelsArray = providerConfig.models;
-  const modelName = modelsArray[0]?.name;
-  const embeddingModelName = modelsArray[1]?.name;
-  const speechModelName = modelsArray[2]?.name;
+  for (const modelId of [TEST_MODEL_IDS.default, TEST_MODEL_IDS.embedding, TEST_MODEL_IDS.speech]) {
+    requireModelRoute(providerConfig, modelId);
+  }
 
   // Parse options from data table
   let freeModel: string | undefined;
@@ -539,7 +573,7 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
       if (key === 'freeModel') {
         // If value is 'true', enable freeModel using the same model as main model
         if (value === 'true') {
-          freeModel = modelName;
+          freeModel = TEST_MODEL_IDS.default;
         }
       } else if (key === 'aiGenerateBackupTitle') {
         aiGenerateBackupTitle = value === 'true';
@@ -549,30 +583,30 @@ Given('I add test ai settings:', async function(this: ApplicationWorld, dataTabl
     }
   }
 
-  const newAi: AIGlobalSettings = {
-    providers: [providerConfig],
-    defaultConfig: {
+  const newAi: ProviderAccountSettings = {
+    accounts: [providerConfig],
+    modelAssignments: {
       default: {
-        provider: providerConfig.provider,
-        model: modelName,
+        providerId: providerConfig.providerId,
+        modelId: TEST_MODEL_IDS.default,
+        parameters: desiredModelParameters,
       },
       embedding: {
-        provider: providerConfig.provider,
-        model: embeddingModelName,
+        providerId: providerConfig.providerId,
+        modelId: TEST_MODEL_IDS.embedding,
       },
       speech: {
-        provider: providerConfig.provider,
-        model: speechModelName,
+        providerId: providerConfig.providerId,
+        modelId: TEST_MODEL_IDS.speech,
       },
       ...(freeModel
         ? {
           free: {
-            provider: providerConfig.provider,
-            model: freeModel,
+            providerId: providerConfig.providerId,
+            modelId: freeModel,
           },
         }
         : {}),
-      modelParameters: desiredModelParameters,
     },
   };
 
@@ -620,6 +654,12 @@ When('I send ask AI with selection message with text {string} and workspace {str
     throw new Error('Electron app not found');
   }
 
+  if (!this.mockOpenAIServer) {
+    throw new Error('Mock OpenAI server is not running');
+  }
+
+  const requestCountBeforeSend = this.mockOpenAIServer.getAllRequests().length;
+
   const sendResult = await this.app.evaluate(async ({ BrowserWindow }, { text, wsId }: { text: string; wsId: string }) => {
     // Find main window - the first window is always the main window in TidGi
     const allWindows = BrowserWindow.getAllWindows();
@@ -645,8 +685,23 @@ When('I send ask AI with selection message with text {string} and workspace {str
     throw new Error(`Failed to send IPC message: ${sendResult.error || 'Unknown error'}`);
   }
 
-  // Small delay to ensure IPC message is processed (cross-process communication needs time)
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // Wait for the observable result of the cross-process event instead of assuming
+  // a fixed delay is long enough on every CI host.
+  await backOff(
+    async () => {
+      const requestsAfterSend = this.mockOpenAIServer!.getAllRequests().slice(requestCountBeforeSend);
+      const receivedSelection = requestsAfterSend.some(
+        (request) =>
+          request.messages.some(
+            (message) => message.role === 'user' && message.content?.includes(selectionText),
+          ),
+      );
+      if (!receivedSelection) {
+        throw new Error('The Ask AI selection has not reached the mock provider yet');
+      }
+    },
+    { numOfAttempts: 40, startingDelay: 250, timeMultiple: 1, maxDelay: 250, delayFirstAttempt: true },
+  );
 });
 
 export { clearAISettings };

@@ -49,6 +49,8 @@ export interface IWindowService {
    * Temporarily hide window, it will not be destroyed, and can be shown again very quick, with WebContentsView restored immediately.
    */
   hide(windowName: WindowNames): Promise<void>;
+  /** Register main-process menu contributions after Electron and the database are ready. */
+  initializeMenu(): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
   /**
    * Check if tidgi mini window is visible (open and showing on screen)

@@ -25,9 +25,9 @@ export function useValidateExistedWiki(
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       errorInWhichComponentSetter({ gitRepoUrl: true });
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.mainWikiToLink.wikiFolderLocation) {
+    } else if (!isCreateMainWorkspace && !form.mainWikiSelection.id) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
-      errorInWhichComponentSetter({ mainWikiToLink: true });
+      errorInWhichComponentSetter({ mainWikiSelection: true });
       hasErrorSetter(true);
     } else if (isCreateSyncedWorkspace && (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken.length > 0))) {
       wikiCreationMessageSetter(t('AddWorkspace.NotLoggedIn'));
@@ -46,7 +46,7 @@ export function useValidateExistedWiki(
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink.wikiFolderLocation,
+    form.mainWikiSelection.id,
     form.tagNames,
     errorInWhichComponentSetter,
   ]);
