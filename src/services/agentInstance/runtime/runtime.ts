@@ -286,7 +286,10 @@ export class MemeLoopDesktopRuntime {
       },
       agentToolLoop: {
         maxIterations: 32,
-        fallbackRegistryTools: false,
+        // Prompt plugins own their dynamic tools, while Core built-ins use
+        // the runtime registry. Unhandled calls must receive a result before
+        // another model request; a plugin's presence cannot disable Core.
+        fallbackRegistryTools: true,
       },
       resolveAgentDefinition: createDesktopAgentDefinitionResolver({
         fallbackAgentId: agentId,

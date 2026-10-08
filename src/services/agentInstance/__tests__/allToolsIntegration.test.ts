@@ -122,8 +122,8 @@ describe('all tools integration', () => {
     yield { type: 'finish' as const, finishReason: 'stop' };
   }
 
-  async function* mockToolCall(toolName: string, input: Record<string, unknown>) {
-    yield { type: 'tool-call' as const, toolCallId: `call-${nanoid()}`, toolName, input };
+  async function* mockToolCall(toolName: string, input: Record<string, unknown>, toolCallId = `call-${nanoid()}`) {
+    yield { type: 'tool-call' as const, toolCallId, toolName, input };
     yield { type: 'finish' as const, finishReason: 'tool-calls' };
   }
 
@@ -151,6 +151,40 @@ describe('all tools integration', () => {
     if (page.reset) throw new Error('unexpected conversation page reset');
     return page.items;
   }
+
+  it('executes Core registry tools alongside prompt plugins and includes failures in the next request', async () => {
+    const definitions = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+    const definition = await definitions.getAgentDef(testAgentInstance.agentDefId);
+    if (!definition) throw new Error('Missing test definition');
+    vi.mocked(definitions.getAgentDef).mockResolvedValue({ ...definition, tools: ['mcpClient'] });
+    const generatePortableLlm = vi.fn()
+      .mockReturnValueOnce(mockToolCall('mcpClient', {
+        nodeId: 'unavailable-test-peer',
+        serverName: 'test-server',
+        toolName: 'test-tool',
+        args: {},
+      }, 'call-registry-mcp'))
+      .mockReturnValueOnce(mockChunk('MCP 参数不完整，请补充目标设备。'));
+    mockExternalAPIService.generatePortableLlm = generatePortableLlm;
+
+    await executeMessage('调用 MCP 工具');
+
+    const persisted = await getPersistedMessages();
+    expect(persisted.map(message => message.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
+    const result = persisted.find(message => message.role === 'tool');
+    expect(result?.content).toContain('MCP proxy not configured');
+    expect(generatePortableLlm).toHaveBeenCalledTimes(2);
+    expect(generatePortableLlm.mock.calls[1]?.[0].messages).toContainEqual({
+      role: 'tool',
+      content: [expect.objectContaining({
+        type: 'tool-result',
+        toolCallId: 'call-registry-mcp',
+        toolName: 'mcpClient',
+        output: expect.objectContaining({ type: 'error-text' }),
+      })],
+    });
+    expect(persisted.at(-1)?.content).toBe('MCP 参数不完整，请补充目标设备。');
+  });
 
   // ── wiki-search ────────────────────────────────────────────
 
