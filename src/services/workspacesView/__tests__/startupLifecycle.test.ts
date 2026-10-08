@@ -70,10 +70,10 @@ function createWorkspace(id: string, overrides: Partial<IWikiWorkspace> = {}): I
   };
 }
 
-function createService(): WorkspaceView {
+function createService(hibernateUnusedWorkspacesAtLaunch = false): WorkspaceView {
   return new WorkspaceView(
     {} as never,
-    { get: vi.fn().mockResolvedValue(false) } as never,
+    { get: vi.fn().mockResolvedValue(hibernateUnusedWorkspacesAtLaunch) } as never,
   );
 }
 
@@ -162,6 +162,23 @@ describe('WorkspaceView startup lifecycle', () => {
     expect(mocks.updateMetaData).toHaveBeenCalledWith('duplicate-folder', expect.objectContaining({ didFailLoadErrorMessage: expect.stringContaining('folder') }));
     expect(mocks.updateMetaData).toHaveBeenCalledWith('duplicate-port', expect.objectContaining({ didFailLoadErrorMessage: expect.stringContaining('port') }));
     expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { globalHibernate: false, hibernateWhenUnused: true },
+    { globalHibernate: true, hibernateWhenUnused: false },
+  ])('does not reject a sleeping wiki for sharing a saved HTTP port: %j', async ({ globalHibernate, hibernateWhenUnused }) => {
+    mocks.getWorkspacesAsList.mockResolvedValue([
+      createWorkspace('active', { active: true, enableHTTPAPI: true, port: 5212 }),
+      createWorkspace('sleeping', { active: false, enableHTTPAPI: true, port: 5212, hibernateWhenUnused }),
+    ]);
+    const service = createService(globalHibernate);
+    const initialize = vi.spyOn(service, 'initializeWorkspaceView').mockResolvedValue(undefined);
+
+    await service.initializeAllWorkspaceView();
+
+    expect(initialize.mock.calls.map(([workspace]) => workspace.id).sort()).toEqual(['active', 'sleeping']);
+    expect(mocks.updateMetaData).not.toHaveBeenCalledWith('sleeping', expect.objectContaining({ didFailLoadErrorMessage: expect.any(String) }));
   });
 
   it('records an individual worker failure and continues the startup batch', async () => {

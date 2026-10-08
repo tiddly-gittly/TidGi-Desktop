@@ -80,6 +80,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     logger.info('starting', { function: 'initializeAllWorkspaceView' });
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const workspacesList = await workspaceService.getWorkspacesAsList();
+    const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+    startupAbortController.signal.throwIfAborted();
     logger.info(`Found ${workspacesList.length} workspaces to initialize`, {
       workspaces: workspacesList.map(w => ({ id: w.id, name: w.name, isSubWiki: isWikiWorkspace(w) ? w.isSubWiki : false, pageType: w.pageType })),
     }, { function: 'initializeAllWorkspaceView' });
@@ -103,7 +105,10 @@ export class WorkspaceView implements IWorkspaceViewService {
       const absoluteFolderPath = path.resolve(workspace.wikiFolderLocation).normalize('NFC');
       const folderKey = process.platform === 'linux' ? absoluteFolderPath : absoluteFolderPath.toLowerCase();
       const duplicateFolderWorkspaceID = scheduledFolderPaths.get(folderKey);
-      const duplicatePortWorkspaceID = workspace.enableHTTPAPI ? scheduledHTTPPorts.get(workspace.port) : undefined;
+      // Sleeping workspaces do not start a server. Their saved preferred port
+      // must not claim a startup resource or turn normal hibernation into failure.
+      const startsHTTPServer = workspace.enableHTTPAPI && !((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active);
+      const duplicatePortWorkspaceID = startsHTTPServer ? scheduledHTTPPorts.get(workspace.port) : undefined;
       if (duplicateFolderWorkspaceID || duplicatePortWorkspaceID) {
         const conflict = duplicateFolderWorkspaceID
           ? `wiki folder already scheduled by workspace ${duplicateFolderWorkspaceID}`
@@ -111,7 +116,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         return { conflict, workspace };
       }
       scheduledFolderPaths.set(folderKey, workspace.id);
-      if (workspace.enableHTTPAPI) scheduledHTTPPorts.set(workspace.port, workspace.id);
+      if (startsHTTPServer) scheduledHTTPPorts.set(workspace.port, workspace.id);
       return { workspace };
     });
 
