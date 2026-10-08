@@ -583,20 +583,29 @@ When('I hide the main window as if closing with runOnBackground', async function
  */
 async function dispatchSecondInstance(world: ApplicationWorld, commandLine: string[]): Promise<void> {
   if (!world.app) throw new Error('Application is not launched');
-  await world.app.evaluate(({ app, BrowserWindow }, argv: string[]) => {
-    // Trigger the same handler that a real second-instance launch fires.
-    // Electron event listeners for 'second-instance' receive: (event, argv, workingDirectory, additionalData).
-    // Return the inspector evaluation before native show/navigation re-enters
-    // Chromium and invalidates its execution context. Subsequent UI assertions
-    // wait for the requested page, rather than sleeping in another evaluation.
-    setImmediate(() => {
-      app.emit('second-instance', /* event */ {}, argv, /* workingDirectory */ '', /* additionalData */ {});
-      // Test mode skips existedWindow.show(), so mirror the real foregrounding.
-      for (const win of BrowserWindow.getAllWindows()) {
-        if (!win.isDestroyed()) win.show();
-      }
-    });
-  }, commandLine);
+  try {
+    await world.app.evaluate(({ app, BrowserWindow }, argv: string[]) => {
+      // Trigger the same handler that a real second-instance launch fires.
+      // Electron event listeners for 'second-instance' receive: (event, argv, workingDirectory, additionalData).
+      // Return the inspector evaluation before native show/navigation re-enters
+      // Chromium and invalidates its execution context. Subsequent UI assertions
+      // wait for the requested page, rather than sleeping in another evaluation.
+      setImmediate(() => {
+        app.emit('second-instance', /* event */ {}, argv, /* workingDirectory */ '', /* additionalData */ {});
+        // Test mode skips existedWindow.show(), so mirror the real foregrounding.
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) win.show();
+        }
+      });
+    }, commandLine);
+  } catch (error) {
+    // Native foregrounding can invalidate the inspector reply after the event
+    // has already navigated successfully. Do not dispatch twice: the following
+    // UI assertions still require the actual destination and usable controls.
+    if (!(error instanceof Error) || !error.message.includes('Execution context was destroyed') || world.app.process().exitCode !== null) {
+      throw error;
+    }
+  }
 }
 
 When('I reopen the main window as second instance would', async function(this: ApplicationWorld) {
