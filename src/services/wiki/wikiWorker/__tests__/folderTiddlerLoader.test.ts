@@ -1,5 +1,5 @@
 import type { IWikiWorkspace } from '@services/workspaces/interface';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { TiddlyWiki } from 'tiddlywiki';
@@ -8,6 +8,7 @@ import { FolderTiddlerScanError, type FolderTiddlerScanProgress, resolveFolderTi
 import { createLoadWikiTiddlersWithSubWikis } from '../loadWikiTiddlersWithSubWikis';
 
 const temporaryDirectories: string[] = [];
+const temporaryLinks: string[] = [];
 
 function createTemporaryDirectory(): string {
   const directory = mkdtempSync(path.join(tmpdir(), 'tidgi-folder-wiki-'));
@@ -45,6 +46,8 @@ function createFakeWiki() {
 }
 
 afterEach(() => {
+  // Remove cycles before walking the fixture tree (Windows junction traversal).
+  for (const link of temporaryLinks.splice(0)) unlinkSync(link);
   for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { recursive: true, force: true });
 });
 
@@ -69,7 +72,9 @@ describe('folder-as-tiddlers loading', () => {
     for (const excluded of ['.git', 'files', 'node_modules', 'output', 'cache', '.cache']) {
       writeFixtureFile(root, `tiddlers/${excluded}/must-not-load.tid`);
     }
-    symlinkSync(path.join(root, 'tiddlers'), path.join(root, 'tiddlers', 'nested', 'cycle'), process.platform === 'win32' ? 'junction' : 'dir');
+    const cyclePath = path.join(root, 'tiddlers', 'nested', 'cycle');
+    symlinkSync(path.join(root, 'tiddlers'), cyclePath, process.platform === 'win32' ? 'junction' : 'dir');
+    temporaryLinks.push(cyclePath);
     const { loadTiddlersFromFile, wiki } = createFakeWiki();
 
     const result = scanFolderTiddlers(wiki, root);

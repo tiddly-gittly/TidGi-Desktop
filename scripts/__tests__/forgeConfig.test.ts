@@ -60,7 +60,7 @@ describe('renderer package entry aliases', () => {
     });
 
     expect(cronAliases).toHaveLength(1);
-    expect(cronAliases[0]?.replacement).toMatch(/material-ui-cron\/dist\/index\.esm\.js$/u);
+    expect(cronAliases[0]?.replacement).toMatch(/material-ui-cron[\\/]dist[\\/]index\.esm\.js$/u);
     expect(rendererDedupe).toEqual(['react', 'react-dom']);
   });
 });

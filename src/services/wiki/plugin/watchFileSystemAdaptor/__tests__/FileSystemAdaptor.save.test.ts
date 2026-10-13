@@ -1,4 +1,5 @@
 import { git, workspace } from '@services/wiki/wikiWorker/services';
+import path from 'node:path';
 import type { IFileInfo, Tiddler, Wiki } from 'tiddlywiki';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemAdaptor } from '../FileSystemAdaptor';
@@ -112,7 +113,7 @@ describe('FileSystemAdaptor - Save Operations', () => {
       await adaptor.saveTiddler({ fields: { title: 'Note' } } as Tiddler, vi.fn());
 
       await vi.waitFor(() => {
-        expect(git.notifyFileChange).toHaveBeenCalledWith('/test/wiki', { onlyWhenGitLogOpened: true });
+        expect(git.notifyFileChange).toHaveBeenCalledWith(path.resolve('/test/wiki'), { onlyWhenGitLogOpened: true });
       });
     });
 
