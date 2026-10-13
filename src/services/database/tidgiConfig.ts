@@ -95,7 +95,7 @@ export function getTidgiConfigPath(wikiFolderLocation: string): string {
  * Extract syncable config fields from a workspace
  */
 export function extractSyncableConfig(workspace: IWikiWorkspaceMinimal): Partial<ISyncableWikiConfig> {
-  const syncableConfig: Partial<ISyncableWikiConfig> = {};
+  const syncableConfig: Partial<ISyncableWikiConfig> = { id: workspace.id };
   for (const field of syncableConfigFields) {
     if (field in workspace) {
       // Only include non-default values to keep the file minimal
@@ -131,6 +131,12 @@ function extractKnownFields(parsed: ITidgiConfigFile): Partial<ISyncableWikiConf
   }
 
   const result: Partial<ISyncableWikiConfig> = {};
+  if ('id' in parsed) {
+    if (typeof parsed.id !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(parsed.id)) {
+      throw new Error('Invalid portable workspace id');
+    }
+    result.id = parsed.id;
+  }
   for (const field of syncableConfigFields) {
     if (field in parsed && parsed[field] !== undefined) {
       (result as Record<string, unknown>)[field] = parsed[field];
@@ -207,8 +213,15 @@ export async function writeTidgiConfig(wikiFolderLocation: string, config: Parti
       }
     }
 
+    // A local edit racing startup must not replace another device's stable ID.
+    // Identity adoption happens while importing, never as a side effect of saving.
+    if (typeof existingConfig.id === 'string' && config.id !== undefined && existingConfig.id !== config.id) {
+      throw new Error(`Portable workspace identity mismatch in ${configPath}`);
+    }
+
     // Filter out default values
     const nonDefaultConfig = pickBy(config, (value, key) => {
+      if (key === 'id') return typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value);
       const defaultValue = syncableConfigDefaultValues[key as SyncableConfigField];
       return !isEqual(value, defaultValue);
     });
@@ -256,6 +269,8 @@ export function mergeWithSyncedConfig<T extends IWikiWorkspaceMinimal>(
 
   // Apply synced config over local, with defaults for missing fields
   const merged = { ...localWorkspace };
+  // Startup reconciles the complete identity graph before publishing these IDs.
+  if (syncedConfig.id !== undefined) merged.id = syncedConfig.id;
   for (const field of syncableConfigFields) {
     if (field in syncedConfig) {
       (merged as Record<string, unknown>)[field] = syncedConfig[field];

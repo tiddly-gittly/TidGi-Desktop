@@ -36,6 +36,7 @@ import type {
   IWorkspaceWithMetadata,
 } from './interface';
 import { isWikiWorkspace, wikiWorkspaceDefaultValues, WorkspaceType } from './interface';
+import { reconcilePortableIdentities } from './portableIdentity';
 import { registerMenu } from './registerMenu';
 import { syncableConfigFields } from './syncableConfig';
 import { workspaceSorter } from './utilities';
@@ -273,6 +274,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   private async hydratePortableConfigsSerially(workspaceIDs: string[], runController: AbortController): Promise<void> {
+    const imported = new Map<string, { original: IWikiWorkspace; hydrated: IWikiWorkspace }>();
     try {
       for (const workspaceID of workspaceIDs) {
         if (runController.signal.aborted) return;
@@ -304,7 +306,7 @@ export class Workspace implements IWorkspaceService {
         };
         this.portableConfigHydrations.set(workspace.id, hydration);
 
-        const timedOut = await this.hydratePortableConfig(workspace, hydration, runController.signal);
+        const timedOut = await this.hydratePortableConfig(workspace, hydration, runController.signal, imported);
         if (timedOut) {
           logger.warn('Portable workspace config hydration stopped after timeout to preserve filesystem worker capacity', {
             workspaceID: workspace.id,
@@ -313,9 +315,46 @@ export class Workspace implements IWorkspaceService {
         }
       }
     } finally {
+      if (!runController.signal.aborted && imported.size > 0) {
+        this.publishPortableConfigs(imported);
+      }
       if (this.portableConfigHydrationRunController === runController) {
         this.portableConfigHydrationRunController = undefined;
       }
+    }
+  }
+
+  private publishPortableConfigs(imported: Map<string, { original: IWikiWorkspace; hydrated: IWikiWorkspace }>): void {
+    const entries = { ...this.getWorkspacesSync() };
+    for (const [id, { original, hydrated }] of imported) {
+      // A user edit/removal while another folder was being read supersedes import.
+      if (entries[id] === original && !this.workspaceMutationQueues.has(id)) entries[id] = hydrated;
+    }
+    try {
+      const reconciled = reconcilePortableIdentities(entries);
+      this.normalizeSubWikiLinks(reconciled);
+      // Commit the entire graph together. Hydration never writes portable files.
+      const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+      const persisted = { ...(databaseService.getSetting('workspaces') ?? {}) };
+      for (const id of Object.keys(reconciled)) {
+        if (Object.hasOwn(persisted, id) && !Object.hasOwn(this.getWorkspacesSync(), id)) {
+          throw new Error(`Portable workspace identity would replace an invalid settings entry: ${id}`);
+        }
+      }
+      for (const id of Object.keys(this.getWorkspacesSync())) delete persisted[id];
+      Object.assign(persisted, reconciled);
+      databaseService.setSetting('workspaces', persisted);
+      for (const [id, workspace] of Object.entries(entries)) {
+        if (id !== workspace.id && this.metaData[id] !== undefined) {
+          this.metaData[workspace.id] = { ...this.metaData[id], ...this.metaData[workspace.id] };
+          delete this.metaData[id];
+        }
+      }
+      this.workspaces = reconciled;
+      this.updateWorkspaceSubject();
+      void this.updateWorkspaceMenuItems();
+    } catch (error) {
+      logger.error('Portable workspace identity reconciliation failed; keeping local settings', { error });
     }
   }
 
@@ -403,6 +442,7 @@ export class Workspace implements IWorkspaceService {
     workspaceAtScheduling: IWikiWorkspace,
     hydration: IPortableConfigHydration,
     runSignal: AbortSignal,
+    imported: Map<string, { original: IWikiWorkspace; hydrated: IWikiWorkspace }>,
   ): Promise<boolean> {
     try {
       const { config: portableConfig, timedOut } = await this.readPortableConfigWithTimeout(
@@ -422,19 +462,17 @@ export class Workspace implements IWorkspaceService {
       }
 
       try {
-        const hydratedWorkspace = this.sanitizeWorkspace(mergeWithSyncedConfig(currentWorkspace, portableConfig));
-        this.workspaces![workspaceAtScheduling.id] = hydratedWorkspace;
-        this.normalizeSubWikiLinks(this.workspaces!);
-        // settings.json is the non-blocking last-known-good startup cache;
-        // tidgi.config.json is the portable authority. Refresh the cache after
-        // a successful import so the next launch can restore names and
-        // sub-wiki relationships without filesystem I/O on the critical path.
-        const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-        const persistedWorkspaces = databaseService.getSetting('workspaces') ?? {};
-        persistedWorkspaces[workspaceAtScheduling.id] = hydratedWorkspace;
-        databaseService.setSetting('workspaces', persistedWorkspaces);
-        this.updateWorkspaceSubject();
-        void this.updateWorkspaceMenuItems();
+        const merged = mergeWithSyncedConfig(currentWorkspace, portableConfig);
+        const id = portableConfig.id ?? currentWorkspace.id;
+        const hydratedWorkspace = this.sanitizeWorkspace({
+          ...merged,
+          id,
+          homeUrl: getDefaultTidGiUrl(id),
+          lastUrl: id === currentWorkspace.id ? currentWorkspace.lastUrl : null,
+          lastNodeJSArgv: id === currentWorkspace.id ? currentWorkspace.lastNodeJSArgv : [],
+        });
+        if (!isWikiWorkspace(hydratedWorkspace)) throw new Error('Invalid portable wiki workspace');
+        imported.set(workspaceAtScheduling.id, { original: currentWorkspace, hydrated: hydratedWorkspace });
         logger.debug('hydratePortableConfig: Hydrated portable config', {
           fields: Object.keys(portableConfig),
           workspaceId: workspaceAtScheduling.id,
@@ -550,6 +588,18 @@ export class Workspace implements IWorkspaceService {
         : undefined;
       const syncableChanged = previousSyncableConfig === undefined || !isEqual(newSyncableConfig, previousSyncableConfig);
       if (syncableChanged) {
+        if (workspaceToSave.isSubWiki) {
+          const parent = workspaceToSave.mainWikiID ? workspaces[workspaceToSave.mainWikiID] : undefined;
+          if (!parent || !isWikiWorkspace(parent) || parent.isSubWiki || parent.id === id) {
+            throw new Error('Cannot sync a sub-wiki configuration without a valid main workspace');
+          }
+          if (parent.useTidgiConfigSync) {
+            const parentConfig = await readTidgiConfig(parent.wikiFolderLocation);
+            if (parentConfig?.id !== undefined && parentConfig.id !== parent.id) {
+              throw new Error('Cannot sync a sub-wiki before its main workspace identity is reconciled');
+            }
+          }
+        }
         await writeTidgiConfig(workspaceToSave.wikiFolderLocation, newSyncableConfig);
       }
     }

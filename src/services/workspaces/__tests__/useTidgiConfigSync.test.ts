@@ -140,6 +140,18 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('create', () => {
+    it('reuses a portable identity when importing on a second device', async () => {
+      mockReadTidgiConfig.mockResolvedValue({ id: 'Shared-Wiki', name: 'Shared Wiki' });
+      const service = new Workspace();
+      const workspace = await service.create({
+        ...createWorkspace({}),
+        name: 'Local name',
+        wikiFolderLocation: '/tmp/imported',
+        workspaceType: WorkspaceType.folder,
+      });
+      expect(workspace).toMatchObject({ id: 'Shared-Wiki', homeUrl: 'tidgi://Shared-Wiki', name: 'Shared Wiki' });
+      expect(mockWriteTidgiConfig).toHaveBeenCalledWith('/tmp/imported', expect.objectContaining({ id: 'Shared-Wiki' }));
+    });
     it('generates unique lowercase host-safe IDs with the canonical length', async () => {
       const service = new Workspace();
       mockGetSetting.mockReturnValue({});
@@ -593,6 +605,93 @@ describe('Workspace useTidgiConfigSync', () => {
           mainWikiID: root.id,
         });
       });
+    });
+
+    it('migrates Mac local IDs together with child links before workers start, without writing shared files', async () => {
+      const child = createWorkspace({ id: 'mac-child', wikiFolderLocation: '/wikis/child', isSubWiki: true, mainWikiID: 'mac-root' });
+      const root = createWorkspace({ id: 'mac-root', wikiFolderLocation: '/wikis/root', groupId: 'local-group' });
+      mockGetSetting.mockReturnValue({ [child.id]: child, [root.id]: root });
+      mockReadTidgiConfig.mockImplementation((folder: string) =>
+        Promise.resolve(
+          folder === child.wikiFolderLocation
+            ? { id: 'shared-child', name: 'Calendar', isSubWiki: true, mainWikiID: 'mac-root' }
+            : { id: 'shared-root', name: 'Wiki' },
+        )
+      );
+      const service = new Workspace();
+      await service.startPortableConfigHydration();
+      await expect(service.getSubWorkspacesAsList('shared-root')).resolves.toEqual([
+        expect.objectContaining({ id: 'shared-child', mainWikiID: 'shared-root' }),
+      ]);
+      await expect(service.get('mac-root')).resolves.toBeUndefined();
+      await expect(service.get('shared-root')).resolves.toMatchObject({ groupId: 'local-group', homeUrl: 'tidgi://shared-root' });
+      expect(mockSetSetting).toHaveBeenCalledWith('workspaces', expect.not.objectContaining({ 'mac-root': expect.anything() }));
+      expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
+    });
+
+    it('keeps the local registry intact when portable IDs collide across different folders', async () => {
+      const first = createWorkspace({ id: 'first', wikiFolderLocation: '/wikis/first' });
+      const second = createWorkspace({ id: 'second', wikiFolderLocation: '/wikis/second' });
+      mockGetSetting.mockReturnValue({ first, second });
+      mockReadTidgiConfig.mockResolvedValue({ id: 'shared', name: 'Shared' });
+      const service = new Workspace();
+      await service.startPortableConfigHydration();
+      expect(Object.keys(await service.getWorkspaces())).toEqual(['first', 'second']);
+      expect(mockSetSetting).not.toHaveBeenCalled();
+      expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
+    });
+
+    it('does not overwrite a rejected settings entry when adopting a portable ID', async () => {
+      const local = createWorkspace({ id: 'local', wikiFolderLocation: '/wikis/local' });
+      const invalid = createWorkspace({ id: 'mismatched', wikiFolderLocation: '/wikis/other' });
+      mockGetSetting.mockReturnValue({ local, shared: invalid });
+      mockReadTidgiConfig.mockResolvedValue({ id: 'shared', name: 'Shared' });
+      const service = new Workspace();
+      await service.startPortableConfigHydration();
+      await expect(service.get('local')).resolves.toMatchObject({ wikiFolderLocation: '/wikis/local' });
+      expect(mockSetSetting).not.toHaveBeenCalled();
+    });
+
+    it('does not publish a device-local parent ID while the parent portable identity is pending', async () => {
+      const root = createWorkspace({ id: 'mac-root', wikiFolderLocation: '/wikis/root', useTidgiConfigSync: true });
+      const child = createWorkspace({
+        id: 'shared-child',
+        wikiFolderLocation: '/wikis/child',
+        isSubWiki: true,
+        mainWikiID: root.id,
+        useTidgiConfigSync: true,
+      });
+      mockGetSetting.mockReturnValue({ [root.id]: root, [child.id]: child });
+      mockReadTidgiConfig.mockResolvedValue({ id: 'shared-root' });
+      const service = new Workspace();
+      await expect(service.update(child.id, { name: 'Edited while importing' }))
+        .rejects.toThrow('before its main workspace identity is reconciled');
+      expect(mockWriteTidgiConfig).not.toHaveBeenCalled();
+      expect(mockSetSetting).not.toHaveBeenCalled();
+    });
+
+    it('discards a staged identity import superseded while another folder is being read', async () => {
+      const first = createWorkspace({ id: 'first', wikiFolderLocation: '/wikis/first' });
+      const second = createWorkspace({ id: 'second', wikiFolderLocation: '/wikis/second' });
+      mockGetSetting.mockReturnValue({ first, second });
+      let finish: ((config: Record<string, unknown>) => void) | undefined;
+      mockReadTidgiConfig.mockImplementation((folder: string) =>
+        folder === first.wikiFolderLocation
+          ? Promise.resolve({ id: 'shared-first', name: 'Imported' })
+          : new Promise<Record<string, unknown>>(resolve => {
+            finish = resolve;
+          })
+      );
+      const service = new Workspace();
+      const hydration = service.startPortableConfigHydration();
+      await vi.waitFor(() => {
+        expect(finish).toBeDefined();
+      });
+      await service.update(first.id, { groupId: 'newer-group' });
+      finish?.({ name: 'Second' });
+      await hydration;
+      await expect(service.get(first.id)).resolves.toMatchObject({ groupId: 'newer-group', name: first.name });
+      await expect(service.get('shared-first')).resolves.toBeUndefined();
     });
 
     it('sanitizes canonical html workspaces without reading tidgi.config.json', async () => {

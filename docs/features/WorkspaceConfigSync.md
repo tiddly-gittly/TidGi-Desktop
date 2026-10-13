@@ -12,7 +12,6 @@ These fields are device-specific and should NOT be synced:
 
 | Field                | Reason                                             |
 | -------------------- | -------------------------------------------------- |
-| `id`                 | Unique identifier, different per installation      |
 | `order`              | User preference for sidebar order, device-specific |
 | `groupId`            | Membership in this installation's workspace groups |
 | `active`             | Current active state, runtime only                 |
@@ -33,7 +32,8 @@ These fields represent user preferences that should follow the wiki across devic
 | ---------------------------- | --------------------------------------------------------------------------------- |
 | `name`                       | Display name for the workspace                                                    |
 | `isSubWiki`                  | Whether this workspace is a sub-wiki                                              |
-| `mainWikiID`                 | Explicit link to the main workspace, validated against the local registry          |
+| `id`                        | Stable wiki identity, reused when importing on another device                      |
+| `mainWikiID`                 | Main wiki's portable `id`, shared across devices                                   |
 | `gitUrl`                     | Git repository URL for syncing                                                    |
 | `storageService`             | Storage service type (github, gitlab, local)                                      |
 | `userName`                   | Git username for this workspace                                                   |
@@ -101,12 +101,23 @@ When loading a workspace:
 1. Decode the settings cache without reading wiki files synchronously.
 2. Open the main window and start MCP and device networking.
 3. Read `tidgi.config.json` files asynchronously, one at a time, with a bounded timeout.
-4. Merge valid portable fields into the cache and resolve sub-wiki links.
+4. Reconcile portable IDs and parent references as one graph, then publish the cache.
 5. Start wiki workers with the hydrated names, routing settings, and child list.
 
 This ensures synced preferences take precedence over stale local values.
 
-Workspace IDs are opaque and remain unchanged. Chromium lowercases the host in
+An existing portable `id` takes precedence over the installation's cached ID.
+Startup reads are staged until all available configurations have been considered,
+so a child read before its parent is not detached during identity migration.
+Local parent references are remapped along with workspace keys and home URLs.
+Duplicate entries for the same folder and portable identity are consolidated;
+conflicting identities for different folders leave the local cache unchanged
+and produce an error in the log. Import never rewrites portable configuration.
+Edits and removals made while startup reads are pending supersede those reads.
+Configs without an `id` keep the local ID, which is published on the next portable
+save. A new import reuses a saved `id` instead of generating an installation ID.
+
+Workspace IDs are opaque. Chromium lowercases the host in
 `tidgi://` URLs, so saved navigation URLs and the attached view's protocol handler
 compare hosts case-insensitively while dispatching operations with the original
 workspace ID. This must not hide grouped workspaces with mixed-case IDs. Other
