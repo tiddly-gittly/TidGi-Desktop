@@ -86,7 +86,11 @@ describe('loadTiddlyWikiModule', () => {
     );
     writeFileSync(path.join(bootPath, 'boot.js'), 'module.exports = { TiddlyWiki: () => ({ fixture: true }) };');
     const linkedPackagePath = path.join(resourcesPath, 'node_modules', 'tiddlywiki');
-    symlinkSync(path.relative(path.dirname(linkedPackagePath), packagePath), linkedPackagePath, 'dir');
+    symlinkSync(
+      process.platform === 'win32' ? packagePath : path.relative(path.dirname(linkedPackagePath), packagePath),
+      linkedPackagePath,
+      process.platform === 'win32' ? 'junction' : 'dir',
+    );
     const requiredIdentifiers: string[] = [];
     const manifestPaths: string[] = [];
     const actualRequire = createRequire(import.meta.url);

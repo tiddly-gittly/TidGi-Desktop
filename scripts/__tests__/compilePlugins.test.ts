@@ -19,7 +19,12 @@ describe('compiled filesystem watcher native module loading', () => {
   });
 
   it('builds a watcher artifact that requires the env-provided absolute binary', () => {
-    execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['run', 'build:plugin'], { cwd: projectRoot, stdio: 'ignore' });
+    execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['run', 'build:plugin'], {
+      cwd: projectRoot,
+      stdio: 'ignore',
+      // Windows command shims require cmd.exe; all arguments here are constants.
+      shell: process.platform === 'win32',
+    });
 
     expect(existsSync(watchPluginOutput)).toBe(true);
     const compiledSource = readFileSync(watchPluginOutput, 'utf8');

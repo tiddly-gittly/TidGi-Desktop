@@ -8,6 +8,12 @@ const require = createRequire(import.meta.url);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const electronPath = require('electron') as string;
 const vitestPath = path.join(projectRoot, 'node_modules', 'vitest', 'vitest.mjs');
+// Preserve the documented `pnpm test:unit <test files>` focused-test workflow.
+const requestedSuites = process.argv.slice(2);
+if (requestedSuites.length > 0) {
+  runVitest(['run', ...requestedSuites]);
+  process.exit(0);
+}
 const largeSuite = 'src/services/agentInstance/__tests__/conversationPaging.integration.test.ts';
 const resourceHeavySuites = [
   'src/services/agentInstance/__tests__/multiTurnToolUse.test.ts',

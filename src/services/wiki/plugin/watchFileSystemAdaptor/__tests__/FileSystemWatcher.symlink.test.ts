@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { IFileInfo, Wiki } from 'tiddlywiki';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemWatcher } from '../FileSystemWatcher';
@@ -78,7 +79,7 @@ describe('FileSystemWatcher symlink policy', () => {
     global.$tw.boot.wikiTiddlersPath = '/test/wiki';
     const watcher = createWatcher(true);
 
-    expect((watcher as unknown as InternalWatcher).getWikiRootPath()).toBe('/test/wiki');
+    expect((watcher as unknown as InternalWatcher).getWikiRootPath()).toBe(path.resolve('/test/wiki'));
   });
 
   it('skips a symbolic link by default', () => {
@@ -99,9 +100,9 @@ describe('FileSystemWatcher symlink policy', () => {
 
     internalWatcher.handleNsfwEvents([{ action: 0, directory: '/test/wiki/tiddlers', file: 'linked.tid' }]);
 
-    expect(fileSystem.statSync).toHaveBeenCalledWith('/test/wiki/tiddlers/linked.tid');
+    expect(fileSystem.statSync).toHaveBeenCalledWith(path.join('/test/wiki/tiddlers', 'linked.tid'));
     expect(handleFileAddOrChange).toHaveBeenCalledWith(
-      '/test/wiki/tiddlers/linked.tid',
+      path.join('/test/wiki/tiddlers', 'linked.tid'),
       'linked.tid',
       '.tid',
       'add',

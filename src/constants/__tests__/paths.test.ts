@@ -20,7 +20,7 @@ describe('nsfw native binary path', () => {
 
   it('resolves the packaged binary below Resources/node_modules', () => {
     expect(resolveNsfwBinaryPath('/Applications/TidGi.app/Contents/Resources/node_modules')).toBe(
-      '/Applications/TidGi.app/Contents/Resources/node_modules/nsfw/build/Release/nsfw.node',
+      path.resolve('/Applications/TidGi.app/Contents/Resources/node_modules/nsfw/build/Release/nsfw.node'),
     );
   });
 
