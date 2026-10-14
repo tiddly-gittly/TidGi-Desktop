@@ -68,7 +68,7 @@ minimumReleaseAgeExclude:
   - eslint-config-tidgi@3.1.0
   - eslint-plugin-unicorn@65.0.1
   - git-sync-js@2.4.0
-  - memeloop@0.3.0 || 0.3.1 || 0.3.4 || 0.3.5
+  - memeloop@0.3.0 || 0.3.1 || 0.3.4 || 0.3.5 || 0.3.6
   - typescript-eslint@8.61.0
   - tidgi-shared@0.1.6
   - electron-ipc-cat@2.6.0

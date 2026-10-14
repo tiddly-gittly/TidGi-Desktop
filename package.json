@@ -102,7 +102,7 @@
     "lodash": "4.18.1",
     "material-ui-cron": "2.0.1",
     "material-ui-popup-state": "^5.3.7",
-    "memeloop": "^0.3.5",
+    "memeloop": "^0.3.6",
     "menubar": "9.5.2",
     "monaco-editor": "^0.56.0",
     "nanoid": "^6.0.0",
