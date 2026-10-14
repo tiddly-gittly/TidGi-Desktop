@@ -612,7 +612,19 @@ export class AgentInstanceService implements IAgentInstanceService {
     maxBytes: number,
     options?: { signal?: AbortSignal },
   ): Promise<Uint8Array | null> {
-    return this.readAgentAttachmentRange(contentHash, offset, maxBytes, options);
+    return this.getAttachmentUploadStore().readSyncRange(contentHash, offset, maxBytes, options);
+  }
+
+  public stageAttachmentChunk(reference: AttachmentReference, offset: number, data: Uint8Array, options?: { signal?: AbortSignal }): Promise<number> {
+    return this.getAttachmentUploadStore().stageSyncChunk(reference, offset, data, options);
+  }
+
+  public commitStagedAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<void> {
+    return this.getAttachmentUploadStore().commitSyncAttachment(contentHash, options);
+  }
+
+  public verifyAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<boolean> {
+    return this.getAttachmentUploadStore().verifyAttachment(contentHash, options);
   }
 
   public async readAttachmentData(contentHash: string, options?: { signal?: AbortSignal }): Promise<Uint8Array | null> {
@@ -1631,7 +1643,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     const storedReference = await this.getAttachmentUploadStore().getReference(reference.contentHash);
     if (
       !storedReference || storedReference.contentHash !== reference.contentHash ||
-      storedReference.filename !== reference.filename || storedReference.mimeType !== reference.mimeType ||
       storedReference.size !== reference.size
     ) throw new Error('attachment blob does not match its event-scoped reference');
     const hasCommittedScope = consumeCommittedScope

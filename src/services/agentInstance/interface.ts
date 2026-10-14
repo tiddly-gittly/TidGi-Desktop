@@ -150,6 +150,9 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   getAgentAttachmentReference(contentHash: string, options?: { signal?: AbortSignal }): Promise<AttachmentReference | null>;
   saveAgentAttachment(reference: AttachmentReference, data: Uint8Array, options?: { signal?: AbortSignal }): Promise<void>;
   readAgentAttachmentRange(contentHash: string, offset: number, maxBytes: number, options?: { signal?: AbortSignal }): Promise<Uint8Array | null>;
+  stageAttachmentChunk(reference: AttachmentReference, offset: number, data: Uint8Array, options?: { signal?: AbortSignal }): Promise<number>;
+  commitStagedAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<void>;
+  verifyAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<boolean>;
 
   /**
    * Subscribe to agent instance updates

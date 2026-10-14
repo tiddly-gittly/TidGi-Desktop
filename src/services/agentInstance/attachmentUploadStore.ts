@@ -47,6 +47,8 @@ export class DesktopAttachmentUploadStore {
   private readonly blobDirectory: string;
   private readonly temporaryDirectory: string;
   private readonly metadataDirectory: string;
+  private readonly syncDirectory: string;
+  private readonly syncLocks = new Map<string, Promise<void>>();
   private initialization: Promise<void> | undefined;
 
   public constructor(rootDirectory: string) {
@@ -54,6 +56,7 @@ export class DesktopAttachmentUploadStore {
     this.blobDirectory = path.join(rootDirectory, 'blobs');
     this.temporaryDirectory = path.join(rootDirectory, 'staging');
     this.metadataDirectory = path.join(rootDirectory, 'metadata');
+    this.syncDirectory = path.join(rootDirectory, 'sync-staging');
   }
 
   public async initialize(): Promise<void> {
@@ -62,6 +65,7 @@ export class DesktopAttachmentUploadStore {
         mkdir(this.blobDirectory, { recursive: true, mode: 0o700 }),
         mkdir(this.temporaryDirectory, { recursive: true, mode: 0o700 }),
         mkdir(this.metadataDirectory, { recursive: true, mode: 0o700 }),
+        mkdir(this.syncDirectory, { recursive: true, mode: 0o700 }),
       ]);
       await this.cleanupStaleTemporaryFiles();
     })();
@@ -234,13 +238,28 @@ export class DesktopAttachmentUploadStore {
   }
 
   public async readRange(contentHash: string, offset: number, maxBytes: number, options?: { signal?: AbortSignal }): Promise<Uint8Array | null> {
+    return this.readBoundedRange(contentHash, offset, maxBytes, DESKTOP_ATTACHMENT_UPLOAD_LIMITS.chunkBytes, false, options);
+  }
+
+  public async readSyncRange(contentHash: string, offset: number, maxBytes: number, options?: { signal?: AbortSignal }): Promise<Uint8Array | null> {
+    return this.readBoundedRange(contentHash, offset, maxBytes, 3 * 1024 * 1024, true, options);
+  }
+
+  private async readBoundedRange(
+    contentHash: string,
+    offset: number,
+    maxBytes: number,
+    limit: number,
+    emptyAtEnd: boolean,
+    options?: { signal?: AbortSignal },
+  ): Promise<Uint8Array | null> {
     options?.signal?.throwIfAborted();
     const reference = await this.getReference(contentHash, options);
     if (!reference) return null;
-    if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > DESKTOP_ATTACHMENT_UPLOAD_LIMITS.chunkBytes) {
+    if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > limit) {
       throw new RangeError('attachment range is invalid');
     }
-    if (offset >= reference.size) return null;
+    if (offset >= reference.size) return emptyAtEnd && offset === reference.size ? new Uint8Array(0) : null;
     const handle = await open(this.blobPath(normalizeSha256(contentHash)), 'r');
     try {
       const data = new Uint8Array(Math.min(maxBytes, reference.size - offset));
@@ -249,6 +268,137 @@ export class DesktopAttachmentUploadStore {
       return bytesRead === 0 ? null : data.slice(0, bytesRead);
     } finally {
       await handle.close();
+    }
+  }
+
+  public async verifyAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<boolean> {
+    const reference = await this.getReference(contentHash, options);
+    return reference !== null && await this.verifyFile(this.blobPath(normalizeSha256(contentHash)), reference, options);
+  }
+
+  /** Durable sync staging is independent of ephemeral renderer upload capabilities. */
+  public async stageSyncChunk(reference: AttachmentReference, offset: number, data: Uint8Array, options?: { signal?: AbortSignal }): Promise<number> {
+    const digest = normalizeSha256(reference.contentHash);
+    parseMetadata({ ...reference, contentHash: `sha256:${digest}`, version: 1 }, digest);
+    if (
+      reference.size > DESKTOP_ATTACHMENT_UPLOAD_LIMITS.totalBytes ||
+      !Number.isSafeInteger(offset) || offset < 0 || !(data instanceof Uint8Array) ||
+      data.byteLength > 3 * 1024 * 1024 || offset + data.byteLength > reference.size ||
+      (data.byteLength === 0 && reference.size !== 0)
+    ) throw new Error('invalid_attachment_chunk');
+    await this.initialize();
+    return this.withSyncLock(digest, async () => {
+      options?.signal?.throwIfAborted();
+      const published = await this.getReference(reference.contentHash, options);
+      if (published) {
+        if (published.size !== reference.size) throw new Error('attachment_reference_conflict');
+        return published.size;
+      }
+      const metadataPath = path.join(this.syncDirectory, `${digest}.json`);
+      const temporaryMetadataPath = path.join(this.temporaryDirectory, `${randomUUID()}.json`);
+      await writeFile(temporaryMetadataPath, JSON.stringify({ ...reference, contentHash: `sha256:${digest}`, version: 1 }), { flag: 'wx', mode: 0o600 });
+      try {
+        await link(temporaryMetadataPath, metadataPath).catch((error: unknown) => {
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        });
+      } finally {
+        await unlink(temporaryMetadataPath).catch(() => undefined);
+      }
+      const stagedReference = parseMetadata(JSON.parse(await readFile(metadataPath, 'utf8')) as unknown, digest);
+      if (stagedReference.size !== reference.size) throw new Error('attachment_reference_conflict');
+      const stagedPath = path.join(this.syncDirectory, `${digest}.part`);
+      const handle = await open(stagedPath, 'wx+', 0o600).catch((error: unknown) => {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        return open(stagedPath, 'r+');
+      });
+      try {
+        let durableOffset = (await handle.stat()).size;
+        if (durableOffset > reference.size || offset > durableOffset) throw new Error('attachment_chunk_offset_mismatch');
+        let overlap = Math.min(data.byteLength, durableOffset - offset);
+        if (overlap > 0) {
+          const prior = new Uint8Array(overlap);
+          const { bytesRead } = await handle.read(prior, 0, overlap, offset);
+          if (bytesRead !== overlap || !Buffer.from(prior).equals(data.subarray(0, overlap))) {
+            if (offset !== 0) throw new Error('attachment_chunk_retry_conflict');
+            // Restart only unverified staging; the final hash still gates publication.
+            await handle.truncate(0);
+            durableOffset = 0;
+            overlap = 0;
+          }
+        }
+        let written = overlap;
+        while (written < data.byteLength) {
+          options?.signal?.throwIfAborted();
+          const result = await handle.write(data, written, data.byteLength - written, offset + written);
+          if (result.bytesWritten === 0) throw new Error('attachment_chunk_write_failed');
+          written += result.bytesWritten;
+        }
+        await handle.sync();
+        options?.signal?.throwIfAborted();
+        return Math.max(durableOffset, offset + data.byteLength);
+      } finally {
+        await handle.close();
+      }
+    });
+  }
+
+  public async commitSyncAttachment(contentHash: string, options?: { signal?: AbortSignal }): Promise<void> {
+    const digest = normalizeSha256(contentHash);
+    await this.initialize();
+    await this.withSyncLock(digest, async () => {
+      options?.signal?.throwIfAborted();
+      if (await this.getReference(contentHash, options)) {
+        if (!await this.verifyAttachment(contentHash, options)) throw new Error('attachment_hash_mismatch');
+        return;
+      }
+      const stagedPath = path.join(this.syncDirectory, `${digest}.part`);
+      const metadataPath = path.join(this.syncDirectory, `${digest}.json`);
+      const reference = parseMetadata(JSON.parse(await readFile(metadataPath, 'utf8')) as unknown, digest);
+      if ((await stat(stagedPath)).size !== reference.size) throw new Error('attachment_incomplete');
+      if (!await this.verifyFile(stagedPath, reference, options)) {
+        await unlink(stagedPath);
+        await unlink(metadataPath);
+        throw new Error('attachment_hash_mismatch');
+      }
+      options?.signal?.throwIfAborted();
+      await this.publishTemporaryBlob(stagedPath, digest, reference.size);
+      await this.writeMetadata(reference);
+      await unlink(stagedPath);
+      await unlink(metadataPath);
+    });
+  }
+
+  private async verifyFile(file: string, reference: AttachmentReference, options?: { signal?: AbortSignal }): Promise<boolean> {
+    options?.signal?.throwIfAborted();
+    const handle = await open(file, 'r');
+    try {
+      if ((await handle.stat()).size !== reference.size) return false;
+      const hash = createHash('sha256');
+      const buffer = new Uint8Array(DESKTOP_ATTACHMENT_UPLOAD_LIMITS.chunkBytes);
+      let offset = 0;
+      while (offset < reference.size) {
+        options?.signal?.throwIfAborted();
+        const { bytesRead } = await handle.read(buffer, 0, Math.min(buffer.byteLength, reference.size - offset), offset);
+        if (bytesRead === 0) return false;
+        hash.update(buffer.subarray(0, bytesRead));
+        offset += bytesRead;
+      }
+      options?.signal?.throwIfAborted();
+      return hash.digest('hex') === normalizeSha256(reference.contentHash);
+    } finally {
+      await handle.close();
+    }
+  }
+
+  private async withSyncLock<T>(digest: string, operation: () => Promise<T>): Promise<T> {
+    const previous = this.syncLocks.get(digest) ?? Promise.resolve();
+    const result = previous.catch(() => undefined).then(operation);
+    const settled = result.then(() => undefined, () => undefined);
+    this.syncLocks.set(digest, settled);
+    try {
+      return await result;
+    } finally {
+      if (this.syncLocks.get(digest) === settled) this.syncLocks.delete(digest);
     }
   }
 

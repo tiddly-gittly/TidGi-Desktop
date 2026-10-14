@@ -133,6 +133,7 @@ export function createDesktopAgentExecutionCoordinator(
           ...(staged === undefined ? {} : { attachment: staged.attachment }),
         }),
       );
+      callOptions.signal.throwIfAborted();
       const handle = unwrapRendererAgentRunResult(await services.agentInstance.executeAgentRunForRenderer(runTurnRequest));
       assertRunHandleCorrelation(handle, request.provenance);
       await notifyRunAccepted(options, request.provenance, handle, services);
@@ -213,6 +214,7 @@ export function createDesktopAgentExecutionCoordinator(
     callOptions: RemoteAgentExecutionCallOptions,
   ): Promise<RemoteAgentExecutionResult> => {
     try {
+      callOptions.signal.throwIfAborted();
       const handle = await services.agentInstance.retryConversationTurn({
         conversationId: request.provenance.conversationId,
         definitionId: request.provenance.definitionId,
@@ -332,7 +334,8 @@ export function createDesktopAgentExecutionCoordinator(
     cancelRemote,
     syncConversation: (peerId, conversationId, callOptions) =>
       withRemoteOperation(services, createId, callOptions.signal, async operationId => {
-        await services.deviceNetwork.syncWithDevice(peerId, { conversationIds: [conversationId], operationId });
+        const result = await services.deviceNetwork.syncWithDevice(peerId, { conversationIds: [conversationId], operationId });
+        if (!result.complete) throw new RemoteAgentExecutionError('SYNC_FAILED', true);
       }),
     createId,
     onListenerError: error => {
@@ -472,6 +475,8 @@ async function waitForAcceptedRun(options: {
     void options.cancelOnAbort().catch(() => undefined);
   };
   options.signal.addEventListener('abort', abortListener, { once: true });
+  // Admission can finish after target switching has already aborted this signal.
+  if (options.signal.aborted) abortListener();
   try {
     for (;;) {
       options.signal.throwIfAborted();

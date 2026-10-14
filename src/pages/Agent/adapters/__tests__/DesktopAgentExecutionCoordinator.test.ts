@@ -1,4 +1,4 @@
-import { AGENT_RUN_ERROR_MESSAGE_KEYS, createAgentRunError, extractAgentRunError } from 'memeloop';
+import { AGENT_RUN_ERROR_MESSAGE_KEYS, createAgentRunError, extractAgentRunError, type SyncResult } from 'memeloop';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createDesktopAgentExecutionCoordinator, type DesktopAgentExecutionCoordinatorServices } from '../DesktopAgentExecutionCoordinator';
@@ -6,6 +6,93 @@ import { createDesktopAgentExecutionCoordinator, type DesktopAgentExecutionCoord
 describe('DesktopAgentExecutionCoordinator', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('does not report a bounded incomplete remote sync as synchronized', async () => {
+    const services = createServices();
+    services.deviceNetwork.syncWithDevice = vi.fn().mockResolvedValue(
+      {
+        ok: true,
+        peerId: 'peer-remote',
+        complete: false,
+        syncedAt: 1,
+        progress: { passes: 8, elapsedMs: 1, peers: 1, frontierPages: 1, pages: 64, events: 128, bytes: 1024 },
+        continuation: { reason: 'pass-limit', resumeFrom: 'durable-frontier' },
+      } satisfies SyncResult,
+    );
+    const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
+      createId: sequentialIds(),
+      pollIntervalMs: 1,
+      services,
+    });
+    const result = await coordinator.execute({
+      target: { kind: 'remote', peerId: 'peer-remote' },
+      provenance: provenanceOf('turn-remote', 'request-remote'),
+      message: 'hello',
+    });
+    expect(result.synchronization).toBe('degraded');
+    await coordinator.dispose();
+  });
+
+  it('cancels a run accepted after a target switch while admission is pending', async () => {
+    const services = createServices();
+    let accept!: () => void;
+    services.agentInstance.executeAgentRunForRenderer = vi.fn<typeof services.agentInstance.executeAgentRunForRenderer>(request =>
+      new Promise(resolve => {
+        accept = () => {
+          resolve({ kind: 'success', value: handle('run-late', request.turnId, request.requestId) });
+        };
+      })
+    );
+    const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
+      createId: sequentialIds(),
+      pollIntervalMs: 1,
+      services,
+    });
+    const running = coordinator.execute({
+      target: { kind: 'local' },
+      provenance: provenanceOf('turn-late', 'request-late'),
+      message: 'hello',
+    }).catch((error: unknown) => error);
+    await vi.waitFor(() => {
+      expect(accept).toBeTypeOf('function');
+    });
+    coordinator.switchTarget('conversation-1', { kind: 'remote', peerId: 'peer-remote' });
+    accept();
+    await running;
+    expect(services.agentInstance.cancelAgentRun).toHaveBeenCalledWith('run-late');
+    await coordinator.dispose();
+  });
+
+  it('does not dispatch a local run after cancellation during preparation', async () => {
+    const services = createServices();
+    const prepare = services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer;
+    let finishPreparation!: () => void;
+    services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer = vi.fn<typeof services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer>(request =>
+      new Promise(resolve => {
+        finishPreparation = () => {
+          void prepare(request).then(resolve);
+        };
+      })
+    );
+    const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
+      createId: sequentialIds(),
+      pollIntervalMs: 1,
+      services,
+    });
+    const running = coordinator.execute({
+      target: { kind: 'local' },
+      provenance: provenanceOf('turn-late', 'request-late'),
+      message: 'hello',
+    }).catch((error: unknown) => error);
+    await vi.waitFor(() => {
+      expect(finishPreparation).toBeTypeOf('function');
+    });
+    coordinator.switchTarget('conversation-1', { kind: 'remote', peerId: 'peer-remote' });
+    finishPreparation();
+    await running;
+    expect(services.agentInstance.executeAgentRunForRenderer).not.toHaveBeenCalled();
+    await coordinator.dispose();
   });
 
   it('submits an exact local durable run and remains running until its terminal record', async () => {
@@ -424,7 +511,15 @@ function createServices(): DesktopAgentExecutionCoordinatorServices {
       abortOperation: vi.fn().mockResolvedValue(undefined),
       finishOperation: vi.fn().mockResolvedValue(undefined),
       sendRpc,
-      syncWithDevice: vi.fn().mockResolvedValue(undefined),
+      syncWithDevice: vi.fn().mockResolvedValue(
+        {
+          ok: true,
+          peerId: 'peer-remote',
+          complete: true,
+          syncedAt: 1,
+          progress: { passes: 1, elapsedMs: 1, peers: 1, frontierPages: 1, pages: 1, events: 1, bytes: 128 },
+        } satisfies SyncResult,
+      ),
     },
     logWarning: vi.fn(),
   };
