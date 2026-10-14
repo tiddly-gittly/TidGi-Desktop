@@ -184,8 +184,8 @@ describe('AgentInstanceService durable execution IPC', () => {
     expect(readRange).not.toHaveBeenCalled();
   });
 
-  it('rejects attachment range reads when renderer metadata differs from the stored reference', async () => {
-    const query = vi.fn();
+  it('rejects attachment aliases without an exact conversation-scoped reference', async () => {
+    const query = vi.fn().mockResolvedValue([{ found: 0 }]);
     const readRange = vi.fn();
     const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
     Object.assign(service as unknown as Record<string, unknown>, {
@@ -205,9 +205,12 @@ describe('AgentInstanceService durable execution IPC', () => {
       reference: { ...attachmentReference, filename: 'substituted.png' },
       offset: 0,
       maxBytes: 4,
-    })).rejects.toThrow('attachment blob does not match its event-scoped reference');
+    })).rejects.toThrow('attachment is not authorized for this conversation');
 
-    expect(query).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('conversation_attachment_references'),
+      ['conversation-1', attachmentReference.contentHash, 'substituted.png', attachmentReference.mimeType, attachmentReference.size],
+    );
     expect(readRange).not.toHaveBeenCalled();
   });
 
