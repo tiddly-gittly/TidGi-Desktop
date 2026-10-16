@@ -24,7 +24,14 @@ describe('AgentInstanceService durable execution IPC', () => {
     expect(resolveAgentToolLoopTerminalState(step, 'completed')).toBe(expected satisfies AgentInstanceState);
   });
 
-  it('projects a streamed Core input-required state without decoding step payloads in Desktop', async () => {
+  it.each(
+    [
+      ['input-required', 'input-required'],
+      ['calling-llm', 'completed'],
+      ['blocked', 'failed'],
+      ['cancelled', 'canceled'],
+    ] as const,
+  )('settles a completed durable run with final Core step %s as %s', async (stepStatus, expectedState) => {
     const statuses: string[] = [];
     let listener: ((update: MemeLoopRuntimeUpdate) => void) | undefined;
     const runtime = {
@@ -37,7 +44,7 @@ describe('AgentInstanceService durable execution IPC', () => {
           type: 'agent-step',
           conversationId: 'conversation-1',
           runId: 'run-1',
-          step: { type: 'thinking', data: { status: 'input-required' } },
+          step: { type: 'thinking', data: { status: stepStatus } },
         });
         return {
           runId: 'run-1',
@@ -87,7 +94,7 @@ describe('AgentInstanceService durable execution IPC', () => {
       message: 'hello',
     });
 
-    expect(statuses).toEqual(['working', 'input-required']);
+    expect(statuses).toEqual(['working', expectedState]);
   });
 
   it('preserves caller provenance and materializes the exact local user-root message', async () => {

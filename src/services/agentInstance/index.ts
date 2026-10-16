@@ -1462,7 +1462,11 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Core's loop terminal state. Consume Core's canonical projection of
       // the streamed steps so ask-question can remain input-required without
       // teaching Desktop the shape of step payloads.
-      const completedState = runTerminalStates.get(handle.runId) ?? 'completed';
+      const projectedState = runTerminalStates.get(handle.runId) ?? 'completed';
+      // Core's step reducer also reports transient calling-llm progress. Once
+      // the durable run has completed, settle that progress just as Core's
+      // runAgentToolLoopTurn does, while preserving input-required and failures.
+      const completedState = projectedState === 'working' || projectedState === 'submitted' ? 'completed' : projectedState;
       await this.updateAgentStatusBestEffort(agentId, { state: completedState, modified: new Date() });
       if (definition.heartbeat?.enabled && !agent.volatile) {
         startHeartbeat(agentId, definition.id, definition.heartbeat, this, { createdBy: 'agent-definition' });
