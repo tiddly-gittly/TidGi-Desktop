@@ -163,4 +163,34 @@ describe('Wiki shutdown lifecycle', () => {
     expect((wiki as unknown as { wikiWorkers: Record<string, unknown> }).wikiWorkers).toEqual({});
     await expect(wiki.startWiki('later', 'tester')).rejects.toThrow('shutting down');
   });
+
+  it('rejects an in-flight document request before stopping its worker without cancelling a replacement worker', async () => {
+    const wiki = createWikiService();
+    const nativeWorker = Object.assign(new EventEmitter(), { kill: mocks.workerKill, pid: 42 });
+    const getIndex = vi.fn(() => new Promise<never>(() => undefined));
+    const workers: Record<string, unknown> = {
+      pending: {
+        booted: false,
+        detachWorker: mocks.detachWorker,
+        nativeWorker,
+        proxy: { getIndex },
+      },
+    };
+    (wiki as unknown as { wikiWorkers: Record<string, unknown> }).wikiWorkers = workers;
+    const pending = wiki.callWikiIpcServerRoute('pending', 'getIndex', '');
+    const failure = expect(pending).rejects.toThrow('stopped during workspace restart');
+    await vi.waitFor(() => {
+      expect(getIndex).toHaveBeenCalledOnce();
+    });
+    await wiki.stopWiki('pending');
+    await failure;
+
+    const response = { statusCode: 200, headers: { 'Content-Type': 'text/html' }, data: '<html>replacement</html>' };
+    workers.pending = {
+      booted: true,
+      nativeWorker: Object.assign(new EventEmitter(), { pid: 43 }),
+      proxy: { getIndex: vi.fn(async () => response) },
+    };
+    await expect(wiki.callWikiIpcServerRoute('pending', 'getIndex', '')).resolves.toEqual(response);
+  });
 });

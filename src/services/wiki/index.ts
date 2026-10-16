@@ -134,6 +134,16 @@ export class Wiki implements IWikiService {
       rejectStartWiki?: (error: Error) => void;
     }>
   > = {};
+  private readonly routeLifetimes = new WeakMap<WikiWorker, AbortController>();
+
+  private getRouteLifetime(worker: WikiWorker): AbortController {
+    let lifetime = this.routeLifetimes.get(worker);
+    if (!lifetime) {
+      lifetime = new AbortController();
+      this.routeLifetimes.set(worker, lifetime);
+    }
+    return lifetime;
+  }
 
   // Tracks in-flight startWiki promises so restartWiki can wait for an ongoing
   // startWiki to settle before calling stopWiki, avoiding a race where stopWiki
@@ -405,6 +415,7 @@ export class Wiki implements IWikiService {
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation, workspaceID };
     const handleWorkerStartFailure = async (error: unknown): Promise<Error> => {
       const normalizedError = error instanceof Error ? error : new Error(String(error));
+      this.getRouteLifetime(worker).abort(normalizedError);
       rejectStartWikiDeferred(normalizedError);
       if (this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker) {
         try {
@@ -474,6 +485,7 @@ export class Wiki implements IWikiService {
 
       // Handle worker exit
       wikiWorker.on('exit', (code) => {
+        this.getRouteLifetime(worker).abort(new Error(`Wiki worker exited for workspace ${workspaceID} (${code})`));
         const workerWasBooted = this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker && this.wikiWorkers[workspaceID]?.booted;
         if (this.wikiWorkers[workspaceID]?.nativeWorker === wikiWorker) {
           delete this.wikiWorkers[workspaceID];
@@ -692,11 +704,24 @@ export class Wiki implements IWikiService {
     logger.debug(`callWikiIpcServerRoute get ${route}`, { workspaceID });
     const worker = await this.getWorkerEnsure(workspaceID);
     logger.debug(`callWikiIpcServerRoute got worker`);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
-    const response = await worker[route](...arguments_);
-    logger.debug(`callWikiIpcServerRoute returning response`, { route, code: response.statusCode });
-    return response;
+    const { signal } = this.getRouteLifetime(worker);
+    signal.throwIfAborted();
+    let cancel!: () => void;
+    const cancelled = new Promise<never>((_resolve, reject) => {
+      cancel = () => {
+        reject(signal.reason instanceof Error ? signal.reason : new Error('Wiki protocol request cancelled'));
+      };
+      signal.addEventListener('abort', cancel, { once: true });
+    });
+    try {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
+      const response = await Promise.race([worker[route](...arguments_), cancelled]);
+      logger.debug(`callWikiIpcServerRoute returning response`, { route, code: response.statusCode });
+      return response;
+    } finally {
+      signal.removeEventListener('abort', cancel);
+    }
   }
 
   public async probeNetworkProxyForTest(workspaceID: string, url: string): Promise<string> {
@@ -797,6 +822,9 @@ export class Wiki implements IWikiService {
 
     const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
     syncService.stopIntervalSync(id);
+    // Settle protocol requests before kill/removeAllListeners. The IPC transport
+    // may not reject calls on a clean exit, which would strand queued navigation.
+    this.getRouteLifetime(worker).abort(new Error(`Wiki ${id} stopped during workspace restart`));
 
     // Reject boot waiters before any graceful cleanup. A not-yet-booted worker
     // cannot perform meaningful beforeExit work, and shutdown must not wait for
