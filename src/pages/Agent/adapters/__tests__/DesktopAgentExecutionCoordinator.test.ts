@@ -335,6 +335,46 @@ describe('DesktopAgentExecutionCoordinator', () => {
     await coordinator.dispose();
   });
 
+  it('uploads attachments restored during branch preparation before remote admission', async () => {
+    const services = createServices();
+    const prepare = services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer;
+    services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer = vi.fn(async request => {
+      const result = await prepare(request);
+      if (result.kind !== 'success') return result;
+      return {
+        ...result,
+        value: {
+          ...result.value,
+          userMessage: {
+            ...result.value.userMessage,
+            attachments: [attachmentReference()],
+          },
+        },
+      };
+    });
+    const coordinator = createDesktopAgentExecutionCoordinator('peer-local', {
+      createId: sequentialIds(),
+      pollIntervalMs: 1,
+      services,
+    });
+    await coordinator.execute({
+      target: { kind: 'remote', peerId: 'peer-remote' },
+      provenance: provenanceOf('edited-root', 'edited-request'),
+      message: 'edited prompt',
+    });
+    const calls = vi.mocked(services.deviceNetwork.sendRpc).mock.calls;
+    expect(calls.map(call => call[1])).toEqual([
+      'memeloop.chat.beginAttachmentUpload',
+      'memeloop.chat.uploadAttachmentChunk',
+      'memeloop.chat.commitAttachmentUpload',
+      'memeloop.agent.runTurn',
+      'memeloop.agent.getRunStatus',
+    ]);
+    expect(calls[3][2]).toMatchObject({ userMessage: { attachments: [attachmentReference()] } });
+    expect(services.agentInstance.beginAgentAttachmentUpload).not.toHaveBeenCalled();
+    await coordinator.dispose();
+  });
+
   it('cancels the tracked local run by runId and waits for its durable terminal state', async () => {
     const services = createServices();
     let resolveExecutionStatus!: (status: unknown) => void;

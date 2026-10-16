@@ -363,6 +363,7 @@ describe('AgentInstanceService durable execution IPC', () => {
     });
     mutable.updateAgentStatusBestEffort = vi.fn().mockResolvedValue(undefined);
     mutable.activeDurableRunIds = new Map();
+    mutable.dataSource = { getRepository: vi.fn(() => ({ findOne: vi.fn().mockResolvedValue(null) })) };
 
     const request = {
       target: { kind: 'local' as const },

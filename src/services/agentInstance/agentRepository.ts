@@ -11,6 +11,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import { ConversationBranchEntity } from '@services/database/schema/conversationEditing';
 import {
   AgentLoopCheckpointEntity,
   AgentRunStateEntity,
@@ -74,6 +75,7 @@ import {
   assertConversationMessageProjection,
   canonicalConversationEventBytes,
   compareConversationLoopCheckpointEvents,
+  conversationBranchIdentity,
   conversationEventAttachmentReferences,
   conversationEventToMessage,
   createAgentInstanceFromDefinition,
@@ -2743,6 +2745,18 @@ async function projectConversationEvent(
   }
   await insertMessageDetailProjection(manager, message);
   await messageRepository.save(messageRepository.create(projectChatMessageEntity(message)));
+  if (message.role === 'user' && message.metadata?.memeloopBranch !== undefined) {
+    const identity = conversationBranchIdentity(message);
+    await manager.getRepository(ConversationBranchEntity).createQueryBuilder().insert().values([
+      {
+        ...identity,
+        variantConversationId: identity.rootConversationId,
+        variantMessageId: identity.rootMessageId,
+        createdAt: 0,
+      },
+      { ...identity, createdAt: message.timestamp },
+    ]).orIgnore().execute();
+  }
   if (projectTimeline) {
     if (event.kind === 'message') await projectTimelineMessage(manager, event);
     else await projectTimelineCompaction(manager, event);

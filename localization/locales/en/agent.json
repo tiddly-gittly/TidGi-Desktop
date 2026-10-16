@@ -70,6 +70,25 @@
     "RenderPlaceholder": "This is the webpage rendering area."
   },
   "Chat": {
+    "Editing": {
+      "Edit": "Edit and branch",
+      "Input": "Edit message",
+      "Discard": "Discard",
+      "SaveDraft": "Save draft",
+      "ReloadDraft": "Load saved draft",
+      "Conflict": "This draft changed in another window. Your text remains here; load the saved draft to resolve the conflict.",
+      "PendingFailed": "This message has not been accepted. Retry, or return to the original history to edit your saved draft.",
+      "PreviousBranch": "Previous history",
+      "NextBranch": "Next history",
+      "Alternatives": "{{count}} alternative histories"
+    },
+    "RunStatus": {
+      "Working": "Working…",
+      "Queued": "Preparing request…",
+      "Cancelling": "Cancelling…"
+    },
+    "Workspace": { "Label": "Workspace", "Active": "Active workspace" },
+    "Rendering": { "Source": "Source", "Rendered": "Rendered", "Document": "Rendered message" },
     "Cancel": "Cancel",
     "Attachment": {
       "RemoveFile": "Remove {{name}}",

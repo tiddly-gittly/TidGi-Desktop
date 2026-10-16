@@ -13,6 +13,8 @@ interface ChatRequest {
 }
 
 interface Rule {
+  statusCode?: number;
+  delayMs?: number;
   response?: string;
   stream?: boolean;
   embedding?: number[]; // Optional: predefined embedding vector for this response
@@ -38,7 +40,7 @@ export class MockOpenAIServer {
       // Separate rules: ones with response go to chatRules, embedding-only go to embeddingRules
       // Note: Rules with both response and embedding will add to both collections
       for (const rule of rules) {
-        if (rule.response || rule.toolCall) {
+        if (rule.response || rule.toolCall || rule.statusCode) {
           this.chatRules.push(rule);
         }
         // Separately handle embedding - a rule can have both response and embedding
@@ -59,7 +61,7 @@ export class MockOpenAIServer {
       this.embeddingRules = [];
       // Note: Rules with both response and embedding will add to both collections
       for (const rule of rules) {
-        if (rule.response || rule.toolCall) {
+        if (rule.response || rule.toolCall || rule.statusCode) {
           this.chatRules.push(rule);
         }
         // Separately handle embedding - a rule can have both response and embedding
@@ -78,7 +80,7 @@ export class MockOpenAIServer {
     if (Array.isArray(rules)) {
       // Note: A rule can have both response and embedding - handle them independently
       for (const rule of rules) {
-        if (rule.response || rule.toolCall) {
+        if (rule.response || rule.toolCall || rule.statusCode) {
           this.chatRules.push(rule);
         }
         // Removed 'else' - a rule can have both response and embedding
@@ -294,8 +296,24 @@ export class MockOpenAIServer {
         this.lastRequest = chatRequest;
         this.allRequests.push(chatRequest);
 
+        const nextRule = this.chatRules[this.callCount];
+        if (nextRule?.statusCode) {
+          this.callCount++;
+          setTimeout(() => {
+            if (response.destroyed || response.writableEnded) return;
+            response.writeHead(nextRule.statusCode!, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ error: { code: 'test_provider_failure', message: 'Test provider failure' } }));
+          }, nextRule.delayMs ?? 0);
+          return;
+        }
         if (chatRequest.stream) {
-          this.handleStreamingChatCompletions(chatRequest, response);
+          if (nextRule?.delayMs) {
+            setTimeout(() => {
+              if (!response.destroyed) this.handleStreamingChatCompletions(chatRequest, response);
+            }, nextRule.delayMs);
+          } else {
+            this.handleStreamingChatCompletions(chatRequest, response);
+          }
           return;
         }
 

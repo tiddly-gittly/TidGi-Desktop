@@ -87,6 +87,12 @@ export type RendererAgentRunResult<T> =
  * Agent instance service to manage chat instances and messages
  */
 export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
+  loadConversationEditSource(conversationId: string, messageId: string): Promise<import('memeloop').ConversationEditSource>;
+  saveConversationEditDraft(input: import('memeloop').ConversationDraftWrite): Promise<number>;
+  forkConversation(input: import('memeloop').ConversationForkRequest): Promise<string>;
+  getConversationBranches(conversationId: string, messageIds: readonly string[]): Promise<import('memeloop').ConversationBranchState[]>;
+  getConversationWorkspace(conversationId: string): Promise<string | null>;
+  setConversationWorkspace(conversationId: string, workspaceId: string | null): Promise<void>;
   /** Canonical repository point read used by retry and on-demand detail paths. */
   getMessageById(
     conversationId: string,
@@ -464,6 +470,12 @@ export const AgentInstanceServiceIPCDescriptor = {
     preparePromptPreviewExecutionModelRequest: ProxyPropertyType.Function,
     getCronPreviewDates: ProxyPropertyType.Function,
     updateAgent: ProxyPropertyType.Function,
+    loadConversationEditSource: ProxyPropertyType.Function,
+    saveConversationEditDraft: ProxyPropertyType.Function,
+    forkConversation: ProxyPropertyType.Function,
+    getConversationBranches: ProxyPropertyType.Function,
+    getConversationWorkspace: ProxyPropertyType.Function,
+    setConversationWorkspace: ProxyPropertyType.Function,
     writeAgentAttachmentChunk: ProxyPropertyType.Function,
     prepareAgentDeviceRpcRunTurn: ProxyPropertyType.Function,
     readAgentAttachmentChunk: ProxyPropertyType.Function,

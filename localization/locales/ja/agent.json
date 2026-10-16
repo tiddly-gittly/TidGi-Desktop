@@ -70,6 +70,21 @@
     "RenderPlaceholder": "これはウェブページのレンダリング領域です"
   },
   "Chat": {
+    "Editing": {
+      "Edit": "編集して分岐",
+      "Input": "メッセージを編集",
+      "Discard": "破棄",
+      "SaveDraft": "下書きを保存",
+      "ReloadDraft": "保存済みの下書きを読み込む",
+      "Conflict": "別のウィンドウで下書きが変更されました。現在の入力はここに保持されています。保存済みの下書きを読み込んで競合を解消してください。",
+      "PendingFailed": "このメッセージはまだ受け付けられていません。再試行するか、元の履歴に戻って保存済みの下書きを編集してください。",
+      "PreviousBranch": "前の履歴",
+      "NextBranch": "次の履歴",
+      "Alternatives": "切り替え可能な履歴：{{count}} 件"
+    },
+    "RunStatus": { "Working": "実行中…", "Queued": "リクエストを準備中…", "Cancelling": "キャンセル中…" },
+    "Workspace": { "Label": "ワークスペース", "Active": "アクティブなワークスペース" },
+    "Rendering": { "Source": "ソース", "Rendered": "表示結果", "Document": "表示されたメッセージ" },
     "Cancel": "キャンセル",
     "Attachment": {
       "RemoveFile": "{{name}}を削除",

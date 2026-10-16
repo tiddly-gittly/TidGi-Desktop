@@ -9,8 +9,11 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { container } from '@services/container';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
+import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { assertPortableLlmJsonValue, type PortableLlmJsonValue, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
@@ -20,6 +23,10 @@ import { defineDesktopTool } from './defineToolDefinition';
  * Configuration parameters for the MCP plugin
  */
 export const ModelContextProtocolParameterSchema = z.object({
+  useHostServer: z.boolean().optional().meta({
+    title: 'Use this app’s MCP server',
+    description: 'Follow the local app’s MCP port and authentication settings.',
+  }),
   /** MCP server command (for stdio transport) */
   command: z.string().optional().meta({
     title: 'Server command',
@@ -60,8 +67,26 @@ export function getModelContextProtocolParameterSchema() {
   return ModelContextProtocolParameterSchema;
 }
 
+export async function resolveMCPHostConnection(
+  config: ModelContextProtocolParameter,
+  definitionId: string,
+  getPreferences: () => Pick<IPreferenceService, 'get'>,
+): Promise<{ config: ModelContextProtocolParameter; token?: string } | undefined> {
+  const useHost = config.useHostServer === true || (
+    config.useHostServer === undefined && !config.command &&
+    definitionId.startsWith('memeloop:') && config.serverUrl === 'http://127.0.0.1:38385/mcp'
+  );
+  if (!useHost) return { config };
+  const preferences = getPreferences();
+  if (!await preferences.get('mcpServerEnabled')) return undefined;
+  const port = await preferences.get('mcpServerPort');
+  const token = await preferences.get('mcpServerRequireToken') ? (await preferences.get('mcpServerToken')).trim() : undefined;
+  return { config: { ...config, command: undefined, serverUrl: `http://127.0.0.1:${port}/mcp` }, token };
+}
+
 /** Per-instance MCP client state, keyed by agent instance ID */
 interface MCPClientState {
+  connectionKey: string;
   /** Available tools from the MCP server */
   tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
   /** Client connection (lazy-loaded to avoid import issues if SDK not installed) */
@@ -123,7 +148,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation:
  * Try to connect to MCP server and list available tools.
  * Returns tool list on success, empty array on failure.
  */
-async function connectAndListTools(config: ModelContextProtocolParameter, agentId: string): Promise<MCPClientState['tools']> {
+async function connectAndListTools(config: ModelContextProtocolParameter, agentId: string, connectionKey: string, token?: string): Promise<MCPClientState['tools']> {
   const client = new Client({ name: 'TidGi-Agent', version: '1.0.0' }, { capabilities: {} });
   try {
     let transport: unknown;
@@ -132,7 +157,7 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
       transport = new StdioClientTransport({ command: config.command, args: config.args ?? [] });
     } else if (config.serverUrl) {
       const serverURL = new URL(config.serverUrl);
-      transport = new StreamableHTTPClientTransport(serverURL);
+      transport = new StreamableHTTPClientTransport(serverURL, token ? { requestInit: { headers: { Authorization: `Bearer ${token}` } } } : undefined);
     } else {
       logger.warn('MCP: No command or serverUrl configured', { agentId });
       return [];
@@ -150,6 +175,7 @@ async function connectAndListTools(config: ModelContextProtocolParameter, agentI
     }));
 
     clientStates.set(agentId, {
+      connectionKey,
       tools,
       client: client as MCPClientState['client'],
       transport,
@@ -226,11 +252,27 @@ export const mcpDefinition = defineDesktopTool({
   async onProcessPrompts({ config, agentFrameworkContext, injectContent, registerModelTool }) {
     const agentId = agentFrameworkContext?.agent?.id;
     if (!agentId) return;
+    const connection = await resolveMCPHostConnection(
+      config,
+      agentFrameworkContext.agent.agentDefId,
+      () => container.get<IPreferenceService>(serviceIdentifier.Preference),
+    );
+    if (!connection) {
+      await cleanupMCPClient(agentId);
+      return;
+    }
+    const { config: effectiveConfig, token } = connection;
+    // This value stays in process memory and is never logged or persisted.
+    const connectionKey = JSON.stringify([effectiveConfig.command, effectiveConfig.args, effectiveConfig.serverUrl, token]);
 
     // Connect if not already connected
     let state = clientStates.get(agentId);
+    if (state && state.connectionKey !== connectionKey) {
+      await cleanupMCPClient(agentId);
+      state = undefined;
+    }
     if (!state?.connected) {
-      const tools = await connectAndListTools(config, agentId);
+      const tools = await connectAndListTools(effectiveConfig, agentId, connectionKey, token);
       state = clientStates.get(agentId);
       if (!tools.length) return;
     }

@@ -172,22 +172,17 @@ export function createDesktopAgentExecutionCoordinator(
     try {
       return await withRemoteOperation(services, createId, callOptions.signal, async operationId => {
         const client = remoteClient(target.peerId, operationId);
-        const forwardedAttachment = staged === undefined
-          ? undefined
-          : await uploadAttachmentToRemote(
-            client,
-            staged.attachment.reference,
-            request.provenance.conversationId,
-            services,
-            createId,
-            callOptions.signal,
-          );
         const runTurnRequest = unwrapRendererAgentRunResult(
           await services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer({
             ...request,
-            ...(forwardedAttachment === undefined ? {} : { attachment: forwardedAttachment }),
+            ...(staged === undefined ? {} : { attachment: staged.attachment }),
           }),
         );
+        // Preparation also restores attachments retained by an edited branch.
+        // Authorize every final reference in the target conversation before admission.
+        for (const reference of runTurnRequest.userMessage?.attachments ?? []) {
+          await uploadAttachmentToRemote(client, reference, request.provenance.conversationId, services, createId, callOptions.signal);
+        }
         callOptions.signal.throwIfAborted();
         const handle = await client.runTurn(runTurnRequest);
         assertRunHandleCorrelation(handle, request.provenance);

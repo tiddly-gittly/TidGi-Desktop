@@ -19,6 +19,7 @@ import { ensureSettingFolderExist, fixSettingFileWhenError, readTidgiConfig } fr
 import type { DatabaseInitOptions, IDatabaseService, ISettingFile } from './interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from './schema/agent';
 import { AgentBrowserTabEntity } from './schema/agentBrowser';
+import { ConversationBranchEntity, ConversationEditDraftEntity, ConversationForkEntity, ConversationWorkspaceChoiceEntity } from './schema/conversationEditing';
 import {
   AgentLoopCheckpointEntity,
   AgentLoopCheckpointExecutionLeaseEntity,
@@ -122,6 +123,10 @@ export class DatabaseService implements IDatabaseService {
         AgentBrowserTabEntity,
         ScheduledTaskEntity,
         ConversationAttachmentReferenceEntity,
+        ConversationBranchEntity,
+        ConversationEditDraftEntity,
+        ConversationForkEntity,
+        ConversationWorkspaceChoiceEntity,
         AgentRunStateEntity,
         AgentRunExecutionLeaseEntity,
         ConversationMessageDetailEntity,

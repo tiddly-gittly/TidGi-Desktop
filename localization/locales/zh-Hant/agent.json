@@ -70,6 +70,25 @@
     "RenderPlaceholder": "這是網頁渲染區域"
   },
   "Chat": {
+    "Editing": {
+      "Edit": "編輯並建立分支",
+      "Input": "編輯訊息",
+      "Discard": "放棄",
+      "SaveDraft": "儲存草稿",
+      "ReloadDraft": "載入已儲存的草稿",
+      "Conflict": "草稿已在另一視窗修改。目前文字仍保留在這裡；載入已儲存的草稿可解除衝突。",
+      "PendingFailed": "訊息尚未被接受。可以重試，或返回原歷史修改已儲存的草稿。",
+      "PreviousBranch": "上一條歷史",
+      "NextBranch": "下一條歷史",
+      "Alternatives": "有 {{count}} 條可切換的替代歷史"
+    },
+    "RunStatus": {
+      "Working": "正在處理…",
+      "Queued": "正在準備請求…",
+      "Cancelling": "正在取消…"
+    },
+    "Workspace": { "Label": "工作區", "Active": "目前啟用的工作區" },
+    "Rendering": { "Source": "原始文字", "Rendered": "渲染結果", "Document": "訊息渲染結果" },
     "Cancel": "取消",
     "Attachment": {
       "RemoveFile": "移除 {{name}}",

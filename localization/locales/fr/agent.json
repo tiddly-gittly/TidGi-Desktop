@@ -70,6 +70,21 @@
     "RenderPlaceholder": "Voici la zone de rendu de la page web."
   },
   "Chat": {
+    "Editing": {
+      "Edit": "Modifier et créer une branche",
+      "Input": "Modifier le message",
+      "Discard": "Abandonner",
+      "SaveDraft": "Enregistrer le brouillon",
+      "ReloadDraft": "Charger le brouillon enregistré",
+      "Conflict": "Le brouillon a été modifié dans une autre fenêtre. Votre texte est conservé ici ; chargez le brouillon enregistré pour résoudre le conflit.",
+      "PendingFailed": "Ce message n’a pas encore été accepté. Réessayez ou revenez à l’historique d’origine pour modifier le brouillon enregistré.",
+      "PreviousBranch": "Historique précédent",
+      "NextBranch": "Historique suivant",
+      "Alternatives": "{{count}} historiques alternatifs"
+    },
+    "RunStatus": { "Working": "En cours…", "Queued": "Préparation de la requête…", "Cancelling": "Annulation…" },
+    "Workspace": { "Label": "Espace de travail", "Active": "Espace de travail actif" },
+    "Rendering": { "Source": "Source", "Rendered": "Rendu", "Document": "Message rendu" },
     "Cancel": "Annuler",
     "Attachment": {
       "RemoveFile": "Supprimer {{name}}",

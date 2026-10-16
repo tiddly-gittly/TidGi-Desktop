@@ -18,7 +18,9 @@ import { BehaviorSubject } from 'rxjs';
 import type { ITab, TabItem } from '../../pages/Agent/types/tab';
 import { TabState, TabType } from '../../pages/Agent/types/tab';
 import type { IDatabaseService } from '../database/interface';
+import { AgentInstanceMessageEntity } from '../database/schema/agent';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
+import { ConversationEditDraftEntity } from '../database/schema/conversationEditing';
 import type { IAgentBrowserService } from './interface';
 
 const MAX_CLOSED_TABS = 10;
@@ -101,6 +103,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           agentId: data.agentId as string | undefined,
           agentDefId: data.agentDefId as string | undefined,
           initialMessage: data.initialMessage as string | undefined,
+          initialEditSource: data.initialEditSource as IChatTab['initialEditSource'],
           initialWikiTiddlers: data.initialWikiTiddlers as IChatTab['initialWikiTiddlers'],
         };
       case TabType.NEW_TAB:
@@ -176,6 +179,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           agentId: chatTab.agentId,
           agentDefId: chatTab.agentDefId,
           initialMessage: chatTab.initialMessage,
+          initialEditSource: chatTab.initialEditSource,
           initialWikiTiddlers: chatTab.initialWikiTiddlers,
         };
         break;
@@ -385,7 +389,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           break;
         }
         case TabType.CHAT: {
-          const chatData = pick(data, ['agentId', 'agentDefId', 'initialMessage', 'initialWikiTiddlers']);
+          const chatData = pick(data, ['agentId', 'agentDefId', 'initialMessage', 'initialWikiTiddlers', 'initialEditSource']);
           Object.assign(existingTab.data, chatData);
           break;
         }
@@ -423,11 +427,29 @@ export class AgentBrowserService implements IAgentBrowserService {
     this.ensureRepositories();
     const acknowledged = await this.dataSource!.transaction(async manager => {
       const repository = manager.getRepository(AgentBrowserTabEntity);
+      const confirmEditedRoot = async (source: IChatTab['initialEditSource']) => {
+        if (!source) return true;
+        const root = await manager.getRepository(AgentInstanceMessageEntity).findOneBy({
+          conversationId: agentId,
+          messageId: `initial:${tabId}:${agentId}:turn`,
+          role: 'user',
+        });
+        if (!root) return false;
+        // Ack and draft cleanup share the root snapshot and tab-identity fence.
+        await manager.getRepository(ConversationEditDraftEntity).update({
+          conversationId: source.conversationId,
+          messageId: source.messageId,
+          revision: source.draftRevision,
+        }, { text: null, revision: source.draftRevision + 1 });
+        return true;
+      };
       const direct = await repository.findOne({ where: { id: tabId, opened: true } });
       if (direct?.tabType === TabType.CHAT) {
         const data = { ...(direct.data ?? {}) };
         if (data.agentId !== agentId || data.initialMessage !== expectedMessage) return false;
+        if (!await confirmEditedRoot(data.initialEditSource as IChatTab['initialEditSource'])) return false;
         delete data.initialMessage;
+        delete data.initialEditSource;
         delete data.initialWikiTiddlers;
         direct.data = data;
         await repository.save(direct);
@@ -441,8 +463,10 @@ export class AgentBrowserService implements IAgentBrowserService {
         if (childIndex < 0) continue;
         const child = childTabs[childIndex] as IChatTab;
         if (child.agentId !== agentId || child.initialMessage !== expectedMessage) return false;
+        if (!await confirmEditedRoot(child.initialEditSource)) return false;
         const nextChild = { ...child };
         delete nextChild.initialMessage;
+        delete nextChild.initialEditSource;
         delete nextChild.initialWikiTiddlers;
         const nextChildren = [...childTabs];
         nextChildren[childIndex] = nextChild;

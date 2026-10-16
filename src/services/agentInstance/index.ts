@@ -11,6 +11,7 @@ import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
+import { ConversationForkEntity, ConversationWorkspaceChoiceEntity } from '@services/database/schema/conversationEditing';
 import { ConversationTimelineStateEntity } from '@services/database/schema/conversationEvent';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
@@ -54,6 +55,7 @@ import {
   type AttachmentReference,
   type ChatMessage,
   type CompactionCandidatePage,
+  conversationBranchIdentity,
   type ConversationEvent,
   type ConversationEventDraft,
   type ConversationEventPage,
@@ -116,6 +118,7 @@ import {
   DesktopAttachmentUploadStore,
   type WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadStore';
+import * as editingStore from './conversationEditingStore';
 import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
 
 import * as repo from './agentRepository';
@@ -1284,6 +1287,42 @@ export class AgentInstanceService implements IAgentInstanceService {
     }
   }
 
+  public async loadConversationEditSource(conversationId: string, messageId: string) {
+    this.ensureRepositories();
+    return editingStore.loadConversationEditSource(this.dataSource!, conversationId, messageId);
+  }
+
+  public async saveConversationEditDraft(input: import('memeloop').ConversationDraftWrite) {
+    this.ensureRepositories();
+    return editingStore.saveConversationEditDraft(this.dataSource!, input);
+  }
+
+  public async forkConversation(input: import('memeloop').ConversationForkRequest) {
+    this.ensureRepositories();
+    const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
+    return editingStore.forkConversation(this.dataSource!, input, originNodeId);
+  }
+
+  public async getConversationBranches(conversationId: string, messageIds: readonly string[]) {
+    this.ensureRepositories();
+    return editingStore.getConversationBranches(this.dataSource!, conversationId, messageIds);
+  }
+
+  public async getConversationWorkspace(conversationId: string): Promise<string | null> {
+    this.ensureRepositories();
+    return (await this.dataSource!.getRepository(ConversationWorkspaceChoiceEntity).findOne({ where: { conversationId } }))?.workspaceId ?? null;
+  }
+
+  public async setConversationWorkspace(conversationId: string, workspaceId: string | null): Promise<void> {
+    this.ensureRepositories();
+    if (!await this.getAgentMetadata(conversationId)) throw new Error('conversation_not_found');
+    if (workspaceId !== null) {
+      const workspace = await this.workspaceService.get(workspaceId);
+      if (!workspace || !isWikiWorkspace(workspace)) throw new Error('conversation_workspace_not_found');
+    }
+    await this.dataSource!.getRepository(ConversationWorkspaceChoiceEntity).save({ conversationId, workspaceId });
+  }
+
   public async deleteAgent(agentId: string): Promise<void> {
     this.ensureRepositories();
     try {
@@ -1667,6 +1706,27 @@ export class AgentInstanceService implements IAgentInstanceService {
       beforeCommitMap,
       metadata,
     });
+    const fork = await this.dataSource!.getRepository(ConversationForkEntity).findOne({
+      where: { targetConversationId: provenance.conversationId, replacementMessageId: provenance.turnId },
+    });
+    if (fork) {
+      if (request.message !== fork.replacementText) throw new Error('conversation_fork_content_mismatch');
+      const { beforeCommitMap: _beforeCommitMap, ...sourceMetadata } = fork.source.metadata ?? {};
+      userMessage.parts = [
+        { type: 'text', text: request.message },
+        ...fork.source.parts.filter(part => part.type === 'attachment'),
+      ];
+      if (fork.source.attachments !== undefined) userMessage.attachments = fork.source.attachments;
+      userMessage.metadata = {
+        ...sourceMetadata,
+        ...userMessage.metadata,
+        memeloopBranch: {
+          ...conversationBranchIdentity(fork.source),
+          variantConversationId: provenance.conversationId,
+          variantMessageId: provenance.turnId,
+        },
+      };
+    }
     return {
       conversationId: provenance.conversationId,
       definitionId: provenance.definitionId,
