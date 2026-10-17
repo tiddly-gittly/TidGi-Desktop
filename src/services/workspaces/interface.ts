@@ -340,7 +340,7 @@ export interface IWorkspaceMetaData {
    * indicating server or webpage is still loading
    */
   isLoading?: boolean;
-  /** Human-paced macOS consent, not a timed wiki boot. Never persisted. */
+  /** A directory access check is pending; this does not imply an OS permission dialog is visible. Never persisted. */
   isWaitingForFolderAccess?: boolean;
   /**
    * Is restarting service for this workspace.

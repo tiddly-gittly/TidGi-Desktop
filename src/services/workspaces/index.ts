@@ -57,6 +57,11 @@ interface IPortableConfigReadResult {
   timedOut: boolean;
 }
 
+interface IFolderAccessWait {
+  folder: string;
+  callers: Set<symbol>;
+}
+
 @injectable()
 export class Workspace implements IWorkspaceService {
   /**
@@ -80,6 +85,7 @@ export class Workspace implements IWorkspaceService {
   private nextPortableConfigHydrationGeneration = 0;
   private portableConfigHydrationPromise: Promise<void> | undefined;
   private portableConfigHydrationRunController: AbortController | undefined;
+  private readonly folderAccessWaits = new Map<string, IFolderAccessWait>();
 
   /**
    * Initialize workspace menu after database is ready
@@ -283,35 +289,43 @@ export class Workspace implements IWorkspaceService {
         if (
           workspace === undefined ||
           !isWikiWorkspace(workspace) ||
-          workspace.workspaceType === WorkspaceType.html
+          workspace.workspaceType === WorkspaceType.html ||
+          !workspace.useTidgiConfigSync
         ) {
           continue;
         }
 
-        try {
-          if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) !== undefined) {
-            await this.ensureWikiFolderAccess(workspace, runController.signal);
-          }
-        } catch (error) {
-          if (runController.signal.aborted) return;
-          logger.warn('Workspace folder access was not granted', { workspaceID, error });
-          continue;
-        }
-        if (!workspace.useTidgiConfigSync) continue;
-
+        // Register before the directory check, so editing/removing a workspace
+        // can cancel this wait as well as its subsequent portable-config read.
         this.cancelPortableConfigHydrationForWorkspace(workspace.id);
         const hydration: IPortableConfigHydration = {
           controller: new AbortController(),
           generation: ++this.nextPortableConfigHydrationGeneration,
         };
         this.portableConfigHydrations.set(workspace.id, hydration);
+        try {
+          const signal = AbortSignal.any([runController.signal, hydration.controller.signal]);
+          try {
+            if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) !== undefined) {
+              await this.ensureWikiFolderAccess(workspace, signal);
+            }
+          } catch (error) {
+            if (runController.signal.aborted) return;
+            if (!signal.aborted) logger.warn('Workspace folder access check failed', { workspaceID, error });
+            continue;
+          }
+          if (runController.signal.aborted) return;
+          if (hydration.controller.signal.aborted) continue;
 
-        const timedOut = await this.hydratePortableConfig(workspace, hydration, runController.signal, imported);
-        if (timedOut) {
-          logger.warn('Portable workspace config hydration stopped after timeout to preserve filesystem worker capacity', {
-            workspaceID: workspace.id,
-          });
-          return;
+          const timedOut = await this.hydratePortableConfig(workspace, hydration, runController.signal, imported);
+          if (timedOut) {
+            logger.warn('Portable workspace config hydration stopped after timeout to preserve filesystem worker capacity', {
+              workspaceID: workspace.id,
+            });
+            return;
+          }
+        } finally {
+          if (this.portableConfigHydrations.get(workspace.id) === hydration) this.portableConfigHydrations.delete(workspace.id);
         }
       }
     } finally {
@@ -359,17 +373,45 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async ensureWikiFolderAccess(workspace: IWikiWorkspace, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted();
     if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) === undefined) return;
-    await this.updateMetaData(workspace.id, { isLoading: true, isWaitingForFolderAccess: true });
+    let wait = this.folderAccessWaits.get(workspace.id);
+    if (wait?.folder !== workspace.wikiFolderLocation) {
+      wait = { folder: workspace.wikiFolderLocation, callers: new Set() };
+      this.folderAccessWaits.set(workspace.id, wait);
+    }
+    const caller = Symbol();
+    wait.callers.add(caller);
     try {
+      await this.updateMetaData(workspace.id, { isLoading: true, isWaitingForFolderAccess: true, didFailLoadErrorMessage: null });
       await macFolderAccessGate.waitForAccess(workspace.wikiFolderLocation, signal);
     } catch (error) {
       if (signal?.aborted) throw error;
-      const message = i18n.t('FolderAccessDenied', { folderPath: workspace.wikiFolderLocation });
+      const currentWorkspace = this.workspaces?.[workspace.id];
+      if (
+        this.folderAccessWaits.get(workspace.id) !== wait ||
+        currentWorkspace === undefined ||
+        !isWikiWorkspace(currentWorkspace) ||
+        currentWorkspace.wikiFolderLocation !== workspace.wikiFolderLocation
+      ) {
+        throw error;
+      }
+      const code = error instanceof Error && 'code' in error ? error.code : undefined;
+      const message = i18n.t(code === 'EACCES' || code === 'EPERM' ? 'FolderAccessDenied' : 'FolderAccessFailed', {
+        folderPath: workspace.wikiFolderLocation,
+        error: error instanceof Error ? error.message : String(error),
+      });
       await this.updateMetaData(workspace.id, { isLoading: false, didFailLoadErrorMessage: message });
       throw new Error(message, { cause: error });
     } finally {
-      await this.updateMetaData(workspace.id, { isWaitingForFolderAccess: false });
+      wait.callers.delete(caller);
+      if (wait.callers.size === 0 && this.folderAccessWaits.get(workspace.id) === wait) {
+        this.folderAccessWaits.delete(workspace.id);
+        // Do not resurrect metadata for a workspace removed during the wait.
+        if (this.workspaces?.[workspace.id] !== undefined) {
+          await this.updateMetaData(workspace.id, { isWaitingForFolderAccess: false });
+        }
+      }
     }
   }
 

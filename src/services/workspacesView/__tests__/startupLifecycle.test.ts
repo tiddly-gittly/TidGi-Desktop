@@ -1,5 +1,6 @@
 import { PageType } from '@/constants/pageTypes';
 import { SupportedStorageServices } from '@services/types';
+import { getWorkspaceStrategy } from '@services/workspaces/strategies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type IDedicatedWorkspace, type IWikiWorkspace, wikiWorkspaceDefaultValues } from '../../workspaces/interface';
 
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   setWikiStartLockOn: vi.fn(),
   updateMetaData: vi.fn().mockResolvedValue(undefined),
   update: vi.fn().mockResolvedValue(undefined),
+  ensureWikiFolderAccess: vi.fn().mockResolvedValue(undefined),
   getActiveWorkspace: vi.fn(),
   get: vi.fn(),
   getView: vi.fn(),
@@ -36,6 +38,7 @@ vi.mock('@services/container', async () => {
             getWorkspacesAsList: mocks.getWorkspacesAsList,
             updateMetaData: mocks.updateMetaData,
             update: mocks.update,
+            ensureWikiFolderAccess: mocks.ensureWikiFolderAccess,
             getActiveWorkspace: mocks.getActiveWorkspace,
             get: mocks.get,
           };
@@ -80,6 +83,34 @@ function createService(hibernateUnusedWorkspacesAtLaunch = false): WorkspaceView
 describe('WorkspaceView startup lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it.each([true, false])('does not touch a sleeping wiki folder before applying hibernation (global: %s)', async (globalHibernate) => {
+    const workspace = createWorkspace('sleeping', { active: false, hibernated: false, hibernateWhenUnused: !globalHibernate });
+    const checkWikiExist = vi.spyOn(getWorkspaceStrategy(workspace).runtime, 'checkWikiExist').mockResolvedValue('not found');
+    try {
+      await createService(globalHibernate).initializeWorkspaceView(workspace);
+      expect(mocks.ensureWikiFolderAccess).not.toHaveBeenCalled();
+      expect(checkWikiExist).not.toHaveBeenCalled();
+      expect(mocks.update).toHaveBeenCalledWith(workspace.id, { hibernated: true });
+    } finally {
+      checkWikiExist.mockRestore();
+    }
+  });
+
+  it.each([
+    { active: true, followHibernateSettingWhenInit: true },
+    { active: false, followHibernateSettingWhenInit: false },
+  ])('still checks folder access for active or explicitly awakened wikis: %j', async ({ active, followHibernateSettingWhenInit }) => {
+    const workspace = createWorkspace('awake', { active, hibernated: true, hibernateWhenUnused: true });
+    const checkWikiExist = vi.spyOn(getWorkspaceStrategy(workspace).runtime, 'checkWikiExist').mockResolvedValue('not found');
+    try {
+      await createService(true).initializeWorkspaceView(workspace, { followHibernateSettingWhenInit });
+      expect(mocks.ensureWikiFolderAccess).toHaveBeenCalledWith(workspace, undefined);
+      expect(checkWikiExist).toHaveBeenCalledTimes(1);
+    } finally {
+      checkWikiExist.mockRestore();
+    }
   });
 
   it('does not schedule Electron menu work merely by constructing the service', async () => {

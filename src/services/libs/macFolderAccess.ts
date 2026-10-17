@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import { opendir } from 'node:fs/promises';
 import path from 'node:path';
+import { logger } from './log';
 
 interface FolderAccessOptions {
   platform: NodeJS.Platform;
@@ -8,7 +9,7 @@ interface FolderAccessOptions {
   readDirectory: (folder: string) => Promise<void>;
 }
 
-/** Separate human-paced macOS consent from timed filesystem/worker startup. */
+/** Check directory access before timed startup; macOS may defer the read for human-paced consent. */
 export class MacFolderAccessGate {
   private readonly granted = new Set<string>();
   private readonly pending = new Map<string, Promise<void>>();
@@ -57,7 +58,13 @@ export const macFolderAccessGate = new MacFolderAccessGate({
   platform: process.platform,
   protectedFolders: () => [app.getPath('desktop'), app.getPath('documents'), app.getPath('downloads')],
   readDirectory: async (folder) => {
+    const startedAt = performance.now();
+    // Track both operations so a pending probe can be diagnosed without
+    // interpreting its waiting metadata as evidence of a macOS dialog.
+    logger.debug('Workspace directory access check started', { folder });
     const directory = await opendir(folder);
+    logger.debug('Workspace directory access check opened directory', { folder, elapsedMs: performance.now() - startedAt });
     await directory.close();
+    logger.debug('Workspace directory access check completed', { folder, elapsedMs: performance.now() - startedAt });
   },
 });

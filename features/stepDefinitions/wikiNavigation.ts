@@ -1,7 +1,39 @@
 import { Then } from '@cucumber/cucumber';
+import assert from 'node:assert/strict';
 import { WindowNames } from '../../src/services/windows/WindowProperties';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import { executeTiddlyWikiCode } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
+
+Then('a pending folder check should name its workspace and clear without an approval action', async function(this: ApplicationWorld) {
+  if (!this.mainWindow) throw new Error('Application not launched');
+  const page = this.mainWindow;
+  // Exercise live service metadata -> renderer subscription in the packaged
+  // app. Real OS consent remains platform-specific; this test creates no prompt.
+  const workspace = await page.evaluate(async (windowName) => {
+    const active = await window.service.workspace.getActiveWorkspace();
+    if (!active) throw new Error('No active workspace');
+    await window.service.view.hideView(active.id, windowName);
+    await window.service.workspace.updateMetaData(active.id, { isLoading: true, isWaitingForFolderAccess: true, didFailLoadErrorMessage: null });
+    return { id: active.id, name: active.name ?? active.id };
+  }, WindowNames.main);
+  const status = page.locator('[data-testid="workspace-folder-access-status"]');
+  try {
+    await status.waitFor({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    const text = await status.innerText();
+    assert.ok(text.includes(workspace.name), 'The pending workspace must be identified');
+    assert.match(text, /If macOS|如果 macOS/, 'Permission guidance must be conditional, not a claim that a dialog exists');
+    await page.evaluate(async (id) => {
+      await window.service.workspace.updateMetaData(id, { isLoading: false, isWaitingForFolderAccess: false });
+    }, workspace.id);
+    await status.waitFor({ state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+  } finally {
+    await page.evaluate(async ({ id, windowName }) => {
+      await window.service.workspace.updateMetaData(id, { isLoading: false, isWaitingForFolderAccess: false });
+      await window.service.view.showView(id, windowName);
+    }, { id: workspace.id, windowName: WindowNames.main });
+  }
+});
 
 Then('reloading a different saved wiki fragment should recreate the document and its services', async function(this: ApplicationWorld) {
   if (!this.app || !this.mainWindow) throw new Error('Application not launched');

@@ -366,6 +366,189 @@ describe('Workspace useTidgiConfigSync', () => {
   });
 
   describe('startup portable config hydration', () => {
+    it('keeps shared directory wait metadata until the remaining caller finishes', async () => {
+      const workspace = createWorkspace({});
+      const service = createWorkspaceService(workspace);
+      const controller = new AbortController();
+      let finishFirst!: () => void;
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/protected');
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess')
+        .mockImplementationOnce(async () => {
+          await new Promise<void>(resolve => {
+            finishFirst = resolve;
+          });
+        })
+        .mockImplementationOnce(async (_folder, signal) => {
+          await new Promise<void>((_resolve, reject) => {
+            signal?.addEventListener('abort', () => {
+              reject(signal.reason instanceof Error ? signal.reason : new Error('cancelled'));
+            }, { once: true });
+          });
+        });
+      const first = service.ensureWikiFolderAccess(workspace);
+      const second = service.ensureWikiFolderAccess(workspace, controller.signal);
+      const cancellation = expect(second).rejects.toThrow('cancelled');
+      try {
+        await vi.waitFor(() => {
+          expect(waitForAccess).toHaveBeenCalledTimes(2);
+        });
+        controller.abort(new Error('cancelled'));
+        await cancellation;
+        await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({ isWaitingForFolderAccess: true, didFailLoadErrorMessage: null });
+        finishFirst();
+        await first;
+        await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({ isWaitingForFolderAccess: false, didFailLoadErrorMessage: null });
+      } finally {
+        controller.abort(new Error('cancelled'));
+        finishFirst?.();
+        await Promise.all([first, cancellation]);
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+      }
+    });
+
+    it.each(['update', 'remove'] as const)('continues the config queue when %s cancels a directory wait', async (mutation) => {
+      const blocked = createWorkspace({ id: 'blocked', wikiFolderLocation: '/blocked/wiki' });
+      const ready = createWorkspace({ id: 'ready', wikiFolderLocation: '/ready/wiki' });
+      mockGetSetting.mockReturnValue({ blocked, ready });
+      const service = new Workspace();
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess')
+        .mockImplementation(folder => folder === blocked.wikiFolderLocation ? '/blocked' : undefined);
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockImplementation(async (_folder, signal) => {
+        await new Promise<void>((_resolve, reject) => {
+          signal?.addEventListener('abort', () => {
+            reject(signal.reason instanceof Error ? signal.reason : new Error('cancelled'));
+          }, { once: true });
+        });
+      });
+      const hydration = service.startPortableConfigHydration();
+      try {
+        await vi.waitFor(() => {
+          expect(waitForAccess).toHaveBeenCalledTimes(1);
+        });
+        if (mutation === 'update') await service.update(blocked.id, { wikiFolderLocation: '/replacement/wiki' });
+        else await service.remove(blocked.id);
+        await vi.waitFor(() => {
+          expect(mockReadTidgiConfig).toHaveBeenCalledWith(ready.wikiFolderLocation, expect.anything());
+        });
+        await hydration;
+        expect((await service.getMetaData(blocked.id)).didFailLoadErrorMessage).toBeFalsy();
+      } finally {
+        service.cancelPortableConfigHydration();
+        await hydration;
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+      }
+    });
+
+    it('does not let a superseded directory failure overwrite a new path or clear its wait', async () => {
+      const workspace = createWorkspace({});
+      const service = createWorkspaceService(workspace);
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/protected');
+      let rejectOld!: (error: Error) => void;
+      let resolveNew!: () => void;
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess')
+        .mockImplementationOnce(async () => {
+          await new Promise<void>((_resolve, reject) => {
+            rejectOld = reject;
+          });
+        })
+        .mockImplementationOnce(async () => {
+          await new Promise<void>((resolve) => {
+            resolveNew = resolve;
+          });
+        });
+      const oldWait = service.ensureWikiFolderAccess(workspace);
+      const oldFailure = expect(oldWait).rejects.toThrow('denied');
+      try {
+        await vi.waitFor(() => {
+          expect(rejectOld).toBeDefined();
+        });
+        await service.update(workspace.id, { wikiFolderLocation: '/replacement/wiki' });
+        const updated = await service.get(workspace.id) as IWikiWorkspace;
+        const newWait = service.ensureWikiFolderAccess(updated);
+        await vi.waitFor(() => {
+          expect(resolveNew).toBeDefined();
+        });
+        rejectOld(Object.assign(new Error('denied'), { code: 'EACCES' }));
+        await oldFailure;
+        await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({
+          isWaitingForFolderAccess: true,
+          didFailLoadErrorMessage: null,
+        });
+        resolveNew();
+        await newWait;
+        await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({ isWaitingForFolderAccess: false });
+      } finally {
+        rejectOld?.(new Error('denied'));
+        resolveNew?.();
+        await oldFailure;
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+      }
+    });
+
+    it('does not request protected-folder access when portable config sync is disabled', async () => {
+      const workspace = createWorkspace({ useTidgiConfigSync: false, hibernateWhenUnused: true, active: false });
+      const service = createWorkspaceService(workspace);
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockResolvedValue(undefined);
+      try {
+        await service.startPortableConfigHydration();
+        expect(waitForAccess).not.toHaveBeenCalled();
+        expect(mockReadTidgiConfig).not.toHaveBeenCalled();
+        await expect(service.getMetaData(workspace.id)).resolves.toEqual({});
+      } finally {
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+      }
+    });
+
+    it.each([
+      ['EACCES', 'FolderAccessDenied'],
+      ['EPERM', 'FolderAccessDenied'],
+      ['ENOENT', 'FolderAccessFailed'],
+      ['EIO', 'FolderAccessFailed'],
+      [undefined, 'FolderAccessFailed'],
+    ])('reports directory failure %s without inventing a permission denial', async (code, messageKey) => {
+      const workspace = createWorkspace({});
+      const service = createWorkspaceService(workspace);
+      const failure = Object.assign(new Error('Directory probe failed'), { code });
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockRejectedValue(failure);
+      try {
+        await expect(service.ensureWikiFolderAccess(workspace)).rejects.toMatchObject({ message: messageKey, cause: failure });
+        await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({
+          isLoading: false,
+          isWaitingForFolderAccess: false,
+          didFailLoadErrorMessage: messageKey,
+        });
+      } finally {
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+      }
+    });
+
+    it('clears a previous directory error when a retry succeeds', async () => {
+      const workspace = createWorkspace({});
+      const service = createWorkspaceService(workspace);
+      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess')
+        .mockRejectedValueOnce(Object.assign(new Error('denied'), { code: 'EACCES' }))
+        .mockResolvedValue(undefined);
+      try {
+        await expect(service.ensureWikiFolderAccess(workspace)).rejects.toThrow('FolderAccessDenied');
+        await service.ensureWikiFolderAccess(workspace);
+        await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({
+          isWaitingForFolderAccess: false,
+          didFailLoadErrorMessage: null,
+        });
+      } finally {
+        needsAccess.mockRestore();
+        waitForAccess.mockRestore();
+      }
+    });
+
     it('waits for human consent before starting the portable-config deadline', async () => {
       vi.useFakeTimers();
       const consent = { resolve: () => {} };

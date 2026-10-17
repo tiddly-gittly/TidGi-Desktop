@@ -196,6 +196,15 @@ export class WorkspaceView implements IWorkspaceViewService {
     const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
     const shouldBeMainWiki = isWikiWorkspace(workspace) && !workspace.isSubWiki;
+    if (followHibernateSettingWhenInit && shouldBeMainWiki && !workspace.active) {
+      const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+      if (hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) {
+        // A sleeping wiki must not prompt for access or wait on an offline
+        // folder merely to decide that no runtime should be started.
+        if (!workspace.hibernated) await workspaceService.update(workspace.id, { hibernated: true });
+        return;
+      }
+    }
     const strategy = getWorkspaceStrategy(workspace);
     if (isWikiWorkspace(workspace)) {
       await workspaceService.ensureWikiFolderAccess(workspace, this.startupAbortController?.signal);
@@ -239,24 +248,6 @@ export class WorkspaceView implements IWorkspaceViewService {
       return;
     }
     if (followHibernateSettingWhenInit) {
-      const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
-
-      if ((hibernateUnusedWorkspacesAtLaunch || (isWikiWorkspace(workspace) && workspace.hibernateWhenUnused)) && !workspace.active) {
-        logger.debug(
-          `initializeWorkspaceView() quit because ${
-            JSON.stringify({
-              followHibernateSettingWhenInit,
-              'workspace.hibernateWhenUnused': isWikiWorkspace(workspace) ? workspace.hibernateWhenUnused : false,
-              'workspace.active': workspace.active,
-              hibernateUnusedWorkspacesAtLaunch,
-            })
-          }`,
-        );
-        if (isWikiWorkspace(workspace) && !workspace.hibernated) {
-          await workspaceService.update(workspace.id, { hibernated: true });
-        }
-        return;
-      }
       // Workspace is NOT being hibernated - clear any stale hibernated flag from a previous session
       // to avoid a state mismatch where views run but the sidebar still shows the workspace as sleeping.
       if (isWikiWorkspace(workspace) && workspace.hibernated) {
