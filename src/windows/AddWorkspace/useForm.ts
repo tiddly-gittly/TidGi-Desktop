@@ -5,7 +5,7 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import type { INewWikiWorkspaceConfig, IWikiWorkspace } from '@services/workspaces/interface';
-import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isWikiWorkspace, WorkspaceType } from '@services/workspaces/interface';
 import type { ISyncableWikiConfig } from '@services/workspaces/syncableConfig';
 import type { INewWikiRequiredFormData } from './useNewWiki';
 
@@ -42,23 +42,23 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
   const mainWorkspaceList = useMemo(() => workspaceList?.filter((workspace) => isWikiWorkspace(workspace) && !workspace.isSubWiki) ?? [], [workspaceList]);
-  const [mainWikiToLink, mainWikiToLinkSetter] = useState<IMainWikiInfo>(
+  const [mainWikiSelection, mainWikiSelectionSetter] = useState<IMainWikiInfo>(
     () => {
       const firstMainWiki = mainWorkspaceList.find(isWikiWorkspace);
       return firstMainWiki ? { wikiFolderLocation: firstMainWiki.wikiFolderLocation, port: firstMainWiki.port, id: firstMainWiki.id } : { wikiFolderLocation: '', port: 0, id: '' };
     },
   );
   const [tagNames, tagNamesSetter] = useState<string[]>([]);
-  let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
-  if (mainWikiToLinkIndex < 0) {
-    mainWikiToLinkIndex = 0;
+  let mainWikiSelectionIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiSelection.id);
+  if (mainWikiSelectionIndex < 0) {
+    mainWikiSelectionIndex = 0;
   }
   useEffect(() => {
-    const selectedWorkspace = mainWorkspaceList[mainWikiToLinkIndex];
+    const selectedWorkspace = mainWorkspaceList[mainWikiSelectionIndex];
     if (selectedWorkspace && isWikiWorkspace(selectedWorkspace) && selectedWorkspace.wikiFolderLocation) {
-      mainWikiToLinkSetter({ wikiFolderLocation: selectedWorkspace.wikiFolderLocation, port: selectedWorkspace.port, id: selectedWorkspace.id });
+      mainWikiSelectionSetter({ wikiFolderLocation: selectedWorkspace.wikiFolderLocation, port: selectedWorkspace.port, id: selectedWorkspace.id });
     }
-  }, [mainWorkspaceList, mainWikiToLinkIndex]);
+  }, [mainWorkspaceList, mainWikiSelectionIndex]);
   /**
    * For creating new wiki, we use parentFolderLocation to determine in which folder we create the new wiki folder.
    * New folder will basically be created in `${parentFolderLocation}/${wikiFolderName}`
@@ -145,8 +145,8 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     storageProviderSetter,
     wikiPort,
     wikiPortSetter,
-    mainWikiToLink,
-    mainWikiToLinkSetter,
+    mainWikiSelection,
+    mainWikiSelectionSetter,
     tagNames,
     tagNamesSetter,
     gitRepoUrl,
@@ -159,7 +159,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     wikiFolderLocation,
     workspaceList,
     mainWorkspaceList,
-    mainWikiToLinkIndex,
+    mainWikiSelectionIndex,
     wikiHtmlPath,
     wikiHtmlPathSetter,
     ancestorGitRepos,
@@ -205,13 +205,13 @@ export async function workspaceConfigFromForm(
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
-    mainWikiToLink: isCreateMainWorkspace ? null : form.mainWikiToLink.wikiFolderLocation,
-    mainWikiID: isCreateMainWorkspace ? null : form.mainWikiToLink.id,
+    mainWikiID: isCreateMainWorkspace ? null : form.mainWikiSelection.id,
     name: form.wikiFolderName,
     storageService: form.storageProvider,
     tagNames: isCreateMainWorkspace ? [] : form.tagNames,
     port: form.wikiPort,
     wikiFolderLocation: form.wikiFolderLocation!,
+    workspaceType: WorkspaceType.folder,
     readOnlyMode: false,
     tokenAuth: false,
     enableFileSystemWatch: false,

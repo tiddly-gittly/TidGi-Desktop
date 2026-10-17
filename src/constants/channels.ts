@@ -177,6 +177,10 @@ export enum HtmlWikiChannel {
   name = 'HtmlWikiChannel',
 }
 
+export enum DeviceNetworkChannel {
+  name = 'DeviceNetworkChannel',
+}
+
 export enum WikiEmbeddingChannel {
   name = 'WikiEmbeddingChannel',
 }

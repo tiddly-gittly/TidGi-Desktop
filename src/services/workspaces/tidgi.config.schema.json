@@ -16,8 +16,8 @@
     },
     "id": {
       "type": "string",
-      "description": "Canonical workspace ID shared across devices",
-      "default": ""
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "Stable wiki identity shared across devices; mainWikiID references this value"
     },
     "name": {
       "type": "string",

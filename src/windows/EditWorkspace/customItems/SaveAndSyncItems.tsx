@@ -29,7 +29,7 @@ export function WorkspacePathItem(): React.JSX.Element {
       />
       <TextField
         fullWidth
-        placeholder='Optional'
+        placeholder={t('Schema.Optional')}
         disabled
         value={pathValue}
       />

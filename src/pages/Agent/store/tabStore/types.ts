@@ -26,6 +26,7 @@ export interface TabsState {
   setActiveTab: (tabId: string) => void;
   pinTab: (tabId: string, isPinned: boolean) => void;
   updateTabData: (tabId: string, data: Partial<TabItem>) => void;
+  acknowledgeInitialMessage: (tabId: string, agentId: string, expectedMessage: string) => Promise<boolean>;
   transformTabType: (tabId: string, newType: TabType, initialData?: Record<string, unknown>) => void;
 
   // Split view operations

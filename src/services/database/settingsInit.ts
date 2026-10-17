@@ -14,8 +14,12 @@ import { parseJsonWithRepairSync } from './jsonRepair';
  */
 export function ensureSettingFolderExist(): void {
   if (!fs.existsSync(SETTINGS_FOLDER)) {
-    fs.mkdirSync(SETTINGS_FOLDER, { recursive: true });
+    fs.mkdirSync(SETTINGS_FOLDER, { recursive: true, mode: 0o700 });
   }
+}
+
+function enforcePrivateSettingsMode(): void {
+  if (!isWin && fs.existsSync(settings.file())) fs.chmodSync(settings.file(), 0o600);
 }
 
 /**
@@ -37,11 +41,11 @@ export function fixSettingFileWhenError(jsonError: Error, providedJSONContent?: 
   // Only write back if the repaired result is a plain object; a non-object (e.g. a string returned by
   // best-effort-json-parser for bare-string content) would corrupt the file again.
   if (repaired !== null && typeof repaired === 'object' && !Array.isArray(repaired)) {
-    fs.writeJSONSync(settings.file(), repaired);
+    fs.writeJSONSync(settings.file(), repaired, { mode: 0o600 });
     logger.info('Fix JSON content done, saved', { repaired });
   } else if (repaired !== undefined) {
     logger.warn('fixSettingFileWhenError: repaired value is not a plain object, resetting settings to {}', { type: typeof repaired });
-    fs.writeJSONSync(settings.file(), {});
+    fs.writeJSONSync(settings.file(), {}, { mode: 0o600 });
   }
 }
 
@@ -58,7 +62,7 @@ function fixEmptyAndErrorSettingFileOnStartUp() {
         // A valid JSON string at the root (e.g. `"wiki"`) passes JSON.parse but breaks property assignment.
         if (content === null || typeof content !== 'object' || Array.isArray(content)) {
           logger.warn('Settings file has non-object root value, resetting to {}');
-          fs.writeJSONSync(settings.file(), {});
+          fs.writeJSONSync(settings.file(), {}, { mode: 0o600 });
         } else {
           logger.info('Setting file format good.');
         }
@@ -68,11 +72,12 @@ function fixEmptyAndErrorSettingFileOnStartUp() {
     } else {
       // create an empty JSON file if not exist, to prevent error when reading it. fixes https://github.com/tiddly-gittly/TidGi-Desktop/issues/507
       fs.ensureFileSync(settings.file());
-      fs.writeJSONSync(settings.file(), {});
+      fs.writeJSONSync(settings.file(), {}, { mode: 0o600 });
     }
   } catch (error) {
     logger.error('Error when checking Setting file format', { function: 'fixEmptyAndErrorSettingFileOnStartUp', error });
   }
+  enforcePrivateSettingsMode();
 }
 
 /**

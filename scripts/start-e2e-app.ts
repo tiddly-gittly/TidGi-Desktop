@@ -37,27 +37,27 @@ function getMostRecentScenarioName(): string | undefined {
 
 const appPath = getPackedAppPath();
 
-// Get scenario name from command line argument or detect most recent
+// Get scenario name from command line argument or detect most recent. The
+// packaged app accepts the canonical environment contract only; passing a
+// custom Electron CLI flag is not supported on every platform.
 const scenarioName = process.argv[2] || getMostRecentScenarioName();
 
-if (scenarioName) {
-  console.log('Starting TidGi E2E app with scenario:', scenarioName);
-} else {
-  console.log('Starting TidGi E2E app without scenario (using legacy userData-test)');
+if (!scenarioName) {
+  process.stderr.write('A scenario name is required to start the packaged E2E app.\n');
+  process.exit(1);
 }
+console.log('Starting TidGi E2E app with scenario:', scenarioName);
 console.log('App path:', appPath);
 
 const environment = Object.assign({}, process.env, {
   NODE_ENV: 'test',
+  TIDGI_TEST_SCENARIO: scenarioName,
   LANG: process.env.LANG || 'zh-Hans.UTF-8',
   LANGUAGE: process.env.LANGUAGE || 'zh-Hans:zh',
   LC_ALL: process.env.LC_ALL || 'zh-Hans.UTF-8',
 });
 
-// Pass scenario name as argument to the app if available
-const args = scenarioName ? [`--test-scenario=${scenarioName}`] : [];
-
-const child = spawn(appPath, args, { env: environment, stdio: 'inherit' });
+const child = spawn(appPath, [], { env: environment, stdio: 'inherit' });
 child.on('exit', code => process.exit(code ?? 0));
 child.on('error', error => {
   console.error('Failed to start TidGi app:', error);

@@ -11,7 +11,6 @@ export function useSystemPreferenceObservable(): IUsedElectionSettings | undefin
 }
 
 export function getOpenAtLoginString(openAtLogin: IUsedElectionSettings['openAtLogin'], t: TFunction): string {
-  if (openAtLogin === 'yes-hidden') return t('Preference.OpenAtLoginMinimized');
   if (openAtLogin === 'yes') return t('Yes');
   return t('No');
 }
