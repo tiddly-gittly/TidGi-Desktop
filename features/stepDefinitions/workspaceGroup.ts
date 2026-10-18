@@ -467,7 +467,10 @@ async function buildDragIntentError(
   let elementAtPoint = 'unknown';
 
   try {
-    actualIntent = (await world.currentWindow.locator(getDragIntentSelector(targetWorkspaceId)).first().getAttribute('data-drag-intent')) ?? 'null-attribute';
+    actualIntent = await world.currentWindow.evaluate(selector => {
+      const element = document.querySelector(selector);
+      return element ? element.getAttribute('data-drag-intent') ?? 'null-attribute' : 'not-found';
+    }, getDragIntentSelector(targetWorkspaceId));
   } catch { /* ignore */ }
   try {
     targetRect = await world.currentWindow.locator(targetItemSelector).boundingBox();
@@ -967,6 +970,15 @@ When('I expand workspace group {string}', async function(this: ApplicationWorld,
 
   await waitForGroupVisibility(this, group.id);
   await waitForGroupedWorkspaceDomState(this, group.id, true);
+  // Collapse mounts its children before the expansion animation completes.
+  // Wait for the final geometry before dnd-kit measures the drag targets.
+  for (const workspace of await getGroupWorkspaces(this, group.id)) {
+    await this.currentWindow.locator(`.MuiCollapse-entered [data-testid="workspace-item-${workspace.id}"]`).waitFor({
+      state: 'visible',
+      timeout: PLAYWRIGHT_SHORT_TIMEOUT,
+    });
+  }
+  await waitForTwoAnimationFrames(this);
 });
 
 When('I drag group header {string} onto group header {string}', async function(this: ApplicationWorld, sourceGroupName: string, targetGroupName: string) {
