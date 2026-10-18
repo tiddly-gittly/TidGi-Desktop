@@ -11,6 +11,11 @@ When('I hover the first user message', async function(this: ApplicationWorld) {
   await this.currentWindow.locator('[data-memeloop-turn-anchor="true"]').first().hover();
 });
 
+When('I hover the first assistant message', async function(this: ApplicationWorld) {
+  if (!this.currentWindow) throw new Error('No conversation window');
+  await this.currentWindow.locator('[data-testid="message-bubble"]:has([data-testid="assistant-message"])').first().hover();
+});
+
 Then('message surfaces and shared tools should work in {string} theme', async function(this: ApplicationWorld, mode: string) {
   const page = this.currentWindow;
   const app = this.app;
