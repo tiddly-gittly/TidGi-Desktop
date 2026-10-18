@@ -13,6 +13,9 @@ overrides:
   tar-stream>bl: ^4.1.0
   '@ai-sdk/provider-utils': 5.0.34
 
+patchedDependencies:
+  '@memeloop/react-ui@0.2.6': 5417744eabda2cfed4ca9a4b84ddcbc9f71e7be3580753930c2e7f749b5f953c
+
 importers:
 
   .:
@@ -63,8 +66,8 @@ importers:
         specifier: ^0.3.1
         version: 0.3.1(memeloop@0.3.7(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
       '@memeloop/react-ui':
-        specifier: ^0.2.5
-        version: 0.2.5(b223d55a6ed9d72ced445f164c5ab216)
+        specifier: 0.2.6
+        version: 0.2.6(patch_hash=5417744eabda2cfed4ca9a4b84ddcbc9f71e7be3580753930c2e7f749b5f953c)(b223d55a6ed9d72ced445f164c5ab216)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(supports-color@10.2.2)(zod@4.4.3)
@@ -2178,8 +2181,8 @@ packages:
     peerDependencies:
       memeloop: ^0.3.5
 
-  '@memeloop/react-ui@0.2.5':
-    resolution: {integrity: sha512-vxz8oatDhGmx7YOzEqm8Nc1gkNHkX+7ymEzXj52AMVOHAH5Hv6Z681bgJXl8p/fi36ZtYrWbTm+Wz9lKz8VKgw==}
+  '@memeloop/react-ui@0.2.6':
+    resolution: {integrity: sha512-jY5gOYotdgsupDNkARpsFrntw74bU66MJjPJw/P5AtuC4Wi6RvLWgBc7SE9g7e/8MFXg6J3ykR7SduZvE4RWiA==}
     peerDependencies:
       '@assistant-ui/react': ^0.15.16
       '@emotion/react': '>=11.0.0 <12.0.0'
@@ -11743,7 +11746,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@memeloop/react-ui@0.2.5(b223d55a6ed9d72ced445f164c5ab216)':
+  '@memeloop/react-ui@0.2.6(patch_hash=5417744eabda2cfed4ca9a4b84ddcbc9f71e7be3580753930c2e7f749b5f953c)(b223d55a6ed9d72ced445f164c5ab216)':
     dependencies:
       '@assistant-ui/react': 0.15.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(immer@11.1.15)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@emotion/react': 11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)

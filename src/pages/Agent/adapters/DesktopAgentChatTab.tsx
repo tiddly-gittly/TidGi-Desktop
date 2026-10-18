@@ -429,8 +429,6 @@ function DesktopAgentChatView({
               void window.service.native.log('warn', 'Message rendering fell back to source', { error });
             }}
             labels={{
-              source: t('Chat.Rendering.Source'),
-              rendered: t('Chat.Rendering.Rendered'),
               document: t('Chat.Rendering.Document'),
             }}
             onInternalLink={title => {
@@ -482,6 +480,7 @@ function DesktopAgentChatView({
           retry: t('Chat.Actions.Retry'),
           deleteTurn: t('Chat.Actions.DeleteTurn'),
           copy: t('Chat.Actions.Copy'),
+          copyPreview: t('Chat.Actions.CopyPreview'),
           copyAll: t('Chat.Actions.CopyAll'),
           user: t('Chat.Actions.User'),
           agent: t('Chat.Actions.Agent'),

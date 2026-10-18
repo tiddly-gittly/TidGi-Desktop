@@ -146,6 +146,7 @@
       "Retry": "Retry",
       "DeleteTurn": "Delete turn",
       "Copy": "Copy",
+      "CopyPreview": "Copy preview",
       "CopyAll": "Copy all",
       "User": "User",
       "Agent": "Agent"
