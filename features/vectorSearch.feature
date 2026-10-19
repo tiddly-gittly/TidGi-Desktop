@@ -57,7 +57,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     # Verify the last message contains vector search results
     And I should see "search result in last message" elements with selectors:
       | element description        | selector                                                               |
-      | search result in last message| [data-testid='message-bubble']:has-text('Tiddler: AI Agent Guide') |
+      | search result in last message| [data-testid='assistant-message']:not([data-testid='work-disclosure'] *):has-text('Tiddler: AI Agent Guide') |
 
   @vectorSearch @mockOpenAI
   Scenario: UI workflow - Generate embeddings via preferences, then search
@@ -101,7 +101,7 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     And I press "Enter" key
     Then I should see 8 messages in chat history
     # Verify the last message contains vector search results
-    And I should see a "ML search result in last message" element with selector "[data-testid='message-bubble']:has-text('Tiddler: Machine Learning Basics')"
+    And I should see a "ML search result in last message" element with selector "[data-testid='assistant-message']:not([data-testid='work-disclosure'] *):has-text('Tiddler: Machine Learning Basics')"
 
   @vectorSearch @mockOpenAI
   Scenario: Vector search with low similarity - No results below threshold, then lower threshold
@@ -154,11 +154,12 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I type "使用向量搜索在 wiki 中查找关于天气预报的内容，阈值设为0.7" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 16 messages in chat history
-    # Verify the response contains "no results found" with threshold info
+    # The tool result repeats this text inside collapsed work; verify the visible final assistant response.
+    # Scope to assistant content so the user prompt cannot satisfy the threshold assertion.
     Then I should see "no results and threshold 0.7" elements with selectors:
       | element description          | selector                                                                 |
-      | no results message           | [data-testid='message-bubble']:has-text('未找到符合条件') |
-      | threshold 0.7 message        | [data-testid='message-bubble']:has-text('0.7')            |
+      | no results message           | [data-testid='assistant-message']:not([data-testid='work-disclosure'] *):has-text('未找到符合条件') |
+      | threshold 0.7 message        | [data-testid='assistant-message']:not([data-testid='work-disclosure'] *):has-text('0.7')            |
     # Step 6: Lower threshold and search again (should find low-similarity results)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "再次搜索天气预报，但这次把阈值降低到0.1" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -167,5 +168,5 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     # Verify the response contains low-similarity result
     Then I should see "AI Technology and low similarity" elements with selectors:
       | element description                    | selector                                                                 |
-      | AI Technology message                  | [data-testid='message-bubble']:has-text('Tiddler: AI Technology') |
-      | low similarity message                 | [data-testid='message-bubble']:has-text('15')             |
+      | AI Technology message                  | [data-testid='assistant-message']:not([data-testid='work-disclosure'] *):has-text('Tiddler: AI Technology') |
+      | low similarity message                 | [data-testid='assistant-message']:not([data-testid='work-disclosure'] *):has-text('15')             |
