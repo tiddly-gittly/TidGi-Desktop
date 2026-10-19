@@ -81,6 +81,11 @@ export function createDesktopMessageLabels(t: TFunction<'agent'>): MemeLoopMessa
     },
     toolResult: t('Chat.Message.ToolResult'),
     toolCall: name => t('Chat.Message.ToolCall', { toolName: name }),
+    workSteps: count => t('Chat.Message.WorkSteps', { count }),
+    toolSteps: count => t('Chat.Message.ToolSteps', { count }),
+    toolInput: t('Chat.Message.ToolInput'),
+    toolOutput: t('Chat.Message.ToolOutput'),
+    toolInputTruncated: t('Chat.Message.ToolInputTruncated'),
     truncated: count => t('Chat.Message.Truncated', { count }),
     askQuestion: {
       answerPlaceholder: t('Chat.AskQuestion.AnswerPlaceholder'),

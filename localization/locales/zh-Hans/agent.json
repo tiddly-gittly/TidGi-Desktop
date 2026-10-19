@@ -173,6 +173,11 @@
       "Error": "错误",
       "ToolResult": "工具结果",
       "ToolCall": "工具调用：{{toolName}}",
+      "WorkSteps": "工作了 {{count}} 步",
+      "ToolSteps": "{{count}} 次工具调用",
+      "ToolInput": "命令 / 参数",
+      "ToolOutput": "结果",
+      "ToolInputTruncated": "参数超出预览长度，可展开详情查看更多。",
       "Truncated": "消息已缩短显示（原文 {{count}} 个字符）。请使用对话导出或消息详细内容查看完整文本。"
     },
     "AskQuestion": {

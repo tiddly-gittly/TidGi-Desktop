@@ -168,6 +168,11 @@
       "Error": "エラー",
       "ToolResult": "ツール結果",
       "ToolCall": "ツール呼び出し: {{toolName}}",
+      "WorkSteps": "{{count}} ステップ実行",
+      "ToolSteps": "{{count}} 回のツール呼び出し",
+      "ToolInput": "コマンド / 引数",
+      "ToolOutput": "結果",
+      "ToolInputTruncated": "引数がプレビューの上限を超えています。詳細を開くと続きを確認できます。",
       "Truncated": "表示のためメッセージを短縮しました（{{count}} 文字）。完全な内容は会話のエクスポートまたはメッセージ詳細で確認できます。"
     },
     "AskQuestion": {

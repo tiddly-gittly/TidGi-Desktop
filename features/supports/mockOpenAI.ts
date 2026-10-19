@@ -437,6 +437,14 @@ export class MockOpenAIServer {
           }],
         };
         response.write(`data: ${JSON.stringify(roleChunk)}\n\n`);
+        if (responseRule.response) {
+          response.write(`data: ${
+            JSON.stringify({
+              ...roleChunk,
+              choices: [{ index: 0, delta: { content: responseRule.response }, finish_reason: null }],
+            })
+          }\n\n`);
+        }
         response.write(`data: ${JSON.stringify(toolCallChunk)}\n\n`);
         response.write('data: [DONE]\n\n');
         response.end();

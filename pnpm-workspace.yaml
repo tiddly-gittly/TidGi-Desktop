@@ -54,7 +54,7 @@ allowBuilds:
 blockExoticSubdeps: false
 
 minimumReleaseAgeExclude:
-  - '@memeloop/react-ui@0.2.0 || 0.2.1 || 0.2.2 || 0.2.4 || 0.2.5 || 0.2.6'
+  - '@memeloop/react-ui@0.2.0 || 0.2.1 || 0.2.2 || 0.2.4 || 0.2.5 || 0.2.6 || 0.2.7'
   - '@typescript-eslint/eslint-plugin@8.61.0'
   - '@typescript-eslint/parser@8.61.0'
   - '@typescript-eslint/project-service@8.61.0'
@@ -68,7 +68,7 @@ minimumReleaseAgeExclude:
   - eslint-config-tidgi@3.1.0
   - eslint-plugin-unicorn@65.0.1
   - git-sync-js@2.4.0
-  - memeloop@0.3.0 || 0.3.1 || 0.3.4 || 0.3.5 || 0.3.6 || 0.3.7
+  - memeloop@0.3.0 || 0.3.1 || 0.3.4 || 0.3.5 || 0.3.6 || 0.3.7 || 0.3.8
   - typescript-eslint@8.61.0
   - tidgi-shared@0.1.6
   - electron-ipc-cat@2.6.0
@@ -86,6 +86,3 @@ minimumReleaseAgeExclude:
   - '@memeloop/libp2p@0.3.0 || 0.3.1'
   - memeloop-cli@0.2.6
   - multiformats@14.0.5
-
-patchedDependencies:
-  '@memeloop/react-ui@0.2.6': patches/@memeloop__react-ui@0.2.6.patch

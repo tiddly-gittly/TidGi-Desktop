@@ -172,6 +172,11 @@
       "Error": "Error",
       "ToolResult": "Tool result",
       "ToolCall": "Tool call: {{toolName}}",
+      "WorkSteps": "Worked {{count}} steps",
+      "ToolSteps": "{{count}} tool calls",
+      "ToolInput": "Command / arguments",
+      "ToolOutput": "Result",
+      "ToolInputTruncated": "Arguments exceed the preview limit. Open details for more.",
       "Truncated": "Message shortened for display ({{count}} characters). Use conversation export or message details for the complete content."
     },
     "AskQuestion": {
