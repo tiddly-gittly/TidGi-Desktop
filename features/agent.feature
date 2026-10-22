@@ -39,7 +39,11 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I type "PROMPT_HISTORY_USER" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see a "final assistant response" element with selector "[data-testid='message-bubble']:has-text('PROMPT_HISTORY_ASSISTANT')"
-    And the prompt workspace should show the same request in every view and allow returning from details
+    And the prompt tree and message list should show the same history tools and unsent input
+    And prompt message details should close with Escape
+    And the complete model request should include the unsent input and allow returning to the tree
+    And the prompt form and code editors should both open
+    And closing prompt preview should preserve the chat input
 
   @agent @mockOpenAI
   Scenario: Wiki-search tool usage
