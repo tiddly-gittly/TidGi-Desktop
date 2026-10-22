@@ -60,8 +60,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0
       '@memeloop/libp2p':
-        specifier: 0.3.2
-        version: 0.3.2(memeloop@0.3.9(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
+        specifier: 0.3.3
+        version: 0.3.3(memeloop@0.3.9(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
       '@memeloop/react-ui':
         specifier: 0.2.8
         version: 0.2.8(d558f47132dc31145d7da651f61e7176)
@@ -2173,8 +2173,8 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@memeloop/libp2p@0.3.2':
-    resolution: {integrity: sha512-Funguu9aM8P8aF+runC8J3MIEnkUGA8D5n4Lu1v3+5Sk4S81mbUs/gksnJ1xgeYLAY7NfdlQLg+rabsuFf4m1Q==}
+  '@memeloop/libp2p@0.3.3':
+    resolution: {integrity: sha512-i2QF4XQRdHQ6bgv32JW76/hJ2bJzYdR23/8u7Ze8S5CnIQyQ26RY2047ZHmXZcN+fFN6/izJJMmm7Ye+3xV4RA==}
     peerDependencies:
       memeloop: ^0.3.5
 
@@ -11724,7 +11724,7 @@ snapshots:
       - supports-color
     optional: true
 
-  '@memeloop/libp2p@0.3.2(memeloop@0.3.9(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))':
+  '@memeloop/libp2p@0.3.3(memeloop@0.3.9(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))':
     dependencies:
       '@chainsafe/libp2p-noise': 17.0.0
       '@chainsafe/libp2p-yamux': 8.0.1
@@ -11742,6 +11742,7 @@ snapshots:
       '@libp2p/websockets': 10.1.19
       '@multiformats/multiaddr': 13.0.3
       '@multiformats/multiaddr-matcher': 3.0.2
+      '@noble/hashes': 2.2.0
       libp2p: 3.3.8
       memeloop: 0.3.9(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
       uint8arrays: 6.1.1
