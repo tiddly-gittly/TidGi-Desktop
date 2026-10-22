@@ -36,6 +36,21 @@ function fixture() {
 }
 
 describe('Desktop conversation model parameter host', () => {
+  it('uses wire metadata for aliases and prefers explicit logical metadata regardless of catalog order', async () => {
+    const { host, options, updateAgent } = fixture();
+    const models = [...accounts[0].catalogProvider!.models];
+    const aliasedAccounts = [{ ...accounts[0], catalogProvider: { ...accounts[0].catalogProvider!, models } }];
+    const logical = models[0];
+    models.splice(0, 1, { ...logical, id: 'wire', name: 'Wire model' });
+    options.externalAPIService.getProviderAccounts.mockResolvedValue(aliasedAccounts);
+    expect((await host.get('conversation')).model?.name).toBe('Wire model');
+    await host.set('conversation', { ...selection, parameters: { reasoningEffort: 'low' } });
+    expect(updateAgent).toHaveBeenCalledOnce();
+    models.push({ ...logical, temperature: false, reasoningEfforts: ['high'] });
+    expect((await host.get('conversation')).model?.name).toBe('Model');
+    await expect(host.set('conversation', { ...selection, parameters: { temperature: 0.6 } })).rejects.toThrow('conversation_model_temperature_unsupported');
+  });
+
   it('resolves actual inherited config and route defaults without exposing credentials', async () => {
     const { host } = fixture();
     const result = await host.get('conversation');

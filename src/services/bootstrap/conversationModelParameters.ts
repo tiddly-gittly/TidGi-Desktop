@@ -74,7 +74,8 @@ export function createDesktopConversationModelParameters(options: Options): Conv
       hostDefault: assignments.default,
     });
     const account = accounts.find(item => item.enabled !== false && item.providerId === selection.providerId);
-    const defaults = account?.models.find(route => route.modelId === selection.modelId)?.requestDefaults;
+    const route = account?.models.find(route => route.modelId === selection.modelId);
+    const defaults = route?.requestDefaults;
     selection.parameters = {
       ...(defaults?.temperature === undefined ? {} : { temperature: defaults.temperature }),
       ...(defaults?.topP === undefined ? {} : { topP: defaults.topP }),
@@ -82,7 +83,10 @@ export function createDesktopConversationModelParameters(options: Options): Conv
       ...(defaults?.reasoningEffort === undefined ? {} : { reasoningEffort: defaults.reasoningEffort }),
       ...selection.parameters,
     };
-    const model = publicModel(account?.catalogProvider?.models.find(item => item.id === selection.modelId));
+    const model = publicModel(
+      account?.catalogProvider?.models.find(item => item.id === selection.modelId) ??
+        account?.catalogProvider?.models.find(item => item.id === route?.wireModelId),
+    );
     return { selection, ...(model ? { model } : {}) };
   };
   return {

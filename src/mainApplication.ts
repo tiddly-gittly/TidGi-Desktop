@@ -166,6 +166,10 @@ installApplicationQuitLifecycle({
     logger.info('App before-quit - pending workspace startup cancelled');
   },
   app,
+  stopNetwork: async () => {
+    await deviceNetworkService.stop();
+    logger.info('App before-quit - device network stopped');
+  },
   cleanup: runBeforeQuitCleanup,
   logger,
 });

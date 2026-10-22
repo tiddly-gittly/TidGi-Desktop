@@ -70,8 +70,14 @@ interface ModelOption {
 
 function modelDisplayName(option: ModelOption): string {
   const providerName = option.account.catalogProvider?.name ?? option.account.providerId;
-  const modelName = option.account.catalogProvider?.models.find(model => model.id === option.route.modelId)?.name ?? option.route.modelId;
+  const modelName = catalogModel(option.account, option.route.modelId)?.name ?? option.route.modelId;
   return `${providerName} - ${modelName}`;
+}
+
+function catalogModel(account: ProviderAccountConfig | undefined, modelId: string | undefined) {
+  const route = account?.models.find(route => route.modelId === modelId);
+  return account?.catalogProvider?.models.find(model => model.id === modelId) ??
+    account?.catalogProvider?.models.find(model => model.id === route?.wireModelId);
 }
 
 export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, agentDefId, showParameters, disabled }) => {
@@ -90,7 +96,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
     ? configManagement.config?.default
     : configManagement.config;
   const busy = disabled || configManagement.loading || configManagement.saving;
-  const selectedCatalogModel = accounts.find(account => account.providerId === config?.providerId)?.catalogProvider?.models.find(model => model.id === config?.modelId);
+  const selectedCatalogModel = catalogModel(accounts.find(account => account.providerId === config?.providerId), config?.modelId);
   const parameterContext = `${agentId ?? ''}:${agentDefId ?? ''}:${config?.providerId ?? ''}:${config?.modelId ?? ''}`;
   const currentParameterContext = useRef(parameterContext);
   currentParameterContext.current = parameterContext;
@@ -196,7 +202,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
                     option.account.catalogProvider?.name,
                     option.route.modelId,
                     option.route.wireModelId,
-                    option.account.catalogProvider?.models.find(model => model.id === option.route.modelId)?.name,
+                    catalogModel(option.account, option.route.modelId)?.name,
                   ].some(value => value?.toLowerCase().includes(query))
                 );
               }}

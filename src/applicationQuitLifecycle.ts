@@ -15,6 +15,7 @@ export interface QuitLifecycleLogger {
 export interface ApplicationQuitLifecycleOptions {
   abortStartup(): void;
   app: QuitApplicationLike;
+  stopNetwork(): Promise<void>;
   cleanup(): Promise<void>;
   forceExitAfterMs?: number;
   logger: QuitLifecycleLogger;
@@ -52,7 +53,13 @@ export function installApplicationQuitLifecycle(options: ApplicationQuitLifecycl
     }, forceExitAfterMs);
     forceExitTimer.unref();
 
-    cleanupPromise = options.cleanup()
+    // Stop incoming RPC/sync and their sockets while runtime/storage are still
+    // available, before cleanup disposes the services those requests use.
+    cleanupPromise = options.stopNetwork()
+      .catch((error: unknown) => {
+        logger.error('before-quit device network stop failed', { error });
+      })
+      .then(() => options.cleanup())
       .catch((error: unknown) => {
         logger.error('before-quit cleanup failed unexpectedly', { error });
       })

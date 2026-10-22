@@ -52,7 +52,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@dr.pogodin/react-helmet": "^3.2.2",
     "@fontsource/roboto": "^5.3.0",
-    "@memeloop/libp2p": "0.3.3",
+    "@memeloop/libp2p": "0.3.4",
     "@memeloop/react-ui": "0.2.8",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
