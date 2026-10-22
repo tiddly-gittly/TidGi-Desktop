@@ -296,7 +296,8 @@ When('I open the generated model-request prompt audit', async function(this: App
   });
   await dialog.locator('[data-testid="prompt-preview-model-request-detail"]').click();
   await retry(async () => {
-    if (await dialog.locator('[data-testid="prompt-preview-audit-detail"] pre').count() !== 1) {
+    const detail = dialog.locator('[data-testid="prompt-preview-audit-detail"]');
+    if (await detail.getByRole('progressbar').count() > 0 || !(await detail.locator('pre').textContent())) {
       throw new Error('Generated model-request detail is not ready');
     }
   });
@@ -310,23 +311,25 @@ Then(
     const dialog = page.getByRole('dialog');
     const detail = dialog.locator('[data-testid="prompt-preview-audit-detail"]');
     let requestJson = '';
-    let previousChunk = '';
     for (let chunkIndex = 0; chunkIndex < 128; chunkIndex++) {
       const chunk = await detail.locator('pre').textContent() ?? '';
       if (chunk.length === 0) throw new Error('Prompt audit returned an empty request chunk');
       requestJson += chunk;
       const next = detail.locator('[data-testid="prompt-preview-audit-detail-next"]');
       if (await next.count() === 0) break;
-      previousChunk = chunk;
       await next.click();
       await retry(async () => {
+        if (await detail.getByRole('alert').count() > 0) {
+          throw new Error(`Prompt audit detail failed: ${await detail.getByRole('alert').innerText()}`);
+        }
         const nextChunk = await detail.locator('pre').textContent() ?? '';
-        if (nextChunk.length === 0 || nextChunk === previousChunk) {
+        if (await detail.getByRole('progressbar').count() > 0 || nextChunk.length === 0) {
           throw new Error('Prompt audit has not advanced to its next bounded chunk');
         }
       });
       if (chunkIndex === 127) throw new Error('Prompt audit exceeded its bounded 128-chunk E2E ceiling');
     }
+    JSON.parse(requestJson);
 
     const summaryPresence = Array.from(
       { length: state.compactionCount },
