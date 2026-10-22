@@ -12,7 +12,7 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { AgentDefinition, PromptConcatStreamState } from 'memeloop';
+import type { AgentDefinition, PromptPreviewPreparedExecution } from 'memeloop';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -82,21 +82,9 @@ describe('default agent tools -> prompt integration', () => {
       conversationId: agent.id,
       inputText: '帮我搜一下 wiki 里的笔记',
     });
-    let lastCompleteState: PromptConcatStreamState | undefined;
+    let allContent: string;
     try {
-      await new Promise<void>((resolve, reject) => {
-        agentInstanceService.concatPromptPreview({
-          sessionId: prepared.sessionId,
-          expectedRevision: prepared.revision,
-          agentFrameworkConfig: mergedConfig,
-        }).subscribe({
-          next: state => {
-            if (state.isComplete) lastCompleteState = state;
-          },
-          error: reject,
-          complete: resolve,
-        });
-      });
+      allContent = await readRequest(agentInstanceService, prepared);
     } finally {
       await agentInstanceService.releasePromptPreviewAuditSession({
         sessionId: prepared.sessionId,
@@ -104,8 +92,6 @@ describe('default agent tools -> prompt integration', () => {
       });
     }
 
-    expect(lastCompleteState).toBeDefined();
-    const allContent = JSON.stringify(lastCompleteState?.flatPrompts);
     expect(allContent).toContain('spawn-agent');
     expect(allContent).toContain('## ask-question');
     expect(allContent).toContain('manage-todo');
@@ -139,21 +125,9 @@ describe('default agent tools -> prompt integration', () => {
       conversationId: agent.id,
       inputText: '帮我搜一下 wiki 里的笔记',
     });
-    let lastCompleteState: PromptConcatStreamState | undefined;
+    let allContent: string;
     try {
-      await new Promise<void>((resolve, reject) => {
-        agentInstanceService.concatPromptPreview({
-          sessionId: prepared.sessionId,
-          expectedRevision: prepared.revision,
-          agentFrameworkConfig: mergedConfig,
-        }).subscribe({
-          next: state => {
-            if (state.isComplete) lastCompleteState = state;
-          },
-          error: reject,
-          complete: resolve,
-        });
-      });
+      allContent = await readRequest(agentInstanceService, prepared);
     } finally {
       await agentInstanceService.releasePromptPreviewAuditSession({
         sessionId: prepared.sessionId,
@@ -161,6 +135,23 @@ describe('default agent tools -> prompt integration', () => {
       });
     }
 
-    expect(JSON.stringify(lastCompleteState?.flatPrompts)).not.toContain('wiki-search');
+    expect(allContent).not.toContain('wiki-search');
   }, 30_000);
 });
+
+async function readRequest(service: IAgentInstanceService, execution: PromptPreviewPreparedExecution): Promise<string> {
+  let text = '';
+  let cursor: string | undefined;
+  do {
+    const chunk = await service.getPromptPreviewAuditDetail({
+      sessionId: execution.sessionId,
+      expectedRevision: execution.revision,
+      target: { kind: 'request' },
+      maxBytes: 64 * 1_024,
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+    text += new TextDecoder().decode(chunk.canonicalUtf8);
+    cursor = chunk.nextCursor;
+  } while (cursor !== undefined);
+  return text;
+}

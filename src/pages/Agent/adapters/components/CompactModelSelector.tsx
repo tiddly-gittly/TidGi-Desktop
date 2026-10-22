@@ -2,11 +2,29 @@
 // Uses MUI Popper so the menu automatically flips when bottom space is insufficient.
 
 import { useAIConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAIConfigManagement';
+import { ModelParameterFields } from '@memeloop/react-ui/agent';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
-import { Autocomplete, Box, ClickAwayListener, Paper, Popper, TextField, Typography } from '@mui/material';
+import TuneIcon from '@mui/icons-material/Tune';
+import {
+  Alert,
+  Autocomplete,
+  Box,
+  Button,
+  ClickAwayListener,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
+  Popper,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
-import type { AgentModelConfig, ProviderAccountConfig, ProviderModelRoute } from 'memeloop';
+import type { AgentModelConfig, AgentModelParameters, ProviderAccountConfig, ProviderModelRoute } from 'memeloop';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -39,6 +57,8 @@ const DropdownPaper = styled(Paper)(({ theme }) => ({
 interface ModelSelectorProps {
   agentId?: string;
   agentDefId?: string;
+  showParameters?: boolean;
+  disabled?: boolean;
 }
 
 interface ModelOption {
@@ -54,11 +74,13 @@ function modelDisplayName(option: ModelOption): string {
   return `${providerName} - ${modelName}`;
 }
 
-export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, agentDefId }) => {
+export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, agentDefId, showParameters, disabled }) => {
   const { t } = useTranslation('agent');
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorElement);
   const searchInputReference = useRef<HTMLInputElement>(null);
+  const [parametersOpen, setParametersOpen] = useState(false);
+  const [parameters, setParameters] = useState<AgentModelParameters>({});
   const configManagement = useAIConfigManagement({
     agentId,
     agentDefId,
@@ -67,6 +89,14 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
   const config = 'handleEmbeddingModelChange' in configManagement
     ? configManagement.config?.default
     : configManagement.config;
+  const busy = disabled || configManagement.loading || configManagement.saving;
+  const selectedCatalogModel = accounts.find(account => account.providerId === config?.providerId)?.catalogProvider?.models.find(model => model.id === config?.modelId);
+  const parameterContext = `${agentId ?? ''}:${agentDefId ?? ''}:${config?.providerId ?? ''}:${config?.modelId ?? ''}`;
+  const currentParameterContext = useRef(parameterContext);
+  currentParameterContext.current = parameterContext;
+  useEffect(() => {
+    setParametersOpen(false);
+  }, [parameterContext]);
 
   const modelOptions: ModelOption[] = [];
   for (const account of accounts) {
@@ -95,8 +125,9 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
       : t('ModelSelector.NoModelSelected'));
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    if (busy) return;
     setAnchorElement((previous) => (previous ? null : event.currentTarget));
-  }, []);
+  }, [busy]);
 
   const handleClose = useCallback(() => {
     setAnchorElement(null);
@@ -104,11 +135,11 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
 
   const handleSelect = useCallback(
     async (option: ModelOption | null) => {
-      if (!option) return;
+      if (!option || busy) return;
       await handleModelChange(option.value);
       handleClose();
     },
-    [handleModelChange, handleClose],
+    [handleModelChange, handleClose, busy],
   );
 
   useEffect(() => {
@@ -122,6 +153,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
   return (
     <>
       <SwitcherButton
+        disabled={busy}
         onClick={handleClick}
         data-testid='model-selector-button'
         title={displayName}
@@ -153,7 +185,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
               getOptionLabel={modelDisplayName}
               value={selectedModel ?? (modelOptions[0]) ?? null}
               onChange={(_event, value) => {
-                void handleSelect(value);
+                void handleSelect(value).catch(() => undefined);
               }}
               filterOptions={(options, state) => {
                 const query = state.inputValue.toLowerCase();
@@ -207,6 +239,77 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
           </DropdownPaper>
         </ClickAwayListener>
       </Popper>
+      {showParameters && (
+        <>
+          <Tooltip title={t('Preference.ModelParameters')}>
+            <span>
+              <IconButton
+                size='small'
+                aria-label={t('Preference.ModelParameters')}
+                data-testid='conversation-model-parameters'
+                disabled={busy || !config}
+                onClick={() => {
+                  configManagement.clearError?.();
+                  setParameters({ ...config?.parameters });
+                  setParametersOpen(true);
+                }}
+              >
+                <TuneIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Dialog
+            data-testid='conversation-model-parameters-dialog'
+            open={parametersOpen}
+            onClose={() => {
+              if (!configManagement.saving) setParametersOpen(false);
+            }}
+            fullWidth
+            maxWidth='xs'
+          >
+            <DialogTitle>{t('Preference.ModelParameters')} — {selectedCatalogModel?.name ?? config?.modelId}</DialogTitle>
+            <DialogContent>
+              {configManagement.error && <Alert severity='error'>{t('Preference.FailedToSaveModelParameters')}</Alert>}
+              <Box sx={{ pt: 1 }}>
+                <ModelParameterFields
+                  model={selectedCatalogModel}
+                  value={parameters}
+                  onChange={setParameters}
+                  disabled={busy}
+                  labels={{
+                    reasoningEffort: t('Preference.ReasoningEffort'),
+                    temperature: t('Preference.Temperature'),
+                    maxOutputTokens: t('Preference.MaxOutputTokens'),
+                    defaultValue: t('Preference.ModelDefault'),
+                    unavailable: t('Preference.NoModelParameters'),
+                  }}
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                disabled={configManagement.saving}
+                onClick={() => {
+                  setParametersOpen(false);
+                }}
+              >
+                {t('Cancel', { ns: 'translation' })}
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  const context = parameterContext;
+                  void configManagement.handleParametersChange(parameters).then(() => {
+                    if (currentParameterContext.current === context) setParametersOpen(false);
+                  }).catch(() => undefined);
+                }}
+              >
+                {t('Save', { ns: 'translation' })}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
     </>
   );
 };

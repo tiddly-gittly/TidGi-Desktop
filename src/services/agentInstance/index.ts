@@ -40,7 +40,6 @@ import {
   type AgentDeviceRpcRetryTurnRequest,
   type AgentDeviceRpcRetryTurnResponse,
   type AgentDeviceRpcRunTurnRequest,
-  type AgentFrameworkConfig,
   type AgentHeartbeatConfig,
   type AgentInstanceLatestStatus,
   type AgentInstanceMeta,
@@ -51,7 +50,6 @@ import {
   type AgentRunError,
   AgentRunFailure,
   type AgentRuntimeView,
-  assertPromptPreviewGeneratedResult,
   type AttachmentReference,
   type ChatMessage,
   type CompactionCandidatePage,
@@ -71,6 +69,7 @@ import {
   type ConversationTimelinePage,
   type ConversationTimelinePageCallOptions,
   createAgentRunError,
+  createConversationBranchReplacement,
   type CreateScheduledTaskInput,
   extractAgentRunError,
   type GetCompactionCandidatePageOptions,
@@ -92,7 +91,6 @@ import {
   PORTABLE_LLM_REQUEST_LIMITS,
   projectConversationMessageForList,
   projectTransientConversationMessageForList,
-  type PromptConcatStreamState,
   type PromptPreviewAuditDetailChunk,
   type PromptPreviewAuditDetailRequest,
   type PromptPreviewAuditPage,
@@ -427,8 +425,12 @@ export class AgentInstanceService implements IAgentInstanceService {
     return this.getMemeLoopRuntime().preparePromptPreviewExecutionModelRequest(input);
   }
 
-  public async cancelPromptPreview(requestId: string): Promise<void> {
-    this.getMemeLoopRuntime().cancelPromptPreview(requestId);
+  public async cancelPromptPreview(requestId: string, conversationId?: string): Promise<void> {
+    this.getMemeLoopRuntime().cancelPromptPreview(requestId, conversationId);
+  }
+
+  public async getPromptPreviewSessionConversationId(sessionId: string, expectedRevision: string): Promise<string> {
+    return this.getMemeLoopRuntime().getPromptPreviewSessionConversationId(sessionId, expectedRevision);
   }
 
   public async getPromptPreviewAuditPage(request: PromptPreviewAuditPageRequest): Promise<PromptPreviewAuditPage> {
@@ -1290,6 +1292,22 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async loadConversationEditSource(conversationId: string, messageId: string) {
     this.ensureRepositories();
     return editingStore.loadConversationEditSource(this.dataSource!, conversationId, messageId);
+  }
+
+  public async getPendingConversationBranchReplacement(conversationId: string) {
+    this.ensureRepositories();
+    const fork = await this.dataSource!.getRepository(ConversationForkEntity).findOne({ where: { targetConversationId: conversationId } });
+    return fork
+      ? createConversationBranchReplacement(fork.source, {
+        conversationId: fork.source.conversationId,
+        messageId: fork.source.messageId,
+        sourceRevision: '',
+        requestId: fork.requestId,
+        targetConversationId: fork.targetConversationId,
+        replacementMessageId: fork.replacementMessageId,
+        text: fork.replacementText,
+      })
+      : null;
   }
 
   public async saveConversationEditDraft(input: import('memeloop').ConversationDraftWrite) {
@@ -2255,42 +2273,6 @@ export class AgentInstanceService implements IAgentInstanceService {
       void this.publishConversationMessage(message, true)
         .catch((error: unknown) => logger.warn('Failed to publish transient conversation projection', { agentId, messageId, error }));
     }
-  }
-
-  public concatPromptPreview(input: {
-    sessionId: string;
-    expectedRevision: string;
-    agentFrameworkConfig: AgentFrameworkConfig;
-  }): Observable<PromptConcatStreamState> {
-    return new Observable<PromptConcatStreamState>(observer => {
-      const abortController = new AbortController();
-      const processStream = async () => {
-        try {
-          const generator = this.getMemeLoopRuntime().concatPromptPreview({
-            ...input,
-            signal: abortController.signal,
-          });
-          for await (const state of generator) {
-            if (abortController.signal.aborted || observer.closed) return;
-            assertPromptPreviewGeneratedResult({
-              flatPrompts: state.flatPrompts,
-              processedPrompts: state.processedPrompts,
-            });
-            observer.next(state);
-            if (state.isComplete) {
-              observer.complete();
-              return;
-            }
-          }
-        } catch (error) {
-          if (!abortController.signal.aborted && !observer.closed) observer.error(error);
-        }
-      };
-      void processStream();
-      return () => {
-        abortController.abort(new DOMException('Prompt preview closed', 'AbortError'));
-      };
-    });
   }
 
   public async dispose(): Promise<void> {

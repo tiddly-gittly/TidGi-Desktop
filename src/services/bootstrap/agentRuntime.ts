@@ -3,12 +3,14 @@ import type { IAgentDefinitionService } from '@services/agentDefinition/interfac
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
+import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { createAgentRuntimeDeviceRpcHandler, type DeviceCapabilities } from 'memeloop';
-import { protectRemoteAgentRpcHandler } from './remoteAgentRpcPolicy';
+import { createDesktopConversationModelParameters } from './conversationModelParameters';
 import { createDesktopScheduledTaskRpcHandler } from './scheduledTaskRpcStore';
 
 const emptyCapabilities: DeviceCapabilities = {
@@ -26,10 +28,11 @@ export interface InitializeAgentServicesOptions {
   deviceNetworkService: IDeviceNetworkService;
   wikiService: IWikiService;
   workspaceService: IWorkspaceService;
+  preferenceService: IPreferenceService;
 }
 
 export async function initializeAgentServices(options: InitializeAgentServicesOptions): Promise<void> {
-  const { agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService } = options;
+  const { agentDefinitionService, agentInstanceService, deviceNetworkService, wikiService, workspaceService, preferenceService } = options;
 
   await agentDefinitionService.initialize();
   await agentInstanceService.initialize();
@@ -48,15 +51,32 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
       cancelRun: runId => durableRuntime.cancelRun(runId),
     },
     storage: agentInstanceService,
+    conversationEditing: agentInstanceService,
+    conversationModelParameters: createDesktopConversationModelParameters({
+      agentInstanceService,
+      agentDefinitionService,
+      externalAPIService: container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI),
+    }),
+    promptPreview: {
+      prepare: input => agentInstanceService.preparePromptPreviewExecutionModelRequest(input),
+      getAuditPage: input => agentInstanceService.getPromptPreviewAuditPage(input),
+      getAuditDetail: input => agentInstanceService.getPromptPreviewAuditDetail(input),
+      release: input => agentInstanceService.releasePromptPreviewAuditSession(input),
+      cancel: input => agentInstanceService.cancelPromptPreview(input.requestId, input.conversationId),
+      getSessionConversationId: (sessionId, revision) => agentInstanceService.getPromptPreviewSessionConversationId(sessionId, revision),
+    },
+    getMainConversationId: async () => (await preferenceService.get('mainAgentConversationId')) || null,
+    setMainConversationId: conversationId => preferenceService.set('mainAgentConversationId', conversationId),
     scheduledTaskHandler: createDesktopScheduledTaskRpcHandler(agentInstanceService, identity.peerId),
     retryTurn: (request, requestPeerId) => durableRuntime.retryTurn({ ...request, requestPeerId }),
     getAgentDefinitions: () => agentDefinitionService.getAgentDefs(),
     localNodeId: identity.peerId,
+    authorize: request => deviceNetworkService.authorizeAgentRpc(request),
   });
   deviceNetworkService.configureRuntime({
     buildCapabilities: async () => buildDeviceNetworkCapabilities(workspaceService),
     syncStorage: agentInstanceService,
-    rpcHandler: protectRemoteAgentRpcHandler(agentRpcHandler),
+    rpcHandler: agentRpcHandler,
   });
 
   await initializeTemplateBackends(agentDefinitionService, wikiService, workspaceService);
@@ -75,6 +95,7 @@ export async function initializeAgentServicesSafely(): Promise<boolean> {
     deviceNetworkService: container.get<IDeviceNetworkService>(serviceIdentifier.DeviceNetwork),
     wikiService: container.get<IWikiService>(serviceIdentifier.Wiki),
     workspaceService: container.get<IWorkspaceService>(serviceIdentifier.Workspace),
+    preferenceService: container.get<IPreferenceService>(serviceIdentifier.Preference),
   });
 }
 

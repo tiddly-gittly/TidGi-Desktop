@@ -8,7 +8,14 @@ import type {
   LocalDeviceIdentity,
   TrustedDeviceRecord,
 } from 'memeloop/device-network';
-import { CloudDeviceFetchClient, CloudDeviceFetchError, DeviceCloudConnectionCoordinator, StandardDeviceCloudConnectionAdapter } from 'memeloop/device-network';
+import {
+  CloudDeviceFetchClient,
+  CloudDeviceFetchError,
+  DeviceCloudConnectionCoordinator,
+  LocalTrustDeviceAuthorizer,
+  MutableDeviceAuthorizer,
+  StandardDeviceCloudConnectionAdapter,
+} from 'memeloop/device-network';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { IDatabaseService } from '@services/database/interface';
@@ -1019,6 +1026,21 @@ describe('DeviceNetwork outbound Cloud grants', () => {
     });
     return { sendRpc, service };
   }
+
+  it('rechecks current paired-peer authorization for inbound Agent RPC', async () => {
+    const paired = record('local-pair', 'local-pairing');
+    const cloud = record('cloud-peer', 'cloud-account');
+    const { service } = createService(paired, async () => cloudGrant);
+    await expect(service.authorizeAgentRpc({ remotePeerId: paired.peerId })).resolves.toBe(false);
+    const authorizer = new LocalTrustDeviceAuthorizer({ trustedDevices: [paired, cloud] });
+    Object.assign(service, { mutableAuthorizer: new MutableDeviceAuthorizer(authorizer) });
+
+    await expect(service.authorizeAgentRpc({ remotePeerId: paired.peerId })).resolves.toBe(true);
+    await expect(service.authorizeAgentRpc({ remotePeerId: 'unknown' })).resolves.toBe(false);
+    await expect(service.authorizeAgentRpc({ remotePeerId: cloud.peerId })).resolves.toBe(false);
+    authorizer.setTrustedDevice({ ...paired, revokedAt: Date.now() });
+    await expect(service.authorizeAgentRpc({ remotePeerId: paired.peerId })).resolves.toBe(false);
+  });
 
   it('keeps an explicit local pairing usable without requesting a Cloud grant', async () => {
     const createConnectionGrant = vi.fn(async () => cloudGrant);

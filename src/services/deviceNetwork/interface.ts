@@ -91,6 +91,7 @@ export interface IDeviceNetworkService extends Omit<CoreDeviceNetworkService, 'o
   abortOperation(operationId: string): Promise<void>;
   finishOperation(operationId: string): Promise<void>;
   getLocalIdentity(): Promise<LocalDeviceIdentity>;
+  authorizeAgentRpc(request: Pick<Parameters<DeviceRpcHandler>[0], 'remotePeerId' | 'presentedGrant'>): Promise<boolean>;
   getCloudConnectionStatus(): Promise<DeviceCloudConnectionStatus>;
   createPairingInvite(): Promise<string>;
   requestPairingFromInvite(serialized: string): Promise<PairingSession>;

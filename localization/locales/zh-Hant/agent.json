@@ -87,8 +87,15 @@
       "Queued": "正在準備請求…",
       "Cancelling": "正在取消…"
     },
-    "Workspace": { "Label": "工作區", "Active": "目前啟用的工作區" },
-    "Rendering": { "Source": "原始文字", "Rendered": "渲染結果", "Document": "訊息渲染結果" },
+    "Workspace": {
+      "Label": "工作區",
+      "Active": "目前啟用的工作區"
+    },
+    "Rendering": {
+      "Source": "原始文字",
+      "Rendered": "渲染結果",
+      "Document": "訊息渲染結果"
+    },
     "Cancel": "取消",
     "Attachment": {
       "RemoveFile": "移除 {{name}}",
@@ -194,7 +201,9 @@
       "Seek": "跳至對話輪次",
       "Close": "關閉時間軸",
       "NewMessages": "{{count}} 則新訊息 — 跳到最新"
-    }
+    },
+    "MainConversation": "主對話",
+    "UseAsMainConversation": "設為主對話"
   },
   "Common": {
     "None": "未選擇"
@@ -259,9 +268,36 @@
       "multiDayOfMonthLabel": "每月日期",
       "dayOfMonthLabel": "天",
       "hourLabel": "小時",
-      "weekDaysOptions": ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
-      "periodOptions": ["小時", "天", "星期", "月", "年"],
-      "shortMonthOptions": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+      "weekDaysOptions": [
+        "星期日",
+        "星期一",
+        "星期二",
+        "星期三",
+        "星期四",
+        "星期五",
+        "星期六"
+      ],
+      "periodOptions": [
+        "小時",
+        "天",
+        "星期",
+        "月",
+        "年"
+      ],
+      "shortMonthOptions": [
+        "一月",
+        "二月",
+        "三月",
+        "四月",
+        "五月",
+        "六月",
+        "七月",
+        "八月",
+        "九月",
+        "十月",
+        "十一月",
+        "十二月"
+      ],
       "onOptionLabel": "在",
       "lastDayOfMonthLabel": "每月最後一天",
       "scheduleTitle": "排程",
@@ -469,6 +505,9 @@
     "OutputModalities": "輸出模態",
     "Attachments": "附件",
     "ModelParameters": "模型參數",
+    "ModelDefault": "模型預設值",
+    "NoModelParameters": "此模型暫無可調整的參數。",
+    "ReasoningEffort": "推理強度",
     "ModelParametersDescription": "配置生成式AI模型的行為參數，如溫度、token限制等",
     "ModelRemovedSuccessfully": "模型刪除成功",
     "ModelUpdatedSuccessfully": "模型更新成功",

@@ -66,6 +66,10 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
   }, [agentDefinitionId, agentId, aui]);
 
   const handleOpenPreview = useCallback(() => {
+    if (isLongPress.current) {
+      isLongPress.current = false;
+      return;
+    }
     schedulePreviewOpen();
   }, [schedulePreviewOpen]);
 
@@ -81,9 +85,10 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
 
   const handleTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
     isLongPress.current = false;
+    const target = event.currentTarget;
     longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
-      setMenuAnchor(event.currentTarget);
+      setMenuAnchor(target);
     }, LONG_PRESS_DURATION);
   }, []);
 
@@ -111,6 +116,7 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchMove={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           data-testid='prompt-preview-button'
         >
           <ArticleIcon />

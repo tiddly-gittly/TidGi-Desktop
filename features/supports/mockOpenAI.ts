@@ -10,6 +10,9 @@ interface ChatRequest {
   messages: ChatMessage[];
   model?: string;
   stream?: boolean;
+  reasoning_effort?: string;
+  temperature?: number;
+  top_p?: number;
 }
 
 interface Rule {

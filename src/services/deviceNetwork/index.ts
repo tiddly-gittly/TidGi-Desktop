@@ -26,6 +26,7 @@ import {
   type DeviceCloudConnectionSnapshot,
   type DeviceConnectionGrant,
   type DeviceConnectionGrantStringScope,
+  type DeviceRpcHandler,
   type DeviceTrustStore,
   encodeDevicePairingInvite,
   type LocalDeviceIdentity,
@@ -320,6 +321,14 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   public async getLocalIdentity(): Promise<LocalDeviceIdentity> {
     await this.ensureIdentity();
     return this.identity!;
+  }
+
+  public async authorizeAgentRpc(request: Pick<Parameters<DeviceRpcHandler>[0], 'remotePeerId' | 'presentedGrant'>): Promise<boolean> {
+    return this.mutableAuthorizer?.canOpenProtocol({
+      ...request,
+      protocol: '/memeloop/rpc/2.0.0',
+      direction: 'inbound',
+    }) ?? false;
   }
 
   public async start(): Promise<void> {

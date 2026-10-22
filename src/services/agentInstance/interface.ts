@@ -13,7 +13,6 @@ import type {
   AgentDeviceRpcRetryTurnRequest,
   AgentDeviceRpcRetryTurnResponse,
   AgentDeviceRpcRunTurnRequest,
-  AgentFrameworkConfig,
   AgentHeartbeatConfig,
   AgentInstanceLatestStatus,
   AgentInstanceMetadata,
@@ -51,7 +50,6 @@ import type {
   MessageVersionFrontier,
   MessageVersionFrontierCursor,
   MessageVersionFrontierPage,
-  PromptConcatStreamState,
   PromptPreviewAuditDetailChunk,
   PromptPreviewAuditDetailRequest,
   PromptPreviewAuditPage,
@@ -88,6 +86,7 @@ export type RendererAgentRunResult<T> =
  */
 export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   loadConversationEditSource(conversationId: string, messageId: string): Promise<import('memeloop').ConversationEditSource>;
+  getPendingConversationBranchReplacement(conversationId: string): Promise<import('memeloop').PendingLocalChatMessage | null>;
   saveConversationEditDraft(input: import('memeloop').ConversationDraftWrite): Promise<number>;
   forkConversation(input: import('memeloop').ConversationForkRequest): Promise<string>;
   getConversationBranches(conversationId: string, messageIds: readonly string[]): Promise<import('memeloop').ConversationBranchState[]>;
@@ -150,7 +149,8 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   getPromptPreviewAuditPage(input: PromptPreviewAuditPageRequest): Promise<PromptPreviewAuditPage>;
   getPromptPreviewAuditDetail(input: PromptPreviewAuditDetailRequest): Promise<PromptPreviewAuditDetailChunk>;
   releasePromptPreviewAuditSession(input: PromptPreviewAuditReleaseRequest): Promise<void>;
-  cancelPromptPreview(requestId: string): Promise<void>;
+  cancelPromptPreview(requestId: string, conversationId?: string): Promise<void>;
+  getPromptPreviewSessionConversationId(sessionId: string, expectedRevision: string): Promise<string>;
 
   /** Main-process blob-store bindings used by sync; deliberately absent from renderer IPC. */
   getAgentAttachmentReference(contentHash: string, options?: { signal?: AbortSignal }): Promise<AttachmentReference | null>;
@@ -310,20 +310,6 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   closeAgent(agentId: string): Promise<void>;
 
   /**
-   * Pure function to concatenate prompts with given prompt description and messages
-   * This is useful for front-end to generate prompts from configurations.
-   * Returns an Observable stream that yields intermediate processing states and final result
-   * @param promptDescription Configuration for prompt generation
-   * @param messages Messages to be included in prompt generation
-   * @returns Observable stream of processing states, with final state containing complete results
-   */
-  concatPromptPreview(input: {
-    sessionId: string;
-    expectedRevision: string;
-    agentFrameworkConfig: AgentFrameworkConfig;
-  }): Observable<PromptConcatStreamState>;
-
-  /**
    * Get JSON Schema for handler configuration
    * This allows frontend to generate a form based on the schema for a specific handler
    * @param agentFrameworkID Handler ID to get schema for
@@ -426,7 +412,6 @@ export const AgentInstanceServiceIPCDescriptor = {
     abortAgentAttachmentUpload: ProxyPropertyType.Function,
     beginAgentAttachmentUpload: ProxyPropertyType.Function,
     closeAgent: ProxyPropertyType.Function,
-    concatPromptPreview: ProxyPropertyType.Function$,
     createAgent: ProxyPropertyType.Function,
     deleteAgent: ProxyPropertyType.Function,
     discardVolatileAgentPreview: ProxyPropertyType.Function,
@@ -452,6 +437,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     getFrameworkConfigSchema: ProxyPropertyType.Function,
     getPromptPreviewAuditDetail: ProxyPropertyType.Function,
     getPromptPreviewAuditPage: ProxyPropertyType.Function,
+    getPromptPreviewSessionConversationId: ProxyPropertyType.Function,
     resolveToolApproval: ProxyPropertyType.Function,
     resolveAskQuestion: ProxyPropertyType.Function,
     rollbackTurn: ProxyPropertyType.Function,

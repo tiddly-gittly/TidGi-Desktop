@@ -87,8 +87,15 @@
       "Queued": "Preparing request…",
       "Cancelling": "Cancelling…"
     },
-    "Workspace": { "Label": "Workspace", "Active": "Active workspace" },
-    "Rendering": { "Source": "Source", "Rendered": "Rendered", "Document": "Rendered message" },
+    "Workspace": {
+      "Label": "Workspace",
+      "Active": "Active workspace"
+    },
+    "Rendering": {
+      "Source": "Source",
+      "Rendered": "Rendered",
+      "Document": "Rendered message"
+    },
     "Cancel": "Cancel",
     "Attachment": {
       "RemoveFile": "Remove {{name}}",
@@ -194,7 +201,9 @@
       "Seek": "Jump to a conversation turn",
       "Close": "Close timeline",
       "NewMessages": "{{count}} new messages — jump to latest"
-    }
+    },
+    "MainConversation": "Main conversation",
+    "UseAsMainConversation": "Use as main conversation"
   },
   "Common": {
     "None": "Not selected"
@@ -259,9 +268,36 @@
       "multiDayOfMonthLabel": "Day of month",
       "dayOfMonthLabel": "Day(s)",
       "hourLabel": "Hour(s)",
-      "weekDaysOptions": ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"],
-      "periodOptions": ["hour", "day", "week", "month", "year"],
-      "shortMonthOptions": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      "weekDaysOptions": [
+        "SUNDAY",
+        "MONDAY",
+        "TUESDAY",
+        "WEDNESDAY",
+        "THURSDAY",
+        "FRIDAY",
+        "SATURDAY"
+      ],
+      "periodOptions": [
+        "hour",
+        "day",
+        "week",
+        "month",
+        "year"
+      ],
+      "shortMonthOptions": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
       "onOptionLabel": "on",
       "lastDayOfMonthLabel": "Last day of month",
       "scheduleTitle": "Schedule",
@@ -450,6 +486,9 @@
     "OutputModalities": "Output modalities",
     "Attachments": "Attachments",
     "ModelParameters": "model parameters",
+    "ModelDefault": "Model default",
+    "NoModelParameters": "No adjustable parameters available for this model.",
+    "ReasoningEffort": "Reasoning effort",
     "ModelParametersDescription": "Configure the behavior parameters of generative AI models, such as temperature and token limits.",
     "ModelRemovedSuccessfully": "Model removed successfully",
     "ModelUpdatedSuccessfully": "Model updated successfully",

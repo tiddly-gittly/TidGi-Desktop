@@ -16,6 +16,31 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | agent workspace     | [data-testid='workspace-agent'] |
       | new tab button      | [data-tab-id='new-tab-button']  |
 
+  @agent @mockOpenAI @modelParameters
+  Scenario: Model parameters open for the current conversation
+    Given the test model advertises reasoning and temperature parameters
+    When I click on a "search input box" element with selector ".aa-Input"
+    And I should see an "autocomplete panel" element with selector ".aa-Panel"
+    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    When I click on a "current model parameters button" element with selector "[data-testid='conversation-model-parameters']"
+    Then I should see a "current conversation model parameters dialog" element with selector "[data-testid='conversation-model-parameters-dialog'] [role='dialog']"
+    And I should see a "current model name" element with selector "[data-testid='conversation-model-parameters-dialog'] h2:has-text('test-model')"
+    And the selected model parameters should persist and reach the actual model request
+    Then I should see a "conversation message input" element with selector "[data-testid='agent-message-input']"
+
+  @agent @mockOpenAI @promptExperience
+  Scenario: Prompt preview includes history tools and unsent input in both views
+    Given I add mock OpenAI responses:
+      | response                 | stream | embedding | toolName    | toolArguments                                    |
+      |                          | false  |           | wiki-search | {"workspaceName":"wiki","filter":"[title[Index]]"} |
+      | PROMPT_HISTORY_ASSISTANT  | false  |           |             |                                                  |
+    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I type "PROMPT_HISTORY_USER" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see a "final assistant response" element with selector "[data-testid='message-bubble']:has-text('PROMPT_HISTORY_ASSISTANT')"
+    And the prompt workspace should show the same request in every view and allow returning from details
+
   @agent @mockOpenAI
   Scenario: Wiki-search tool usage
     # Add scenario-specific responses to the mock server

@@ -1,11 +1,11 @@
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { describe, expect, it, vi } from 'vitest';
 import { initializeAgentServicesSafelyWithServices } from '../agentRuntime';
-import { REMOTE_AGENT_MESSAGE_MAX_BYTES } from '../remoteAgentRpcPolicy';
 
 function createOptions() {
   const durableRuntime = {
@@ -28,15 +28,31 @@ function createOptions() {
         conversationId: conversationId ?? 'conversation-1',
       })),
       getDurableAgentRuntime: vi.fn().mockResolvedValue(durableRuntime),
+      getConversationMeta: vi.fn().mockResolvedValue({
+        conversationId: 'conversation-1',
+        originNodeId: 'test-peer',
+        title: 'Main',
+        definitionId: 'assistant',
+        lastMessagePreview: '',
+        lastMessageTimestamp: 1,
+        messageCount: 0,
+        originClock: 1,
+        isUserInitiated: true,
+      }),
     } as unknown as IAgentInstanceService,
     deviceNetworkService: {
       getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'test-peer' }),
+      authorizeAgentRpc: vi.fn().mockImplementation(async ({ remotePeerId }: { remotePeerId: string }) => remotePeerId === 'remote-peer'),
       configureRuntime: vi.fn(),
     } as unknown as IDeviceNetworkService,
     wikiService: {} as IWikiService,
     workspaceService: {
       getWorkspacesAsList: vi.fn().mockResolvedValue([]),
     } as unknown as IWorkspaceService,
+    preferenceService: {
+      get: vi.fn().mockResolvedValue('conversation-1'),
+      set: vi.fn().mockResolvedValue(undefined),
+    } as unknown as IPreferenceService,
   };
 }
 
@@ -62,7 +78,7 @@ describe('initializeAgentServicesSafely', () => {
     expect(options.deviceNetworkService.configureRuntime).toHaveBeenCalledOnce();
   });
 
-  it('installs the inbound Agent RPC resource policy on the production handler', async () => {
+  it('resolves the explicitly selected main conversation through the production handler', async () => {
     const options = createOptions();
     await expect(initializeAgentServicesSafelyWithServices(options)).resolves.toBe(true);
     const [runtimeOptions] = vi.mocked(options.deviceNetworkService.configureRuntime).mock.calls[0];
@@ -70,13 +86,39 @@ describe('initializeAgentServicesSafely', () => {
     await expect(
       runtimeOptions.rpcHandler?.({
         remotePeerId: 'remote-peer',
-        method: 'memeloop.agent.send',
-        parameters: {
-          conversationId: 'conversation-1',
-          message: 'x'.repeat(REMOTE_AGENT_MESSAGE_MAX_BYTES + 1),
+        method: 'memeloop.chat.getMainConversation',
+        parameters: {},
+        presentedGrant: {
+          issuer: 'memeloop-cloud',
+          accountId: 'account-1',
+          subjectPeerId: 'remote-peer',
+          allowedPeerIds: ['test-peer'],
+          protocols: ['/memeloop/rpc/2.0.0'],
+          rpcMethodScope: { mode: 'all' },
+          conversationScope: { mode: 'all' },
+          definitionScope: { mode: 'all' },
+          issuedAt: 1,
+          expiresAt: 1000,
+          signature: 'verified-by-transport',
         },
       }),
-    ).rejects.toThrow(`remote_agent_message_too_large:${REMOTE_AGENT_MESSAGE_MAX_BYTES}`);
-    expect(options.durableRuntime.sendMessage).not.toHaveBeenCalled();
+    ).resolves.toMatchObject({ conversation: { conversationId: 'conversation-1' } });
+    expect(options.preferenceService.get).toHaveBeenCalledWith('mainAgentConversationId');
+  });
+
+  it('allows paired main-history reads without a cloud grant and rejects a removed peer', async () => {
+    const options = createOptions();
+    await initializeAgentServicesSafelyWithServices(options);
+    const [runtimeOptions] = vi.mocked(options.deviceNetworkService.configureRuntime).mock.calls[0];
+    const request = {
+      remotePeerId: 'remote-peer',
+      method: 'memeloop.chat.getMainConversation',
+      parameters: {},
+    };
+    await expect(runtimeOptions.rpcHandler?.(request)).resolves.toMatchObject({
+      conversation: { conversationId: 'conversation-1' },
+    });
+    vi.mocked(options.deviceNetworkService.authorizeAgentRpc).mockResolvedValue(false);
+    await expect(runtimeOptions.rpcHandler?.(request)).rejects.toThrow('rpc_permission_denied');
   });
 });

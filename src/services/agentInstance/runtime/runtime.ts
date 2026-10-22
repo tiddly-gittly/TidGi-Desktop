@@ -1,6 +1,5 @@
 import type {
   AgentDefinition,
-  AgentFrameworkConfig,
   AgentFrameworkContext,
   AgentLoopGenerator,
   AgentLoopInput,
@@ -11,7 +10,6 @@ import type {
   ChatMessage,
   Device,
   MemeLoopRuntime,
-  PromptConcatStreamState,
   PromptPreviewAuditDetailChunk,
   PromptPreviewAuditDetailRequest,
   PromptPreviewAuditPage,
@@ -21,15 +19,7 @@ import type {
   PromptPreviewPrepareRequest,
   ToolApprovalResolution,
 } from 'memeloop';
-import {
-  createAgentLoopRunner,
-  createMemeLoopRuntime,
-  materializeAgentInstanceModel,
-  promptConcatStream,
-  ProviderRegistry,
-  registerBuiltinPromptPlugins,
-  ToolApprovalBroker,
-} from 'memeloop';
+import { createAgentLoopRunner, createMemeLoopRuntime, materializeAgentInstanceModel, ProviderRegistry, registerBuiltinPromptPlugins, ToolApprovalBroker } from 'memeloop';
 
 import { disabledDesktopAgentToolIds, mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
@@ -146,8 +136,12 @@ export class MemeLoopDesktopRuntime {
     return this.promptPreviewService.prepare(input);
   }
 
-  public cancelPromptPreview(requestId: string): void {
-    this.promptPreviewService.cancel(requestId);
+  public cancelPromptPreview(requestId: string, conversationId?: string): void {
+    this.promptPreviewService.cancel(requestId, conversationId);
+  }
+
+  public getPromptPreviewSessionConversationId(sessionId: string, expectedRevision: string): string {
+    return this.promptPreviewService.getSessionConversationId(sessionId, expectedRevision);
   }
 
   public getPromptPreviewAuditPage(request: PromptPreviewAuditPageRequest): PromptPreviewAuditPage {
@@ -164,22 +158,6 @@ export class MemeLoopDesktopRuntime {
 
   public resolveToolApproval(resolution: ToolApprovalResolution): boolean {
     return this.toolApprovals.resolveApproval(resolution);
-  }
-
-  public async *concatPromptPreview(input: {
-    sessionId: string;
-    expectedRevision: string;
-    agentFrameworkConfig: AgentFrameworkConfig;
-    signal: AbortSignal;
-  }): AsyncGenerator<PromptConcatStreamState, PromptConcatStreamState, unknown> {
-    const retained = this.promptPreviewService.getContextForHost(input.sessionId, input.expectedRevision);
-    const context = await this.createContext(retained.conversationId, undefined, input.signal);
-    input.signal.throwIfAborted();
-    return yield* promptConcatStream(
-      { agentFrameworkConfig: input.agentFrameworkConfig },
-      [...retained.messages],
-      { ...context, operationSignal: input.signal },
-    );
   }
 
   public async dispose(): Promise<void> {

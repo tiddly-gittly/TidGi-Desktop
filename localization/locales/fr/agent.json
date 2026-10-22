@@ -82,9 +82,20 @@
       "NextBranch": "Historique suivant",
       "Alternatives": "{{count}} historiques alternatifs"
     },
-    "RunStatus": { "Working": "En cours…", "Queued": "Préparation de la requête…", "Cancelling": "Annulation…" },
-    "Workspace": { "Label": "Espace de travail", "Active": "Espace de travail actif" },
-    "Rendering": { "Source": "Source", "Rendered": "Rendu", "Document": "Message rendu" },
+    "RunStatus": {
+      "Working": "En cours…",
+      "Queued": "Préparation de la requête…",
+      "Cancelling": "Annulation…"
+    },
+    "Workspace": {
+      "Label": "Espace de travail",
+      "Active": "Espace de travail actif"
+    },
+    "Rendering": {
+      "Source": "Source",
+      "Rendered": "Rendu",
+      "Document": "Message rendu"
+    },
     "Cancel": "Annuler",
     "Attachment": {
       "RemoveFile": "Supprimer {{name}}",
@@ -190,7 +201,9 @@
       "Seek": "Aller à un tour de conversation",
       "Close": "Fermer la chronologie",
       "NewMessages": "{{count}} nouveaux messages — aller aux plus récents"
-    }
+    },
+    "MainConversation": "Conversation principale",
+    "UseAsMainConversation": "Définir comme conversation principale"
   },
   "Common": {
     "None": "non sélectionné"
@@ -255,9 +268,36 @@
       "multiDayOfMonthLabel": "Jour du mois",
       "dayOfMonthLabel": "Jours",
       "hourLabel": "Heure(s)",
-      "weekDaysOptions": ["DIMANCHE", "LUNDI", "MARDI", "MERCREDI", "JEUDI", "VENDREDI", "SAMEDI"],
-      "periodOptions": ["heure", "jour", "semaine", "mois", "année"],
-      "shortMonthOptions": ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"],
+      "weekDaysOptions": [
+        "DIMANCHE",
+        "LUNDI",
+        "MARDI",
+        "MERCREDI",
+        "JEUDI",
+        "VENDREDI",
+        "SAMEDI"
+      ],
+      "periodOptions": [
+        "heure",
+        "jour",
+        "semaine",
+        "mois",
+        "année"
+      ],
+      "shortMonthOptions": [
+        "Jan",
+        "Fév",
+        "Mar",
+        "Avr",
+        "Mai",
+        "Juin",
+        "Juil",
+        "Aoû",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Déc"
+      ],
       "onOptionLabel": "le",
       "lastDayOfMonthLabel": "Dernier jour du mois",
       "scheduleTitle": "Planification",
@@ -467,6 +507,9 @@
     "OutputModalities": "Modalités de sortie",
     "Attachments": "Pièces jointes",
     "ModelParameters": "paramètres du modèle",
+    "ModelDefault": "Valeur par défaut du modèle",
+    "NoModelParameters": "Aucun paramètre réglable disponible pour ce modèle.",
+    "ReasoningEffort": "Effort de raisonnement",
     "ModelParametersDescription": "Configurer les paramètres de comportement des modèles d'IA générative, tels que la température et les limites de tokens.",
     "ModelRemovedSuccessfully": "Modèle supprimé avec succès",
     "ModelUpdatedSuccessfully": "Modèle mis à jour avec succès",

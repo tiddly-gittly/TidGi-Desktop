@@ -216,6 +216,138 @@ describe('useAIConfigManagement', () => {
     expect(result.current.config?.modelId).toBe('reasoning');
   });
 
+  it('follows inherited defaults until parameters are saved to the current conversation', async () => {
+    let persisted: AgentModelConfig | undefined;
+    const updateAgent = vi.fn(async (_id: string, update: { modelConfig: AgentModelConfig }) => {
+      persisted = update.modelConfig;
+    });
+    Object.defineProperty(window.service, 'agentInstance', {
+      value: { getAgentMetadata: vi.fn(async () => ({ id: 'conversation-1', modelConfig: persisted })), updateAgent },
+      writable: true,
+    });
+    const { result, unmount } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    act(() => {
+      configSubject.next({ default: { ...assignments.default!, modelId: 'fast' } });
+    });
+    expect(result.current.config?.modelId).toBe('fast');
+    await act(async () =>
+      result.current.handleParametersChange({
+        ...result.current.config?.parameters,
+        reasoningEffort: 'low',
+      })
+    );
+    expect(updateAgent).toHaveBeenCalledWith('conversation-1', {
+      modelConfig: { ...assignments.default, modelId: 'fast', parameters: { ...assignments.default?.parameters, reasoningEffort: 'low' } },
+    });
+    expect(updateDefaultAIConfig).not.toHaveBeenCalled();
+    act(() => {
+      configSubject.next(assignments);
+    });
+    expect(result.current.config?.modelId).toBe('fast');
+    unmount();
+    const reloaded = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    await waitFor(() => {
+      expect(reloaded.result.current.loading).toBe(false);
+    });
+    expect(reloaded.result.current.config).toEqual(persisted);
+  });
+
+  it('ignores an older conversation load after switching conversations', async () => {
+    let resolveFirst!: (value: { modelConfig: AgentModelConfig }) => void;
+    const first = new Promise<{ modelConfig: AgentModelConfig }>(resolve => {
+      resolveFirst = resolve;
+    });
+    const secondConfig: AgentModelConfig = { providerId: 'openai-main', modelId: 'fast' };
+    const getAgentMetadata = vi.fn((id: string) => id === 'first' ? first : Promise.resolve({ modelConfig: secondConfig }));
+    Object.defineProperty(window.service, 'agentInstance', { value: { getAgentMetadata }, writable: true });
+    const { result, rerender } = renderHook(({ id }) => useAIConfigManagement({ agentId: id }), { initialProps: { id: 'first' } });
+    await waitFor(() => {
+      expect(getAgentMetadata).toHaveBeenCalledWith('first');
+    });
+    rerender({ id: 'second' });
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    await act(async () => {
+      resolveFirst({ modelConfig: assignments.default! });
+    });
+    expect(result.current.config).toEqual(secondConfig);
+  });
+
+  it('drops incompatible settings on model change while preserving unrelated parameters', async () => {
+    const catalogAccounts: ProviderAccountConfig[] = [{
+      ...accounts[0],
+      catalogProvider: {
+        id: 'custom',
+        name: 'Custom',
+        env: [],
+        models: [{
+          id: 'fast',
+          name: 'Fast',
+          attachment: false,
+          reasoning: true,
+          toolCall: true,
+          reasoningEfforts: ['low'],
+          temperature: false,
+          limit: { output: 1024 },
+        }],
+      },
+    }];
+    accountsSubject.next(catalogAccounts);
+    const updateAgent = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window.service, 'agentInstance', {
+      value: { getAgentMetadata: vi.fn().mockResolvedValue({ modelConfig: assignments.default }), updateAgent },
+      writable: true,
+    });
+    const { result } = renderHook(() => useAIConfigManagement({ agentId: 'conversation-1' }));
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    await act(async () => result.current.handleModelChange({ providerId: 'openai-main', modelId: 'fast' }));
+    expect(updateAgent).toHaveBeenCalledWith('conversation-1', {
+      modelConfig: { providerId: 'openai-main', modelId: 'fast', parameters: { topP: 0.95 } },
+    });
+  });
+
+  it('does not roll back another conversation when an earlier save fails', async () => {
+    let rejectSave!: (error: Error) => void;
+    const pendingSave = new Promise<void>((_resolve, reject) => {
+      rejectSave = reject;
+    });
+    const updateAgent = vi.fn(() => pendingSave);
+    Object.defineProperty(window.service, 'agentInstance', {
+      value: {
+        getAgentMetadata: vi.fn(async (id: string) => ({
+          modelConfig: { providerId: 'openai-main', modelId: id === 'first' ? 'reasoning' : 'fast' },
+        })),
+        updateAgent,
+      },
+      writable: true,
+    });
+    const { result, rerender } = renderHook(({ id }) => useAIConfigManagement({ agentId: id }), { initialProps: { id: 'first' } });
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    let completion!: Promise<void>;
+    act(() => {
+      completion = result.current.handleParametersChange({ reasoningEffort: 'low' }).catch(() => undefined);
+    });
+    rerender({ id: 'second' });
+    await waitFor(() => {
+      expect(result.current.config?.modelId).toBe('fast');
+    });
+    await act(async () => {
+      rejectSave(new Error('old save failed'));
+      await completion;
+    });
+    expect(result.current.config?.modelId).toBe('fast');
+    expect(result.current.error).toBeUndefined();
+    expect(updateAgent).toHaveBeenCalledWith('first', expect.anything());
+  });
+
   it('unsubscribes both observables on unmount', async () => {
     const configSubscribe = vi.spyOn(configSubject, 'subscribe');
     const accountsSubscribe = vi.spyOn(accountsSubject, 'subscribe');

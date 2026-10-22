@@ -30,6 +30,7 @@ export interface INetworkProxyPreferences {
  * The Zod schema in definitions/registry.ts validates against this at runtime.
  */
 export interface IPreferences {
+  mainAgentConversationId: string;
   aiGenerateBackupTitle: boolean;
   aiGenerateBackupTitleTimeout: number;
   allowPrerelease: boolean;

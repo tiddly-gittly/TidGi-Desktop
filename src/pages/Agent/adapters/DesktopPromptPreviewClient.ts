@@ -1,13 +1,10 @@
 import type {
-  PromptConcatStreamState,
   PromptPreviewAuditDetailChunk,
   PromptPreviewAuditDetailRequest,
   PromptPreviewAuditPage,
   PromptPreviewAuditPageRequest,
   PromptPreviewAuditReleaseRequest,
   PromptPreviewClient,
-  PromptPreviewGeneratedResult,
-  PromptPreviewProgress,
 } from 'memeloop';
 
 interface PromptPreviewAgentInstanceBridge {
@@ -24,63 +21,6 @@ interface PromptPreviewAgentInstanceBridge {
 export const createDesktopPromptPreviewClient = (
   bridge: PromptPreviewAgentInstanceBridge = window.service.agentInstance,
 ): PromptPreviewClient => ({
-  generatePreview: async (agentFrameworkConfig, execution, onProgress, options) => {
-    options.signal.throwIfAborted();
-    const stream = window.observables.agentInstance.concatPromptPreview({
-      sessionId: execution.sessionId,
-      expectedRevision: execution.revision,
-      agentFrameworkConfig,
-    });
-
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const subscription: { current?: { unsubscribe(): void } } = {};
-      const dispose = (): void => {
-        options.signal.removeEventListener('abort', abort);
-        subscription.current?.unsubscribe();
-      };
-      const finish = (result: PromptPreviewGeneratedResult | null): void => {
-        if (settled) return;
-        settled = true;
-        dispose();
-        resolve(result);
-      };
-      const fail = (error: unknown): void => {
-        if (settled) return;
-        settled = true;
-        dispose();
-        reject(error instanceof Error ? error : new Error('prompt_preview_failed'));
-      };
-      const abort = (): void => {
-        fail(abortReason(options.signal));
-      };
-
-      options.signal.addEventListener('abort', abort, { once: true });
-      if (options.signal.aborted) {
-        abort();
-        return;
-      }
-
-      let latest: PromptPreviewGeneratedResult = { flatPrompts: [], processedPrompts: [] };
-      subscription.current = stream.subscribe({
-        next: (state: PromptConcatStreamState) => {
-          if (settled || options.signal.aborted) return;
-          onProgress?.({
-            progress: normalizeProgress(state.progress),
-            stepCode: toStepCode(state.step),
-            ...(state.currentPlugin?.toolId ? { currentPlugin: state.currentPlugin.toolId } : {}),
-          });
-          latest = { flatPrompts: state.flatPrompts, processedPrompts: state.processedPrompts };
-          if (state.isComplete) finish(latest);
-        },
-        error: fail,
-        complete: () => {
-          finish(latest);
-        },
-      });
-    });
-  },
-
   getAuditPage: async (request, options): Promise<PromptPreviewAuditPage> => {
     return abortFenced(options.signal, bridge.getPromptPreviewAuditPage(request));
   },
@@ -119,17 +59,6 @@ async function abortFenced<T>(signal: AbortSignal, operation: Promise<T>): Promi
       },
     );
   });
-}
-
-function normalizeProgress(progress: unknown): number {
-  return typeof progress === 'number' && Number.isFinite(progress)
-    ? Math.max(0, Math.min(1, progress))
-    : 0;
-}
-
-function toStepCode(step: unknown): PromptPreviewProgress['stepCode'] {
-  if (step === 'plugin' || step === 'flatten' || step === 'finalize') return step;
-  return 'completing';
 }
 
 function abortReason(signal: AbortSignal): Error {

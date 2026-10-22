@@ -82,9 +82,20 @@
       "NextBranch": "次の履歴",
       "Alternatives": "切り替え可能な履歴：{{count}} 件"
     },
-    "RunStatus": { "Working": "実行中…", "Queued": "リクエストを準備中…", "Cancelling": "キャンセル中…" },
-    "Workspace": { "Label": "ワークスペース", "Active": "アクティブなワークスペース" },
-    "Rendering": { "Source": "ソース", "Rendered": "表示結果", "Document": "表示されたメッセージ" },
+    "RunStatus": {
+      "Working": "実行中…",
+      "Queued": "リクエストを準備中…",
+      "Cancelling": "キャンセル中…"
+    },
+    "Workspace": {
+      "Label": "ワークスペース",
+      "Active": "アクティブなワークスペース"
+    },
+    "Rendering": {
+      "Source": "ソース",
+      "Rendered": "表示結果",
+      "Document": "表示されたメッセージ"
+    },
     "Cancel": "キャンセル",
     "Attachment": {
       "RemoveFile": "{{name}}を削除",
@@ -190,7 +201,9 @@
       "Seek": "会話ターンへ移動",
       "Close": "タイムラインを閉じる",
       "NewMessages": "新着メッセージ {{count}} 件 — 最新へ移動"
-    }
+    },
+    "MainConversation": "メインの会話",
+    "UseAsMainConversation": "メインの会話に設定"
   },
   "Common": {
     "None": "選択されていません"
@@ -255,9 +268,36 @@
       "multiDayOfMonthLabel": "日付",
       "dayOfMonthLabel": "日",
       "hourLabel": "時",
-      "weekDaysOptions": ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"],
-      "periodOptions": ["時間", "日", "週", "月", "年"],
-      "shortMonthOptions": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+      "weekDaysOptions": [
+        "日曜日",
+        "月曜日",
+        "火曜日",
+        "水曜日",
+        "木曜日",
+        "金曜日",
+        "土曜日"
+      ],
+      "periodOptions": [
+        "時間",
+        "日",
+        "週",
+        "月",
+        "年"
+      ],
+      "shortMonthOptions": [
+        "1月",
+        "2月",
+        "3月",
+        "4月",
+        "5月",
+        "6月",
+        "7月",
+        "8月",
+        "9月",
+        "10月",
+        "11月",
+        "12月"
+      ],
       "onOptionLabel": "に",
       "lastDayOfMonthLabel": "月末",
       "scheduleTitle": "スケジュール",
@@ -468,6 +508,9 @@
     "OutputModalities": "出力モダリティ",
     "Attachments": "添付ファイル",
     "ModelParameters": "モデルパラメータ",
+    "ModelDefault": "モデルの既定値",
+    "NoModelParameters": "このモデルには調整可能なパラメータがありません。",
+    "ReasoningEffort": "推論の強度",
     "ModelParametersDescription": "生成AIモデルの動作パラメータ（温度、トークン制限など）を設定する",
     "ModelRemovedSuccessfully": "モデルが正常に削除されました",
     "ModelUpdatedSuccessfully": "モデル更新が成功しました",

@@ -1,7 +1,4 @@
-import { AgentInstanceService } from '@services/agentInstance';
-import { container } from '@services/container';
-import serviceIdentifier from '@services/serviceIdentifier';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { vi } from 'vitest';
 import { serviceInstances } from './services-container';
 
@@ -54,23 +51,7 @@ Object.defineProperty(window, 'observables', {
       }).asObservable(),
       providerAccounts$: new BehaviorSubject([]).asObservable(),
     },
-    agentInstance: {
-      concatPromptPreview: vi.fn((input: Parameters<AgentInstanceService['concatPromptPreview']>[0]) => {
-        const agentInstanceService = container.get<AgentInstanceService>(serviceIdentifier.AgentInstance);
-        return new Observable<ReturnType<AgentInstanceService['concatPromptPreview']> extends Observable<infer T> ? T : never>((observer) => {
-          const initAndCall = async () => {
-            try {
-              await agentInstanceService.initializeFrameworks();
-              agentInstanceService.concatPromptPreview(input).subscribe(observer);
-            } catch (_error: unknown) {
-              console.warn(`Error while inserting dom node in react widget, this might be cause by use transclude widget for the wikitext contains widget.`, _error);
-              observer.error(_error);
-            }
-          };
-          void initAndCall();
-        });
-      }),
-    },
+    agentInstance: {},
     deviceNetwork: {
       cloudStatus$: serviceInstances.deviceNetwork.cloudStatus$!.asObservable(),
       devices$: serviceInstances.deviceNetwork.devices$!.asObservable(),

@@ -12,8 +12,8 @@ import {
   type WikiAttachmentOption,
 } from '@memeloop/react-ui/agent';
 import { ConversationTimelineWindowController, type MemeLoopMessageLabels, RenderedMessageContent, type WebMemeLoopChatAdapter } from '@memeloop/react-ui/chat';
-import TuneIcon from '@mui/icons-material/Tune';
-import { Alert, Box, Button, IconButton, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, MenuItem, TextField, Typography } from '@mui/material';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { TFunction } from 'i18next';
 import { type ConversationMessageListProjection, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,7 +37,7 @@ import { useConversationWorkspace } from './hooks/useConversationWorkspace';
 import { useExecutionTargets } from './hooks/useExecutionTargets';
 import { useMessageHandling } from './hooks/useMessageHandling';
 import { localizeAgentRunError } from './localizeAgentRunError';
-import { handleDesktopAgentErrorAction, openAgentRunErrorSettings } from './openAgentRunErrorSettings';
+import { handleDesktopAgentErrorAction } from './openAgentRunErrorSettings';
 import { parseTiddlyWikiDrop } from './tiddlyWikiDrop';
 import { isChatTab } from './utils/tabTypeGuards';
 
@@ -178,6 +178,8 @@ function DesktopAgentChatView({
   timelineController: ConversationTimelineWindowController;
 }) {
   const { t, i18n } = useTranslation('agent');
+  const preferences = usePreferenceObservable();
+  const [mainConversationError, setMainConversationError] = useState<string>();
   const { snapshot } = useAgentSession();
   useEffect(() => {
     if (!snapshot.error) return;
@@ -334,6 +336,16 @@ function DesktopAgentChatView({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      {mainConversationError && (
+        <Alert
+          severity='error'
+          onClose={() => {
+            setMainConversationError(undefined);
+          }}
+        >
+          {mainConversationError}
+        </Alert>
+      )}
       {initialFailed && tab.initialMessage && (
         <Alert severity='error' data-testid='pending-branch-error'>
           <Typography>{t('Chat.Editing.PendingFailed')}</Typography>
@@ -381,7 +393,7 @@ function DesktopAgentChatView({
           ),
           secondary: (
             <>
-              <CompactModelSelector agentId={tab.agentId} agentDefId={activeAgentDefinitionId} />
+              <CompactModelSelector agentId={tab.agentId} agentDefId={activeAgentDefinitionId} showParameters disabled={adapter.isRunning} />
               <TextField
                 select
                 size='small'
@@ -403,11 +415,18 @@ function DesktopAgentChatView({
                 agentId={tab.agentId}
                 agentDefinitionId={activeAgentDefinitionId}
               />
-              <Tooltip title={t('Preference.ModelParameters')}>
-                <IconButton size='small' onClick={() => void openAgentRunErrorSettings()}>
-                  <TuneIcon />
-                </IconButton>
-              </Tooltip>
+              <Button
+                size='small'
+                data-testid='use-as-main-conversation'
+                disabled={preferences?.mainAgentConversationId === tab.agentId}
+                onClick={() => {
+                  void window.service.preference.set('mainAgentConversationId', tab.agentId).catch((error: unknown) => {
+                    setMainConversationError(error instanceof Error ? error.message : String(error));
+                  });
+                }}
+              >
+                {t(preferences?.mainAgentConversationId === tab.agentId ? 'Chat.MainConversation' : 'Chat.UseAsMainConversation')}
+              </Button>
             </>
           ),
           loading: adapter.isLoading,

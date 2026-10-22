@@ -1,11 +1,8 @@
 import {
   type AgentFrameworkContext,
-  type ChatMessage,
   isContextCompactionSummary,
-  type PortableLlmMessage,
   type PromptPreviewAuditDetailChunk,
   type PromptPreviewAuditDetailRequest,
-  type PromptPreviewAuditEntrySource,
   type PromptPreviewAuditPage,
   type PromptPreviewAuditPageRequest,
   type PromptPreviewAuditReleaseRequest,
@@ -34,13 +31,13 @@ export interface DesktopPromptPreviewServiceOptions {
 
 interface PendingPromptPreview {
   requestId: string;
+  conversationId: string;
   abortController: AbortController;
 }
 
 interface RetainedHostContext {
   revision: string;
   conversationId: string;
-  messages: ChatMessage[];
   lastAccessedAt: number;
 }
 
@@ -73,6 +70,7 @@ export class DesktopPromptPreviewService {
 
     const operation: PendingPromptPreview = {
       requestId: input.requestId,
+      conversationId: input.conversationId,
       abortController: new AbortController(),
     };
     this.pending.set(input.requestId, operation);
@@ -92,17 +90,12 @@ export class DesktopPromptPreviewService {
       const compactionSummaryCount = prepared.messages.filter(isContextCompactionSummary).length;
       const execution = this.auditStore.createSession({
         request: prepared.prepared.request,
-        sources: classifyRequestSources(
-          prepared.prepared.request.messages,
-          prepared.messages,
-          input.inputText,
-        ),
+        provenance: prepared.prepared.provenance,
         compactionSummaryCount,
       });
       this.retainedHostContexts.set(execution.sessionId, {
         revision: execution.revision,
         conversationId: input.conversationId,
-        messages: prepared.messages,
         lastAccessedAt: this.now(),
       });
       // Durable context count is the useful compaction diagnostic; the audit
@@ -129,10 +122,8 @@ export class DesktopPromptPreviewService {
     return this.auditStore.getDetail(request);
   }
 
-  /** Main-process-only access for the session-based prompt-concat observable. */
-  public getContextForHost(sessionId: string, expectedRevision: string): Readonly<Pick<RetainedHostContext, 'conversationId' | 'messages'>> {
-    const context = this.touch(sessionId, expectedRevision);
-    return { conversationId: context.conversationId, messages: context.messages };
+  public getSessionConversationId(sessionId: string, expectedRevision: string): string {
+    return this.touch(sessionId, expectedRevision).conversationId;
   }
 
   public release(request: PromptPreviewAuditReleaseRequest): void {
@@ -141,10 +132,11 @@ export class DesktopPromptPreviewService {
   }
 
   /** Abort an in-flight prepare. Prepared sessions are released explicitly. */
-  public cancel(requestId: string): void {
+  public cancel(requestId: string, conversationId?: string): void {
     assertRequestId(requestId);
     const operation = this.pending.get(requestId);
     if (!operation) return;
+    if (conversationId !== undefined && operation.conversationId !== conversationId) throw previewError('conversation_mismatch');
     this.pending.delete(requestId);
     operation.abortController.abort(abortError());
   }
@@ -175,39 +167,6 @@ export class DesktopPromptPreviewService {
       this.retainedHostContexts.delete(sessionId);
     }
   }
-}
-
-function classifyRequestSources(
-  requestMessages: readonly PortableLlmMessage[],
-  contextMessages: readonly ChatMessage[],
-  inputText: string | undefined,
-): PromptPreviewAuditEntrySource[] {
-  // Core maps every retained history message to exactly one provider message
-  // and prepends the resolved system/prompt block. Classify by that stable
-  // ordering instead of comparing contents: compaction summaries are wrapped
-  // for the provider, and ordinary messages may legitimately have duplicate
-  // text. When a host policy filtered history, fall back to conservative role
-  // classification rather than labelling an unrelated entry as compaction.
-  const previewEntryCount = inputText === undefined ? 0 : 1;
-  const historyStart = requestMessages.length - contextMessages.length - previewEntryCount;
-  const hasAlignedHistory = historyStart >= 0;
-  return requestMessages.map((message, index) => {
-    if (inputText !== undefined && index === requestMessages.length - 1 && message.role === 'user') {
-      return 'preview-input';
-    }
-    if (hasAlignedHistory && index >= historyStart) {
-      const contextMessage = contextMessages[index - historyStart];
-      if (contextMessage !== undefined) {
-        if (isContextCompactionSummary(contextMessage)) return 'context-compaction-summary';
-        if (contextMessage.role === 'tool' || message.role === 'tool') return 'tool';
-        return 'conversation-message';
-      }
-    }
-    if (message.role === 'system') return 'system';
-    if (message.role === 'tool') return 'tool';
-    if (index < Math.max(0, historyStart)) return 'prompt';
-    return 'conversation-message';
-  });
 }
 
 function assertPrepareInput(input: PromptPreviewPrepareRequest): void {

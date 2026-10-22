@@ -16,12 +16,7 @@ describe('createDesktopPromptPreviewController', () => {
 
     const result = await controller.generate({ prompts: [], plugins: [] }, 'conversation-long');
 
-    expect(client.generatePreview).toHaveBeenCalledWith(
-      expect.anything(),
-      execution,
-      expect.any(Function),
-      expect.objectContaining({ signal: expect.any(AbortSignal) }),
-    );
+    expect(client.generatePreview).not.toHaveBeenCalled();
     expect(result?.audit.route).toEqual({
       providerId: 'provider-exact',
       logicalModelId: 'logical-exact',

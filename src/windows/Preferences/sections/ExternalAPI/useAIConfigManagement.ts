@@ -1,5 +1,5 @@
-import type { AgentModelConfig, ModelAssignments, ProviderAccountConfig } from 'memeloop';
-import { useCallback, useEffect, useState } from 'react';
+import type { AgentModelConfig, AgentModelParameters, ModelAssignments, ProviderAccountConfig } from 'memeloop';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseAIConfigManagementProps {
   agentDefId?: string;
@@ -24,6 +24,8 @@ interface AIConfigManagementBase {
   clearError?: () => void;
   accounts: ProviderAccountConfig[];
   setAccounts: React.Dispatch<React.SetStateAction<ProviderAccountConfig[]>>;
+  saving: boolean;
+  handleParametersChange: (parameters: AgentModelParameters) => Promise<void>;
 }
 
 interface GlobalAIConfigManagementResult extends AIConfigManagementBase {
@@ -58,8 +60,19 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
   const [scopedConfig, setScopedConfig] = useState<AgentModelConfig | null>(null);
   const [accounts, setAccounts] = useState<ProviderAccountConfig[]>([]);
   const [error, setError] = useState<AIConfigFailure>();
+  const [saving, setSaving] = useState(false);
+  const scopeKey = `${agentId ?? ''}:${agentDefId ?? ''}`;
+  const currentScope = useRef(scopeKey);
+  currentScope.current = scopeKey;
+  const mutation = useRef(0);
 
   useEffect(() => {
+    let cancelled = false;
+    let receivedGlobalUpdate = false;
+    let receivedAccountsUpdate = false;
+    mutation.current += 1;
+    setScopedConfig(null);
+    setSaving(false);
     const fetchConfig = async () => {
       try {
         setLoading(true);
@@ -89,17 +102,15 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
         // Definitions and instances persist only one AgentModelConfig. Do not
         // merge auxiliary global assignments into this scoped view: doing so
         // makes the UI look editable while updates can only save `default`.
-        if (isScoped) {
-          setScopedConfig(agentModelConfig ?? globalConfig.default ?? null);
-        } else {
-          setGlobalConfig(globalConfig);
-        }
-
         const providerAccounts = await window.service.externalAPI.getProviderAccounts();
-        setAccounts(providerAccounts);
+        if (cancelled) return;
+        setScopedConfig(agentModelConfig ?? null);
+        if (!receivedGlobalUpdate) setGlobalConfig(globalConfig);
+        if (!receivedAccountsUpdate) setAccounts(providerAccounts);
 
         setLoading(false);
       } catch (error) {
+        if (cancelled) return;
         const normalizedError = toError(error);
         setGlobalConfig(null);
         setScopedConfig(null);
@@ -116,17 +127,17 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
 
     // Subscribe to config changes from backend
     const configSubscription = window.observables.externalAPI.defaultConfig$.subscribe(updatedConfig => {
-      // Only update if we're using global config (not agent-specific config)
-      if (!agentId && !agentDefId) {
-        setGlobalConfig(updatedConfig);
-      }
+      receivedGlobalUpdate = true;
+      setGlobalConfig(updatedConfig);
     });
 
     const providerAccountsSubscription = window.observables.externalAPI.providerAccounts$.subscribe(updatedAccounts => {
+      receivedAccountsUpdate = true;
       setAccounts(updatedAccounts);
     });
 
     return () => {
+      cancelled = true;
       configSubscription.unsubscribe();
       providerAccountsSubscription.unsubscribe();
     };
@@ -176,26 +187,55 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
     });
   }, [globalConfig?.default?.parameters, updateGlobalSelection]);
   const handleScopedModelChange = useCallback(async (selection: AgentModelConfig) => {
+    const operation = ++mutation.current;
     const previousConfig = scopedConfig;
     const updatedConfig: AgentModelConfig = {
       ...selection,
-      ...(scopedConfig?.parameters === undefined ? {} : { parameters: scopedConfig.parameters }),
+      parameters: selection.parameters ?? (scopedConfig ?? globalConfig?.default)?.parameters,
     };
+    const model = accounts.find(account => account.providerId === selection.providerId)?.catalogProvider?.models.find(model => model.id === selection.modelId);
+    const previousSelection = scopedConfig ?? globalConfig?.default;
+    const modelChanged = previousSelection?.providerId !== selection.providerId || previousSelection?.modelId !== selection.modelId;
+    if (modelChanged && updatedConfig.parameters?.reasoningEffort && model && !model.reasoningEfforts?.includes(updatedConfig.parameters.reasoningEffort)) {
+      updatedConfig.parameters = { ...updatedConfig.parameters };
+      delete updatedConfig.parameters.reasoningEffort;
+    }
+    if (modelChanged && model && updatedConfig.parameters) {
+      updatedConfig.parameters = { ...updatedConfig.parameters };
+      if (model.temperature === false) delete updatedConfig.parameters.temperature;
+      if (model.limit?.output && (updatedConfig.parameters.maxOutputTokens ?? 0) > model.limit.output) {
+        delete updatedConfig.parameters.maxOutputTokens;
+      }
+    }
     setScopedConfig(updatedConfig);
     setError(undefined);
+    setSaving(true);
     try {
       await updateScopedConfig(updatedConfig);
     } catch (error) {
       const normalizedError = toError(error);
-      setScopedConfig(previousConfig);
-      setError({ operation: 'update', error: normalizedError });
+      if (currentScope.current === scopeKey && mutation.current === operation) {
+        setScopedConfig(previousConfig);
+        setError({ operation: 'update', error: normalizedError });
+      }
       void window.service.native.log('error', 'Failed to update model assignment', {
         function: 'useAIConfigManagement.handleScopedModelChange',
         error: normalizedError,
       });
       throw normalizedError;
+    } finally {
+      if (currentScope.current === scopeKey && mutation.current === operation) setSaving(false);
     }
-  }, [scopedConfig, updateScopedConfig]);
+  }, [scopedConfig, globalConfig?.default, accounts, scopeKey, updateScopedConfig]);
+  const handleParametersChange = useCallback(async (parameters: AgentModelParameters) => {
+    const config = isScoped ? scopedConfig ?? globalConfig?.default : globalConfig?.default;
+    if (!config) return;
+    if (isScoped) {
+      await handleScopedModelChange({ ...config, parameters });
+    } else {
+      await updateGlobalSelection('default', { ...config, parameters });
+    }
+  }, [isScoped, scopedConfig, globalConfig?.default, handleScopedModelChange, updateGlobalSelection]);
   const handleEmbeddingModelChange = useCallback(
     (selection: AgentModelConfig) => updateGlobalSelection('embedding', selection),
     [updateGlobalSelection],
@@ -267,12 +307,14 @@ export function useAIConfigManagement({ agentDefId, agentId }: UseAIConfigManage
     clearError,
     accounts,
     setAccounts,
+    saving,
+    handleParametersChange,
   };
 
   if (isScoped) {
     return {
       ...baseResult,
-      config: scopedConfig,
+      config: scopedConfig ?? globalConfig?.default ?? null,
       handleModelChange: handleScopedModelChange,
     };
   }

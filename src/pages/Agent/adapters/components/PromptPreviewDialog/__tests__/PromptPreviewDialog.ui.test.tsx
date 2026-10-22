@@ -2,7 +2,7 @@
  * Tests for PromptPreviewDialog component
  * Testing tool information rendering for wikiOperationPlugin, wikiSearchPlugin, workspacesListPlugin
  */
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -261,15 +261,16 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
   it('groups generated tool prompts in an expandable tree and forwards the selected editor path', async () => {
     const user = userEvent.setup();
     const controller = previewController();
+    const audit = auditExecution();
+    audit.initialPage.items[0].promptPath = [
+      { id: 'tools', caption: 'Wiki tools' },
+      { id: 'search-tools', caption: 'Search tools', fieldPaths: ['plugins', 'search-plugin'] },
+    ];
     const state = previewState({
       result: {
         flatPrompts: [],
-        processedPrompts: [
-          { id: 'system', caption: 'System prompt', role: 'system', text: 'system' },
-          { id: 'search-tools', caption: 'Search tools', text: 'search', source: ['plugins', 'search-plugin'] },
-          { id: 'wiki-tools', caption: 'Wiki tools', text: 'wiki', source: ['plugins', 'wiki-plugin'] },
-        ],
-        audit: auditExecution(),
+        processedPrompts: [],
+        audit,
       },
     });
     render(
@@ -278,12 +279,13 @@ describe('PromptPreviewDialog - Tool Information Rendering', () => {
       </TestWrapper>,
     );
 
-    expect(screen.getByText('Search tools')).toBeInTheDocument();
-    expect(screen.getByText('Wiki tools')).toBeInTheDocument();
-    await user.click(screen.getByText('Prompt.GeneratedTools'));
-    expect(screen.queryByText('Search tools')).not.toBeInTheDocument();
-    await user.click(screen.getByText('Prompt.GeneratedTools'));
-    await user.click(screen.getByText('Search tools'));
+    const search = screen.getByText('Search tools');
+    const wiki = screen.getByText('Wiki tools');
+    expect(search).toBeVisible();
+    await user.click(wiki);
+    expect(search).not.toBeVisible();
+    await user.click(wiki);
+    await user.click(within(search).getByRole('button', { name: 'Prompt.Edit' }));
     expect(controller.setFormFieldsToScrollTo).toHaveBeenLastCalledWith(['plugins', 'search-plugin']);
   });
 });
