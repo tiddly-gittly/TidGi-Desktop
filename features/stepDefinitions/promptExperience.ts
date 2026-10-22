@@ -132,7 +132,9 @@ Then('the complete model request should include the unsent input and allow retur
       assert.equal(await detail.getByRole('progressbar').count(), 0, 'Request chunk is still loading');
       assert(await detail.locator('pre').textContent(), 'Request chunk has not arrived');
     }, { numOfAttempts: 30, startingDelay: 100, maxDelay: 1000 });
-    request += await detail.locator('pre').textContent();
+    const chunk = await detail.locator('pre').textContent();
+    assert(chunk);
+    request += chunk;
     const next = detail.getByTestId('prompt-preview-audit-detail-next');
     if (await next.count() === 0) break;
     await next.click();
