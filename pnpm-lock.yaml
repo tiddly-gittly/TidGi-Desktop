@@ -13,6 +13,9 @@ overrides:
   tar-stream>bl: ^4.1.0
   '@ai-sdk/provider-utils': 5.0.34
 
+patchedDependencies:
+  electron-installer-redhat@3.4.0: 3cb5b1aa439c5ecb57014cbf5a89317e6a30789ab0dfcbf05851a77f792e2376
+
 importers:
 
   .:
@@ -10408,7 +10411,7 @@ snapshots:
       '@electron-forge/maker-base': 8.0.0-alpha.9(supports-color@10.2.2)
       '@electron-forge/shared-types': 8.0.0-alpha.9(supports-color@10.2.2)
     optionalDependencies:
-      electron-installer-redhat: 3.4.0(supports-color@10.2.2)
+      electron-installer-redhat: 3.4.0(patch_hash=3cb5b1aa439c5ecb57014cbf5a89317e6a30789ab0dfcbf05851a77f792e2376)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -14780,7 +14783,7 @@ snapshots:
       - supports-color
     optional: true
 
-  electron-installer-redhat@3.4.0(supports-color@10.2.2):
+  electron-installer-redhat@3.4.0(patch_hash=3cb5b1aa439c5ecb57014cbf5a89317e6a30789ab0dfcbf05851a77f792e2376)(supports-color@10.2.2):
     dependencies:
       '@malept/cross-spawn-promise': 1.1.1
       debug: 4.4.3(supports-color@10.2.2)

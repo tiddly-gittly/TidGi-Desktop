@@ -90,3 +90,6 @@ minimumReleaseAgeExclude:
   - '@memeloop/libp2p@0.3.0 || 0.3.1'
   - memeloop-cli@0.2.6
   - multiformats@14.0.5
+
+patchedDependencies:
+  electron-installer-redhat@3.4.0: patches/electron-installer-redhat@3.4.0.patch
