@@ -74,6 +74,7 @@ export const defaultPreferences: IPreferences = {
   syncDebounceInterval: 1000 * 60 * 30,
   syncOnlyWhenNoDraft: true,
   aiGenerateBackupTitle: true,
+  mainAgentConversationId: '',
   aiGenerateBackupTitleTimeout: 1500,
   themeSource: 'system',
   tidgiMiniWindow: false,

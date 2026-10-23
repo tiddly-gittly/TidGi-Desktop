@@ -15,11 +15,9 @@ Feature: Deep Link
     When I open edit workspace window for workspace with name "wiki"
     And I switch to "editWorkspace" window
     And I wait for the page to load completely
-    When I click on "search section and generate embeddings button and open AI settings button" elements with selectors:
-      | element description        | selector                                     |
-      | search and embedding section | [data-section-id='search']                  |
-      | generate embeddings button | [data-testid^='generate-embeddings-button-'] |
-      | open AI settings button    | button:has-text('打开 AI API 设置')          |
+    When I click on a "search and embedding section" element with selector "[data-section-id='search']"
+    And I click on a "generate embeddings button" element with selector "[data-testid^='generate-embeddings-button-']"
+    And I click on an "open AI settings button" element with selector "button:has-text('打开 AI API 设置')"
     And I switch to "preferences" window
     Then I should see an "external API content section" element with selector "[data-settings-entry-id='externalAPI']"
     And the "external API content section" element with selector "[data-settings-entry-id='externalAPI']" should be aligned near the top of its scroll viewport
@@ -35,3 +33,8 @@ Feature: Deep Link
     When I trigger deep link "tidgi-test://agent" as second instance would
     And I switch to "main" window
     Then I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I hide the main window as if closing with runOnBackground
+    And I reopen the main window as second instance would
+    And I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    Then I should see a "chat input" element with selector "[data-testid='agent-message-input']"
+    When I type "Foreground restore input test" in "chat input" element with selector "[data-testid='agent-message-input']"

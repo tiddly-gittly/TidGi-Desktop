@@ -3,6 +3,9 @@ import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  // SWC owns TS/JS transformation in this test pipeline. Vitest 4 otherwise
+  // enables Oxc after the SWC plugin disables esbuild and emits a warning.
+  oxc: false,
   plugins: [swc.vite({
     jsc: {
       transform: {
@@ -18,7 +21,7 @@ export default defineConfig({
     environment: 'jsdom',
 
     // features/ tests (HTTP/Node.js integration) run in node environment
-    // @ts-expect-error - environmentMatchGlobs may not exist in vitest 4 types
+    // @ts-expect-error — environmentMatchGlobs is supported in vitest 4
     environmentMatchGlobs: [
       ['features/**', 'node'],
       ['scripts/**', 'node'],
@@ -26,6 +29,12 @@ export default defineConfig({
 
     // Setup files
     setupFiles: ['./src/__tests__/setup-vitest.ts'],
+
+    server: {
+      deps: {
+        inline: [/@memeloop\/react-ui/, /node_modules\/@memeloop\/react-ui/],
+      },
+    },
 
     // Test file patterns
     include: [
@@ -57,22 +66,48 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     reporters: ['default', 'hanging-process'],
-  },
-
-  // Vitest 4 requires pool options at the top level
-  pool: 'forks',
-  poolOptions: {
-    forks: {
-      maxForks: 6,
-      minForks: 2,
-    },
+    // Electron retains an isolated V8/module graph for every concurrent test
+    // file. Higher worker counts make otherwise small shards enter exit-time
+    // GC for minutes, so keep concurrency bounded instead of enlarging V8's
+    // heap. Threads support the native modules used by these tests and each
+    // file remains isolated.
+    pool: 'threads',
+    maxWorkers: 2,
     isolate: true,
   },
 
   resolve: {
+    // Sibling-linked MemeLoop packages must share Desktop's React dispatcher,
+    // matching the packaged renderer contract in vite.renderer.aliases.ts.
+    dedupe: ['react', 'react-dom'],
+    preserveSymlinks: true,
     alias: [
       { find: '@', replacement: path.resolve(__dirname, './src') },
       { find: '@services', replacement: path.resolve(__dirname, './src/services') },
+      { find: /^react$/, replacement: path.resolve(__dirname, './node_modules/react/index.js') },
+      { find: /^react\/jsx-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-runtime.js') },
+      { find: /^react\/jsx-dev-runtime$/, replacement: path.resolve(__dirname, './node_modules/react/jsx-dev-runtime.js') },
+      { find: /^react-dom$/, replacement: path.resolve(__dirname, './node_modules/react-dom/index.js') },
+      { find: /^react-dom\/client$/, replacement: path.resolve(__dirname, './node_modules/react-dom/client.js') },
+      // Resolve memeloop packages for vitest (SWC-transformed files need explicit paths)
+      { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
+      { find: /^@memeloop\/react-ui\/chat$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js') },
+      { find: /^@memeloop\/react-ui\/native$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/native/index.js') },
+      { find: /^@memeloop\/react-ui\/theme$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/theme/index.js') },
+      { find: /^@memeloop\/react-ui\/agent\/prompts$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/prompts/index.js') },
+      { find: /^@memeloop\/react-ui\/agent\/scheduling$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/scheduling/index.js') },
+      { find: /^@memeloop\/react-ui\/agent$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/agent/index.js') },
+      { find: /^@memeloop\/react-ui$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/index.js') },
+      // MUI rewrites this import through its browser map, so pin both exposed deep-import forms.
+      { find: /^react-transition-group\/TransitionGroupContext$/, replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js') },
+      {
+        find: /^react-transition-group\/cjs\/TransitionGroupContext\.js$/,
+        replacement: path.resolve(__dirname, './node_modules/react-transition-group/cjs/TransitionGroupContext.js'),
+      },
+      {
+        find: /^react-transition-group\/esm\/TransitionGroupContext\.js$/,
+        replacement: path.resolve(__dirname, './node_modules/react-transition-group/esm/TransitionGroupContext.js'),
+      },
       // Stub optional MCP SDK so tests don't fail on import-resolution when SDK is not installed
       { find: /^@modelcontextprotocol\/sdk\/.*$/, replacement: path.resolve(__dirname, './src/__tests__/__stubs__/mcpSdkStub.ts') },
     ],

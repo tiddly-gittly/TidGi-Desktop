@@ -10,12 +10,21 @@ interface ChatRequest {
   messages: ChatMessage[];
   model?: string;
   stream?: boolean;
+  reasoning_effort?: string;
+  temperature?: number;
+  top_p?: number;
 }
 
 interface Rule {
-  response: string;
+  statusCode?: number;
+  delayMs?: number;
+  response?: string;
   stream?: boolean;
   embedding?: number[]; // Optional: predefined embedding vector for this response
+  toolCall?: {
+    name: string;
+    arguments: Record<string, unknown>;
+  };
 }
 
 export class MockOpenAIServer {
@@ -34,7 +43,7 @@ export class MockOpenAIServer {
       // Separate rules: ones with response go to chatRules, embedding-only go to embeddingRules
       // Note: Rules with both response and embedding will add to both collections
       for (const rule of rules) {
-        if (rule.response) {
+        if (rule.response || rule.toolCall || rule.statusCode) {
           this.chatRules.push(rule);
         }
         // Separately handle embedding - a rule can have both response and embedding
@@ -55,7 +64,7 @@ export class MockOpenAIServer {
       this.embeddingRules = [];
       // Note: Rules with both response and embedding will add to both collections
       for (const rule of rules) {
-        if (rule.response) {
+        if (rule.response || rule.toolCall || rule.statusCode) {
           this.chatRules.push(rule);
         }
         // Separately handle embedding - a rule can have both response and embedding
@@ -74,7 +83,7 @@ export class MockOpenAIServer {
     if (Array.isArray(rules)) {
       // Note: A rule can have both response and embedding - handle them independently
       for (const rule of rules) {
-        if (rule.response) {
+        if (rule.response || rule.toolCall || rule.statusCode) {
           this.chatRules.push(rule);
         }
         // Removed 'else' - a rule can have both response and embedding
@@ -290,8 +299,24 @@ export class MockOpenAIServer {
         this.lastRequest = chatRequest;
         this.allRequests.push(chatRequest);
 
+        const nextRule = this.chatRules[this.callCount];
+        if (nextRule?.statusCode) {
+          this.callCount++;
+          setTimeout(() => {
+            if (response.destroyed || response.writableEnded) return;
+            response.writeHead(nextRule.statusCode!, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ error: { code: 'test_provider_failure', message: 'Test provider failure' } }));
+          }, nextRule.delayMs ?? 0);
+          return;
+        }
         if (chatRequest.stream) {
-          this.handleStreamingChatCompletions(chatRequest, response);
+          if (nextRule?.delayMs) {
+            setTimeout(() => {
+              if (!response.destroyed) this.handleStreamingChatCompletions(chatRequest, response);
+            }, nextRule.delayMs);
+          } else {
+            this.handleStreamingChatCompletions(chatRequest, response);
+          }
           return;
         }
 
@@ -339,9 +364,21 @@ export class MockOpenAIServer {
           index: 0,
           message: {
             role: 'assistant',
-            content: responseRule.response,
+            content: responseRule.response ?? null,
+            ...(responseRule.toolCall === undefined
+              ? {}
+              : {
+                tool_calls: [{
+                  id: `call-test-${this.callCount}`,
+                  type: 'function',
+                  function: {
+                    name: responseRule.toolCall.name,
+                    arguments: JSON.stringify(responseRule.toolCall.arguments),
+                  },
+                }],
+              }),
           },
-          finish_reason: 'stop',
+          finish_reason: responseRule.toolCall === undefined ? 'stop' : 'tool_calls',
         },
       ],
       usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
@@ -379,6 +416,43 @@ export class MockOpenAIServer {
           },
         ],
       };
+
+      if (responseRule.toolCall) {
+        const toolCallChunk = {
+          id: 'chatcmpl-test-' + Date.now().toString(),
+          object: 'chat.completion.chunk',
+          created: Math.floor(Date.now() / 1000),
+          model: modelName,
+          choices: [{
+            index: 0,
+            delta: {
+              tool_calls: [{
+                index: 0,
+                id: `call-test-${this.callCount}`,
+                type: 'function',
+                function: {
+                  name: responseRule.toolCall.name,
+                  arguments: JSON.stringify(responseRule.toolCall.arguments),
+                },
+              }],
+            },
+            finish_reason: 'tool_calls',
+          }],
+        };
+        response.write(`data: ${JSON.stringify(roleChunk)}\n\n`);
+        if (responseRule.response) {
+          response.write(`data: ${
+            JSON.stringify({
+              ...roleChunk,
+              choices: [{ index: 0, delta: { content: responseRule.response }, finish_reason: null }],
+            })
+          }\n\n`);
+        }
+        response.write(`data: ${JSON.stringify(toolCallChunk)}\n\n`);
+        response.write('data: [DONE]\n\n');
+        response.end();
+        return;
+      }
 
       // Send content chunks. Support multiple chunks separated by '<stream_split>'
       const rawResponse = typeof responseRule.response === 'string'
@@ -460,9 +534,21 @@ export class MockOpenAIServer {
             index: 0,
             message: {
               role: 'assistant',
-              content: responseRule.response,
+              content: responseRule.response ?? null,
+              ...(responseRule.toolCall === undefined
+                ? {}
+                : {
+                  tool_calls: [{
+                    id: `call-test-${this.callCount}`,
+                    type: 'function',
+                    function: {
+                      name: responseRule.toolCall.name,
+                      arguments: JSON.stringify(responseRule.toolCall.arguments),
+                    },
+                  }],
+                }),
             },
-            finish_reason: 'stop',
+            finish_reason: responseRule.toolCall === undefined ? 'stop' : 'tool_calls',
           },
         ],
         usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },

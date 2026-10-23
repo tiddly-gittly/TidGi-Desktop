@@ -4,6 +4,14 @@ import { wikiWorkspaceDefaultValues } from './interface';
 
 export const workspaceSorter = (a: IWorkspace, b: IWorkspace): number => a.order - b.order;
 
+function setWorkspaceDifference<K extends keyof IWikiWorkspace>(
+  differences: Partial<IWikiWorkspace>,
+  key: K,
+  value: IWikiWorkspace[K],
+): void {
+  differences[key] = value;
+}
+
 /**
  * Get only the fields that differ from defaults, for persisting to storage.
  * This reduces storage size and makes configs more readable by only storing non-default values.
@@ -20,7 +28,7 @@ export function getDifferencesFromDefaults(workspace: IWikiWorkspace): Partial<I
 
     // Include field if it has a value and differs from default, or if there's no default defined
     if (defaultValue === undefined || !isEqual(defaultValue, workspaceValue)) {
-      (differences as unknown as Record<string, unknown>)[typedKey as string] = workspaceValue;
+      setWorkspaceDifference(differences, typedKey, workspaceValue);
     }
   });
 

@@ -1,4 +1,3 @@
-import { container } from '@services/container';
 import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
 import { inject, injectable } from 'inversify';
@@ -30,15 +29,10 @@ export class View implements IViewService {
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
+    @inject(serviceIdentifier.ThemeService) private readonly themeService: IThemeService,
   ) {}
-
-  private get windowService(): IWindowService {
-    return container.get<IWindowService>(serviceIdentifier.Window);
-  }
-
-  private get workspaceService(): IWorkspaceService {
-    return container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  }
 
   public async initialize(): Promise<void> {
     await registerViewMenu();
@@ -51,6 +45,7 @@ export class View implements IViewService {
    * Views stay in this map even when hidden (offscreen). Only `destroyAllViewsOfWorkspace` removes them.
    */
   private readonly views = new Map<string, Map<WindowNames, WebContentsView>>();
+  private readonly viewLoads = new WeakMap<WebContentsView, Promise<void>>();
 
   /**
    * Track resize-listener cleanup functions so we can unbind them on destroy.
@@ -71,7 +66,7 @@ export class View implements IViewService {
   }
 
   public getView(workspaceID: string, windowName: WindowNames): WebContentsView | undefined {
-    let view = this.views.get(workspaceID)?.get(windowName);
+    const view = this.views.get(workspaceID)?.get(windowName);
     if (view) {
       // Stale entry from a window that was destroyed (e.g. close-handler race in older builds).
       // Remove it so callers know to recreate the view rather than reusing a dead one.
@@ -82,24 +77,6 @@ export class View implements IViewService {
       return view;
     }
 
-    // Case-insensitive fallback — indicates a casing bug elsewhere, but keeps things working
-    const lower = workspaceID.toLowerCase();
-    for (const [id, windowViews] of this.views.entries()) {
-      if (id.toLowerCase() === lower) {
-        view = windowViews.get(windowName);
-        if (view) {
-          if (view.webContents.isDestroyed()) {
-            windowViews.delete(windowName);
-            continue;
-          }
-          logger[process.env.NODE_ENV === 'development' ? 'warn' : 'debug'](
-            'getView: case-insensitive match — workspace ID casing inconsistency',
-            { requestedId: workspaceID, actualId: id, windowName },
-          );
-          return view;
-        }
-      }
-    }
     return undefined;
   }
 
@@ -210,8 +187,7 @@ export class View implements IViewService {
   ): Promise<WebContentsView> {
     const view = new WebContentsView({ webPreferences: sharedWebPreferences });
 
-    const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
-    const shouldUseDarkColors = await themeService.shouldUseDarkColors();
+    const shouldUseDarkColors = await this.themeService.shouldUseDarkColors();
     view.setBackgroundColor(shouldUseDarkColors ? '#212121' : '#ffffff');
 
     if (this.shouldMuteAudio) {
@@ -286,8 +262,8 @@ export class View implements IViewService {
       shouldPauseNotifications: this.shouldPauseNotifications,
       workspace,
       sharedWebPreferences,
-      loadInitialUrlWithCatch: async () => {
-        await this.loadUrlForView(workspace, view, uri);
+      loadInitialUrlWithCatch: async isCurrent => {
+        await this.loadUrlForView(workspace, view, uri, isCurrent);
       },
       windowName,
     });
@@ -295,7 +271,8 @@ export class View implements IViewService {
     await this.loadUrlForView(workspace, view, uri);
   }
 
-  public async loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string): Promise<void> {
+  public async loadUrlForView(workspace: IWorkspace, view: WebContentsView, uri?: string, isCurrent?: () => boolean): Promise<void> {
+    if (isCurrent && !isCurrent()) return;
     const { rememberLastPageVisited } = this.preferenceService.getPreferences();
     const lastUrl = isWikiWorkspace(workspace) ? workspace.lastUrl : null;
     const homeUrl = isWikiWorkspace(workspace) ? workspace.homeUrl : null;
@@ -312,7 +289,8 @@ export class View implements IViewService {
         // by a concurrent error.  Don't retry: the view will show an error.
         return;
       }
-      await view.webContents.loadURL(urlToLoad);
+      if (view.webContents.isDestroyed() || (isCurrent && !isCurrent())) return;
+      await this.navigateView(view, urlToLoad, isCurrent);
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
@@ -322,23 +300,92 @@ export class View implements IViewService {
     }
   }
 
+  private navigateView(view: WebContentsView, url: string, isCurrent?: () => boolean, forceReload = false): Promise<void> {
+    const navigate = async () => {
+      if (view.webContents.isDestroyed() || (isCurrent && !isCurrent())) return;
+      const currentUrl = view.webContents.getURL();
+      if (forceReload && currentUrl.split('#')[0] === url.split('#')[0]) {
+        // Restore a saved fragment synchronously without starting a second
+        // Chromium navigation. loadURL(fragment) can still have pending events
+        // after its promise settles, which would abort a following reload.
+        if (currentUrl !== url) {
+          await view.webContents.executeJavaScript(`history.replaceState(history.state, "", ${JSON.stringify(url)})`);
+        }
+        if (view.webContents.isDestroyed()) return;
+        await this.reloadViewDocument(view);
+        return;
+      }
+      await view.webContents.loadURL(url);
+    };
+    // Restart can arrive while the view's first document/preload is still
+    // initializing. Serialize loads instead of aborting that first navigation.
+    const navigation = (this.viewLoads.get(view) ?? Promise.resolve()).then(navigate, navigate);
+    this.viewLoads.set(view, navigation);
+    const settled = () => {
+      if (this.viewLoads.get(view) === navigation) this.viewLoads.delete(view);
+    };
+    void navigation.then(settled, settled);
+    return navigation;
+  }
+
+  private reloadViewDocument(view: WebContentsView): Promise<void> {
+    const contents = view.webContents;
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        contents.removeListener('did-finish-load', finished);
+        contents.removeListener('did-fail-load', failed);
+        contents.removeListener('did-stop-loading', stopped);
+        contents.removeListener('destroyed', destroyed);
+      };
+      const finished = () => {
+        cleanup();
+        resolve();
+      };
+      const fail = (error: Error) => {
+        cleanup();
+        reject(error);
+      };
+      const failed = (_event: Electron.Event, code: number, description: string, _url: string, isMainFrame: boolean) => {
+        if (isMainFrame) fail(new Error(`Wiki reload failed: ${description} (${code})`));
+      };
+      const stopped = () => {
+        fail(new Error('Wiki reload stopped before document completion'));
+      };
+      const destroyed = () => {
+        fail(new Error('Wiki view destroyed during reload'));
+      };
+      contents.on('did-finish-load', finished);
+      contents.on('did-fail-load', failed);
+      contents.on('did-stop-loading', stopped);
+      contents.on('destroyed', destroyed);
+      try {
+        contents.reload();
+      } catch (error) {
+        fail(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
     const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
-    this.forEachView(async (view, id) => {
+    const navigations: Array<Promise<void>> = [];
+    this.forEachView((view, id) => {
       if (workspaceID !== undefined && id !== workspaceID) return;
-      if (!view.webContents) return;
-      if (workspaceID !== undefined) {
-        const workspace = await this.workspaceService.get(workspaceID);
-        if (rememberLastPageVisited && workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
-          try {
-            await view.webContents.loadURL(workspace.lastUrl);
-          } catch (error) {
-            logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+      if (!view.webContents || view.webContents.isDestroyed()) return;
+      navigations.push((async () => {
+        let url = view.webContents.getURL();
+        if (workspaceID !== undefined && rememberLastPageVisited) {
+          const workspace = await this.workspaceService.get(workspaceID);
+          if (workspace && isWikiWorkspace(workspace) && workspace.lastUrl) {
+            url = workspace.lastUrl;
           }
         }
-      }
-      view.webContents.reload();
+        if (view.webContents.isDestroyed()) return;
+        if (!url || url === 'about:blank') url = getDefaultTidGiUrl(id);
+        await this.navigateView(view, url, undefined, true);
+      })());
     });
+    await Promise.all(navigations);
   }
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
@@ -389,8 +436,10 @@ export class View implements IViewService {
     try {
       browserWindow.contentView.removeChildView(view);
       attached = true;
-    } catch {
+    } catch (error: unknown) {
       // View was not attached — normal for window-recreation or first-show.
+      // Keep the lifecycle probe observable without failing the show path.
+      logger.debug('showView: removeChildView skipped', { workspaceID, windowName, error });
     }
     try {
       browserWindow.contentView.addChildView(view);
@@ -450,7 +499,11 @@ export class View implements IViewService {
       this.customBoundsMap.set(key, bounds);
       try {
         browserWindow.contentView.addChildView(view);
-      } catch { /* already added */ }
+      } catch (error: unknown) {
+        // addChildView is idempotent from the caller's perspective; Electron
+        // throws when the view is already attached, so retain the diagnostic.
+        logger.debug('setViewBounds: view already attached', { workspaceID, windowName, error });
+      }
       view.setBounds(bounds);
     } else {
       const previousCustomBounds = this.customBoundsMap.get(key);
@@ -526,7 +579,11 @@ export class View implements IViewService {
       if (browserWindow && !browserWindow.isDestroyed()) {
         try {
           browserWindow.contentView.removeChildView(view);
-        } catch { /* ok */ }
+        } catch (error: unknown) {
+          // The view may already have been detached by Electron during window
+          // teardown. Destruction remains best-effort, with a trace for races.
+          logger.debug('destroyAllViewsOfWorkspace: removeChildView skipped', { workspaceID, windowName, error });
+        }
       }
       // Destroy webContents
       try {

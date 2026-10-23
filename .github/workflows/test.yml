@@ -39,6 +39,9 @@ jobs:
       - name: Rebuild native modules for Electron
         run: pnpm exec electron-rebuild -f -w better-sqlite3,nsfw
 
+      - name: Type-check repository contracts
+        run: pnpm run check
+
       - name: Run unit tests
         run: pnpm run test:unit
         env:

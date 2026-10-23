@@ -44,7 +44,6 @@ function createWorkspaces() {
       homeUrl: 'tidgi://workspace/workspace-2/',
       isSubWiki: true,
       mainWikiID: 'workspace-1',
-      mainWikiToLink: '/path/to/wiki1',
       port: 5213,
       tagNames: ['WorkNotes'],
       metadata: { badgeCount: 5 },

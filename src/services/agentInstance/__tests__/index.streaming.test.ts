@@ -1,379 +1,297 @@
 /**
- * Tests for AgentInstanceService streaming behavior
- * Tests that sendMsgToAgent properly triggers streaming updates through observables
+ * Agent streaming contract tests.
+ *
+ * Metadata subscriptions intentionally never carry a transcript. Streaming
+ * partials cross the bounded conversation-projection channel, while completed
+ * immutable messages are read through durable paging.
  */
-import { nanoid } from 'nanoid';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-// Use shared mocks via test container (setup-vitest binds serviceInstances into the container)
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentInstance, AgentInstanceLatestStatus, IAgentInstanceService } from '@services/agentInstance/interface';
+import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import defaultAgents from '../agentFrameworks/taskAgents.json';
+import type { AgentConversationUpdate, AgentDefinition, AgentInstanceLatestStatus, AgentRuntimeView } from 'memeloop';
+import { getBuiltinLoopProfiles } from 'memeloop';
+import { nanoid } from 'nanoid';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
+  return {
+    systemPrompt: '',
+    tools: [],
+    version: '1',
+    ...profile,
+  };
+}
 
 describe('AgentInstanceService Streaming Behavior', () => {
   let agentInstanceService: IAgentInstanceService;
-  let testAgentInstance: AgentInstance;
-  let mockAgentDefinitionService: Partial<IAgentDefinitionService>;
+  let testAgentInstance: AgentRuntimeView;
   let mockExternalAPIService: Partial<IExternalAPIService>;
-  let mockDatabaseService: Partial<IDatabaseService>;
+
+  beforeAll(async () => {
+    await container.get<IDatabaseService>(serviceIdentifier.Database).initializeForApp();
+  });
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    // Retrieve shared mocks from the test container
-    mockAgentDefinitionService = container.get(serviceIdentifier.AgentDefinition);
-    mockDatabaseService = container.get(serviceIdentifier.Database);
+    const definitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     mockExternalAPIService = container.get(serviceIdentifier.ExternalAPI);
-
-    // Setup mock database service with in-memory SQLite
-    const mockRepo = {
-      findOne: vi.fn(),
-      save: vi.fn(),
-      create: vi.fn(),
-      find: vi.fn(),
-      findAndCount: vi.fn(),
-    };
-    const mockDataSource = {
-      isInitialized: true,
-      initialize: vi.fn(),
-      destroy: vi.fn(),
-      getRepository: vi.fn().mockReturnValue(mockRepo),
-      manager: {
-        transaction: vi.fn().mockImplementation(async (cb: (manager: { getRepository: () => typeof mockRepo }) => Promise<unknown>) => {
-          // Mock transaction - just call the callback with mock repo
-          return await cb({
-            getRepository: () => mockRepo,
-          });
-        }),
-      },
-    };
-    mockDatabaseService.getDatabase = vi.fn().mockResolvedValue(mockDataSource);
-
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
 
+    await definitionService.initialize();
     await agentInstanceService.initialize();
-    // Setup test agent instance using data from taskAgents.json
-    const exampleAgent = defaultAgents[0];
-    testAgentInstance = {
-      id: nanoid(),
-      agentDefId: exampleAgent.id,
-      name: 'Test Agent',
-      status: {
-        state: 'working',
-        modified: new Date(),
-      },
-      created: new Date(),
-      closed: false,
-      messages: [],
-    };
 
-    // Mock agent definition service to return our test agent definition
-    mockAgentDefinitionService.getAgentDef = vi.fn().mockResolvedValue({
-      ...exampleAgent,
-      agentFrameworkID: 'basicPromptConcatHandler',
+    const profile = getBuiltinLoopProfiles().find(candidate => candidate.id === 'memeloop:general-assistant');
+    if (!profile) throw new Error('Missing built-in general assistant profile');
+    const definition = {
+      ...toAgentDefinition(profile),
+      agentFrameworkID: 'agent-tool-loop',
+      tools: [],
+      plugins: [],
+      agentTools: [],
+      agentFrameworkConfig: { prompts: [], plugins: [], response: [] },
+      modelConfig: {
+        providerId: 'mock',
+        modelId: 'mock-model',
+        parameters: { temperature: 0.7 },
+      },
+    };
+    vi.spyOn(definitionService, 'getAgentDef').mockResolvedValue(definition);
+    testAgentInstance = await agentInstanceService.createAgent(definition.id, { id: nanoid() });
+
+    mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
+      default: { providerId: 'mock', modelId: 'mock-model', parameters: { temperature: 0.7 } },
     });
-    // Mock the getAgent method to return our test instance
-    vi.spyOn(agentInstanceService, 'getAgent').mockResolvedValue(testAgentInstance);
+    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'mock',
+      providerType: 'openai-compatible',
+      enabled: true,
+      secretRef: 'test://mock/api-key',
+      models: [{ modelId: 'mock-model', wireModelId: 'mock-model', apiMode: 'chat-completions' }],
+    }]);
   });
 
-  it('should trigger streaming updates when sendMsgToAgent is called', async () => {
-    // Define expected content as variables
+  async function getPersistedMessages() {
+    const page = await agentInstanceService.getAgentMessagePage(testAgentInstance.id, {
+      limit: 80,
+      maxBytes: 4 * 1024 * 1024,
+      direction: 'forward',
+    });
+    if (page.reset) throw new Error('unexpected conversation page reset');
+    return page.items;
+  }
+
+  async function executeMessage(text: string, signal?: AbortSignal) {
+    const requestId = `streaming-test:request:${nanoid()}`;
+    const turnId = `streaming-test:turn:${nanoid()}`;
+    return agentInstanceService.executeLocalAgentMessage({
+      target: { kind: 'local' },
+      provenance: {
+        conversationId: testAgentInstance.id,
+        definitionId: testAgentInstance.agentDefId,
+        requestId,
+        turnId,
+      },
+      message: text,
+    }, { signal });
+  }
+
+  it('publishes bounded streaming projections and persists only the completed response', async () => {
     const expectedUserMessage = '你好，请回答一个简单的问题。';
     const expectedAIResponsePart1 = '这是一个测试回答的开始...';
     const expectedAIResponsePart2 = '这是一个测试回答的开始...正在思考中...';
     const expectedAIResponseFinal = '这是一个测试回答的开始...正在思考中...完成了！这是对用户问题的完整回答。';
-
-    // Setup mock for AI streaming response using the variables
-    const mockAIResponseGenerator = function*() {
-      yield {
-        status: 'update' as const,
-        content: expectedAIResponsePart1,
-        requestId: 'test-request-1',
-      };
-
-      yield {
-        status: 'update' as const,
-        content: expectedAIResponsePart2,
-        requestId: 'test-request-1',
-      };
-
-      yield {
-        status: 'done' as const,
-        content: expectedAIResponseFinal,
-        requestId: 'test-request-1',
-      };
+    const mockAIResponseGenerator = async function*() {
+      yield { type: 'text-delta' as const, id: 'test-request-1', text: expectedAIResponsePart1 };
+      await new Promise(resolve => setTimeout(resolve, 60));
+      yield { type: 'text-delta' as const, id: 'test-request-1', text: expectedAIResponsePart2.slice(expectedAIResponsePart1.length) };
+      await new Promise(resolve => setTimeout(resolve, 60));
+      yield { type: 'text-delta' as const, id: 'test-request-1', text: expectedAIResponseFinal.slice(expectedAIResponsePart2.length) };
+      yield { type: 'finish' as const, finishReason: 'stop' };
     };
+    mockExternalAPIService.generatePortableLlm = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
-
-    // Subscribe to agent updates before sending message
-    const agentUpdatesObservable = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id);
-    const agentUpdates: (AgentInstance | undefined)[] = [];
-
-    const agentSubscription = agentUpdatesObservable.subscribe(update => {
-      if (update) {
-        agentUpdates.push(update);
-      }
+    const updates: AgentConversationUpdate[] = [];
+    const subscription = agentInstanceService.subscribeToConversationUpdates(testAgentInstance.id).subscribe(update => {
+      updates.push(update);
     });
-
     try {
-      // Send message to agent using the same variable
-      const sendMessagePromise = agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
-        text: expectedUserMessage,
-      });
-
-      // Wait for sendMsgToAgent to complete - this indicates all streaming is done
-      await sendMessagePromise;
-
-      // Verify that agent updates were triggered - expecting exactly 5 updates (with enhanced plugin system)
-      expect(agentUpdates.length).toBe(5);
-
-      // Check that the agent received the user message
-      const latestUpdate = agentUpdates[agentUpdates.length - 1];
-      expect(latestUpdate).toBeDefined();
-      expect(latestUpdate!.messages.length).toBe(3); // User + AI messages (improved plugin handling)
-
-      // Check that user message was added using the same variable
-      const userMessage = latestUpdate!.messages.find(msg => msg.role === 'user');
-      expect(userMessage).toBeDefined();
-      expect(userMessage!.content).toBe(expectedUserMessage);
-
-      // Check that AI response was added with exact expected content using the same variable
-      const aiMessage = latestUpdate!.messages.find(msg => msg.role === 'assistant');
-      expect(aiMessage).toBeDefined();
-      expect(aiMessage!.content).toBe(expectedAIResponseFinal);
+      await executeMessage(expectedUserMessage);
     } finally {
-      agentSubscription.unsubscribe();
+      subscription.unsubscribe();
     }
+
+    const streamingContents = updates
+      .filter((update): update is Extract<AgentConversationUpdate, { kind: 'projection' }> => update.kind === 'projection' && update.streaming)
+      .map(update => update.message.content);
+    expect(streamingContents).toContain(expectedAIResponsePart1);
+    expect(streamingContents).toContain(expectedAIResponsePart2);
+
+    const messages = await getPersistedMessages();
+    expect(messages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'user', content: expectedUserMessage }),
+      expect.objectContaining({ role: 'assistant', content: expectedAIResponseFinal }),
+    ]));
+    expect(messages).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'assistant', content: expectedAIResponsePart1 }),
+    ]));
   });
 
-  it('should provide streaming updates for individual messages', async () => {
-    // Define expected content as variables
-    const expectedUserMessage = '测试消息级别流式更新';
-    const expectedStreamingPart1 = '流式回答第一部分';
-    const expectedStreamingPart2 = '流式回答第一部分...第二部分';
+  it('publishes reasoning and answer deltas as independent bounded projections', async () => {
+    const mockAIResponseGenerator = async function*() {
+      yield { type: 'reasoning-delta' as const, id: 'reasoning-stream', text: '先分析问题。' };
+      await new Promise(resolve => setTimeout(resolve, 60));
+      yield { type: 'reasoning-delta' as const, id: 'reasoning-stream', text: '再核对答案。' };
+      await new Promise(resolve => setTimeout(resolve, 60));
+      yield { type: 'text-delta' as const, id: 'reasoning-stream', text: '最终' };
+      await new Promise(resolve => setTimeout(resolve, 60));
+      yield { type: 'text-delta' as const, id: 'reasoning-stream', text: '答案' };
+      yield { type: 'finish' as const, finishReason: 'stop' };
+    };
+    mockExternalAPIService.generatePortableLlm = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    const projections: Extract<AgentConversationUpdate, { kind: 'projection' }>[] = [];
+    const subscription = agentInstanceService.subscribeToConversationUpdates(testAgentInstance.id).subscribe(update => {
+      if (update.kind === 'projection' && update.streaming) projections.push(update);
+    });
+    try {
+      await executeMessage('请推理后回答');
+    } finally {
+      subscription.unsubscribe();
+    }
+
+    expect(projections.some(update => update.message.reasoning?.text === '先分析问题。' && update.message.content === '')).toBe(true);
+    expect(projections.some(update => update.message.reasoning?.text === '先分析问题。再核对答案。' && update.message.content === '最终')).toBe(true);
+    const durablePage = await agentInstanceService.getAgentMessagePage(testAgentInstance.id, {
+      limit: 80,
+      maxBytes: 256 * 1024,
+      direction: 'forward',
+    });
+    if (durablePage.reset) throw new Error('unexpected conversation page reset');
+    const assistant = durablePage.items.find(message => message.role === 'assistant');
+    expect(assistant).toMatchObject({
+      content: '最终答案',
+      reasoning: { text: '', hasMore: true },
+    });
+    expect(assistant?.metadata?.displayTruncation).toBeUndefined();
+  });
+
+  it('keeps message-specific status subscriptions compatible with a durably paged message', async () => {
     const expectedStreamingFinal = '流式回答第一部分...第二部分...完成！';
-
-    // Setup mock for AI streaming response with progressive content using the variables
-    const mockAIResponseGenerator = function*() {
-      yield {
-        status: 'update' as const,
-        content: expectedStreamingPart1,
-        requestId: 'test-request-2',
-      };
-
-      yield {
-        status: 'update' as const,
-        content: expectedStreamingPart2,
-        requestId: 'test-request-2',
-      };
-
-      yield {
-        status: 'done' as const,
-        content: expectedStreamingFinal,
-        requestId: 'test-request-2',
-      };
+    const mockAIResponseGenerator = async function*() {
+      yield { type: 'text-delta' as const, id: 'test-request-2', text: '流式回答第一部分' };
+      yield { type: 'text-delta' as const, id: 'test-request-2', text: '...第二部分' };
+      yield { type: 'text-delta' as const, id: 'test-request-2', text: '...完成！' };
+      yield { type: 'finish' as const, finishReason: 'stop' };
     };
+    mockExternalAPIService.generatePortableLlm = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
+    await executeMessage('测试消息级别流式更新');
+    const assistant = (await getPersistedMessages()).find(message => message.role === 'assistant');
+    expect(assistant?.messageId).toBeDefined();
 
-    // Track agent updates to capture the AI message ID
-    let aiMessageId: string | undefined;
-    const messageUpdates: (AgentInstanceLatestStatus | undefined)[] = [];
-    let messageSubscription: import('rxjs').Subscription | undefined;
-
-    const agentSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id).subscribe(update => {
-      if (update) {
-        const aiMessage = update.messages.find(msg => msg.role === 'assistant' || msg.role === 'agent');
-        if (aiMessage && !aiMessageId) {
-          aiMessageId = aiMessage.id;
-
-          // Subscribe to message-level updates as soon as we get the AI message ID
-          messageSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id, aiMessageId).subscribe({
-            next: (status) => {
-              if (status?.message) {
-                messageUpdates.push(status);
-                // Verify message ID consistency
-                expect(status.message.id).toBe(aiMessageId);
-                // Each update should contain progressive content
-                expect(status.message.content).toContain(expectedStreamingPart1);
-              }
-            },
-          });
-        }
-      }
+    const statuses: AgentInstanceLatestStatus[] = [];
+    const subscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id, assistant!.messageId).subscribe(status => {
+      if (status) statuses.push(status);
     });
-
     try {
-      // Start sending message using the same variable
-      const sendMessagePromise = agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
-        text: expectedUserMessage,
+      await vi.waitFor(() => {
+        expect(statuses.at(-1)?.message?.content).toBe(expectedStreamingFinal);
       });
-
-      // Wait for completion to ensure all streaming is done
-      await sendMessagePromise;
-
-      expect(aiMessageId).toBeDefined();
-
-      if (messageSubscription) {
-        messageSubscription.unsubscribe();
-      }
-
-      // Now we should have received streaming updates during the process
-      expect(messageUpdates.length).toBe(2); // Received 2 updates (likely the last 2 since we subscribe mid-stream)
-
-      // Verify the final update contains the expected final content
-      const finalUpdate = messageUpdates[messageUpdates.length - 1];
-      expect(finalUpdate?.message?.content).toBe(expectedStreamingFinal);
-
-      // Verify external API was called
-      expect(mockExternalAPIService.generateFromAI).toHaveBeenCalled();
     } finally {
-      agentSubscription.unsubscribe();
-      if (messageSubscription) {
-        messageSubscription.unsubscribe();
-      }
+      subscription.unsubscribe();
     }
   });
 
-  it('should complete message-level observable when streaming is done', async () => {
-    // Define expected content as variables
-    const expectedUserMessage = '测试 Observable 完成时机';
-    const expectedStreamingUpdate = '流式回答开始...';
-    const expectedStreamingFinal = '流式回答开始...已完成！';
-
-    // Setup mock for AI streaming response using the variables
-    const mockAIResponseGenerator = function*() {
-      yield {
-        status: 'update' as const,
-        content: expectedStreamingUpdate,
-        requestId: 'test-request-complete',
-      };
-
-      yield {
-        status: 'done' as const,
-        content: expectedStreamingFinal,
-        requestId: 'test-request-complete',
-      };
+  it('metadata subscriptions remain transcript-free after a completed stream', async () => {
+    const mockAIResponseGenerator = async function*() {
+      yield { type: 'text-delta' as const, id: 'test-request-complete', text: '流式回答开始...' };
+      yield { type: 'text-delta' as const, id: 'test-request-complete', text: '已完成！' };
+      yield { type: 'finish' as const, finishReason: 'stop' };
     };
+    mockExternalAPIService.generatePortableLlm = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
-
-    // This test demonstrates message-level Observable behavior
-    // Since we can't easily test completion timing in our current setup,
-    // we focus on verifying that message-level subscriptions work correctly
-
-    let aiMessageId: string | undefined;
-    const agentSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id).subscribe(update => {
-      if (update) {
-        const aiMessage = update.messages.find(msg => msg.role === 'assistant' || msg.role === 'agent');
-        if (aiMessage && !aiMessageId) {
-          aiMessageId = aiMessage.id;
-        }
-      }
+    const metadataUpdates: AgentRuntimeView[] = [];
+    const subscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id).subscribe(update => {
+      if (update) metadataUpdates.push(update);
     });
-
     try {
-      // Send message using the same variable
-      await agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
-        text: expectedUserMessage,
+      await executeMessage('测试 Observable 完成时机');
+      await vi.waitFor(() => {
+        expect(metadataUpdates.length).toBeGreaterThan(0);
       });
-
-      expect(aiMessageId).toBeDefined();
-
-      if (aiMessageId) {
-        // Test that we can create message-level subscriptions
-        let subscriptionWorked = false;
-        const messageSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id, aiMessageId).subscribe({
-          next: () => {
-            subscriptionWorked = true;
-          },
-          complete: () => {
-            // This would be called if observable completes
-          },
-        });
-
-        // Give minimal time for any immediate data
-        await new Promise(resolve => setTimeout(resolve, 5));
-        messageSubscription.unsubscribe();
-
-        // Verify subscription mechanism works (even if no data flows)
-        expect(subscriptionWorked).toBeTruthy();
-      }
-
-      expect(mockExternalAPIService.generateFromAI).toHaveBeenCalled();
+      expect(metadataUpdates.every(update => !Object.prototype.hasOwnProperty.call(update, 'messages'))).toBe(true);
+      expect((await getPersistedMessages()).some(message => message.content === '流式回答开始...已完成！')).toBe(true);
     } finally {
-      agentSubscription.unsubscribe();
+      subscription.unsubscribe();
     }
   });
 
-  it('should handle AI response streaming errors gracefully', async () => {
-    // Define expected content as variables
-    const expectedUserMessage = '这会触发一个错误';
-    const expectedErrorMessage = 'Error: Test AI error';
-    const expectedErrorDetail = {
-      message: 'Test AI error',
-      code: 'TEST_ERROR',
-      name: 'TestError',
-      provider: 'test-provider',
+  it('cancels the exact durable run through the command signal without marking the agent failed', async () => {
+    mockExternalAPIService.generatePortableLlm = vi.fn().mockImplementation((request: Parameters<IExternalAPIService['generatePortableLlm']>[0]) =>
+      (async function*() {
+        yield { type: 'text-delta' as const, id: 'test-request-cancel', text: '已开始回答' };
+        const signal = request.signal;
+        if (!signal) throw new Error('durable request did not receive its cancellation signal');
+        await new Promise<never>((_resolve, reject) => {
+          const abortError = () => signal.reason instanceof Error ? signal.reason : new DOMException('Aborted', 'AbortError');
+          if (signal.aborted) {
+            reject(abortError());
+            return;
+          }
+          signal.addEventListener('abort', () => {
+            reject(abortError());
+          }, { once: true });
+        });
+      })()
+    );
+
+    const projections: Extract<AgentConversationUpdate, { kind: 'projection' }>[] = [];
+    const subscription = agentInstanceService.subscribeToConversationUpdates(testAgentInstance.id).subscribe(update => {
+      if (update.kind === 'projection' && update.streaming) projections.push(update);
+    });
+    const abortController = new AbortController();
+    const execution = executeMessage('取消这次回答', abortController.signal);
+    const settledError = execution.then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    try {
+      await vi.waitFor(() => {
+        expect(projections.some(update => update.message.content === '已开始回答')).toBe(true);
+      });
+      abortController.abort();
+      await expect(settledError).resolves.toMatchObject({ name: 'AbortError' });
+      await vi.waitFor(async () => {
+        expect((await agentInstanceService.getAgentMetadata(testAgentInstance.id))?.status?.state).toBe('canceled');
+      });
+    } finally {
+      subscription.unsubscribe();
+    }
+  });
+
+  it('persists a localized typed AI stream error and rejects the durable run with the same typed failure', async () => {
+    const mockAIResponseGenerator = async function*() {
+      yield { type: 'finish' as const, finishReason: 'stop' };
+      throw new Error('Test AI error');
     };
+    mockExternalAPIService.generatePortableLlm = vi.fn().mockReturnValue(mockAIResponseGenerator());
 
-    // Setup mock for AI error response using the variables
-    const mockAIResponseGenerator = function*() {
-      yield {
-        status: 'error' as const,
-        errorDetail: expectedErrorDetail,
-        requestId: 'test-request-3',
-      };
-    };
-
-    mockExternalAPIService.generateFromAI = vi.fn().mockReturnValue(mockAIResponseGenerator());
-
-    // Track AI message creation
-    let aiMessageId: string | undefined;
-    const agentSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id).subscribe(update => {
-      if (update) {
-        const aiMessage = update.messages.find(msg => msg.role === 'assistant' || msg.role === 'agent');
-        if (aiMessage && !aiMessageId) {
-          aiMessageId = aiMessage.id;
-        }
-      }
+    await expect(executeMessage('这会触发一个错误')).rejects.toMatchObject({
+      message: 'PROVIDER_UNAVAILABLE',
+      agentRunError: expect.objectContaining({ code: 'PROVIDER_UNAVAILABLE' }),
     });
 
-    try {
-      // Send message that will trigger an error using the same variable
-      await agentInstanceService.sendMsgToAgent(testAgentInstance.id, {
-        text: expectedUserMessage,
-      });
-
-      // Test that we can subscribe to the AI message (even if it has an error)
-      if (aiMessageId) {
-        let statusUpdateReceived = false;
-        const messageSubscription = agentInstanceService.subscribeToAgentUpdates(testAgentInstance.id, aiMessageId).subscribe({
-          next: (status) => {
-            if (status?.message) {
-              statusUpdateReceived = true;
-              // Verify the error message structure with exact content using the same variables
-              expect(status.message.content).toBe(expectedErrorMessage);
-              expect(status.message.metadata?.errorDetail).toEqual(expectedErrorDetail);
-            }
-          },
-        });
-
-        // Give a moment for any status updates
-        await new Promise(resolve => setTimeout(resolve, 10));
-        messageSubscription.unsubscribe();
-
-        // Verify error was handled through message-level updates
-        expect(statusUpdateReceived).toBeTruthy();
-      }
-
-      // Verify external API was called and error was handled gracefully
-      expect(mockExternalAPIService.generateFromAI).toHaveBeenCalled();
-    } finally {
-      agentSubscription.unsubscribe();
-    }
+    expect(mockExternalAPIService.generatePortableLlm).toHaveBeenCalled();
+    expect(await getPersistedMessages()).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        role: 'error',
+        content: 'agent.run.error.providerUnavailable',
+        metadata: expect.objectContaining({
+          agentRunError: expect.objectContaining({ code: 'PROVIDER_UNAVAILABLE' }),
+        }),
+      }),
+    ]));
   });
 });

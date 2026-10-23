@@ -11,7 +11,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { type INewWikiWorkspaceConfig, isWikiWorkspace, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { type INewWikiWorkspaceConfig, isWikiWorkspace, IWorkspace, IWorkspaceService, WorkspaceType } from '@services/workspaces/interface';
 import { getWorkspaceGitScope, isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
@@ -174,13 +174,13 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       wikiFolderLocation: DEFAULT_FIRST_WIKI_PATH,
       storageService: SupportedStorageServices.local,
       name: 'wiki',
+      workspaceType: WorkspaceType.folder,
       port: 5212,
       isSubWiki: false,
       backupOnInterval: true,
       readOnlyMode: false,
       tokenAuth: false,
       tagNames: [],
-      mainWikiToLink: null,
       mainWikiID: null,
       excludedPlugins: [],
       enableHTTPAPI: false,

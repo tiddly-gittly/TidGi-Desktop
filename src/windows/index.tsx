@@ -11,6 +11,7 @@ const LogViewer = lazy(() => import('./LogViewer'));
 const Main = lazy(() => import('../pages/Main'));
 const DialogNotifications = lazy(() => import('./Notifications'));
 const DialogPreferences = lazy(() => import('./Preferences'));
+const PromptPreview = lazy(() => import('./PromptPreview'));
 const SpellcheckLanguages = lazy(() => import('./SpellcheckLanguages'));
 
 export function Pages(): React.JSX.Element {
@@ -34,6 +35,7 @@ export function Pages(): React.JSX.Element {
         <Route path={`/${WindowNames.logViewer}`} component={LogViewer} />
         <Route path={`/${WindowNames.notifications}`} component={DialogNotifications} />
         <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
+        <Route path={`/${WindowNames.promptPreview}`} component={PromptPreview} />
         <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />
         <Route path={`/${WindowNames.main}`} component={Main} nest />
         <Route path='/' component={Main} nest />

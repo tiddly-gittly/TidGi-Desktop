@@ -1,12 +1,12 @@
-import { isProviderConfigError } from './errors';
+import { isProviderConfigError, parseProviderError } from './errors';
 
 /**
  * Extract structured error details from various error types
  */
-export function extractErrorDetails(error: unknown, provider: string): {
+export function extractErrorDetails(error: unknown, providerId: string): {
   name: string;
   code: string;
-  provider: string;
+  providerId: string;
   message?: string;
 } {
   // Check if it's already a known provider error type
@@ -14,57 +14,27 @@ export function extractErrorDetails(error: unknown, provider: string): {
     return {
       name: error.name,
       code: error.code,
-      provider: error.provider,
+      providerId: error.providerId,
       message: error.message,
     };
   }
 
-  // Convert error to string for analysis
-  const errorMessage = error instanceof Error ? error.message : String(error);
-
-  // Check common error patterns
-  if (errorMessage.includes('API key') && errorMessage.includes('not found')) {
+  const normalized = parseProviderError(error, providerId);
+  if (isProviderConfigError(normalized)) {
     return {
-      name: 'MissingAPIKeyError',
-      code: 'MISSING_API_KEY',
-      provider,
-      message: `API key for ${provider} not found`,
-    };
-  } else if (errorMessage.includes('requires baseURL')) {
-    return {
-      name: 'MissingBaseURLError',
-      code: 'MISSING_BASE_URL',
-      provider,
-      message: `${provider} provider requires baseURL`,
-    };
-  } else if (errorMessage.includes('authentication failed') || errorMessage.includes('401')) {
-    return {
-      name: 'AuthenticationError',
-      code: 'AUTHENTICATION_FAILED',
-      provider,
-      message: `${provider} authentication failed: Invalid API key`,
-    };
-  } else if (errorMessage.includes('404')) {
-    return {
-      name: 'ModelNotFoundError',
-      code: 'MODEL_NOT_FOUND',
-      provider,
-      message: `Model not found for ${provider}`,
-    };
-  } else if (errorMessage.includes('429')) {
-    return {
-      name: 'RateLimitError',
-      code: 'RATE_LIMIT_EXCEEDED',
-      provider,
-      message: `${provider} rate limit exceeded. Reduce request frequency or check API limits.`,
+      name: normalized.name,
+      code: normalized.code,
+      providerId: normalized.providerId,
+      message: normalized.message,
     };
   }
 
-  // Generic error
+  // Never relay an arbitrary SDK/upstream body to renderers. Agent runs turn
+  // this stable code into Core's localized error + diagnosticId contract.
   return {
     name: 'AIProviderError',
     code: 'UNKNOWN_ERROR',
-    provider,
-    message: errorMessage,
+    providerId,
+    message: 'Chat.ConfigError.ProviderUnavailable',
   };
 }
