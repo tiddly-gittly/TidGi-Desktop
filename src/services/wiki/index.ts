@@ -34,7 +34,7 @@ import type { IWikiService, IWorkerInfo } from './interface';
 import { WikiControlActions } from './interface';
 import type { ITiddlerRoutingInfo } from './plugin/watchFileSystemAdaptor/tiddlerRoutingInfo';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
-import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers } from './wikiWorker/ipcServerRoutes';
+import type { IpcServerRouteMethods, IpcServerRouteNames, ITidGiChangedTiddlers, IWikiServerRouteResponse } from './wikiWorker/ipcServerRoutes';
 import { createWikiWorkerLifecycleMessage, releaseWorkerServicesAfterSubscriberReady, WikiWorkerLifecycleTracker } from './workerLifecycle';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
@@ -48,7 +48,8 @@ import { applyNetworkProxyToSession } from '@services/preferences/networkProxyEl
 import type { ISyncService } from '@services/sync/interface';
 import type { IThemeService } from '@services/theme/interface';
 import { serializeError } from 'serialize-error';
-import { wikiWorkerStartedEventName } from './constants';
+import { WIKI_SAVE_TIMEOUT_MS, wikiWorkerStartedEventName } from './constants';
+import { withWikiDeadline } from './requestDeadline';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
@@ -713,14 +714,55 @@ export class Wiki implements IWikiService {
       };
       signal.addEventListener('abort', cancel, { once: true });
     });
+    const deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(new Error(`Wiki ${route} request timed out; changes have not been confirmed saved`));
+      }, WIKI_SAVE_TIMEOUT_MS);
+    });
     try {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
-      const response = await Promise.race([worker[route](...arguments_), cancelled]);
+      let request: Promise<IWikiServerRouteResponse>;
+      if (route === 'putTiddler') {
+        const [title, fields, rendererDeadline] = arguments_ as Parameters<WikiWorker['putTiddler']>;
+        request = worker.putTiddler(title, fields, Math.min(deadline, rendererDeadline ?? deadline));
+      } else if (route === 'deleteTiddler') {
+        const [title, rendererDeadline] = arguments_ as Parameters<WikiWorker['deleteTiddler']>;
+        request = worker.deleteTiddler(title, Math.min(deadline, rendererDeadline ?? deadline));
+      } else {
+        // @ts-expect-error The route and argument tuple are correlated by the method's generic signature.
+        request = worker[route](...arguments_);
+      }
+      const response = await Promise.race([request, cancelled, timedOut]);
       logger.debug(`callWikiIpcServerRoute returning response`, { route, code: response.statusCode });
       return response;
     } finally {
+      clearTimeout(timeoutHandle);
       signal.removeEventListener('abort', cancel);
+    }
+  }
+
+  public async waitForPendingSaves(workspaceID: string): Promise<void> {
+    const deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS;
+    for (;;) {
+      const checks: Array<Promise<boolean>> = [];
+      container.get<IViewService>(serviceIdentifier.View).forEachView((view, id) => {
+        if (id !== workspaceID || view.webContents.isDestroyed()) return;
+        // Check every live renderer, including mini/secondary windows. Missing
+        // or unresponsive syncers are not evidence that edits reached disk.
+        checks.push(view.webContents.executeJavaScript(
+          'Boolean(window.$tw?.syncer && !$tw.syncer.isDirty() && $tw.syncer.numTasksInProgress === 0)',
+        ) as Promise<boolean>);
+      });
+      // Startup sync can run before a worker or any renderer exists. There is
+      // no in-memory state to lose then. A live renderer with a missing worker
+      // must still fail closed, so this is not a general missing-worker bypass.
+      if (checks.length === 0 && !this.getWorker(workspaceID)) return;
+      checks.push(this.callWikiIpcServerRoute(workspaceID, 'getSaveStatus').then(response => response.data === 'saved'));
+      const states = await withWikiDeadline(Promise.all(checks), deadline);
+      if (states.every(Boolean)) return;
+      if (Date.now() >= deadline) throw new Error('Wiki has unsaved changes; sync or restart was cancelled');
+      await new Promise<void>(resolve => setTimeout(resolve, Math.min(100, deadline - Date.now())));
     }
   }
 

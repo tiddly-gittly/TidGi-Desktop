@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   terminateWorker: vi.fn().mockResolvedValue(undefined),
   workerKill: vi.fn(),
   ensureWikiFolderAccess: vi.fn().mockResolvedValue(undefined),
+  forEachView: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
@@ -46,6 +47,9 @@ vi.mock('@services/container', async () => {
         }
         if (description.includes('Symbol(Sync)')) {
           return { stopIntervalSync: mocks.stopIntervalSync };
+        }
+        if (description.includes('Symbol(View)')) {
+          return { forEachView: mocks.forEachView };
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return actual.container.get(identifier);
@@ -192,5 +196,66 @@ describe('Wiki shutdown lifecycle', () => {
       proxy: { getIndex: vi.fn(async () => response) },
     };
     await expect(wiki.callWikiIpcServerRoute('pending', 'getIndex', '')).resolves.toEqual(response);
+  });
+
+  it('bounds a live worker that never answers and discards a late answer', async () => {
+    vi.useFakeTimers();
+    const wiki = createWikiService();
+    const delayed = Promise.withResolvers<{ statusCode: number }>();
+    vi.spyOn(wiki, 'getWorker').mockReturnValue({ getIndex: () => delayed.promise } as unknown as WikiWorker);
+    const request = wiki.callWikiIpcServerRoute('pending', 'getIndex', '');
+    const failure = expect(request).rejects.toThrow('timed out');
+    await vi.advanceTimersByTimeAsync(30_000);
+    await failure;
+    delayed.resolve({ statusCode: 200 });
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(request).rejects.toThrow('timed out');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(['main', 'secondary', 'server', 'unavailable'] as const)('refuses sync/restart while %s has unconfirmed saves', async dirtyLocation => {
+    vi.useFakeTimers();
+    const wiki = createWikiService();
+    const main = vi.fn().mockResolvedValue(dirtyLocation !== 'main');
+    const secondary = vi.fn().mockResolvedValue(dirtyLocation !== 'secondary');
+    mocks.forEachView.mockImplementation((visit: (view: unknown, id: string) => void) => {
+      for (const executeJavaScript of [main, secondary]) {
+        visit({ webContents: { isDestroyed: () => false, executeJavaScript } }, 'pending');
+      }
+    });
+    vi.spyOn(wiki, 'callWikiIpcServerRoute').mockImplementation(async () => {
+      if (dirtyLocation === 'unavailable') return await new Promise<never>(() => {});
+      return { data: dirtyLocation === 'server' ? 'pending' : 'saved' };
+    });
+    const failure = expect(wiki.waitForPendingSaves('pending')).rejects.toThrow(/unsaved|timed out/);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await failure;
+    expect(main).toHaveBeenCalled();
+    expect(secondary).toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('drains all live views and then verifies the filesystem syncer', async () => {
+    vi.useFakeTimers();
+    const wiki = createWikiService();
+    const probe = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+    mocks.forEachView.mockImplementation((visit: (view: unknown, id: string) => void) => {
+      visit({ webContents: { isDestroyed: () => false, executeJavaScript: probe } }, 'pending');
+    });
+    const server = vi.spyOn(wiki, 'callWikiIpcServerRoute').mockResolvedValue({ data: 'saved' });
+    const drain = wiki.waitForPendingSaves('pending');
+    await vi.advanceTimersByTimeAsync(100);
+    await drain;
+    expect(probe).toHaveBeenCalledTimes(2);
+    expect(server).toHaveBeenCalledWith('pending', 'getSaveStatus');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('allows startup sync only when neither worker nor live renderer exists', async () => {
+    const wiki = createWikiService();
+    mocks.forEachView.mockImplementation(() => {});
+    const probe = vi.spyOn(wiki, 'callWikiIpcServerRoute');
+    await expect(wiki.waitForPendingSaves('pending')).resolves.toBeUndefined();
+    expect(probe).not.toHaveBeenCalled();
   });
 });

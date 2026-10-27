@@ -22,6 +22,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceStrategy } from '@services/workspaces/strategies';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 
 import type { ISyncService } from '@services/sync/interface';
 import { workspaceSorter } from '@services/workspaces/utilities';
@@ -276,7 +277,9 @@ export class WorkspaceView implements IWorkspaceViewService {
 
           if (userInfo?.accessToken) {
             // sync in non-blocking way
-            void container.get<ISyncService>(serviceIdentifier.Sync).syncWikiIfNeeded(workspace);
+            void container.get<ISyncService>(serviceIdentifier.Sync).syncWikiIfNeeded(workspace).catch((error: unknown) => {
+              logger.error('Startup sync failed; keeping the wiki open for save retry', { workspaceId: workspace.id, error });
+            });
           } else {
             // user not login into Github or something else
             void dialog.showMessageBox(mainWindow, {
@@ -726,6 +729,12 @@ export class WorkspaceView implements IWorkspaceViewService {
       isRestarting: true,
     });
     try {
+      if (isWikiWorkspace(workspaceToRestart) && !isHtmlWikiWorkspace(workspaceToRestart)) {
+        // Recheck here: the user may have edited any window while git ran.
+        // Edits after this snapshot remain dirty until disk ACK; TiddlyWiki's
+        // existing beforeunload handler vetoes the later renderer reload.
+        await container.get<IWikiService>(serviceIdentifier.Wiki).waitForPendingSaves(workspaceToRestart.id);
+      }
       await getWorkspaceStrategy(workspaceToRestart).runtime.stopWorkspace(workspaceToRestart.id);
       await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
       if (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).workspaceDidFailLoad(workspaceToRestart.id)) {

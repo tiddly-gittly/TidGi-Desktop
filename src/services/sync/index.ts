@@ -12,6 +12,7 @@ import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { ISyncOptions, ISyncService } from './interface';
 
@@ -59,6 +60,8 @@ export class Sync implements ISyncService {
       return;
     }
     const idToUse = isSubWiki ? mainWorkspace!.id : id;
+    // Force bypasses draft policy, never outstanding disk writes.
+    if (!isHtmlWikiWorkspace(mainWorkspace ?? workspace)) await this.wikiService.waitForPendingSaves(idToUse);
     // we can only run filter on main wiki (tw don't know what is sub-wiki)
     // Skip draft check when user explicitly triggers sync (force=true), or when syncOnlyWhenNoDraft is disabled.
     if (!force && syncOnlyWhenNoDraft && !(await this.checkCanSyncDueToNoDraft(idToUse))) {
@@ -158,16 +161,15 @@ export class Sync implements ISyncService {
     } catch (error) {
       const error_ = error as Error;
       logger.error('Error when checking draft titles', { error: error_, function: 'checkCanSyncDueToNoDraft' });
-      // when app is on background, might have no draft, because user won't edit it. So just return true
-      return true;
+      return false;
     }
   }
 
   /**
-   * Record<workspaceID, returnValue<setInterval>>
    * Set this in wikiStartup, and clear it when wiki is down.
+   * Keep the pending registration too, so stopping during preference loading cancels startup.
    */
-  private wikiSyncIntervals: Record<string, ReturnType<typeof setInterval>> = {};
+  private wikiSyncIntervals: Record<string, { timer?: ReturnType<typeof setInterval> }> = {};
   /**
    * Trigger git sync interval if needed in config
    */
@@ -180,23 +182,29 @@ export class Sync implements ISyncService {
     this.stopIntervalSync(id);
 
     if (syncOnInterval || backupOnInterval) {
+      const registration: { timer?: ReturnType<typeof setInterval> } = {};
+      this.wikiSyncIntervals[id] = registration;
       const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
-      this.wikiSyncIntervals[id] = setInterval(async () => {
+      if (this.wikiSyncIntervals[id] !== registration) return;
+      registration.timer = setInterval(async () => {
         // Source will be tracked as 'sync' or 'backup' depending on settings
-        await this.syncWikiIfNeeded(workspace);
+        try {
+          await this.syncWikiIfNeeded(workspace);
+        } catch (error) {
+          logger.error('Interval sync failed; keeping the wiki open for save retry', { workspaceId: id, error });
+        }
       }, syncDebounceInterval);
     }
   }
 
   public stopIntervalSync(workspaceID: string): void {
-    if (typeof this.wikiSyncIntervals[workspaceID] === 'number') {
-      clearInterval(this.wikiSyncIntervals[workspaceID]);
-    }
+    clearInterval(this.wikiSyncIntervals[workspaceID]?.timer);
+    delete this.wikiSyncIntervals[workspaceID];
   }
 
   public clearAllSyncIntervals(): void {
-    Object.values(this.wikiSyncIntervals).forEach((interval) => {
-      clearInterval(interval);
+    Object.keys(this.wikiSyncIntervals).forEach(workspaceID => {
+      this.stopIntervalSync(workspaceID);
     });
   }
 }

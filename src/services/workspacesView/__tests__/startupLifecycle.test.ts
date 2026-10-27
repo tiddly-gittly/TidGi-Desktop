@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   addView: vi.fn().mockResolvedValue(undefined),
   showView: vi.fn().mockResolvedValue(undefined),
   buildMenu: vi.fn().mockResolvedValue(undefined),
+  waitForPendingSaves: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('electron', () => ({
@@ -49,6 +50,7 @@ vi.mock('@services/container', async () => {
           return {
             setAllWikiStartLockOff: mocks.setAllWikiStartLockOff,
             setWikiStartLockOn: mocks.setWikiStartLockOn,
+            waitForPendingSaves: mocks.waitForPendingSaves,
           };
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -302,5 +304,24 @@ describe('WorkspaceView startup lifecycle', () => {
     await expect(startup).rejects.toThrow('Workspace startup cancelled because the application is quitting');
     expect(mocks.updateMetaData).not.toHaveBeenCalled();
     expect(mocks.setAllWikiStartLockOff).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not stop or reload when an edit during git leaves pending saves at restart', async () => {
+    const workspace = createWorkspace('edited-during-git');
+    mocks.get.mockResolvedValue(workspace);
+    mocks.waitForPendingSaves.mockRejectedValueOnce(new Error('unsaved edit during git'));
+    const service = createService();
+    vi.spyOn(service, 'updateLastUrl').mockResolvedValue(undefined);
+    const initialize = vi.spyOn(service, 'initializeWorkspaceView').mockResolvedValue(undefined);
+    const stop = vi.spyOn(getWorkspaceStrategy(workspace).runtime, 'stopWorkspace').mockResolvedValue(undefined);
+    try {
+      await expect(service.restartWorkspaceViewService(workspace.id)).rejects.toThrow('unsaved edit during git');
+      expect(mocks.waitForPendingSaves).toHaveBeenCalledWith(workspace.id);
+      expect(stop).not.toHaveBeenCalled();
+      expect(initialize).not.toHaveBeenCalled();
+      expect(mocks.updateMetaData).toHaveBeenLastCalledWith(workspace.id, { isRestarting: false });
+    } finally {
+      stop.mockRestore();
+    }
   });
 });

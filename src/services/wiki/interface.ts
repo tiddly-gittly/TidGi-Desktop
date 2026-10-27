@@ -56,6 +56,8 @@ export interface IWikiService {
    * @param workspaceID You can get this from active workspace
    */
   getWorker(workspaceID: string): WikiWorker | undefined;
+  /** Wait for all live renderers and the filesystem syncer to finish saving. */
+  waitForPendingSaves(workspaceID: string): Promise<void>;
   /**
    * Get info about all wiki workers for the debug panel.
    */
