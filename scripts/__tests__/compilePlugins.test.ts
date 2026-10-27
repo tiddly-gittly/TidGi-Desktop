@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = process.cwd();
@@ -34,6 +35,19 @@ describe('compiled filesystem watcher native module loading', () => {
     expect(existsSync(path.join(reusablePluginRoot, 'tidgi-language-model'))).toBe(false);
     expect(existsSync(path.join(reusablePluginRoot, 'memeloop-agent-ui'))).toBe(false);
     expect(existsSync(path.join(reusablePluginRoot, 'tw-react'))).toBe(false);
+    // TiddlyWiki consumes module.exports, not the original exports alias.
+    // Mixing an ESM test export with exports.adaptorClass silently hides the
+    // renderer adaptor after esbuild replaces module.exports.
+    const ipcSource = readFileSync(path.join(reusablePluginRoot, 'tidgi-ipc-syncadaptor/ipc-syncadaptor.js'), 'utf8');
+    const pluginModule = { exports: {} as Record<string, unknown> };
+    runInNewContext(ipcSource, {
+      module: pluginModule,
+      exports: pluginModule.exports,
+      $tw: { browser: true },
+      window: { service: { wiki: {} }, meta: () => ({ workspace: { id: 'fixture' } }) },
+      document: { location: { protocol: 'tidgi:' } },
+    });
+    expect(typeof pluginModule.exports.adaptorClass).toBe('function');
   }, 30_000);
 
   it('keeps the compiled binary location aligned with afterPack output', () => {

@@ -501,11 +501,12 @@ export class TidGiIPCSyncAdaptor {
   }
 }
 
+export let adaptorClass: typeof TidGiIPCSyncAdaptor | undefined;
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
   const servicesExposed = Boolean(window.service?.wiki);
   const hasWorkspaceIDinMeta = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
-    exports.adaptorClass = TidGiIPCSyncAdaptor;
+    adaptorClass = TidGiIPCSyncAdaptor;
   }
 }

@@ -160,6 +160,30 @@ describe('wiki navigation lifecycle', () => {
     expect(contents.reload).not.toHaveBeenCalled();
   });
 
+  it('settles an unload veto even without loading events and never overrides it', async () => {
+    const { service, contents } = fixture();
+    const preventDefault = vi.fn();
+    contents.reload.mockImplementationOnce(() => {
+      contents.emit('will-prevent-unload', { preventDefault });
+    });
+    let failure: unknown;
+    const reload = service.reloadViewsWebContents('wiki').catch((error: unknown) => {
+      failure = error;
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(failure).toEqual(new Error('Wiki reload prevented by unsaved changes'));
+    await reload;
+    expect(preventDefault).not.toHaveBeenCalled();
+    for (const name of ['did-finish-load', 'did-stop-loading', 'destroyed', 'did-fail-load', 'will-prevent-unload']) {
+      expect(contents.listenerCount(name)).toBe(0);
+    }
+    // The rejected navigation must not block the next attempt after saving.
+    contents.reload.mockImplementationOnce(() => {
+      contents.emit('did-finish-load');
+    });
+    await expect(service.reloadViewsWebContents('wiki')).resolves.toBeUndefined();
+  });
+
   it.each(['navigation', 'completion', 'destruction'] as const)('cancels an old aborted-load retry after %s', async event => {
     const { view, contents } = fixture();
     const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
