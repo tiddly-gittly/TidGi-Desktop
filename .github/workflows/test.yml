@@ -152,6 +152,16 @@ jobs:
           CI: true
         timeout-minutes: 45
 
+      - name: Upload failed calibration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-artifacts-calibration-${{ matrix.os }}
+          path: test-artifacts
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+
       - uses: actions/upload-artifact@v7
         with:
           name: e2e-calibration-${{ matrix.os }}
