@@ -1158,7 +1158,7 @@ When('I create new wiki workspaces with names:', async function(this: Applicatio
 });
 
 /**
- * Restart a workspace wiki worker
+ * Restart through the same save-draining path used by the workspace menu.
  */
 When('I restart workspace {string}', async function(this: ApplicationWorld, workspaceName: string) {
   if (!this.app) throw new Error('Application is not available');
@@ -1184,9 +1184,7 @@ When('I restart workspace {string}', async function(this: ApplicationWorld, work
         }) || null;
         if (!workspace) return { success: false, error: 'Workspace not found' };
         try {
-          await window.service.wiki.restartWiki(workspace);
-          // Reload view to show fresh content from disk after wiki restart
-          await window.service.view.reloadViewsWebContents(workspace.id);
+          await window.service.workspaceView.restartWorkspaceViewService(workspace.id);
           return { success: true };
         } catch (error) {
           return { success: false, error: error.message };
