@@ -18,6 +18,10 @@ const mocks = vi.hoisted(() => ({
   showView: vi.fn().mockResolvedValue(undefined),
   buildMenu: vi.fn().mockResolvedValue(undefined),
   waitForPendingSaves: vi.fn().mockResolvedValue(undefined),
+  getWorker: vi.fn().mockReturnValue({}),
+  workspaceDidFailLoad: vi.fn().mockResolvedValue(false),
+  reloadViewsWebContents: vi.fn().mockResolvedValue(undefined),
+  wikiOperationInBrowser: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('electron', () => ({
@@ -42,15 +46,20 @@ vi.mock('@services/container', async () => {
             ensureWikiFolderAccess: mocks.ensureWikiFolderAccess,
             getActiveWorkspace: mocks.getActiveWorkspace,
             get: mocks.get,
+            workspaceDidFailLoad: mocks.workspaceDidFailLoad,
           };
         }
-        if (description === 'Symbol(View)') return { getView: mocks.getView, addView: mocks.addView, showView: mocks.showView };
+        if (description === 'Symbol(View)') {
+          return { getView: mocks.getView, addView: mocks.addView, showView: mocks.showView, reloadViewsWebContents: mocks.reloadViewsWebContents };
+        }
         if (description === 'Symbol(MenuService)') return { buildMenu: mocks.buildMenu };
         if (description.includes('Symbol(Wiki)')) {
           return {
             setAllWikiStartLockOff: mocks.setAllWikiStartLockOff,
             setWikiStartLockOn: mocks.setWikiStartLockOn,
             waitForPendingSaves: mocks.waitForPendingSaves,
+            getWorker: mocks.getWorker,
+            wikiOperationInBrowser: mocks.wikiOperationInBrowser,
           };
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -320,6 +329,54 @@ describe('WorkspaceView startup lifecycle', () => {
       expect(stop).not.toHaveBeenCalled();
       expect(initialize).not.toHaveBeenCalled();
       expect(mocks.updateMetaData).toHaveBeenLastCalledWith(workspace.id, { isRestarting: false });
+    } finally {
+      stop.mockRestore();
+    }
+  });
+
+  it('restores a stopped worker before draining retained renderer edits', async () => {
+    const workspace = createWorkspace('stopped-for-move');
+    mocks.get.mockResolvedValue(workspace);
+    mocks.getWorker.mockReturnValueOnce(undefined);
+    mocks.waitForPendingSaves.mockImplementationOnce(async () => {
+      expect(initialize).toHaveBeenCalledWith(workspace, { syncImmediately: false });
+      throw new Error('retained edit still pending');
+    });
+    const service = createService();
+    vi.spyOn(service, 'updateLastUrl').mockResolvedValue(undefined);
+    const initialize = vi.spyOn(service, 'initializeWorkspaceView').mockResolvedValue(undefined);
+    const stop = vi.spyOn(getWorkspaceStrategy(workspace).runtime, 'stopWorkspace').mockResolvedValue(undefined);
+    try {
+      await expect(service.restartWorkspaceViewService(workspace.id)).rejects.toThrow('retained edit still pending');
+      expect(initialize).toHaveBeenCalledTimes(1);
+      expect(stop).not.toHaveBeenCalled();
+    } finally {
+      stop.mockRestore();
+    }
+  });
+
+  it('reloads a recovered worker only after retained edits finish, without restarting it twice', async () => {
+    const workspace = createWorkspace('stopped-for-move');
+    mocks.get.mockResolvedValue(workspace);
+    mocks.getWorker.mockReturnValueOnce(undefined);
+    const saved = Promise.withResolvers<undefined>();
+    mocks.waitForPendingSaves.mockReturnValueOnce(saved.promise);
+    const service = createService();
+    vi.spyOn(service, 'updateLastUrl').mockResolvedValue(undefined);
+    const initialize = vi.spyOn(service, 'initializeWorkspaceView').mockResolvedValue(undefined);
+    const stop = vi.spyOn(getWorkspaceStrategy(workspace).runtime, 'stopWorkspace').mockResolvedValue(undefined);
+    try {
+      const restart = service.restartWorkspaceViewService(workspace.id);
+      await vi.waitFor(() => {
+        expect(mocks.waitForPendingSaves).toHaveBeenCalledWith(workspace.id);
+      });
+      expect(initialize).toHaveBeenCalledTimes(1);
+      expect(mocks.reloadViewsWebContents).not.toHaveBeenCalled();
+      saved.resolve(undefined);
+      await restart;
+      expect(stop).not.toHaveBeenCalled();
+      expect(initialize).toHaveBeenCalledTimes(1);
+      expect(mocks.reloadViewsWebContents).toHaveBeenCalledExactlyOnceWith(workspace.id);
     } finally {
       stop.mockRestore();
     }

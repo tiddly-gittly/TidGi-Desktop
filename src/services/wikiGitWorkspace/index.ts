@@ -324,10 +324,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       logger.info(`Moving workspace ${name} from ${wikiFolderLocation} to ${newWikiFolderLocation}`);
 
       const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-      await wikiService.stopWiki(workspaceID).catch((error_: unknown) => {
-        const error = error_ as Error;
-        logger.error(`Failed to stop wiki before move: ${error.message}`, { error });
-      });
+      await wikiService.waitForPendingSaves(workspaceID);
+      await wikiService.stopWiki(workspaceID);
 
       await copy(wikiFolderLocation, newWikiFolderLocation, {
         overwrite: false,

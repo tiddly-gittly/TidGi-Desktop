@@ -1,6 +1,8 @@
-import type { Tiddler, Wiki } from 'tiddlywiki';
+import { Subject } from 'rxjs';
+import type { Syncer, Tiddler, Wiki } from 'tiddlywiki';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WIKI_SAVE_TIMEOUT_MS } from '../../../constants';
+import type { ITidGiChangedTiddlers } from '../../../wikiWorker/ipcServerRoutes';
 import type { TidGiIPCSyncAdaptor } from '../ipc-syncadaptor';
 
 describe('renderer IPC save deadline', () => {
@@ -66,5 +68,39 @@ describe('renderer IPC save deadline', () => {
     const deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS;
     await adaptor.saveTiddler({ fields } as Tiddler, vi.fn());
     expect(request).toHaveBeenCalledWith('fixture', 'putTiddler', fields.title, fields, deadline);
+  });
+
+  it('retains incoming changes while another save occupies the core task slot', async () => {
+    const changes = new Subject<ITidGiChangedTiddlers>();
+    const syncer = {
+      tiddlerInfo: { Index: { changeCount: 1 } },
+      syncFromServer: vi.fn(),
+    } as unknown as Syncer;
+    vi.stubGlobal('$tw', { ...$tw, syncer });
+    adaptor.wiki = {
+      tiddlerExists: () => true,
+      getChangeCount: () => 1,
+    } as unknown as Wiki;
+    const originalObservables = window.observables;
+    Object.defineProperty(window, 'observables', {
+      value: { wiki: { getWikiChangeObserver$: () => changes } },
+    });
+    try {
+      adaptor.setupSSE();
+      changes.next({ Index: { modified: true, revision: 2 } });
+      await vi.advanceTimersByTimeAsync(500);
+      expect(syncer.syncFromServer).toHaveBeenCalledTimes(1);
+
+      // The real syncer cannot read this batch until the active save finishes.
+      const consume = vi.fn();
+      adaptor.getUpdatedTiddlers(syncer, consume);
+      expect(consume).toHaveBeenCalledExactlyOnceWith(null, { modifications: ['Index'], deletions: [] });
+      const nextRead = vi.fn();
+      adaptor.getUpdatedTiddlers(syncer, nextRead);
+      expect(nextRead).toHaveBeenCalledExactlyOnceWith(null, { modifications: [], deletions: [] });
+    } finally {
+      changes.complete();
+      Object.defineProperty(window, 'observables', { value: originalObservables });
+    }
   });
 });

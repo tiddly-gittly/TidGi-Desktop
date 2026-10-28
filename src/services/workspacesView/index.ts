@@ -729,14 +729,24 @@ export class WorkspaceView implements IWorkspaceViewService {
       isRestarting: true,
     });
     try {
+      let restoredWorker = false;
       if (isWikiWorkspace(workspaceToRestart) && !isHtmlWikiWorkspace(workspaceToRestart)) {
+        const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+        // A move stops the worker before updating its folder. Recover it at
+        // the new location so retained renderer edits can finish saving.
+        if (!wikiService.getWorker(workspaceToRestart.id)) {
+          await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
+          restoredWorker = true;
+        }
         // Recheck here: the user may have edited any window while git ran.
         // Edits after this snapshot remain dirty until disk ACK; TiddlyWiki's
         // existing beforeunload handler vetoes the later renderer reload.
-        await container.get<IWikiService>(serviceIdentifier.Wiki).waitForPendingSaves(workspaceToRestart.id);
+        await wikiService.waitForPendingSaves(workspaceToRestart.id);
       }
-      await getWorkspaceStrategy(workspaceToRestart).runtime.stopWorkspace(workspaceToRestart.id);
-      await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
+      if (!restoredWorker) {
+        await getWorkspaceStrategy(workspaceToRestart).runtime.stopWorkspace(workspaceToRestart.id);
+        await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
+      }
       if (await container.get<IWorkspaceService>(serviceIdentifier.Workspace).workspaceDidFailLoad(workspaceToRestart.id)) {
         logger.warn('skip because workspaceDidFailLoad', { function: 'restartWorkspaceViewService' });
         return;

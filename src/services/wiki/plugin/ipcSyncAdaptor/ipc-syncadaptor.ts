@@ -128,11 +128,9 @@ export class TidGiIPCSyncAdaptor {
         // Large batch (e.g. git checkout): defer to idle callback to avoid blocking UI
         requestIdleCallback(() => {
           syncer.syncFromServer();
-          this.clearUpdatedTiddlers();
         }, { timeout: 2000 });
       } else {
         syncer.syncFromServer();
-        this.clearUpdatedTiddlers();
       }
     }, 500);
     this.sseSubscribed = true;
@@ -247,7 +245,11 @@ export class TidGiIPCSyncAdaptor {
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
-    callback(null, this.updatedTiddlers);
+    // syncFromServer may only schedule a read while a save is in progress.
+    // Consume the batch when the core actually asks for it, not at scheduling.
+    const changes = this.updatedTiddlers;
+    this.clearUpdatedTiddlers();
+    callback(null, changes);
   }
 
   setLoggerSaveBuffer(loggerForSaving: Logger) {
