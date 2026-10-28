@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   workerKill: vi.fn(),
   ensureWikiFolderAccess: vi.fn().mockResolvedValue(undefined),
   forEachView: vi.fn(),
+  getWorkspace: vi.fn(),
+  getLoadedViewEnsure: vi.fn().mockResolvedValue(undefined),
+  generalNotification: vi.fn(),
 }));
 
 vi.mock('electron', () => ({
@@ -29,6 +32,10 @@ vi.mock('electron-ipc-cat/server', () => ({
 
 vi.mock('../wikiWorker/index?utilityProcess', () => ({ default: vi.fn() }));
 
+vi.mock('../wikiOperations/sender/sendWikiOperationsToBrowser', () => ({
+  getSendWikiOperationsToBrowser: () => ({ [WikiChannel.generalNotification]: mocks.generalNotification }),
+}));
+
 vi.mock('@services/container', async () => {
   const actual = await vi.importActual<typeof import('@services/container')>('@services/container');
   return Object.assign({}, actual, {
@@ -38,18 +45,14 @@ vi.mock('@services/container', async () => {
         if (description.includes('Symbol(Workspace)')) {
           return {
             ensureWikiFolderAccess: mocks.ensureWikiFolderAccess,
-            get: vi.fn().mockResolvedValue({
-              id: 'pending',
-              wikiFolderLocation: '/wikis/pending',
-              workspaceType: 'folder',
-            }),
+            get: mocks.getWorkspace,
           };
         }
         if (description.includes('Symbol(Sync)')) {
           return { stopIntervalSync: mocks.stopIntervalSync };
         }
         if (description.includes('Symbol(View)')) {
-          return { forEachView: mocks.forEachView };
+          return { forEachView: mocks.forEachView, getLoadedViewEnsure: mocks.getLoadedViewEnsure };
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return actual.container.get(identifier);
@@ -76,6 +79,45 @@ describe('Wiki shutdown lifecycle', () => {
     vi.clearAllMocks();
     mocks.terminateWorker.mockResolvedValue(undefined);
     mocks.ensureWikiFolderAccess.mockResolvedValue(undefined);
+    mocks.getWorkspace.mockResolvedValue({
+      id: 'pending',
+      wikiFolderLocation: '/wikis/pending',
+      workspaceType: 'folder',
+    });
+    mocks.getLoadedViewEnsure.mockResolvedValue(undefined);
+  });
+
+  it('sends HTML wiki browser operations without waiting for a nonexistent Node worker', async () => {
+    vi.useFakeTimers();
+    mocks.getWorkspace.mockResolvedValue({ id: 'html', wikiFolderLocation: '/wikis/wiki.html', workspaceType: 'html' });
+    const wiki = createWikiService();
+    const getWorker = vi.spyOn(wiki, 'getWorker');
+    const pending = wiki.wikiOperationInBrowser(WikiChannel.generalNotification, 'html', ['Restart complete']);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getWorker).not.toHaveBeenCalled();
+    expect(mocks.getLoadedViewEnsure).toHaveBeenCalledWith('html', 'main');
+    expect(mocks.generalNotification).toHaveBeenCalledWith('Restart complete');
+    await pending;
+  });
+
+  it('still waits for a folder worker and its loaded view before browser operations', async () => {
+    const wiki = createWikiService();
+    const getWorker = vi.spyOn(wiki, 'getWorker').mockReturnValue({} as WikiWorker);
+    let markLoaded!: () => void;
+    mocks.getLoadedViewEnsure.mockReturnValue(
+      new Promise<void>((resolve) => {
+        markLoaded = resolve;
+      }),
+    );
+    const pending = wiki.wikiOperationInBrowser(WikiChannel.generalNotification, 'pending', ['Restart complete']);
+    await vi.waitFor(() => {
+      expect(mocks.getLoadedViewEnsure).toHaveBeenCalledWith('pending', 'main');
+    });
+    expect(getWorker).toHaveBeenCalledWith('pending');
+    expect(mocks.generalNotification).not.toHaveBeenCalled();
+    markLoaded();
+    await pending;
+    expect(mocks.generalNotification).toHaveBeenCalledWith('Restart complete');
   });
 
   afterEach(() => {

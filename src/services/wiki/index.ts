@@ -1332,8 +1332,11 @@ export class Wiki implements IWikiService {
     workspaceID: string,
     arguments_: Parameters<ISendWikiOperationsToBrowser[OP]>,
   ): Promise<Awaited<ReturnType<ISendWikiOperationsToBrowser[OP]>>> {
-    // At least wait for wiki started. Otherwise some services like theme may try to call this method even on app start.
-    await this.getWorkerEnsure(workspaceID);
+    // Folder wikis need their backend ready; HTML wikis run only in the renderer.
+    const workspace = await container.get<IWorkspaceService>(serviceIdentifier.Workspace).get(workspaceID);
+    if (workspace === undefined || !isHtmlWikiWorkspace(workspace)) {
+      await this.getWorkerEnsure(workspaceID);
+    }
     const viewService = container.get<IViewService>(serviceIdentifier.View);
     await viewService.getLoadedViewEnsure(workspaceID, WindowNames.main);
     const sendWikiOperationsToBrowser = getSendWikiOperationsToBrowser(workspaceID);
