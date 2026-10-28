@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { ITiddlerFields, ITiddlyWiki, Syncer } from 'tiddlywiki';
+import type { IFileInfo, ITiddlerFields, ITiddlyWiki, Syncer, Tiddler } from 'tiddlywiki';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IpcServerRoutes } from '../ipcServerRoutes';
 
@@ -34,8 +34,12 @@ describe('real core syncer filesystem acknowledgement', () => {
     const fields: ITiddlerFields = { title: 'save-ack-fixture', type: 'text/vnd.tiddlywiki', text: 'Only synthetic fixture content.' };
     const originalSave = instance.syncadaptor.saveTiddler.bind(instance.syncadaptor);
     const diskWritten = Promise.withResolvers<() => void>();
-    vi.spyOn(instance.syncadaptor, 'saveTiddler').mockImplementation((tiddler, callback, options) => {
-      originalSave(tiddler, (error, adaptorInfo, revision) => {
+    vi.spyOn(instance.syncadaptor, 'saveTiddler').mockImplementation((
+      tiddler: Tiddler,
+      callback: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
+      options?: { tiddlerInfo?: Record<string, unknown> },
+    ) => {
+      originalSave(tiddler, (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => {
         if (tiddler.fields.title === fields.title) {
           diskWritten.resolve(() => {
             callback(error, adaptorInfo, revision);
