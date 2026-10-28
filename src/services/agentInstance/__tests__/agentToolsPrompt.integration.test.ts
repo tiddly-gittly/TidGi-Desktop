@@ -11,11 +11,17 @@ import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
+import { i18n } from '@services/libs/i18n';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { createInstance } from 'i18next';
 import type { AgentDefinition, PromptPreviewPreparedExecution } from 'memeloop';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import english from '../../../../localization/locales/en/agent.json';
+import chinese from '../../../../localization/locales/zh-Hans/agent.json';
+
+const translations = createInstance();
 
 function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[number]): AgentDefinition {
   return {
@@ -32,11 +38,18 @@ describe('default agent tools -> prompt integration', () => {
   let externalAPIService: Partial<IExternalAPIService>;
 
   beforeAll(async () => {
+    await translations.init({
+      lng: 'en',
+      defaultNS: 'agent',
+      resources: { en: { agent: english }, 'zh-Hans': { agent: chinese } },
+      interpolation: { escapeValue: false },
+    });
     await container.get<IDatabaseService>(serviceIdentifier.Database).initializeForApp();
   });
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.spyOn(i18n, 't').mockImplementation(translations.t.bind(translations));
     agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
     externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
@@ -136,6 +149,47 @@ describe('default agent tools -> prompt integration', () => {
     }
 
     expect(allContent).not.toContain('wiki-search');
+  }, 30_000);
+
+  it.each(['en', 'zh-Hans'])('prepares readable tool descriptions in both request messages and native tools (%s)', async language => {
+    await translations.changeLanguage(language);
+    const profile = getBuiltinLoopProfiles().find(agent => agent.id === 'memeloop:general-assistant');
+    if (!profile) throw new Error('Missing built-in general assistant profile');
+    const definition: AgentDefinition = {
+      ...toAgentDefinition(profile),
+      modelConfig: { providerId: 'mock', modelId: 'mock-model' },
+      agentTools: [],
+      agentFrameworkConfig: {
+        ...profile.agentFrameworkConfig,
+        prompts: [{ id: 'localized-tools', text: 'Available tools', enabled: true }],
+        plugins: [{
+          id: 'localized-wiki-search',
+          toolId: 'wikiSearch',
+          enabled: true,
+          wikiSearchParam: { sourceType: 'wiki', toolListPosition: { targetId: 'localized-tools', position: 'after' } },
+        }],
+      },
+    };
+    vi.spyOn(agentDefinitionService, 'getAgentDef').mockResolvedValue(definition);
+    const agent = await agentInstanceService.createAgent(definition.id, { id: nanoid() });
+    const execution = await agentInstanceService.preparePromptPreviewExecutionModelRequest({
+      requestId: `localized-tools:${nanoid()}`,
+      conversationId: agent.id,
+      inputText: 'Show the available wiki tools',
+    });
+    try {
+      const request = JSON.parse(await readRequest(agentInstanceService, execution)) as { messages: unknown; tools: unknown };
+      const description = translations.t('Schema.WikiSearch.Tool.Description');
+      const parameterDescription = translations.t('Schema.WikiSearch.Tool.Parameters.workspaceName.Description');
+      for (const value of [request.messages, request.tools]) {
+        const text = JSON.stringify(value);
+        expect(text).toContain(description);
+        expect(text).toContain(parameterDescription);
+        expect(text).not.toContain('Schema.WikiSearch.');
+      }
+    } finally {
+      await agentInstanceService.releasePromptPreviewAuditSession({ sessionId: execution.sessionId, expectedRevision: execution.revision });
+    }
   }, 30_000);
 });
 

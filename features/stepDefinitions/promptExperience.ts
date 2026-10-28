@@ -91,6 +91,7 @@ Then('the prompt tree and message list should show the same history tools and un
   assert(treeText.some(text => text.includes('PROMPT_HISTORY_USER')));
   assert(treeText.some(text => text.includes('PROMPT_HISTORY_ASSISTANT')));
   assert(treeText.some(text => text.includes('wiki-search')));
+  assert(!treeText.some(text => text.includes('Schema.WikiSearch.')), 'Tool descriptions must be localized before prompt compilation');
   assert(treeText.some(text => text.includes('UNSENT_PREVIEW_INPUT')));
   assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-tree.png')), 'Prompt screenshot capture failed');
   await tree.getByTestId('prompt-preview-entry').filter({ hasText: 'UNSENT_PREVIEW_INPUT' }).scrollIntoViewIfNeeded();
@@ -141,6 +142,7 @@ Then('the complete model request should include the unsent input and allow retur
   }
   JSON.parse(request);
   assert(request.includes('UNSENT_PREVIEW_INPUT'));
+  assert(!request.includes('Schema.WikiSearch.'), 'The actual prepared model request must not contain tool-description translation keys');
   assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-request.png')), 'Prompt screenshot capture failed');
   await page.getByTestId('prompt-preview-detail-back').click();
   await inspector.getByRole('tab').first().click();
