@@ -17,6 +17,7 @@ import type {
 } from 'memeloop';
 import type { DeviceCloudConnectionSnapshot } from 'memeloop/device-network';
 import type { BehaviorSubject } from 'rxjs';
+import type { DeviceNetworkListenPorts } from './listenPorts';
 
 /**
  * Non-secret Cloud display/configuration metadata. The token and device
@@ -32,6 +33,7 @@ export interface HostDeviceNetworkPersistedCloudConfiguration {
  * overwritten when DatabaseService flushes its in-memory settings object.
  */
 export interface DeviceNetworkPersistedSettings {
+  listenPortsV1?: DeviceNetworkListenPorts;
   /** Generation metadata for the durable, all-or-nothing Cloud trust snapshot. */
   cloudTrustSnapshotV1?: {
     epoch: string;

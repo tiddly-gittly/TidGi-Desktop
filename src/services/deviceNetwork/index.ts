@@ -57,6 +57,7 @@ import type {
   IDeviceNetworkService,
 } from './interface';
 import { createInitialDeviceCloudConnectionStatus } from './interface';
+import { boundListenPorts, listenAddresses, readListenPorts } from './listenPorts';
 import { TrustedRpcGate } from './trustedRpcGate';
 
 const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
@@ -151,6 +152,7 @@ function clonePersistedSettings(settings: DeviceNetworkPersistedSettings | undef
     // credential and identity records rather than carrying secrets
     // through a later unrelated settings write.
     cloudConfigurationV1: typeof cloudUrl === 'string' ? { cloudUrl } : undefined,
+    listenPortsV1: settings?.listenPortsV1 && { ...settings.listenPortsV1 },
     cloudTrustSnapshotV1: settings?.cloudTrustSnapshotV1 && { ...settings.cloudTrustSnapshotV1 },
     trustedDevicesV1: settings?.trustedDevicesV1?.map(record => ({ ...record })),
   };
@@ -339,16 +341,37 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     this.mutableAuthorizer = new MutableDeviceAuthorizer(this.createLocalPairingAuthorizer());
 
     const capabilities = await this.buildCapabilities();
+    const listenPorts = readListenPorts((await this.settingsStore.read()).listenPortsV1);
     this.core = new Libp2pDeviceNetworkService({
       identity: this.identity!,
       capabilities,
       trustStore: this.trustStore,
       authorizer: this.mutableAuthorizer,
       enableMdns: true,
+      listen: { addresses: listenAddresses(listenPorts) },
       syncStorage: this.runtimeOptions.syncStorage,
       rpcHandler: this.runtimeOptions.rpcHandler,
     });
-    await this.core.start();
+    try {
+      await this.core.start();
+      const ports = boundListenPorts(this.core.getMultiaddrs());
+      await this.settingsStore.update(settings => {
+        settings.listenPortsV1 = ports;
+      }, true);
+    } catch (error) {
+      await this.core.stop().catch(() => undefined);
+      this.core = undefined;
+      this.mutableAuthorizer = undefined;
+      if (listenPorts) {
+        throw new Error(
+          `Device network could not start on saved ports (TCP ${listenPorts.tcpPort}, WebSocket ${listenPorts.webSocketPort}): ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
     this.standardCloudAdapter = this.createStandardCloudAdapter();
 
     this.started = true;
