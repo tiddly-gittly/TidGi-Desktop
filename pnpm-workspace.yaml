@@ -54,6 +54,7 @@ allowBuilds:
 blockExoticSubdeps: false
 
 minimumReleaseAgeExclude:
+  - '@memeloop/react-ui@0.2.10'
   - '@memeloop/libp2p@0.3.5'
   - '@memeloop/react-ui@0.2.9'
   - '@memeloop/libp2p@0.3.4'
