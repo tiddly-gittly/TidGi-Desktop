@@ -32,7 +32,6 @@ export interface IWikiService {
    * create sub wiki in a parent folder, and link to a main wiki, and set tagName to filesystemPath.tid
    * @param parentFolderLocation
    * @param folderName
-   * @param mainWikiToLink
    * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
    */
   createSubWiki(parentFolderLocation: string, folderName: string, onlyLink?: boolean): Promise<void>;
@@ -57,6 +56,8 @@ export interface IWikiService {
    * @param workspaceID You can get this from active workspace
    */
   getWorker(workspaceID: string): WikiWorker | undefined;
+  /** Wait for all live renderers and the filesystem syncer to finish saving. */
+  waitForPendingSaves(workspaceID: string): Promise<void>;
   /**
    * Get info about all wiki workers for the debug panel.
    */

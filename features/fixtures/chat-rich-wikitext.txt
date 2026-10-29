@@ -1,0 +1,22 @@
+\define acceptanceGreeting(name)
+欢迎，$name$！
+\end
+
+<$let sampleName="变量已展开" sampleCount="2">
+
+! Wikitext 渲染验收
+
+|!语法|!渲染结果|h
+|变量|<<sampleName>>|
+|带参数的宏|<<acceptanceGreeting "宏已展开">>|
+|过滤器计算|<$text text={{{ [<sampleCount>add[3]] }}}/>|
+|核心条目字段转入|{{$:/core!!version}}|
+|格式|''加粗'' 与 //斜体//|
+
+!! 列表与局部变量
+
+<ul><$list filter="[enlist[Alpha Beta]]"><li><$text text=<<currentTiddler>>/></li></$list></ul>
+
+> 引用内同样支持 <<sampleName>>
+
+</$let>

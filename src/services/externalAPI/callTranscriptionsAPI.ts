@@ -1,8 +1,9 @@
 import { logger } from '@services/libs/log';
+import type { ModelAssignments, ProviderAccountConfig } from 'memeloop';
 
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { resolveProviderModelRoute } from './callProviderAPI';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
-import type { AIProviderConfig, AITranscriptionResponse } from './interface';
+import type { AITranscriptionResponse } from './interface';
 
 interface TranscriptionOptions {
   /** Language of the audio (ISO-639-1 format, e.g., 'en', 'zh') */
@@ -20,9 +21,10 @@ interface TranscriptionOptions {
  */
 export async function generateTranscriptionFromProvider(
   audioFile: File | Blob,
-  config: AiAPIConfig,
+  config: ModelAssignments,
   signal: AbortSignal,
-  providerConfig?: AIProviderConfig,
+  account: ProviderAccountConfig,
+  apiKey: string,
   options: TranscriptionOptions = {},
 ): Promise<AITranscriptionResponse> {
   // Extract provider and model from config
@@ -31,39 +33,38 @@ export async function generateTranscriptionFromProvider(
   if (!transcriptionsConfig) {
     throw new Error('No transcriptions model or default model configured');
   }
-  const provider = transcriptionsConfig.provider;
-  const model = transcriptionsConfig.model;
+  const providerId = transcriptionsConfig.providerId;
+  const logicalModelId = transcriptionsConfig.modelId;
+  const wireModelId = resolveProviderModelRoute(account, logicalModelId).wireModelId;
 
-  logger.info(`Using AI transcription provider: ${provider}, model: ${model}`);
+  logger.info(`Using AI transcription provider: ${providerId}, logical model: ${logicalModelId}`);
 
   try {
     // Check if API key is required
-    const isOllama = providerConfig?.providerClass === 'ollama';
-    const isLocalOpenAICompatible = providerConfig?.providerClass === 'openAICompatible' &&
-      providerConfig?.baseURL &&
-      (providerConfig.baseURL.includes('localhost') || providerConfig.baseURL.includes('127.0.0.1'));
+    const isOllama = account.providerType === 'ollama';
+    const isLocalOpenAICompatible = account.providerType === 'openai-compatible' &&
+      account.baseUrl !== undefined && new URL(account.baseUrl).protocol === 'http:';
 
-    if (!providerConfig?.apiKey && !isOllama && !isLocalOpenAICompatible) {
-      throw new MissingAPIKeyError(provider);
+    if (!apiKey && !isOllama && !isLocalOpenAICompatible) {
+      throw new MissingAPIKeyError(providerId);
     }
 
     // Get base URL and prepare headers
-    let baseURL = providerConfig?.baseURL || '';
+    let baseUrl = account.baseUrl || '';
     const headers: Record<string, string> = {};
 
     // Set up provider-specific configuration
-    switch (providerConfig?.providerClass || provider) {
+    switch (account.providerType) {
       case 'openai':
-        baseURL = 'https://api.openai.com/v1';
-        headers['Authorization'] = `Bearer ${providerConfig?.apiKey}`;
+        baseUrl ||= 'https://api.openai.com/v1';
+        headers['Authorization'] = `Bearer ${apiKey}`;
         break;
-      case 'openAICompatible':
-        if (!providerConfig?.baseURL) {
-          throw new MissingBaseURLError(provider);
+      case 'openai-compatible':
+        if (!account.baseUrl) {
+          throw new MissingBaseURLError(providerId);
         }
-        baseURL = providerConfig.baseURL;
-        if (providerConfig.apiKey) {
-          headers['Authorization'] = `Bearer ${providerConfig.apiKey}`;
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
         }
         break;
       case 'deepseek':
@@ -74,12 +75,11 @@ export async function generateTranscriptionFromProvider(
         throw new Error(`Ollama provider does not support transcriptions via this API`);
       default:
         // For silicon flow and other openai-compatible providers
-        if (!providerConfig?.baseURL) {
-          throw new MissingBaseURLError(provider);
+        if (!account.baseUrl) {
+          throw new MissingBaseURLError(providerId);
         }
-        baseURL = providerConfig.baseURL;
-        if (providerConfig.apiKey) {
-          headers['Authorization'] = `Bearer ${providerConfig.apiKey}`;
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
         }
         break;
     }
@@ -87,7 +87,7 @@ export async function generateTranscriptionFromProvider(
     // Prepare FormData for multipart/form-data request
     const formData = new FormData();
     formData.append('file', audioFile);
-    formData.append('model', model);
+    formData.append('model', wireModelId);
 
     // Add optional parameters
     if (options.language) {
@@ -104,7 +104,7 @@ export async function generateTranscriptionFromProvider(
     }
 
     // Make the API call
-    const response = await fetch(`${baseURL}/audio/transcriptions`, {
+    const response = await fetch(`${baseUrl}/audio/transcriptions`, {
       method: 'POST',
       headers,
       body: formData,
@@ -120,13 +120,13 @@ export async function generateTranscriptionFromProvider(
       });
 
       if (response.status === 401) {
-        throw new AuthenticationError(provider);
+        throw new AuthenticationError(providerId);
       } else if (response.status === 404) {
-        throw new Error(`${provider} error: Model "${model}" not found`);
+        throw new Error(`${providerId} error: Model "${wireModelId}" not found`);
       } else if (response.status === 429) {
-        throw new Error(`${provider} too many requests: Reduce request frequency or check API limits`);
+        throw new Error(`${providerId} too many requests: Reduce request frequency or check API limits`);
       } else {
-        throw new Error(`${provider} transcription error: ${errorText}`);
+        throw new Error(`${providerId} transcription error: ${errorText}`);
       }
     }
 
@@ -155,11 +155,12 @@ export async function generateTranscriptionFromProvider(
       text,
       language,
       duration,
-      model,
+      logicalModelId,
+      wireModelId,
       status: 'done' as const,
     };
   } catch (error) {
-    logger.error(`${provider} transcription error:`, error);
+    logger.error(`${providerId} transcription error:`, error);
 
     if (error instanceof Error && error.name === 'AbortError') {
       throw error;
@@ -169,12 +170,13 @@ export async function generateTranscriptionFromProvider(
     return {
       requestId: crypto.randomUUID(),
       text: '',
-      model,
+      logicalModelId,
+      wireModelId,
       status: 'error' as const,
       errorDetail: {
         name: error instanceof Error ? error.name : 'UnknownError',
         code: 'TRANSCRIPTION_FAILED',
-        provider,
+        providerId,
         message: error instanceof Error ? error.message : String(error),
       },
     };

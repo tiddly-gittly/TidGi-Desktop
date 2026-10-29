@@ -1,20 +1,10 @@
-import fs from 'fs-extra';
 import path from 'path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
 import { utilityProcessPlugin } from 'vite-plugin-electron-utility-process';
 
-// Dynamically read TypeORM's optional peer dependencies to avoid hardcoding
-const typeormPackageJson = fs.readJsonSync(path.resolve(__dirname, 'node_modules/typeorm/package.json')) as Record<string, unknown>;
-const typeormOptionalDepNames = Object.keys(typeormPackageJson.peerDependenciesMeta || {}).filter(
-  (dep) => dep !== 'better-sqlite3',
-);
-
-// Convert to RegExp to match both package name and sub-paths
-const typeormOptionalDepsRegex = typeormOptionalDepNames.map(
-  (dep) => new RegExp(`^${dep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/.*)?$`),
-);
+const typeormRuntimeExternals = ['typeorm', /^typeorm\/.*$/];
 
 export default defineConfig({
   define: {
@@ -45,6 +35,22 @@ export default defineConfig({
     commonjsOptions: {
       ignoreDynamicRequires: true,
     },
+    rolldownOptions: {
+      external: [
+        'sqlite-vec',
+        'registry-js',
+        'dugite',
+        'tiddlywiki',
+        'zx',
+        'esbuild',
+        '@modelcontextprotocol/sdk',
+        /^@modelcontextprotocol\/sdk\//,
+        'default-gateway',
+        'electron-unhandled',
+        'rotating-file-stream',
+        ...typeormRuntimeExternals,
+      ],
+    },
     rollupOptions: {
       external: [
         'sqlite-vec',
@@ -55,15 +61,10 @@ export default defineConfig({
         'esbuild',
         '@modelcontextprotocol/sdk',
         /^@modelcontextprotocol\/sdk\//,
-        // default-gateway v7 / electron-unhandled v5 are pure ESM, used via dynamic import().
-        // External so the dynamic import() runs at Node.js runtime.
         'default-gateway',
         'electron-unhandled',
-        // rotating-file-stream@3 is pure ESM ("type":"module") but has a CJS dist.
-        // External it so Node.js native require() uses its "exports.require" CJS entry.
         'rotating-file-stream',
-        ...typeormOptionalDepsRegex,
-        'expo-sqlite',
+        ...typeormRuntimeExternals,
       ],
     },
   },

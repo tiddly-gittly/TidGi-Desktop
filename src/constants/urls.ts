@@ -11,6 +11,19 @@ export const safeModeHash = '#:safe';
 export const getDefaultHTTPServerIP = (port: number) => `http://${defaultServerIP}:${port}`;
 export const getDefaultTidGiUrl = (workspaceID: string) => `tidgi://${workspaceID}`;
 export const getTiddlerTidGiUrl = (workspaceID: string, tiddlerTitle: string) => `${getDefaultTidGiUrl(workspaceID)}/${tiddlerTitle}`;
+
+/** Compare URL hosts using browser semantics without changing opaque workspace IDs. */
+export function isTidGiUrlForWorkspace(url: string | URL, workspaceID: string): boolean {
+  try {
+    const parsed = typeof url === 'string' ? new URL(url) : url;
+    return parsed.protocol === 'tidgi:' &&
+      parsed.host.toLowerCase() === workspaceID.toLowerCase() &&
+      parsed.username === '' && parsed.password === '';
+  } catch {
+    return false;
+  }
+}
+
 const tidGiUrlRegex = /^tidgi:\/\/([\da-f-]+)\/([\da-f-]+)$/i;
 export const getInfoFromTidGiUrl = (tidGiUrl: string) => {
   const match = tidGiUrl.match(tidGiUrlRegex);

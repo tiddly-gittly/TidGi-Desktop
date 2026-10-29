@@ -26,7 +26,7 @@ export async function registerMenu(): Promise<void> {
         role: 'zoom',
       }
       : {
-        label: 'Zoom',
+        label: i18n.t('Menu.ZoomIn'),
         click: async () => {
           await windowService.maximize();
         },
@@ -79,7 +79,7 @@ export async function registerMenu(): Promise<void> {
           const requireRestartText = i18n.t('Preference.RequireRestart');
           // Check if i18n is ready
           if (!alwaysOnTopText || !requireRestartText) {
-            return 'Always on Top (Require Restart)'; // Fallback
+            return `${alwaysOnTopText || i18n.t('Preference.AlwaysOnTop')} (${requireRestartText || i18n.t('Preference.RequireRestart')})`;
           }
           return `${alwaysOnTopText} (${requireRestartText})`;
         },

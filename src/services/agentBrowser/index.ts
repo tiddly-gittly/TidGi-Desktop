@@ -3,6 +3,7 @@ import { pick } from 'lodash';
 
 import { DataSource, Equal, Not, Repository } from 'typeorm';
 
+import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { getTiddlerTitleFromUrl } from '@/constants/urls';
 import { TEMP_TAB_ID_PREFIX } from '@/pages/Agent/constants/tab';
 import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
@@ -17,7 +18,9 @@ import { BehaviorSubject } from 'rxjs';
 import type { ITab, TabItem } from '../../pages/Agent/types/tab';
 import { TabState, TabType } from '../../pages/Agent/types/tab';
 import type { IDatabaseService } from '../database/interface';
+import { AgentInstanceMessageEntity } from '../database/schema/agent';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
+import { ConversationEditDraftEntity } from '../database/schema/conversationEditing';
 import type { IAgentBrowserService } from './interface';
 
 const MAX_CLOSED_TABS = 10;
@@ -50,7 +53,7 @@ export class AgentBrowserService implements IAgentBrowserService {
   public async initialize(): Promise<void> {
     try {
       // Get repositories
-      this.dataSource = await this.databaseService.getDatabase('agent');
+      this.dataSource = await this.databaseService.getDatabase(MEME_LOOP_DATABASE_KEY);
       this.tabRepository = this.dataSource.getRepository(AgentBrowserTabEntity);
       logger.debug('Agent browser repository initialized');
     } catch (error) {
@@ -99,6 +102,9 @@ export class AgentBrowserService implements IAgentBrowserService {
           type: TabType.CHAT,
           agentId: data.agentId as string | undefined,
           agentDefId: data.agentDefId as string | undefined,
+          initialMessage: data.initialMessage as string | undefined,
+          initialEditSource: data.initialEditSource as IChatTab['initialEditSource'],
+          initialWikiTiddlers: data.initialWikiTiddlers as IChatTab['initialWikiTiddlers'],
         };
       case TabType.NEW_TAB:
         return {
@@ -168,10 +174,13 @@ export class AgentBrowserService implements IAgentBrowserService {
         break;
       }
       case TabType.CHAT: {
-        const chatTab = tab as { agentId?: string; agentDefId?: string };
+        const chatTab = tab;
         entity.data = {
           agentId: chatTab.agentId,
           agentDefId: chatTab.agentDefId,
+          initialMessage: chatTab.initialMessage,
+          initialEditSource: chatTab.initialEditSource,
+          initialWikiTiddlers: chatTab.initialWikiTiddlers,
         };
         break;
       }
@@ -380,7 +389,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           break;
         }
         case TabType.CHAT: {
-          const chatData = pick(data, ['agentId', 'agentDefId']);
+          const chatData = pick(data, ['agentId', 'agentDefId', 'initialMessage', 'initialWikiTiddlers', 'initialEditSource']);
           Object.assign(existingTab.data, chatData);
           break;
         }
@@ -412,6 +421,63 @@ export class AgentBrowserService implements IAgentBrowserService {
       logger.error('Failed to update tab', { error });
       throw error;
     }
+  }
+
+  public async acknowledgeInitialMessage(tabId: string, agentId: string, expectedMessage: string): Promise<boolean> {
+    this.ensureRepositories();
+    const acknowledged = await this.dataSource!.transaction(async manager => {
+      const repository = manager.getRepository(AgentBrowserTabEntity);
+      const confirmEditedRoot = async (source: IChatTab['initialEditSource']) => {
+        if (!source) return true;
+        const root = await manager.getRepository(AgentInstanceMessageEntity).findOneBy({
+          conversationId: agentId,
+          messageId: `initial:${tabId}:${agentId}:turn`,
+          role: 'user',
+        });
+        if (!root) return false;
+        // Ack and draft cleanup share the root snapshot and tab-identity fence.
+        await manager.getRepository(ConversationEditDraftEntity).update({
+          conversationId: source.conversationId,
+          messageId: source.messageId,
+          revision: source.draftRevision,
+        }, { text: null, revision: source.draftRevision + 1 });
+        return true;
+      };
+      const direct = await repository.findOne({ where: { id: tabId, opened: true } });
+      if (direct?.tabType === TabType.CHAT) {
+        const data = { ...(direct.data ?? {}) };
+        if (data.agentId !== agentId || data.initialMessage !== expectedMessage) return false;
+        if (!await confirmEditedRoot(data.initialEditSource as IChatTab['initialEditSource'])) return false;
+        delete data.initialMessage;
+        delete data.initialEditSource;
+        delete data.initialWikiTiddlers;
+        direct.data = data;
+        await repository.save(direct);
+        return true;
+      }
+
+      const splitTabs = await repository.find({ where: { tabType: TabType.SPLIT_VIEW, opened: true } });
+      for (const split of splitTabs) {
+        const childTabs = Array.isArray(split.data?.childTabs) ? split.data.childTabs as TabItem[] : [];
+        const childIndex = childTabs.findIndex(child => child.id === tabId && child.type === TabType.CHAT);
+        if (childIndex < 0) continue;
+        const child = childTabs[childIndex] as IChatTab;
+        if (child.agentId !== agentId || child.initialMessage !== expectedMessage) return false;
+        if (!await confirmEditedRoot(child.initialEditSource)) return false;
+        const nextChild = { ...child };
+        delete nextChild.initialMessage;
+        delete nextChild.initialEditSource;
+        delete nextChild.initialWikiTiddlers;
+        const nextChildren = [...childTabs];
+        nextChildren[childIndex] = nextChild;
+        split.data = { ...(split.data ?? {}), childTabs: nextChildren };
+        await repository.save(split);
+        return true;
+      }
+      return false;
+    });
+    if (acknowledged) await this.updateTabsObservable();
+    return acknowledged;
   }
 
   /**
@@ -731,8 +797,19 @@ export class AgentBrowserService implements IAgentBrowserService {
             if (chatChild?.agentId) {
               // Send the new message with wiki tiddler attachment to existing agent
               const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
-              await agentInstanceService.sendMsgToAgent(chatChild.agentId, {
-                text: selectionText,
+              const agent = await agentInstanceService.getAgentMetadata(chatChild.agentId);
+              if (!agent) throw new Error(`Agent instance not found: ${chatChild.agentId}`);
+              const requestId = `agent-browser:request:${crypto.randomUUID()}`;
+              const turnId = `agent-browser:turn:${crypto.randomUUID()}`;
+              await agentInstanceService.executeLocalAgentMessage({
+                target: { kind: 'local' },
+                provenance: {
+                  conversationId: chatChild.agentId,
+                  definitionId: agent.agentDefId,
+                  requestId,
+                  turnId,
+                },
+                message: selectionText,
                 wikiTiddlers,
               });
             }
@@ -758,6 +835,7 @@ export class AgentBrowserService implements IAgentBrowserService {
         agentDefId: agent.agentDefId,
         agentId: agent.id,
         initialMessage: selectionText,
+        initialWikiTiddlers: wikiTiddlers,
         state: TabState.ACTIVE,
         isPinned: false,
         createdAt: timestamp,
@@ -783,17 +861,6 @@ export class AgentBrowserService implements IAgentBrowserService {
           };
           childTabs.push(wikiEmbedTab);
         }
-      }
-
-      // Send initial message to the agent with wiki tiddler attachment
-      // Note: When creating SPLIT_VIEW tabs (not plain CHAT tabs), we need to send the message here
-      // because basicActions.ts only handles direct CHAT tab creation.
-      // The child CHAT tab has initialMessage set, but we must explicitly send it.
-      if (selectionText && agent.id) {
-        await agentInstanceService.sendMsgToAgent(agent.id, {
-          text: selectionText,
-          wikiTiddlers,
-        });
       }
 
       // Create a split view tab with the child tabs

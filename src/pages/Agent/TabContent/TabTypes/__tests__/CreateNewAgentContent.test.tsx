@@ -4,9 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { ICreateNewAgentTab, TabState, TabType } from '@/pages/Agent/types/tab';
 import { ThemeProvider } from '@mui/material/styles';
-import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { lightTheme } from '@services/theme/defaultTheme';
+import type { AgentDefinition } from 'memeloop';
 import { CreateNewAgentContent } from '../CreateNewAgentContent';
+
+// This suite verifies the multi-step editor. Keep the preview step at its
+// component boundary; DesktopAgentChatTab has its own lifecycle coverage.
+vi.mock('@/pages/Agent/adapters', () => ({
+  DesktopAgentChatTab: () => <div data-testid='agent-chat-preview' />,
+}));
 
 // Mock agent definition service
 const mockCreateAgentDef = vi.fn();
@@ -18,6 +24,9 @@ const mockUpdateTab = vi.fn();
 const mockGetAllTabs = vi.fn();
 const mockGetActiveTabId = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
+const mockCreateAgent = vi.fn();
+const mockDeleteAgent = vi.fn();
+const mockDiscardVolatileAgentPreview = vi.fn();
 
 Object.defineProperty(window, 'service', {
   writable: true,
@@ -31,6 +40,9 @@ Object.defineProperty(window, 'service', {
     },
     agentInstance: {
       getFrameworkConfigSchema: mockGetFrameworkConfigSchema,
+      createAgent: mockCreateAgent,
+      deleteAgent: mockDeleteAgent,
+      discardVolatileAgentPreview: mockDiscardVolatileAgentPreview,
     },
     agentBrowser: {
       updateTab: mockUpdateTab,
@@ -82,8 +94,8 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(), // deprecated
-    removeListener: vi.fn(), // deprecated
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
@@ -131,6 +143,10 @@ describe('CreateNewAgentContent', () => {
         },
       },
     });
+    mockUpdateAgentDef.mockResolvedValue({ id: 'saved-agent-definition' });
+    mockCreateAgent.mockResolvedValue({ id: 'preview-agent' });
+    mockDeleteAgent.mockResolvedValue(undefined);
+    mockDiscardVolatileAgentPreview.mockResolvedValue(undefined);
   });
 
   it('should render the first step (setup agent)', () => {
@@ -157,6 +173,9 @@ describe('CreateNewAgentContent', () => {
       id: 'template-1',
       name: 'Test Template',
       description: 'Test Description',
+      systemPrompt: '',
+      tools: [] as string[],
+      version: '1',
       agentFrameworkConfig: { systemPrompt: 'Test prompt' },
     };
 
@@ -319,6 +338,63 @@ describe('CreateNewAgentContent', () => {
     }, { timeout: 2000 });
   });
 
+  it('atomically discards the preview conversation and temporary definition on unmount', async () => {
+    mockGetAgentDef.mockResolvedValue({
+      id: 'temp-123',
+      name: 'Preview Agent',
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Preview prompt' }] },
+    });
+    const { unmount } = render(
+      <TestComponent tab={{ ...mockTab, currentStep: 2, agentDefId: 'temp-123' }} />,
+    );
+    await waitFor(() => {
+      expect(mockCreateAgent).toHaveBeenCalledWith('temp-123', { preview: true });
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(mockDiscardVolatileAgentPreview).toHaveBeenCalledWith({
+        agentId: 'preview-agent',
+        temporaryDefinitionId: 'temp-123',
+      });
+    });
+    expect(mockDeleteAgent).not.toHaveBeenCalled();
+    expect(mockDeleteAgentDef).not.toHaveBeenCalled();
+  });
+
+  it('discards a preview whose backend creation completes after the tab unmounts', async () => {
+    mockGetAgentDef.mockResolvedValue({
+      id: 'temp-123',
+      name: 'Late Preview Agent',
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Preview prompt' }] },
+    });
+    let resolveCreate: ((value: { id: string }) => void) | undefined;
+    mockCreateAgent.mockReturnValueOnce(
+      new Promise(resolve => {
+        resolveCreate = resolve;
+      }),
+    );
+    const { unmount } = render(
+      <TestComponent tab={{ ...mockTab, currentStep: 2, agentDefId: 'temp-123' }} />,
+    );
+    await waitFor(() => {
+      expect(mockCreateAgent).toHaveBeenCalledWith('temp-123', { preview: true });
+    });
+
+    unmount();
+    resolveCreate?.({ id: 'late-preview-agent' });
+
+    await waitFor(() => {
+      expect(mockDiscardVolatileAgentPreview).toHaveBeenCalledWith({
+        agentId: 'late-preview-agent',
+        temporaryDefinitionId: 'temp-123',
+      });
+    });
+  });
+
   it('should handle PromptConfigForm rendering in step 2', async () => {
     // Simple test to verify PromptConfigForm can render
     const tabStep2: ICreateNewAgentTab = {
@@ -334,6 +410,36 @@ describe('CreateNewAgentContent', () => {
 
     // Should show editPrompt content
     expect(await screen.findByText('请先选择一个模板')).toBeInTheDocument();
+  });
+
+  it('saves the latest controlled prompt edit before advancing', async () => {
+    mockGetAgentDef.mockResolvedValue({
+      id: 'temp-123',
+      name: 'Test Agent',
+      agentFrameworkID: 'test-handler',
+      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }], plugins: [] },
+    });
+
+    render(
+      <ThemeProvider theme={lightTheme}>
+        <CreateNewAgentContent tab={{ ...mockTab, currentStep: 1, agentDefId: 'temp-123' }} />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(await screen.findByTestId('prompt-array-item-toggle-0'));
+    const promptInput = await screen.findByDisplayValue('Original prompt');
+    fireEvent.change(promptInput, { target: { value: 'Latest prompt edit' } });
+    fireEvent.click(screen.getByTestId('next-button'));
+
+    await waitFor(() => {
+      expect(mockUpdateAgentDef).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentFrameworkConfig: expect.objectContaining({
+            prompts: [expect.objectContaining({ text: 'Latest prompt edit' })],
+          }),
+        }),
+      );
+    });
   });
 
   it('should call createAgentDef when template is selected', async () => {
@@ -378,8 +484,12 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'template-1',
       name: 'Test Template',
+      description: '',
+      systemPrompt: '',
+      tools: [] as string[],
+      version: '1',
       agentFrameworkID: 'test-handler',
-      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }] },
+      agentFrameworkConfig: { prompts: [{ text: 'Original prompt' }], plugins: [] },
     };
 
     const mockCreatedDefinition = {
@@ -407,7 +517,7 @@ describe('CreateNewAgentContent', () => {
               name: 'My Agent',
             };
 
-            const createdDefinition = await window.service.agentDefinition.createAgentDef(newAgentDefinition);
+            const createdDefinition = await window.service.agentDefinition.createAgentDef(newAgentDefinition as unknown as AgentDefinition);
             setDefinition(createdDefinition);
 
             // Simulate auto-save after 50ms (shorter than real 500ms)
@@ -470,7 +580,11 @@ describe('CreateNewAgentContent', () => {
     const mockTemplate = {
       id: 'task-agent',
       name: 'Example Agent',
-      agentFrameworkID: 'basicPromptConcatHandler',
+      description: '',
+      systemPrompt: '',
+      tools: [] as string[],
+      version: '1',
+      agentFrameworkID: 'memeloopTaskAgent',
       agentFrameworkConfig: {
         prompts: [
           {
@@ -501,9 +615,9 @@ describe('CreateNewAgentContent', () => {
     mockCreateAgentDef.mockResolvedValue(mockCreatedDefinition);
 
     // Step 1: Create agent definition (simulates template selection)
-    const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition);
+    const createdDef = await window.service.agentDefinition.createAgentDef(mockCreatedDefinition as unknown as AgentDefinition);
     expect(createdDef).toBeDefined();
-    const prompts = createdDef.agentFrameworkConfig.prompts as Array<{
+    const prompts = createdDef.agentFrameworkConfig?.prompts as Array<{
       children?: Array<{ text?: string }>;
     }>;
     expect((prompts as Array<{ children?: Array<{ text?: string }> }>)[0]?.children?.[0]?.text).toBe('You are a helpful assistant for Tiddlywiki user.');
@@ -527,7 +641,7 @@ describe('CreateNewAgentContent', () => {
       },
     };
 
-    await window.service.agentDefinition.updateAgentDef(updatedDefinition);
+    await window.service.agentDefinition.updateAgentDef(updatedDefinition as unknown as AgentDefinition);
 
     // Verify the correct nested structure is updated
     expect(mockUpdateAgentDef).toHaveBeenCalledWith(

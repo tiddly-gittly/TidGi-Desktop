@@ -1,183 +1,111 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import '@testing-library/jest-dom/vitest';
 import { ThemeProvider } from '@mui/material/styles';
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
 import { lightTheme } from '@services/theme/defaultTheme';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MODEL_CATALOG_SOURCE_URL, type ModelAssignments, type ModelCatalogProvider, type ModelCatalogResolution, type ProviderAccountConfig } from 'memeloop';
+import { createRef } from 'react';
 import { BehaviorSubject } from 'rxjs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ExternalAPI } from '../index';
 
-// Mock data
-const mockLanguageModel: ModelInfo = {
-  name: 'gpt-4o',
-  caption: 'GPT-4o',
-  features: ['language', 'reasoning'],
+const catalogProvider: ModelCatalogProvider = {
+  id: 'openai-main',
+  name: 'OpenAI Main',
+  npm: '@ai-sdk/openai',
+  api: 'https://api.openai.com/v1',
+  env: ['OPENAI_API_KEY'],
+  models: [
+    {
+      id: 'reasoning',
+      name: 'Reasoning model',
+      attachment: true,
+      reasoning: true,
+      toolCall: true,
+      modalities: { input: ['text', 'image'], output: ['text'] },
+    },
+    {
+      id: 'text-embedding-3-small',
+      name: 'Embedding model',
+      attachment: false,
+      reasoning: false,
+      toolCall: false,
+      modalities: { input: ['text'], output: ['embedding'] },
+    },
+  ],
 };
 
-const mockEmbeddingModel: ModelInfo = {
-  name: 'text-embedding-3-small',
-  caption: 'Text Embedding 3 Small',
-  features: ['embedding'],
+const catalogResolution: ModelCatalogResolution = {
+  catalog: {
+    schemaVersion: 1,
+    source: MODEL_CATALOG_SOURCE_URL,
+    catalogVersion: 'test-catalog',
+    fetchedAt: '2026-08-31T00:00:00.000Z',
+    providers: [catalogProvider],
+  },
+  source: 'embedded',
+  stale: false,
 };
 
-const mockProvider: AIProviderConfig = {
-  provider: 'existing-provider',
-  apiKey: 'sk-test',
-  baseURL: 'https://api.example.com/v1',
-  models: [mockLanguageModel],
-  providerClass: 'openai',
-  isPreset: false,
-  enabled: true,
-};
+describe('ExternalAPI provider-account integration', () => {
+  let setProviderAccount: ReturnType<typeof vi.fn<(account: ProviderAccountConfig) => Promise<void>>>;
 
-// Test wrapper component
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider theme={lightTheme}>
-    {children}
-  </ThemeProvider>
-);
-
-describe('ExternalAPI Add Provider with Embedding Model', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Mock ExternalAPI service methods
-    Object.defineProperty(window.service.externalAPI, 'getAIProviders', {
-      value: vi.fn().mockResolvedValue([mockProvider]),
-      writable: true,
+    const assignments: ModelAssignments = {};
+    setProviderAccount = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperties(window.service.externalAPI, {
+      getAIConfig: { value: vi.fn().mockResolvedValue(assignments), writable: true },
+      getProviderAccounts: { value: vi.fn().mockResolvedValue([]), writable: true },
+      getProviderCatalog: { value: vi.fn().mockResolvedValue(catalogResolution), writable: true },
+      setProviderAccount: { value: setProviderAccount, writable: true },
+      getProviderApiKey: { value: vi.fn().mockResolvedValue(''), writable: true },
     });
-
-    Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
-      value: vi.fn().mockResolvedValue({
-        default: {
-          provider: 'existing-provider',
-          model: 'gpt-4o',
-        },
-        // No embedding initially
-        modelParameters: {
-          temperature: 0.7,
-          systemPrompt: 'You are a helpful assistant.',
-          topP: 0.95,
-        },
-      }),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'updateDefaultAIConfig', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'updateProvider', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'deleteProvider', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    Object.defineProperty(window.service.externalAPI, 'deleteFieldFromDefaultAIConfig', {
-      value: vi.fn().mockResolvedValue(undefined),
-      writable: true,
-    });
-
-    // Mock observables for externalAPI
-    const mockConfig: AiAPIConfig = {
-      default: {
-        provider: 'existing-provider',
-        model: 'gpt-4o',
-      },
-      modelParameters: {
-        temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.',
-        topP: 0.95,
-      },
-    };
-
     Object.defineProperty(window.observables, 'externalAPI', {
       value: {
-        defaultConfig$: new BehaviorSubject<AiAPIConfig>(mockConfig),
-        providers$: new BehaviorSubject<AIProviderConfig[]>([mockProvider]),
+        defaultConfig$: new BehaviorSubject(assignments),
+        providerAccounts$: new BehaviorSubject<ProviderAccountConfig[]>([]),
       },
       writable: true,
     });
   });
 
-  // Helper function to render ExternalAPI with theme wrapper and wait for loading to complete
-  const renderExternalAPI = async () => {
-    const result = render(
-      <TestWrapper>
-        <ExternalAPI sectionRef={React.createRef()} onNeedsRestart={() => {}} />
-      </TestWrapper>,
+  function renderSection() {
+    return render(
+      <ThemeProvider theme={lightTheme}>
+        <ExternalAPI sectionRef={createRef()} onNeedsRestart={vi.fn()} />
+      </ThemeProvider>,
     );
+  }
 
-    // Wait for initial loading to complete to avoid act warnings
+  it('adds a custom account through the canonical provider API', async () => {
+    const user = userEvent.setup();
+    renderSection();
+    await waitFor(() => expect(screen.queryByText('Loading')).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    await user.type(screen.getByTestId('new-provider-name-input'), '0remote');
+    await user.type(screen.getByTestId('new-provider-base-url-input'), 'https://models.example.test/v1');
+    await user.click(screen.getByTestId('add-provider-submit-button'));
+
     await waitFor(() => {
-      expect(screen.queryByText('Loading')).not.toBeInTheDocument();
+      expect(setProviderAccount).toHaveBeenCalledWith({
+        providerId: '0remote',
+        providerType: 'openai-compatible',
+        baseUrl: 'https://models.example.test/v1',
+        enabled: true,
+        models: [],
+      });
     });
-
-    return result;
-  };
-
-  it('should show add provider functionality', async () => {
-    await renderExternalAPI();
-
-    // Should show add new provider button
-    const addProviderButton = screen.getByTestId('add-new-provider-button');
-    expect(addProviderButton).toBeInTheDocument();
-    expect(addProviderButton).toHaveTextContent('Preference.AddNewProvider');
   });
 
-  it('should verify that updateProvider is called when adding a provider (integration test)', async () => {
-    await renderExternalAPI();
+  it('exposes the exact catalog provider for account creation', async () => {
+    const user = userEvent.setup();
+    renderSection();
+    await waitFor(() => expect(screen.queryByText('Loading')).not.toBeInTheDocument());
 
-    // This test verifies that the component is wired correctly
-    // The actual provider addition logic is tested in the component unit tests
-
-    // Verify that the updateProvider mock is set up
-    expect(window.service.externalAPI.updateProvider).toBeDefined();
-
-    // Verify that updateDefaultAIConfig is available (for setting embedding model as default)
-    expect(window.service.externalAPI.updateDefaultAIConfig).toBeDefined();
-
-    // Note: Full integration test would require complex form interaction
-    // The logic is verified in unit tests and component tests
-    expect(true).toBe(true);
-  });
-
-  it('should show both default model and embedding model selectors', async () => {
-    await renderExternalAPI();
-
-    // Should show both model selectors
-    expect(screen.getByText('Preference.DefaultAIModelSelection')).toBeInTheDocument();
-    expect(screen.getByText('Preference.DefaultEmbeddingModelSelection')).toBeInTheDocument();
-  });
-
-  it('should handle embedding model selection correctly', async () => {
-    // Mock a provider with embedding model
-    Object.defineProperty(window.service.externalAPI, 'getAIProviders', {
-      value: vi.fn().mockResolvedValue([
-        {
-          ...mockProvider,
-          models: [mockLanguageModel, mockEmbeddingModel],
-        },
-      ]),
-      writable: true,
-    });
-
-    await renderExternalAPI();
-
-    // Should show embedding model in the dropdown (this tests the filtering logic)
-    const embeddingSelector = screen.getAllByRole('combobox')[1]; // Second combobox is for embedding
-    expect(embeddingSelector).toBeInTheDocument();
-
-    // The actual model options are filtered by the component to show only embedding models
-    // This ensures that when a provider is added with embedding models,
-    // they will appear in the embedding model selector
+    await user.click(screen.getByRole('button', { name: 'Preference.AddNewProvider' }));
+    await user.click(within(screen.getByTestId('new-provider-preset-select')).getByRole('combobox'));
+    expect(await screen.findByRole('option', { name: 'OpenAI Main' })).toHaveAttribute('data-value', 'openai-main');
   });
 });

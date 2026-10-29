@@ -1,4 +1,4 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -32,6 +32,7 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [currentKeyCombo, setCurrentKeyCombo] = useState(value);
+  const [captureError, setCaptureError] = useState(false);
 
   /**
    * Format shortcut text for display
@@ -94,16 +95,22 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
       // Update current shortcut combination
       const newCombo = combo.join('+');
       setCurrentKeyCombo(newCombo);
-    } catch {
-      // Handle error silently
+      setCaptureError(false);
+    } catch (error) {
+      setCaptureError(true);
+      void window.service.native.log('error', 'KeyboardShortcutRegister: failed to determine shortcut platform', {
+        error,
+        key,
+      });
     }
-  }, [onChange, currentKeyCombo]);
+  }, [currentKeyCombo, onChange, t]);
 
   /**
    * Open the dialog
    */
   const handleOpenDialog = useCallback(() => {
     setCurrentKeyCombo(value);
+    setCaptureError(false);
     setDialogOpen(true);
   }, [value]);
 
@@ -173,6 +180,12 @@ export const KeyboardShortcutRegister: React.FC<KeyboardShortcutRegisterProps> =
           <Typography variant='body1' gutterBottom>
             {t('KeyboardShortcut.PressKeysPrompt', { feature: label })}
           </Typography>
+
+          {captureError && (
+            <Alert severity='error' sx={{ mb: 2 }} role='alert'>
+              {t('Error.Generic')}
+            </Alert>
+          )}
 
           <Box
             data-testid='shortcut-display'

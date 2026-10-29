@@ -82,7 +82,21 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
   const isWindowToLoadURL = windowName !== WindowNames.secondary;
   if (isWindowToLoadURL) {
     // This loading will wait for a while
-    await newWindow.loadURL(newWindowURL);
+    try {
+      await newWindow.loadURL(newWindowURL);
+    } catch (error) {
+      // `loadURL` can reject after Electron has already registered the
+      // BrowserWindow (for example when a preload/sandbox startup fails).
+      // Remove that half-created instance before the next open attempt so it
+      // cannot be mistaken for a healthy reusable window.
+      if (windowService.get(windowName) === newWindow) {
+        windowService.set(windowName, undefined);
+      }
+      if (typeof newWindow.isDestroyed !== 'function' || !newWindow.isDestroyed()) {
+        newWindow.close();
+      }
+      throw error;
+    }
   }
   await webContentLoadingPromise;
   return newWindow;

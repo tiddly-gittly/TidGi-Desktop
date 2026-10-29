@@ -4,6 +4,7 @@
   "ts-node": {
     "files": true,
     "compilerOptions": {
+      "rootDir": ".",
       "module": "commonjs"
     }
   },
@@ -11,6 +12,7 @@
     "paths": {
       "@services/*": ["./src/services/*"],
       "@/*": ["./src/*"]
+      // @memeloop/react-ui resolved through workspace node_modules (file: dependency)
     },
     "skipLibCheck": true,
     /* Basic Options */

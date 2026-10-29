@@ -15,7 +15,6 @@ function createWorkspace(overrides: Partial<IWikiWorkspace>): IWikiWorkspace {
     wikiFolderLocation: '/tmp/workspace-1',
     isSubWiki: false,
     mainWikiID: null,
-    mainWikiToLink: null,
     pageType: null,
     picturePath: null,
     homeUrl: 'tidgi://workspace-1',

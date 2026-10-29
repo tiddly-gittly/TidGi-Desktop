@@ -19,73 +19,51 @@ Feature: TidGi Preference
       | external services section | [data-testid='preference-section-externalAPI'] |
       | add provider button       | [data-testid='add-new-provider-button']        |
     # Step 4: Fill provider form with mock server details (interface type already selected as openAICompatible)
-    When I type "TestProvider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
+    When I type "test-provider" in "provider name input" element with selector "[data-testid='new-provider-name-input']"
     And I type "http://127.0.0.1:15121/v1" in "API endpoint input" element with selector "[data-testid='new-provider-base-url-input']"
     When I click on an "add provider submit" element with selector "[data-testid='add-provider-submit-button']"
-    # Step 5: Select the new provider and add a model
-    When I click on "provider tab and add model button" elements with selectors:
-      | element description       | selector                                    |
-      | provider tab TestProvider | button[role='tab']:has-text('TestProvider') |
-      | add model button          | [data-testid='add-new-model-button']        |
-    # Step 6: Add language model (will auto-fill as default language model)
+    # Step 5: The newly added provider is selected automatically; add a model.
+    When I click on an "add model button" element with selector "[data-testid='add-new-model-button']"
+    # Step 6: Add a language model (auto-fills the default language assignment).
     When I type "test-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
     When I click on "save model button and add model button" elements with selectors:
       | element description  | selector                             |
-      | save model button    | [data-testid='save-model-button']    |
+      | save model button    | [data-testid='save-new-model-button'] |
       | add model button     | [data-testid='add-new-model-button'] |
-    # Step 7: Add embedding model (will auto-fill as default embedding model)
+    # Step 7: Model IDs containing "embedding" advertise embedding capability.
     When I type "test-embedding-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
-    When I click on "embedding feature checkbox and save model button and add model button" elements with selectors:
-      | element description         | selector                                   |
-      | embedding feature checkbox  | [data-testid='feature-checkbox-embedding'] |
-      | save model button           | [data-testid='save-model-button']          |
-      | add model button            | [data-testid='add-new-model-button']       |
-    # Step 8: Add speech model (will auto-fill as default speech model)
+    When I click on "save model button and add model button" elements with selectors:
+      | element description | selector                              |
+      | save model button   | [data-testid='save-new-model-button'] |
+      | add model button    | [data-testid='add-new-model-button']  |
+    # Step 8: Output modality drives speech and image-generation assignments.
     When I type "test-speech-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
-    # Uncheck language feature first (it's checked by default)
-    When I click on "language feature checkbox and speech feature checkbox and save model button" elements with selectors:
-      | element description        | selector                                  |
-      | language feature checkbox  | [data-testid='feature-checkbox-language'] |
-      | speech feature checkbox    | [data-testid='feature-checkbox-speech']   |
-      | save model button          | [data-testid='save-model-button']         |
-    # Step 9: Verify auto-fill worked by checking that autocomplete inputs have the correct selected values
-    # MUI Autocomplete shows selected value in the input, we check by looking for the model name in the visible text
-    Then I should see "model values and autocomplete inputs" elements with selectors:
-      | element description                                      | selector                                                                                       |
-      | default language model value test-model                  | text='test-model'                                                                              |
-      | default embedding model value test-embedding-model       | text='test-embedding-model'                                                                    |
-      | default speech model value test-speech-model             | text='test-speech-model'                                                                       |
-      | first autocomplete input with test-model                 | xpath=(//div[contains(@class,'MuiAutocomplete-root')]//input[@value='test-model'])[1]         |
-      | second autocomplete input with test-embedding-model      | xpath=(//div[contains(@class,'MuiAutocomplete-root')]//input[@value='test-embedding-model'])[1] |
-      | third autocomplete input with test-speech-model          | xpath=(//div[contains(@class,'MuiAutocomplete-root')]//input[@value='test-speech-model'])[1]  |
-    # Verify the autocomplete is not empty and negative case remain explicit
-    Then I should not see a "empty first autocomplete placeholder" element with selector "xpath=(//label[contains(text(),'Preference.SelectModel')])[1]"
-    Then I should not see a "test-model after test-embedding-model (wrong order)" element with selector "xpath=//input[@value='test-embedding-model']/following::input[@value='test-model']"
-    # Step 10: Add ComfyUI provider with workflow path
-    When I click on a "add provider button" element with selector "[data-testid='add-new-provider-button']"
-    When I select "comfyui" from MUI Select with test id "new-provider-preset-select"
-    When I click on an "add provider submit" element with selector "[data-testid='add-provider-submit-button']"
-    When I click on "provider tab and add model button" elements with selectors:
-      | element description  | selector                                   |
-      | provider tab comfyui | button[role='tab']:has-text('comfyui')     |
-      | add model button     | [data-testid='add-new-model-button']       |
-    When I type "test-flux" in "model name input" element with selector "[data-testid='new-model-name-input']"
-    When I click on "language feature checkbox and imageGeneration feature checkbox" elements with selectors:
-      | element description              | selector                                         |
-      | language feature checkbox        | [data-testid='feature-checkbox-language']        |
-      | imageGeneration feature checkbox | [data-testid='feature-checkbox-imageGeneration'] |
-    When I type "C:/test/mock/workflow.json" in "workflow path input" element with selector "[data-testid='workflow-path-input']"
-    When I click on a "save model button" element with selector "[data-testid='save-model-button']"
-    Then I should see a "test-flux model chip" element with selector "[data-testid='model-chip-test-flux']"
-    # Verify workflow path was saved by clicking to edit
-    When I click on a "test-flux model chip" element with selector "[data-testid='model-chip-test-flux']"
-    Then I should see a "workflow path input with value" element with selector "[data-testid='workflow-path-input'][value='C:/test/mock/workflow.json']"
-    When I press "Escape" key
-    # Step 11: Close preferences window
+    When I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
+    And I type "audio" in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
+    When I click on "save model button and add model button" elements with selectors:
+      | element description | selector                              |
+      | save model button   | [data-testid='save-new-model-button'] |
+      | add model button    | [data-testid='add-new-model-button']  |
+    When I type "test-image-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
+    When I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
+    And I type "image" in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
+    When I click on a "save model button" element with selector "[data-testid='save-new-model-button']"
+    # Step 9: Verify canonical capability auto-fill through stable selector contracts.
+    Then I should see "model assignments and chips" elements with selectors:
+      | element description              | selector                                                                          |
+      | default language model input     | [data-testid='default-model-selector'] input[value='test-model']                  |
+      | default embedding model input    | [data-testid='embedding-model-selector'] input[value='test-embedding-model']      |
+      | default speech model input       | [data-testid='speech-model-selector'] input[value='test-speech-model']            |
+      | default image model input        | [data-testid='image-generation-model-selector'] input[value='test-image-model']   |
+      | language model chip              | [data-testid='model-chip-test-model']                                             |
+      | embedding model chip             | [data-testid='model-chip-test-embedding-model']                                   |
+      | speech model chip                | [data-testid='model-chip-test-speech-model']                                      |
+      | image model chip                 | [data-testid='model-chip-test-image-model']                                       |
+    # Step 10: Close preferences window
     When I close "preferences" window
     And I ensure test ai settings exists
 
-    # --- Part B: Background tasks — create alarm, edit-to-interval, cancel ---
+    # --- Part B: Background tasks — create a recurring Cron wake-up ---
     Then I switch to "main" window
     When I click on "agent workspace button and new tab button and create default agent button" elements with selectors:
       | element description         | selector                                    |
@@ -97,19 +75,16 @@ Feature: TidGi Preference
     And I switch to "preferences" window
     And I click on a "ai agent section" element with selector "[data-testid='preference-section-aiAgent']"
     And I click on a "add scheduled task button" element with selector "[data-testid='scheduled-task-add-button']"
-    Then I should see "interval and message input" elements with selectors:
-      | element description | selector                                    |
-      | interval input      | [data-testid='scheduled-task-interval-input'] |
-      | message input       | [data-testid='scheduled-task-message-input']  |
-    When I type "120" in "interval input" element with selector "[data-testid='scheduled-task-interval-input'] input"
-    And I type "Preference-created scheduled task" in "message input" element with selector "[data-testid='scheduled-task-message-input'] textarea:not([readonly])"
-    And I click on a "save scheduled task button" element with selector "[data-testid='scheduled-task-save-button']"
-    Then I should see a "created scheduled task row" element with selector "[data-testid^='scheduled-task-row-']"
-    When I click on a "scheduled task edit button" element with selector "[data-testid^='scheduled-task-edit-']"
-    And I click on a "schedule mode select" element with selector "[data-testid='scheduled-task-mode-select']"
-    And I click on a "cron mode option" element with selector "li[role='option']:has-text('Cron expression')"
-    And I type "0 */2 * * *" in "cron expression input" element with selector "[data-testid='scheduled-task-cron-input'] input"
-    And I click on a "save scheduled task button" element with selector "[data-testid='scheduled-task-save-button']"
-    Then I should see a "cron text in schedule column" element with selector "*:has-text('Cron: 0 */2 * * *')"
-    And I click on a "scheduled task delete button" element with selector "[data-testid^='scheduled-task-delete-']"
-    Then I should not see a "scheduled task row" element with selector "[data-testid^='scheduled-task-row-']"
+    Then I should see "shared scheduled task controls" elements with selectors:
+      | element description        | selector                                             |
+      | scheduled task dialog      | [data-testid='scheduled-task-dialog']                |
+      | agent definition select    | [data-testid='scheduled-task-agent-definition-select'] |
+      | scheduled task editor      | [data-testid='edit-agent-schedule-section']          |
+      | schedule mode select       | [data-testid='edit-agent-schedule-mode-select']      |
+    When I select "enabled" from MUI Select with test id "edit-agent-schedule-mode-select"
+    And I wait for 1.5 seconds for "cron preview"
+    Then I should see a "cron preview" element with selector "[data-testid='schedule-preview-dates']"
+    When I click on a "save scheduled task button" element with selector "[data-testid='edit-agent-schedule-save-button']"
+    Then I should see a "scheduled task selector" element with selector "[data-testid='edit-agent-scheduled-task-select']"
+    When I click on a "close scheduled task dialog" element with selector "[data-testid='scheduled-task-cancel-button']"
+    Then I should not see a "scheduled task dialog" element with selector "[data-testid='scheduled-task-dialog']"

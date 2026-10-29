@@ -20,13 +20,13 @@ const createMockForm = (overrides: Partial<IWikiWorkspaceForm> = {}): IWikiWorks
   wikiFolderName: 'test-wiki',
   wikiFolderNameSetter: vi.fn(),
   wikiFolderLocation: '/test/parent/test-wiki',
-  mainWikiToLink: {
+  mainWikiSelection: {
     wikiFolderLocation: '/main/wiki',
     id: 'main-wiki-id',
     port: 5212,
   },
-  mainWikiToLinkSetter: vi.fn(),
-  mainWikiToLinkIndex: 0,
+  mainWikiSelectionSetter: vi.fn(),
+  mainWikiSelectionIndex: 0,
   mainWorkspaceList: [
     {
       id: 'main-wiki-id',
@@ -235,7 +235,7 @@ describe('NewWikiForm Component', () => {
       await renderNewWikiForm({
         isCreateMainWorkspace: false,
         errorInWhichComponent: {
-          mainWikiToLink: true,
+          mainWikiSelection: true,
           tagNames: true,
         },
       });
@@ -297,7 +297,7 @@ describe('NewWikiForm Component', () => {
     it('should show helper text for sub workspace linking', async () => {
       const form = createMockForm({
         wikiFolderName: 'sub-wiki',
-        mainWikiToLink: {
+        mainWikiSelection: {
           wikiFolderLocation: '/main/wiki',
           id: 'main-id',
           port: 5212,

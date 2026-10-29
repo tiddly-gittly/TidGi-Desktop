@@ -116,6 +116,7 @@ export const syncableConfigDefaultValues = {
  * Type for syncable config - used by tidgiConfig.ts
  */
 export type ISyncableWikiConfig = {
+  /** Stable wiki identity shared by devices; mainWikiID references this ID. */
   id?: string;
   name: string;
   gitUrl: string | null;
