@@ -1,5 +1,7 @@
 import { logger } from '@services/libs/log';
-import { IExternalAPIService } from './interface';
+import { collectPortableLlmTextResponse, type PortableLlmRequest } from 'memeloop';
+
+import type { IExternalAPIService } from './interface';
 
 export async function waitForAIStreamResult(
   prompt: string,
@@ -7,45 +9,32 @@ export async function waitForAIStreamResult(
   externalAPIService: IExternalAPIService,
 ): Promise<string | undefined> {
   try {
-    if (!aiConfig?.free?.model || !aiConfig?.free?.provider) {
-      return undefined;
-    }
-
-    // Use the free model for generation
-    const config = {
-      ...aiConfig,
-      default: aiConfig.free,
+    const selection = aiConfig.free;
+    if (!selection) return undefined;
+    const account = (await externalAPIService.getProviderAccounts()).find(candidate => candidate.providerId === selection.providerId);
+    const route = account?.models.find(candidate => candidate.modelId === selection.modelId);
+    if (!account || !route) return undefined;
+    const request: PortableLlmRequest = {
+      providerId: account.providerId,
+      logicalModelId: route.modelId,
+      wireModelId: route.wireModelId,
+      apiMode: route.apiMode,
+      messages: [{ role: 'user', content: prompt }],
+      stream: true,
+      ...(selection.parameters?.maxOutputTokens === undefined
+        ? {}
+        : { maxOutputTokens: selection.parameters.maxOutputTokens }),
+      ...(selection.parameters?.temperature === undefined
+        ? {}
+        : { temperature: selection.parameters.temperature }),
+      ...(selection.parameters?.topP === undefined
+        ? {}
+        : { topP: selection.parameters.topP }),
     };
-
-    const messages = [
-      {
-        role: 'user' as const,
-        content: prompt,
-      },
-    ];
-
-    // Use generateFromAI and get the final content
-    // Note: response.content already contains accumulated content, not incremental
-    let finalContent = '';
-    const generator = externalAPIService.generateFromAI(messages, config);
-
-    for await (const response of generator) {
-      if (response.status === 'error') {
-        logger.error('AI generation error', { errorDetail: response.errorDetail });
-        return undefined;
-      }
-
-      // Update with latest content (it's already accumulated, not incremental)
-      if (response.content) {
-        finalContent = response.content;
-      }
-
-      if (response.status === 'done') {
-        break;
-      }
-    }
-
-    return finalContent.trim() || undefined;
+    const result = await collectPortableLlmTextResponse(
+      externalAPIService.generatePortableLlm(request),
+    );
+    return result.trim() || undefined;
   } catch (error) {
     logger.error('AI API call failed', { error });
     return undefined;

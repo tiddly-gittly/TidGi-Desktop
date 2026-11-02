@@ -51,7 +51,7 @@ export function SearchBar({ value, onChange, inputRef }: SearchBarProps): React.
                     onChange('');
                   }}
                   edge='end'
-                  aria-label='clear search'
+                  aria-label={t('Preference.ClearSearch')}
                 >
                   <ClearIcon fontSize='small' />
                 </IconButton>

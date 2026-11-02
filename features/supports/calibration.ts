@@ -77,6 +77,7 @@ export function writeCalibrationResult(result: CalibrationWriteInput): void {
 // AND Playwright Chromium CDP. Node.js 32-bit signed max is 2^31-1 (2147483647 ≈ 24.8d),
 // but Playwright CDP may overflow values above 2^30. 5 minutes is safe and enough.
 const NO_TIMEOUT = 300_000;
+const CALIBRATION_ELEMENT_TIMEOUT = process.env.CI ? 10_000 : 5_000;
 
 function requireRecord(): CalibrationRecord {
   if (cachedRecord !== null) return cachedRecord;
@@ -112,6 +113,10 @@ export function getMeasuredLaunchTimeoutMs(): number {
 }
 
 export function getMeasuredElementTimeoutMs(): number {
-  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return NO_TIMEOUT;
+  // Calibration needs a generous Cucumber step budget so it can measure
+  // legitimate launch and persistence work. Individual DOM lookups remain
+  // bounded: a missing selector is a functional failure, not a 5-minute
+  // performance sample.
+  if (process.env.TIDGI_E2E_IS_CALIBRATION === 'true') return CALIBRATION_ELEMENT_TIMEOUT;
   return requireRecord().elementMs;
 }

@@ -5,6 +5,7 @@
  * and ordinary wiki targets without pulling renderer-only assumptions into the main process.
  */
 import { PageType } from '@/constants/pageTypes';
+import { TIDGI_PROTOCOL_SCHEME } from '@/constants/protocol';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import { container } from '@services/container';
 import { PreferenceSections } from '@services/preferences/interface';
@@ -14,7 +15,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DeepLinkService } from '../index';
+import { DeepLinkService, findTidGiProtocolUrl } from '../index';
 
 // ---------- helpers ----------
 
@@ -65,6 +66,42 @@ describe('DeepLinkService – preferences URL routing', () => {
     await service.openDeepLink('tidgi://preferences/externalAPI');
 
     expect(windowOpen).toHaveBeenCalledOnce();
+    expect(windowOpen).toHaveBeenCalledWith(
+      WindowNames.preferences,
+      { preferenceGotoTab: PreferenceSections.externalAPI },
+    );
+  });
+
+  it('forwards a validated provider field focus target to External API settings', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://preferences/externalAPI?provider=siliconflow&field=apiKey');
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      WindowNames.preferences,
+      {
+        preferenceGotoTab: PreferenceSections.externalAPI,
+        preferenceFocus: { providerId: 'siliconflow', field: 'apiKey' },
+      },
+    );
+  });
+
+  it('forwards an exact provider and model focus target to External API settings', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://preferences/externalAPI?provider=0%E6%8F%90%E4%BE%9B%E6%96%B9&model=%E6%A8%A1%E5%9E%8B%2Fv2&field=model');
+
+    expect(windowOpen).toHaveBeenCalledWith(
+      WindowNames.preferences,
+      {
+        preferenceGotoTab: PreferenceSections.externalAPI,
+        preferenceFocus: { providerId: '0提供方', modelId: '模型/v2', field: 'model' },
+      },
+    );
+  });
+
+  it('drops invalid provider focus fields instead of forwarding arbitrary metadata', async () => {
+    const service = makeService();
+    await service.openDeepLink('tidgi://preferences/externalAPI?provider=siliconflow&field=secret');
+
     expect(windowOpen).toHaveBeenCalledWith(
       WindowNames.preferences,
       { preferenceGotoTab: PreferenceSections.externalAPI },
@@ -181,5 +218,23 @@ describe('DeepLinkService – preferences URL routing', () => {
 
     expect(openWorkspaceTiddler).toHaveBeenCalledOnce();
     expect(openWorkspaceTiddler.mock.calls[0]?.[1]).toBe('\uFF1Cscript\uFF1Cscript\uFF1Ealert(1)\uFF1C/script\uFF1E');
+  });
+});
+
+describe('findTidGiProtocolUrl', () => {
+  it('ignores Squirrel metadata appended after the protocol URL', () => {
+    const protocolUrl = `${TIDGI_PROTOCOL_SCHEME}://preferences/externalAPI`;
+    expect(findTidGiProtocolUrl([
+      'C:\\Users\\test\\AppData\\Local\\tidgi\\TidGi.exe',
+      protocolUrl,
+      '--source-app-id',
+    ])).toBe(protocolUrl);
+  });
+
+  it('does not treat an arbitrary last argument as a URL', () => {
+    expect(findTidGiProtocolUrl([
+      'C:\\Users\\test\\AppData\\Local\\tidgi\\TidGi.exe',
+      '--source-app-id',
+    ])).toBeUndefined();
   });
 });

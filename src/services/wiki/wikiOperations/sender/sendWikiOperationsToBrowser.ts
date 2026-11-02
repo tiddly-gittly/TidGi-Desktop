@@ -3,8 +3,6 @@
  * ERROR in Circular dependency detected: src/services/libs/log/index.ts -> src/services/libs/log/rendererTransport.ts -> src/services/wiki/wikiOperations.ts -> src/services/libs/log/index.ts
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/no-unsafe-argument */
-
 import { WikiChannel } from '@/constants/channels';
 import { WikiStateKey } from '@/constants/wiki';
 import { container } from '@services/container';
@@ -95,7 +93,7 @@ export const getSendWikiOperationsToBrowser = (workspaceID: string) => (({
   // invokeActionString is a temporary operation not yet in WikiChannel enum
 
   invokeActionString: async (title: string, data: Record<string, unknown>): Promise<string | undefined> => {
-    return await sendAndWait('invokeActionString' as any, workspaceID, [title, JSON.stringify(data)]);
+    return await sendAndWait('invokeActionString', workspaceID, [title, JSON.stringify(data)]);
   },
 }) as const);
 export type ISendWikiOperationsToBrowser = ReturnType<typeof getSendWikiOperationsToBrowser>;

@@ -1,8 +1,7 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { ModelAssignments } from 'memeloop';
 import type { Observable } from 'rxjs';
 import type { ITiddlerFields } from 'tiddlywiki';
-
-import type { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema/types';
 
 /**
  * Embedding record in the database
@@ -22,10 +21,10 @@ export interface EmbeddingRecord {
   created: Date;
   /** Last update time */
   modified: Date;
-  /** Embedding model used */
-  model: string;
-  /** Provider used for embedding */
-  provider: string;
+  /** Canonical logical embedding model ID. */
+  modelId: string;
+  /** Canonical provider account ID. */
+  providerId: string;
   /** Embedding dimensions */
   dimensions: number;
 }
@@ -80,7 +79,7 @@ export interface IWikiEmbeddingService {
    * @param config AI configuration for embedding generation
    * @param forceUpdate Whether to force update all embeddings even if unchanged
    */
-  generateEmbeddings(workspaceId: string, config: AiAPIConfig, forceUpdate?: boolean): Promise<void>;
+  generateEmbeddings(workspaceId: string, config: ModelAssignments, forceUpdate?: boolean): Promise<void>;
 
   /**
    * Search for similar content using vector similarity
@@ -93,7 +92,7 @@ export interface IWikiEmbeddingService {
   searchSimilar(
     workspaceId: string,
     query: string,
-    config: AiAPIConfig,
+    config: ModelAssignments,
     limit?: number,
     threshold?: number,
   ): Promise<SearchResult[]>;
@@ -124,8 +123,8 @@ export interface IWikiEmbeddingService {
     totalEmbeddings: number;
     totalNotes: number;
     lastUpdated?: Date;
-    modelUsed?: string;
-    providerUsed?: string;
+    modelId?: string;
+    providerId?: string;
   }>;
 
   /**

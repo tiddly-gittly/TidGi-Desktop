@@ -63,11 +63,11 @@ Feature: Agent Prompt Editing and Tool Toggle
     And the last AI request should contain system prompt "wiki-search"
     # Now navigate to plugins tab (2nd tab due to ui:order, id=config-tab-1) and disable the wiki search tool
     When I click on a "plugins tab" element with selector "[data-testid='edit-agent-prompt-form'] #config-tab-1"
-    # Wait for plugins array items to render after tab switch
-    And I should see a "third plugin item checkbox" element with selector "[data-testid='array-item-enabled-2']"
-    # Wiki search is at index 2 in the plugins array (0=fullReplacement/history, 1=workspacesList, 2=wikiSearch)
+    # Wiki search is at index 2 after the canonical agent tools are merged.
+    When I click on a "third plugin expand button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开'] >> nth=2"
+    And I should see a "third plugin enabled checkbox" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) input[id$='_plugins_2_enabled']"
     # Click the enabled checkbox to uncheck/disable the wiki search tool
-    When I click on a "wiki search tool enabled checkbox" element with selector "[data-testid='array-item-enabled-2']"
+    When I click on a "wiki search tool enabled checkbox" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) input[id$='_plugins_2_enabled']"
     # Wait for the preview agent to be recreated (form change triggers recreation with 500ms debounce)
     And I wait for 1.5 seconds for "preview agent recreation after form change"
     # Send another message and verify wiki-search is now absent from prompt

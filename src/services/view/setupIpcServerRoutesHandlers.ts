@@ -1,5 +1,6 @@
 import { WebContentsView } from 'electron';
 
+import { isTidGiUrlForWorkspace } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import type { IDeepLinkService } from '@services/deepLink/interface';
@@ -181,22 +182,19 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
         normalizedPathname = parsedUrl.hash.slice(filesIndex);
       }
     }
-    let effectiveWorkspaceID = workspaceID;
-    if (workspaceIDFromHost.toLowerCase() !== workspaceID.toLowerCase()) {
-      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback, using URL-based ID', {
+    // Chromium lowercases standard-scheme hosts. Match the attached view's
+    // URL host, but keep its original opaque ID for all service calls. Never
+    // resolve the request host through another workspace or accept credentials,
+    // ports or prefix matches as the attached workspace's origin.
+    if (!isTidGiUrlForWorkspace(parsedUrl, workspaceID)) {
+      logger.warn('workspaceID mismatch in setupIpcServerRoutesHandlers.handlerCallback', {
         function: 'setupIpcServerRoutesHandlers.handlerCallback',
         workspaceIDFromHost,
         workspaceID,
       });
-      const workspaceFromHost = await workspaceService.get(workspaceIDFromHost);
-      if (workspaceFromHost) {
-        effectiveWorkspaceID = workspaceFromHost.id;
-      } else {
-        const allWorkspaces = await workspaceService.getWorkspacesAsList();
-        const matched = allWorkspaces.find(ws => ws.id.toLowerCase() === workspaceIDFromHost.toLowerCase());
-        effectiveWorkspaceID = matched?.id ?? workspaceIDFromHost;
-      }
+      return new Response(undefined, { status: 404, statusText: 'Workspace URL does not match the attached view' });
     }
+    const effectiveWorkspaceID = workspaceID;
     try {
       for (const route of methods) {
         if (request.method === route.method && route.path.test(normalizedPathname)) {

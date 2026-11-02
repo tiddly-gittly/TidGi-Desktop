@@ -8,6 +8,7 @@ import type { IPreferences } from '../interface';
  * Add entries here when a custom component reads/writes preference keys.
  */
 export const customPreferenceFieldSchemas = {
+  mainAgentConversationId: z.string(),
   aiGenerateBackupTitleTimeout: z.number(),
   downloadPath: z.string(),
   externalAPIDebug: z.boolean(),

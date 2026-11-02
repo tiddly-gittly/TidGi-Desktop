@@ -11,34 +11,39 @@ Feature: Scheduled Tasks Management
     And I wait for the page to load completely
     And I should see a "page body" element with selector "body"
 
-    # --- Part A: View and add a scheduled task in preferences ---
+    # Create a durable conversation. Scheduled tasks cannot belong to a
+    # volatile preview or to a definition without a conversation.
+    When I click on "agent workspace button and new tab button and create default agent button" elements with selectors:
+      | element description         | selector                                    |
+      | agent workspace             | [data-testid='workspace-agent']             |
+      | new tab button              | [data-tab-id='new-tab-button']              |
+      | create default agent button | [data-testid='create-default-agent-button'] |
+    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+
+    # --- Part A: Open the shared scheduled-task editor from preferences ---
     When I click on a "settings button" element with selector "#open-preferences-button"
     When I switch to "preferences" window
     When I click on an "ai-agent section" element with selector "[data-testid='preference-section-aiAgent']"
-    Then I should see a "Scheduled Tasks section" element with selector "[data-testid='scheduled-tasks-table'], h6"
+    Then I should see a "Scheduled Tasks section" element with selector "[data-testid='scheduled-tasks-settings']"
     When I click on a "add task button" element with selector "[data-testid='scheduled-task-add-button']"
     Then I should see a "scheduled task dialog" element with selector "[data-testid='scheduled-task-dialog']"
+    Then I should see a "shared scheduled task editor" element with selector "[data-testid='edit-agent-schedule-section']"
     When I click on a "cancel button" element with selector "[data-testid='scheduled-task-cancel-button']"
     Then I should not see a "dialog" element with selector "[data-testid='scheduled-task-dialog']"
 
-    # --- Part B: Create an interval scheduled task ---
+    # --- Part B: Create a recurring Cron scheduled task ---
     When I click on a "add task button" element with selector "[data-testid='scheduled-task-add-button']"
     Then I should see a "scheduled task dialog" element with selector "[data-testid='scheduled-task-dialog']"
-    Then I should see a "mode select" element with selector "[data-testid='scheduled-task-mode-select']"
-    Then I should see a "interval input" element with selector "[data-testid='scheduled-task-interval-input']"
-    When I type "Periodic check-in for test" in "message input" element with selector "[data-testid='scheduled-task-message-input'] textarea:not([readonly])"
-    When I click on a "save button" element with selector "[data-testid='scheduled-task-save-button']"
-
-    # --- Part C: Cron mode shows next run preview ---
-    When I click on a "add task button" element with selector "[data-testid='scheduled-task-add-button']"
-    Then I should see a "scheduled task dialog" element with selector "[data-testid='scheduled-task-dialog']"
-    When I select "cron" from MUI Select with test id "scheduled-task-mode-select"
-    Then I should see a "cron expression input" element with selector "[data-testid='scheduled-task-cron-input']"
-    Then I should see a "timezone input" element with selector "[data-testid='scheduled-task-timezone-input']"
+    Then I should see a "mode select" element with selector "[data-testid='edit-agent-schedule-mode-select']"
+    When I select "enabled" from MUI Select with test id "edit-agent-schedule-mode-select"
+    And I wait for 1.5 seconds for "cron preview"
+    Then I should see a "cron preview" element with selector "[data-testid='schedule-preview-dates']"
+    When I click on a "save button" element with selector "[data-testid='edit-agent-schedule-save-button']"
+    Then I should see a "scheduled task selector" element with selector "[data-testid='edit-agent-scheduled-task-select']"
     When I click on a "cancel button" element with selector "[data-testid='scheduled-task-cancel-button']"
     When I close "preferences" window
 
-    # --- Part D: Agent tab — schedule section in definition editor ---
+    # --- Part C: Agent tab — the same shared schedule editor ---
     Then I switch to "main" window
     When I click on "agent workspace button and new tab button" elements with selectors:
       | element description | selector                        |

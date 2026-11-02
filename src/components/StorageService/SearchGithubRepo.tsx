@@ -189,7 +189,7 @@ function SearchGithubRepoResultList({
       />
       {(loading || isCreatingRepo) && <LinearProgress variant='query' />}
 
-      <List component='nav' aria-label='main mailbox folders'>
+      <List component='nav' aria-label={t('Preference.Search')}>
         {repoList.map(({ name, url }) => (
           <ListItemButton
             key={url}

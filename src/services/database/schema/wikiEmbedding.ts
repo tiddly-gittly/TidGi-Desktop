@@ -8,7 +8,7 @@ import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, PrimaryGenerate
  * IMPORTANT: Uses integer primary key to match sqlite-vec rowid requirements
  */
 @Entity('wiki_embeddings')
-@Index(['workspaceId', 'model', 'provider'])
+@Index(['workspaceId', 'modelId', 'providerId'])
 export class WikiEmbeddingEntity implements EmbeddingRecord {
   @PrimaryGeneratedColumn()
   id!: number; // number for sqlite-vec compatibility
@@ -34,10 +34,10 @@ export class WikiEmbeddingEntity implements EmbeddingRecord {
   modified!: Date;
 
   @Column()
-  model!: string;
+  modelId!: string;
 
   @Column()
-  provider!: string;
+  providerId!: string;
 
   @Column({ type: 'integer' })
   dimensions!: number;

@@ -445,7 +445,7 @@ When('I open tiddler {string} in browser view', async function(this: Application
   const escapedTitleForJs = JSON.stringify(tiddlerTitle);
   await backOff(
     async () => {
-      const result = await executeTiddlyWikiCode<{ success: boolean; error?: string }>(
+      const result = await executeTiddlyWikiCode<{ success: boolean; error?: string; diagnostics?: string[] }>(
         this.app!,
         `(function() {
           const title = ${escapedTitleForJs};
@@ -453,7 +453,15 @@ When('I open tiddler {string} in browser view', async function(this: Application
           if (!tiddler) {
             return { success: false, error: 'Tiddler not loaded: ' + title };
           }
-          try { if ($tw?.wiki?.removeFromStory) $tw.wiki.removeFromStory(title); } catch {}
+          const diagnostics = [];
+          const bestEffortMutation = (label, mutation) => {
+            try { mutation(); } catch (error) {
+              diagnostics.push(label + ': ' + String(error).slice(0, 160));
+            }
+          };
+          bestEffortMutation('removeFromStory', () => {
+            if ($tw?.wiki?.removeFromStory) $tw.wiki.removeFromStory(title);
+          });
           $tw.wiki.addToStory(title, undefined, '$:/StoryList', { openLinkFromOutsideRiver: 'top' });
           if ($tw?.pageWidgetNode?.refresh) {
             const changes = Object.create(null);
@@ -472,10 +480,13 @@ When('I open tiddler {string} in browser view', async function(this: Application
           if (!storyText) {
             return { success: false, error: 'Tiddler has no visible content: ' + title };
           }
-          return { success: true };
+          return { success: true, ...(diagnostics.length > 0 ? { diagnostics } : {}) };
         })()`,
         this.currentWindow,
       );
+      if (result?.diagnostics?.length) {
+        console.warn(`Best-effort browser-view mutations reported: ${result.diagnostics.join('; ').slice(0, 512)}`);
+      }
       if (!result?.success) {
         throw new Error(result?.error ?? `Failed to open tiddler ${tiddlerTitle}`);
       }
@@ -588,13 +599,19 @@ Then('image {string} should be loaded in browser view', async function(this: App
           naturalWidth: number;
           naturalHeight: number;
           canonicalUri: string;
+          diagnostics?: string[];
         }>(
           this.app!,
           `(function() {
               const title = ${JSON.stringify(tiddlerTitle)};
               const container = document.querySelector("[data-tiddler-title='" + title.replace(/'/g, "\\'") + "']");
               if (!container) {
-                try { if (typeof $tw !== 'undefined' && $tw.wiki) $tw.wiki.addToStory(title); } catch {}
+                let mutationDiagnostic = '';
+                try {
+                  if (typeof $tw !== 'undefined' && $tw.wiki) $tw.wiki.addToStory(title);
+                } catch (error) {
+                  mutationDiagnostic = String(error).slice(0, 160);
+                }
                 return {
                   loaded: false,
                   hasContainer: false,
@@ -604,6 +621,7 @@ Then('image {string} should be loaded in browser view', async function(this: App
                   naturalWidth: 0,
                   naturalHeight: 0,
                   canonicalUri: (typeof $tw !== 'undefined' && $tw.wiki && $tw.wiki.getTiddler(title)?.fields?._canonical_uri) || '',
+                  ...(mutationDiagnostic ? { diagnostics: ['addToStory: ' + mutationDiagnostic] } : {}),
                 };
               }
               const image = container.querySelector('img');
@@ -633,8 +651,12 @@ Then('image {string} should be loaded in browser view', async function(this: App
           this.currentWindow,
         );
         lastDiagnostic = JSON.stringify(diagnostic);
+        if (diagnostic?.diagnostics?.length) {
+          console.warn(`Best-effort browser-view mutations reported: ${diagnostic.diagnostics.join('; ').slice(0, 512)}`);
+        }
         isImageLoaded = Boolean(diagnostic?.loaded);
-      } catch {
+      } catch (error) {
+        lastDiagnostic = `renderer read failed: ${String(error).slice(0, 160)}`;
         isImageLoaded = false;
       }
 

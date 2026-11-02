@@ -35,9 +35,14 @@ interface IRowData {
   entries: ILogEntrySummary[];
   expandedID?: string;
   details?: LogRecord;
+  detailLoadError: boolean;
   onToggle: (entry: ILogEntrySummary) => void;
+  onRetryDetails: (entry: ILogEntrySummary) => void;
+  onCopy: (value: string) => void;
   copyMessageLabel: string;
   copyJSONLabel: string;
+  retryLabel: string;
+  detailLoadFailedLabel: string;
 }
 
 function formatTimestamp(timestamp: string): string {
@@ -52,7 +57,10 @@ const borderColorByLevel: Record<LogRecord['level'], string> = {
   debug: 'grey.600',
 };
 
-function LogRow({ index, style, entries, expandedID, details, onToggle, copyMessageLabel, copyJSONLabel }: RowComponentProps<IRowData>): React.JSX.Element {
+function LogRow(
+  { index, style, entries, expandedID, details, detailLoadError, onToggle, onRetryDetails, onCopy, copyMessageLabel, copyJSONLabel, retryLabel, detailLoadFailedLabel }:
+    RowComponentProps<IRowData>,
+): React.JSX.Element {
   const entry = entries[index];
   const expanded = expandedID === entry.id;
   return (
@@ -117,7 +125,7 @@ function LogRow({ index, style, entries, expandedID, details, onToggle, copyMess
                       size='small'
                       label={copyMessageLabel}
                       onClick={() => {
-                        void navigator.clipboard.writeText(details.message);
+                        onCopy(details.message);
                       }}
                     />
                     <Chip
@@ -125,7 +133,7 @@ function LogRow({ index, style, entries, expandedID, details, onToggle, copyMess
                       size='small'
                       label={copyJSONLabel}
                       onClick={() => {
-                        void navigator.clipboard.writeText(JSON.stringify(details, null, 2));
+                        onCopy(JSON.stringify(details, null, 2));
                       }}
                     />
                   </Stack>
@@ -140,6 +148,25 @@ function LogRow({ index, style, entries, expandedID, details, onToggle, copyMess
                     </tbody>
                   </Box>
                 </>
+              )
+              : detailLoadError
+              ? (
+                <Alert
+                  severity='error'
+                  action={
+                    <Button
+                      color='inherit'
+                      size='small'
+                      onClick={() => {
+                        onRetryDetails(entry);
+                      }}
+                    >
+                      {retryLabel}
+                    </Button>
+                  }
+                >
+                  {detailLoadFailedLabel}
+                </Alert>
               )
               : <CircularProgress size={20} />}
           </Box>
@@ -163,6 +190,11 @@ export default function LogViewer(): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sourcesError, setSourcesError] = useState(false);
+  const [entriesError, setEntriesError] = useState(false);
+  const [olderEntriesError, setOlderEntriesError] = useState(false);
+  const [detailLoadError, setDetailLoadError] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const [following, setFollowing] = useState(true);
   const [workspaceNames, setWorkspaceNames] = useState<Record<string, string>>({});
   const listReference = useListRef(null);
@@ -170,19 +202,30 @@ export default function LogViewer(): React.JSX.Element {
   const entriesRequestID = useRef(0);
 
   useEffect(() => {
-    void window.service.logViewer.listDates().then(result => {
-      setDates(result);
-      setDate(result[0] ?? new Date().toLocaleDateString('sv-SE'));
-    });
-    void window.service.workspace.getWorkspacesAsList().then(workspaces => {
-      setWorkspaceNames(Object.fromEntries(workspaces.map(workspace => [workspace.id, workspace.name])));
-    });
+    void window.service.logViewer.listDates()
+      .then(result => {
+        setDates(result);
+        setDate(result[0] ?? new Date().toLocaleDateString('sv-SE'));
+      })
+      .catch((error: unknown) => {
+        setDates([]);
+        setDate(new Date().toLocaleDateString('sv-SE'));
+        void window.service.native.log('error', 'LogViewer: failed to load log dates', { error });
+      });
+    void window.service.workspace.getWorkspacesAsList()
+      .then(workspaces => {
+        setWorkspaceNames(Object.fromEntries(workspaces.map(workspace => [workspace.id, workspace.name])));
+      })
+      .catch((error: unknown) => {
+        void window.service.native.log('warn', 'LogViewer: failed to load workspace names', { error });
+      });
   }, []);
 
   useEffect(() => {
     if (!date) return;
     let cancelled = false;
     setLoading(true);
+    setSourcesError(false);
     void (async () => {
       try {
         const result = await window.service.logViewer.listSources(date);
@@ -197,10 +240,12 @@ export default function LogViewer(): React.JSX.Element {
           preferred?.id ??
             (result.some(source => source.id === previous) ? previous : meta.workspaceID === undefined ? result[0]?.id ?? '' : '')
         );
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setSources([]);
           setSelectedSourceID('');
+          setSourcesError(true);
+          void window.service.native.log('error', 'LogViewer: failed to load log sources', { error, date });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -223,6 +268,8 @@ export default function LogViewer(): React.JSX.Element {
 
   const loadEntries = useCallback(async () => {
     const requestID = ++entriesRequestID.current;
+    setEntriesError(false);
+    setOlderEntriesError(false);
     if (selectedSource === undefined) {
       setEntries([]);
       setOlderCursor(undefined);
@@ -242,10 +289,16 @@ export default function LogViewer(): React.JSX.Element {
         setEntries(result.entries);
         setOlderCursor(result.nextCursor);
       }
-    } catch {
+    } catch (error) {
       if (requestID !== entriesRequestID.current) return;
       setEntries([]);
       setOlderCursor(undefined);
+      setEntriesError(true);
+      void window.service.native.log('error', 'LogViewer: failed to load log entries', {
+        error,
+        sourceID: selectedSource.id,
+        query: debouncedQuery,
+      });
     } finally {
       if (requestID === entriesRequestID.current) setLoading(false);
     }
@@ -256,13 +309,20 @@ export default function LogViewer(): React.JSX.Element {
     const requestID = ++entriesRequestID.current;
     setLoading(true);
     setFollowing(false);
+    setOlderEntriesError(false);
     try {
       const page = await window.service.logViewer.readPage(selectedSource, olderCursor);
       if (requestID !== entriesRequestID.current) return;
       setEntries(current => [...page.entries, ...current]);
       setOlderCursor(page.nextCursor);
-    } catch {
-      // Keep the entries already loaded and allow a later retry.
+    } catch (error) {
+      if (requestID === entriesRequestID.current) {
+        setOlderEntriesError(true);
+        void window.service.native.log('warn', 'LogViewer: failed to load older log entries', {
+          error,
+          sourceID: selectedSource.id,
+        });
+      }
     } finally {
       if (requestID === entriesRequestID.current) setLoading(false);
     }
@@ -288,25 +348,47 @@ export default function LogViewer(): React.JSX.Element {
     };
   }, [date, dates, debouncedQuery, following, loadEntries, selectedSource]);
 
+  const loadDetails = useCallback((entry: ILogEntrySummary) => {
+    detailRequestID.current = entry.id;
+    setExpandedID(entry.id);
+    setFollowing(false);
+    setDetails(undefined);
+    setDetailLoadError(false);
+    void window.service.logViewer.readEntry(entry.ref)
+      .then(value => {
+        if (detailRequestID.current === entry.id) setDetails(value);
+      })
+      .catch((error: unknown) => {
+        if (detailRequestID.current === entry.id) {
+          setDetailLoadError(true);
+          void window.service.native.log('error', 'LogViewer: failed to load log entry details', {
+            error,
+            entryID: entry.id,
+          });
+        }
+      });
+  }, []);
+
   const toggleEntry = useCallback((entry: ILogEntrySummary) => {
     if (expandedID === entry.id) {
       detailRequestID.current = undefined;
       setExpandedID(undefined);
       setDetails(undefined);
+      setDetailLoadError(false);
       return;
     }
-    detailRequestID.current = entry.id;
-    setExpandedID(entry.id);
-    setFollowing(false);
-    setDetails(undefined);
-    void window.service.logViewer.readEntry(entry.ref)
-      .then(value => {
-        if (detailRequestID.current === entry.id) setDetails(value);
-      })
-      .catch(() => {
-        if (detailRequestID.current === entry.id) setDetails(undefined);
-      });
-  }, [expandedID]);
+    loadDetails(entry);
+  }, [expandedID, loadDetails]);
+
+  const copyToClipboard = useCallback(async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyError(false);
+    } catch (error) {
+      setCopyError(true);
+      void window.service.native.log('warn', 'LogViewer: failed to copy log content', { error });
+    }
+  }, []);
 
   const globalSources = sources.filter(source => source.scope.kind === 'global');
   const workspaceSources = new Map<string, ILogSource[]>();
@@ -320,10 +402,17 @@ export default function LogViewer(): React.JSX.Element {
     entries,
     expandedID,
     details,
+    detailLoadError,
     onToggle: toggleEntry,
+    onRetryDetails: loadDetails,
+    onCopy: (value: string) => {
+      void copyToClipboard(value);
+    },
     copyMessageLabel: t('LogViewer.CopyMessage'),
     copyJSONLabel: t('LogViewer.CopyJSON'),
-  }), [details, entries, expandedID, t, toggleEntry]);
+    retryLabel: t('LogViewer.Refresh'),
+    detailLoadFailedLabel: t('Error.Generic'),
+  }), [copyToClipboard, details, entries, expandedID, t, toggleEntry, detailLoadError]);
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
@@ -432,7 +521,53 @@ export default function LogViewer(): React.JSX.Element {
         </Paper>
         <Box sx={{ flex: 1, minWidth: 0, position: 'relative' }}>
           {loading && <CircularProgress size={24} sx={{ position: 'absolute', zIndex: 2, top: 12, right: 12 }} />}
-          {selectedSource === undefined
+          <Stack spacing={1} sx={{ p: 2, pb: 0 }}>
+            {sourcesError && <Alert severity='error' role='alert'>{t('Error.Generic')}</Alert>}
+            {entriesError && (
+              <Alert
+                severity='error'
+                role='alert'
+                action={
+                  <Button
+                    color='inherit'
+                    size='small'
+                    onClick={() => {
+                      void loadEntries();
+                    }}
+                  >
+                    {t('LogViewer.Refresh')}
+                  </Button>
+                }
+              >
+                {t('Error.Generic')}
+              </Alert>
+            )}
+            {olderEntriesError && (
+              <Alert
+                severity='error'
+                role='alert'
+                action={
+                  <Button
+                    color='inherit'
+                    size='small'
+                    onClick={() => {
+                      void loadOlder();
+                    }}
+                  >
+                    {t('LogViewer.LoadOlder')}
+                  </Button>
+                }
+              >
+                {t('Error.Generic')}
+              </Alert>
+            )}
+            {copyError && <Alert severity='error' role='alert'>{t('Error.Generic')}</Alert>}
+          </Stack>
+          {sourcesError
+            ? null
+            : entriesError
+            ? null
+            : selectedSource === undefined
             ? <Alert severity='info' sx={{ m: 2 }}>{t('LogViewer.NoSources')}</Alert>
             : entries.length === 0 && !loading
             ? <Alert severity='info' sx={{ m: 2 }}>{t('LogViewer.NoEntries')}</Alert>
