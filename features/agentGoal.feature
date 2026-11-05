@@ -72,3 +72,15 @@ Feature: Persistent agent goals
     Then I should see a "resumed completion evidence" element with selector "[role='dialog'] p:has-text('GOAL_RESUMED_EVIDENCE')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
     Then I should see a "resumed final reply" element with selector "[data-testid='message-bubble']:has-text('GOAL_RESUMED_RESULT')"
+
+  @agent @mockOpenAI @agentGoal @scheduled-execution
+  Scenario: A scheduled message executes through the durable model runtime
+    Given I add mock OpenAI responses:
+      | response | stream | embedding | toolName | toolArguments |
+      | SCHEDULE_ACCEPTANCE_RESULT | false | | | |
+    When I schedule a one-shot message for the current test conversation
+    Then I should see a "scheduled user message" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_REQUEST')"
+    And I should see a "scheduled final reply" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_RESULT')"
+    And the scheduled message should have completed once
+    When I reload the conversation window
+    Then I should see a "restored scheduled result" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_RESULT')"

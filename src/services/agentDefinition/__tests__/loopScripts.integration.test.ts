@@ -6,7 +6,9 @@ import {
   type AgentFrameworkContext,
   type AgentLoopStep,
   BUILTIN_AGENT_AGENT_LOOP_QUALITY_GATE_SCRIPT_ID,
+  type ChatMessage,
   type ConversationEventDraft,
+  conversationEventToMessage,
   type ConversationMeta,
   createAgentLoopRunner,
   digestNormalizedScript,
@@ -95,10 +97,15 @@ describe('Desktop loop definition persistence and execution', () => {
     Object.assign(reloaded, { dataSource: database, agentDefRepository: database.getRepository(AgentDefinitionEntity) });
     const storage = new AgentInstanceService();
     const conversations = new Map<string, ConversationMeta>();
+    const messages = new Map<string, ChatMessage>();
+    let clock = 0;
     Object.assign(storage, {
       getAgentDefinition: async (id: string) => await reloaded.getAgentDef(id) ?? null,
       getConversationMeta: async (id: string) => conversations.get(id) ?? null,
+      getMessageById: async (conversationId: string, messageId: string) => messages.get(`${conversationId}:${messageId}`) ?? null,
       appendLocalEvent: async (draft: ConversationEventDraft) => {
+        clock += 1;
+        const event = { ...draft, originSequence: clock, lamportClock: clock };
         if (draft.kind === 'metadataPatch') {
           conversations.set(draft.conversationId, {
             conversationId: draft.conversationId,
@@ -108,11 +115,15 @@ describe('Desktop loop definition persistence and execution', () => {
             lastMessageTimestamp: 0,
             messageCount: 0,
             originNodeId: draft.originNodeId,
-            originClock: 1,
+            originClock: clock,
             isUserInitiated: false,
           });
         }
-        return { ...draft, originSequence: 1, lamportClock: 1 };
+        if (event.kind === 'message') {
+          const message = conversationEventToMessage(event);
+          messages.set(`${message.conversationId}:${message.messageId}`, message);
+        }
+        return event;
       },
     });
     const execute = vi.fn(async ({ query }: { query: string }) => ({ content: `wiki:${query}` }));
@@ -137,6 +148,13 @@ describe('Desktop loop definition persistence and execution', () => {
     expect(execute).toHaveBeenCalledWith({ query: 'calendar' });
     expect(steps).toContainEqual({ type: 'message', data: 'parent:wiki:calendar' });
     expect([...conversations.values()].map(item => item.definitionId)).toContain('child');
+    const childMessages = [...messages.values()];
+    expect(childMessages.map(message => [message.role, message.content])).toEqual([
+      ['user', 'calendar'],
+      ['assistant', 'wiki:calendar'],
+    ]);
+    expect(childMessages[1].turnId).toBe(childMessages[0].messageId);
+    expect(childMessages[1].conversationId).toBe(childMessages[0].conversationId);
   });
 
   it('keeps imported source separate from a local source approval and revokes replaced source', async () => {

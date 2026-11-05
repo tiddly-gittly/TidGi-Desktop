@@ -91,8 +91,10 @@ function createRuntimeContext(
     appendLocalConversationEvent: vi.fn(async (draft: ConversationEventDraft): Promise<ConversationEvent> => {
       sequence += 1;
       const event = { ...draft, originSequence: sequence, lamportClock: sequence };
-      const message = conversationEventToMessage(event);
-      if (message) messages.set(message.messageId, message);
+      if (event.kind === 'message') {
+        const message = conversationEventToMessage(event);
+        messages.set(message.messageId, message);
+      }
       return event;
     }),
   });
