@@ -4,37 +4,50 @@ import type { ConversationBranchState, ConversationEditingAdapter, ConversationM
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createSecureBrowserUuid } from '../createSecureBrowserUuid';
 
+const emptyBranches: ConversationBranchState[] = [];
+
 export function useConversationEditing(
   tab: IChatTab & { agentId: string },
   messages: readonly ConversationMessageListProjection[],
   timeline?: ConversationTimelinePageSuccess,
+  revision?: string,
+  isRunning = false,
 ): ConversationEditingAdapter {
-  const [branches, setBranches] = useState<ConversationBranchState[]>([]);
+  const [loaded, setLoaded] = useState<{ conversationId: string; branches: ConversationBranchState[] }>();
+  const branches = loaded?.conversationId === tab.agentId ? loaded.branches : emptyBranches;
   const attempts = useRef<{ key: string; requestId: string; targetConversationId: string } | undefined>(undefined);
-  const identities = useMemo(() => [
+  const identitiesKey = JSON.stringify([
     ...new Set([
       ...messages.filter(message => message.role === 'user').map(message => message.messageId),
       ...(timeline?.items.flatMap(entry => entry.kind === 'message' && entry.role === 'user' ? [entry.messageId] : []) ?? []),
     ]),
-  ], [messages, timeline]);
+  ]);
   useEffect(() => {
     let disposed = false;
-    setBranches([]);
-    void (async () => {
+    let request = 0;
+    const identities = JSON.parse(identitiesKey) as string[];
+    const refresh = async () => {
+      const currentRequest = ++request;
       const result: ConversationBranchState[] = [];
       for (let offset = 0; offset < identities.length; offset += 256) {
         const page = await window.service.agentInstance.getConversationBranches(tab.agentId, identities.slice(offset, offset + 256));
-        if (disposed) return;
+        if (disposed || currentRequest !== request) return;
         result.push(...page);
       }
-      if (!disposed) setBranches(result);
-    })().catch((error: unknown) => {
-      void window.service.native.log('error', 'Failed to load conversation branches', { error });
-    });
+      if (!disposed) setLoaded({ conversationId: tab.agentId, branches: result });
+    };
+    const reload = () => {
+      void refresh().catch((error: unknown) => {
+        void window.service.native.log('error', 'Failed to load conversation branches', { error });
+      });
+    };
+    reload();
+    window.addEventListener('focus', reload);
     return () => {
       disposed = true;
+      window.removeEventListener('focus', reload);
     };
-  }, [identities, tab.agentId]);
+  }, [identitiesKey, revision, isRunning, tab.agentId, tab.state]);
 
   return useMemo(() => ({
     branches,

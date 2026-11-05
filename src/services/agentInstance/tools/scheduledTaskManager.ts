@@ -48,9 +48,7 @@ interface RuntimeEntry {
   task: Pick<ScheduledTaskEntity, 'id' | 'agentInstanceId'>;
   /** croner Cron instance (only for cron-kind tasks) */
   cronJob?: InstanceType<typeof Cron>;
-  /** setInterval handle used only by the internal heartbeat runtime. */
-  intervalHandle?: ReturnType<typeof setInterval>;
-  /** setTimeout handle (only for at-kind one-shot tasks) */
+  /** setTimeout handle for one-shot tasks and the next heartbeat. */
   timeoutHandle?: ReturnType<typeof setTimeout>;
 }
 
@@ -353,7 +351,6 @@ function cancelEntry(taskId: string): void {
   const entry = activeEntries.get(taskId);
   if (!entry) return;
   if (entry.cronJob) entry.cronJob.stop();
-  if (entry.intervalHandle) clearInterval(entry.intervalHandle);
   if (entry.timeoutHandle) clearTimeout(entry.timeoutHandle);
   activeEntries.delete(taskId);
 }
@@ -904,15 +901,6 @@ export async function cancelTasksForAgent(agentInstanceId: string): Promise<void
 
 import type { AgentHeartbeatConfig } from 'memeloop';
 
-interface HeartbeatState {
-  nextWakeAtISO?: string;
-  createdBy?: string;
-  lastRunAtISO?: string;
-  runCount: number;
-}
-
-const heartbeatStates = new Map<string, HeartbeatState>();
-
 /**
  * Start a heartbeat for an agent instance. Not persisted — derived from definition config.
  */
@@ -929,59 +917,56 @@ export function startHeartbeat(
   const intervalMs = Math.max(config.intervalSeconds, 60) * 1000;
   const message = config.message || '[Heartbeat] Periodic check-in. Review your tasks and take any pending actions.';
 
-  const state: HeartbeatState = {
-    nextWakeAtISO: new Date(Date.now() + intervalMs).toISOString(),
-    createdBy: options?.createdBy ?? 'agent-definition',
-    runCount: 0,
-  };
-  heartbeatStates.set(agentId, state);
-
-  const handle = setInterval(() => {
-    const s = heartbeatStates.get(agentId);
-    if (!s) return;
-    s.lastRunAtISO = new Date().toISOString();
-    s.runCount += 1;
-    s.nextWakeAtISO = new Date(Date.now() + intervalMs).toISOString();
-
-    // Active hours check
-    if (config.activeHoursStart && config.activeHoursEnd) {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const [sh, sm] = config.activeHoursStart.split(':').map(Number);
-      const [eh, em] = config.activeHoursEnd.split(':').map(Number);
-      const start = (sh ?? 0) * 60 + (sm ?? 0);
-      const end = (eh ?? 0) * 60 + (em ?? 0);
-      if (start <= end ? !(currentMinutes >= start && currentMinutes <= end) : !(currentMinutes >= start || currentMinutes <= end)) {
-        return;
-      }
-    }
-
-    const fireIdentity = s.lastRunAtISO ?? new Date().toISOString();
-    void agentInstanceService.executeLocalAgentMessage({
-      target: { kind: 'local' },
-      provenance: {
-        conversationId: agentId,
-        definitionId: agentDefinitionId,
-        requestId: `heartbeat:${agentId}:${fireIdentity}:request`,
-        turnId: `heartbeat:${agentId}:${fireIdentity}:turn`,
-      },
-      message: `[Heartbeat] ${message}`,
-    }).catch((error: unknown) => {
-      logger.error('Heartbeat failed to send message', { error, agentId });
-    });
-  }, intervalMs);
-
-  handle.unref?.();
-  // Store handle under a heartbeat-specific key to avoid conflicting with scheduled tasks
-  activeEntries.set(`__heartbeat:${agentId}`, {
+  const entry: RuntimeEntry = {
     task: { id: `__heartbeat:${agentId}`, agentInstanceId: agentId },
-    intervalHandle: handle,
-  });
-  logger.info('Heartbeat started', { agentId, intervalMs });
+  };
+  activeEntries.set(entry.task.id, entry);
+
+  const scheduleNext = (): void => {
+    if (activeEntries.get(entry.task.id) !== entry) return;
+    entry.timeoutHandle = setTimeout(() => {
+      void run();
+    }, intervalMs);
+    entry.timeoutHandle.unref?.();
+  };
+
+  const run = async (): Promise<void> => {
+    if (activeEntries.get(entry.task.id) !== entry) return;
+    try {
+      if (config.activeHoursStart && config.activeHoursEnd) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const [sh, sm] = config.activeHoursStart.split(':').map(Number);
+        const [eh, em] = config.activeHoursEnd.split(':').map(Number);
+        const start = (sh ?? 0) * 60 + (sm ?? 0);
+        const end = (eh ?? 0) * 60 + (em ?? 0);
+        if (start <= end ? !(currentMinutes >= start && currentMinutes <= end) : !(currentMinutes >= start || currentMinutes <= end)) {
+          return;
+        }
+      }
+      const fireIdentity = new Date().toISOString();
+      await agentInstanceService.executeLocalAgentMessage({
+        target: { kind: 'local' },
+        provenance: {
+          conversationId: agentId,
+          definitionId: agentDefinitionId,
+          requestId: `heartbeat:${agentId}:${fireIdentity}:request`,
+          turnId: `heartbeat:${agentId}:${fireIdentity}:turn`,
+        },
+        message: `[Heartbeat] ${message}`,
+      });
+    } catch (error: unknown) {
+      logger.error('Heartbeat failed to send message', { error, agentId });
+    } finally {
+      scheduleNext();
+    }
+  };
+
+  scheduleNext();
+  logger.info('Heartbeat started', { agentId, intervalMs, createdBy: options?.createdBy ?? 'agent-definition' });
 }
 
 /** Stop heartbeat for an agent instance. */
 export function stopHeartbeat(agentId: string): void {
   cancelEntry(`__heartbeat:${agentId}`);
-  heartbeatStates.delete(agentId);
 }

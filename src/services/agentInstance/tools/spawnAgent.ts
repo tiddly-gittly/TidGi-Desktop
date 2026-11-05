@@ -50,6 +50,7 @@ async function executeSpawnAgent(
   parentAgentId: string,
   parentDefinitionId: string,
   timeoutMs: number,
+  signal: AbortSignal,
 ): Promise<ToolExecutionResult> {
   const { task, context: taskContext, agentDefinitionId } = parameters;
   const agentInstanceService = container.get<IAgentInstanceService>(serviceIdentifier.AgentInstance);
@@ -71,6 +72,7 @@ async function executeSpawnAgent(
       ? `${task}\n\n<context>\n${taskContext}\n</context>`
       : task;
 
+    signal.throwIfAborted();
     const terminal = await agentInstanceService.executeLocalAgentMessage({
       target: { kind: 'local' },
       provenance: {
@@ -80,7 +82,7 @@ async function executeSpawnAgent(
         turnId: `spawn-agent:${parentAgentId}:${childAgent.id}:turn`,
       },
       message: fullMessage,
-    }, { signal: AbortSignal.timeout(timeoutMs) });
+    }, { signal: AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) });
     const page = await agentInstanceService.getAgentStorageFullContentMessagePage(childAgent.id, {
       limit: 50,
       maxBytes: 256 * 1024,
@@ -126,7 +128,8 @@ export const spawnAgentDefinition = defineDesktopTool({
     const timeoutMs = config?.defaultTimeoutMs ?? 120000;
     await executeToolCall(
       'spawn-agent',
-      (parameters) => executeSpawnAgent(parameters, agentFrameworkContext.agent.id, (agentFrameworkContext as { agentDef?: AgentDefinition }).agentDef!.id, timeoutMs),
+      (parameters, signal) =>
+        executeSpawnAgent(parameters, agentFrameworkContext.agent.id, (agentFrameworkContext as { agentDef?: AgentDefinition }).agentDef!.id, timeoutMs, signal),
     );
   },
 });

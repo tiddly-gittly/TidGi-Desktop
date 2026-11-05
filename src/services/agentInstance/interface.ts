@@ -43,6 +43,7 @@ import type {
   GetFullContentMessagePageOptions,
   GetMessagePageOptions,
   GetRetainedCompactionControlsOptions,
+  GoalClient,
   ListScheduledTasksOptions,
   MemeLoopRunHandle,
   MemeLoopRunStatus,
@@ -117,6 +118,14 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   createAgent(agentDefinitionID?: string, options?: { id?: string; preview?: boolean; volatile?: boolean }): Promise<AgentRuntimeView>;
   /** Main-process only; deliberately omitted from the renderer IPC descriptor. */
   getDurableAgentRuntime(): Promise<MemeLoopRuntime>;
+  /** Main-process coordinator used by authenticated device RPC. */
+  getGoalClient(): GoalClient;
+  restoreGoals(): Promise<void>;
+  getGoal: GoalClient['get'];
+  startGoal: GoalClient['start'];
+  pauseGoal: GoalClient['pause'];
+  resumeGoal: GoalClient['resume'];
+  completeGoal: GoalClient['complete'];
   /** Main-process only exact-id materialization for authenticated Device RPC. */
   ensureAgentConversation(definitionId: string, conversationId?: string): Promise<{ conversationId: string }>;
 
@@ -406,6 +415,11 @@ export interface IAgentInstanceLifecycle {
 export const AgentInstanceServiceIPCDescriptor = {
   channel: AgentChannel.instance,
   properties: {
+    getGoal: ProxyPropertyType.Function,
+    startGoal: ProxyPropertyType.Function,
+    pauseGoal: ProxyPropertyType.Function,
+    resumeGoal: ProxyPropertyType.Function,
+    completeGoal: ProxyPropertyType.Function,
     cancelAgent: ProxyPropertyType.Function,
     cancelAgentRun: ProxyPropertyType.Function,
     cancelPromptPreview: ProxyPropertyType.Function,

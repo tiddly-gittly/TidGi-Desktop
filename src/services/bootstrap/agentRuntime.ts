@@ -48,10 +48,11 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
       },
       sendMessage: input => durableRuntime.sendMessage(input),
       getRunStatus: runId => durableRuntime.getRunStatus(runId),
-      cancelRun: runId => durableRuntime.cancelRun(runId),
+      cancelRun: runId => agentInstanceService.cancelAgentRun(runId),
     },
     storage: agentInstanceService,
     conversationEditing: agentInstanceService,
+    goals: agentInstanceService.getGoalClient(),
     conversationModelParameters: createDesktopConversationModelParameters({
       agentInstanceService,
       agentDefinitionService,
@@ -80,6 +81,7 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
   });
 
   await initializeTemplateBackends(agentDefinitionService, wikiService, workspaceService);
+  await agentInstanceService.restoreGoals();
 }
 
 /**

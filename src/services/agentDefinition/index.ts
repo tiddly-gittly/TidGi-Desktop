@@ -4,8 +4,8 @@
  */
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
-import type { AgentDefinition, AgentDefinitionToolConfig } from 'memeloop';
-import { getBuiltinLoopProfiles, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
+import type { AgentDefinition, AgentDefinitionToolConfig, AgentLoopScriptPolicy } from 'memeloop';
+import { digestNormalizedScript, getBuiltinLoopProfiles, normalizeScript, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
 import { DataSource, Repository } from 'typeorm';
@@ -70,6 +70,8 @@ function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
 const defaultAgentsList = createDesktopBuiltinAgentDefinitions();
 
 function projectAgentDefinition(entity: AgentDefinitionEntity): AgentDefinition {
+  const loopId = entity.loopId ??
+    (entity.agentFrameworkID === 'agent-tool-loop' || entity.agentFrameworkID === 'agent-agent-loop' ? entity.agentFrameworkID : undefined);
   return {
     id: entity.id,
     name: entity.name,
@@ -77,6 +79,9 @@ function projectAgentDefinition(entity: AgentDefinitionEntity): AgentDefinition 
     systemPrompt: entity.systemPrompt,
     tools: [...entity.tools],
     version: entity.version,
+    ...(loopId == null ? {} : { loopId }),
+    ...(entity.scriptReference == null ? {} : { scriptReference: entity.scriptReference }),
+    ...(entity.metadata == null ? {} : { metadata: entity.metadata }),
     ...(entity.avatarUrl === undefined ? {} : { avatarUrl: entity.avatarUrl }),
     ...(entity.agentFrameworkID === undefined ? {} : { agentFrameworkID: entity.agentFrameworkID }),
     ...(entity.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
@@ -141,6 +146,9 @@ export class AgentDefinitionService implements IAgentDefinitionService {
           systemPrompt: definition.systemPrompt,
           tools: definition.tools,
           version: definition.version,
+          loopId: definition.loopId,
+          scriptReference: definition.scriptReference,
+          metadata: definition.metadata,
           avatarUrl: definition.avatarUrl,
           agentFrameworkID: definition.agentFrameworkID,
           agentFrameworkConfig: definition.agentFrameworkConfig,
@@ -174,27 +182,81 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   public async createAgentDef(agent: AgentDefinition): Promise<AgentDefinition> {
     this.ensureRepositories();
     if (!agent.id) agent.id = nanoid();
-    await this.agentDefRepository!.save(this.agentDefRepository!.create({
+    const entity = await this.agentDefRepository!.save(this.agentDefRepository!.create({
       ...agent,
       isCustomized: true,
+      approvedScriptDigest: null,
     }));
-    return agent;
+    return projectAgentDefinition(entity);
   }
 
   public async updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition> {
     this.ensureRepositories();
     const existing = await this.agentDefRepository!.findOne({ where: { id: agent.id } });
     if (!existing) throw new Error(`Agent definition not found: ${agent.id}`);
+    if (agent.scriptReference !== undefined && existing.approvedScriptDigest) {
+      const digest = agent.scriptReference.kind === 'source'
+        ? await digestNormalizedScript(normalizeScript(agent.scriptReference.source))
+        : null;
+      if (digest !== existing.approvedScriptDigest) existing.approvedScriptDigest = null;
+    }
     Object.assign(
       existing,
       Object.fromEntries(
-        Object.entries(pick(agent, ['name', 'description', 'avatarUrl', 'agentFrameworkID', 'agentFrameworkConfig', 'modelConfig', 'agentTools', 'heartbeat']))
+        Object.entries(
+          pick(agent, [
+            'name',
+            'description',
+            'avatarUrl',
+            'loopId',
+            'scriptReference',
+            'metadata',
+            'agentFrameworkID',
+            'agentFrameworkConfig',
+            'modelConfig',
+            'agentTools',
+            'heartbeat',
+          ]),
+        )
           .filter(([, v]) => v !== undefined),
       ),
     );
     existing.isCustomized = true;
     await this.agentDefRepository!.save(existing);
     return projectAgentDefinition(existing);
+  }
+
+  /** Explicit local editor action: save executable source and its approval together. */
+  public async saveAgentLoopScript(input: { id: string; loopId: string; source: string; metadata?: Record<string, unknown> }): Promise<AgentDefinition> {
+    this.ensureRepositories();
+    const entity = await this.agentDefRepository!.findOneByOrFail({ id: input.id });
+    if (input.loopId !== 'agent-tool-loop' && input.loopId !== 'agent-agent-loop') {
+      throw new Error(`Unknown agent loop: ${input.loopId}`);
+    }
+    entity.loopId = input.loopId;
+    entity.agentFrameworkID = input.loopId;
+    entity.scriptReference = { kind: 'source', source: input.source, name: `${input.id}.mjs` };
+    if (input.metadata !== undefined) entity.metadata = input.metadata;
+    entity.approvedScriptDigest = await digestNormalizedScript(normalizeScript(input.source));
+    entity.isCustomized = true;
+    await this.agentDefRepository!.save(entity);
+    return projectAgentDefinition(entity);
+  }
+
+  public getLoopScriptPolicy(): AgentLoopScriptPolicy {
+    return {
+      allowSource: true,
+      allowSpecifier: false,
+      scriptLoadGate: {
+        admitScriptLoad: async ({ digest }) => {
+          this.ensureRepositories();
+          const approved = await this.agentDefRepository!.existsBy({ approvedScriptDigest: digest });
+          return approved
+            ? { allowed: true, trustClass: 'trusted', checkpointAccepted: true }
+            : { allowed: false, reason: 'Apply this source in the local agent script editor before running it.' };
+        },
+      },
+    };
   }
 
   public async getAgentDefs(): Promise<AgentDefinition[]> {

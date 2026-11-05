@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
@@ -33,6 +33,7 @@ const mockDeleteAgent = vi.fn();
 const mockDiscardVolatileAgentPreview = vi.fn();
 const mockGetAgentDef = vi.fn();
 const mockUpdateAgentDef = vi.fn();
+const mockSaveAgentLoopScript = vi.fn();
 const mockGetFrameworkConfigSchema = vi.fn();
 const mockLog = vi.fn();
 const mockListScheduledTasksForAgent = vi.fn();
@@ -59,6 +60,7 @@ Object.defineProperty(window, 'service', {
     agentDefinition: {
       getAgentDef: mockGetAgentDef,
       updateAgentDef: mockUpdateAgentDef,
+      saveAgentLoopScript: mockSaveAgentLoopScript,
     },
     native: {
       log: mockLog,
@@ -102,6 +104,7 @@ describe('EditAgentDefinitionContent', () => {
       title: 'Test Chat',
     });
     mockUpdateAgentDef.mockResolvedValue(mockAgentDefinition);
+    mockSaveAgentLoopScript.mockResolvedValue(mockAgentDefinition);
     mockListScheduledTasksForAgent.mockResolvedValue([]);
     mockGetCronPreviewDates.mockResolvedValue([]);
     mockDiscardVolatileAgentPreview.mockResolvedValue(undefined);
@@ -352,6 +355,28 @@ describe('EditAgentDefinitionContent', () => {
     // Should save agent definition
     await waitFor(() => {
       expect(mockUpdateAgentDef).toHaveBeenCalled();
+    });
+  });
+
+  it('applies source explicitly and keeps subsequent preview autosaves on that source', async () => {
+    await renderComponent();
+    const source = 'export default function run(ctx) { ctx.finish("scripted"); }';
+    fireEvent.change(screen.getByLabelText('LoopScript.Source'), { target: { value: source } });
+    expect(mockSaveAgentLoopScript).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'LoopScript.Save' }));
+    await waitFor(() => {
+      expect(mockSaveAgentLoopScript).toHaveBeenCalledWith({
+        id: mockAgentDefinition.id,
+        loopId: 'agent-tool-loop',
+        source,
+        metadata: {},
+      });
+    });
+    await waitFor(() => {
+      expect(mockUpdateAgentDef).toHaveBeenLastCalledWith(expect.objectContaining({
+        loopId: 'agent-tool-loop',
+        scriptReference: { kind: 'source', source, name: `${mockAgentDefinition.id}.mjs` },
+      }));
     });
   });
 

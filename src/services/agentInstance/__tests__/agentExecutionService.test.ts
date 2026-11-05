@@ -3,6 +3,7 @@ import { resolveAgentToolLoopTerminalState } from 'memeloop';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AgentInstanceService } from '../index';
+import * as scheduledTaskManager from '../tools/scheduledTaskManager';
 
 describe('AgentInstanceService durable execution IPC', () => {
   const attachmentReference = {
@@ -11,6 +12,108 @@ describe('AgentInstanceService durable execution IPC', () => {
     mimeType: 'image/png',
     size: 4,
   } as const;
+
+  it('observes cancellation during runtime preparation before sending a durable message', async () => {
+    const controller = new AbortController();
+    const reason = new Error('Stopped during runtime lookup');
+    const ready = Promise.withResolvers<undefined>();
+    const unsubscribe = vi.fn();
+    const runtime = {
+      subscribeToUpdates: vi.fn().mockReturnValue(unsubscribe),
+      sendMessage: vi.fn(),
+      cancelRun: vi.fn(),
+    };
+    const pending = Promise.withResolvers<typeof runtime>();
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    const updateStatus = vi.fn().mockResolvedValue(undefined);
+    Object.assign(service, {
+      deviceNetworkService: { getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }) },
+      agentDefinitionService: { getAgentDef: vi.fn().mockResolvedValue({ id: 'definition-1' }) },
+      getAgentMetadata: vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1' }),
+      getAgentMessage: vi.fn().mockResolvedValue(undefined),
+      createAgentDeviceRpcRunTurn: vi.fn().mockResolvedValue({
+        conversationId: 'conversation-1',
+        definitionId: 'definition-1',
+        requestId: 'request-1',
+        turnId: 'turn-1',
+        message: 'hello',
+      }),
+      captureBeforeTurnCommitMap: vi.fn().mockResolvedValue({}),
+      updateAgentStatusBestEffort: updateStatus,
+      getDurableAgentRuntime: vi.fn(() => {
+        ready.resolve(undefined);
+        return pending.promise;
+      }),
+    });
+
+    const execution = service.executeLocalAgentMessage({
+      target: { kind: 'local' },
+      provenance: { conversationId: 'conversation-1', definitionId: 'definition-1', requestId: 'request-1', turnId: 'turn-1' },
+      message: 'hello',
+    }, { signal: controller.signal });
+    await ready.promise;
+    controller.abort(reason);
+    pending.resolve(runtime);
+
+    await expect(execution).rejects.toBe(reason);
+    expect(runtime.sendMessage).not.toHaveBeenCalled();
+    expect(runtime.cancelRun).not.toHaveBeenCalled();
+    expect(updateStatus).toHaveBeenLastCalledWith('conversation-1', expect.objectContaining({ state: 'canceled' }));
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { requestId: 'heartbeat:conversation-1:2026-11-04:request', enabledAfterRun: true, shouldStart: false },
+    { requestId: 'user-request', enabledAfterRun: false, shouldStart: false },
+    { requestId: 'user-request', enabledAfterRun: true, shouldStart: true },
+  ])('preserves heartbeat lifecycle after $requestId (enabled=$enabledAfterRun)', async ({ requestId, enabledAfterRun, shouldStart }) => {
+    const start = vi.spyOn(scheduledTaskManager, 'startHeartbeat').mockImplementation(() => {});
+    const stop = vi.spyOn(scheduledTaskManager, 'stopHeartbeat').mockImplementation(() => {});
+    const heartbeat = { enabled: true, intervalSeconds: 120, message: 'Review pending work' };
+    const getAgentDef = vi.fn()
+      .mockResolvedValueOnce({ id: 'definition-1', heartbeat })
+      .mockResolvedValue({ id: 'definition-1', heartbeat: { ...heartbeat, enabled: enabledAfterRun } });
+    const service = Object.create(AgentInstanceService.prototype) as AgentInstanceService;
+    Object.assign(service, {
+      deviceNetworkService: { getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }) },
+      agentDefinitionService: { getAgentDef },
+      getAgentMetadata: vi.fn().mockResolvedValue({ id: 'conversation-1', agentDefId: 'definition-1', volatile: false }),
+      getAgentMessage: vi.fn().mockResolvedValue(undefined),
+      createAgentDeviceRpcRunTurn: vi.fn().mockResolvedValue({
+        conversationId: 'conversation-1',
+        definitionId: 'definition-1',
+        requestId,
+        turnId: 'turn-1',
+        message: 'hello',
+      }),
+      captureBeforeTurnCommitMap: vi.fn().mockResolvedValue({}),
+      updateAgentStatusBestEffort: vi.fn().mockResolvedValue(undefined),
+      getDurableAgentRuntime: vi.fn().mockResolvedValue({
+        subscribeToUpdates: vi.fn().mockReturnValue(vi.fn()),
+        sendMessage: vi.fn().mockResolvedValue({ runId: 'run-1' }),
+      }),
+      waitForDurableRun: vi.fn().mockResolvedValue({ state: 'completed' }),
+      activeDurableRunIds: new Map(),
+    });
+
+    try {
+      await service.executeLocalAgentMessage({
+        target: { kind: 'local' },
+        provenance: { conversationId: 'conversation-1', definitionId: 'definition-1', requestId, turnId: 'turn-1' },
+        message: 'hello',
+      });
+      if (shouldStart) {
+        expect(start).toHaveBeenCalledWith('conversation-1', 'definition-1', heartbeat, service, { createdBy: 'agent-definition' });
+      } else {
+        expect(start).not.toHaveBeenCalled();
+      }
+      if (enabledAfterRun) expect(stop).not.toHaveBeenCalled();
+      else expect(stop).toHaveBeenCalledWith('conversation-1');
+    } finally {
+      start.mockRestore();
+      stop.mockRestore();
+    }
+  });
 
   it.each(
     [

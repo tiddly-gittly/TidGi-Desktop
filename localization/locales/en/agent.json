@@ -1,4 +1,16 @@
 {
+  "LoopScript": {
+    "Title": "Execution script",
+    "Description": "Customize the agent loop with JavaScript (.mjs). Saving enables this source to run on this computer with your account's access.",
+    "Family": "Loop",
+    "ToolLoop": "Tools",
+    "AgentLoop": "Subagents",
+    "Source": "JavaScript source",
+    "Metadata": "Loop configuration (JSON)",
+    "InvalidMetadata": "Enter a JSON object for the loop configuration.",
+    "Save": "Save script",
+    "Saved": "Script saved and ready for the next run."
+  },
   "agent": {
     "run": {
       "error": {

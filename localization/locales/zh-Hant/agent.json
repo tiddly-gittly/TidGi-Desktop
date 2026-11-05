@@ -1,4 +1,16 @@
 {
+  "LoopScript": {
+    "Title": "執行腳本",
+    "Description": "使用 JavaScript（.mjs）自訂智能體循環。儲存後，這份原始碼會以你的帳戶權限在本機執行。",
+    "Family": "循環",
+    "ToolLoop": "工具呼叫",
+    "AgentLoop": "子智能體",
+    "Source": "JavaScript 原始碼",
+    "Metadata": "循環設定（JSON）",
+    "InvalidMetadata": "請使用 JSON 物件填寫循環設定。",
+    "Save": "儲存腳本",
+    "Saved": "腳本已儲存，將用於下一輪執行。"
+  },
   "agent": {
     "run": {
       "error": {

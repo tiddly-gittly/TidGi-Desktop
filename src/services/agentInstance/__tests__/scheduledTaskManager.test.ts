@@ -525,6 +525,78 @@ describe('ScheduledTaskManager', () => {
     });
   });
 
+  describe('heartbeat cadence', () => {
+    const config = { enabled: true, intervalSeconds: 60, message: 'Review pending work' };
+
+    it('waits for a slow run to finish before starting the next interval', async () => {
+      const pending = Promise.withResolvers<undefined>();
+      const send = vi.fn().mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
+      manager.startHeartbeat('heartbeat-agent', 'definition-1', config, makeAgentService(send));
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(send).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(240_000);
+      expect(send).toHaveBeenCalledTimes(1);
+
+      pending.resolve(undefined);
+      await vi.advanceTimersByTimeAsync(59_999);
+      expect(send).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['stopHeartbeat', 'stopAllScheduledTasks'] as const)('honors %s while a run is pending', async (stop) => {
+      const pending = Promise.withResolvers<undefined>();
+      const send = vi.fn().mockReturnValue(pending.promise);
+      manager.startHeartbeat('heartbeat-agent', 'definition-1', config, makeAgentService(send));
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      if (stop === 'stopHeartbeat') manager.stopHeartbeat('heartbeat-agent');
+      else manager.stopAllScheduledTasks();
+      pending.resolve(undefined);
+      await vi.advanceTimersByTimeAsync(180_000);
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps a restarted heartbeat independent of the previous pending run', async () => {
+      const previous = Promise.withResolvers<undefined>();
+      const send = vi.fn().mockReturnValueOnce(previous.promise).mockResolvedValue(undefined);
+      manager.startHeartbeat('heartbeat-agent', 'definition-1', config, makeAgentService(send));
+      await vi.advanceTimersByTimeAsync(60_000);
+      manager.startHeartbeat('heartbeat-agent', 'definition-1', config, makeAgentService(send));
+      await vi.advanceTimersByTimeAsync(30_000);
+      previous.resolve(undefined);
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(send).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(send).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(send).toHaveBeenCalledTimes(3);
+    });
+
+    it('schedules another interval after an execution failure', async () => {
+      const send = vi.fn().mockRejectedValueOnce(new Error('Temporary execution failure')).mockResolvedValue(undefined);
+      manager.startHeartbeat('heartbeat-agent', 'definition-1', config, makeAgentService(send));
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it('rechecks active hours on later ticks', async () => {
+      vi.setSystemTime(new Date(2026, 10, 4, 8, 58, 0));
+      const send = vi.fn().mockResolvedValue(undefined);
+      manager.startHeartbeat('heartbeat-agent', 'definition-1', {
+        ...config,
+        activeHoursStart: '09:00',
+        activeHoursEnd: '17:00',
+      }, makeAgentService(send));
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(send).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('getCronPreviewDates', () => {
     it('returns N next run dates for a valid expression', () => {
       const dates = manager.getCronPreviewDates('0 9 * * *', undefined, 3);

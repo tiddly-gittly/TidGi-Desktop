@@ -102,6 +102,7 @@ export class MemeLoopDesktopRuntime {
       deviceNetworkService: IDeviceNetworkService;
       notifyTransientMessage: (message: ChatMessage) => void | Promise<void>;
       loopScriptPolicy?: AgentFrameworkContext['loopScriptPolicy'];
+      goals?: AgentFrameworkContext['goals'];
       dataSource: DataSource;
     },
   ) {
@@ -244,6 +245,7 @@ export class MemeLoopDesktopRuntime {
         async () => (await this.options.deviceNetworkService.getLocalIdentity()).peerId,
       ),
       loopScriptPolicy: this.options.loopScriptPolicy,
+      goals: this.options.goals,
       runChildAgent: this.createRunChildAgent(agentId),
       onTransientMessage: async (message) => {
         // Streaming partials are deliberately UI-only. The MemeLoop core

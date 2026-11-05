@@ -121,9 +121,10 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
   // Load schema when temporaryAgentDefinition is available
   useEffect(() => {
     const loadSchema = async () => {
-      if (temporaryAgentDefinition?.agentFrameworkID) {
+      const loopId = temporaryAgentDefinition?.loopId ?? temporaryAgentDefinition?.agentFrameworkID;
+      if (loopId) {
         try {
-          const schema = await window.service.agentInstance.getFrameworkConfigSchema(temporaryAgentDefinition.agentFrameworkID);
+          const schema = await window.service.agentInstance.getFrameworkConfigSchema(loopId);
           setPromptSchema(schema);
         } catch (error) {
           console.error('Failed to load framework config schema:', error);
@@ -133,7 +134,7 @@ export const CreateNewAgentContent: React.FC<CreateNewAgentContentProps> = ({ ta
     };
 
     void loadSchema();
-  }, [temporaryAgentDefinition?.agentFrameworkID]);
+  }, [temporaryAgentDefinition?.loopId, temporaryAgentDefinition?.agentFrameworkID]);
 
   // Create preview agent when entering step 3
   useEffect(() => {

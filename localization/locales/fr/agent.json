@@ -1,4 +1,16 @@
 {
+  "LoopScript": {
+    "Title": "Script d’exécution",
+    "Description": "Personnalisez la boucle avec JavaScript (.mjs). Une fois enregistré, ce code s’exécute sur cet ordinateur avec les droits de votre compte.",
+    "Family": "Boucle",
+    "ToolLoop": "Outils",
+    "AgentLoop": "Sous-agents",
+    "Source": "Code JavaScript",
+    "Metadata": "Configuration de la boucle (JSON)",
+    "InvalidMetadata": "Saisissez un objet JSON pour configurer la boucle.",
+    "Save": "Enregistrer le script",
+    "Saved": "Script enregistré pour la prochaine exécution."
+  },
   "agent": {
     "run": {
       "error": {

@@ -28,6 +28,7 @@ describe('Desktop built-in general assistant integration', () => {
     // it into its persisted editor field so both prompt and plugin forms can
     // request the matching schema.
     expect(definition?.agentFrameworkID).toBe(AGENT_TOOL_LOOP_ID);
+    expect(definition?.loopId).toBe(AGENT_TOOL_LOOP_ID);
     expect(instances.getFrameworkConfigSchema(definition?.agentFrameworkID ?? '')).toMatchObject({
       properties: expect.objectContaining({
         prompts: expect.any(Object),

@@ -28,6 +28,14 @@ function createOptions() {
         conversationId: conversationId ?? 'conversation-1',
       })),
       getDurableAgentRuntime: vi.fn().mockResolvedValue(durableRuntime),
+      getGoalClient: vi.fn().mockReturnValue({
+        get: vi.fn().mockResolvedValue(null),
+        start: vi.fn(),
+        pause: vi.fn(),
+        resume: vi.fn(),
+        complete: vi.fn(),
+      }),
+      restoreGoals: vi.fn().mockResolvedValue(undefined),
       getConversationMeta: vi.fn().mockResolvedValue({
         conversationId: 'conversation-1',
         originNodeId: 'test-peer',
@@ -76,6 +84,9 @@ describe('initializeAgentServicesSafely', () => {
     expect(options.agentInstanceService.initialize).toHaveBeenCalledOnce();
     expect(options.agentInstanceService.getDurableAgentRuntime).toHaveBeenCalledOnce();
     expect(options.deviceNetworkService.configureRuntime).toHaveBeenCalledOnce();
+    expect(options.agentInstanceService.restoreGoals).toHaveBeenCalledOnce();
+    expect(vi.mocked(options.deviceNetworkService.configureRuntime).mock.invocationCallOrder[0])
+      .toBeLessThan(vi.mocked(options.agentInstanceService.restoreGoals).mock.invocationCallOrder[0]);
   });
 
   it('resolves the explicitly selected main conversation through the production handler', async () => {
@@ -120,5 +131,22 @@ describe('initializeAgentServicesSafely', () => {
     });
     vi.mocked(options.deviceNetworkService.authorizeAgentRpc).mockResolvedValue(false);
     await expect(runtimeOptions.rpcHandler?.(request)).rejects.toThrow('rpc_permission_denied');
+  });
+
+  it('routes goal reads through the paired-device authorizer and the same desktop coordinator', async () => {
+    const options = createOptions();
+    await initializeAgentServicesSafelyWithServices(options);
+    const [runtimeOptions] = vi.mocked(options.deviceNetworkService.configureRuntime).mock.calls[0];
+    const goals = options.agentInstanceService.getGoalClient();
+    const request = {
+      remotePeerId: 'remote-peer',
+      method: 'memeloop.goal.get',
+      parameters: { conversationId: 'conversation-1' },
+    };
+    await expect(runtimeOptions.rpcHandler?.(request)).resolves.toBeNull();
+    expect(goals.get).toHaveBeenCalledWith('conversation-1');
+    vi.mocked(options.deviceNetworkService.authorizeAgentRpc).mockResolvedValue(false);
+    await expect(runtimeOptions.rpcHandler?.(request)).rejects.toThrow('rpc_permission_denied');
+    expect(goals.get).toHaveBeenCalledTimes(1);
   });
 });

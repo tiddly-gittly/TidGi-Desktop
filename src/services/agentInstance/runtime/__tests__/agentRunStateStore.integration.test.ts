@@ -38,7 +38,7 @@ import { AgentInstanceService } from '../../index';
 import type { IAgentInstanceService } from '../../interface';
 import { DesktopAgentRunStateStore } from '../agentRunStateStore';
 
-type RuntimeInstanceServiceOverrides = Pick<IAgentInstanceService, 'appendLocalConversationEvent' | 'getAgentConversationMeta'>;
+type RuntimeInstanceServiceOverrides = Pick<IAgentInstanceService, 'appendLocalConversationEvent' | 'getAgentConversationMeta' | 'getMessageById'>;
 
 function createInstanceService(overrides: Partial<RuntimeInstanceServiceOverrides>): IAgentInstanceService {
   const service = new AgentInstanceService();
@@ -71,7 +71,12 @@ function createRuntimeContext(
   runAgentToolLoop: NonNullable<AgentFrameworkContext['runAgentToolLoop']>,
 ): AgentFrameworkContext {
   let sequence = 0;
+  const messages = new Map<string, ChatMessage>();
   const storage = createInstanceService({
+    getMessageById: vi.fn(async (conversationId: string, messageId: string) => {
+      const message = messages.get(messageId);
+      return message?.conversationId === conversationId ? message : null;
+    }),
     getAgentConversationMeta: vi.fn(async (_localNodeId: string, conversationId: string) => ({
       conversationId,
       title: 'Conversation',
@@ -85,7 +90,10 @@ function createRuntimeContext(
     })),
     appendLocalConversationEvent: vi.fn(async (draft: ConversationEventDraft): Promise<ConversationEvent> => {
       sequence += 1;
-      return { ...draft, originSequence: sequence, lamportClock: sequence };
+      const event = { ...draft, originSequence: sequence, lamportClock: sequence };
+      const message = conversationEventToMessage(event);
+      if (message) messages.set(message.messageId, message);
+      return event;
     }),
   });
   return {

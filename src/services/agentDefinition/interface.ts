@@ -4,7 +4,7 @@
  */
 import { AgentChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { AgentDefinition, TiddlerFieldsForAgent } from 'memeloop';
+import type { AgentDefinition, AgentLoopScriptPolicy, TiddlerFieldsForAgent } from 'memeloop';
 
 export interface AgentTemplateTiddlerSource {
   tiddler: unknown;
@@ -18,6 +18,8 @@ export interface IAgentDefinitionService {
   configureTemplateSource(source: AgentTemplateSource): void;
   createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
   updateAgentDef(agent: Partial<AgentDefinition> & { id: string }): Promise<AgentDefinition>;
+  saveAgentLoopScript(input: { id: string; loopId: string; source: string; metadata?: Record<string, unknown> }): Promise<AgentDefinition>;
+  getLoopScriptPolicy(): AgentLoopScriptPolicy;
   getAgentDefs(): Promise<AgentDefinition[]>;
   getAgentDef(id?: string): Promise<AgentDefinition | undefined>;
   getAgentTemplates(): Promise<AgentDefinition[]>;
@@ -31,6 +33,7 @@ export const AgentDefinitionServiceIPCDescriptor = {
   properties: {
     createAgentDef: ProxyPropertyType.Function,
     updateAgentDef: ProxyPropertyType.Function,
+    saveAgentLoopScript: ProxyPropertyType.Function,
     getAgentDefs: ProxyPropertyType.Function,
     getAgentDef: ProxyPropertyType.Function,
     getAgentTemplates: ProxyPropertyType.Function,

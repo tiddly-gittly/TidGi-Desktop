@@ -1,5 +1,5 @@
 import type { CreateScheduledTaskInput, ScheduledTaskState } from 'memeloop';
-import type { AgentDefinition, AgentDefinitionToolConfig, AgentHeartbeatConfig, AgentModelConfig } from 'memeloop';
+import type { AgentDefinition, AgentDefinitionToolConfig, AgentHeartbeatConfig, AgentModelConfig, LoopProfileScriptReference } from 'memeloop';
 import type { AgentInstanceLatestStatus, AgentInstanceMetadata } from 'memeloop';
 import type { AgentFrameworkConfig, AttachmentReference, ChatMessage, ChatMessagePart, ChatRole, DetailReference, ToolCall } from 'memeloop';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
@@ -146,6 +146,19 @@ export class AgentDefinitionEntity implements AgentDefinition {
 
   @Column()
   version!: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  loopId?: string;
+
+  @Column({ type: 'simple-json', nullable: true })
+  scriptReference?: LoopProfileScriptReference;
+
+  @Column({ type: 'simple-json', nullable: true })
+  metadata?: Record<string, unknown>;
+
+  /** Local editor approval; excluded from portable definitions and synchronization. */
+  @Column({ type: 'varchar', nullable: true })
+  approvedScriptDigest?: string | null;
 
   /** Agent avatar or icon URL, nullable indicates using default avatar */
   @Column({ nullable: true })

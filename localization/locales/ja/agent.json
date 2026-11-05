@@ -1,4 +1,16 @@
 {
+  "LoopScript": {
+    "Title": "実行スクリプト",
+    "Description": "JavaScript（.mjs）でエージェントのループを編集します。保存すると、このコードがアカウントの権限でこのコンピューター上で実行されます。",
+    "Family": "ループ",
+    "ToolLoop": "ツール",
+    "AgentLoop": "サブエージェント",
+    "Source": "JavaScript ソース",
+    "Metadata": "ループ設定（JSON）",
+    "InvalidMetadata": "ループ設定を JSON オブジェクトで入力してください。",
+    "Save": "スクリプトを保存",
+    "Saved": "スクリプトを保存しました。次の実行から使用されます。"
+  },
   "agent": {
     "run": {
       "error": {

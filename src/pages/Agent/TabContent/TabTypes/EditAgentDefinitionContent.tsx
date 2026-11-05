@@ -11,6 +11,7 @@ import type { IEditAgentDefinitionTab } from '../../types/tab';
 import { TabState, TabType } from '../../types/tab';
 import { createEditableAgentFrameworkConfig } from './agentDefinitionFrameworkConfig';
 import { createAgentDefinitionSaveQueue } from './agentDefinitionSaveQueue';
+import { AgentLoopScriptEditor } from './AgentLoopScriptEditor';
 import { ScheduledWakeupEditor } from './ScheduledWakeupEditor';
 
 interface EditAgentDefinitionContentProps {
@@ -81,11 +82,14 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   const [forceRecreatePreview, setForceRecreatePreview] = useState(0);
   const pendingSaveCountReference = useRef(0);
   const [agentDefinitionSaveQueue] = useState(() => createAgentDefinitionSaveQueue(async definition => await window.service.agentDefinition.updateAgentDef(definition)));
-  const saveAgentDefinition = useCallback(async (definition: AgentDefinition): Promise<AgentDefinition> => {
+  const saveAgentDefinition = useCallback(async (
+    definition: AgentDefinition,
+    persist?: (definition: AgentDefinition) => Promise<AgentDefinition>,
+  ): Promise<AgentDefinition> => {
     pendingSaveCountReference.current += 1;
     setIsSaving(true);
     try {
-      return await agentDefinitionSaveQueue.save(definition);
+      return await agentDefinitionSaveQueue.save(definition, persist);
     } finally {
       pendingSaveCountReference.current -= 1;
       if (pendingSaveCountReference.current === 0) {
@@ -127,27 +131,28 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
   // Load framework config schema
   useEffect(() => {
     const loadSchema = async () => {
-      if (!agentDefinition?.agentFrameworkID) {
+      const loopId = agentDefinition?.loopId ?? agentDefinition?.agentFrameworkID;
+      if (!loopId) {
         // No agentFrameworkID found
         return;
       }
 
       try {
         // Loading framework config schema
-        const schema = await window.service.agentInstance.getFrameworkConfigSchema(agentDefinition.agentFrameworkID);
+        const schema = await window.service.agentInstance.getFrameworkConfigSchema(loopId);
         // Schema loaded successfully
         setPromptSchema(schema);
       } catch (error) {
         void window.service.native.log('error', 'EditAgentDefinitionContent: Failed to load framework config schema', {
           error,
-          agentFrameworkID: agentDefinition.agentFrameworkID,
+          loopId,
         });
         console.error('Failed to load framework config schema:', error);
       }
     };
 
     void loadSchema();
-  }, [agentDefinition?.agentFrameworkID]);
+  }, [agentDefinition?.loopId, agentDefinition?.agentFrameworkID]);
 
   // Auto-save after edits settle. Cleanup is essential: a stale save must not
   // overwrite a newer prompt configuration after the preview has been created.
@@ -429,6 +434,24 @@ export const EditAgentDefinitionContent: React.FC<EditAgentDefinitionContentProp
         </SectionContainer>
 
         <Divider sx={{ my: 3 }} />
+
+        <SectionContainer>
+          <AgentLoopScriptEditor
+            key={agentDefinition.id}
+            definition={agentDefinition}
+            onSave={async (loopId, source, metadata) => {
+              const updated: AgentDefinition = {
+                ...agentDefinition,
+                loopId,
+                metadata,
+                agentFrameworkID: loopId,
+                scriptReference: { kind: 'source', source, name: `${agentDefinition.id}.mjs` },
+              };
+              setAgentDefinition(updated);
+              await saveAgentDefinition(updated, async () => await window.service.agentDefinition.saveAgentLoopScript({ id: updated.id, loopId, source, metadata }));
+            }}
+          />
+        </SectionContainer>
 
         <ScheduledWakeupEditor agentDefinition={agentDefinition} />
 

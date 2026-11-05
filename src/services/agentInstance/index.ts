@@ -80,6 +80,8 @@ import {
   type GetFullContentMessagePageOptions,
   type GetMessagePageOptions,
   type GetRetainedCompactionControlsOptions,
+  type GoalClient,
+  GoalCoordinator,
   type ListScheduledTasksOptions,
   type MemeLoopRunHandle,
   type MemeLoopRunStatus,
@@ -118,6 +120,7 @@ import {
 } from './attachmentUploadStore';
 import * as editingStore from './conversationEditingStore';
 import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
+import { DesktopGoalStore } from './runtime/goalStore';
 
 import * as repo from './agentRepository';
 import type { IAgentInstanceService, RendererAgentRunResult } from './interface';
@@ -200,12 +203,20 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   private frameworkSchemas: Map<string, Record<string, unknown>> = new Map();
   private memeLoopRuntime: MemeLoopDesktopRuntime | null = null;
+  private goalCoordinator: GoalCoordinator | undefined;
   private activeDurableRunIds = new Map<string, Set<string>>();
   private durableErrorPersistence = new Map<string, Promise<void>>();
 
   public async initialize(): Promise<void> {
     try {
       await this.initializeDatabase();
+      const executionNodeId = await this.getLocalNodeId();
+      this.goalCoordinator = new GoalCoordinator({
+        store: new DesktopGoalStore(this.dataSource!),
+        executionNodeId,
+        getRuntime: () => this.getDurableAgentRuntime(),
+        onError: error => logger.error('Goal continuation failed', { error }),
+      });
       await this.initializeFrameworks();
       // Restore definition-owned heartbeat timers after DB + frameworks are ready.
       await this.restoreBackgroundTasks();
@@ -719,6 +730,8 @@ export class AgentInstanceService implements IAgentInstanceService {
         externalAPIService: this.externalAPIService,
         deviceNetworkService: this.deviceNetworkService,
         notifyTransientMessage: (message) => this.publishConversationMessage(message, true),
+        loopScriptPolicy: this.agentDefinitionService.getLoopScriptPolicy(),
+        goals: this.goalCoordinator,
         dataSource: this.dataSource!,
       });
     }
@@ -729,6 +742,38 @@ export class AgentInstanceService implements IAgentInstanceService {
   public getDurableAgentRuntime(): Promise<MemeLoopRuntime> {
     this.ensureRepositories();
     return this.getMemeLoopRuntime().getCoreRuntime(new DesktopAgentRunStateStore(this.dataSource!));
+  }
+
+  public getGoalClient(): GoalClient {
+    if (!this.goalCoordinator) throw new Error('Agent goals are not initialized');
+    return this.goalCoordinator;
+  }
+
+  public restoreGoals(): Promise<void> {
+    if (!this.goalCoordinator) throw new Error('Agent goals are not initialized');
+    return this.goalCoordinator.restore();
+  }
+
+  public getGoal(...input: Parameters<GoalClient['get']>): ReturnType<GoalClient['get']> {
+    return this.getGoalClient().get(...input);
+  }
+
+  public async startGoal(input: Parameters<GoalClient['start']>[0]): ReturnType<GoalClient['start']> {
+    const conversation = await this.getAgentMetadata(input.conversationId);
+    if (!conversation || conversation.agentDefId !== input.definitionId) throw new Error('goal_conversation_definition_mismatch');
+    return this.getGoalClient().start(input);
+  }
+
+  public pauseGoal(...input: Parameters<GoalClient['pause']>): ReturnType<GoalClient['pause']> {
+    return this.getGoalClient().pause(...input);
+  }
+
+  public resumeGoal(...input: Parameters<GoalClient['resume']>): ReturnType<GoalClient['resume']> {
+    return this.getGoalClient().resume(...input);
+  }
+
+  public completeGoal(...input: Parameters<GoalClient['complete']>): ReturnType<GoalClient['complete']> {
+    return this.getGoalClient().complete(...input);
   }
 
   /** Idempotently materialize Core's requested conversation identity in the Desktop projection. */
@@ -1345,6 +1390,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
     try {
       stopHeartbeat(agentId);
+      await this.goalCoordinator?.pauseConversation(agentId);
       await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
       await cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
@@ -1449,6 +1495,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       runTerminalStates.set(update.runId, resolveAgentToolLoopTerminalState(update.step, current));
     });
     try {
+      options?.signal?.throwIfAborted();
       handle = await durableRuntime.sendMessage({
         ...prepared,
         requestPeerId,
@@ -1486,8 +1533,10 @@ export class AgentInstanceService implements IAgentInstanceService {
       // runAgentToolLoopTurn does, while preserving input-required and failures.
       const completedState = projectedState === 'working' || projectedState === 'submitted' ? 'completed' : projectedState;
       await this.updateAgentStatusBestEffort(agentId, { state: completedState, modified: new Date() });
-      if (definition.heartbeat?.enabled && !agent.volatile) {
-        startHeartbeat(agentId, definition.id, definition.heartbeat, this, { createdBy: 'agent-definition' });
+      if (definition.heartbeat?.enabled && !agent.volatile && !requestId.startsWith(`heartbeat:${agentId}:`)) {
+        const heartbeat = (await this.agentDefinitionService.getAgentDef(agent.agentDefId))?.heartbeat;
+        if (heartbeat?.enabled) startHeartbeat(agentId, definition.id, heartbeat, this, { createdBy: 'agent-definition' });
+        else stopHeartbeat(agentId);
       }
       return terminal;
     } catch (error) {
@@ -1692,7 +1741,11 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public async cancelAgentRun(runId: string): Promise<boolean> {
-    return (await this.getDurableAgentRuntime()).cancelRun(runId);
+    const runtime = await this.getDurableAgentRuntime();
+    const run = await runtime.getRunStatus(runId);
+    const goal = run ? await this.goalCoordinator?.pauseConversation(run.conversationId) : undefined;
+    const cancelled = await runtime.cancelRun(runId);
+    return cancelled || (goal?.status === 'paused' && goal.pendingRound?.runId === runId);
   }
 
   private async assertAgentAttachmentAuthorized(
@@ -1761,6 +1814,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async cancelAgent(agentId: string): Promise<void> {
     stopHeartbeat(agentId);
+    await this.goalCoordinator?.pauseConversation(agentId);
     const durableRunIds = [...(this.activeDurableRunIds.get(agentId) ?? [])];
     await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
     if (durableRunIds.length > 0) {
@@ -1793,6 +1847,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
     try {
       stopHeartbeat(agentId);
+      await this.goalCoordinator?.pauseConversation(agentId);
       await (await this.getDurableAgentRuntime()).cancelAgent(agentId);
       await cancelTasksForAgent(agentId);
       await cleanupMCPClient(agentId);
@@ -2276,6 +2331,8 @@ export class AgentInstanceService implements IAgentInstanceService {
   }
 
   public async dispose(): Promise<void> {
+    await this.goalCoordinator?.suspend();
+    this.goalCoordinator = undefined;
     await this.memeLoopRuntime?.dispose();
     this.memeLoopRuntime = null;
     for (const subject of this.agentInstanceSubjects.values()) subject.complete();
