@@ -103,11 +103,7 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: UI_ASSERT_TIMEOUT });
-    const isVisible = await currentWindow.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
-    }
+    await currentWindow.locator(selector).first().waitFor({ state: 'visible', timeout: UI_ASSERT_TIMEOUT });
   } catch (error) {
     const controlSummary = await getControlSummaryForSelectorFailure(currentWindow, selector);
     throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}\nVisible controls near target:\n${controlSummary}`);
