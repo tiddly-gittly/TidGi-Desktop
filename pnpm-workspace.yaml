@@ -54,6 +54,7 @@ allowBuilds:
 blockExoticSubdeps: false
 
 minimumReleaseAgeExclude:
+  - 'memeloop@0.3.12'
   - 'memeloop@0.3.11'
   - '@memeloop/react-ui@0.2.13'
   - 'memeloop@0.3.10'
