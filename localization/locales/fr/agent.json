@@ -143,8 +143,8 @@
       "ThisDevice": "Cet appareil"
     },
     "ConfigError": {
-      "AuthenticationError": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
-      "AuthenticationFailed": "L'authentification {{provider}} a échoué. Veuillez vérifier votre clé API dans les paramètres.",
+      "AuthenticationError": "Vérifiez la clé API de {{provider}} dans les paramètres.",
+      "AuthenticationFailed": "Vérifiez la clé API de {{provider}} dans les paramètres.",
       "GoToSettings": "Aller aux paramètres",
       "MissingAPIKeyError": "Clé API pour {{provider}} introuvable. Veuillez l'ajouter dans les paramètres.",
       "MissingBaseURLError": "Le fournisseur {{provider}} nécessite une URL de base. Veuillez la configurer dans les paramètres.",

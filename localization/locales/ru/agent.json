@@ -143,8 +143,8 @@
       "ThisDevice": "Это устройство"
     },
     "ConfigError": {
-      "AuthenticationError": "Ошибка аутентификации {{provider}}. Пожалуйста, проверьте API-ключ в настройках.",
-      "AuthenticationFailed": "Ошибка аутентификации {{provider}}. Пожалуйста, проверьте API-ключ в настройках.",
+      "AuthenticationError": "Проверьте API-ключ {{provider}} в настройках.",
+      "AuthenticationFailed": "Проверьте API-ключ {{provider}} в настройках.",
       "GoToSettings": "Перейти к настройкам",
       "MissingAPIKeyError": "API-ключ для {{provider}} не найден. Пожалуйста, добавьте его в настройках.",
       "MissingBaseURLError": "Провайдер {{provider}} требует базовый URL. Пожалуйста, настройте его в настройках.",

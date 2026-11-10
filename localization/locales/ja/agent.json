@@ -143,8 +143,8 @@
       "ThisDevice": "このデバイス"
     },
     "ConfigError": {
-      "AuthenticationError": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
-      "AuthenticationFailed": "{{provider}} の認証に失敗しました。設定でAPIキーを確認してください。",
+      "AuthenticationError": "設定で {{provider}} の API キーを確認してください。",
+      "AuthenticationFailed": "設定で {{provider}} の API キーを確認してください。",
       "GoToSettings": "設定へ移動",
       "MissingAPIKeyError": "{{provider}} のAPIキーが見つかりません。設定で追加してください。",
       "MissingBaseURLError": "{{provider}} プロバイダーにはベーsURLの設定が必要です。設定で構成してください。",

@@ -143,8 +143,8 @@
       "ThisDevice": "This device"
     },
     "ConfigError": {
-      "AuthenticationError": "{{provider}} authentication failed. Please check your API key in Settings.",
-      "AuthenticationFailed": "{{provider}} authentication failed. Please check your API key in Settings.",
+      "AuthenticationError": "Check the API key for {{provider}} in Settings.",
+      "AuthenticationFailed": "Check the API key for {{provider}} in Settings.",
       "GoToSettings": "Go to Settings",
       "MissingAPIKeyError": "API key for {{provider}} not found. Please add it in Settings.",
       "MissingBaseURLError": "{{provider}} provider requires a base URL. Please configure it in Settings.",

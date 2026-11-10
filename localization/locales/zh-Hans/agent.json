@@ -143,8 +143,8 @@
       "ThisDevice": "此设备"
     },
     "ConfigError": {
-      "AuthenticationError": "{{provider}} 身份验证失败。请在设置中检查您的 API 密钥。",
-      "AuthenticationFailed": "{{provider}} 身份验证失败。请在设置中检查您的 API 密钥。",
+      "AuthenticationError": "请在设置中检查 {{provider}} 的 API 密钥。",
+      "AuthenticationFailed": "请在设置中检查 {{provider}} 的 API 密钥。",
       "GoToSettings": "前往设置",
       "MissingAPIKeyError": "未找到 {{provider}} 的 API 密钥。请在设置中添加。",
       "MissingBaseURLError": "{{provider}} 提供商需要配置基础 URL。请在设置中进行配置。",
