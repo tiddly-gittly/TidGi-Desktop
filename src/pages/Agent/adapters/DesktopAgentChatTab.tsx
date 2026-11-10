@@ -354,6 +354,8 @@ function DesktopAgentChatView({
           conversationId={tab.agentId}
           definitionId={activeAgentDefinitionId}
           labels={goalLabels}
+          resolveErrorPresentation={resolveErrorPresentation}
+          onErrorAction={handleDesktopAgentErrorAction}
           onClose={() => {
             setGoalOpen(false);
           }}
