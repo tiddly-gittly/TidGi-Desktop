@@ -27,7 +27,12 @@ export function sendToMainWindowNoWait(type: WikiChannel, workspaceID: string, m
  * @param type The handler on renderer (preload script) side should implement `ipcRenderer.send(WikiChannel.xxx, nonceReceived, result);`, where `result` is usually `string[]` (the default type for `<T>` in function signature)
  * @returns undefined if main window webContents is not found
  */
-export async function sendToMainWindowAndAwait<T = string[]>(type: WikiChannel, workspaceID: string, messages: string[], options?: { timeout?: number }): Promise<T | undefined> {
+export async function sendToMainWindowAndAwait<T = string[]>(
+  type: WikiChannel | 'invokeActionString',
+  workspaceID: string,
+  messages: string[],
+  options?: { timeout?: number },
+): Promise<T | undefined> {
   const viewService = container.get<IViewService>(serviceIdentifier.View);
   const browserView = viewService.getView(workspaceID, WindowNames.main);
   if ((browserView?.webContents) === undefined) {

@@ -10,8 +10,8 @@ import { DEFAULT_FIRST_WIKI_FOLDER_PATH as PATHS_DEFAULT_FIRST_WIKI_FOLDER_PATH,
  * Application Path Configuration
  *
  * Sets up isolated userData directories for different environments:
- * - Test with --test-scenario: test-artifacts/{scenarioSlug}/userData-test (scenario-isolated)
- * - Test without scenario: userData-test/ (legacy, isolated from dev/prod)
+ * - Packaged tests with TIDGI_TEST_SCENARIO: test-artifacts/{scenarioSlug}/userData-test (scenario-isolated)
+ * - Unit tests: userData-test/ (isolated from dev/prod)
  * - Development: userData-dev/ (isolated from production)
  * - Production: system default userData directory
  */
@@ -20,26 +20,15 @@ import { DEFAULT_FIRST_WIKI_FOLDER_PATH as PATHS_DEFAULT_FIRST_WIKI_FOLDER_PATH,
 const isPackaged = process.resourcesPath && !process.resourcesPath.includes('electron');
 
 /**
- * Parse test scenario identifier from environment variable or CLI argument.
- * On Windows Electron rejects custom CLI flags, so E2E tests pass TIDGI_TEST_SCENARIO via env.
- * This is used to isolate test data per scenario in E2E tests.
+ * Parse the test scenario identifier supplied by the E2E harness.
+ * Packaged test runs must provide this environment value so each run gets an
+ * isolated user-data directory.
  */
 function getTestScenarioSlug(): string | undefined {
   // Use bracket notation to prevent Vite/esbuild from stripping the runtime env var.
   const environmentScenario = process.env['TIDGI_TEST_SCENARIO'];
-  if (environmentScenario) {
-    const slug = slugify(environmentScenario, 60);
-    return slug === 'unknown' ? undefined : slug;
-  }
-
-  // Fallback to CLI argument for legacy compatibility
-  const scenarioArgument = process.argv.find(argument => argument.startsWith('--test-scenario='));
-  if (!scenarioArgument) return undefined;
-
-  const rawName = scenarioArgument.split('=')[1];
-  if (!rawName) return undefined;
-
-  const slug = slugify(rawName, 60);
+  if (!environmentScenario) return undefined;
+  const slug = slugify(environmentScenario, 60);
   return slug === 'unknown' ? undefined : slug;
 }
 
@@ -48,12 +37,11 @@ export const TEST_SCENARIO_SLUG = getTestScenarioSlug();
 // Set isolated userData paths for dev/test
 if (isTest) {
   let userDataPath: string;
-  if (TEST_SCENARIO_SLUG && isPackaged) {
-    // E2E with scenario isolation: test-artifacts/{scenario}/userData-test
+  if (isPackaged) {
+    if (!TEST_SCENARIO_SLUG) {
+      throw new Error('TIDGI_TEST_SCENARIO is required for packaged test runs');
+    }
     userDataPath = path.resolve(process.cwd(), 'test-artifacts', TEST_SCENARIO_SLUG, 'userData-test');
-  } else if (isPackaged) {
-    // E2E without scenario (legacy): cwd/userData-test
-    userDataPath = path.resolve(process.cwd(), 'userData-test');
   } else {
     // Unit tests: project/userData-test
     userDataPath = path.resolve(sourcePath, 'userData-test');

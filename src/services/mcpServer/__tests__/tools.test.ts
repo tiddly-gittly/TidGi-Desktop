@@ -9,19 +9,47 @@ const mockOpen = vi.fn();
 const mockClose = vi.fn();
 
 function createSnapshotWindowMock(snapshot: unknown) {
+  const listeners = new Map<string, Set<() => void>>();
+  const emit = (event: string) => {
+    const eventListeners = listeners.get(event);
+    listeners.delete(event);
+    for (const listener of eventListeners ?? []) {
+      listener();
+    }
+  };
+  const sendInputEvent = vi.fn();
+  const insertText = vi.fn(async () => undefined);
+  const webContents = {
+    isDestroyed: vi.fn(() => false),
+    focus: vi.fn(),
+    sendInputEvent,
+    insertText,
+    loadURL: vi.fn(async () => undefined),
+    once: vi.fn((event: string, listener: () => void) => {
+      const eventListeners = listeners.get(event) ?? new Set<() => void>();
+      eventListeners.add(listener);
+      listeners.set(event, eventListeners);
+    }),
+    removeListener: vi.fn((event: string, listener: () => void) => {
+      listeners.get(event)?.delete(listener);
+    }),
+    executeJavaScript: vi.fn((_script: string, _userGesture?: boolean) => Promise.resolve(snapshot)),
+    debugger: {
+      isAttached: vi.fn(() => false),
+      attach: vi.fn(),
+      detach: vi.fn(),
+      sendCommand: vi.fn(async () => snapshot),
+    },
+  };
   return {
     isDestroyed: vi.fn(() => false),
     isVisible: vi.fn(() => true),
     getTitle: vi.fn(() => 'TidGi [Snapshot]'),
-    webContents: {
-      isDestroyed: vi.fn(() => false),
-      debugger: {
-        isAttached: vi.fn(() => false),
-        attach: vi.fn(),
-        detach: vi.fn(),
-        sendCommand: vi.fn(async () => snapshot),
-      },
-    },
+    focus: vi.fn(),
+    webContents,
+    emit,
+    sendInputEvent,
+    insertText,
   };
 }
 
@@ -32,6 +60,26 @@ function createBrowserWindowMock(overrides: Partial<{ destroyed: boolean; visibl
     isVisible: vi.fn(() => visible),
     getTitle: vi.fn(() => title),
   };
+}
+
+function createInputWindowMock() {
+  const sendInputEvent = vi.fn();
+  const insertText = vi.fn(async () => undefined);
+  const webContents = {
+    isDestroyed: vi.fn(() => false),
+    focus: vi.fn(),
+    sendInputEvent,
+    insertText,
+  };
+  const browserWindow = {
+    isDestroyed: vi.fn(() => false),
+    isFocused: vi.fn(() => false),
+    focus: vi.fn(),
+    isVisible: vi.fn(() => true),
+    getTitle: vi.fn(() => 'TidGi [Input]'),
+    webContents,
+  };
+  return { browserWindow, webContents, sendInputEvent, insertText };
 }
 
 describe('MCP tools', () => {
@@ -51,6 +99,9 @@ describe('MCP tools', () => {
   afterEach(() => {
     if (container.isBound(serviceIdentifier.Window)) {
       container.unbind(serviceIdentifier.Window);
+    }
+    if (container.isBound(serviceIdentifier.View)) {
+      container.unbind(serviceIdentifier.View);
     }
   });
 
@@ -139,10 +190,11 @@ describe('MCP tools', () => {
   });
 
   it('returns a structural summary for oversized snapshots', async () => {
-    mockGet.mockReturnValue(createSnapshotWindowMock({
+    const target = createSnapshotWindowMock({
       nodes: Array.from({ length: 120 }, (_, index) => ({ nodeId: String(index), name: `node-${index}`, childIds: [index + 1] })),
       metadata: { title: 'Preferences' },
-    }));
+    });
+    mockGet.mockReturnValue(target);
 
     const result = await callTool('ui_snapshot', {
       workspaceId: 'main-window',
@@ -159,6 +211,8 @@ describe('MCP tools', () => {
       expect.objectContaining({ key: 'nodes', path: 'nodes' }),
       expect.objectContaining({ key: 'metadata', path: 'metadata' }),
     ]));
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+    expect(target.webContents.debugger.attach).not.toHaveBeenCalled();
   });
 
   it('supports drilling into an oversized array snapshot with slices', async () => {
@@ -193,6 +247,262 @@ describe('MCP tools', () => {
     expect(result).toHaveLength(5);
     expect(result[0]).toEqual({ nodeId: '10', text: 'node-10' });
     expect(result[4]).toEqual({ nodeId: '14', text: 'node-14' });
+  });
+
+  it('reuses a fresh root snapshot for interactive drilldown without another renderer command', async () => {
+    const target = createSnapshotWindowMock({
+      nodes: [{ nodeId: '0' }],
+      interactive: [
+        { text: 'Save', x: 240, y: 180 },
+        { text: 'Cancel', x: 320, y: 180 },
+      ],
+    });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', {
+      workspaceId: 'main-window',
+      maxBytes: 20_000,
+    });
+    const interactive = await callTool('ui_snapshot', {
+      workspaceId: 'main-window',
+      path: 'interactive',
+      sliceStart: 0,
+      sliceCount: 100,
+      maxBytes: 20_000,
+    });
+
+    expect(interactive).toEqual([
+      { text: 'Save', x: 240, y: 180 },
+      { text: 'Cancel', x: 320, y: 180 },
+    ]);
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining('getBoundingClientRect'),
+      true,
+    );
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining('const x = Math.max'),
+      true,
+    );
+  });
+
+  it('omits offscreen interactive controls and rejects cached viewport-external clicks', async () => {
+    const target = createSnapshotWindowMock(undefined);
+    const widthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    const heightDescriptor = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    const elementFromPointDescriptor = Object.getOwnPropertyDescriptor(document, 'elementFromPoint');
+    const originalBody = document.body.innerHTML;
+    const boundingRect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
+      const top = this.id === 'offscreen' ? 900 : 100;
+      return {
+        x: 20,
+        y: top,
+        width: 120,
+        height: 40,
+        top,
+        right: 140,
+        bottom: top + 40,
+        left: 20,
+        toJSON: () => ({}),
+      };
+    });
+
+    try {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 400 });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: 300 });
+      document.body.innerHTML = '<button id="visible">Visible</button><button id="offscreen">Offscreen</button>';
+      const visible = document.getElementById('visible')!;
+      const elementFromPoint = vi.fn(() => visible);
+      Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: elementFromPoint });
+      // Execute the exact renderer payload against jsdom so this regression
+      // test covers the DOM geometry filter rather than only its source text.
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      const runRendererSnapshot = new Function('window', 'document', 'NodeFilter', 'script', 'return eval(script);');
+      target.webContents.executeJavaScript.mockImplementation((script: string) => Promise.resolve(runRendererSnapshot(window, document, NodeFilter, script)));
+      mockGet.mockReturnValue(target);
+
+      const snapshot = await callTool('ui_snapshot', { workspaceId: 'main-window' }) as {
+        interactive: Array<{ text: string; x: number; y: number }>;
+      };
+
+      expect(snapshot.interactive).toEqual([
+        expect.objectContaining({ text: 'Visible', x: 80, y: 120 }),
+      ]);
+      expect(elementFromPoint).toHaveBeenCalledWith(80, 120);
+      await expect(callTool('ui_click', {
+        workspaceId: 'main-window',
+        x: 400,
+        y: 120,
+      })).rejects.toThrow('outside the current viewport');
+      expect(target.sendInputEvent).not.toHaveBeenCalled();
+    } finally {
+      boundingRect.mockRestore();
+      if (widthDescriptor !== undefined) Object.defineProperty(window, 'innerWidth', widthDescriptor);
+      if (heightDescriptor !== undefined) Object.defineProperty(window, 'innerHeight', heightDescriptor);
+      if (elementFromPointDescriptor !== undefined) {
+        Object.defineProperty(document, 'elementFromPoint', elementFromPointDescriptor);
+      } else {
+        Reflect.deleteProperty(document, 'elementFromPoint');
+      }
+      document.body.innerHTML = originalBody;
+    }
+  });
+
+  it('invalidates a cached snapshot after an MCP UI mutation', async () => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    await callTool('ui_click', { workspaceId: 'main-window', x: 240, y: 180 });
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['typing', async () => callTool('ui_type', { workspaceId: 'main-window', text: 'draft value' }), 2],
+    ['a keypress', async () => callTool('ui_key', { workspaceId: 'main-window', key: 'Enter' }), 2],
+    ['ui_evaluate', async (target: ReturnType<typeof createSnapshotWindowMock>) => {
+      target.webContents.executeJavaScript.mockResolvedValueOnce(JSON.stringify({ ok: true, value: 'read' }));
+      await callTool('ui_evaluate', { workspaceId: 'main-window', script: '"read"' });
+    }, 3],
+  ])('invalidates a cached snapshot after %s', async (_name, action, expectedRendererCommands) => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    await action(target);
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(expectedRendererCommands);
+  });
+
+  it('invalidates a workspace snapshot before navigation', async () => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    container.bind(serviceIdentifier.View).toConstantValue({
+      getView: vi.fn(() => ({ webContents: target.webContents })),
+    });
+
+    await callTool('ui_snapshot', { workspaceId: 'workspace-id' });
+    await callTool('ui_navigate', { workspaceId: 'workspace-id', url: 'https://example.com' });
+    await callTool('ui_snapshot', { workspaceId: 'workspace-id' });
+
+    expect(target.webContents.loadURL).toHaveBeenCalledWith('https://example.com');
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+  });
+
+  it('invalidates a cached snapshot when the renderer reloads', async () => {
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    target.emit('did-start-loading');
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+  });
+
+  it('expires a cached snapshot after its short drilldown window', async () => {
+    vi.useFakeTimers();
+    const target = createSnapshotWindowMock({ interactive: [{ text: 'Save', x: 240, y: 180 }] });
+    mockGet.mockReturnValue(target);
+
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+    await vi.advanceTimersByTimeAsync(15_001);
+    await callTool('ui_snapshot', { workspaceId: 'main-window' });
+
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('fails fast after a renderer command times out instead of queuing another command', async () => {
+    vi.useFakeTimers();
+    let settleSnapshot: ((snapshot: unknown) => void) | undefined;
+    const target = createSnapshotWindowMock(undefined);
+    target.webContents.executeJavaScript.mockImplementationOnce(() =>
+      new Promise((resolve) => {
+        settleSnapshot = resolve;
+      })
+    );
+    mockGet.mockReturnValue(target);
+
+    const timedOutSnapshot = callTool('ui_snapshot', { workspaceId: 'main-window' });
+    const timeoutExpectation = expect(timedOutSnapshot).rejects.toThrow('ui_snapshot timed out after 10000ms');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await timeoutExpectation;
+
+    await expect(callTool('ui_evaluate', {
+      workspaceId: 'main-window',
+      script: '1 + 1',
+    })).rejects.toThrow('ui_snapshot is still running');
+    expect(target.webContents.executeJavaScript).toHaveBeenCalledTimes(1);
+
+    settleSnapshot?.({ title: 'Recovered' });
+    await vi.advanceTimersByTimeAsync(0);
+    target.webContents.executeJavaScript.mockResolvedValueOnce(JSON.stringify({ ok: true, value: 2 }));
+
+    await expect(callTool('ui_evaluate', {
+      workspaceId: 'main-window',
+      script: '1 + 1',
+    })).resolves.toBe(2);
+    vi.useRealTimers();
+  });
+
+  it('focuses the target before clicking so modal controls receive the pointer event', async () => {
+    const target = createInputWindowMock();
+    mockGet.mockReturnValue(target.browserWindow);
+
+    await callTool('ui_click', {
+      workspaceId: 'main-window',
+      x: 240,
+      y: 180,
+    });
+
+    expect(target.browserWindow.focus).toHaveBeenCalledTimes(1);
+    expect(target.webContents.focus).toHaveBeenCalledTimes(1);
+    expect(target.sendInputEvent.mock.calls).toEqual([
+      [{ type: 'mouseMove', x: 240, y: 180 }],
+      [{ type: 'mouseDown', x: 240, y: 180, button: 'left', clickCount: 1 }],
+      [{ type: 'mouseUp', x: 240, y: 180, button: 'left', clickCount: 1 }],
+    ]);
+  });
+
+  it('focuses before typing into a dialog field and waits for insertion', async () => {
+    const target = createInputWindowMock();
+    mockGet.mockReturnValue(target.browserWindow);
+
+    const result = await callTool('ui_type', {
+      workspaceId: 'main-window',
+      text: 'draft value',
+    });
+
+    expect(target.browserWindow.focus).toHaveBeenCalledTimes(1);
+    expect(target.webContents.focus).toHaveBeenCalledTimes(1);
+    expect(target.insertText).toHaveBeenCalledWith('draft value');
+    expect(result).toEqual({ success: true, length: 11 });
+  });
+
+  it('normalizes keyboard aliases and printable keys for dialog activation', async () => {
+    const target = createInputWindowMock();
+    mockGet.mockReturnValue(target.browserWindow);
+
+    await callTool('ui_key', {
+      workspaceId: 'main-window',
+      key: 'Control+s',
+    });
+    await callTool('ui_key', {
+      workspaceId: 'main-window',
+      key: 'Esc',
+    });
+
+    expect(target.browserWindow.focus).toHaveBeenCalledTimes(2);
+    expect(target.webContents.focus).toHaveBeenCalledTimes(2);
+    expect(target.sendInputEvent.mock.calls).toEqual([
+      [{ type: 'keyDown', keyCode: 'S', modifiers: ['control'] }],
+      [{ type: 'keyUp', keyCode: 'S', modifiers: ['control'] }],
+      [{ type: 'keyDown', keyCode: 'Escape', modifiers: [] }],
+      [{ type: 'keyUp', keyCode: 'Escape', modifiers: [] }],
+    ]);
   });
 
   it('rejects ui_navigate for app window targets', async () => {

@@ -9,8 +9,9 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const ListTiddlersParameterSchema = z.object({
   toolListPosition: z.object({
@@ -93,7 +94,7 @@ async function executeListTiddlers(parameters: z.infer<typeof ListTiddlersToolSc
   };
 }
 
-const listTiddlersDefinition = registerToolDefinition({
+export const listTiddlersDefinition = defineDesktopTool({
   toolId: 'listTiddlers',
   displayName: 'Wiki List Tiddlers',
   description: 'List tiddlers with skinny data and pagination for large wikis',
@@ -107,10 +108,8 @@ const listTiddlersDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-list-tiddlers') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-list-tiddlers') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
     await executeToolCall('wiki-list-tiddlers', executeListTiddlers);
   },
 });
-
-export const listTiddlersTool = listTiddlersDefinition.tool;

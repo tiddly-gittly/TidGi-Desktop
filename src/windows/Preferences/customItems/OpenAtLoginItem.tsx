@@ -33,15 +33,6 @@ export function OpenAtLoginItem(): React.JSX.Element | null {
             <MenuItem
               dense
               onClick={async () => {
-                await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden');
-                popupState.close();
-              }}
-            >
-              {t('Preference.OpenAtLoginMinimized')}
-            </MenuItem>
-            <MenuItem
-              dense
-              onClick={async () => {
                 await window.service.systemPreference.setSystemPreference('openAtLogin', 'no');
                 popupState.close();
               }}

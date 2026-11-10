@@ -2,6 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { isHtmlWiki } from '@/constants/fileNames';
+import { logger } from '@services/libs/log';
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
 
 export async function validateHtmlWikiFile(htmlFileLocation: string): Promise<void> {
   const resolved = path.resolve(htmlFileLocation);
@@ -12,8 +17,7 @@ export async function validateHtmlWikiFile(htmlFileLocation: string): Promise<vo
   try {
     content = await fs.readFile(resolved, 'utf-8');
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT') {
+    if (isNodeError(error) && error.code === 'ENOENT') {
       throw new Error(`HTML wiki file does not exist: ${resolved}`);
     }
     throw error;
@@ -32,8 +36,7 @@ export async function readHtmlWikiFile(htmlFileLocation: string): Promise<string
   try {
     content = await fs.readFile(resolved, 'utf-8');
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT') {
+    if (isNodeError(error) && error.code === 'ENOENT') {
       throw new Error(`HTML wiki file does not exist: ${resolved}`);
     }
     throw error;
@@ -59,8 +62,13 @@ export async function writeHtmlWikiFile(htmlFileLocation: string, content: strin
   } finally {
     try {
       await fs.unlink(temporaryPath);
-    } catch {
-      // temp file may have been renamed
+    } catch (error: unknown) {
+      // The rename completed before cleanup, so a missing temporary file is
+      // expected. Preserve unrelated cleanup failures in the log without
+      // masking the write/rename result from the caller.
+      if (!isNodeError(error) || error.code !== 'ENOENT') {
+        logger.warn('Failed to remove temporary HTML wiki file', { temporaryPath, error });
+      }
     }
   }
 }

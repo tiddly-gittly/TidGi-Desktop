@@ -15,6 +15,27 @@ interface IAllBranchesViewProps {
   renderTooltip: (props: Omit<Parameters<typeof CustomGitTooltip>[0], 't'>) => React.JSX.Element;
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item: unknown) => typeof item === 'string');
+}
+
+function isGitLogEntry(value: unknown): value is GitLogEntry {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const entry = value as Record<string, unknown>;
+  const author = entry.author;
+  const hasAuthorName = author === undefined || (
+    author !== null &&
+    typeof author === 'object' &&
+    typeof Reflect.get(author, 'name') === 'string'
+  );
+  return typeof entry.hash === 'string' &&
+    typeof entry.branch === 'string' &&
+    typeof entry.message === 'string' &&
+    typeof entry.committerDate === 'string' &&
+    isStringArray(entry.parents) &&
+    hasAuthorName;
+}
+
 export function AllBranchesView({
   entries,
   currentBranch,
@@ -37,12 +58,12 @@ export function AllBranchesView({
   }
 
   return (
-    <ReactGitLog
+    <ReactGitLog<GitLogEntry>
       entries={entries}
       currentBranch={currentBranch}
       theme={theme}
       onSelectCommit={(commit) => {
-        onSelectCommit(commit as unknown as GitLogEntry);
+        if (commit !== undefined && isGitLogEntry(commit)) onSelectCommit(commit);
       }}
       enableSelectedCommitStyling
     >

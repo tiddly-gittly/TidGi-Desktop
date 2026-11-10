@@ -18,13 +18,13 @@ Feature: Agent Tools - Ask-question variants and turn action bar
   Scenario: Ask-question — single-select, multi-select, and text input in one session
     # All 6 mock responses are queued in FIFO order; each ask-question consumes 2
     Given I add mock OpenAI responses:
-      | response                                                                                                                                                                                                                                                                                                                                                                                                     | stream |
-      | <tool_use name="ask-question">{"question":"Which approach do you prefer?","inputType":"single-select","options":[{"label":"Approach A: Create separate tiddlers for each topic and link them","description":"This keeps content modular and easy to navigate"},{"label":"Approach B: Create one large tiddler with sections","description":"Simpler structure, all information in one place"}],"allowFreeform":true}</tool_use> | false  |
-      | 好的，你选择了方法A。我将为每个主题创建独立的tiddler并链接它们。                                                                                                                                                                                                                                                                                                                                              | false  |
-      | <tool_use name="ask-question">{"question":"Which tags should I add to the new tiddler?","inputType":"multi-select","options":[{"label":"AI","description":"Artificial Intelligence"},{"label":"Programming","description":"Software development"},{"label":"Notes","description":"Personal notes"}],"allowFreeform":false}</tool_use>                                                 | false  |
-      | 好的，我将为tiddler添加 AI, Programming 两个标签。                                                                                                                                                                                                                                                                                                                                  | false  |
-      | <tool_use name="ask-question">{"question":"What title should the new tiddler have?","inputType":"text","allowFreeform":true}</tool_use>                                                                                                                                                                                                                                             | false  |
-      | 好的，我将创建标题为"My Custom Title"的tiddler。                                                                                                                                                                                                                                                                                                                                      | false  |
+      | response                                                                                                                                                                                                                                                                                                                                                                                                     | stream | embedding | toolName | toolArguments |
+      |                                                                                                                                                                                                                                                                                                                                                                                                              | false  |           | ask-question | {"question":"Which approach do you prefer?","inputType":"single-select","options":[{"label":"Approach A: Create separate tiddlers for each topic and link them","description":"This keeps content modular and easy to navigate"},{"label":"Approach B: Create one large tiddler with sections","description":"Simpler structure, all information in one place"}],"allowFreeform":true} |
+      | 好的，你选择了方法A。我将为每个主题创建独立的tiddler并链接它们。                                                                                                                                                                                                                                                                                                                                              | false  |           |          | |
+      |                                                                                                                                                                                                                                                                                                                                                                                                              | false  |           | ask-question | {"question":"Which tags should I add to the new tiddler?","inputType":"multi-select","options":[{"label":"AI","description":"Artificial Intelligence"},{"label":"Programming","description":"Software development"},{"label":"Notes","description":"Personal notes"}],"allowFreeform":false} |
+      | 好的，我将为tiddler添加 AI, Programming 两个标签。                                                                                                                                                                                                                                                                                                                                  | false  |           |          | |
+      |                                                                                                                                                                                                                                                                                                                                                                                                              | false  |           | ask-question | {"question":"What title should the new tiddler have?","inputType":"text","allowFreeform":true} |
+      | 好的，我将创建标题为"My Custom Title"的tiddler。                                                                                                                                                                                                                                                                                                                                      | false  |           |          | |
     # Create agent
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
@@ -87,6 +87,8 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I press "Enter" key
     Then I should see 2 messages in chat history
     And I should see an "response" element with selector "[data-testid='message-bubble']:has-text('要删除的回复')"
+    And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
+    When I hover the first assistant message
     When I click on a "delete button" element with selector "[data-testid='turn-action-delete']"
     Then I should not see a "deleted response" element with selector "[data-testid='message-bubble']:has-text('要删除的回复')"
     # ── Part 2: Retry ── (0 turns → 1 turn, selector unambiguous)
@@ -97,6 +99,8 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I press "Enter" key
     Then I should see 2 messages in chat history
     And I should see an "first response" element with selector "[data-testid='message-bubble']:has-text('第一次回复')"
+    And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
+    When I hover the first assistant message
     When I click on a "retry button" element with selector "[data-testid='turn-action-retry']"
     Then I should see 2 messages in chat history
     And I should see an "retried response" element with selector "[data-testid='message-bubble']:has-text('重试后的回复')"
@@ -109,7 +113,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I should not see a "files changed chip" element with selector "[data-testid='turn-files-changed']"
 
   @agentTool @mockOpenAI
-  Scenario: Agent switcher — switch between Task Agent and Plan Agent
+  Scenario: Agent switcher — switch between General Assistant and Code Assistant
     Given I add mock OpenAI responses:
       | response                           | stream |
       | Task Agent 模式的回复。            | false  |
@@ -124,11 +128,11 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     And I type "Task Agent测试" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see an "task agent response" element with selector "[data-testid='message-bubble']:has-text('Task Agent 模式')"
-    # Switch to Plan Agent via the switcher dropdown
+    # Switch to the canonical MemeLoop Code Assistant profile via the switcher dropdown
     When I click on a "agent switcher button" element with selector "[data-testid='agent-switcher-button']"
     Then I should see an "agent switcher dropdown" element with selector "[data-testid='agent-switcher-dropdown']"
-    And I should see a "plan agent option" element with selector "[data-testid='agent-switcher-option-plan-agent']"
-    When I click on a "plan agent option" element with selector "[data-testid='agent-switcher-option-plan-agent']"
+    And I should see a "code assistant option" element with selector "[data-testid='agent-switcher-option-memeloop:code-assistant']"
+    When I click on a "code assistant option" element with selector "[data-testid='agent-switcher-option-memeloop:code-assistant']"
     # After switching, chat history resets (new agent instance), input should be available
     Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Send message with Plan Agent

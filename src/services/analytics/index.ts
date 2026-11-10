@@ -2,7 +2,6 @@ import { app, net } from 'electron';
 import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
 
-import { container } from '@services/container';
 import type { IAnalyticsSecretSettings, IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -22,6 +21,7 @@ export class AnalyticsService implements IAnalyticsService {
   private flushInFlight: Promise<void> | undefined;
 
   constructor(
+    @inject(serviceIdentifier.Database) private readonly databaseService: IDatabaseService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
     app.on('browser-window-focus', () => {
@@ -93,8 +93,7 @@ export class AnalyticsService implements IAnalyticsService {
       return undefined;
     }
 
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const secrets = this.getAnalyticsSecrets(databaseService);
+    const secrets = this.getAnalyticsSecrets();
     const now = new Date();
     const todayDate = now.toISOString().slice(0, 10);
 
@@ -112,8 +111,8 @@ export class AnalyticsService implements IAnalyticsService {
       deviceFirstLaunchDate: firstLaunchDate,
       deviceLastLaunchDate: todayDate,
     };
-    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, nextSecrets);
-    await databaseService.immediatelyStoreSettingsToFile();
+    this.databaseService.setSetting(ANALYTICS_SETTINGS_KEY, nextSecrets);
+    await this.databaseService.immediatelyStoreSettingsToFile();
 
     return {
       firstLaunchDate,
@@ -122,8 +121,8 @@ export class AnalyticsService implements IAnalyticsService {
     } satisfies IAnalyticsEventProperties;
   }
 
-  private getAnalyticsSecrets(databaseService: IDatabaseService): IAnalyticsSecretSettings {
-    const rawSettings = databaseService.getSetting(ANALYTICS_SETTINGS_KEY);
+  private getAnalyticsSecrets(): IAnalyticsSecretSettings {
+    const rawSettings = this.databaseService.getSetting(ANALYTICS_SETTINGS_KEY);
     return (rawSettings && typeof rawSettings === 'object' && !Array.isArray(rawSettings))
       ? rawSettings
       : {};
@@ -153,14 +152,13 @@ export class AnalyticsService implements IAnalyticsService {
   }
 
   private getOrCreateDeviceId(): string {
-    const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-    const secrets = this.getAnalyticsSecrets(databaseService);
+    const secrets = this.getAnalyticsSecrets();
     if (secrets.deviceId) {
       return secrets.deviceId;
     }
     const newId = randomUUID();
-    databaseService.setSetting(ANALYTICS_SETTINGS_KEY, { ...secrets, deviceId: newId });
-    void databaseService.immediatelyStoreSettingsToFile();
+    this.databaseService.setSetting(ANALYTICS_SETTINGS_KEY, { ...secrets, deviceId: newId });
+    void this.databaseService.immediatelyStoreSettingsToFile();
     return newId;
   }
 

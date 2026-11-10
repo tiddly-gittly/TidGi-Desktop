@@ -249,3 +249,47 @@ Common install-failure causes:
 
 - A previous install left `Update.exe` / `squirrel.exe --updateSelf` running and locking files under `%LocalAppData%\tidgi`. Fully quit the stuck installer processes (or reboot), then run the installer again.
 - Antivirus or Windows Defender blocking deletes/writes under `%LocalAppData%\tidgi`.
+
+## GPU process isn't usable (SSH/xvfb)
+
+SSH env Electron GPU:
+
+```
+GPU process launch failed: error_code=1002
+GPU process isn't usable. Goodbye.
+```
+
+Use `--disable-gpu --disable-software-rasterizer --in-process-gpu`
+
+```sh
+xvfb-run -a npx electron-forge start -- --disable-gpu --disable-software-rasterizer --in-process-gpu &
+```
+
+## SUID sandbox helper binary was found, but is not configured correctly
+
+```
+FATAL:sandbox/linux/suid/client/setuid_sandbox_host.cc:166] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure that xxx/node_modules/electron/dist/chrome-sandbox is owned by root and has mode 4755.
+```
+
+The chrome-sandbox SUID bit is missing after electron install/rebuild on Linux.
+
+### Recommended: fix at system level (Ubuntu 24.04+ / Debian)
+
+Modern Ubuntu/Debian enables `apparmor_restrict_unprivileged_userns`, which blocks Electron from using the unprivileged user-namespace sandbox. Electron then falls back to the `chrome-sandbox` SUID helper, but package managers do not set its SUID bit automatically.
+
+Disable the restriction permanently so Electron can use the user-namespace sandbox instead of the SUID helper:
+
+```sh
+echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee /etc/sysctl.d/99-electron-sandbox.conf
+sudo sysctl --system
+```
+
+You will need to enter your password for `sudo`. After applying, newly installed/rebuilt Electron binaries no longer require manual `chown`/`chmod` of `chrome-sandbox`.
+
+### Workaround: fix only the current Electron binary
+
+If you cannot change the system setting, run this after every reinstall or rebuild:
+
+```sh
+sudo chown root:root node_modules/electron/dist/chrome-sandbox && sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+```

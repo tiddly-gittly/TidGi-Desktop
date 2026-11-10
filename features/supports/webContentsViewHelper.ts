@@ -416,106 +416,57 @@ export async function elementExists(app: ElectronApplication, selector: string, 
 }
 
 /**
- * Capture screenshot of WebContentsView with timeout
- * Returns true if screenshot capture started successfully, false if failed or timeout
- * File writing continues asynchronously in background if capture succeeds
+ * Capture and save the WebContentsView screenshot within the calling step's deadline.
+ * Returns false when the view no longer exists; capture and write errors propagate.
  */
 export async function captureScreenshot(app: ElectronApplication, screenshotPath: string): Promise<boolean> {
-  try {
-    // Add timeout to prevent screenshot from blocking test execution
-    const timeoutPromise = new Promise<null>((resolve) => {
-      setTimeout(() => {
-        resolve(null);
-      }, 500);
-    });
-
-    const capturePromise = (async () => {
-      const webContentsId = await getFirstWebContentsView(app);
-      if (!webContentsId) {
-        return null;
-      }
-
-      const pngBufferData = await app.evaluate(
-        async ({ webContents }, id: number) => {
-          const targetWebContents = webContents.fromId(id);
-          if (!targetWebContents || targetWebContents.isDestroyed()) {
-            return null;
-          }
-
-          try {
-            const image = await targetWebContents.capturePage();
-            const pngBuffer = image.toPNG();
-            return Array.from(pngBuffer);
-          } catch {
-            return null;
-          }
-        },
-        webContentsId,
-      );
-
-      return pngBufferData;
-    })();
-
-    const result = await Promise.race([capturePromise, timeoutPromise]);
-
-    // If we got the screenshot data, write it to file asynchronously (fire and forget)
-    if (result && Array.isArray(result)) {
-      fs.writeFile(screenshotPath, Buffer.from(result)).catch(() => {
-        // Silently ignore write errors
-      });
-      return true;
-    }
-
-    return false;
-  } catch {
+  const webContentsId = await getFirstWebContentsView(app);
+  if (!webContentsId) {
     return false;
   }
+  const result = await app.evaluate(
+    async ({ webContents }, id: number) => {
+      const targetWebContents = webContents.fromId(id);
+      if (!targetWebContents || targetWebContents.isDestroyed()) {
+        return null;
+      }
+      const image = await targetWebContents.capturePage();
+      return Array.from(image.toPNG());
+    },
+    webContentsId,
+  );
+  if (!result) {
+    return false;
+  }
+  await fs.writeFile(screenshotPath, Buffer.from(result));
+  return true;
 }
 
 /**
  * Capture screenshot of a Playwright Page's underlying Electron window.
  * Uses Electron's native webContents.capturePage() which works even when
  * the window is hidden (unlike Playwright's page.screenshot()).
+ * Awaits the file write; the calling step owns the deadline.
  */
 export async function captureWindowScreenshot(app: ElectronApplication, page: Page, screenshotPath: string): Promise<boolean> {
-  try {
-    const timeoutPromise = new Promise<null>((resolve) => {
-      setTimeout(() => {
-        resolve(null);
-      }, 500);
-    });
-
-    const capturePromise = (async () => {
-      // Evaluate inside Electron to find the BrowserWindow matching this page's webContents
-      const pngBufferData = await app.evaluate(
-        async ({ BrowserWindow }, pageUrl: string) => {
-          for (const win of BrowserWindow.getAllWindows()) {
-            if (win.isDestroyed()) continue;
-            if (win.webContents.getURL() === pageUrl) {
-              try {
-                const image = await win.webContents.capturePage();
-                return Array.from(image.toPNG());
-              } catch {
-                return null;
-              }
-            }
-          }
-          return null;
-        },
-        page.url(),
-      );
-      return pngBufferData;
-    })();
-
-    const result = await Promise.race([capturePromise, timeoutPromise]);
-    if (result && Array.isArray(result)) {
-      fs.writeFile(screenshotPath, Buffer.from(result)).catch(() => {});
-      return true;
-    }
-    return false;
-  } catch {
+  const result = await app.evaluate(
+    async ({ BrowserWindow }, pageUrl: string) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (win.isDestroyed()) continue;
+        if (win.webContents.getURL() === pageUrl) {
+          const image = await win.webContents.capturePage();
+          return Array.from(image.toPNG());
+        }
+      }
+      return null;
+    },
+    page.url(),
+  );
+  if (!result) {
     return false;
   }
+  await fs.writeFile(screenshotPath, Buffer.from(result));
+  return true;
 }
 
 /**

@@ -6,8 +6,10 @@ import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
 import { Observable, Subject, type Subscription } from 'rxjs';
-import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+import type { ITiddlerFields, ITiddlyWiki, Syncer } from 'tiddlywiki';
+import { WIKI_SAVE_TIMEOUT_MS } from '../constants';
 import { applyInitialPaletteBeforeIndexRender } from './applyInitialPalette';
+import { waitForTiddlerDeletion, waitForTiddlerPersistence } from './tiddlerPersistence';
 
 /**
  * Change info emitted by TidGi's change Observable.
@@ -97,10 +99,19 @@ export class IpcServerRoutes {
   //    ██    ██ ██   ██ ██   ██ ██         ██          ██ ███ ██ ██      ██   ██
   //    ██    ██ ██████  ██████  ███████    ██           ███ ███  ███████ ██████
 
-  async deleteTiddler(title: string): Promise<IWikiServerRouteResponse> {
+  async deleteTiddler(title: string, deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
+    if (Date.now() >= deadline) throw new Error('Delete request expired before the wiki became available');
     this.wikiInstance.wiki.deleteTiddler(title);
+    await waitForTiddlerDeletion(this.wikiInstance, title, this.wikiInstance.wiki.getChangeCount(title), deadline);
     return { headers: { 'Content-Type': 'text/plain' }, data: 'OK', statusCode: 204 };
+  }
+
+  async getSaveStatus(): Promise<IWikiServerRouteResponse> {
+    await this.waitForIpcServerRoutesAvailable();
+    const syncer = this.wikiInstance.syncer as (Syncer & { numTasksInProgress: number }) | undefined;
+    if (!syncer) throw new Error('Filesystem syncer is unavailable');
+    return { statusCode: 200, data: !syncer.isDirty() && syncer.numTasksInProgress === 0 ? 'saved' : 'pending' };
   }
 
   async getFavicon(): Promise<IWikiServerRouteResponse> {
@@ -246,8 +257,9 @@ export class IpcServerRoutes {
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: tiddlers };
   }
 
-  async putTiddler(title: string, fields: ITiddlerFields): Promise<IWikiServerRouteResponse> {
+  async putTiddler(title: string, fields: ITiddlerFields, deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
+    if (Date.now() >= deadline) throw new Error('Save request expired before the wiki became available');
     const tiddlerFieldsToPut = omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>;
     // Pull up any subfields in the `fields` object
     // we skip this part by not creating the fields object at the beginning at src\services\wiki\plugin\ipcSyncAdaptor\index.ts
@@ -274,8 +286,14 @@ export class IpcServerRoutes {
 
     this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
 
-    const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
-    return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
+    const revision = this.wikiInstance.wiki.getChangeCount(title);
+    const persistence = await waitForTiddlerPersistence(this.wikiInstance, title, revision, deadline);
+    const changeCount = revision.toString();
+    return {
+      statusCode: 204,
+      headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"`, 'X-TidGi-Persistence': persistence },
+      data: 'OK',
+    };
   }
 
   async getTiddlerHtml(title: string): Promise<IWikiServerRouteResponse> {
@@ -380,6 +398,7 @@ export const ipcServerRoutes: IpcServerRoutes = new IpcServerRoutes();
 
 // Explicit method signature to preserve types
 type IpcServerRoutesMethodsType = {
+  getSaveStatus: IpcServerRoutes['getSaveStatus'];
   deleteTiddler: IpcServerRoutes['deleteTiddler'];
   getFavicon: IpcServerRoutes['getFavicon'];
   getIndex: IpcServerRoutes['getIndex'];
@@ -393,6 +412,7 @@ type IpcServerRoutesMethodsType = {
 };
 
 export const ipcServerRoutesMethods: IpcServerRoutesMethodsType = {
+  getSaveStatus: ipcServerRoutes.getSaveStatus.bind(ipcServerRoutes),
   deleteTiddler: ipcServerRoutes.deleteTiddler.bind(ipcServerRoutes),
   getFavicon: ipcServerRoutes.getFavicon.bind(ipcServerRoutes),
   getIndex: ipcServerRoutes.getIndex.bind(ipcServerRoutes),

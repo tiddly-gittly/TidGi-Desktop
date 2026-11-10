@@ -15,6 +15,17 @@ import type { GitFileStatus, IFileDiffResult, IGitLogOptions, IGitLogResult } fr
 /** Prefix for temporary Git index directories used during amend/undo operations */
 const TEMP_GIT_INDEX_PREFIX = 'tidgi-git-index-';
 
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
+
+function isMissingFileError(error: unknown): boolean {
+  if (isNodeError(error)) return error.code === 'ENOENT' || error.code === 'ENOTDIR';
+  if (!(error instanceof Error)) return false;
+  if (error.cause !== undefined && isMissingFileError(error.cause)) return true;
+  return /(?:does not exist|pathspec .* did not match|not found)/iu.test(error.message);
+}
+
 /**
  * Helper to create git environment variables for commit operations
  * This ensures commits work in environments without git config (like CI)
@@ -66,9 +77,10 @@ export async function initScopedWikiGit(repoPath: string, scopedPath: string, me
   try {
     await fs.stat(path.join(repoPath, '.git'));
     hasLocalGitMetadata = true;
-  } catch {
-    // The target directory is not itself a repository. An ancestor repository
-    // must not suppress initialization because scopedPath is relative to repoPath.
+  } catch (error: unknown) {
+    // A missing .git entry means this directory needs initialization. Surface
+    // permission and other filesystem failures instead of masking them.
+    if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
   }
   if (!hasLocalGitMetadata) {
     const initResult = await gitExec(['init'], repoPath);
@@ -142,8 +154,11 @@ export async function discoverAncestorGitRepos(startPath: string, maxDepth = 8):
         // comparable with the repoPath returned by getWorkspaceGitScope (which is also normalized).
         repos.push(current.replace(/\\/g, '/'));
       }
-    } catch {
-      // ignore stat errors (e.g. permission denied) and keep walking
+    } catch (error: unknown) {
+      // Disappearing or inaccessible ancestor directories are expected during
+      // workspace discovery; malformed/non-filesystem failures are not.
+      const code = isNodeError(error) ? error.code : undefined;
+      if (code === undefined || !['ENOENT', 'ENOTDIR', 'EACCES', 'EPERM'].includes(code)) throw error;
     }
     const parent = path.dirname(current);
     if (parent === current) break;
@@ -187,8 +202,8 @@ export async function restoreFileFromCommit(repoPath: string, commitHash: string
     try {
       await fs.unlink(absolutePath);
       return { action: 'deleted' };
-    } catch {
-      // File doesn't exist in working tree either
+    } catch (error: unknown) {
+      if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
       return { action: 'unchanged' };
     }
   }
@@ -631,8 +646,10 @@ export async function getFileContent(
         if (result.exitCode === 0) {
           return truncateContent(result.stdout, maxLines, maxChars);
         }
-      } catch {
-        // Silently fail and throw main error
+      } catch (fallbackError: unknown) {
+        // The primary read failure below remains the caller-facing error. Do
+        // not hide a non-Error thrown value from the fallback probe.
+        if (!(fallbackError instanceof Error)) throw fallbackError;
       }
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to read file: ${errorMessage}`);
@@ -667,8 +684,8 @@ export async function getFileBinaryContent(
       const fullPath = path.join(repoPath, filePath);
       const buffer = await fs.readFile(fullPath);
       return bufferToDataUrl(buffer, filePath);
-    } catch (error) {
-      throw new Error(`Failed to read binary file from working tree: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to read binary file from working tree: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 
@@ -702,42 +719,34 @@ export async function getImageComparison(
   commitHash: string,
   filePath: string,
 ): Promise<{ previous: string | null; current: string | null }> {
-  // Get current version (at this commit)
+  // Get current version (at this commit). A missing path is expected for a
+  // deleted file; all other failures must remain visible to the caller.
   let current: string | null = null;
   try {
     current = await getFileBinaryContent(repoPath, commitHash, filePath);
-  } catch {
-    // File might be deleted in this commit
+  } catch (error: unknown) {
+    if (!isMissingFileError(error)) throw error;
   }
 
-  // Get previous version (at parent commit)
+  // Get previous version (at parent commit). `rev-parse` reports an initial
+  // commit through its exit code, so no catch is needed around that probe.
   let previous: string | null = null;
-  try {
-    if (!commitHash) {
-      // Compare working tree (current) with HEAD
+  if (!commitHash) {
+    try {
+      previous = await getFileBinaryContent(repoPath, 'HEAD', filePath);
+    } catch (error: unknown) {
+      if (!isMissingFileError(error)) throw error;
+    }
+  } else {
+    const parentResult = await gitExec(['rev-parse', `${commitHash}^`], repoPath);
+    if (parentResult.exitCode === 0) {
+      const parentHash = parentResult.stdout.trim();
       try {
-        previous = await getFileBinaryContent(repoPath, 'HEAD', filePath);
-      } catch {
-        // File does not exist in HEAD (newly added)
-      }
-    } else {
-      // Get parent commit hash
-      const parentResult = await gitExec(
-        ['rev-parse', `${commitHash}^`],
-        repoPath,
-      );
-
-      if (parentResult.exitCode === 0) {
-        const parentHash = parentResult.stdout.trim();
-        try {
-          previous = await getFileBinaryContent(repoPath, parentHash, filePath);
-        } catch {
-          // File might be newly added in this commit
-        }
+        previous = await getFileBinaryContent(repoPath, parentHash, filePath);
+      } catch (error: unknown) {
+        if (!isMissingFileError(error)) throw error;
       }
     }
-  } catch {
-    // This is the initial commit, no parent
   }
 
   return { previous, current };
@@ -921,8 +930,8 @@ export async function addToGitignore(repoPath: string, pattern: string): Promise
     let content = '';
     try {
       content = await fs.readFile(gitignorePath, 'utf-8');
-    } catch {
-      // File doesn't exist, will create new
+    } catch (error: unknown) {
+      if (!isNodeError(error) || error.code !== 'ENOENT') throw error;
     }
 
     // Check if pattern already exists
@@ -1106,8 +1115,10 @@ export async function getTiddlerAtTime(
             return parsedTiddler; // Match found
           }
         }
-      } catch {
-        // Continue checking other files
+      } catch (error: unknown) {
+        // `gitExec` should return a result for git failures. Preserve that
+        // contract and only skip a genuinely malformed Error from a file.
+        if (!(error instanceof Error)) throw error;
       }
       return null; // No match in this file
     });

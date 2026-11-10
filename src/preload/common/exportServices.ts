@@ -1,4 +1,3 @@
-import type { TidgiService } from '@/types/tidgi-tw';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { contextBridge } from 'electron';
 import { windowName } from './browserViewMetaData';
@@ -13,7 +12,13 @@ const exposedService = windowName === WindowNames.view
 const attachServiceToTw = () => {
   if (typeof $tw === 'undefined') return false;
   $tw.tidgi ??= Object.create(null);
-  $tw.tidgi.service ??= exposedService as unknown as TidgiService;
+  // The preload proxy deliberately promisifies synchronous service methods,
+  // so its runtime shape is not assignable to the worker-side logical service
+  // declaration. Merge it at this process boundary while preserving any
+  // plugin-owned fields on `$tw.tidgi`.
+  if ($tw.tidgi.service === undefined) {
+    Object.assign($tw.tidgi, { service: exposedService });
+  }
   return true;
 };
 
