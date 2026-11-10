@@ -82,12 +82,12 @@ function projectAgentDefinition(entity: AgentDefinitionEntity): AgentDefinition 
     ...(loopId == null ? {} : { loopId }),
     ...(entity.scriptReference == null ? {} : { scriptReference: entity.scriptReference }),
     ...(entity.metadata == null ? {} : { metadata: entity.metadata }),
-    ...(entity.avatarUrl === undefined ? {} : { avatarUrl: entity.avatarUrl }),
-    ...(entity.agentFrameworkID === undefined ? {} : { agentFrameworkID: entity.agentFrameworkID }),
-    ...(entity.agentFrameworkConfig === undefined ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
+    ...(entity.avatarUrl == null ? {} : { avatarUrl: entity.avatarUrl }),
+    ...(entity.agentFrameworkID == null ? {} : { agentFrameworkID: entity.agentFrameworkID }),
+    ...(entity.agentFrameworkConfig == null ? {} : { agentFrameworkConfig: entity.agentFrameworkConfig }),
     ...(entity.modelConfig == null ? {} : { modelConfig: entity.modelConfig }),
-    ...(entity.agentTools === undefined ? {} : { agentTools: entity.agentTools }),
-    ...(entity.heartbeat === undefined ? {} : { heartbeat: entity.heartbeat }),
+    ...(entity.agentTools == null ? {} : { agentTools: entity.agentTools }),
+    ...(entity.heartbeat == null ? {} : { heartbeat: entity.heartbeat }),
   };
 }
 
