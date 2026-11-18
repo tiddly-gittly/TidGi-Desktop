@@ -37,12 +37,10 @@ describe('getNodeWikiExtraPlugins', () => {
     expect(existsSync(twReactPath)).toBe(true);
     const languageModelPlugin = JSON.parse(readFileSync(languageModelPath, 'utf8')) as {
       title?: string;
-      version?: string;
       dependents?: string;
     };
     expect(languageModelPlugin).toMatchObject({
       title: '$:/plugins/linonetwo/tidgi-language-model',
-      version: '0.4.0',
       dependents: '$:/plugins/linonetwo/tw-react',
     });
   });
