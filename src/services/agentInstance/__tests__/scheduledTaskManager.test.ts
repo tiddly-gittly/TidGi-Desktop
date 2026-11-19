@@ -2,9 +2,9 @@
  * Unit tests for ScheduledTaskManager — cron parsing, restore, active hours, volatile exemption.
  */
 
-import type { ScheduledTaskEntity } from '@services/database/schema/agent';
+import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import type { CreateScheduledTaskInput } from 'memeloop';
-import type { Repository } from 'typeorm';
+import { DataSource, type Repository } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IAgentInstanceService } from '../interface';
 
@@ -51,7 +51,7 @@ function makeEntity(overrides: Partial<ScheduledTaskEntity> = {}): ScheduledTask
 }
 
 function makeRepo(entities: ScheduledTaskEntity[] = []): Repository<ScheduledTaskEntity> {
-  const store = new Map(entities.map(e => [e.id, e]));
+  const store = new Map(entities.map(e => [e.id, structuredClone(e)]));
   const repository = {
     find: vi.fn(async (options?: { where?: Partial<ScheduledTaskEntity> }) => {
       let results = [...store.values()];
@@ -65,22 +65,38 @@ function makeRepo(entities: ScheduledTaskEntity[] = []): Repository<ScheduledTas
         const states = typeof stateFilter === 'string' ? [stateFilter] : stateFilter?._value;
         if (states) results = results.filter(e => states.includes(e.state));
       }
-      return results;
+      return structuredClone(results);
     }),
     findOne: vi.fn(async (options?: { where?: { id?: string } }) => {
       const id = options?.where?.id;
-      return id ? (store.get(id) ?? null) : null;
+      return id ? structuredClone(store.get(id) ?? null) : null;
+    }),
+    findOneByOrFail: vi.fn(async ({ id }: { id: string }) => {
+      const entity = store.get(id);
+      if (!entity) throw new Error(`Missing task: ${id}`);
+      return structuredClone(entity);
     }),
     create: vi.fn((data: Partial<ScheduledTaskEntity>) => (Object.assign(makeEntity(), data))),
     save: vi.fn(async (entity: ScheduledTaskEntity) => {
-      store.set(entity.id, entity);
-      return entity;
+      store.set(entity.id, structuredClone(entity));
+      return structuredClone(entity);
     }),
     update: vi.fn(async (criteria: string | Partial<ScheduledTaskEntity>, data: Partial<ScheduledTaskEntity>) => {
       const matches = typeof criteria === 'string'
         ? [...store.values()].filter(entity => entity.id === criteria)
         : [...store.values()].filter(entity => Object.entries(criteria).every(([key, value]) => entity[key as keyof ScheduledTaskEntity] === value));
-      for (const existing of matches) store.set(existing.id, Object.assign({}, existing, data));
+      for (const existing of matches) {
+        const values = Object.fromEntries(
+          Object.entries(data).map(([key, value]) => [
+            key,
+            typeof value === 'function'
+              ? (key === 'executionRevision' ? existing.executionRevision + 1 : null)
+              : value,
+          ]),
+        );
+        store.set(existing.id, structuredClone(Object.assign({}, existing, values)));
+      }
+      return { affected: matches.length, generatedMaps: [], raw: [] };
     }),
     delete: vi.fn(async (id: string) => {
       store.delete(id);
@@ -347,6 +363,202 @@ describe('ScheduledTaskManager', () => {
       expect(await manager.getActiveTasksForAgent('agent-3')).toHaveLength(1);
       await manager.removeTask(task.id);
       expect(await manager.getActiveTasksForAgent('agent-3')).toHaveLength(0);
+    });
+  });
+
+  describe('in-flight task invalidation', () => {
+    const schedules = [
+      { kind: 'at' as const, wakeAtISO: '2026-01-01T00:00:01.000Z' },
+      { kind: 'cron' as const, expression: '* * * * *' },
+    ];
+
+    beforeEach(() => {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    });
+
+    describe.each(schedules)('$kind provider execution', (schedule) => {
+      it.each(
+        [
+          ['cancel', 'resolve'],
+          ['cancel', 'reject'],
+          ['pause', 'resolve'],
+          ['pause', 'reject'],
+        ] as const,
+      )('does not change metadata or restart after %s then %s', async (action, outcome) => {
+        const pending = Promise.withResolvers<undefined>();
+        const send = vi.fn().mockReturnValue(pending.promise);
+        const repo = makeRepo();
+        manager.initScheduledTaskManager(repo, makeAgentService(send), localIdentity);
+        const task = await manager.addTask(createInput({ schedule }));
+        await vi.advanceTimersByTimeAsync(schedule.kind === 'at' ? 1_000 : 60_000);
+        expect(send).toHaveBeenCalledTimes(1);
+
+        if (action === 'cancel') await manager.removeTask(task.id);
+        else await manager.updateTask(task.id, { enabled: false });
+        const afterMutation = await repo.findOne({ where: { id: task.id } });
+        vi.mocked(repo.update).mockClear();
+        if (outcome === 'resolve') pending.resolve(undefined);
+        else pending.reject(new Error('late provider failure'));
+
+        await vi.advanceTimersByTimeAsync(180_000);
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(repo.update).not.toHaveBeenCalled();
+        expect(await repo.findOne({ where: { id: task.id } })).toEqual(afterMutation);
+        expect(vi.getTimerCount()).toBe(0);
+      });
+
+      it.each(['resolve', 'reject'] as const)('preserves the replacement after the previous run settles with %s', async outcome => {
+        const pending = Promise.withResolvers<undefined>();
+        const send = vi.fn().mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
+        const repo = makeRepo();
+        manager.initScheduledTaskManager(repo, makeAgentService(send), localIdentity);
+        const task = await manager.addTask(createInput({ schedule }));
+        await vi.advanceTimersByTimeAsync(schedule.kind === 'at' ? 1_000 : 60_000);
+        const wakeAt = new Date(Date.now() + 300_000);
+        await manager.updateTask(task.id, {
+          schedule: { kind: 'at', wakeAtISO: wakeAt.toISOString() },
+          payload: { message: 'replacement message' },
+        });
+        const replacement = await repo.findOne({ where: { id: task.id } });
+        vi.mocked(repo.update).mockClear();
+        if (outcome === 'resolve') pending.resolve(undefined);
+        else pending.reject(new Error('obsolete provider failure'));
+
+        await vi.advanceTimersByTimeAsync(299_999);
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(repo.update).not.toHaveBeenCalled();
+        expect(await repo.findOne({ where: { id: task.id } })).toEqual(replacement);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(send).toHaveBeenCalledTimes(2);
+        expect(send.mock.calls[1][0]).toMatchObject({ message: 'replacement message' });
+        expect(await repo.findOne({ where: { id: task.id } })).toMatchObject({ state: 'completed', runCount: 1 });
+      });
+
+      it('does not invoke the provider if cancelled during the durable-agent lookup', async () => {
+        const send = vi.fn();
+        const service = makeAgentService(send);
+        const repo = makeRepo();
+        manager.initScheduledTaskManager(repo, service, localIdentity);
+        const task = await manager.addTask(createInput({ schedule }));
+        const lookup = Promise.withResolvers<Awaited<ReturnType<IAgentInstanceService['getAgentMetadata']>>>();
+        vi.mocked(service.getAgentMetadata).mockReturnValueOnce(lookup.promise);
+        await vi.advanceTimersByTimeAsync(schedule.kind === 'at' ? 1_000 : 60_000);
+        await manager.removeTask(task.id);
+        lookup.resolve({ agentDefId: 'definition-1', id: 'agent-1' } as never);
+        await vi.advanceTimersByTimeAsync(180_000);
+        expect(send).not.toHaveBeenCalled();
+      });
+    });
+
+    describe.each(
+      [
+        ['at retry', schedules[0], 'nextRetryAt', false],
+        ['at persisted retry', schedules[0], 'nextRetryAt', true],
+        ['at completion', schedules[0], 'runCount', false],
+        ['cron failure', schedules[1], 'lastError', false],
+        ['cron success', schedules[1], 'runCount', false],
+      ] as const,
+    )('%s SQL write', (_label, schedule, delayedField, persistBeforeWaiting) => {
+      it.each(['cancel', 'pause', 'replace'] as const)('ignores an older revision write and callback after %s', async action => {
+        const pendingWrite = Promise.withResolvers<undefined>();
+        const send = delayedField === 'runCount'
+          ? vi.fn().mockResolvedValue(undefined)
+          : vi.fn().mockRejectedValue(new Error('provider failure'));
+        const repo = makeRepo();
+        manager.initScheduledTaskManager(repo, makeAgentService(send), localIdentity);
+        const task = await manager.addTask(createInput({ schedule }));
+        const applyUpdate = vi.mocked(repo.update).getMockImplementation()!;
+        let delayed = false;
+        vi.mocked(repo.update).mockImplementation(async (criteria, patch) => {
+          if (!delayed && patch[delayedField] != null) {
+            delayed = true;
+            const result = persistBeforeWaiting ? await applyUpdate(criteria, patch) : undefined;
+            await pendingWrite.promise;
+            if (result) return result;
+          }
+          return await applyUpdate(criteria, patch);
+        });
+        await vi.advanceTimersByTimeAsync(schedule.kind === 'at' ? 1_000 : 60_000);
+        expect(delayed).toBe(true);
+
+        if (action === 'cancel') await manager.removeTask(task.id);
+        else if (action === 'pause') await manager.updateTask(task.id, { enabled: false });
+        else {
+          await manager.updateTask(task.id, {
+            schedule: { kind: 'at', wakeAtISO: new Date(Date.now() + 300_000).toISOString() },
+            payload: { message: 'replacement message' },
+          });
+        }
+        const afterMutation = await repo.findOne({ where: { id: task.id } });
+        expect(afterMutation?.executionRevision).toBe(1);
+        pendingWrite.resolve(undefined);
+        await vi.advanceTimersByTimeAsync(180_000);
+        expect(await repo.findOne({ where: { id: task.id } })).toEqual(afterMutation);
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(action === 'replace' ? 1 : 0);
+      });
+    });
+
+    describe('scoped mutations with SQLite', () => {
+      let database: DataSource;
+
+      beforeEach(async () => {
+        database = new DataSource({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [ScheduledTaskEntity],
+          synchronize: true,
+        });
+        await database.initialize();
+      });
+
+      afterEach(async () => {
+        manager.stopAllScheduledTasks();
+        await database.destroy();
+      });
+
+      it.each(['cancel', 'pause', 'replace'] as const)('rejects old retry SQL after scoped %s', async action => {
+        const repo = database.getRepository(ScheduledTaskEntity);
+        const send = vi.fn().mockRejectedValue(new Error('provider failure'));
+        manager.initScheduledTaskManager(repo, makeAgentService(send), localIdentity);
+        const task = await manager.addTask(createInput({ schedule: schedules[0] }));
+        const pendingWrite = Promise.withResolvers<undefined>();
+        const applyUpdate = repo.update.bind(repo);
+        let delayed = false;
+        const update = vi.spyOn(repo, 'update').mockImplementation(async (criteria, patch) => {
+          if (!delayed && patch.nextRetryAt instanceof Date) {
+            delayed = true;
+            await pendingWrite.promise;
+          }
+          return await applyUpdate(criteria, patch);
+        });
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(delayed).toBe(true);
+        const scope = {
+          taskId: task.id,
+          agentInstanceId: task.agentInstanceId,
+          agentDefinitionId: task.agentDefinitionId,
+          executionNodeId: task.executionNodeId,
+        };
+        if (action === 'cancel') await manager.removeTaskScoped(scope);
+        else {
+          await manager.updateTaskScoped(
+            scope,
+            action === 'pause' ? { enabled: false } : {
+              schedule: { kind: 'at', wakeAtISO: new Date(Date.now() + 300_000).toISOString() },
+            },
+          );
+        }
+        await vi.advanceTimersByTimeAsync(0);
+        const afterMutation = await repo.findOneByOrFail({ id: task.id });
+        expect(afterMutation.executionRevision).toBe(1);
+        pendingWrite.resolve(undefined);
+        await vi.advanceTimersByTimeAsync(180_000);
+        expect(await repo.findOneByOrFail({ id: task.id })).toEqual(afterMutation);
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(action === 'replace' ? 1 : 0);
+        update.mockRestore();
+      });
     });
   });
 

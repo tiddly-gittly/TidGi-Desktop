@@ -1,3 +1,4 @@
+import { SCHEDULED_TASK_RPC_MAX_LIST_BYTES } from '@/constants/agent';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import {
   createScheduledTaskAggregatePageController,
@@ -15,8 +16,6 @@ import {
   type ScheduledTaskRpcStoreContext,
   type ScheduledTaskRpcUpdateRequest,
 } from 'memeloop';
-
-const MAX_LIST_BYTES = 256 * 1024;
 
 /**
  * Main-process binding for Core's strict, scoped schedule RPC contract.
@@ -70,7 +69,7 @@ export function createDesktopScheduledTaskStore(
           source.executionNodeId !== request.executionNodeId || source.cursor === undefined)
       ) throw new ScheduledTaskAggregateCursorError();
       const limit = request.limit ?? 100;
-      if (!Number.isSafeInteger(request.maxBytes) || request.maxBytes < 64 || request.maxBytes > MAX_LIST_BYTES) {
+      if (!Number.isSafeInteger(request.maxBytes) || request.maxBytes < 64 || request.maxBytes > SCHEDULED_TASK_RPC_MAX_LIST_BYTES) {
         throw new Error('scheduled_task_invalid_byte_budget');
       }
       const page = await agentInstanceService.listScheduledTasksForAgent(request.agentInstanceId, {

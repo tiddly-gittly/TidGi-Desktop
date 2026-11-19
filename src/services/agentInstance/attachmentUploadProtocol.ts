@@ -1,16 +1,5 @@
 import type { AttachmentReference } from 'memeloop';
 
-/** Renderer/main attachment staging contract. Keep this module browser-safe. */
-export const DESKTOP_ATTACHMENT_UPLOAD_LIMITS = Object.freeze(
-  {
-    chunkBytes: 256 * 1024,
-    // Must never exceed Core ATTACHMENT_UPLOAD_LIMITS.totalBytes.
-    totalBytes: 64 * 1024 * 1024,
-    filenameBytes: 1024,
-    mimeTypeBytes: 256,
-  } as const,
-);
-
 export interface BeginDesktopAttachmentUploadInput {
   conversationId: string;
   filename: string;

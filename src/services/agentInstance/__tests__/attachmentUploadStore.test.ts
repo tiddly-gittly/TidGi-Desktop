@@ -1,3 +1,4 @@
+import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/constants/agentAttachments';
 // @vitest-environment node
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, mkdtemp, readdir, rm, utimes, writeFile } from 'node:fs/promises';
@@ -6,7 +7,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS, DesktopAttachmentUploadStore } from '../attachmentUploadStore';
+import { DesktopAttachmentUploadStore } from '../attachmentUploadStore';
 
 const bytes = (...values: number[]) => Uint8Array.from(values);
 const digest = (data: Uint8Array): string => `sha256:${createHash('sha256').update(data).digest('hex')}`;

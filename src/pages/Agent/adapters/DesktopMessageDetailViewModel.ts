@@ -1,3 +1,4 @@
+import { MESSAGE_DETAIL_CURSOR_PREFIX } from '@/constants/agent';
 import {
   getDisplayTruncation,
   MEMELOOP_MESSAGE_DETAIL_MAX_BYTES,
@@ -169,8 +170,6 @@ function canonicalDetailPage(
   return boundedCanonicalDetailPage(`${canonical.content}${suffix}`, request);
 }
 
-const DETAIL_CURSOR_PREFIX = 'desktop-message-detail:v1:';
-
 /** Returns a single UI-bounded page; nextCursor is an opaque code-unit offset. */
 function boundedCanonicalDetailPage(
   completeText: string,
@@ -210,8 +209,8 @@ function boundedCanonicalDetailPage(
 
 function parseDetailCursor(cursor: string | undefined, value: string): number {
   if (cursor === undefined) return 0;
-  if (!cursor.startsWith(DETAIL_CURSOR_PREFIX)) throw new Error('invalid message detail cursor');
-  const offset = Number(cursor.slice(DETAIL_CURSOR_PREFIX.length));
+  if (!cursor.startsWith(MESSAGE_DETAIL_CURSOR_PREFIX)) throw new Error('invalid message detail cursor');
+  const offset = Number(cursor.slice(MESSAGE_DETAIL_CURSOR_PREFIX.length));
   if (!Number.isSafeInteger(offset) || offset < 0 || offset > value.length || unicodeBoundaryAtOrBefore(value, offset) !== offset) {
     throw new Error('invalid message detail cursor');
   }
@@ -219,7 +218,7 @@ function parseDetailCursor(cursor: string | undefined, value: string): number {
 }
 
 function detailCursor(offset: number): string {
-  return `${DETAIL_CURSOR_PREFIX}${offset}`;
+  return `${MESSAGE_DETAIL_CURSOR_PREFIX}${offset}`;
 }
 
 function omittedMessageField(

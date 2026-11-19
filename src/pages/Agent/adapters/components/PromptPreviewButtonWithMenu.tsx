@@ -1,3 +1,4 @@
+import { PROMPT_PREVIEW_LONG_PRESS_MS } from '@/constants/agent';
 import { useAui } from '@memeloop/react-ui/chat';
 import ArticleIcon from '@mui/icons-material/Article';
 import { IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
@@ -13,8 +14,6 @@ export interface PromptPreviewButtonWithMenuProps {
   /** Whether the button is disabled. */
   disabled?: boolean;
 }
-
-const LONG_PRESS_DURATION = 600;
 
 /**
  * Prompt preview button.
@@ -89,7 +88,7 @@ export const PromptPreviewButtonWithMenu: React.FC<PromptPreviewButtonWithMenuPr
     longPressTimer.current = setTimeout(() => {
       isLongPress.current = true;
       setMenuAnchor(target);
-    }, LONG_PRESS_DURATION);
+    }, PROMPT_PREVIEW_LONG_PRESS_MS);
   }, []);
 
   const handleTouchEnd = useCallback(() => {

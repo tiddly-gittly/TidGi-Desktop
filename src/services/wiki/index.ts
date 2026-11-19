@@ -16,6 +16,7 @@ import { container } from '@services/container';
 
 import { WikiChannel } from '@/constants/channels';
 import { getTiddlyWikiBootPath, NSFW_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_BUILT_IN_PLUGINS_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { WIKI_SAVE_TIMEOUT_MS, WORKER_AVAILABILITY_TIMEOUT_MS } from '@/constants/wiki';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IHtmlWikiService } from '@services/htmlWiki/interface';
@@ -48,14 +49,13 @@ import { applyNetworkProxyToSession } from '@services/preferences/networkProxyEl
 import type { ISyncService } from '@services/sync/interface';
 import type { IThemeService } from '@services/theme/interface';
 import { serializeError } from 'serialize-error';
-import { WIKI_SAVE_TIMEOUT_MS, wikiWorkerStartedEventName } from './constants';
+import { wikiWorkerStartedEventName } from './constants';
 import { withWikiDeadline } from './requestDeadline';
 import type { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
 import { getSendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import type { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 
 type WikiOperationFunction = (...arguments_: never[]) => unknown;
-const WORKER_AVAILABILITY_TIMEOUT_MS = 10_000;
 
 /**
  * Invoke a dynamically selected wiki operation without weakening the

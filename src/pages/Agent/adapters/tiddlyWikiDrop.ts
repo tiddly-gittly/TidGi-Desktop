@@ -1,3 +1,4 @@
+import { TIDDLYWIKI_DROP_LIMITS } from '@/constants/agentAttachments';
 import type { DroppedAttachmentSnapshot } from '@memeloop/react-ui/chat';
 
 export interface TiddlyWikiDropAttachment {
@@ -25,15 +26,6 @@ export class TiddlyWikiDropValidationError extends Error {
     super(code);
   }
 }
-
-export const TIDDLYWIKI_DROP_LIMITS = Object.freeze(
-  {
-    attachments: 16,
-    payloadBytes: 256 * 1024,
-    titleBytes: 8 * 1024,
-    workspaceBytes: 1024,
-  } as const,
-);
 
 const encoder = new TextEncoder();
 const unsafeTitleCharacters = /[\p{Cc}\p{Cs}\u2028\u2029]/u;

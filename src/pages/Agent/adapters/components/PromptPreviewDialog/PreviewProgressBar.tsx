@@ -1,3 +1,4 @@
+import { PROMPT_PREVIEW_PROGRESS_DELAY_MS } from '@/constants/agent';
 import { Box, Chip, LinearProgress, Typography } from '@mui/material';
 import type { PromptPreviewDialogState } from 'memeloop';
 import React, { useEffect, useState } from 'react';
@@ -7,7 +8,6 @@ import { useTranslation } from 'react-i18next';
  * Debounce delay before showing the progress bar (ms)
  * Prevents flashing for quick operations
  */
-const SHOW_DELAY_MS = 200;
 
 interface PreviewProgressBarProps {
   /**
@@ -40,7 +40,7 @@ export const PreviewProgressBar: React.FC<PreviewProgressBarProps> = ({ show, st
       // Delay showing the progress bar
       const timer = setTimeout(() => {
         setShowDelayed(true);
-      }, SHOW_DELAY_MS);
+      }, PROMPT_PREVIEW_PROGRESS_DELAY_MS);
       return () => {
         clearTimeout(timer);
       };

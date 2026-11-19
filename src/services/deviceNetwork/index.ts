@@ -1,3 +1,10 @@
+import {
+  CLOUD_ACCESS_TOKEN_SECRET_REF,
+  CLOUD_DEVICE_FRESHNESS_MS,
+  CLOUD_HEARTBEAT_INTERVAL_MS,
+  DEVICE_IDENTITY_SECRET_REF,
+  RELAY_RENEWAL_WINDOW_MS,
+} from '@/constants/deviceNetwork';
 import { app } from 'electron';
 import { inject, injectable } from 'inversify';
 import { randomUUID } from 'node:crypto';
@@ -59,12 +66,6 @@ import type {
 import { createInitialDeviceCloudConnectionStatus } from './interface';
 import { boundListenPorts, listenAddresses, readListenPorts } from './listenPorts';
 import { TrustedRpcGate } from './trustedRpcGate';
-
-const CLOUD_HEARTBEAT_INTERVAL_MS = 60_000;
-export const CLOUD_DEVICE_FRESHNESS_MS = 3 * 60_000;
-const RELAY_RENEWAL_WINDOW_MS = 2 * 60_000;
-const CLOUD_ACCESS_TOKEN_SECRET_REF = 'device-network.cloud-access-token.v1';
-const DEVICE_IDENTITY_SECRET_REF = 'device-network.identity.v1';
 
 interface DesktopCloudConfiguration {
   cloudUrl: string;

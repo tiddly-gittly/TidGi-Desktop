@@ -1,9 +1,18 @@
 /**
- * Agent CRUD Repository — Database operations for AgentInstance lifecycle.
- *
- * Pure functions that receive repositories as parameters.
- * Extracted from AgentInstanceService to reduce class size.
+ * Agent database operations. Functions receive their repositories as parameters.
  */
+import {
+  LARGE_REMOTE_PROJECTION_BATCH,
+  MAX_CANONICAL_JSON_DEPTH,
+  MAX_CANONICAL_JSON_NODES,
+  MAX_EVENT_PAGE_SIZE,
+  MAX_EVENT_RANGES,
+  PERSISTED_MESSAGE_LIST_PROJECTION_BYTES,
+  REMOTE_PROJECTION_CHUNK_SIZE,
+  TIMELINE_ACTOR_LENGTH,
+  TIMELINE_RANK_CHECKPOINT_INTERVAL,
+  TIMELINE_STORED_PREVIEW_LENGTH,
+} from '@/constants/agentStorage';
 import { backOff } from 'exponential-backoff';
 import { pick } from 'lodash';
 import { createHash } from 'node:crypto';
@@ -226,8 +235,6 @@ interface RawMessageSqlRow {
   metadataJson: string | null;
   duration: number | null;
 }
-
-const PERSISTED_MESSAGE_LIST_PROJECTION_BYTES = 48 * 1024;
 
 function messageSqlColumns(alias: string, detailAlias?: string): string {
   const projected = detailAlias !== undefined;
@@ -1267,8 +1274,6 @@ interface TimelinePageSqlRow {
   turnIndex: number | null;
 }
 
-const TIMELINE_RANK_CHECKPOINT_INTERVAL = 256;
-
 /** One revision, cursor validation, bounded rank seek, and page in one read. */
 export async function getConversationTimelinePage(
   repository: Repository<AgentInstanceMessageEntity>,
@@ -2070,11 +2075,6 @@ function assertConversationListProjectionScope(scope: ConversationListProjection
   }
 }
 
-const MAX_CANONICAL_JSON_DEPTH = 32;
-const MAX_CANONICAL_JSON_NODES = 200_000;
-const MAX_EVENT_PAGE_SIZE = 80;
-const MAX_EVENT_RANGES = 256;
-
 function eventStoreError(code: 'CONFLICT' | 'NOT_FOUND' | 'VALIDATION_ERROR', message: string): OrchestrationError {
   return new OrchestrationError({
     code: code === 'VALIDATION_ERROR' ? 'INVALID' : code,
@@ -2223,8 +2223,6 @@ async function ensureMetadataConversationProjection(
   await instanceRepository.save(instance);
 }
 
-const TIMELINE_STORED_PREVIEW_LENGTH = 240;
-const TIMELINE_ACTOR_LENGTH = 160;
 const timelinePreviewDatabases = new WeakSet<object>();
 
 function storedTimelinePreview(content: string): string {
@@ -2877,16 +2875,6 @@ async function rebuildConversationTimelineProjection(
   );
   await rebuildTimelineRankCheckpoints(manager, conversationId);
 }
-
-const LARGE_REMOTE_PROJECTION_BATCH = 256;
-/**
- * Keep the remote merge bounded while amortising SQLite/TypeORM statement
- * setup.  A thousand message rows stays comfortably below SQLite's bound
- * parameter ceiling (the JSON-backed inserts use one parameter; the detail
- * projection uses seven per row) and avoids making a 100k sync batch issue six
- * hundred write statements.
- */
-const REMOTE_PROJECTION_CHUNK_SIZE = 1_000;
 
 function conversationEventProjectionMessage(event: ConversationEvent): ChatMessage | undefined {
   if (event.kind === 'message') return conversationEventToMessage(event);

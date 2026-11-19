@@ -1,3 +1,4 @@
+import { AGENT_RUN_POLL_INTERVAL_MS } from '@/constants/agent';
 import type {
   AgentAttachmentInput,
   AgentCommittedAttachment,
@@ -27,13 +28,11 @@ import {
   RemoteAgentExecutionError,
 } from 'memeloop';
 
-import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/services/agentInstance/attachmentUploadProtocol';
+import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/constants/agentAttachments';
 import type { IAgentInstanceService } from '@/services/agentInstance/interface';
 import type { IDeviceNetworkService } from '@/services/deviceNetwork/interface';
 
 import { createSecureBrowserUuid } from './createSecureBrowserUuid';
-
-const DEFAULT_RUN_POLL_INTERVAL_MS = 500;
 
 type DesktopAgentInstanceExecutionPort = Pick<
   IAgentInstanceService,
@@ -73,7 +72,7 @@ export interface DesktopAgentExecutionCoordinatorFactoryOptions {
   services?: DesktopAgentExecutionCoordinatorServices;
 }
 
-interface StagedAttachment {
+interface PreparedAttachment {
   attachment: AgentCommittedAttachment;
   scope?: Parameters<IAgentInstanceService['abortAgentAttachmentUpload']>[0];
 }
@@ -101,17 +100,14 @@ export function createDesktopFileAttachmentSource(file: File): AgentAttachmentIn
   };
 }
 
-/**
- * Desktop's eight concrete ports for Core RemoteAgentExecutionCoordinator.
- * Every execute/retry port retains ownership until the durable run is terminal.
- */
+/** Connect renderer IPC services to MemeLoop's shared execution coordinator. */
 export function createDesktopAgentExecutionCoordinator(
   localPeerId: string,
   options: DesktopAgentExecutionCoordinatorFactoryOptions = {},
 ): RemoteAgentExecutionCoordinator {
   const services = options.services ?? browserServices();
   const createId = options.createId ?? createSecureBrowserUuid;
-  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_RUN_POLL_INTERVAL_MS;
+  const pollIntervalMs = options.pollIntervalMs ?? AGENT_RUN_POLL_INTERVAL_MS;
   const activeRuns = new Map<string, ActiveRun>();
 
   const remoteClient = (peerId: string, operationId: string): AgentDeviceRpcClient =>
@@ -125,12 +121,12 @@ export function createDesktopAgentExecutionCoordinator(
     request: RemoteAgentExecuteRequest,
     callOptions: RemoteAgentExecutionCallOptions,
   ): Promise<RemoteAgentExecutionResult> => {
-    const staged = await stageAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
+    const preparedAttachment = await prepareLocalAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
     try {
       const runTurnRequest = unwrapRendererAgentRunResult(
         await services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer({
           ...request,
-          ...(staged === undefined ? {} : { attachment: staged.attachment }),
+          ...(preparedAttachment === undefined ? {} : { attachment: preparedAttachment.attachment }),
         }),
       );
       callOptions.signal.throwIfAborted();
@@ -158,7 +154,7 @@ export function createDesktopAgentExecutionCoordinator(
       if (runError) throw createRemoteExecutionFailure('PORT_FAILURE', runError.retryable, runError);
       throw error;
     } finally {
-      await releaseStagedAttachment(staged, services);
+      await releaseAttachmentUpload(preparedAttachment, services);
     }
   };
 
@@ -168,14 +164,14 @@ export function createDesktopAgentExecutionCoordinator(
   ): Promise<RemoteAgentExecutionResult> => {
     if (request.target.kind !== 'remote') throw new RemoteAgentExecutionError('INVALID_TARGET', false);
     const target = request.target;
-    const staged = await stageAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
+    const preparedAttachment = await prepareLocalAttachment(request.attachment, request.provenance.conversationId, callOptions.signal, services);
     try {
       return await withRemoteOperation(services, createId, callOptions.signal, async operationId => {
         const client = remoteClient(target.peerId, operationId);
         const runTurnRequest = unwrapRendererAgentRunResult(
           await services.agentInstance.prepareAgentDeviceRpcRunTurnForRenderer({
             ...request,
-            ...(staged === undefined ? {} : { attachment: staged.attachment }),
+            ...(preparedAttachment === undefined ? {} : { attachment: preparedAttachment.attachment }),
           }),
         );
         // Preparation also restores attachments retained by an edited branch.
@@ -200,7 +196,7 @@ export function createDesktopAgentExecutionCoordinator(
         return { runId: handle.runId };
       });
     } finally {
-      await releaseStagedAttachment(staged, services);
+      await releaseAttachmentUpload(preparedAttachment, services);
     }
   };
 
@@ -360,12 +356,12 @@ async function notifyRunAccepted(
   }
 }
 
-async function stageAttachment(
+async function prepareLocalAttachment(
   attachment: AgentAttachmentInput | undefined,
   conversationId: string,
   signal: AbortSignal,
   services: DesktopAgentExecutionCoordinatorServices,
-): Promise<StagedAttachment | undefined> {
+): Promise<PreparedAttachment | undefined> {
   if (attachment === undefined) return undefined;
   if (attachment.kind === 'committed') return { attachment };
   signal.throwIfAborted();
@@ -605,13 +601,13 @@ function abortableDelay(milliseconds: number, signal: AbortSignal): Promise<void
   });
 }
 
-async function releaseStagedAttachment(
-  staged: StagedAttachment | undefined,
+async function releaseAttachmentUpload(
+  preparedAttachment: PreparedAttachment | undefined,
   services: DesktopAgentExecutionCoordinatorServices,
 ): Promise<void> {
-  if (staged?.scope === undefined) return;
-  await services.agentInstance.abortAgentAttachmentUpload(staged.scope).catch((error: unknown) => {
-    services.logWarning('Failed to release staged agent attachment', { error, uploadId: staged.scope?.uploadId });
+  if (preparedAttachment?.scope === undefined) return;
+  await services.agentInstance.abortAgentAttachmentUpload(preparedAttachment.scope).catch((error: unknown) => {
+    services.logWarning('Failed to release attachment upload', { error, uploadId: preparedAttachment.scope?.uploadId });
   });
 }
 

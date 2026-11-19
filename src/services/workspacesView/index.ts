@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import path from 'path';
 
 import { WikiChannel } from '@/constants/channels';
+import { WORKSPACE_STARTUP_CONCURRENCY } from '@/constants/wiki';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAnalyticsService } from '@services/analytics/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -29,8 +30,6 @@ import { workspaceSorter } from '@services/workspaces/utilities';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 import { getTidgiMiniWindowTargetWorkspace } from './utilities';
-
-export const WORKSPACE_STARTUP_CONCURRENCY = 3;
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {

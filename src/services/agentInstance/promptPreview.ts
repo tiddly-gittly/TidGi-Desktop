@@ -1,3 +1,4 @@
+import { PROMPT_PREVIEW_MAX_PENDING, PROMPT_PREVIEW_MAX_RETAINED, PROMPT_PREVIEW_REQUEST_ID_PATTERN, PROMPT_PREVIEW_SESSION_TTL_MS } from '@/constants/agent';
 import {
   type AgentFrameworkContext,
   isContextCompactionSummary,
@@ -12,11 +13,6 @@ import {
 } from 'memeloop';
 import { prepareAgentExecutionModelRequest } from 'memeloop';
 import { randomUUID } from 'node:crypto';
-
-const MAXIMUM_PENDING_PREVIEWS = 8;
-const MAXIMUM_RETAINED_PREVIEWS = 4;
-const SESSION_TTL_MS = 10 * 60 * 1_000;
-const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/u;
 
 export interface DesktopPromptPreviewContextFactory {
   (conversationId: string, signal: AbortSignal): Promise<AgentFrameworkContext>;
@@ -54,7 +50,7 @@ export class DesktopPromptPreviewService {
   private readonly auditStore = new PromptPreviewAuditSessionStore({
     createSessionId: randomUUID,
     createRevision: randomUUID,
-    maxSessions: MAXIMUM_RETAINED_PREVIEWS,
+    maxSessions: PROMPT_PREVIEW_MAX_RETAINED,
   });
 
   public constructor(private readonly options: DesktopPromptPreviewServiceOptions) {
@@ -66,7 +62,7 @@ export class DesktopPromptPreviewService {
     assertPrepareInput(input);
     this.sweepExpired();
     if (this.pending.has(input.requestId)) throw previewError('request_conflict');
-    if (this.pending.size >= MAXIMUM_PENDING_PREVIEWS) throw previewError('capacity_exceeded');
+    if (this.pending.size >= PROMPT_PREVIEW_MAX_PENDING) throw previewError('capacity_exceeded');
 
     const operation: PendingPromptPreview = {
       requestId: input.requestId,
@@ -160,7 +156,7 @@ export class DesktopPromptPreviewService {
   }
 
   private sweepExpired(): void {
-    const cutoff = this.now() - SESSION_TTL_MS;
+    const cutoff = this.now() - PROMPT_PREVIEW_SESSION_TTL_MS;
     for (const [sessionId, context] of this.retainedHostContexts) {
       if (context.lastAccessedAt >= cutoff) continue;
       this.auditStore.release({ sessionId, expectedRevision: context.revision });
@@ -177,7 +173,7 @@ function assertPrepareInput(input: PromptPreviewPrepareRequest): void {
 }
 
 function assertRequestId(requestId: string): void {
-  if (!REQUEST_ID_PATTERN.test(requestId)) throw previewError('request_invalid');
+  if (!PROMPT_PREVIEW_REQUEST_ID_PATTERN.test(requestId)) throw previewError('request_invalid');
 }
 
 function previewError(code: string): Error {

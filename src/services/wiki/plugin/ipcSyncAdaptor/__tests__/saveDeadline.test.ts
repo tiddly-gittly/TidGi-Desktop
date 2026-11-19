@@ -1,7 +1,7 @@
+import { WIKI_SAVE_TIMEOUT_MS } from '@/constants/wiki';
 import { Subject } from 'rxjs';
 import type { Syncer, Tiddler, Wiki } from 'tiddlywiki';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { WIKI_SAVE_TIMEOUT_MS } from '../../../constants';
 import type { ITidGiChangedTiddlers } from '../../../wikiWorker/ipcServerRoutes';
 import type { TidGiIPCSyncAdaptor } from '../ipc-syncadaptor';
 

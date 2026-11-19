@@ -25,6 +25,7 @@ import type {
 import { nanoid } from 'nanoid';
 import { In, Repository } from 'typeorm';
 
+import { MAX_TIMER_DELAY_MS, SCHEDULE_RETRY_BASE_MS, SCHEDULE_RETRY_MAX_MS } from '@/constants/agent';
 import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from '../interface';
@@ -53,10 +54,6 @@ interface RuntimeEntry {
 }
 
 // ─── Utility helpers ──────────────────────────────────────────────────────────
-
-const MAX_TIMER_DELAY_MS = 2_147_000_000;
-const SCHEDULE_RETRY_BASE_MS = 60_000;
-const SCHEDULE_RETRY_MAX_MS = 60 * 60_000;
 
 function minutesInTimezone(date: Date, timezone?: string): number {
   if (!timezone) return date.getHours() * 60 + date.getMinutes();
@@ -154,7 +151,24 @@ export function initScheduledTaskManager(
 
 type TaskFireOutcome = 'succeeded' | 'failed' | 'skipped';
 
-async function fireTask(task: ScheduledTaskEntity): Promise<TaskFireOutcome> {
+function isCurrentEntry(entry: RuntimeEntry): boolean {
+  return activeEntries.get(entry.task.id) === entry;
+}
+
+/** Match the schedule revision so an older attempt cannot overwrite newer execution metadata. */
+async function updateRunningTask(task: ScheduledTaskEntity, entry: RuntimeEntry, patch: Partial<ScheduledTaskEntity>): Promise<boolean> {
+  if (!isCurrentEntry(entry) || !scheduledTaskRepo) return false;
+  const result = await scheduledTaskRepo.update(
+    { id: task.id, executionRevision: task.executionRevision, enabled: true, state: 'active' },
+    patch,
+  );
+  if (!isCurrentEntry(entry) || result.affected !== 1) return false;
+  Object.assign(task, patch);
+  return true;
+}
+
+async function fireTask(task: ScheduledTaskEntity, entry: RuntimeEntry): Promise<TaskFireOutcome | undefined> {
+  if (!isCurrentEntry(entry)) return;
   if (!isWithinActiveHours(task)) {
     logger.debug('ScheduledTaskManager: skipped outside active hours', { taskId: task.id });
     return 'skipped';
@@ -170,6 +184,7 @@ async function fireTask(task: ScheduledTaskEntity): Promise<TaskFireOutcome> {
 
   try {
     await requireDurableAgentInstance(task.agentInstanceId, task.agentDefinitionId);
+    if (!isCurrentEntry(entry)) return;
     const scheduledFor = (task.nextRetryAt ?? task.nextRunAt ?? new Date()).getTime();
     await service.executeLocalAgentMessage({
       target: { kind: 'local' },
@@ -183,26 +198,23 @@ async function fireTask(task: ScheduledTaskEntity): Promise<TaskFireOutcome> {
     });
     logger.info('ScheduledTaskManager: task fired', { taskId: task.id, agentInstanceId: task.agentInstanceId });
   } catch (error) {
+    if (!isCurrentEntry(entry)) return;
     logger.error('ScheduledTaskManager: failed to send message', { taskId: task.id, error });
     const now = new Date();
     const lastError = error instanceof Error ? error.message : String(error);
-    task.lastRunStatus = 'failed';
-    task.lastError = lastError;
-    task.lastFailureAt = now;
-    task.consecutiveFailures = (task.consecutiveFailures ?? 0) + 1;
-    if (scheduledTaskRepo) {
-      await scheduledTaskRepo.update(task.id, {
+    if (
+      !await updateRunningTask(task, entry, {
         lastRunStatus: 'failed',
         lastError,
         lastFailureAt: now,
-        consecutiveFailures: task.consecutiveFailures,
-      });
-    }
+        consecutiveFailures: (task.consecutiveFailures ?? 0) + 1,
+      })
+    ) return;
     return 'failed';
   }
 
   // Update DB counters
-  if (scheduledTaskRepo) {
+  if (isCurrentEntry(entry)) {
     const newRunCount = task.runCount + 1;
     const now = new Date();
 
@@ -220,19 +232,12 @@ async function fireTask(task: ScheduledTaskEntity): Promise<TaskFireOutcome> {
     };
 
     const maxRunsReached = task.maxRuns != null && newRunCount >= task.maxRuns;
-    if (task.deleteAfterRun || maxRunsReached) {
-      await completeTask(task.id);
+    if (task.schedule.kind === 'at' || task.deleteAfterRun || maxRunsReached) {
+      if (await updateRunningTask(task, entry, { ...update, enabled: false, state: 'completed' }) && isCurrentEntry(entry)) cancelEntry(task.id);
       return 'succeeded';
     }
 
-    task.runCount = newRunCount;
-    task.lastRunAt = now;
-    task.lastRunStatus = 'succeeded';
-    task.lastError = null;
-    task.lastFailureAt = null;
-    task.consecutiveFailures = 0;
-    task.nextRetryAt = null;
-    await scheduledTaskRepo.update(task.id, update);
+    if (!await updateRunningTask(task, entry, update)) return;
   }
   return 'succeeded';
 }
@@ -246,30 +251,29 @@ function retryDelay(task: ScheduledTaskEntity): number {
   );
 }
 
-function scheduleAtEntry(task: ScheduledTaskEntity, wakeAt: Date): void {
-  cancelEntry(task.id);
+function scheduleAtEntry(task: ScheduledTaskEntity, wakeAt: Date, entry: RuntimeEntry): void {
+  if (!isCurrentEntry(entry)) return;
   task.nextRunAt = wakeAt;
   const remaining = Math.max(0, wakeAt.getTime() - Date.now());
   const delay = Math.min(remaining, MAX_TIMER_DELAY_MS);
   const handle = setTimeout(() => {
+    if (!isCurrentEntry(entry)) return;
     if (remaining > MAX_TIMER_DELAY_MS) {
-      scheduleAtEntry(task, wakeAt);
+      scheduleAtEntry(task, wakeAt, entry);
       return;
     }
-    void fireTask(task).then(async outcome => {
-      if (outcome === 'succeeded') {
-        if (activeEntries.has(task.id)) await completeTask(task.id);
-        return;
-      }
+    void fireTask(task, entry).then(async outcome => {
+      if (!isCurrentEntry(entry) || outcome === undefined || outcome === 'succeeded') return;
       const nextRetryAt = new Date(Date.now() + (outcome === 'failed' ? retryDelay(task) : SCHEDULE_RETRY_BASE_MS));
-      task.nextRetryAt = nextRetryAt;
-      task.nextRunAt = nextRetryAt;
-      if (scheduledTaskRepo) await scheduledTaskRepo.update(task.id, { nextRetryAt, nextRunAt: nextRetryAt });
-      scheduleAtEntry(task, nextRetryAt);
+      if (await updateRunningTask(task, entry, { nextRetryAt, nextRunAt: nextRetryAt })) {
+        scheduleAtEntry(task, nextRetryAt, entry);
+      }
+    }).catch((error: unknown) => {
+      logger.error('ScheduledTaskManager: failed to persist task outcome', { taskId: task.id, error });
     });
   }, delay);
   handle.unref?.();
-  activeEntries.set(task.id, { task, timeoutHandle: handle });
+  entry.timeoutHandle = handle;
 }
 
 function scheduleEntry(task: ScheduledTaskEntity): void {
@@ -277,12 +281,14 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
 
   if (!task.enabled || task.state !== 'active') return;
 
+  const entry: RuntimeEntry = { task };
+  activeEntries.set(task.id, entry);
   const schedule = task.schedule;
 
   if (schedule.kind === 'at') {
     const atSchedule = schedule;
     const wakeAt = new Date(atSchedule.wakeAtISO);
-    scheduleAtEntry(task, wakeAt);
+    scheduleAtEntry(task, wakeAt, entry);
   } else if (schedule.kind === 'cron') {
     const cronSchedule = schedule;
     try {
@@ -293,20 +299,23 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
         // Return the promise to Croner. `protect: true` can prevent overlapping
         // agent turns only while it can observe that the previous callback is
         // still pending; a fire-and-forget callback defeats that guarantee.
-        await fireTask(task);
-        if (!activeEntries.has(task.id)) return;
-        task.nextRunAt = cronJob.nextRun() ?? undefined;
-        if (scheduledTaskRepo && task.nextRunAt) await scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
+        await fireTask(task, entry);
+        if (!isCurrentEntry(entry)) return;
+        const nextRunAt = cronJob.nextRun() ?? undefined;
+        if (nextRunAt) await updateRunningTask(task, entry, { nextRunAt });
       });
       task.nextRunAt = cronJob.nextRun() ?? undefined;
-      activeEntries.set(task.id, { task, cronJob });
+      entry.cronJob = cronJob;
     } catch (error) {
+      cancelEntry(task.id);
       logger.error('ScheduledTaskManager: invalid cron expression', { expression: cronSchedule.expression, error });
     }
   }
 
   if (scheduledTaskRepo && task.nextRunAt) {
-    void scheduledTaskRepo.update(task.id, { nextRunAt: task.nextRunAt });
+    void updateRunningTask(task, entry, { nextRunAt: task.nextRunAt }).catch((error: unknown) => {
+      logger.error('ScheduledTaskManager: failed to persist next run time', { taskId: task.id, error });
+    });
   }
 }
 
@@ -484,14 +493,20 @@ export async function updateTask(
   validateSchedule(entity);
 
   options.signal?.throwIfAborted();
-  await scheduledTaskRepo.save(entity);
+  await scheduledTaskRepo.update(taskId, {
+    ...mutableTaskFields(entity),
+    executionRevision: () => 'executionRevision + 1',
+    nextRetryAt: null,
+    nextRunAt: () => 'NULL',
+  });
   options.signal?.throwIfAborted();
+  const updated = await scheduledTaskRepo.findOneByOrFail({ id: taskId });
 
-  cancelEntry(entity.id);
-  if (entity.enabled) scheduleEntry(entity);
+  cancelEntry(updated.id);
+  if (updated.enabled) scheduleEntry(updated);
 
   logger.info('ScheduledTaskManager: task updated', { taskId: entity.id });
-  return entityToScheduledTask(entity);
+  return entityToScheduledTask(updated);
 }
 
 /** Atomically validate the complete RPC resource tuple and update one task. */
@@ -514,7 +529,12 @@ export async function updateTaskScoped(
     options.signal?.throwIfAborted();
     const result = await repository.createQueryBuilder()
       .update(ScheduledTaskEntity)
-      .set(mutableTaskFields(candidate))
+      .set({
+        ...mutableTaskFields(candidate),
+        executionRevision: () => 'executionRevision + 1',
+        nextRetryAt: null,
+        nextRunAt: () => 'NULL',
+      })
       .where('id = :id', { id: where.id })
       .andWhere('agentInstanceId = :agentInstanceId', { agentInstanceId: where.agentInstanceId })
       .andWhere('agentDefinitionId = :agentDefinitionId', { agentDefinitionId: where.agentDefinitionId })
@@ -556,7 +576,7 @@ export async function removeTaskScoped(
     const where = scopeWhere(scope);
     const result = await manager.getRepository(ScheduledTaskEntity).createQueryBuilder()
       .update(ScheduledTaskEntity)
-      .set({ enabled: false, state: 'cancelled' })
+      .set({ enabled: false, state: 'cancelled', executionRevision: () => 'executionRevision + 1' })
       .where('id = :id', { id: where.id })
       .andWhere('agentInstanceId = :agentInstanceId', { agentInstanceId: where.agentInstanceId })
       .andWhere('agentDefinitionId = :agentDefinitionId', { agentDefinitionId: where.agentDefinitionId })
@@ -632,16 +652,9 @@ function mutableTaskFields(entity: ScheduledTaskEntity): Partial<ScheduledTaskEn
 export async function removeTask(taskId: string): Promise<void> {
   cancelEntry(taskId);
   if (scheduledTaskRepo) {
-    await scheduledTaskRepo.update(taskId, { enabled: false, state: 'cancelled' });
+    await scheduledTaskRepo.update(taskId, { enabled: false, state: 'cancelled', executionRevision: () => 'executionRevision + 1' });
   }
   logger.info('ScheduledTaskManager: task removed', { taskId });
-}
-
-async function completeTask(taskId: string): Promise<void> {
-  cancelEntry(taskId);
-  if (scheduledTaskRepo) {
-    await scheduledTaskRepo.update(taskId, { enabled: false, state: 'completed' });
-  }
 }
 
 /** List all active in-memory tasks. */
@@ -890,7 +903,7 @@ export async function cancelTasksForAgent(agentInstanceId: string): Promise<void
   if (scheduledTaskRepo) {
     await scheduledTaskRepo.update(
       { agentInstanceId, state: 'active' },
-      { enabled: false, state: 'cancelled' },
+      { enabled: false, state: 'cancelled', executionRevision: () => 'executionRevision + 1' },
     );
   }
 }

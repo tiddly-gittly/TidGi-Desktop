@@ -1,22 +1,13 @@
+import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/constants/agentAttachments';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access, type FileHandle, link, mkdir, open, opendir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { AttachmentReference } from 'memeloop';
-import {
-  type BeginDesktopAttachmentUploadInput,
-  DESKTOP_ATTACHMENT_UPLOAD_LIMITS,
-  type DesktopAttachmentUploadScope,
-  type WriteDesktopAttachmentChunkInput,
-} from './attachmentUploadProtocol';
+import { type BeginDesktopAttachmentUploadInput, type DesktopAttachmentUploadScope, type WriteDesktopAttachmentChunkInput } from './attachmentUploadProtocol';
 
-export {
-  type BeginDesktopAttachmentUploadInput,
-  DESKTOP_ATTACHMENT_UPLOAD_LIMITS,
-  type DesktopAttachmentUploadScope,
-  type WriteDesktopAttachmentChunkInput,
-} from './attachmentUploadProtocol';
+export { type BeginDesktopAttachmentUploadInput, type DesktopAttachmentUploadScope, type WriteDesktopAttachmentChunkInput } from './attachmentUploadProtocol';
 
 interface ActiveUpload {
   uploadId: string;

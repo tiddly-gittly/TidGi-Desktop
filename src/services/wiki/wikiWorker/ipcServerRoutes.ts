@@ -2,12 +2,12 @@
  * Expose apis that ipc sync adaptor will use
  */
 
+import { WIKI_SAVE_TIMEOUT_MS } from '@/constants/wiki';
 import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
 import { Observable, Subject, type Subscription } from 'rxjs';
 import type { ITiddlerFields, ITiddlyWiki, Syncer } from 'tiddlywiki';
-import { WIKI_SAVE_TIMEOUT_MS } from '../constants';
 import { applyInitialPaletteBeforeIndexRender } from './applyInitialPalette';
 import { waitForTiddlerDeletion, waitForTiddlerPersistence } from './tiddlerPersistence';
 

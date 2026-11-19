@@ -1,10 +1,10 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
+import { WIKI_SAVE_TIMEOUT_MS } from '@/constants/wiki';
 import type { ITidGiChangedTiddlers, IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { isWikiWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import type { ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
-import { WIKI_SAVE_TIMEOUT_MS } from '../../constants';
 import { withWikiDeadline } from '../../requestDeadline';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from '../../wikiWorker/ipcServerRoutes';
 

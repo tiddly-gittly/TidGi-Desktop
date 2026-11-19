@@ -1,12 +1,18 @@
 /**
- * Bounded Desktop binding for Core's scheduled-task client.
- *
- * One page considers at most eight devices with a fixed RPC concurrency. A
- * host cursor retains each device's independent keyset cursor; no call walks a
- * second page or materializes the complete task set. Offline sources remain
- * explicit; durable cache storage never crosses renderer IPC as a second DTO.
+ * Desktop binding for MemeLoop's scheduled-task client.
+ * A page reads a bounded batch of devices, retaining each source's cursor.
  */
-
+import {
+  SCHEDULED_TASK_AGGREGATE_OVERHEAD_BYTES,
+  SCHEDULED_TASK_DEFAULT_PAGE_BYTES,
+  SCHEDULED_TASK_DEFAULT_PAGE_SIZE,
+  SCHEDULED_TASK_MAX_DIRECTORY_SOURCES,
+  SCHEDULED_TASK_MAX_PAGE_BYTES,
+  SCHEDULED_TASK_MAX_PAGE_SIZE,
+  SCHEDULED_TASK_MAX_RPC_CONCURRENCY,
+  SCHEDULED_TASK_MAX_SOURCE_BATCH,
+  SCHEDULED_TASK_MIN_PAGE_BYTES,
+} from '@/constants/agent';
 import type { Device } from '@services/deviceNetwork/interface';
 import {
   createScheduledTaskAggregatePageController,
@@ -23,16 +29,6 @@ import {
 import { type AgentDeviceRpcSend, createAgentDeviceRpcClient, createScheduledTaskClientFromRpc } from 'memeloop/device-network';
 
 import { createSecureBrowserUuid } from './createSecureBrowserUuid';
-
-const DEFAULT_PAGE_SIZE = 64;
-const MAX_PAGE_SIZE = 100;
-const DEFAULT_PAGE_BYTES = 256 * 1024;
-const MAX_PAGE_BYTES = 256 * 1024;
-const MIN_PAGE_BYTES = 64;
-const AGGREGATE_OVERHEAD_BYTES = 16 * 1024;
-const MAX_SOURCE_BATCH = 8;
-const MAX_DIRECTORY_SOURCES = 64;
-const MAX_RPC_CONCURRENCY = 4;
 
 type SourcePath = 'local' | 'live' | 'offline';
 
@@ -126,8 +122,8 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
       ]);
       options.signal?.throwIfAborted();
       const directory = buildTargets(identity.peerId, devices, executionNodeIds);
-      const capped = directory.length > MAX_DIRECTORY_SOURCES;
-      const targets = directory.slice(0, MAX_DIRECTORY_SOURCES);
+      const capped = directory.length > SCHEDULED_TASK_MAX_DIRECTORY_SOURCES;
+      const targets = directory.slice(0, SCHEDULED_TASK_MAX_DIRECTORY_SOURCES);
       const directorySignature = targetSignature(identity.peerId, targets);
       const requestGeneration = reconcileConfiguration(directorySignature);
       const pageController = createScheduledTaskAggregatePageController({
@@ -143,18 +139,18 @@ export const createDesktopScheduledTaskClient = (): ScheduledTaskClient => {
       };
       const decoded = options.cursor === undefined ? undefined : pageController.decode(options.cursor);
       const targetOffset = decoded?.sourceIndex ?? 0;
-      const maximumSourcesForBudget = Math.max(1, Math.floor(maxBytes / MIN_PAGE_BYTES));
-      const batch = targets.slice(targetOffset, targetOffset + Math.min(MAX_SOURCE_BATCH, maximumSourcesForBudget));
+      const maximumSourcesForBudget = Math.max(1, Math.floor(maxBytes / SCHEDULED_TASK_MIN_PAGE_BYTES));
+      const batch = targets.slice(targetOffset, targetOffset + Math.min(SCHEDULED_TASK_MAX_SOURCE_BATCH, maximumSourcesForBudget));
       const sourceCursors = decoded?.sources.length
         ? validateSourceCursors(decoded.sources, batch)
         : batch.map(target => ({ executionNodeId: target.executionNodeId, done: false } satisfies ScheduledTaskAggregateCursorSource));
       const activeCount = Math.max(1, sourceCursors.filter(source => !source.done).length);
       const sourceLimit = Math.max(1, Math.floor(limit / activeCount));
-      const itemBudget = Math.max(MIN_PAGE_BYTES, maxBytes - Math.min(AGGREGATE_OVERHEAD_BYTES, Math.floor(maxBytes / 4)));
-      const sourceMaxBytes = Math.max(MIN_PAGE_BYTES, Math.floor(itemBudget / activeCount));
+      const itemBudget = Math.max(SCHEDULED_TASK_MIN_PAGE_BYTES, maxBytes - Math.min(SCHEDULED_TASK_AGGREGATE_OVERHEAD_BYTES, Math.floor(maxBytes / 4)));
+      const sourceMaxBytes = Math.max(SCHEDULED_TASK_MIN_PAGE_BYTES, Math.floor(itemBudget / activeCount));
       const reads = await mapWithConcurrency(
         sourceCursors,
-        MAX_RPC_CONCURRENCY,
+        SCHEDULED_TASK_MAX_RPC_CONCURRENCY,
         source => {
           const target = batch.find(candidate => candidate.executionNodeId === source.executionNodeId);
           if (!target) throw new Error('scheduled_task_cursor_stale');
@@ -407,16 +403,16 @@ function buildTargets(
 }
 
 function normalizedPageSize(value: number | undefined): number {
-  const limit = value ?? DEFAULT_PAGE_SIZE;
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE) {
+  const limit = value ?? SCHEDULED_TASK_DEFAULT_PAGE_SIZE;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > SCHEDULED_TASK_MAX_PAGE_SIZE) {
     throw new Error('scheduled_task_invalid_page_limit');
   }
   return limit;
 }
 
 function normalizedPageBytes(value: number | undefined): number {
-  const maxBytes = value ?? DEFAULT_PAGE_BYTES;
-  if (!Number.isSafeInteger(maxBytes) || maxBytes < MIN_PAGE_BYTES || maxBytes > MAX_PAGE_BYTES) {
+  const maxBytes = value ?? SCHEDULED_TASK_DEFAULT_PAGE_BYTES;
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < SCHEDULED_TASK_MIN_PAGE_BYTES || maxBytes > SCHEDULED_TASK_MAX_PAGE_BYTES) {
     throw new Error('scheduled_task_invalid_byte_budget');
   }
   return maxBytes;
@@ -457,7 +453,7 @@ function normalizedExecutionNodeIds(nodeIds: readonly string[] | undefined): str
   const normalized = [...nodeIds].sort();
   if (
     normalized.length < 1 ||
-    normalized.length > MAX_DIRECTORY_SOURCES ||
+    normalized.length > SCHEDULED_TASK_MAX_DIRECTORY_SOURCES ||
     new Set(normalized).size !== normalized.length ||
     normalized.some(nodeId => !nodeId || nodeId.length > 512)
   ) throw new Error('scheduled_task_invalid_execution_nodes');

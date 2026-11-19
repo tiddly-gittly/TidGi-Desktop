@@ -69,7 +69,8 @@ vi.mock('@services/container', async () => {
   });
 });
 
-import { WORKSPACE_STARTUP_CONCURRENCY, WorkspaceView } from '..';
+import { WORKSPACE_STARTUP_CONCURRENCY } from '@/constants/wiki';
+import { WorkspaceView } from '..';
 import { registerMenu } from '../registerMenu';
 
 function createWorkspace(id: string, overrides: Partial<IWikiWorkspace> = {}): IWikiWorkspace {

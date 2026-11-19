@@ -1,9 +1,8 @@
+import { DEFAULT_WIKI_SCAN_MAX_DEPTH as DEFAULT_MAX_DEPTH, DEFAULT_WIKI_SCAN_MAX_FILES as DEFAULT_MAX_FILES } from '@/constants/wiki';
 import { existsSync, lstatSync, readdirSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import type { ITiddlersInFile, TiddlyWiki } from 'tiddlywiki';
 
-const DEFAULT_MAX_DEPTH = 32;
-const DEFAULT_MAX_FILES = 50_000;
 const EXCLUDED_DIRECTORY_NAMES = new Set([
   '.cache',
   '.git',

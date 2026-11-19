@@ -1,3 +1,4 @@
+import { WIKI_TIDDLER_CONTENT_LIMITS, WIKI_TIDDLER_CONTENT_TRUNCATION_CODE } from '@/constants/agentAttachments';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -5,7 +6,7 @@ import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interfa
 import { AGENT_USER_MESSAGE_LIMITS, canonicalJsonBytes, type RemoteAgentExecuteRequest, type WikiTiddlerClickData } from 'memeloop';
 import type { Tiddler } from 'tiddlywiki';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { boundWikiTiddlerContent, createAgentDeviceRpcPendingUserMessage, WIKI_TIDDLER_CONTENT_LIMITS, WIKI_TIDDLER_CONTENT_TRUNCATION_CODE } from '../userMessage';
+import { boundWikiTiddlerContent, createAgentDeviceRpcPendingUserMessage } from '../userMessage';
 
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);

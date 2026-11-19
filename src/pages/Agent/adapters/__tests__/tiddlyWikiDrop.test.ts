@@ -1,5 +1,6 @@
+import { TIDDLYWIKI_DROP_LIMITS } from '@/constants/agentAttachments';
 import { describe, expect, it, vi } from 'vitest';
-import { parseTiddlyWikiDrop, parseTiddlyWikiDropResult, resolveTiddlyWikiDrop, TIDDLYWIKI_DROP_LIMITS, TiddlyWikiDropValidationError } from '../tiddlyWikiDrop';
+import { parseTiddlyWikiDrop, parseTiddlyWikiDropResult, resolveTiddlyWikiDrop, TiddlyWikiDropValidationError } from '../tiddlyWikiDrop';
 
 const snapshot = (stringData: Record<string, string>) => ({ stringData });
 

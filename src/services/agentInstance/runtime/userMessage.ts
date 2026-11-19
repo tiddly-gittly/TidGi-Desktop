@@ -1,3 +1,4 @@
+import { WIKI_TIDDLER_CONTENT_LIMITS, WIKI_TIDDLER_CONTENT_TRUNCATION_CODE, WIKI_TIDDLER_MESSAGE_BUDGET_ERROR_CODE } from '@/constants/agentAttachments';
 import { WikiChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
@@ -14,20 +15,6 @@ import {
   type WikiTiddlerClickData,
   type WikiTiddlerContentProjection,
 } from 'memeloop';
-
-/**
- * Wiki content is projected once into the prompt body. Attachment metadata
- * retains only the identity and bounded-content accounting fields.
- */
-export const WIKI_TIDDLER_CONTENT_LIMITS = Object.freeze(
-  {
-    perAttachmentBytes: 64 * 1_024,
-    totalBytes: Math.min(192 * 1_024, AGENT_USER_MESSAGE_LIMITS.contentBytes),
-  } as const,
-);
-
-export const WIKI_TIDDLER_CONTENT_TRUNCATION_CODE = 'ATTACHMENT_CONTENT_TRUNCATED' as const;
-export const WIKI_TIDDLER_MESSAGE_BUDGET_ERROR_CODE = 'ATTACHMENT_MESSAGE_BUDGET_EXCEEDED' as const;
 
 export class WikiTiddlerMessageBudgetError extends Error {
   public readonly code = WIKI_TIDDLER_MESSAGE_BUDGET_ERROR_CODE;

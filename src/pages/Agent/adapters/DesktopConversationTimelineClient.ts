@@ -1,7 +1,5 @@
+import { DESKTOP_TIMELINE_PAGE_LIMIT, DESKTOP_TIMELINE_PAGE_MAX_BYTES } from '@/constants/agent';
 import type { ConversationTimelinePageClient, ConversationTimelinePageRequest } from '@memeloop/react-ui/chat';
-
-const DESKTOP_TIMELINE_PAGE_LIMIT = 50;
-const DESKTOP_TIMELINE_PAGE_MAX_BYTES = 256 * 1024;
 
 function assertTimelineRequest(request: ConversationTimelinePageRequest): void {
   if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > DESKTOP_TIMELINE_PAGE_LIMIT) {

@@ -1,3 +1,4 @@
+import { CLOUD_DEVICE_FRESHNESS_MS } from '@/constants/deviceNetwork';
 import type {
   CloudDeviceClient,
   CloudDeviceRecord,
@@ -22,7 +23,6 @@ import type { IDatabaseService } from '@services/database/interface';
 
 import {
   classifyCloudConnectionError,
-  CLOUD_DEVICE_FRESHNESS_MS,
   cloudDeviceReachability,
   DeviceNetworkService,
   DeviceNetworkSettingsStore,
