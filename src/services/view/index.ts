@@ -339,7 +339,6 @@ export class View implements IViewService {
         contents.removeListener('did-fail-load', failed);
         contents.removeListener('did-stop-loading', stopped);
         contents.removeListener('destroyed', destroyed);
-        contents.removeListener('will-prevent-unload', prevented);
       };
       const finished = () => {
         cleanup();
@@ -358,16 +357,10 @@ export class View implements IViewService {
       const destroyed = () => {
         fail(new Error('Wiki view destroyed during reload'));
       };
-      const prevented = () => {
-        // Do not preventDefault here: Electron would then override the
-        // renderer's unsaved-change veto and discard its in-memory edits.
-        fail(new Error('Wiki reload prevented by unsaved changes'));
-      };
       contents.on('did-finish-load', finished);
       contents.on('did-fail-load', failed);
       contents.on('did-stop-loading', stopped);
       contents.on('destroyed', destroyed);
-      contents.on('will-prevent-unload', prevented);
       try {
         contents.reload();
       } catch (error) {

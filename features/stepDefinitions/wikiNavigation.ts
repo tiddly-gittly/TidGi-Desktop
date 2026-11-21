@@ -39,8 +39,7 @@ Then('reloading a different saved wiki fragment should recreate the document and
   if (!this.app || !this.mainWindow) throw new Error('Application not launched');
   // Exercise both restoring a different fragment and reloading that same URL.
   for (const restoreFragment of [true, false]) {
-    await executeTiddlyWikiCode(this.app, 'window.__tidgiReloadProbe = true', this.mainWindow);
-    await this.mainWindow.evaluate(async ({ windowName, restoreFragment }) => {
+    const workspaceId = await this.mainWindow.evaluate(async ({ windowName, restoreFragment }) => {
       const workspace = await window.service.workspace.getActiveWorkspace();
       if (!workspace) throw new Error('No active workspace');
       const current = await window.service.view.getViewCurrentUrl(workspace.id, windowName);
@@ -49,11 +48,23 @@ Then('reloading a different saved wiki fragment should recreate the document and
       if (restoreFragment) destination.hash = '#NavigationReloadProbe';
       await window.service.preference.set('rememberLastPageVisited', true);
       await window.service.workspace.update(workspace.id, { lastUrl: destination.href });
-      await window.service.view.reloadViewsWebContents(workspace.id);
+      return workspace.id;
     }, { windowName: WindowNames.main, restoreFragment });
-    const result = await executeTiddlyWikiCode<{ fresh: boolean; service: boolean; fragment: string; openTitles: string[] }>(
+    const expectedText = restoreFragment ? 'Edit before restoring fragment' : 'Edit before same URL reload';
+    const dirty: boolean | null = await executeTiddlyWikiCode(
       this.app,
-      '({fresh: window.__tidgiReloadProbe === undefined, service: typeof window.service?.workspace?.get === "function", fragment: location.hash, openTitles: $tw.wiki.getTiddlerList("$:/StoryList")})',
+      `(() => {
+      window.__tidgiReloadProbe = true;
+      $tw.wiki.addTiddler(new $tw.Tiddler({title: 'NavigationReloadProbe', text: ${JSON.stringify(expectedText)}}));
+      return $tw.syncer.isDirty();
+    })()`,
+      this.mainWindow,
+    );
+    assert.equal(dirty, true, 'The edit must be dirty before requesting reload');
+    await this.mainWindow.evaluate(id => window.service.view.reloadViewsWebContents(id), workspaceId);
+    const result: { fresh: boolean; service: boolean; openTitles: string[]; text: string } | null = await executeTiddlyWikiCode(
+      this.app,
+      '({fresh: window.__tidgiReloadProbe === undefined, service: typeof window.service?.workspace?.get === "function", openTitles: $tw.wiki.getTiddlerList("$:/StoryList"), text: $tw.wiki.getTiddlerText("NavigationReloadProbe")})',
       this.mainWindow,
     );
     // TiddlyWiki normalizes the fragment to focused-title:story-list. Reload
@@ -61,5 +72,6 @@ Then('reloading a different saved wiki fragment should recreate the document and
     if (!result?.fresh || !result.service || !result.openTitles.includes('NavigationReloadProbe')) {
       throw new Error(`Saved-fragment reload did not recreate a working document: ${JSON.stringify(result)}`);
     }
+    assert.equal(result.text, expectedText, 'The new document must load the saved edit');
   }
 });

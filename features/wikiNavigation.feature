@@ -1,6 +1,6 @@
 Feature: Wiki navigation retains its preload bridge
   @wikiNavigation
-  Scenario: Reloading a saved fragment creates a new document with working services
+  Scenario: Reloading saves pending edits and creates a new document with working services
     Given I cleanup test wiki so it could create a new one on start
     And I launch the TidGi application
     And I wait for the page to load completely
@@ -13,6 +13,7 @@ Feature: Wiki navigation retains its preload bridge
     Then the browser view should be loaded and visible
     And I wait for SSE and watch-fs to be ready
     And reloading a different saved wiki fragment should recreate the document and its services
+    And tiddler "NavigationReloadProbe" in workspace "wiki" should be saved to disk with text "Edit before same URL reload"
 
   @wikiFolderAccess
   Scenario: Folder checking identifies the workspace and clears when access finishes

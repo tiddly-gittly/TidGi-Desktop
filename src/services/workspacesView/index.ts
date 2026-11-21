@@ -737,9 +737,8 @@ export class WorkspaceView implements IWorkspaceViewService {
           await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
           restoredWorker = true;
         }
-        // Recheck here: the user may have edited any window while git ran.
-        // Edits after this snapshot remain dirty until disk ACK; TiddlyWiki's
-        // existing beforeunload handler vetoes the later renderer reload.
+        // Recheck edits made while git ran before replacing the worker.
+        // reloadViewsWebContents drains saves again before replacing documents.
         await wikiService.waitForPendingSaves(workspaceToRestart.id);
       }
       if (!restoredWorker) {
