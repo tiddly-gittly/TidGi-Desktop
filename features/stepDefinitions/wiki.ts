@@ -1303,35 +1303,9 @@ When('I update workspace {string} settings:', async function(this: ApplicationWo
     const autoRestartCompleted = await waitForAutoRestart;
     if (autoRestartCompleted) return;
 
-    // Restart the wiki using the runtime-resolved workspace ID.
-    // Use app.evaluate -> BrowserWindow -> executeJavaScript instead of
-    // targetWindow.evaluate so a renderer crash during restartWiki does not
-    // surface as "Target page, context or browser has been closed" from
-    // Playwright. The main-process evaluate survives a renderer reload.
-    const restartResult = await this.app.evaluate(async ({ BrowserWindow }, workspaceId: string) => {
-      const windows = BrowserWindow.getAllWindows();
-      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents?.getURL().includes('index.html'));
-      if (!mainWindow) return { success: false, error: 'Main window not found' };
-
-      const script = `
-        (async () => {
-          const workspace = await window.service.workspace.get(${JSON.stringify(workspaceId)});
-          if (!workspace) return { success: false, error: 'Workspace not found for id=' + ${JSON.stringify(workspaceId)} };
-          try {
-            await window.service.wiki.restartWiki(workspace);
-            await window.service.view.reloadViewsWebContents(workspace.id);
-            return { success: true };
-          } catch (error) {
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
-          }
-        })()
-      `;
-      return (await mainWindow.webContents.executeJavaScript(script)) as { success: boolean; error?: string };
+    await targetWindow.evaluate(async workspaceId => {
+      await window.service.workspaceView.restartWorkspaceViewService(workspaceId);
     }, targetWorkspaceId);
-
-    if (!restartResult.success) {
-      throw new Error(`Failed to restart wiki: ${restartResult.error ?? 'Unknown error'}`);
-    }
 
     // Wait for wiki to restart and watch-fs to stabilize
     // Only wait if enableFileSystemWatch was set to true
