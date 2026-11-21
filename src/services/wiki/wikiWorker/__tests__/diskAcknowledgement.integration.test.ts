@@ -20,7 +20,7 @@ afterEach(async () => {
 });
 
 describe('real core syncer filesystem acknowledgement', () => {
-  it('acknowledges only after the actual filesystem callback, and disk contains the exact submitted text', async () => {
+  it('acknowledges exact disk contents before the next window can save or delete the same title', async () => {
     directory = await mkdtemp(path.join(tmpdir(), 'tidgi-save-ack-fixture-'));
     await writeFile(path.join(directory, 'tiddlywiki.info'), JSON.stringify({ plugins: ['tiddlywiki/filesystem'] }));
     instance = TiddlyWiki();
@@ -34,13 +34,15 @@ describe('real core syncer filesystem acknowledgement', () => {
     const fields: ITiddlerFields = { title: 'save-ack-fixture', type: 'text/vnd.tiddlywiki', text: 'Only synthetic fixture content.' };
     const originalSave = instance.syncadaptor.saveTiddler.bind(instance.syncadaptor);
     const diskWritten = Promise.withResolvers<() => void>();
+    let holdFirstCallback = true;
     vi.spyOn(instance.syncadaptor, 'saveTiddler').mockImplementation((
       tiddler: Tiddler,
       callback: (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void,
       options?: { tiddlerInfo?: Record<string, unknown> },
     ) => {
       originalSave(tiddler, (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => {
-        if (tiddler.fields.title === fields.title) {
+        if (tiddler.fields.title === fields.title && holdFirstCallback) {
+          holdFirstCallback = false;
           diskWritten.resolve(() => {
             callback(error, adaptorInfo, revision);
           });
@@ -53,11 +55,18 @@ describe('real core syncer filesystem acknowledgement', () => {
       return response;
     });
     const releaseCallback = await diskWritten.promise;
+    const secondFields = { ...fields, text: 'The second window edit.' };
+    const secondSave = routes.putTiddler(fields.title, secondFields);
     expect(acknowledged).toBe(false);
     const savedText = await readFile(path.join(directory, 'tiddlers', 'save-ack-fixture.tid'), 'utf8');
     expect(savedText).toContain(fields.text);
+    expect(instance.wiki.getTiddler(fields.title)?.fields.text).toBe(fields.text);
     releaseCallback();
     expect((await saving).statusCode).toBe(204);
+    expect((await secondSave).statusCode).toBe(204);
+    expect(await readFile(path.join(directory, 'tiddlers', 'save-ack-fixture.tid'), 'utf8')).toContain(secondFields.text);
+    await routes.deleteTiddler(fields.title);
+    await expect(readFile(path.join(directory, 'tiddlers', 'save-ack-fixture.tid'), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
     expect(instance.syncer.isDirty()).toBe(false);
   });
 });

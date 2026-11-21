@@ -55,6 +55,28 @@ describe('IPC tiddler persistence acknowledgement', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('persists concurrent writes from two renderers in order before a queued deletion', async () => {
+    const f = fixture();
+    const first = f.routes.putTiddler(f.fields.title, f.fields);
+    const secondFields = { ...f.fields, text: 'edit from the second window' };
+    const second = f.routes.putTiddler(f.fields.title, secondFields);
+    const deletion = f.routes.deleteTiddler(f.fields.title);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(f.wikiInstance.wiki.getTiddler(f.fields.title)?.fields).toEqual(f.fields);
+    f.syncer.tiddlerInfo[f.fields.title] = { changeCount: 1 };
+    await vi.advanceTimersByTimeAsync(25);
+    expect((await first).headers?.Etag).toContain('/1:');
+    expect(f.wikiInstance.wiki.getTiddler(f.fields.title)?.fields).toEqual(secondFields);
+    f.syncer.tiddlerInfo[f.fields.title] = { changeCount: 2 };
+    await vi.advanceTimersByTimeAsync(25);
+    expect((await second).headers?.Etag).toContain('/2:');
+    expect(f.wikiInstance.wiki.tiddlerExists(f.fields.title)).toBe(false);
+    delete f.syncer.tiddlerInfo[f.fields.title];
+    await vi.advanceTimersByTimeAsync(25);
+    expect((await deletion).statusCode).toBe(204);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('does not return success when persistence fails or stalls', async () => {
     const f = fixture();
     const failure = expect(f.routes.putTiddler(f.fields.title, f.fields, Date.now() + 100)).rejects.toThrow('not saved to disk');

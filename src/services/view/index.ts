@@ -2,12 +2,15 @@ import { getPreloadPath } from '@services/windows/viteEntry';
 import { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
 import { inject, injectable } from 'inversify';
 
+import { container } from '@services/container';
 import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IThemeService } from '@services/theme/interface';
+import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isHtmlWikiWorkspace } from '@services/workspaces/workspacePaths';
 
 import { MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { getDefaultTidGiUrl } from '@/constants/urls';
@@ -374,6 +377,16 @@ export class View implements IViewService {
   }
 
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
+    const workspaceIds = new Set<string>();
+    this.forEachView((view, id) => {
+      if ((workspaceID === undefined || id === workspaceID) && !view.webContents.isDestroyed()) workspaceIds.add(id);
+    });
+    await Promise.all([...workspaceIds].map(async id => {
+      const workspace = await this.workspaceService.get(id);
+      if (workspace && isWikiWorkspace(workspace) && !isHtmlWikiWorkspace(workspace)) {
+        await container.get<IWikiService>(serviceIdentifier.Wiki).waitForPendingSaves(id);
+      }
+    }));
     const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
     const navigations: Array<Promise<void>> = [];
     this.forEachView((view, id) => {

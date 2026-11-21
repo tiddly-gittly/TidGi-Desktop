@@ -55,6 +55,20 @@ export class IpcServerRoutes {
    */
   private changeSubject: Subject<ITidGiChangedTiddlers> | undefined;
   private changeListenerInstalled = false;
+  private readonly tiddlerMutations = new Map<string, Promise<unknown>>();
+
+  private async serializeTiddlerMutation<T>(title: string, mutation: () => Promise<T>): Promise<T> {
+    // Each renderer has its own syncer. Keep their writes ordered until the
+    // shared filesystem syncer acknowledges the exact submitted revision.
+    const previous = this.tiddlerMutations.get(title) ?? Promise.resolve();
+    const pending = previous.catch(() => undefined).then(mutation);
+    this.tiddlerMutations.set(title, pending);
+    try {
+      return await pending;
+    } finally {
+      if (this.tiddlerMutations.get(title) === pending) this.tiddlerMutations.delete(title);
+    }
+  }
 
   setConfig({ readOnlyMode, shouldUseDarkColors }: { readOnlyMode?: boolean; shouldUseDarkColors?: boolean }) {
     this.#readonlyMode = Boolean(readOnlyMode);
@@ -100,11 +114,13 @@ export class IpcServerRoutes {
   //    ██    ██ ██████  ██████  ███████    ██           ███ ███  ███████ ██████
 
   async deleteTiddler(title: string, deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS): Promise<IWikiServerRouteResponse> {
-    await this.waitForIpcServerRoutesAvailable();
-    if (Date.now() >= deadline) throw new Error('Delete request expired before the wiki became available');
-    this.wikiInstance.wiki.deleteTiddler(title);
-    await waitForTiddlerDeletion(this.wikiInstance, title, this.wikiInstance.wiki.getChangeCount(title), deadline);
-    return { headers: { 'Content-Type': 'text/plain' }, data: 'OK', statusCode: 204 };
+    return this.serializeTiddlerMutation(title, async () => {
+      await this.waitForIpcServerRoutesAvailable();
+      if (Date.now() >= deadline) throw new Error('Delete request expired before the wiki became available');
+      this.wikiInstance.wiki.deleteTiddler(title);
+      await waitForTiddlerDeletion(this.wikiInstance, title, this.wikiInstance.wiki.getChangeCount(title), deadline);
+      return { headers: { 'Content-Type': 'text/plain' }, data: 'OK', statusCode: 204 };
+    });
   }
 
   async getSaveStatus(): Promise<IWikiServerRouteResponse> {
@@ -258,42 +274,32 @@ export class IpcServerRoutes {
   }
 
   async putTiddler(title: string, fields: ITiddlerFields, deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS): Promise<IWikiServerRouteResponse> {
-    await this.waitForIpcServerRoutesAvailable();
-    if (Date.now() >= deadline) throw new Error('Save request expired before the wiki became available');
-    const tiddlerFieldsToPut = omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>;
-    // Pull up any subfields in the `fields` object
-    // we skip this part by not creating the fields object at the beginning at src\services\wiki\plugin\ipcSyncAdaptor\index.ts
-    // if ('fields' in fields) {
-    //   tiddlerFieldsToPut = {
-    //     ...fields.fields as Record<string, string | number>,
-    //   };
-    // }
-    // tiddlerFieldsToPut = {
-    //   ...tiddlerFieldsToPut,
-    //   // Remove any revision field
-    //   ...omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>,
-    // };
-    // If this is a skinny tiddler, it means the client never got the full
-    // version of the tiddler to edit. So we must preserve whatever text
-    // already exists on the server, or else we'll inadvertently delete it.
-    if (fields._is_skinny !== undefined) {
-      const tiddler = this.wikiInstance.wiki.getTiddler(title);
-      if (tiddler !== undefined) {
-        tiddlerFieldsToPut.text = tiddler.fields.text;
+    return this.serializeTiddlerMutation(title, async () => {
+      await this.waitForIpcServerRoutesAvailable();
+      if (Date.now() >= deadline) throw new Error('Save request expired before the wiki became available');
+      const tiddlerFieldsToPut = omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>;
+      // If this is a skinny tiddler, it means the client never got the full
+      // version of the tiddler to edit. So we must preserve whatever text
+      // already exists on the server, or else we'll inadvertently delete it.
+      if (fields._is_skinny !== undefined) {
+        const tiddler = this.wikiInstance.wiki.getTiddler(title);
+        if (tiddler !== undefined) {
+          tiddlerFieldsToPut.text = tiddler.fields.text;
+        }
       }
-    }
-    tiddlerFieldsToPut.title = title;
+      tiddlerFieldsToPut.title = title;
 
-    this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
+      this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
 
-    const revision = this.wikiInstance.wiki.getChangeCount(title);
-    const persistence = await waitForTiddlerPersistence(this.wikiInstance, title, revision, deadline);
-    const changeCount = revision.toString();
-    return {
-      statusCode: 204,
-      headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"`, 'X-TidGi-Persistence': persistence },
-      data: 'OK',
-    };
+      const revision = this.wikiInstance.wiki.getChangeCount(title);
+      const persistence = await waitForTiddlerPersistence(this.wikiInstance, title, revision, deadline);
+      const changeCount = revision.toString();
+      return {
+        statusCode: 204,
+        headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"`, 'X-TidGi-Persistence': persistence },
+        data: 'OK',
+      };
+    });
   }
 
   async getTiddlerHtml(title: string): Promise<IWikiServerRouteResponse> {

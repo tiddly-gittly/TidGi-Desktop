@@ -1,5 +1,6 @@
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWikiService } from '@services/wiki/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { wikiWorkspaceDefaultValues } from '@services/workspaces/interface';
@@ -62,6 +63,7 @@ describe('wiki navigation lifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     if (!container.isBound(serviceIdentifier.DeepLink)) container.bind(serviceIdentifier.DeepLink).toConstantValue({ openDeepLink: vi.fn() });
+    Object.assign(container.get<IWikiService>(serviceIdentifier.Wiki), { waitForPendingSaves: vi.fn(async () => {}) });
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -81,6 +83,28 @@ describe('wiki navigation lifecycle', () => {
     contents.emit('did-finish-load');
     await reload;
     expect(returned).toBe(true);
+  });
+
+  it('waits for pending edits before reloading and preserves the document when saving fails', async () => {
+    const { service, contents } = fixture();
+    let finish!: () => void;
+    const pending = new Promise<void>(resolve => {
+      finish = resolve;
+    });
+    const wait = vi.spyOn(container.get<IWikiService>(serviceIdentifier.Wiki), 'waitForPendingSaves').mockReturnValueOnce(pending);
+    const reload = service.reloadViewsWebContents('wiki');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(wait).toHaveBeenCalledExactlyOnceWith('wiki');
+    expect(contents.reload).not.toHaveBeenCalled();
+    contents.reload.mockImplementation(() => {
+      contents.emit('did-finish-load');
+    });
+    finish();
+    await reload;
+    expect(contents.reload).toHaveBeenCalledOnce();
+    wait.mockRejectedValueOnce(new Error('disk save failed'));
+    await expect(service.reloadViewsWebContents('wiki')).rejects.toThrow('disk save failed');
+    expect(contents.reload).toHaveBeenCalledOnce();
   });
 
   it('rechecks retry validity after asynchronous metadata writes before navigating', async () => {

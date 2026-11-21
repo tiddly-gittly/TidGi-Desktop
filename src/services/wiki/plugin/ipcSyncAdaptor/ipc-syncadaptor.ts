@@ -63,11 +63,6 @@ export class TidGiIPCSyncAdaptor {
    * Used to ignore stale SSE echoes after an IPC save has already succeeded.
    */
   private readonly lastSavedRevisions = new Map<string, number>();
-  /**
-   * Serializes save/delete requests per title so older IPC operations cannot
-   * clear save state while a newer request for the same tiddler is still active.
-   */
-  private readonly pendingSaveOperations = new Map<string, Promise<void>>();
   private readonly activeSaveCounts = new Map<string, number>();
   /**
    * Titles currently being loaded from the server (loadTiddler).
@@ -206,20 +201,6 @@ export class TidGiIPCSyncAdaptor {
     this.titlesBeingSaved.delete(title);
   }
 
-  private queueSaveOperation(title: string, operation: () => Promise<void>) {
-    const previousOperation = this.pendingSaveOperations.get(title) ?? Promise.resolve();
-    const queuedOperation = previousOperation
-      .catch(() => undefined)
-      .then(operation);
-    const trackedOperation = queuedOperation.finally(() => {
-      if (this.pendingSaveOperations.get(title) === trackedOperation) {
-        this.pendingSaveOperations.delete(title);
-      }
-    });
-    this.pendingSaveOperations.set(title, trackedOperation);
-    return trackedOperation;
-  }
-
   private async callWikiRoute<NAME extends IpcServerRouteNames>(route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
     const deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS;
     return await withWikiDeadline(this.wikiService.callWikiIpcServerRoute(this.workspaceID, route, ...arguments_), deadline);
@@ -354,50 +335,48 @@ export class TidGiIPCSyncAdaptor {
         callback(null);
         return;
       }
-      await this.queueSaveOperation(title, async () => {
-        // Mark as saving BEFORE the IPC call so that any SSE echo arriving
-        // during the call is ignored by our change handler.
-        this.markSaveStart(title);
-        try {
-          const putTiddlerResponse = await this.callWikiRoute(
-            'putTiddler',
-            title,
-            tiddler.fields,
-            Date.now() + WIKI_SAVE_TIMEOUT_MS,
-          );
-          if (putTiddlerResponse === undefined) {
-            throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
-          }
-          if (putTiddlerResponse.headers?.['X-TidGi-Persistence'] === 'excluded') {
-            this.logger.log(`Server save filter keeps ${title} in memory only`);
-          }
-          // Save the details of the new revision of the tiddler
-          const etag = putTiddlerResponse.headers?.Etag;
-          if (etag === undefined) {
-            callback(new Error('Response from server is missing required `etag` header'));
-            return;
-          }
-          const etagInfo = this.parseEtag(etag);
-          if (etagInfo === undefined) {
-            const error = new Error('Failed to parse `etag` header from server response');
-            this.logger.log(error);
-            callback(error);
-            return;
-          }
-          this.rememberRevision(title, etagInfo.revision);
-          if (shouldTrackCreatedUserTiddler) {
-            void this.analyticsService.track('tiddler.created', {
-              storage: 'filesystem',
-              isSubWiki: this.isSubWiki,
-            });
-          }
-          callback(null, {
-            bag: etagInfo.bag,
-          }, etagInfo.revision);
-        } finally {
-          this.markSaveFinish(title);
+      // Mark as saving BEFORE the IPC call so that any SSE echo arriving
+      // during the call is ignored by our change handler.
+      this.markSaveStart(title);
+      try {
+        const putTiddlerResponse = await this.callWikiRoute(
+          'putTiddler',
+          title,
+          tiddler.fields,
+          Date.now() + WIKI_SAVE_TIMEOUT_MS,
+        );
+        if (putTiddlerResponse === undefined) {
+          throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
         }
-      });
+        if (putTiddlerResponse.headers?.['X-TidGi-Persistence'] === 'excluded') {
+          this.logger.log(`Server save filter keeps ${title} in memory only`);
+        }
+        // Save the details of the new revision of the tiddler
+        const etag = putTiddlerResponse.headers?.Etag;
+        if (etag === undefined) {
+          callback(new Error('Response from server is missing required `etag` header'));
+          return;
+        }
+        const etagInfo = this.parseEtag(etag);
+        if (etagInfo === undefined) {
+          const error = new Error('Failed to parse `etag` header from server response');
+          this.logger.log(error);
+          callback(error);
+          return;
+        }
+        this.rememberRevision(title, etagInfo.revision);
+        if (shouldTrackCreatedUserTiddler) {
+          void this.analyticsService.track('tiddler.created', {
+            storage: 'filesystem',
+            isSubWiki: this.isSubWiki,
+          });
+        }
+        callback(null, {
+          bag: etagInfo.bag,
+        }, etagInfo.revision);
+      } finally {
+        this.markSaveFinish(title);
+      }
     } catch (error) {
       console.error(error);
       callback(error as Error);
@@ -452,23 +431,21 @@ export class TidGiIPCSyncAdaptor {
     }
     this.logger.log('deleteTiddler');
     try {
-      await this.queueSaveOperation(title, async () => {
-        this.markSaveStart(title);
-        try {
-          const getTiddlerResponse = await this.callWikiRoute(
-            'deleteTiddler',
-            title,
-            Date.now() + WIKI_SAVE_TIMEOUT_MS,
-          );
-          if (getTiddlerResponse?.data === undefined) {
-            throw new Error('deleteTiddler returned undefined from callWikiIpcServerRoute in deleteTiddler');
-          }
-          this.lastSavedRevisions.delete(title);
-          callback(null, null);
-        } finally {
-          this.markSaveFinish(title);
+      this.markSaveStart(title);
+      try {
+        const getTiddlerResponse = await this.callWikiRoute(
+          'deleteTiddler',
+          title,
+          Date.now() + WIKI_SAVE_TIMEOUT_MS,
+        );
+        if (getTiddlerResponse?.data === undefined) {
+          throw new Error('deleteTiddler returned undefined from callWikiIpcServerRoute in deleteTiddler');
         }
-      });
+        this.lastSavedRevisions.delete(title);
+        callback(null, null);
+      } finally {
+        this.markSaveFinish(title);
+      }
     } catch (error) {
       callback(error as Error);
     }
