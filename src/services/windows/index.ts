@@ -306,6 +306,7 @@ export class Window implements IWindowService {
       WindowNames.main,
       WindowNames.secondary,
       WindowNames.tidgiMiniWindow,
+      WindowNames.promptPreview,
     ].includes(windowName);
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
@@ -339,8 +340,8 @@ export class Window implements IWindowService {
         webSecurity: true,
         allowRunningInsecureContent: false,
         contextIsolation: true,
-        // Keep callbacks active only for windows that host wiki BrowserViews.
-        ...([WindowNames.main, WindowNames.secondary, WindowNames.tidgiMiniWindow].includes(windowName)
+        // Offscreen E2E windows need animation frames for native input and screenshots.
+        ...((shouldKeepWindowPaintableForE2E || [WindowNames.main, WindowNames.secondary, WindowNames.tidgiMiniWindow].includes(windowName))
           ? { backgroundThrottling: false }
           : {}),
         preload: getPreloadPath(),

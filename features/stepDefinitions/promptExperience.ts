@@ -93,7 +93,6 @@ Then('the prompt tree and message list should show the same history tools and un
   assert(!treeText.some(text => text.includes('Schema.WikiSearch.')), 'Tool descriptions must be localized before prompt compilation');
   assert(treeText.some(text => text.includes('UNSENT_PREVIEW_INPUT')));
   await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'prompt-tree.png') });
-  // This BrowserWindow is hidden in E2E; its animation frames can be suspended.
   await tree.getByTestId('prompt-preview-entry').filter({ hasText: 'UNSENT_PREVIEW_INPUT' }).evaluate(element => {
     element.scrollIntoView({ block: 'center' });
   });
