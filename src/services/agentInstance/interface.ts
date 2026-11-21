@@ -69,13 +69,13 @@ import type {
 import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import type { ConversationListProjectionScope } from './agentRepository';
 import type {
   BeginDesktopAttachmentUploadInput,
   DesktopAttachmentUploadScope,
   ReadDesktopAgentAttachmentChunkInput,
   WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadProtocol';
+import type { ConversationListProjectionScope } from './conversationListQueries';
 
 /** Clone-safe renderer IPC outcome for a typed agent submission failure. */
 export type RendererAgentRunResult<T> =
@@ -249,9 +249,8 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   getAgentCompactionCandidatePage(agentId: string, options: GetCompactionCandidatePageOptions): Promise<CompactionCandidatePage>;
   getAgentRetainedCompactionControls(agentId: string, options: GetRetainedCompactionControlsOptions): Promise<RetainedCompactionControlPage>;
   /**
-   * Packaged-E2E-only fixture entry point. The implementation is fail-closed
-   * outside an Electron E2E process and writes through the canonical event
-   * store so renderer tests exercise real SQLite projections and IPC paging.
+   * Packaged E2E fixture using the conversation event store, so the renderer
+   * exercises SQLite projections and IPC paging with a long conversation.
    */
   seedLongConversationForE2E(input: {
     conversationId: string;

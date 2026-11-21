@@ -48,7 +48,7 @@ Feature: TidGi Preference
     When I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
     And I type "image" in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
     When I click on a "save model button" element with selector "[data-testid='save-new-model-button']"
-    # Step 9: Verify canonical capability auto-fill through stable selector contracts.
+    # Step 9: Verify the default model selected for each capability.
     Then I should see "model assignments and chips" elements with selectors:
       | element description              | selector                                                                          |
       | default language model input     | [data-testid='default-model-selector'] input[value='test-model']                  |

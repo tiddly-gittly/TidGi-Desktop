@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
 import { E2EArgsValidationError, validateCucumberArguments } from '../../scripts/run-e2e';

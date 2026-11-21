@@ -14,7 +14,7 @@ const catalogModel: ModelCatalogModel = {
 };
 
 const account: ProviderAccountConfig = {
-  providerId: 'cpa-test',
+  providerId: 'test-provider',
   providerType: 'openai-compatible',
   baseUrl: 'https://models.example.test/v1',
   models: [
@@ -22,8 +22,8 @@ const account: ProviderAccountConfig = {
     { modelId: 'reasoning', wireModelId: 'vendor/reasoning-v7', apiMode: 'responses' },
   ],
   catalogProvider: {
-    id: 'cpa-test',
-    name: 'CPA test',
+    id: 'test-provider',
+    name: 'Test provider',
     env: [],
     models: [catalogModel],
   },

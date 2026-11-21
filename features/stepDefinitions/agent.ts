@@ -11,6 +11,29 @@ import { getSettingsPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
 
+type MockRule = Parameters<MockOpenAIServer['addRules']>[0][number];
+
+function mockRulesFromTable(dataTable?: DataTable): MockRule[] {
+  return (dataTable?.hashes() ?? []).map((row): MockRule => {
+    const response = row.responseFile
+      ? fs.readFileSync(path.resolve('features/fixtures', row.responseFile), 'utf8')
+      : (row.response ?? '').trim();
+    const rule: MockRule = {
+      response,
+      stream: row.stream?.trim().toLowerCase() === 'true',
+      ...(row.embedding ? { embedding: generateSemanticEmbedding(row.embedding.trim()) } : {}),
+      ...(row.toolName ? { toolCall: { name: row.toolName.trim(), arguments: JSON.parse(row.toolArguments || '{}') as Record<string, unknown> } } : {}),
+    };
+    for (const key of ['delayMs', 'statusCode'] as const) {
+      if (!row[key]) continue;
+      const value = Number(row[key]);
+      if (!Number.isInteger(value) || value < 0) throw new Error(`Invalid mock response ${key}: ${row[key]}`);
+      rule[key] = value;
+    }
+    return rule;
+  });
+}
+
 // Backoff configuration for retries
 const BACKOFF_OPTIONS = {
   numOfAttempts: 10,
@@ -65,7 +88,7 @@ function generateSemanticEmbedding(tag: string): number[] {
 // Helper function to start mock OpenAI server and update settings
 async function startMockOpenAIServerAndUpdateSettings(
   world: ApplicationWorld,
-  rules: Array<{ response?: string; stream?: boolean; embedding?: number[]; toolCall?: { name: string; arguments: Record<string, unknown> } }>,
+  rules: MockRule[],
 ): Promise<void> {
   // Use dynamic port (0) to allow parallel test execution
   world.mockOpenAIServer = new MockOpenAIServer(0, rules);
@@ -115,32 +138,7 @@ Given('I have started the mock OpenAI server without rules', function(this: Appl
  */
 Given('I have started the mock OpenAI server', function(this: ApplicationWorld, dataTable: DataTable | undefined, done: (error?: Error) => void) {
   try {
-    const rules: Array<{ response?: string; stream?: boolean; embedding?: number[]; toolCall?: { name: string; arguments: Record<string, unknown> } }> = [];
-    if (dataTable && typeof dataTable.raw === 'function') {
-      const rows = dataTable.raw();
-      // Skip header row
-      for (let index = 1; index < rows.length; index++) {
-        const row = rows[index];
-        const response = (row[0] ?? '').trim();
-        const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
-        const embeddingTag = (row[2] ?? '').trim();
-        const toolName = (row[3] ?? '').trim();
-        const toolArgumentsText = (row[4] ?? '').trim();
-
-        // Generate embedding from semantic tag if provided
-        let embedding: number[] | undefined;
-        if (embeddingTag) {
-          embedding = generateSemanticEmbedding(embeddingTag);
-        }
-
-        // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
-        const toolCall = toolName
-          ? { name: toolName, arguments: JSON.parse(toolArgumentsText || '{}') as Record<string, unknown> }
-          : undefined;
-        if (response || embedding || toolCall) rules.push({ response, stream, embedding, toolCall });
-      }
-    }
-
+    const rules = mockRulesFromTable(dataTable);
     startMockOpenAIServerAndUpdateSettings(this, rules)
       .then(() => {
         done();
@@ -162,33 +160,7 @@ Given('I add mock OpenAI responses:', function(this: ApplicationWorld, dataTable
     throw new Error('Mock OpenAI server is not running. Use "I have started the mock OpenAI server" first.');
   }
 
-  const rules: Array<{ response?: string; stream?: boolean; embedding?: number[]; toolCall?: { name: string; arguments: Record<string, unknown> } }> = [];
-  if (dataTable && typeof dataTable.raw === 'function') {
-    const rows = dataTable.raw();
-    // Skip header row
-    for (let index = 1; index < rows.length; index++) {
-      const row = rows[index];
-      const response = (row[0] ?? '').trim();
-      const stream = (row[1] ?? '').trim().toLowerCase() === 'true';
-      const embeddingTag = (row[2] ?? '').trim();
-      const toolName = (row[3] ?? '').trim();
-      const toolArgumentsText = (row[4] ?? '').trim();
-
-      // Generate embedding from semantic tag if provided
-      let embedding: number[] | undefined;
-      if (embeddingTag) {
-        embedding = generateSemanticEmbedding(embeddingTag);
-      }
-
-      // Include rules with a response OR an embedding — MockOpenAIServer separates them into chatRules vs embeddingRules internally
-      const toolCall = toolName
-        ? { name: toolName, arguments: JSON.parse(toolArgumentsText || '{}') as Record<string, unknown> }
-        : undefined;
-      if (response || embedding || toolCall) rules.push({ response, stream, embedding, toolCall });
-    }
-  }
-
-  this.mockOpenAIServer.addRules(rules);
+  this.mockOpenAIServer.addRules(mockRulesFromTable(dataTable));
 });
 
 // Mock OpenAI server cleanup - for scenarios using mock OpenAI
@@ -459,8 +431,8 @@ Given('I ensure test ai settings exists', async function(this: ApplicationWorld)
     }
 
     // Mock-provider scenarios own one exact account fixture. UI configuration
-    // scenarios build richer catalog metadata, so assert their public contract
-    // explicitly instead of tautologically comparing the account to itself.
+    // scenarios build richer catalog metadata, so verify the configured
+    // provider type and endpoint separately from that metadata.
     if (this.providerConfig && !isEqual(testProvider, this.providerConfig)) {
       throw new Error(
         `test-provider configuration mismatch: expected ${JSON.stringify(this.providerConfig)}, got ${JSON.stringify(testProvider)}`,

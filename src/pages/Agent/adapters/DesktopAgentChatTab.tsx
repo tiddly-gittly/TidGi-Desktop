@@ -31,7 +31,6 @@ import { createDesktopFileAttachmentSource } from './DesktopAgentExecutionCoordi
 import { createDesktopAgentInstanceClient } from './DesktopAgentInstanceClient';
 import { createDesktopConversationTimelineClient } from './DesktopConversationTimelineClient';
 import { createDesktopMessageDetailLoader } from './DesktopMessageDetailLoader';
-import { createDesktopMessageDetailViewModel } from './DesktopMessageDetailViewModel';
 import { createDesktopMessageReasoningLoader } from './DesktopMessageReasoningLoader';
 import { createDesktopVisibleAttachmentLoader } from './DesktopVisibleAttachmentLoader';
 import { useConversationEditing } from './hooks/useConversationEditing';
@@ -190,10 +189,9 @@ function DesktopAgentChatView({
       error: snapshot.error,
     });
   }, [snapshot.error, tab.agentId]);
-  const detailViewModel = useMemo(createDesktopMessageDetailViewModel, []);
-  const detailLoader = useMemo(() => createDesktopMessageDetailLoader(detailViewModel), [detailViewModel]);
+  const detailLoader = useMemo(createDesktopMessageDetailLoader, []);
   const reasoningLoader = useMemo(createDesktopMessageReasoningLoader, []);
-  const visibleAttachmentLoader = useMemo(() => createDesktopVisibleAttachmentLoader(detailViewModel), [detailViewModel]);
+  const visibleAttachmentLoader = useMemo(createDesktopVisibleAttachmentLoader, []);
   const baseAdapter = useAgentSessionChatAdapter({
     conversationId: tab.agentId,
     timelineController,

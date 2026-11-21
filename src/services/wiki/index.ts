@@ -59,7 +59,7 @@ type WikiOperationFunction = (...arguments_: never[]) => unknown;
 
 /**
  * Invoke a dynamically selected wiki operation without weakening the
- * operation map's argument/return contract.  The generic helper keeps the
+ * operation map's argument and return types. The generic helper keeps the
  * tuple intact; the runtime handler checks in each caller remain the source
  * of truth for malformed operation names received over IPC.
  */
@@ -530,7 +530,7 @@ export class Wiki implements IWikiService {
               function: 'startWiki',
             });
             resolve();
-            // Persisting diagnostic argv must not gate worker readiness.
+            // Resolve readiness before persisting diagnostic arguments.
             void workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true).catch((error: unknown) => {
               logger.warn('Failed to persist lastNodeJSArgv after wiki boot', { error, workspaceID });
             });
@@ -615,7 +615,7 @@ export class Wiki implements IWikiService {
     });
     try {
       // A host-side RxJS subscribe only queues the utility-process RPC call.
-      // Wait for an explicit worker-side ACK before releasing the services gate.
+      // Wait for the worker to subscribe before notifying it that services are ready.
       await releaseWorkerServicesAfterSubscriberReady(lifecycleTracker, () => worker.notifyServicesReady());
       await Promise.race([bootPromise, lifecycleTracker.booted]);
       resolveStartWikiDeferred();
@@ -755,8 +755,8 @@ export class Wiki implements IWikiService {
         ) as Promise<boolean>);
       });
       // Startup sync can run before a worker or any renderer exists. There is
-      // no in-memory state to lose then. A live renderer with a missing worker
-      // must still fail closed, so this is not a general missing-worker bypass.
+      // no in-memory state to save then. Once a renderer exists, both its
+      // syncer and the worker must confirm that pending changes reached disk.
       if (checks.length === 0 && !this.getWorker(workspaceID)) return;
       checks.push(this.callWikiIpcServerRoute(workspaceID, 'getSaveStatus').then(response => response.data === 'saved'));
       const states = await withWikiDeadline(Promise.all(checks), deadline);

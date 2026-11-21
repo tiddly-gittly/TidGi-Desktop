@@ -4,11 +4,6 @@ import type { PromptPreviewDialogState } from 'memeloop';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/**
- * Debounce delay before showing the progress bar (ms)
- * Prevents flashing for quick operations
- */
-
 interface PreviewProgressBarProps {
   /**
    * Whether to show the progress bar

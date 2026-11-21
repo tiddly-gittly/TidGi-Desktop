@@ -123,7 +123,14 @@ import { DesktopAgentRunStateStore } from './runtime/agentRunStateStore';
 import { DesktopGoalStore } from './runtime/goalStore';
 
 import * as repo from './agentRepository';
+import * as conversationEventQueries from './conversationEventQueries';
+import * as conversationEventStore from './conversationEventStore';
+import * as conversationListQueries from './conversationListQueries';
+import * as conversationMessageQueries from './conversationMessageQueries';
+import * as conversationMessageWindowQueries from './conversationMessageWindowQueries';
+import * as conversationTimelineQueries from './conversationTimelineQueries';
 import type { IAgentInstanceService, RendererAgentRunResult } from './interface';
+import { createLongConversationEvents } from './longConversationFixture';
 import { MemeLoopDesktopRuntime } from './runtime/runtime';
 import { createAgentDeviceRpcPendingUserMessage } from './runtime/userMessage';
 import { cleanupMCPClient } from './tools/modelContextProtocol';
@@ -144,7 +151,7 @@ import {
 } from './tools/scheduledTaskManager';
 
 /**
- * Enforce Core's metadata-only renderer contract at runtime.
+ * Select the metadata fields sent to the renderer.
  *
  * TypeScript structural types are erased, so an AgentInstanceModel can reach
  * this private boundary with an extra, unbounded `messages` property even
@@ -913,7 +920,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async getAgentStorageMessagePage(agentId: string, options: GetMessagePageOptions): Promise<ConversationMessagePage> {
     this.ensureRepositories();
-    return repo.getMessagePage(this.agentMessageRepository!, agentId, options);
+    return conversationMessageQueries.getMessagePage(this.agentMessageRepository!, agentId, options);
   }
 
   public async getAgentStorageFullContentMessagePage(
@@ -921,7 +928,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetFullContentMessagePageOptions,
   ): Promise<ConversationFullContentMessagePage> {
     this.ensureRepositories();
-    return repo.getFullContentMessagePage(this.agentMessageRepository!, agentId, options);
+    return conversationMessageQueries.getFullContentMessagePage(this.agentMessageRepository!, agentId, options);
   }
 
   public async getAgentMessageIdentity(
@@ -929,7 +936,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     messageId: string,
   ): Promise<ConversationMessageIdentity | null> {
     this.ensureRepositories();
-    return repo.getMessageIdentity(this.dataSource!, agentId, messageId);
+    return conversationMessageQueries.getMessageIdentity(this.dataSource!, agentId, messageId);
   }
 
   public async readAgentMessageDetailRange(
@@ -939,7 +946,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     maxBytes: number,
   ): Promise<ConversationMessageDetailRange> {
     this.ensureRepositories();
-    return repo.readMessageDetailRange(this.dataSource!, agentId, messageId, offset, maxBytes);
+    return conversationMessageQueries.readMessageDetailRange(this.dataSource!, agentId, messageId, offset, maxBytes);
   }
 
   public async readAgentMessageReasoningRange(
@@ -949,7 +956,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     maxBytes: number,
   ): Promise<ConversationMessageDetailRange> {
     this.ensureRepositories();
-    return repo.readMessageReasoningRange(this.dataSource!, agentId, messageId, offset, maxBytes);
+    return conversationMessageQueries.readMessageReasoningRange(this.dataSource!, agentId, messageId, offset, maxBytes);
   }
 
   public async getAgentMessageWindowAround(
@@ -967,12 +974,12 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetConversationMessageWindowAroundOptions,
   ): Promise<ConversationMessageWindowResult> {
     this.ensureRepositories();
-    return repo.getMessageWindowAround(this.dataSource!, agentId, options);
+    return conversationMessageWindowQueries.getMessageWindowAround(this.dataSource!, agentId, options);
   }
 
   public async conversationReferencesAttachment(agentId: string, contentHash: string): Promise<boolean> {
     this.ensureRepositories();
-    return repo.conversationReferencesAttachment(this.dataSource!, agentId, contentHash);
+    return conversationEventQueries.conversationReferencesAttachment(this.dataSource!, agentId, contentHash);
   }
 
   public async getAgentConversationListPage(
@@ -980,21 +987,21 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetConversationListPageOptions,
   ): Promise<ConversationListPage> {
     this.ensureRepositories();
-    return repo.getConversationListPage(this.dataSource!, localNodeId, options);
+    return conversationListQueries.getConversationListPage(this.dataSource!, localNodeId, options);
   }
 
   public async getAgentConversationMeta(localNodeId: string, conversationId: string): Promise<import('memeloop').ConversationMeta | null> {
     this.ensureRepositories();
-    return repo.getConversationMeta(this.dataSource!, localNodeId, conversationId);
+    return conversationListQueries.getConversationMeta(this.dataSource!, localNodeId, conversationId);
   }
 
   public async getAgentConversationListPageScoped(
     localNodeId: string,
     options: GetConversationListPageOptions,
-    scope: repo.ConversationListProjectionScope,
+    scope: conversationListQueries.ConversationListProjectionScope,
   ): Promise<ConversationListPage> {
     this.ensureRepositories();
-    return repo.getConversationListPage(this.dataSource!, localNodeId, options, scope);
+    return conversationListQueries.getConversationListPage(this.dataSource!, localNodeId, options, scope);
   }
 
   public async getAgentConversationTimelinePage(
@@ -1002,29 +1009,29 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetConversationTimelinePageOptions,
   ): Promise<ConversationTimelinePage> {
     this.ensureRepositories();
-    return repo.getConversationTimelinePage(this.agentMessageRepository!, agentId, options);
+    return conversationTimelineQueries.getConversationTimelinePage(this.agentMessageRepository!, agentId, options);
   }
 
   public async getMaxAgentLamportClock(agentId: string): Promise<number> {
     this.ensureRepositories();
-    return repo.getMaxLamportClock(this.agentMessageRepository!, agentId);
+    return conversationMessageQueries.getMaxLamportClock(this.agentMessageRepository!, agentId);
   }
 
   public async getExistingAgentMessageIds(agentId: string, messageIds: string[]): Promise<string[]> {
     this.ensureRepositories();
-    return repo.getExistingMessageIds(this.agentMessageRepository!, agentId, messageIds);
+    return conversationMessageQueries.getExistingMessageIds(this.agentMessageRepository!, agentId, messageIds);
   }
 
   public async getAgentMessage(messageId: string): Promise<ChatMessage | undefined> {
     this.ensureRepositories();
-    return repo.getMessage(this.agentMessageRepository!, messageId);
+    return conversationMessageQueries.getMessage(this.agentMessageRepository!, messageId);
   }
 
   public async getAgentTurnDetail(
     request: AgentDeviceRpcGetTurnDetailRequest,
   ): Promise<AgentDeviceRpcGetTurnDetailResponse> {
     this.ensureRepositories();
-    return repo.getTurnDetail(this.agentMessageRepository!, request);
+    return conversationMessageQueries.getTurnDetail(this.agentMessageRepository!, request);
   }
 
   public async deleteConversationTurn(
@@ -1034,7 +1041,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     const subjectActive = this.conversationSubjects.has(request.conversationId);
     const previousState = subjectActive ? await this.getConversationState(request.conversationId) : { revision: '0', totalMessages: 0 };
     const originNodeId = (await this.deviceNetworkService.getLocalIdentity()).peerId;
-    const tombstone = await repo.appendDeleteTurnTombstoneAtomic(this.dataSource!, request, originNodeId);
+    const tombstone = await conversationEventStore.appendDeleteTurnTombstoneAtomic(this.dataSource!, request, originNodeId);
     if (subjectActive) {
       await this.publishConversationInvalidation(request.conversationId, previousState, 'tombstone');
     }
@@ -1071,7 +1078,7 @@ export class AgentInstanceService implements IAgentInstanceService {
 
   public async getLatestContextCompactionSummary(agentId: string): Promise<ChatMessage | undefined> {
     this.ensureRepositories();
-    return repo.getLatestContextCompactionSummary(this.agentMessageRepository!, agentId);
+    return conversationMessageQueries.getLatestContextCompactionSummary(this.agentMessageRepository!, agentId);
   }
 
   public async getAgentCompactionCandidatePage(
@@ -1079,7 +1086,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetCompactionCandidatePageOptions,
   ): Promise<CompactionCandidatePage> {
     this.ensureRepositories();
-    return repo.getCompactionCandidatePage(this.dataSource!, agentId, options);
+    return conversationEventQueries.getCompactionCandidatePage(this.dataSource!, agentId, options);
   }
 
   public async getAgentRetainedCompactionControls(
@@ -1087,7 +1094,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetRetainedCompactionControlsOptions,
   ): Promise<RetainedCompactionControlPage> {
     this.ensureRepositories();
-    return repo.getRetainedCompactionControls(this.dataSource!, agentId, options);
+    return conversationEventQueries.getRetainedCompactionControls(this.dataSource!, agentId, options);
   }
 
   /**
@@ -1122,115 +1129,14 @@ export class AgentInstanceService implements IAgentInstanceService {
     if (!owner) throw new Error('long-conversation E2E seed owner was not found');
 
     const previousState = await this.getConversationState(input.conversationId);
-    const baseTimestamp = 1_700_000_000_000;
-    const messageOrigins = Array.from(
-      { length: 3 },
-      (_, index) => `e2e-long-messages-${index + 1}:${input.conversationId}`,
-    );
-    const messageOriginSequences = [0, 0, 0];
-    const messageOriginTurnCounts = [0, 0, 0];
-    const compactionOrigin = `e2e-long-compactions:${input.conversationId}`;
-    const summaryTurnIndexes = [
-      ...new Set([
-        Math.min(input.turnCount - 1, Math.max(0, Math.ceil(input.turnCount / 3) - 1)),
-        Math.min(input.turnCount - 1, Math.max(0, Math.ceil(input.turnCount * 2 / 3) - 1)),
-        // Leave exactly the default 32-turn recent tail uncovered. This
-        // proves the model-request path combines retained semantic summaries
-        // with recent history without making an unrelated provider call.
-        Math.max(0, input.turnCount - 33),
-      ]),
-    ];
-    const summaryAt = new Map(summaryTurnIndexes.map((turnIndex, index) => [turnIndex, index]));
-    const events: ConversationEvent[] = [];
-
-    for (let turnIndex = 0; turnIndex < input.turnCount; turnIndex++) {
-      const originIndex = Math.min(2, Math.floor(turnIndex * 3 / input.turnCount));
-      const messageOrigin = messageOrigins[originIndex];
-      const number = turnIndex.toString().padStart(5, '0');
-      const turnId = `e2e-long-user:${input.conversationId}:${number}`;
-      const userSequence = messageOriginSequences[originIndex] + 1;
-      const assistantSequence = userSequence + 1;
-      messageOriginSequences[originIndex] = assistantSequence;
-      messageOriginTurnCounts[originIndex] += 1;
-      const timestamp = baseTimestamp + turnIndex * 4;
-      events.push(
-        {
-          kind: 'message',
-          eventId: `e2e-long-user:${input.conversationId}:${number}`,
-          conversationId: input.conversationId,
-          originNodeId: messageOrigin,
-          originSequence: userSequence,
-          lamportClock: turnIndex * 4 + 1,
-          timestamp,
-          message: {
-            messageId: `e2e-long-user:${input.conversationId}:${number}`,
-            turnId,
-            role: 'user',
-            content: `E2E long question ${number}`,
-            parts: [{ type: 'text', text: `E2E long question ${number}` }],
-          },
-        },
-        {
-          kind: 'message',
-          eventId: `e2e-long-assistant:${input.conversationId}:${number}`,
-          conversationId: input.conversationId,
-          originNodeId: messageOrigin,
-          originSequence: assistantSequence,
-          lamportClock: turnIndex * 4 + 2,
-          timestamp: timestamp + 1,
-          message: {
-            messageId: `e2e-long-assistant:${input.conversationId}:${number}`,
-            turnId,
-            role: 'assistant',
-            content: `E2E long answer ${number}`,
-            parts: [{ type: 'text', text: `E2E long answer ${number}` }],
-          },
-        },
-      );
-
-      const summaryIndex = summaryAt.get(turnIndex);
-      if (summaryIndex !== undefined) {
-        // Keep the three summaries causally incomparable (one origin each),
-        // exactly like concurrent compaction on independent devices. Core
-        // must retain and merge all three until a later semantic summary
-        // explicitly dominates them.
-        const coveredVersion = { [messageOrigin]: messageOriginSequences[originIndex] };
-        const coveredMessageCountByOrigin = { ...coveredVersion };
-        const coveredUserTurnCountByOrigin = { [messageOrigin]: messageOriginTurnCounts[originIndex] };
-        const droppedMessageCount = coveredMessageCountByOrigin[messageOrigin];
-        const droppedTurnCount = coveredUserTurnCountByOrigin[messageOrigin];
-        events.push({
-          kind: 'compaction',
-          mode: 'summary',
-          eventId: `e2e-long-compaction-event:${input.conversationId}:${summaryIndex + 1}`,
-          conversationId: input.conversationId,
-          originNodeId: compactionOrigin,
-          originSequence: summaryIndex + 1,
-          lamportClock: turnIndex * 4 + 3,
-          timestamp: timestamp + 2,
-          boundary: {
-            version: 2,
-            coveredVersion,
-            coveredMessageCountByOrigin,
-            coveredUserTurnCountByOrigin,
-            droppedMessageCount,
-            droppedTurnCount,
-          },
-          summary: {
-            turnId: `e2e-long-compaction-turn:${input.conversationId}:${summaryIndex + 1}`,
-            content: `E2E durable compaction summary ${summaryIndex + 1}`,
-          },
-        });
-      }
-    }
-
-    await repo.insertConversationEventsIfAbsent(this.dataSource!, events);
+    const { events, compactionCount } = createLongConversationEvents(input);
+    await conversationEventStore.insertConversationEventsIfAbsent(this.dataSource!, events);
     await this.publishConversationInvalidation(input.conversationId, previousState, 'reset');
     return {
       conversationId: input.conversationId,
       turnCount: input.turnCount,
       messageCount: input.turnCount * 2,
-      compactionCount: summaryTurnIndexes.length,
+      compactionCount,
     };
   }
 
@@ -1238,7 +1144,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     this.ensureRepositories();
     const subjectActive = this.conversationSubjects.has(draft.conversationId);
     const previousState = subjectActive ? await this.getConversationState(draft.conversationId) : { revision: '0', totalMessages: 0 };
-    const event = await repo.appendLocalConversationEvent(this.dataSource!, draft);
+    const event = await conversationEventStore.appendLocalConversationEvent(this.dataSource!, draft);
     if (subjectActive) {
       if (event.kind === 'message') {
         await this.publishConversationMessage(conversationEventToMessage(event), false, previousState);
@@ -1263,7 +1169,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         ] as const
       )),
     );
-    const events = await repo.appendLocalConversationEventsAtomic(this.dataSource!, drafts);
+    const events = await conversationEventStore.appendLocalConversationEventsAtomic(this.dataSource!, drafts);
     await Promise.all(activeConversationIds.map(conversationId => this.publishConversationInvalidation(conversationId, previousStates.get(conversationId)!, 'append')));
     return events;
   }
@@ -1280,7 +1186,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         ] as const
       )),
     );
-    await repo.insertConversationEventsIfAbsent(this.dataSource!, events);
+    await conversationEventStore.insertConversationEventsIfAbsent(this.dataSource!, events);
     await Promise.all(activeConversationIds.map(conversationId => {
       const conversationEvents = events.filter(event => event.conversationId === conversationId);
       const appendOnly = conversationEvents.some(event => event.kind === 'message') &&
@@ -1298,12 +1204,12 @@ export class AgentInstanceService implements IAgentInstanceService {
     options: GetConversationEventPageOptions,
   ): Promise<ConversationEventPage> {
     this.ensureRepositories();
-    return repo.getConversationEventPage(this.dataSource!, agentId, options);
+    return conversationEventQueries.getConversationEventPage(this.dataSource!, agentId, options);
   }
 
   public async getConversationEventVersionFrontiers(agentIds?: readonly string[]): Promise<MessageVersionFrontier[]> {
     this.ensureRepositories();
-    return repo.getEventVersionFrontiers(this.dataSource!, agentIds);
+    return conversationEventQueries.getEventVersionFrontiers(this.dataSource!, agentIds);
   }
 
   public async getConversationEventVersionFrontierPage(options: {
@@ -1312,14 +1218,14 @@ export class AgentInstanceService implements IAgentInstanceService {
     conversationIds?: readonly string[];
   }): Promise<MessageVersionFrontierPage> {
     this.ensureRepositories();
-    return repo.getEventVersionFrontierPage(this.dataSource!, options);
+    return conversationEventQueries.getEventVersionFrontierPage(this.dataSource!, options);
   }
 
   public async getConversationEventVersionFrontiersForKeys(
     keys: readonly MessageVersionFrontierCursor[],
   ): Promise<MessageVersionFrontier[]> {
     this.ensureRepositories();
-    return repo.getEventVersionFrontiersForKeys(this.dataSource!, keys);
+    return conversationEventQueries.getEventVersionFrontiersForKeys(this.dataSource!, keys);
   }
 
   public async updateAgent(agentId: string, data: AgentInstanceMetadataUpdate): Promise<AgentRuntimeView> {
@@ -1764,7 +1670,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       : this.getAttachmentUploadStore().hasCommittedScope(conversationId, reference);
     const alreadyReferenced = hasCommittedScope
       ? false
-      : await repo.conversationReferencesAttachment(this.dataSource!, conversationId, reference.contentHash, reference);
+      : await conversationEventQueries.conversationReferencesAttachment(this.dataSource!, conversationId, reference.contentHash, reference);
     if (!hasCommittedScope && !alreadyReferenced) {
       throw new Error('attachment is not authorized for this conversation');
     }
@@ -2277,7 +2183,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       // Only notify if there are active subscriptions
       if (this.agentInstanceSubjects.has(agentId)) {
         // Metadata subscriptions never carry transcript content. Conversation
-        // projections use subscribeToConversationUpdates with revision fences.
+        // projections use subscribeToConversationUpdates with revision checks.
         // Select the exact Core view instead of trusting TypeScript's erased
         // structural type: callers can otherwise leak an AgentInstanceModel's
         // unbounded `messages` array through this renderer IPC boundary.

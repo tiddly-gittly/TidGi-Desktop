@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto';
 import type { DataSource } from 'typeorm';
 
 import { AgentLoopCheckpointEntity, AgentLoopCheckpointExecutionLeaseEntity } from '@/services/database/schema/conversationEvent';
-import { appendLocalConversationEventsInTransaction } from '../agentRepository';
+import { appendLocalConversationEventsInTransaction } from '../conversationEventStore';
 import { withDesktopAgentRuntimeTransaction } from './agentRunStateStore';
 
 /** Conversation-event-backed implementation of Core's script-checkpoint port. */
@@ -73,7 +73,7 @@ export class DesktopLoopCheckpointStore implements LoopScriptCheckpointStore {
         if (requestedFence < currentFence) {
           throw new OrchestrationError({
             code: 'STALE_EPOCH',
-            message: `loop checkpoint '${key}' is fenced by a newer writer`,
+            message: `loop checkpoint '${key}' has a newer writer epoch`,
             retryable: false,
           });
         }

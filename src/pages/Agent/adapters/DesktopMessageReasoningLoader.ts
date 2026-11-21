@@ -1,8 +1,8 @@
 import { type MemeLoopMessageReasoningLoader, messageHydrationIdentity } from '@memeloop/react-ui/chat';
 
-import { assertDesktopMessageIdentity } from './DesktopMessageDetailViewModel';
+import { assertDesktopMessageIdentity } from './DesktopMessageContent';
 
-/** Identity-fenced bridge to Desktop's reasoning-only UTF-8 range query. */
+/** Read a reasoning range and check that the message stayed unchanged during IPC. */
 export function createDesktopMessageReasoningLoader(): MemeLoopMessageReasoningLoader {
   return async (message, request) => {
     request.signal.throwIfAborted();
@@ -28,10 +28,6 @@ export function createDesktopMessageReasoningLoader(): MemeLoopMessageReasoningL
     request.signal.throwIfAborted();
     if (!after) throw new Error('message reasoning identity disappeared during read');
     assertDesktopMessageIdentity(messageHydrationIdentity(message), after);
-    if (
-      before.messageId !== after.messageId || before.timestamp !== after.timestamp ||
-      before.lamportClock !== after.lamportClock || before.originNodeId !== after.originNodeId
-    ) throw new Error('message reasoning identity changed during read');
     return page;
   };
 }

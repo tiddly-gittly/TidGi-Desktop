@@ -18,7 +18,7 @@ import {
   ConversationTimelineStateEntity,
   ConversationTurnTombstoneEntity,
 } from '@services/database/schema/conversationEvent';
-import { getConversationListPage } from '../agentRepository';
+import { getConversationListPage } from '../conversationListQueries';
 
 class ListQueryLogger implements Logger {
   public statements: string[] = [];

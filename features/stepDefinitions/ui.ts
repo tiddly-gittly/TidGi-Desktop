@@ -1,5 +1,7 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
@@ -7,6 +9,44 @@ import type { ApplicationWorld } from './application';
 
 const UI_ACTION_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 1000);
 const UI_ASSERT_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
+
+Then('I capture the current window as {string}', async function(this: ApplicationWorld, name: string) {
+  if (!this.app || !this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, name) });
+});
+
+When('I hover on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, _description: string, selector: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.locator(selector).first().hover({ timeout: UI_ACTION_TIMEOUT });
+});
+
+When('I reload the current window', async function(this: ApplicationWorld) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.reload({ timeout: UI_ACTION_TIMEOUT });
+});
+
+When('I type fixture {string} in {string} element with selector {string}', async function(this: ApplicationWorld, file: string, _description: string, selector: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.locator(selector).fill(await readFile(path.resolve('features/fixtures', file), 'utf8'), { timeout: UI_ACTION_TIMEOUT });
+});
+
+Then('the {string} element with selector {string} should have value {string}', async function(this: ApplicationWorld, description: string, selector: string, expected: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  try {
+    await this.currentWindow.waitForFunction(
+      ({ selector, expected }) => document.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)?.value === expected,
+      { selector, expected },
+      { timeout: CUCUMBER_GLOBAL_TIMEOUT },
+    );
+  } catch (error) {
+    throw new Error(`${description}: expected value ${JSON.stringify(expected)}`, { cause: error });
+  }
+});
+
+Then('I should see a(n) {string} element with selector {string} in frame {string}', async function(this: ApplicationWorld, _description: string, selector: string, frame: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.frameLocator(frame).locator(selector).first().waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+});
 
 async function getWindowSummary(page: NonNullable<ApplicationWorld['currentWindow']>): Promise<string> {
   try {
@@ -204,7 +244,7 @@ Then('I should not see a(n) {string} element with selector {string}', async func
           `Parent element HTML:\n${parentHtml}`,
       );
     }
-    // Other errors (element not in DOM at all) are expected — pass
+    throw error;
   }
 });
 
@@ -221,35 +261,13 @@ Then('I should not see {string} elements with selectors:', async function(this: 
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
-  // Retry to allow UI time to update after state changes
-  await backOff(
-    async () => {
-      const errors: string[] = [];
-      for (const [elementComment, selector] of dataRows) {
-        try {
-          const element = currentWindow.locator(selector).first();
-          const count = await element.count();
-          if (count > 0) {
-            const isVisible = await element.isVisible();
-            if (isVisible) {
-              errors.push(`Element "${elementComment}" with selector "${selector}" should not be visible but was found`);
-            }
-          }
-        } catch {
-          // Element not found is expected
-        }
-      }
-      if (errors.length > 0) {
-        throw new Error(`Failed to verify elements are not visible:\n${errors.join('\n')}`);
-      }
-    },
-    {
-      numOfAttempts: 10,
-      startingDelay: 300,
-      timeMultiple: 1,
-      maxDelay: 300,
-    },
-  );
+  await Promise.all(dataRows.map(async ([elementComment, selector]) => {
+    try {
+      await currentWindow.locator(selector).first().waitFor({ state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    } catch (error) {
+      throw new Error(`Failed to verify "${elementComment}" with selector "${selector}" is hidden`, { cause: error });
+    }
+  }));
 });
 
 When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {

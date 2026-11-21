@@ -311,7 +311,7 @@ export class DesktopAttachmentUploadStore {
           const { bytesRead } = await handle.read(prior, 0, overlap, offset);
           if (bytesRead !== overlap || !Buffer.from(prior).equals(data.subarray(0, overlap))) {
             if (offset !== 0) throw new Error('attachment_chunk_retry_conflict');
-            // Restart only unverified staging; the final hash still gates publication.
+            // This temporary file is verified against the content hash before publication.
             await handle.truncate(0);
             durableOffset = 0;
             overlap = 0;

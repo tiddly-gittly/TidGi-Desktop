@@ -220,7 +220,7 @@ describe('Desktop message origin identity', () => {
     );
   });
 
-  it('uses the bounded message-page contract instead of loading a complete agent snapshot', async () => {
+  it('uses the bounded message-page API instead of loading a complete agent snapshot', async () => {
     const summary: ChatMessage = {
       messageId: 'summary-2',
       turnId: 'summary-2',

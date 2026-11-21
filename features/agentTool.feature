@@ -88,7 +88,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     Then I should see 2 messages in chat history
     And I should see an "response" element with selector "[data-testid='message-bubble']:has-text('要删除的回复')"
     And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
-    When I hover the first assistant message
+    When I hover on a "first assistant message" element with selector "[data-testid='message-bubble']:has([data-testid='assistant-message'])"
     When I click on a "delete button" element with selector "[data-testid='turn-action-delete']"
     Then I should not see a "deleted response" element with selector "[data-testid='message-bubble']:has-text('要删除的回复')"
     # ── Part 2: Retry ── (0 turns → 1 turn, selector unambiguous)
@@ -100,7 +100,7 @@ Feature: Agent Tools - Ask-question variants and turn action bar
     Then I should see 2 messages in chat history
     And I should see an "first response" element with selector "[data-testid='message-bubble']:has-text('第一次回复')"
     And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
-    When I hover the first assistant message
+    When I hover on a "first assistant message" element with selector "[data-testid='message-bubble']:has([data-testid='assistant-message'])"
     When I click on a "retry button" element with selector "[data-testid='turn-action-retry']"
     Then I should see 2 messages in chat history
     And I should see an "retried response" element with selector "[data-testid='message-bubble']:has-text('重试后的回复')"

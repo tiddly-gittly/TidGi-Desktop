@@ -15,20 +15,12 @@ const CRITICAL_PACKAGES = [
   'better-sqlite3',
   'nsfw',
   'dugite',
-  'typeorm',
-  'electron-unhandled',
-  '@modelcontextprotocol/sdk',
 ];
 
 interface PackageJsonWithDependencies {
   dependencies?: Record<string, string>;
-  name?: string;
   optionalDependencies?: Record<string, string>;
 }
-
-const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/i;
-
-class PackageNotFoundError extends Error {}
 
 /**
  * Resolve a package root with Node's package-aware resolver.
@@ -38,35 +30,9 @@ class PackageNotFoundError extends Error {}
  * the base keeps resolution anchored to the package that declares the
  * dependency instead of assuming that every dependency was hoisted.
  */
-export function resolvePackageDirectory(packageName: string, fromFolder: string): string {
-  if (!PACKAGE_NAME_PATTERN.test(packageName)) {
-    throw new Error(`Invalid package name in runtime dependency closure: ${packageName}`);
-  }
-
-  let packageJsonPath: string | undefined;
-  try {
-    packageJsonPath = findPackageJSON(packageName, path.join(fromFolder, 'package.json'));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
-      throw new PackageNotFoundError(
-        `Could not resolve package directory for ${packageName} from ${fromFolder}`,
-        { cause: error },
-      );
-    }
-    throw error;
-  }
-  if (packageJsonPath === undefined) {
-    throw new PackageNotFoundError(
-      `Could not resolve package directory for ${packageName} from ${fromFolder}`,
-    );
-  }
-
-  const packageJson = fs.readJsonSync(packageJsonPath) as PackageJsonWithDependencies;
-  if (packageJson.name !== packageName) {
-    throw new Error(
-      `Node resolved ${packageName} to a package manifest named ${packageJson.name ?? '<unnamed>'}`,
-    );
-  }
+function resolvePackageDirectory(packageName: string, fromFolder: string): string {
+  const packageJsonPath = findPackageJSON(packageName, path.join(fromFolder, 'package.json'));
+  if (!packageJsonPath) throw new Error(`Missing package.json for ${packageName}`);
   return path.dirname(packageJsonPath);
 }
 
@@ -96,74 +62,75 @@ function copyWithTracking(
  * cannot be bundled safely. Regular dependencies are required. Installed
  * optional dependencies are copied and become required once selected, while
  * optional dependencies that are absent for the current OS/CPU are skipped.
- * The `copiedPackages` set also breaks cycles and avoids repeated copies.
+ * Reuse a copied dependency only when Node can resolve that exact source from
+ * its parent. Conflicting versions belong in the parent's node_modules.
  */
 export function copyPackageDependencyClosure(
   packageName: string,
   resolutionBaseFolder: string,
   destinationNodeModulesFolder: string,
-  criticalPackage: string,
-  failures: Set<string>,
-  copiedPackages: Set<string> = new Set(),
+  copiedPackages: Map<string, string> = new Map(),
   optional = false,
+  parentDestination?: string,
 ): void {
-  if (copiedPackages.has(packageName)) return;
-
   const packageSegments = packageName.split('/');
   let source: string;
   try {
     source = resolvePackageDirectory(packageName, resolutionBaseFolder);
   } catch (error) {
-    if (optional && error instanceof PackageNotFoundError) return;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Error resolving ${packageName}: ${errorMessage}`);
-    failures.add(criticalPackage);
-    return;
+    if (optional && (error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') return;
+    throw error;
   }
-  copiedPackages.add(packageName);
-  const destination = path.resolve(destinationNodeModulesFolder, ...packageSegments);
-  copyWithTracking(source, destination, { dereference: true }, criticalPackage, failures);
+  let destination = path.resolve(destinationNodeModulesFolder, ...packageSegments);
+  if (parentDestination) {
+    let ancestor = parentDestination;
+    while (true) {
+      const ancestorDependency = path.join(ancestor, 'node_modules', ...packageSegments);
+      const copiedSource = copiedPackages.get(ancestorDependency);
+      if (copiedSource) {
+        if (copiedSource === source) return;
+        destination = path.join(parentDestination, 'node_modules', ...packageSegments);
+        break;
+      }
+      const parent = path.dirname(ancestor);
+      if (parent === ancestor) break;
+      ancestor = parent;
+    }
+  }
+  if (copiedPackages.get(destination) === source) return;
+  copiedPackages.set(destination, source);
+  fs.copySync(
+    source,
+    destination,
+    {
+      dereference: true,
+      // Dependencies are resolved individually; copying a nested node_modules
+      // wholesale would also include development and unrelated optional packages.
+      filter: file => path.relative(source, file).split(path.sep)[0] !== 'node_modules',
+    },
+  );
 
-  let packageJson: PackageJsonWithDependencies;
-  try {
-    packageJson = fs.readJsonSync(path.join(source, 'package.json')) as PackageJsonWithDependencies;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Error reading ${packageName} package.json: ${errorMessage}`);
-    failures.add(criticalPackage);
-    return;
-  }
+  const packageJson = fs.readJsonSync(path.join(source, 'package.json')) as PackageJsonWithDependencies;
+  const runtimeDependencies = { ...packageJson.dependencies, ...packageJson.optionalDependencies };
 
-  const runtimeDependencies = new Map<string, { optional: boolean }>();
-  for (const dependencyName of Object.keys(packageJson.dependencies ?? {})) {
-    runtimeDependencies.set(dependencyName, { optional: false });
-  }
-  for (const dependencyName of Object.keys(packageJson.optionalDependencies ?? {})) {
-    // npm treats an entry present in both maps as optional.
-    runtimeDependencies.set(dependencyName, { optional: true });
-  }
-
-  for (const [dependencyName, dependency] of runtimeDependencies) {
+  for (const dependencyName of Object.keys(runtimeDependencies)) {
     copyPackageDependencyClosure(
       dependencyName,
       source,
       destinationNodeModulesFolder,
-      criticalPackage,
-      failures,
       copiedPackages,
-      dependency.optional,
+      Object.hasOwn(packageJson.optionalDependencies ?? {}, dependencyName),
+      destination,
     );
   }
 }
 
 /**
  * Running afterPack hook
- * Note: This must be a non-async function that accepts a callback for Electron Packager compatibility
  * @param buildPath /var/folders/qj/7j0zx32d0l75zmnrl1w3m3b80000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64/Electron.app/Contents/Resources/app
  * @param electronVersion 12.0.6
  * @param platform darwin / win32 (even on win11 x64)
  * @param arch x64
- * @param callback Callback to signal completion, receives Error if critical deps missing
  */
 export default async (
   _forgeConfig: unknown,
@@ -173,6 +140,7 @@ export default async (
   arch: string,
 ): Promise<void> => {
   const failures = new Set<string>();
+  const copiedPackages = new Map<string, string>();
   let unexpectedError: unknown = null;
 
   try {
@@ -272,8 +240,7 @@ export default async (
         'typeorm',
         sourceNodeModulesFolder,
         path.join(cwd, 'node_modules'),
-        'typeorm',
-        failures,
+        copiedPackages,
       );
 
       // electron-unhandled is pure ESM and remains external to the Vite main
@@ -284,33 +251,19 @@ export default async (
         'electron-unhandled',
         sourceNodeModulesFolder,
         path.join(cwd, 'node_modules'),
-        'electron-unhandled',
-        failures,
+        copiedPackages,
       );
 
       // MCP SDK remains external to the Vite main bundle. Copy its complete
       // runtime dependency closure: recent releases load zod/v3 during module
       // initialization, before any MCP server is configured.
       console.log('Copy @modelcontextprotocol/sdk dependency closure');
-      const mcpSdkDestination = path.join(cwd, 'node_modules', '@modelcontextprotocol', 'sdk');
       copyPackageDependencyClosure(
         '@modelcontextprotocol/sdk',
         sourceNodeModulesFolder,
         path.join(cwd, 'node_modules'),
-        '@modelcontextprotocol/sdk',
-        failures,
+        copiedPackages,
       );
-      try {
-        // The SDK package has "type": "module", so Node.js treats all .js files as ESM.
-        // Its CJS dist lives under dist/cjs/ with .js extensions, which breaks require()
-        // at runtime. Override the type for the CJS subtree so require() works in the
-        // packaged Electron app.
-        fs.writeJsonSync(path.join(mcpSdkDestination, 'dist', 'cjs', 'package.json'), { type: 'commonjs' });
-      } catch (error) {
-        console.error(`Error copying @modelcontextprotocol/sdk: ${error instanceof Error ? error.message : String(error)}`);
-        failures.add('@modelcontextprotocol/sdk');
-      }
-
       // dugite — critical (git operations)
       // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true, recursive: true` here.
       console.log('Copy dugite');

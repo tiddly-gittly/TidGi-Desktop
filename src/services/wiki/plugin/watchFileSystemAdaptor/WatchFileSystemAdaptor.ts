@@ -113,8 +113,7 @@ export class WatchFileSystemAdaptor extends FileSystemAdaptor {
 
       // Call parent's saveTiddler (writes to disk)
       // Defer the syncer callback until the inverse index and echo metadata
-      // have been updated, while still honoring the TiddlyWiki callback
-      // contract required by the parent adaptor.
+      // have been updated, before TiddlyWiki receives its save callback.
       await super.saveTiddler(tiddler, (error, adaptorInfo, revision) => {
         callbackResult = { error, adaptorInfo, revision };
       }, options);

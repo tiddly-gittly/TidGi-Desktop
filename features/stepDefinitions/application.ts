@@ -11,7 +11,7 @@ import { MockOpenAIServer } from '../supports/mockOpenAI';
 import type { MockProxyServer } from '../supports/mockProxy';
 import { getPackedAppPath, makeSlugPath } from '../supports/paths';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
-import { captureScreenshot, captureWindowScreenshot } from '../supports/webContentsViewHelper';
+import { captureScreenshot } from '../supports/webContentsViewHelper';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -452,7 +452,7 @@ AfterStep({ timeout: 3000 }, async function(this: ApplicationWorld, { pickle, pi
     if (isBrowserViewStep) {
       await captureScreenshot(this.app, screenshotPath);
     } else if (this.currentWindow && !this.currentWindow.isClosed()) {
-      await captureWindowScreenshot(this.app, this.currentWindow, screenshotPath);
+      await this.currentWindow.screenshot({ path: screenshotPath });
     }
   } catch (error) {
     // Screenshot is best-effort diagnostics, never fail a step for it

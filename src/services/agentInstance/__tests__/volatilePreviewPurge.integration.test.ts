@@ -19,7 +19,8 @@ import {
   ConversationTimelineStateEntity,
   ConversationTurnTombstoneEntity,
 } from '@services/database/schema/conversationEvent';
-import { appendLocalConversationEvent, discardVolatileAgentPreview } from '../agentRepository';
+import { discardVolatileAgentPreview } from '../agentRepository';
+import { appendLocalConversationEvent } from '../conversationEventStore';
 
 const entities = [
   AgentDefinitionEntity,

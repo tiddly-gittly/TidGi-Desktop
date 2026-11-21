@@ -9,78 +9,20 @@ import {
   validateMessageDetailPage,
 } from '@memeloop/react-ui/chat';
 import { assertCanonicalChatMessageProjection, type ChatMessage, type ConversationMessageIdentity, type ConversationMessageListProjection } from 'memeloop';
-import { createStore, type StoreApi } from 'zustand/vanilla';
-
-export interface DesktopMessageDetailViewModelState {
-  /** Only identities are resident: canonical payloads are released after each page. */
-  loadingMessageIds: readonly string[];
+export async function loadDesktopMessageDetail(
+  projection: ConversationMessageListProjection,
+  request: MemeLoopMessageDetailRequest,
+): Promise<MemeLoopMessageDetailPage | null> {
+  const canonical = await loadDesktopCanonicalMessage(projection, request.signal, request.maxBytes);
+  return canonical ? canonicalDetailPage(canonical, projection, request) : null;
 }
 
-/**
- * Owns on-demand canonical-message hydration for the Desktop renderer.
- *
- * The IPC range is a transport window, not a message-size limit. Every read
- * runs through the authoritative identity fence and no full message is retained
- * in Zustand after its requested detail page has been built.
- */
-export class DesktopMessageDetailViewModel {
-  public readonly store: StoreApi<DesktopMessageDetailViewModelState> = createStore(() => ({
-    loadingMessageIds: [],
-  }));
-
-  public async loadDetail(
-    projection: ConversationMessageListProjection,
-    request: MemeLoopMessageDetailRequest,
-  ): Promise<MemeLoopMessageDetailPage | null> {
-    const canonical = await this.loadCanonicalMessage(projection, request.signal, request.maxBytes);
-    if (!canonical) return null;
-    return canonicalDetailPage(canonical, projection, request);
-  }
-
-  /** Recover one authoritative message without retaining it in the resident transcript. */
-  public async loadCanonicalMessage(
-    projection: ConversationMessageListProjection,
-    signal: AbortSignal,
-    rangeBytes: number,
-  ): Promise<ChatMessage | null> {
-    if (!Number.isSafeInteger(rangeBytes) || rangeBytes < 1) throw new RangeError('message detail range byte budget is invalid');
-    const key = `${projection.conversationId}:${projection.messageId}`;
-    this.markLoading(key, true);
-    try {
-      return await readCanonicalMessage(projection, signal, rangeBytes);
-    } finally {
-      this.markLoading(key, false);
-    }
-  }
-
-  private markLoading(messageId: string, loading: boolean): void {
-    const current = this.store.getState().loadingMessageIds;
-    if (loading) {
-      if (!current.includes(messageId)) this.store.setState({ loadingMessageIds: [...current, messageId] });
-      return;
-    }
-    this.store.setState({ loadingMessageIds: current.filter(value => value !== messageId) });
-  }
-}
-
-export function createDesktopMessageDetailViewModel(): DesktopMessageDetailViewModel {
-  return new DesktopMessageDetailViewModel();
-}
-
-/** Compatibility binding for consumers that only need canonical hydration. */
 export async function loadDesktopCanonicalMessage(
   projection: ConversationMessageListProjection,
   signal: AbortSignal,
   rangeBytes = MEMELOOP_MESSAGE_DETAIL_MAX_BYTES,
 ): Promise<ChatMessage | null> {
-  return readCanonicalMessage(projection, signal, rangeBytes);
-}
-
-async function readCanonicalMessage(
-  projection: ConversationMessageListProjection,
-  signal: AbortSignal,
-  rangeBytes: number,
-): Promise<ChatMessage | null> {
+  if (!Number.isSafeInteger(rangeBytes) || rangeBytes < 1) throw new RangeError('message detail range byte budget is invalid');
   signal.throwIfAborted();
   const firstIdentity = await window.service.agentInstance.getAgentMessageIdentity(
     projection.conversationId,
@@ -142,7 +84,6 @@ async function readCanonicalMessage(
   return canonical;
 }
 
-/** Derive only the identity fence from a trusted full-content detail payload. */
 export function canonicalMessageHydrationIdentity(message: ChatMessage): MemeLoopMessageHydrationIdentity {
   return {
     conversationId: message.conversationId,

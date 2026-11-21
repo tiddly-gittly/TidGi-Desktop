@@ -18,7 +18,7 @@ import {
 } from 'memeloop';
 import { createHash } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
-import { appendLocalConversationEventsInTransaction } from './agentRepository';
+import { appendLocalConversationEventsInTransaction } from './conversationEventStore';
 import { CANONICAL_MESSAGE_FIELDS } from './messageEntityProjection';
 
 function digest(value: unknown): string {

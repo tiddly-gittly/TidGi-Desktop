@@ -7,6 +7,7 @@ import path from 'path';
 import type { IFileInfo, Syncer, Wiki } from 'tiddlywiki';
 import { notifyGitFileChangeBestEffort } from './gitNotification';
 import { type IBootFilesIndexItemWithTitle, InverseFilesIndex } from './InverseFilesIndex';
+import { isNodeError } from './utilities';
 
 /**
  * Delay before actually processing file deletion.
@@ -38,10 +39,6 @@ const SYNCER_TRIGGER_DELAY_MS = 200;
 
 function normalizeIndexPath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
-}
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && typeof error.code === 'string';
 }
 
 export interface IUpdatedTiddlers {

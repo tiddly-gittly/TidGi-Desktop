@@ -20,26 +20,26 @@ import {
   ConversationTimelineStateEntity,
   ConversationTurnTombstoneEntity,
 } from '@services/database/schema/conversationEvent';
+import { conversationReferencesAttachment, getConversationEventPage, getEventVersionFrontiers, getRetainedCompactionControls } from '../conversationEventQueries';
 import {
   appendDeleteTurnTombstoneAtomic,
   appendLocalConversationEvent,
   appendLocalConversationEventsAtomic,
-  conversationReferencesAttachment,
-  getConversationEventPage,
-  getConversationTimelinePage,
-  getEventVersionFrontiers,
+  insertConversationEventsIfAbsent,
+  rebuildConversationEventProjection,
+} from '../conversationEventStore';
+import {
   getFullContentMessagePage,
+  getMaxLamportClock,
   getMessage,
   getMessageIdentity,
   getMessagePage,
-  getMessageWindowAround,
-  getRetainedCompactionControls,
   getTurnDetail,
-  insertConversationEventsIfAbsent,
   readMessageDetailRange,
   readMessageReasoningRange,
-  rebuildConversationEventProjection,
-} from '../agentRepository';
+} from '../conversationMessageQueries';
+import { getMessageWindowAround } from '../conversationMessageWindowQueries';
+import { getConversationTimelinePage } from '../conversationTimelineQueries';
 
 const entities = [
   AgentDefinitionEntity,
@@ -159,6 +159,8 @@ describe('Desktop canonical conversation event store', () => {
       'message projection projection-only has no authoritative event',
     );
     await messageRepository.delete({ messageId: 'projection-only' });
+    await expect(getMaxLamportClock(messageRepository, 'conversation')).resolves.toBe(2);
+    await expect(getMaxLamportClock(messageRepository, 'another-conversation')).resolves.toBe(0);
     const page = await getMessagePage(messageRepository, 'conversation', { limit: 20, maxBytes: 64 * 1024 });
     if (page.reset) throw new Error('unexpected reset');
     expect(page.items).toEqual([expect.objectContaining({
@@ -970,6 +972,7 @@ describe('Desktop canonical conversation event store', () => {
     expect(visible.items).toEqual([]);
     expect(await dataSource.getRepository(ConversationEventEntity).count()).toBe(5);
     expect(await dataSource.getRepository(AgentInstanceMessageEntity).count()).toBe(2);
+    await expect(getMaxLamportClock(dataSource.getRepository(AgentInstanceMessageEntity), 'conversation')).resolves.toBe(0);
   });
 
   it('rebuilds projections idempotently from raw events', async () => {

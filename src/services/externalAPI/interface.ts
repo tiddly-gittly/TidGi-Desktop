@@ -235,7 +235,7 @@ export interface IExternalAPIService {
 
   /**
    * Main-process agent execution path. It preserves MemeLoop's exact portable
-   * request/stream contracts instead of round-tripping through accumulated
+   * request and stream types instead of converting through accumulated
    * renderer-friendly strings.
    */
   generatePortableLlm(

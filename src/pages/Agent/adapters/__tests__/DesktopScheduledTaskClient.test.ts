@@ -145,7 +145,7 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
     expect(sendRpc).not.toHaveBeenCalled();
   });
 
-  it('uses the typed scoped RPC contract and returns every Core execution field unchanged', async () => {
+  it('uses the scoped RPC interface and preserves execution fields', async () => {
     const finishOperation = vi.fn().mockResolvedValue(undefined);
     const sendRpc = vi.fn().mockResolvedValue({
       items: [remoteTask],
@@ -260,14 +260,14 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
     let active = 0;
     let maxActive = 0;
     let release!: () => void;
-    const gate = new Promise<void>(resolve => {
+    const pendingRequest = new Promise<void>(resolve => {
       release = resolve;
     });
     const peers = Array.from({ length: 8 }, (_, index) => `peer-${index}`);
     const sendRpc = vi.fn(async () => {
       active += 1;
       maxActive = Math.max(maxActive, active);
-      await gate;
+      await pendingRequest;
       active -= 1;
       return { items: [], hasMoreAfter: false };
     });

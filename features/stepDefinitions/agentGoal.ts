@@ -2,7 +2,6 @@ import { Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { captureWindowScreenshot } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 Then('the goal should persist two rounds and explicit completion evidence', async function(this: ApplicationWorld) {
@@ -33,7 +32,7 @@ Then('the goal should persist two rounds and explicit completion evidence', asyn
     requests.slice(0, 2).every(request => request.messages.some(message => message.role === 'system' && message.content?.includes('verification evidence'))),
     'Active goal rounds receive lifecycle instructions in the system prompt',
   );
-  assert(await captureWindowScreenshot(this.app, page, path.resolve('test-artifacts', this.scenarioSlug, 'goal-completed.png')));
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'goal-completed.png') });
 });
 
 When('I schedule a one-shot message for the current test conversation', async function(this: ApplicationWorld) {
@@ -67,5 +66,5 @@ Then('the scheduled message should have completed once', async function(this: Ap
     assert.equal(task.lastRunStatus, 'succeeded');
     assert.equal(task.enabled, false);
   }, { numOfAttempts: 30, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
-  assert(await captureWindowScreenshot(this.app, page, path.resolve('test-artifacts', this.scenarioSlug, 'scheduled-result.png')));
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'scheduled-result.png') });
 });

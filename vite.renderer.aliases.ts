@@ -9,7 +9,7 @@ export const rendererAliases = [
   { find: /^material-ui-cron$/, replacement: path.resolve(__dirname, './node_modules/material-ui-cron/dist/index.esm.js') },
   // Use exact public-entry aliases. A string alias for `/agent` also rewrites
   // `/agent/prompts` to `index.js/prompts`, which only fails in Rolldown's
-  // production resolver after type-check and unit gates pass.
+  // production resolver after typecheck and unit tests pass.
   { find: /^@memeloop\/react-ui\/chat$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/chat/index.js') },
   { find: /^@memeloop\/react-ui\/web$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/web/index.js') },
   { find: /^@memeloop\/react-ui\/native$/, replacement: path.resolve(__dirname, './node_modules/@memeloop/react-ui/dist/native/index.js') },

@@ -37,9 +37,8 @@ function getMostRecentScenarioName(): string | undefined {
 
 const appPath = getPackedAppPath();
 
-// Get scenario name from command line argument or detect most recent. The
-// packaged app accepts the canonical environment contract only; passing a
-// custom Electron CLI flag is not supported on every platform.
+// Electron accepts custom CLI flags differently across platforms, so scenario
+// selection uses the same environment variable as the E2E runner.
 const scenarioName = process.argv[2] || getMostRecentScenarioName();
 
 if (!scenarioName) {

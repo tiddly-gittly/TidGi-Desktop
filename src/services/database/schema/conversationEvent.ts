@@ -158,7 +158,7 @@ export class AgentRunStateEntity {
   error?: AgentRunError;
 }
 
-/** Durable execution fence for one Agent run. Expired rows retain the epoch. */
+/** Execution lease for one Agent run. Expired rows retain the epoch. */
 @Entity('agent_run_execution_leases')
 export class AgentRunExecutionLeaseEntity {
   @PrimaryColumn()
@@ -323,7 +323,7 @@ export class AgentLoopCheckpointEntity {
   fencingEpoch!: number;
 }
 
-/** Backend-authoritative execution fence checked atomically with checkpoint writes. */
+/** Execution lease checked in the same transaction as checkpoint writes. */
 @Entity('agent_loop_checkpoint_execution_leases')
 export class AgentLoopCheckpointExecutionLeaseEntity {
   @PrimaryColumn()

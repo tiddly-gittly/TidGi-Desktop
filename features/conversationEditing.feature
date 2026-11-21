@@ -26,45 +26,47 @@ Feature: Shared conversation editing, status and wiki rendering
     And I press "Enter" key
     Then I should see 4 messages in chat history
     And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
-    When I hover the first user message
+    When I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on an "edit first question" element with selector "[data-testid='message-edit'] >> nth=0"
     And I type "AUTOSAVED_DRAFT" in "message edit" element with selector "[data-testid='message-edit-input']"
     Then the conversation edit draft should be persisted as "AUTOSAVED_DRAFT"
-    When I reload the conversation window
-    And I hover the first user message
+    When I reload the current window
+    And I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on an "edit first question" element with selector "[data-testid='message-edit'] >> nth=0"
-    Then the message editor should contain "AUTOSAVED_DRAFT"
+    Then the "message editor" element with selector "[data-testid='message-edit-input']" should have value "AUTOSAVED_DRAFT"
     When I press "Escape" key
     Then I should not see an "editor" element with selector "[data-testid='message-edit-input']"
-    When I hover the first user message
+    When I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on an "edit first question" element with selector "[data-testid='message-edit'] >> nth=0"
-    Then the message editor should contain "AUTOSAVED_DRAFT"
+    Then the "message editor" element with selector "[data-testid='message-edit-input']" should have value "AUTOSAVED_DRAFT"
     When I click on a "discard draft" element with selector "[data-testid='message-edit-discard']"
-    And I hover the first user message
+    And I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on an "edit first question" element with selector "[data-testid='message-edit'] >> nth=0"
-    Then the message editor should contain "ORIGINAL_QUESTION"
+    Then the "message editor" element with selector "[data-testid='message-edit-input']" should have value "ORIGINAL_QUESTION"
     When I type "EDITED_QUESTION" in "message edit" element with selector "[data-testid='message-edit-input']"
     And I click on a "save draft" element with selector "[data-testid='message-edit-save']"
-    And I hover the first user message
+    And I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on an "edit first question" element with selector "[data-testid='message-edit'] >> nth=0"
-    Then the message editor should contain "EDITED_QUESTION"
+    Then the "message editor" element with selector "[data-testid='message-edit-input']" should have value "EDITED_QUESTION"
     When I click on a "send edited message" element with selector "[data-testid='message-edit-send']"
     Then I should see 2 messages in chat history
     And I should see a "new branch reply" element with selector "[data-testid='assistant-message']:has-text('EDITED_BRANCH_REPLY')"
     And the edited model request should exclude the original continuation
     And the timeline should mark a message with alternative histories
-    When I hover the first user message
+    When I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on a "previous history" element with selector "[data-testid='message-branch-previous']"
     Then I should see 4 messages in chat history
     And I should see an "original continuation" element with selector "[data-testid='assistant-message']:has-text('ORIGINAL_LATER_REPLY')"
-    When I hover the first user message
+    When I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on a "next history" element with selector "[data-testid='message-branch-next']"
     Then I should see 2 messages in chat history
     And I should see an "edited continuation" element with selector "[data-testid='assistant-message']:has-text('EDITED_BRANCH_REPLY')"
 
   @agent @mockOpenAI @conversationEditing
   Scenario: The assistant shows status before a delayed failure and settles afterwards
-    Given the next model request fails after a delay
+    Given I add mock OpenAI responses:
+      | statusCode | delayMs |
+      | 403 | 1500 |
     When I type "Check failure status" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see a "pending assistant bubble" element with selector "[data-testid='assistant-run-status']"
@@ -74,7 +76,9 @@ Feature: Shared conversation editing, status and wiki rendering
 
   @agent @mockOpenAI @conversationEditing
   Scenario: Pending status appears before a delayed successful response
-    Given the next model request succeeds after a delay
+    Given I add mock OpenAI responses:
+      | response | stream | delayMs |
+      | DELAYED_REPLY | true | 1500 |
     When I type "Check pending success" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see a "pending assistant bubble" element with selector "[data-testid='assistant-run-status']"
@@ -83,7 +87,9 @@ Feature: Shared conversation editing, status and wiki rendering
 
   @agent @mockOpenAI @conversationEditing
   Scenario: A pending response can be cancelled
-    Given the next model request succeeds after a delay
+    Given I add mock OpenAI responses:
+      | response | stream | delayMs |
+      | DELAYED_REPLY | true | 1500 |
     When I type "Cancel pending response" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see a "pending assistant bubble" element with selector "[data-testid='assistant-run-status']"
@@ -96,7 +102,8 @@ Feature: Shared conversation editing, status and wiki rendering
     Given I add mock OpenAI responses:
       | response | stream |
       | <strong>HTML_RENDERED</strong><script>window.chatScriptExecuted=true</script> | false |
-    When I choose the "wiki" workspace for this conversation
+    When I click on a "conversation workspace" element with selector "[data-testid='conversation-workspace-select'] [role='combobox']"
+    And I click on a "wiki option" element with selector "[role='option']:text-is('wiki')"
     And I type "Render HTML safely" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 2 messages in chat history
@@ -107,37 +114,43 @@ Feature: Shared conversation editing, status and wiki rendering
     Given I add mock OpenAI responses:
       | response | stream |
       | ''WIKI_RENDERED_BOLD'' | false |
-    When I choose the "wiki" workspace for this conversation
+    When I click on a "conversation workspace" element with selector "[data-testid='conversation-workspace-select'] [role='combobox']"
+    And I click on a "wiki option" element with selector "[role='option']:text-is('wiki')"
     And I type "Render a wiki response" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 2 messages in chat history
-    And the assistant should render bold wiki text "WIKI_RENDERED_BOLD"
-    When I reload the conversation window
-    Then the conversation workspace selection should be "wiki"
-    And the assistant should render bold wiki text "WIKI_RENDERED_BOLD"
+    And I should see a "rendered bold response" element with selector "strong:text-is('WIKI_RENDERED_BOLD')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"
+    When I reload the current window
+    Then I should see a "selected wiki" element with selector "[data-testid='conversation-workspace-select'] [role='combobox']:text-is('wiki')"
+    And I should see a "restored bold response" element with selector "strong:text-is('WIKI_RENDERED_BOLD')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"
 
   @agent @mockOpenAI @conversationEditing @messageAppearance
   Scenario: Message surfaces and shared tools work in both themes
     Given I add mock OpenAI responses:
       | response | stream |
       | ''TOOLBAR_REPLY'' | false |
-    When I choose the "wiki" workspace for this conversation
+    When I click on a "conversation workspace" element with selector "[data-testid='conversation-workspace-select'] [role='combobox']"
+    And I click on a "wiki option" element with selector "[role='option']:text-is('wiki')"
     And I type "''TOOLBAR_QUESTION''" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see 2 messages in chat history
-    And the assistant should render bold wiki text "TOOLBAR_REPLY"
+    And I should see a "rendered toolbar reply" element with selector "strong:text-is('TOOLBAR_REPLY')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"
     And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
     And message surfaces and shared tools should work in "light" theme
     And message surfaces and shared tools should work in "dark" theme
 
   @agent @mockOpenAI @conversationEditing @advancedWikitext
   Scenario: Complete conversations render tables variables macros filters and transclusions
-    Given the model echoes the advanced wikitext sample
-    When I choose the "wiki" workspace for this conversation
-    And I send the advanced wikitext sample
+    Given I add mock OpenAI responses:
+      | responseFile | stream |
+      | chat-rich-wikitext.txt | false |
+    When I click on a "conversation workspace" element with selector "[data-testid='conversation-workspace-select'] [role='combobox']"
+    And I click on a "wiki option" element with selector "[role='option']:text-is('wiki')"
+    And I type fixture "chat-rich-wikitext.txt" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
     Then I should see 2 messages in chat history
     And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
     And both completed messages render advanced wikitext in "light" theme
     And both completed messages render advanced wikitext in "dark" theme
-    When I reload the conversation window
+    When I reload the current window
     Then both completed messages render advanced wikitext in "dark" theme

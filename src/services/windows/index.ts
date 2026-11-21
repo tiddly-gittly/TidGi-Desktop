@@ -196,9 +196,7 @@ export class Window implements IWindowService {
     returnWindow?: boolean,
   ): Promise<undefined | BrowserWindow> {
     // `electron-window-state` validates saved bounds through `screen` as soon
-    // as it is constructed. Keep this method safe even if a future deep-link,
-    // test hook, or lifecycle listener bypasses mainApplication's activation
-    // gate and asks for a window during module initialization.
+    // as it is constructed, so every window creation waits for Electron readiness.
     await app.whenReady();
     const { recreate = false, multiple = false, recreateUnlessWorkspaceID } = config ?? {};
     let existedWindow = this.get(windowName);

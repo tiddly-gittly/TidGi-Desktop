@@ -13,7 +13,11 @@ Feature: Nested tool work disclosure
 
   @toolDisclosure @mockOpenAI
   Scenario: Tool commands, consecutive calls, and completed work have independent disclosure
-    Given I queue a two-step wiki search with a delayed final summary
+    Given I add mock OpenAI responses:
+      | response | stream | toolName | toolArguments | delayMs |
+      | PROCESS_GOAL: I will inspect two wiki entries. | false | wiki-search | {"workspaceName":"wiki","filter":"[title[Index]]"} | |
+      | | false | wiki-search | {"workspaceName":"wiki","filter":"[title[GettingStarted]]"} | |
+      | FINAL_TOOL_SUMMARY: Both searches are complete. This conclusion stays visible. | false | | | 6000 |
     When I type "TOOL_DISCLOSURE_TEST search the wiki twice" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then live tool calls should be grouped while process commentary stays visible

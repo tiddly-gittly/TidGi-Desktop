@@ -3,7 +3,7 @@ import type { WorkerPeer } from 'electron-ipc-cat/host';
 
 /**
  * Adapt Electron's strongly-typed UtilityProcess event surface to the small
- * peer contract used by electron-ipc-cat.
+ * peer interface used by electron-ipc-cat.
  *
  * Electron exposes the `error` event as a three-field diagnostic callback,
  * while electron-ipc-cat expects an Error.  Converting it here keeps the

@@ -64,7 +64,7 @@ function requireAgent(agent: AgentRuntimeView | undefined, conversationId: strin
   return agent;
 }
 
-/** Electron IPC binding that forwards Core's exact management contracts unchanged. */
+/** Connect the shared conversation client to Electron IPC. */
 export const createDesktopAgentConversationClient = (): AgentConversationClient => ({
   async getMessagePage(conversationId, options, callOptions) {
     throwIfAborted(callOptions?.signal);

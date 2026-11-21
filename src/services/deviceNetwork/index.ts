@@ -65,7 +65,7 @@ import type {
 } from './interface';
 import { createInitialDeviceCloudConnectionStatus } from './interface';
 import { boundListenPorts, listenAddresses, readListenPorts } from './listenPorts';
-import { TrustedRpcGate } from './trustedRpcGate';
+import { TrustedPeerRequests } from './trustedPeerRequests';
 
 interface DesktopCloudConfiguration {
   cloudUrl: string;
@@ -307,7 +307,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
   public devices$ = new BehaviorSubject<Device[]>([]);
   public pairingSessions$ = new BehaviorSubject<PairingSession[]>([]);
   private deviceNetworkUnsubscribers: Array<() => void> = [];
-  private readonly trustedRpcGate = new TrustedRpcGate();
+  private readonly trustedPeerRequests = new TrustedPeerRequests();
 
   constructor(
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
@@ -377,14 +377,14 @@ export class DeviceNetworkService implements IDeviceNetworkService {
 
     this.started = true;
     const initialDevices = await this.core.listDevices();
-    this.trustedRpcGate.updateDevices(initialDevices);
+    this.trustedPeerRequests.updateDevices(initialDevices);
     this.devices$.next(initialDevices);
     // Wire core observables to IPC-serializable BehaviorSubjects.
     // The core's observe methods return unsubscribe functions that cannot cross IPC,
     // so we mirror their values into Value$ observables exposed to the renderer.
     this.deviceNetworkUnsubscribers.push(
       this.core.observeDevices((devices) => {
-        this.trustedRpcGate.updateDevices(devices);
+        this.trustedPeerRequests.updateDevices(devices);
         this.devices$.next(devices);
       }),
       this.core.observePairingSessions((sessions) => {
@@ -409,7 +409,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
     }
     this.deviceNetworkUnsubscribers = [];
     await this.core?.stop();
-    this.trustedRpcGate.updateDevices([]);
+    this.trustedPeerRequests.updateDevices([]);
     this.devices$.next([]);
     this.core = undefined;
     this.started = false;
@@ -641,7 +641,7 @@ export class DeviceNetworkService implements IDeviceNetworkService {
       const record = core.getTrustedDevice(peerId);
       return record !== undefined && record.revokedAt === undefined;
     };
-    return await this.trustedRpcGate.run(peerId, isTrusted, async () => {
+    return await this.trustedPeerRequests.run(peerId, isTrusted, async () => {
       signal?.throwIfAborted();
       const parameterRecord = parameters !== null && typeof parameters === 'object' && !Array.isArray(parameters)
         ? parameters as Record<string, unknown>

@@ -252,6 +252,13 @@ Common install-failure causes:
 
 ## GPU process isn't usable (SSH/xvfb)
 
+`pnpm run start:dev` uses the display environment of the calling terminal.
+For SSH development on an existing desktop, pass that session's `DISPLAY` and,
+if needed, `XAUTHORITY` explicitly. The launcher does not select a desktop by
+scanning other processes. For a headless session, use
+`xvfb-run -a pnpm run start:dev`; the Linux E2E CI jobs already wrap their test
+commands in `xvfb-run`.
+
 SSH env Electron GPU:
 
 ```

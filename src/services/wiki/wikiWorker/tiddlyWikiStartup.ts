@@ -8,11 +8,7 @@ interface TiddlyWikiBoot {
  * signal.
  */
 export function waitForTiddlyWikiStartup(boot: TiddlyWikiBoot, bootPath: string): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    try {
-      boot.startup({ bootPath, callback: resolve });
-    } catch (error) {
-      reject(error instanceof Error ? error : new Error(String(error)));
-    }
+  return new Promise<void>(resolve => {
+    boot.startup({ bootPath, callback: resolve });
   });
 }

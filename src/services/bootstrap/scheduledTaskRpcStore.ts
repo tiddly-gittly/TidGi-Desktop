@@ -18,7 +18,7 @@ import {
 } from 'memeloop';
 
 /**
- * Main-process binding for Core's strict, scoped schedule RPC contract.
+ * Main-process implementation of MemeLoop's schedule RPC storage interface.
  * All tuple checks happen before writes, and the caller-supplied origin is
  * replaced with the authenticated remote PeerId.
  */

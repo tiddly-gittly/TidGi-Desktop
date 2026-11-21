@@ -11,8 +11,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { appendLocalConversationEventsAtomic } from '../agentRepository';
 import { forkConversation, getConversationBranches, loadConversationEditSource, saveConversationEditDraft } from '../conversationEditingStore';
+import { appendLocalConversationEventsAtomic } from '../conversationEventStore';
 
 describe('durable conversation editing', () => {
   let database: DataSource;

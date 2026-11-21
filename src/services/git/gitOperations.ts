@@ -1116,8 +1116,8 @@ export async function getTiddlerAtTime(
           }
         }
       } catch (error: unknown) {
-        // `gitExec` should return a result for git failures. Preserve that
-        // contract and only skip a genuinely malformed Error from a file.
+        // Git failures are returned by gitExec; Error instances here indicate
+        // a file that could not be read or parsed.
         if (!(error instanceof Error)) throw error;
       }
       return null; // No match in this file

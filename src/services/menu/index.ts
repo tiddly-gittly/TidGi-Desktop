@@ -1,4 +1,5 @@
 import { isTest } from '@/constants/environment';
+import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS } from '@/constants/parameters';
 import { getWorkspaceIdFromUrl } from '@/constants/urls';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -30,8 +31,6 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 import type { IMainMenuService, IOnContextMenuInfo } from './interface';
 import { DeferredMenuItemConstructorOptions } from './interface';
 import { loadDefaultMenuTemplate } from './loadDefaultMenuTemplate';
-
-export const DEFERRED_MENU_PROPERTY_TIMEOUT_MS = 2000;
 
 function isIpcSafeMenuItem(value: unknown): value is IpcSafeMenuItem {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -199,9 +198,8 @@ export class MenuService implements IMainMenuService {
   }
 
   /**
-   * A menu is startup decoration, not a reason to withhold the main window.
-   * Isolate rejected or stalled async providers and use a fail-closed value for
-   * the current build. Later scheduled builds may recover normally.
+   * Resolve asynchronous menu properties within a deadline so a stalled
+   * provider still allows startup to finish. Later builds retry the property.
    */
   private async resolveDeferredBoolean(
     value: (() => boolean) | (() => Promise<boolean>) | boolean | undefined,
@@ -219,7 +217,7 @@ export class MenuService implements IMainMenuService {
         resolve(result);
       };
       const timeout = setTimeout(() => {
-        logger.warn('Deferred menu property timed out; using fail-closed value', {
+        logger.warn('Deferred menu property timed out; using false', {
           itemID,
           property,
           timeoutMs: DEFERRED_MENU_PROPERTY_TIMEOUT_MS,
@@ -232,7 +230,7 @@ export class MenuService implements IMainMenuService {
         .then(value)
         .then(settle)
         .catch((error: unknown) => {
-          logger.warn('Deferred menu property failed; using fail-closed value', {
+          logger.warn('Deferred menu property failed; using false', {
             error,
             itemID,
             property,

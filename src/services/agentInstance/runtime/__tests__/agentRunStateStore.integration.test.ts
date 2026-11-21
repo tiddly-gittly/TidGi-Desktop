@@ -33,7 +33,7 @@ import {
   ConversationTimelineStateEntity,
   ConversationTurnTombstoneEntity,
 } from '@/services/database/schema/conversationEvent';
-import { appendLocalConversationEvent } from '../../agentRepository';
+import { appendLocalConversationEvent } from '../../conversationEventStore';
 import { AgentInstanceService } from '../../index';
 import type { IAgentInstanceService } from '../../interface';
 import { DesktopAgentRunStateStore } from '../agentRunStateStore';
@@ -165,12 +165,12 @@ describe('DesktopAgentRunStateStore', () => {
 
   it('persists cancellation and never allows a late generator completion to overwrite it', async () => {
     let release!: () => void;
-    const gate = new Promise<void>(resolve => {
+    const pendingGeneration = new Promise<void>(resolve => {
       release = resolve;
     });
     const runtime = createMemeLoopRuntime(
       createRuntimeContext(async function*() {
-        await gate;
+        await pendingGeneration;
         yield { type: 'thinking', data: 'late' };
       }),
       { runStateStore: store },

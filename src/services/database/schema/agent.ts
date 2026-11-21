@@ -94,7 +94,7 @@ export class ScheduledTaskEntity {
   @Column({ default: 0 })
   runCount: number = 0;
 
-  /** Monotonic CAS fence for timer/config races. */
+  /** Incremented on configuration changes; callbacks match it before updating execution metadata. */
   @Column({ type: 'integer', default: 0 })
   executionRevision: number = 0;
 

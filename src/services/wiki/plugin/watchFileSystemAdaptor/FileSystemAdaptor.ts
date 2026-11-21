@@ -11,12 +11,12 @@ import { moveExternalAttachmentIfNeeded } from './externalAttachmentUtilities';
 import { notifyGitFileChangeBestEffort } from './gitNotification';
 import type { ExtendedUtilities } from './routingUtilities.type';
 import type { ITiddlerRoutingInfo } from './tiddlerRoutingInfo';
-import { isFileLockError } from './utilities';
+import { isFileLockError, isNodeError } from './utilities';
 
 /**
  * Routing helpers are installed by the watch-filesystem plugin at runtime,
- * rather than being part of TiddlyWiki's built-in `$tw.utils` type.  Keep the
- * boundary explicit and fail closed when a wiki starts without the plugin.
+ * rather than being part of TiddlyWiki's built-in `$tw.utils` type. Missing
+ * helpers indicate that the routing plugin was omitted during startup.
  */
 function isExtendedUtilities(value: unknown): value is ExtendedUtilities {
   if (value === null || typeof value !== 'object') {
@@ -36,10 +36,6 @@ function getExtendedUtilities(): ExtendedUtilities {
     throw new Error('watch-filesystem routing utilities are unavailable');
   }
   return utilities;
-}
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && typeof error.code === 'string';
 }
 
 type SaveTiddlerCallback = (error: Error | null | string, adaptorInfo?: IFileInfo | null, revision?: string) => void;

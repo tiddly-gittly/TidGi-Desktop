@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as repository from '../agentRepository';
 import { DesktopAttachmentUploadStore } from '../attachmentUploadStore';
+import * as conversationEventQueries from '../conversationEventQueries';
 import { AgentInstanceService } from '../index';
 import { AgentInstanceServiceIPCDescriptor } from '../interface';
 
@@ -91,7 +91,7 @@ describe('Desktop production attachment sync ports', () => {
     const alias = await store.commit(scope);
     Reflect.set(service, 'agentInstanceRepository', {});
     Reflect.set(service, 'agentMessageRepository', {});
-    const referenced = vi.spyOn(repository, 'conversationReferencesAttachment').mockResolvedValue(false);
+    const referenced = vi.spyOn(conversationEventQueries, 'conversationReferencesAttachment').mockResolvedValue(false);
     await expect(service.readAgentAttachmentChunk({
       conversationId: 'allowed',
       reference: alias,

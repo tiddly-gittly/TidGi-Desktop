@@ -1,58 +1,65 @@
+// @vitest-environment node
 import fs from 'fs-extra';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { copyPackageDependencyClosure, resolvePackageDirectory } from '../afterPack';
+import { copyPackageDependencyClosure } from '../afterPack';
 
-describe('resolvePackageDirectory', () => {
-  it('resolves a dependency using its parent package pnpm context', () => {
-    const typeormFolder = resolvePackageDirectory('typeorm', path.resolve('node_modules'));
-    const yargsFolder = resolvePackageDirectory('yargs', typeormFolder);
-    const yargsPackage = fs.readJsonSync(path.join(yargsFolder, 'package.json')) as { name: string };
-
-    expect(yargsPackage.name).toBe('yargs');
-  });
-
-  it('does not mistake an export-mapped dist package.json for the package root', () => {
-    const sdkFolder = resolvePackageDirectory(
-      '@modelcontextprotocol/sdk',
-      path.resolve('node_modules'),
-    );
-    const sdkPackage = fs.readJsonSync(path.join(sdkFolder, 'package.json')) as {
-      name: string;
+describe('packaged runtime dependencies', () => {
+  it('preserves conflicting dependency versions and cycles when loading the packaged tree', () => {
+    const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-after-pack-versions-'));
+    const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-after-pack-output-'));
+    const writePackage = (folder: string, name: string, dependencies: Record<string, string>, body: string): void => {
+      fs.outputJsonSync(path.join(folder, 'package.json'), { name, version: '1.0.0', main: 'index.js', dependencies });
+      fs.writeFileSync(path.join(folder, 'index.js'), body);
     };
-
-    expect(sdkPackage).toMatchObject({
-      name: '@modelcontextprotocol/sdk',
-    });
-    expect(sdkFolder.endsWith(path.join('@modelcontextprotocol', 'sdk'))).toBe(true);
-  });
-
-  it('rejects path-like dependency names before resolving a destination', () => {
-    expect(() => resolvePackageDirectory('../outside', path.resolve('node_modules')))
-      .toThrow('Invalid package name');
-    expect(() => resolvePackageDirectory('@scope/../../outside', path.resolve('node_modules')))
-      .toThrow('Invalid package name');
+    try {
+      const modules = path.join(fixture, 'node_modules');
+      writePackage(path.join(modules, 'root-package'), 'root-package', { left: '*', right: '*' }, 'module.exports = [require("left"), require("right")];');
+      writePackage(path.join(modules, 'left'), 'left', { shared: '*', 'root-package': '*' }, 'module.exports = require("shared");');
+      writePackage(path.join(modules, 'right'), 'right', { shared: '*' }, 'module.exports = require("shared");');
+      writePackage(path.join(modules, 'shared'), 'shared', {}, 'module.exports = "v1";');
+      writePackage(path.join(modules, 'right', 'node_modules', 'shared'), 'shared', {}, 'module.exports = "v2";');
+      copyPackageDependencyClosure('root-package', fixture, path.join(destination, 'node_modules'));
+      const require = createRequire(path.join(destination, 'node_modules', 'root-package', 'package.json'));
+      expect(require('./index.js')).toEqual(['v1', 'v2']);
+    } finally {
+      fs.removeSync(fixture);
+      fs.removeSync(destination);
+    }
   });
 
   it('copies the external electron-unhandled runtime dependency closure', () => {
     const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-after-pack-'));
     try {
-      const failures = new Set<string>();
       copyPackageDependencyClosure(
         'electron-unhandled',
         path.resolve('node_modules'),
         destination,
-        'electron-unhandled',
-        failures,
       );
 
-      expect([...failures]).toEqual([]);
       expect(fs.readJsonSync(path.join(destination, 'electron-unhandled', 'package.json')))
         .toMatchObject({ name: 'electron-unhandled' });
       expect(fs.existsSync(path.join(destination, 'clean-stack', 'package.json'))).toBe(true);
       expect(fs.existsSync(path.join(destination, 'serialize-error', 'package.json'))).toBe(true);
+    } finally {
+      fs.removeSync(destination);
+    }
+  });
+
+  it('loads the installed MCP and TypeORM entry points from the copied runtime tree', () => {
+    const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'tidgi-after-pack-runtime-'));
+    try {
+      const modules = path.join(destination, 'node_modules');
+      const copiedPackages = new Map<string, string>();
+      for (const packageName of ['typeorm', '@modelcontextprotocol/sdk']) {
+        copyPackageDependencyClosure(packageName, path.resolve('node_modules'), modules, copiedPackages);
+      }
+      const require = createRequire(path.join(destination, 'probe.cjs'));
+      expect(require('typeorm')).toHaveProperty('DataSource', expect.any(Function));
+      expect(require('@modelcontextprotocol/sdk/server/mcp.js')).toHaveProperty('McpServer', expect.any(Function));
     } finally {
       fs.removeSync(destination);
     }
@@ -84,19 +91,19 @@ describe('resolvePackageDirectory', () => {
       writePackage('required-package');
       writePackage('installed-optional');
 
-      const failures = new Set<string>();
       copyPackageDependencyClosure(
         'root-package',
         fixture,
         destination,
-        'root-package',
-        failures,
       );
 
-      expect([...failures]).toEqual([]);
       expect(fs.existsSync(path.join(destination, 'required-package', 'package.json'))).toBe(true);
       expect(fs.existsSync(path.join(destination, 'installed-optional', 'package.json'))).toBe(true);
       expect(fs.existsSync(path.join(destination, 'unavailable-platform-optional'))).toBe(false);
+      writePackage('installed-optional', { dependencies: { 'missing-required': '1.0.0' } });
+      expect(() => {
+        copyPackageDependencyClosure('root-package', fixture, destination);
+      }).toThrow('missing-required');
     } finally {
       fs.removeSync(fixture);
       fs.removeSync(destination);

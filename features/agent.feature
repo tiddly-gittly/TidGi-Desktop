@@ -40,9 +40,19 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I press "Enter" key
     Then I should see a "final assistant response" element with selector "[data-testid='message-bubble']:has-text('PROMPT_HISTORY_ASSISTANT')"
     And the prompt tree and message list should show the same history tools and unsent input
-    And prompt message details should close with Escape
+    When I click on a "history message detail" element with selector "[data-testid='prompt-execution-inspector'] [data-testid='prompt-preview-entry']:has-text('PROMPT_HISTORY_ASSISTANT')"
+    Then I should see a "history source" element with selector "[data-testid='prompt-preview-audit-detail'] pre:has-text('PROMPT_HISTORY_ASSISTANT')"
+    When I press "Escape" key
+    Then I should not see a "message detail" element with selector "[data-testid='prompt-preview-audit-detail']"
+    And I should see a "prompt inspector" element with selector "[data-testid='prompt-execution-inspector']"
     And the complete model request should include the unsent input and allow returning to the tree
-    And the prompt form and code editors should both open
+    When I click on an "editor toggle" element with selector "[role='switch'][aria-label='显示编辑']"
+    Then I should see a "form editor tab" element with selector "[role='tab']:has-text('表单编辑')"
+    And I capture the current window as "prompt-form.png"
+    When I click on a "code editor tab" element with selector "[role='tab']:has-text('代码编辑')"
+    Then I should see a "code editor" element with selector ".monaco-editor"
+    And I capture the current window as "prompt-code.png"
+    When I click on a "form editor tab" element with selector "[role='tab']:has-text('表单编辑')"
     And closing prompt preview should preserve the chat input
 
   @agent @mockOpenAI

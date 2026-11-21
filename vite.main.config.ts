@@ -51,21 +51,5 @@ export default defineConfig({
         ...typeormRuntimeExternals,
       ],
     },
-    rollupOptions: {
-      external: [
-        'sqlite-vec',
-        'registry-js',
-        'dugite',
-        'tiddlywiki',
-        'zx',
-        'esbuild',
-        '@modelcontextprotocol/sdk',
-        /^@modelcontextprotocol\/sdk\//,
-        'default-gateway',
-        'electron-unhandled',
-        'rotating-file-stream',
-        ...typeormRuntimeExternals,
-      ],
-    },
   },
 });

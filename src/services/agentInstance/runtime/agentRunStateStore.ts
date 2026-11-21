@@ -23,7 +23,7 @@ import {
 import type { DataSource, EntityManager, Repository } from 'typeorm';
 import { In, LessThan } from 'typeorm';
 
-import { appendLocalConversationEventsInTransaction } from '@/services/agentInstance/agentRepository';
+import { appendLocalConversationEventsInTransaction } from '@/services/agentInstance/conversationEventStore';
 import { AgentRunExecutionLeaseEntity, AgentRunStateEntity, ConversationEventEntity } from '@/services/database/schema/conversationEvent';
 
 const ACTIVE_STATES: readonly AgentRunState[] = ['accepted', 'queued', 'running'];

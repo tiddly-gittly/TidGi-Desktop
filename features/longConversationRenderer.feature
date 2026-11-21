@@ -22,11 +22,16 @@ Feature: Bounded long-conversation renderer
     Then the long-conversation renderer should keep its initial DOM bounded at 50 messages and 50 timeline markers
     And hovering the latest user and assistant timeline markers should show their previews
 
-    When I load one earlier resident message page
+    When I click on an "earlier messages" element with selector "[data-testid='conversation-viewport'] > button >> nth=0"
     Then the resident message window should move earlier while remaining bounded at 50 messages
 
     When I seek the conversation timeline to its first absolute entry
     Then the first long-conversation turn should be rendered in a bounded resident window
 
-    When I open the generated model-request prompt audit
+    When I click on a "prompt preview" element with selector "[data-testid='prompt-preview-button']"
+    And I switch to "promptPreview" window
+    Then I should see a "prompt inspector" element with selector "[data-testid='prompt-execution-inspector']"
+    When I click on a "message list tab" element with selector "[role='dialog'] [role='tab'] >> nth=1"
+    Then I should see a "model request audit" element with selector "[data-testid='prompt-preview-execution-audit']"
+    When I click on a "complete model request" element with selector "[data-testid='prompt-preview-model-request-detail']"
     Then the generated prompt should contain all repeated compaction summaries and the recent conversation tail

@@ -1,5 +1,5 @@
 /**
- * Agent streaming contract tests.
+ * Agent streaming tests.
  *
  * Metadata subscriptions intentionally never carry a transcript. Streaming
  * partials cross the bounded conversation-projection channel, while completed

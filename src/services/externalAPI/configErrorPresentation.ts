@@ -41,7 +41,7 @@ function asStringRecord(value: unknown): Record<string, string> {
   );
 }
 
-/** Convert all provider-error paths into one renderer presentation contract. */
+/** Present provider errors consistently in the renderer. */
 export function getConfigErrorPresentation(
   message: string,
   detail?: Partial<AIErrorDetail> | Record<string, unknown>,

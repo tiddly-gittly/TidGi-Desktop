@@ -26,7 +26,7 @@ Feature: Persistent agent goals
     And the goal should persist two rounds and explicit completion evidence
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
     Then I should see a "final goal reply" element with selector "[data-testid='message-bubble']:has-text('GOAL_FINAL_RESULT')"
-    When I reload the conversation window
+    When I reload the current window
     And I click on a "goal button" element with selector "button:has-text('目标')"
     Then I should see a "restored completion evidence" element with selector "[role='dialog'] p:has-text('GOAL_VERIFIED_TWO_ROUNDS')"
 
@@ -48,7 +48,7 @@ Feature: Persistent agent goals
     Then I should see a "script completion evidence" element with selector "[role='dialog'] p:has-text('MJS_GOAL_EVIDENCE')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
     Then I should see a "script final reply" element with selector "[data-testid='message-bubble']:has-text('MJS_GOAL_RESULT')"
-    When I reload the conversation window
+    When I reload the current window
     Then I should see a "restored script final reply" element with selector "[data-testid='message-bubble']:has-text('MJS_GOAL_RESULT')"
 
   @agent @mockOpenAI @agentGoal
@@ -65,7 +65,7 @@ Feature: Persistent agent goals
     When I click on a "pause goal" element with selector "[role='dialog'] button:has-text('暂停')"
     Then I should see a "paused goal" element with selector "[role='dialog'] .MuiChip-label:has-text('已暂停')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
-    And I reload the conversation window
+    And I reload the current window
     And I click on a "goal button" element with selector "button:has-text('目标')"
     Then I should see a "restored paused goal" element with selector "[role='dialog'] .MuiChip-label:has-text('已暂停')"
     When I click on a "resume goal" element with selector "[role='dialog'] button:has-text('继续')"
@@ -82,5 +82,5 @@ Feature: Persistent agent goals
     Then I should see a "scheduled user message" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_REQUEST')"
     And I should see a "scheduled final reply" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_RESULT')"
     And the scheduled message should have completed once
-    When I reload the conversation window
+    When I reload the current window
     Then I should see a "restored scheduled result" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_RESULT')"

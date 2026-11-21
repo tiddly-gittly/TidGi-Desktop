@@ -7,7 +7,7 @@ import { MemeLoopDesktopLLMProvider } from '../llmProvider';
 
 function request(overrides: Partial<PortableLlmRequest> = {}): PortableLlmRequest {
   return {
-    providerId: 'cpa',
+    providerId: 'test-provider',
     logicalModelId: 'logical-model',
     wireModelId: 'wire-model',
     apiMode: 'responses',
@@ -18,7 +18,7 @@ function request(overrides: Partial<PortableLlmRequest> = {}): PortableLlmReques
   };
 }
 
-describe('MemeLoopDesktopLLMProvider portable contract', () => {
+describe('MemeLoopDesktopLLMProvider', () => {
   it('forwards the exact request and yields typed stream parts without accumulated-string conversion', async () => {
     const parts: PortableLlmStreamPart[] = [
       { type: 'text-delta', id: 'text-1', text: 'hel' },
@@ -31,7 +31,7 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
       yield* parts;
     });
     const provider = new MemeLoopDesktopLLMProvider({
-      providerId: 'cpa',
+      providerId: 'test-provider',
       externalAPIService: { generatePortableLlm } as unknown as IExternalAPIService,
     });
     const exactRequest = request();
@@ -53,7 +53,7 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
   it('rejects a request for a different registered provider before transport', async () => {
     const generatePortableLlm = vi.fn();
     const provider = new MemeLoopDesktopLLMProvider({
-      providerId: 'cpa',
+      providerId: 'test-provider',
       externalAPIService: { generatePortableLlm } as unknown as IExternalAPIService,
     });
 
@@ -70,7 +70,7 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
     { code: 'RATE_LIMITED', createError: () => Object.assign(new Error('rate limited'), { status: 429 }) },
   ])('preserves localization parameters for $code', async ({ code, createError }) => {
     const provider = new MemeLoopDesktopLLMProvider({
-      providerId: 'cpa',
+      providerId: 'test-provider',
       externalAPIService: {
         generatePortableLlm: async function*() {
           yield { type: 'text-delta' as const, id: 'partial', text: '' };
@@ -89,27 +89,27 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
     expect(extractAgentRunError(received)).toEqual(expect.objectContaining({
       code,
       retryable: true,
-      providerId: 'cpa',
+      providerId: 'test-provider',
       modelId: 'logical-model',
-      localizedParams: { providerId: 'cpa', modelId: 'logical-model' },
+      localizedParams: { providerId: 'test-provider', modelId: 'logical-model' },
     }));
   });
 
   it.each([
     {
-      createError: () => new MissingAPIKeyError('cpa'),
+      createError: () => new MissingAPIKeyError('test-provider'),
       code: 'PROVIDER_AUTH_MISSING',
-      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'apiKey' },
+      settingTarget: { kind: 'provider', providerId: 'test-provider', field: 'apiKey' },
     },
     {
-      createError: () => new MissingBaseURLError('cpa'),
+      createError: () => new MissingBaseURLError('test-provider'),
       code: 'PROVIDER_CONFIGURATION_MISSING',
-      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'baseUrl' },
+      settingTarget: { kind: 'provider', providerId: 'test-provider', field: 'baseUrl' },
     },
     {
-      createError: () => new AuthenticationError('cpa'),
+      createError: () => new AuthenticationError('test-provider'),
       code: 'PROVIDER_AUTH_MISSING',
-      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'apiKey' },
+      settingTarget: { kind: 'provider', providerId: 'test-provider', field: 'apiKey' },
     },
   ])('turns provider configuration failures into actionable $code run errors', async ({ createError, code, settingTarget }) => {
     const generatePortableLlm = vi.fn(async function*() {
@@ -117,7 +117,7 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
       throw createError();
     });
     const provider = new MemeLoopDesktopLLMProvider({
-      providerId: 'cpa',
+      providerId: 'test-provider',
       externalAPIService: { generatePortableLlm } as unknown as IExternalAPIService,
     });
 
@@ -133,7 +133,7 @@ describe('MemeLoopDesktopLLMProvider portable contract', () => {
     expect(extractAgentRunError(received)).toEqual(expect.objectContaining({
       code,
       retryable: false,
-      providerId: 'cpa',
+      providerId: 'test-provider',
       modelId: 'logical-model',
       settingTarget,
     }));

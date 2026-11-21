@@ -8,11 +8,25 @@ afterEach(() => {
 });
 
 describe('DesktopPromptPreviewClient', () => {
-  it('uses retained request reads without a second prompt generation transport', () => {
-    expect(createDesktopPromptPreviewClient(bridge()).generatePreview).toBeUndefined();
+  it('does not start an IPC read when the view was already closed', async () => {
+    const host = bridge();
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      createDesktopPromptPreviewClient(host).getAuditPage({
+        mode: 'around',
+        entryIndex: 0,
+        sessionId: 'session-test',
+        expectedRevision: 'revision-test',
+        limit: 10,
+        maxBytes: 8 * 1_024,
+      }, { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(host.getPromptPreviewAuditPage).not.toHaveBeenCalled();
   });
 
-  it('fences a bounded page read when the view aborts', async () => {
+  it('rejects a pending page read when the view aborts', async () => {
     let resolvePage: ((page: PromptPreviewAuditPage) => void) | undefined;
     const pendingPage = new Promise<PromptPreviewAuditPage>(resolve => {
       resolvePage = resolve;

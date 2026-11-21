@@ -17,7 +17,7 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { macFolderAccessGate } from '@services/libs/macFolderAccess';
+import { macFolderAccess } from '@services/libs/macFolderAccess';
 import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -306,7 +306,7 @@ export class Workspace implements IWorkspaceService {
         try {
           const signal = AbortSignal.any([runController.signal, hydration.controller.signal]);
           try {
-            if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) !== undefined) {
+            if (macFolderAccess.folderNeedingAccess(workspace.wikiFolderLocation) !== undefined) {
               await this.ensureWikiFolderAccess(workspace, signal);
             }
           } catch (error) {
@@ -374,7 +374,7 @@ export class Workspace implements IWorkspaceService {
 
   public async ensureWikiFolderAccess(workspace: IWikiWorkspace, signal?: AbortSignal): Promise<void> {
     signal?.throwIfAborted();
-    if (macFolderAccessGate.folderNeedingAccess(workspace.wikiFolderLocation) === undefined) return;
+    if (macFolderAccess.folderNeedingAccess(workspace.wikiFolderLocation) === undefined) return;
     let wait = this.folderAccessWaits.get(workspace.id);
     if (wait?.folder !== workspace.wikiFolderLocation) {
       wait = { folder: workspace.wikiFolderLocation, callers: new Set() };
@@ -384,7 +384,7 @@ export class Workspace implements IWorkspaceService {
     wait.callers.add(caller);
     try {
       await this.updateMetaData(workspace.id, { isLoading: true, isWaitingForFolderAccess: true, didFailLoadErrorMessage: null });
-      await macFolderAccessGate.waitForAccess(workspace.wikiFolderLocation, signal);
+      await macFolderAccess.waitForAccess(workspace.wikiFolderLocation, signal);
     } catch (error) {
       if (signal?.aborted) throw error;
       const currentWorkspace = this.workspaces?.[workspace.id];

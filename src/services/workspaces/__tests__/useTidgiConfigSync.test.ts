@@ -1,4 +1,4 @@
-import { macFolderAccessGate } from '@services/libs/macFolderAccess';
+import { macFolderAccess } from '@services/libs/macFolderAccess';
 import { SupportedStorageServices } from '@services/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Workspace } from '../index';
@@ -371,8 +371,8 @@ describe('Workspace useTidgiConfigSync', () => {
       const service = createWorkspaceService(workspace);
       const controller = new AbortController();
       let finishFirst!: () => void;
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/protected');
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess')
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess').mockReturnValue('/protected');
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess')
         .mockImplementationOnce(async () => {
           await new Promise<void>(resolve => {
             finishFirst = resolve;
@@ -412,9 +412,9 @@ describe('Workspace useTidgiConfigSync', () => {
       const ready = createWorkspace({ id: 'ready', wikiFolderLocation: '/ready/wiki' });
       mockGetSetting.mockReturnValue({ blocked, ready });
       const service = new Workspace();
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess')
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess')
         .mockImplementation(folder => folder === blocked.wikiFolderLocation ? '/blocked' : undefined);
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockImplementation(async (_folder, signal) => {
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess').mockImplementation(async (_folder, signal) => {
         await new Promise<void>((_resolve, reject) => {
           signal?.addEventListener('abort', () => {
             reject(signal.reason instanceof Error ? signal.reason : new Error('cancelled'));
@@ -444,10 +444,10 @@ describe('Workspace useTidgiConfigSync', () => {
     it('does not let a superseded directory failure overwrite a new path or clear its wait', async () => {
       const workspace = createWorkspace({});
       const service = createWorkspaceService(workspace);
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/protected');
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess').mockReturnValue('/protected');
       let rejectOld!: (error: Error) => void;
       let resolveNew!: () => void;
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess')
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess')
         .mockImplementationOnce(async () => {
           await new Promise<void>((_resolve, reject) => {
             rejectOld = reject;
@@ -491,8 +491,8 @@ describe('Workspace useTidgiConfigSync', () => {
     it('does not request protected-folder access when portable config sync is disabled', async () => {
       const workspace = createWorkspace({ useTidgiConfigSync: false, hibernateWhenUnused: true, active: false });
       const service = createWorkspaceService(workspace);
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockResolvedValue(undefined);
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess').mockResolvedValue(undefined);
       try {
         await service.startPortableConfigHydration();
         expect(waitForAccess).not.toHaveBeenCalled();
@@ -514,8 +514,8 @@ describe('Workspace useTidgiConfigSync', () => {
       const workspace = createWorkspace({});
       const service = createWorkspaceService(workspace);
       const failure = Object.assign(new Error('Directory probe failed'), { code });
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockRejectedValue(failure);
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess').mockRejectedValue(failure);
       try {
         await expect(service.ensureWikiFolderAccess(workspace)).rejects.toMatchObject({ message: messageKey, cause: failure });
         await expect(service.getMetaData(workspace.id)).resolves.toMatchObject({
@@ -532,8 +532,8 @@ describe('Workspace useTidgiConfigSync', () => {
     it('clears a previous directory error when a retry succeeds', async () => {
       const workspace = createWorkspace({});
       const service = createWorkspaceService(workspace);
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess')
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess')
         .mockRejectedValueOnce(Object.assign(new Error('denied'), { code: 'EACCES' }))
         .mockResolvedValue(undefined);
       try {
@@ -555,8 +555,8 @@ describe('Workspace useTidgiConfigSync', () => {
       const pending = new Promise<void>((resolve) => {
         consent.resolve = resolve;
       });
-      const needsAccess = vi.spyOn(macFolderAccessGate, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
-      const waitForAccess = vi.spyOn(macFolderAccessGate, 'waitForAccess').mockReturnValue(pending);
+      const needsAccess = vi.spyOn(macFolderAccess, 'folderNeedingAccess').mockReturnValue('/Users/test/Desktop');
+      const waitForAccess = vi.spyOn(macFolderAccess, 'waitForAccess').mockReturnValue(pending);
       try {
         const service = createWorkspaceService(createWorkspace({ useTidgiConfigSync: true }));
         const hydration = service.startPortableConfigHydration();

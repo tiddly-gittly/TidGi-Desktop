@@ -421,8 +421,8 @@ describe('Preferences - Search Mode', () => {
       writable: true,
     });
 
-    // Keep the custom ExternalAPI section on its canonical service contract;
-    // rendering all sections must not rely on a rejected catalog request.
+    // The custom ExternalAPI section loads its catalog while the other
+    // sections read generated preference fields.
     Object.defineProperty(window.service.externalAPI, 'getAIConfig', {
       value: vi.fn().mockResolvedValue({}),
       writable: true,

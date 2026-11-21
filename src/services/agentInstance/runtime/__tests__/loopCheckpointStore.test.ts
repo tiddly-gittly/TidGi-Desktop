@@ -20,7 +20,7 @@ import {
   ConversationTurnTombstoneEntity,
 } from '@/services/database/schema/conversationEvent';
 import type { ConversationEvent, LoopCheckpointScope } from 'memeloop';
-import { appendLocalConversationEvent, insertConversationEventsIfAbsent, rebuildConversationEventProjection } from '../../agentRepository';
+import { appendLocalConversationEvent, insertConversationEventsIfAbsent, rebuildConversationEventProjection } from '../../conversationEventStore';
 import { DesktopLoopCheckpointStore } from '../loopCheckpointStore';
 
 let dataSource: DataSource | undefined;

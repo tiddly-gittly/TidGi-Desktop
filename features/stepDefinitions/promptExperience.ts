@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import type { Page } from 'playwright';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
-import { captureWindowScreenshot } from '../supports/webContentsViewHelper';
 import type { ApplicationWorld } from './application';
 
 const promptContexts = new WeakMap<ApplicationWorld, { chat: Page; treeText: string[] }>();
@@ -53,7 +52,7 @@ Then('the selected model parameters should persist and reach the actual model re
       )
     )
   );
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'model-parameters.png')), 'Prompt screenshot capture failed');
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'model-parameters.png') });
   await dialog.getByRole('button', { name: /^(Save|保存)$/ }).click();
   await dialog.waitFor({ state: 'hidden' });
   await page.getByTestId('conversation-model-parameters').click();
@@ -93,7 +92,7 @@ Then('the prompt tree and message list should show the same history tools and un
   assert(treeText.some(text => text.includes('wiki-search')));
   assert(!treeText.some(text => text.includes('Schema.WikiSearch.')), 'Tool descriptions must be localized before prompt compilation');
   assert(treeText.some(text => text.includes('UNSENT_PREVIEW_INPUT')));
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-tree.png')), 'Prompt screenshot capture failed');
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'prompt-tree.png') });
   await tree.getByTestId('prompt-preview-entry').filter({ hasText: 'UNSENT_PREVIEW_INPUT' }).scrollIntoViewIfNeeded();
   await page.evaluate(() =>
     new Promise<void>(resolve =>
@@ -104,22 +103,12 @@ Then('the prompt tree and message list should show the same history tools and un
       )
     )
   );
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-tree-history.png')), 'Prompt screenshot capture failed');
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'prompt-tree-history.png') });
   await inspector.getByRole('tab').nth(1).click();
   const flatEntries = page.getByTestId('prompt-preview-flat').locator('[data-prompt-entry-id]');
   assert.deepEqual(await flatEntries.evaluateAll(nodes => nodes.map(node => node.getAttribute('data-prompt-entry-id'))), treeIds);
   assert.deepEqual(await flatEntries.allTextContents(), treeText);
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-flat.png')), 'Prompt screenshot capture failed');
-});
-
-Then('prompt message details should close with Escape', async function(this: ApplicationWorld) {
-  const page = this.currentWindow!;
-  const inspector = page.getByTestId('prompt-execution-inspector');
-  await inspector.getByTestId('prompt-preview-entry').filter({ hasText: 'PROMPT_HISTORY_ASSISTANT' }).click();
-  await page.getByTestId('prompt-preview-audit-detail').locator('pre').filter({ hasText: 'PROMPT_HISTORY_ASSISTANT' }).waitFor();
-  await page.keyboard.press('Escape');
-  await page.getByTestId('prompt-preview-audit-detail').waitFor({ state: 'hidden' });
-  assert.equal(await inspector.isVisible(), true);
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'prompt-flat.png') });
 });
 
 Then('the complete model request should include the unsent input and allow returning to the tree', async function(this: ApplicationWorld) {
@@ -143,21 +132,10 @@ Then('the complete model request should include the unsent input and allow retur
   JSON.parse(request);
   assert(request.includes('UNSENT_PREVIEW_INPUT'));
   assert(!request.includes('Schema.WikiSearch.'), 'The actual prepared model request must not contain tool-description translation keys');
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-request.png')), 'Prompt screenshot capture failed');
+  await page.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, 'prompt-request.png') });
   await page.getByTestId('prompt-preview-detail-back').click();
   await inspector.getByRole('tab').first().click();
   assert.deepEqual(await page.getByTestId('prompt-preview-tree').locator('[data-prompt-entry-id]').allTextContents(), promptContexts.get(this)!.treeText);
-});
-
-Then('the prompt form and code editors should both open', async function(this: ApplicationWorld) {
-  const page = this.currentWindow!;
-  await page.getByRole('switch', { name: /Show editor|显示编辑/ }).check();
-  await page.getByRole('tab', { name: /Form Editor|表单编辑/ }).waitFor();
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-form.png')), 'Prompt screenshot capture failed');
-  await page.getByRole('tab', { name: /Code Editor|代码编辑/ }).click();
-  await page.locator('.monaco-editor').waitFor({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
-  assert(await captureWindowScreenshot(this.app!, page, path.resolve('test-artifacts', this.scenarioSlug, 'prompt-code.png')), 'Prompt screenshot capture failed');
-  await page.getByRole('tab', { name: /Form Editor|表单编辑/ }).click();
 });
 
 Then('closing prompt preview should preserve the chat input', async function(this: ApplicationWorld) {

@@ -29,8 +29,7 @@ function safeInterpolate(interpolator: unknown, template: string, variables: { [
       return interpolator.interpolate(template, variables);
     } catch (error: unknown) {
       // Interpolator implementations may reject malformed templates. The
-      // fallback below handles ordinary Error failures; preserve unknown
-      // thrown values so the backend boundary cannot hide contract drift.
+      // fallback below handles Error instances; other thrown values propagate.
       if (!(error instanceof Error)) throw error;
     }
   }

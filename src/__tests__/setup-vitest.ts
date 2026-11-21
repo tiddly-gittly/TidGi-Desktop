@@ -4,7 +4,7 @@ import { configure } from '@testing-library/dom';
 import './__mocks__/window';
 
 // DOM-specific setup – only runs in jsdom environment (when document is available).
-// In node environment (e.g. features/**/*.test.ts with environmentMatchGlobs), these are skipped.
+// Files declaring @vitest-environment node skip this DOM setup.
 if (typeof document !== 'undefined') {
   configure({ computedStyleSupportsPseudoElements: false });
 

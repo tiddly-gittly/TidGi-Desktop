@@ -1,8 +1,5 @@
+import { MODEL_DISCOVERY_MAX_BYTES, MODEL_DISCOVERY_MAX_PAGES, MODEL_DISCOVERY_TIMEOUT_MS } from '@/constants/externalAPI';
 import { type ModelCatalogProvider, normalizeProviderAccountConfig, type ProviderAccountConfig, type ProviderModelRoute } from 'memeloop';
-
-const DEFAULT_TIMEOUT_MS = 10_000;
-const DEFAULT_MAX_BYTES = 2 * 1024 * 1024;
-const MAX_PAGES = 20;
 
 interface DiscoveryOptions {
   fetch?: typeof globalThis.fetch;
@@ -29,21 +26,12 @@ function accountBaseUrl(account: ProviderAccountConfig): string {
   }
 }
 
-function assertSafeUrl(value: string): URL {
-  const url = new URL(value);
-  const loopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]';
-  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) {
-    throw new Error('Official model discovery requires HTTPS except for loopback providers');
-  }
-  return url;
-}
-
 function endpoint(
   account: ProviderAccountConfig,
   apiKey: string,
   pageToken?: string,
 ): { headers: Headers; url: URL } {
-  const root = assertSafeUrl(accountBaseUrl(account).replace(/\/+$/, ''));
+  const root = new URL(accountBaseUrl(account).replace(/\/+$/, ''));
   const headers = new Headers({ accept: 'application/json' });
   if (account.providerType === 'ollama') {
     return { headers, url: new URL(`${root.toString().replace(/\/$/, '')}/api/tags`) };
@@ -135,11 +123,11 @@ export async function discoverOfficialModelIds(
   options: DiscoveryOptions = {},
 ): Promise<string[]> {
   const fetchImplementation = options.fetch ?? globalThis.fetch;
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+  const maxBytes = options.maxBytes ?? MODEL_DISCOVERY_MAX_BYTES;
   const timeoutController = new AbortController();
   const timeout = setTimeout(() => {
     timeoutController.abort(new Error('Official model discovery timed out'));
-  }, options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  }, options.timeoutMs ?? MODEL_DISCOVERY_TIMEOUT_MS);
   const signal = options.signal
     ? AbortSignal.any([options.signal, timeoutController.signal])
     : timeoutController.signal;
@@ -147,7 +135,7 @@ export async function discoverOfficialModelIds(
     const ids: string[] = [];
     let pageToken: string | undefined;
     let totalBytes = 0;
-    for (let page = 0; page < MAX_PAGES; page += 1) {
+    for (let page = 0; page < MODEL_DISCOVERY_MAX_PAGES; page += 1) {
       const request = endpoint(account, apiKey, pageToken);
       const response = await fetchImplementation(request.url.toString(), {
         headers: request.headers,
@@ -163,7 +151,7 @@ export async function discoverOfficialModelIds(
       if (!result.nextPageToken) return [...new Set(ids)].sort();
       pageToken = result.nextPageToken;
     }
-    throw new Error(`Official model discovery exceeded ${MAX_PAGES} pages`);
+    throw new Error(`Official model discovery exceeded ${MODEL_DISCOVERY_MAX_PAGES} pages`);
   } finally {
     clearTimeout(timeout);
   }

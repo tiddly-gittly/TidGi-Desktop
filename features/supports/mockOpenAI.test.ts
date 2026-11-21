@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { collectPortableLlmTextResponse, type PortableLlmRequest, type ProviderAccountConfig } from 'memeloop';
 import { createLLMProviderFromAccountRoute } from 'memeloop/llm-providers';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -102,7 +103,11 @@ describe('Mock OpenAI Server', () => {
   });
 
   it('should return valid chat completion with tool result response (second API call)', async () => {
-    // This simulates the second API call in a conversation
+    await fetch(`${server.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'test-model', messages: [{ role: 'user', content: 'Search wiki' }] }),
+    });
     const response = await fetch(`${server.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
@@ -141,9 +146,13 @@ describe('Mock OpenAI Server', () => {
 
     const data = await response.json();
     expect(data.choices[0].message.role).toBe('assistant');
-    // Each test is reset, so this is also the first call returning wiki-search.
-    expect(data.choices[0].message.tool_calls[0].function.name).toBe('wiki-search');
-    expect(data.choices[0].finish_reason).toBe('tool_calls');
+    expect(data.choices[0].message.content).toContain('TiddlyWiki 中，Index 条目提供了编辑卡片');
+    expect(data.choices[0].message.tool_calls).toBeUndefined();
+    expect(data.choices[0].finish_reason).toBe('stop');
+    expect(server.getLastRequest()?.messages.at(-1)).toEqual(expect.objectContaining({
+      role: 'tool',
+      content: expect.stringContaining('Workspace with name or ID'),
+    }));
     expect(data.model).toBe('test-model'); // Verify it returns the requested model
   });
 
@@ -321,5 +330,6 @@ describe('Mock OpenAI Server', () => {
 
     const response = await provider.chat(request);
     expect(await collectPortableLlmTextResponse(response)).toBe('chunkAchunkBchunkC');
+    expect(server.getLastRequest()?.model).toBe('test-model');
   });
 });

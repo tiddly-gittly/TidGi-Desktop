@@ -30,7 +30,7 @@ export function extractErrorDetails(error: unknown, providerId: string): {
   }
 
   // Never relay an arbitrary SDK/upstream body to renderers. Agent runs turn
-  // this stable code into Core's localized error + diagnosticId contract.
+  // this code into MemeLoop's localized error with a diagnosticId.
   return {
     name: 'AIProviderError',
     code: 'UNKNOWN_ERROR',

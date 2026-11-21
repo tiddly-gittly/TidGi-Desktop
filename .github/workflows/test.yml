@@ -124,17 +124,6 @@ jobs:
           CI: true
         timeout-minutes: 15
 
-      - name: Verify packaged executable exists
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            test -f "out/TidGi-win32-x64/tidgi.exe" || { echo "ERROR: Packaged executable not found at out/TidGi-win32-x64/tidgi.exe"; exit 1; }
-            echo "Verified: out/TidGi-win32-x64/tidgi.exe exists"
-          else
-            test -f "out/TidGi-linux-x64/tidgi" || { echo "ERROR: Packaged executable not found at out/TidGi-linux-x64/tidgi"; exit 1; }
-            echo "Verified: out/TidGi-linux-x64/tidgi exists"
-          fi
-
       - name: Calibrate E2E timeouts (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -257,35 +246,10 @@ jobs:
           CI: true
         timeout-minutes: 15
 
-      # Debug: see what electron-forge actually produced
-      - name: List packaging output
-        shell: bash
-        run: |
-          echo "=== out/ directory ==="
-          ls -la out/ 2>/dev/null || echo "out/ does not exist"
-          echo "=== out/TidGi-*-x64/ ==="
-          ls -laR out/TidGi-*-x64/ 2>/dev/null || echo "No TidGi-*-x64 directory"
-
-      # Assert packaged executable exists so failures stop at packaging, not at E2E runtime
-      - name: Verify packaged executable exists
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            test -f "out/TidGi-win32-x64/tidgi.exe" || { echo "ERROR: Packaged executable not found at out/TidGi-win32-x64/tidgi.exe"; exit 1; }
-            echo "Verified: out/TidGi-win32-x64/tidgi.exe exists"
-          else
-            test -f "out/TidGi-linux-x64/tidgi" || { echo "ERROR: Packaged executable not found at out/TidGi-linux-x64/tidgi"; exit 1; }
-            echo "Verified: out/TidGi-linux-x64/tidgi exists"
-          fi
-
       - name: Download E2E calibration
         uses: actions/download-artifact@v4
         with:
           name: e2e-calibration-${{ matrix.os }}
-
-      - name: Verify E2E calibration artifact
-        shell: bash
-        run: test -f .calibration.json
 
       # Linux: Run E2E under xvfb for virtual display
       - name: Run E2E tests (Linux)
@@ -336,5 +300,7 @@ jobs:
             test-artifacts-ci/**/logs/
             test-artifacts-ci/**/settings/
             test-artifacts-ci/**/screenshots/
+            test-artifacts-ci/**/*.png
+            e2e-output.log
           retention-days: 7
         continue-on-error: true

@@ -214,7 +214,7 @@ describe('AgentInstanceService durable execution IPC', () => {
     mutable.agentDefinitionService = {
       getAgentDef: vi.fn().mockResolvedValue({
         id: 'definition-1',
-        modelConfig: { providerId: 'cpa', modelId: 'model-1' },
+        modelConfig: { providerId: 'test-provider', modelId: 'model-1' },
       }),
     };
     mutable.getAgentMetadata = vi.fn().mockResolvedValue({

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';

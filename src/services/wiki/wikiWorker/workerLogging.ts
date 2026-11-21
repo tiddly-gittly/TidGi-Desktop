@@ -26,12 +26,8 @@ export async function logForBestEffort(
 ): Promise<void> {
   try {
     await sink.logFor(context, level, message, meta);
-  } catch (error: unknown) {
-    // stdout/stderr interception still returns the original message to the
-    // underlying stream, which the main process captures independently. Do
-    // Do not write a fallback console message here: it would re-enter the same
-    // interceptor and recursively attempt the failed logging RPC. The explicit
-    // discard keeps this boundary stable while the worker is shutting down.
-    void error;
+  } catch {
+    // The main process also captures the original stdout/stderr. Logging again
+    // here would re-enter the same interceptor and retry the failed RPC recursively.
   }
 }

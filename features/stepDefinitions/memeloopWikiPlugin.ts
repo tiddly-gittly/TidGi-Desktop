@@ -7,7 +7,6 @@ const FULL_MODE = 'full';
 const SIDEBAR_MODE = 'sidebar';
 const SOURCE_TITLE = 'MemeLoop E2E Attachment';
 const SOURCE_MARKER = 'MEMELOOP_REAL_TIDDLER_CONTENT_8f4d2b';
-const DRAG_HARNESS_TITLE = 'MemeLoop E2E Drag Source';
 const ROOT_TEST_ID_PREFIX = 'memeloop-wiki-agent-';
 
 type WikiEntryMode = typeof FULL_MODE | typeof SIDEBAR_MODE;
@@ -53,58 +52,6 @@ async function retryWikiAssertion<T>(
 function rootSelector(mode: WikiEntryMode): string {
   return `[data-testid="${ROOT_TEST_ID_PREFIX}${mode}"]`;
 }
-
-When('I open the packaged MemeLoop wiki main view and sidebar with a real draggable tiddler', async function(this: ApplicationWorld) {
-  assertWikiApplication(this);
-  const result = await executeTiddlyWikiCode<{ error?: string; success?: boolean; diagnostics?: string[] }>(
-    this.app,
-    `(function() {
-      const sourceTitle = ${JSON.stringify(SOURCE_TITLE)};
-      const harnessTitle = ${JSON.stringify(DRAG_HARNESS_TITLE)};
-      $tw.wiki.addTiddler(new $tw.Tiddler({
-        title: sourceTitle,
-        text: ${JSON.stringify(`This is a real persisted TiddlyWiki tiddler. ${SOURCE_MARKER}`)},
-        type: 'text/vnd.tiddlywiki',
-        tags: ['MemeLoopE2E']
-      }));
-      $tw.wiki.addTiddler(new $tw.Tiddler({
-        title: harnessTitle,
-        text: '<$draggable tiddler=' + JSON.stringify(sourceTitle) + ' class="memeloop-e2e-drag-source">Drag real tiddler: ' + sourceTitle + '</$draggable>',
-        type: 'text/vnd.tiddlywiki'
-      }));
-      const diagnostics = [];
-      const bestEffortMutation = (label, mutation) => {
-        try { mutation(); } catch (error) {
-          diagnostics.push(label + ': ' + String(error).slice(0, 160));
-        }
-      };
-      for (const title of [harnessTitle, 'MemeLoop Agent']) {
-        bestEffortMutation('removeFromStory:' + title, () => $tw.wiki.removeFromStory(title));
-        $tw.wiki.addToStory(title, undefined, '$:/StoryList', { openLinkFromOutsideRiver: 'top' });
-      }
-      if ($tw.pageWidgetNode?.refresh) {
-        const changes = Object.create(null);
-        changes['$:/StoryList'] = { modified: true, normal: true };
-        changes[sourceTitle] = { modified: true, normal: true };
-        changes[harnessTitle] = { modified: true, normal: true };
-        $tw.pageWidgetNode.refresh(changes);
-      }
-      $tw.hooks?.invokeHook?.('th-page-refreshed');
-      const sidebarButton = Array.from(document.querySelectorAll('.tc-sidebar-lists .tc-tab-buttons button, .tc-sidebar-lists .tc-tab-buttons a'))
-        .find(element => (element.textContent || '').includes('MemeLoop'));
-      if (!(sidebarButton instanceof HTMLElement)) {
-        return { error: 'Packaged MemeLoop sidebar tab button was not rendered' };
-      }
-      sidebarButton.click();
-      return { success: true, ...(diagnostics.length > 0 ? { diagnostics } : {}) };
-    })()`,
-    this.currentWindow,
-  );
-  if (result?.diagnostics?.length) {
-    console.warn(`Best-effort MemeLoop wiki mutations reported: ${result.diagnostics.join('; ').slice(0, 512)}`);
-  }
-  if (!result?.success) throw new Error(result?.error ?? 'Failed to prepare the packaged MemeLoop wiki plugin');
-});
 
 Then('both MemeLoop wiki entries should use the shared chat UI and the sidebar should be narrow', async function(this: ApplicationWorld) {
   const result = await retryWikiAssertion<{
@@ -162,7 +109,7 @@ When('I drag the real wiki tiddler into the {string} MemeLoop wiki entry', async
       if (!(source instanceof HTMLElement) || source.offsetParent === null) return { error: 'Real TiddlyWiki draggable source is not visible' };
       if (!(target instanceof HTMLElement) || target.offsetParent === null) return { error: 'MemeLoop drop target is not visible' };
       const dataTransfer = new DataTransfer();
-      const dragStarted = source.dispatchEvent(new DragEvent('dragstart', {
+      source.dispatchEvent(new DragEvent('dragstart', {
         bubbles: true,
         cancelable: true,
         dataTransfer
@@ -177,45 +124,6 @@ When('I drag the real wiki tiddler into the {string} MemeLoop wiki entry', async
       target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
       target.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
       source.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer }));
-      return dragStarted || !dragStarted;
-    })()`,
-  );
-});
-
-Then('the {string} MemeLoop wiki entry should show the dropped tiddler attachment', async function(this: ApplicationWorld, rawMode: string) {
-  const mode = parseWikiEntryMode(rawMode);
-  await retryWikiAssertion<boolean>(
-    this,
-    `${mode} MemeLoop attachment chip`,
-    `(function() {
-      const root = document.querySelector(${JSON.stringify(rootSelector(mode))});
-      const chip = root?.querySelector('[data-testid="wiki-tiddler-chip-0"]');
-      if (!(chip instanceof HTMLElement)) return { error: 'Dropped tiddler chip is not rendered' };
-      if (!(chip.textContent || '').includes(${JSON.stringify(SOURCE_TITLE)})) return { error: 'Attachment chip has the wrong tiddler title' };
-      return true;
-    })()`,
-  );
-});
-
-When('I send {string} from the {string} MemeLoop wiki entry', async function(this: ApplicationWorld, text: string, rawMode: string) {
-  const mode = parseWikiEntryMode(rawMode);
-  await retryWikiAssertion<boolean>(
-    this,
-    `send a message from the ${mode} MemeLoop entry`,
-    `(async function() {
-      const root = document.querySelector(${JSON.stringify(rootSelector(mode))});
-      const input = root?.querySelector('[data-testid="agent-message-input"]');
-      if (!(input instanceof HTMLTextAreaElement)) return { error: 'MemeLoop composer textarea is unavailable' };
-      const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
-      if (!valueSetter) return { error: 'Native textarea value setter is unavailable' };
-      input.focus();
-      valueSetter.call(input, ${JSON.stringify(text)});
-      input.dispatchEvent(new InputEvent('input', { bubbles: true, data: ${JSON.stringify(text)}, inputType: 'insertText' }));
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const button = root?.querySelector('[data-testid="agent-send-button"]');
-      if (!(button instanceof HTMLButtonElement)) return { error: 'MemeLoop send button is unavailable' };
-      if (button.disabled) return { error: 'MemeLoop send button is disabled after entering text' };
-      button.click();
       return true;
     })()`,
   );

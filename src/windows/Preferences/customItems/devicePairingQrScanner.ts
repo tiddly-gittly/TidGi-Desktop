@@ -145,7 +145,7 @@ function stopTracks(stream: MediaStream | undefined): void {
   for (const track of stream?.getTracks() ?? []) track.stop();
 }
 
-/** Owns one serial camera scan loop and fences every delayed browser result. */
+/** Serial camera scan loop that ignores results after the scan has stopped. */
 export class DevicePairingQrCameraScanner {
   private active = false;
   private disposed = false;

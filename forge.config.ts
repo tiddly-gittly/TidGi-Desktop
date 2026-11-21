@@ -13,28 +13,6 @@ const { description } = packageJson;
 // Get list of supported language codes from centralized config
 const supportedLanguageCodes = Object.keys(supportedLanguages);
 
-type MacSigningPackagerConfig = Pick<NonNullable<ForgeConfig['packagerConfig']>, 'osxSign'>;
-
-/**
- * Give local macOS test packages a code identity so TCC can attribute access
- * performed by Electron UtilityProcess helpers. This is deliberately opt-in:
- * release builds must continue to use an explicit distribution-signing setup.
- */
-export function getLocalAdHocMacSigningPackagerConfig(environment: NodeJS.ProcessEnv): MacSigningPackagerConfig {
-  if (environment.TIDGI_LOCAL_ADHOC_SIGN !== '1') return {};
-  return {
-    osxSign: {
-      identity: '-',
-      identityValidation: false,
-      preAutoEntitlements: false,
-      optionsForFile: () => ({
-        hardenedRuntime: false,
-        timestamp: 'none',
-      }),
-    },
-  };
-}
-
 const config: ForgeConfig = {
   packagerConfig: {
     name: 'TidGi',
@@ -82,13 +60,6 @@ const config: ForgeConfig = {
       NSCameraUsageDescription: 'TidGi uses the camera only when you scan a signed MemeLoop device pairing QR code.',
     },
     appBundleId: 'com.tidgi',
-    // Local/air-gapped verification can reuse an Electron archive that was
-    // already checksum-verified by @electron/get. CI and release builds leave
-    // this unset and retain the normal authenticated download path.
-    ...(process.env.TIDGI_ELECTRON_ZIP_DIR
-      ? { electronZipDir: path.resolve(process.env.TIDGI_ELECTRON_ZIP_DIR) }
-      : {}),
-    ...getLocalAdHocMacSigningPackagerConfig(process.env),
   },
   hooks: {
     packageAfterPrune: afterPack,

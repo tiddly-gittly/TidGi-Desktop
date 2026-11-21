@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { runInNewContext } from 'node:vm';
 import type { IFileInfo, Wiki } from 'tiddlywiki';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemWatcher } from '../FileSystemWatcher';
@@ -71,6 +72,25 @@ beforeEach(() => {
 afterEach(() => {
   vi.clearAllTimers();
   vi.useRealTimers();
+});
+
+describe('FileSystemWatcher write metadata across VM realms', () => {
+  it.each(['ENOENT', 'EACCES'])('handles a cross-realm %s without losing save completion', (code) => {
+    const error: unknown = runInNewContext('Object.assign(new Error("filesystem failure"), { code })', { code });
+    expect(error).not.toBeInstanceOf(Error);
+    fileSystem.statSync.mockImplementationOnce(() => {
+      throw error;
+    });
+    const watcher = createWatcher(true);
+    watcher.markSaving('Index');
+
+    expect(() => {
+      watcher.markSaveComplete('Index', '/test/wiki/tiddlers/Index.tid.meta');
+    }).not.toThrow();
+
+    if (code === 'ENOENT') expect(logger.alert).not.toHaveBeenCalled();
+    else expect(logger.alert).toHaveBeenCalledExactlyOnceWith('FileSystemWatcher failed to record write metadata:', error);
+  });
 });
 
 describe('FileSystemWatcher symlink policy', () => {

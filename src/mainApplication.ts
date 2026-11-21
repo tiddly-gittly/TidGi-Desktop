@@ -19,7 +19,7 @@ import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
 import { stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
-import { createApplicationActivationGate } from './applicationActivationGate';
+import { createApplicationActivationHandler } from './applicationActivation';
 import { installApplicationQuitLifecycle } from './applicationQuitLifecycle';
 
 // Initialize loggers for modules that can't directly import logger (to avoid electron in worker bundles)
@@ -174,9 +174,10 @@ installApplicationQuitLifecycle({
   logger,
 });
 
-const applicationActivationGate = createApplicationActivationGate({
+const applicationActivation = createApplicationActivationHandler({
   logger,
   openMainWindow: async () => {
+    if (applicationStartupAbortController.signal.aborted) return;
     await windowService.open(WindowNames.main);
   },
 });
@@ -184,10 +185,10 @@ const applicationActivationGate = createApplicationActivationGate({
 app.on('second-instance', () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
-  void applicationActivationGate.requestMainWindow();
+  void applicationActivation.requestMainWindow();
 });
 app.on('activate', () => {
-  void applicationActivationGate.requestMainWindow();
+  void applicationActivation.requestMainWindow();
 });
 
 const commonInit = async (): Promise<void> => {
@@ -354,7 +355,7 @@ app.on('ready', async () => {
   });
   try {
     await commonInit();
-    applicationActivationGate.markInitializationReady();
+    applicationActivation.markInitializationReady();
     assertApplicationStartupActive();
     // buildLanguageMenu needs menuService which is initialized in commonInit
     await buildLanguageMenu();
@@ -363,7 +364,7 @@ app.on('ready', async () => {
     }
     await updaterService.checkForUpdates();
   } catch (error) {
-    applicationActivationGate.markInitializationFailed();
+    applicationActivation.markInitializationFailed();
     if (error instanceof ApplicationStartupCancelledError || applicationStartupAbortController.signal.aborted) {
       logger.info('Application startup stopped because quit was requested');
       return;

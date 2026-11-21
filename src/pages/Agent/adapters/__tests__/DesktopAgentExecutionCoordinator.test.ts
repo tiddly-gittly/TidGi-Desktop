@@ -145,10 +145,10 @@ describe('DesktopAgentExecutionCoordinator', () => {
       code: 'PROVIDER_AUTH_MISSING',
       messageKey: AGENT_RUN_ERROR_MESSAGE_KEYS.PROVIDER_AUTH_MISSING,
       retryable: false,
-      providerId: 'cpa',
+      providerId: 'test-provider',
       modelId: 'model-1',
-      localizedParams: { providerId: 'cpa', modelId: 'model-1', settingField: 'apiKey' },
-      settingTarget: { kind: 'provider', providerId: 'cpa', field: 'apiKey' },
+      localizedParams: { providerId: 'test-provider', modelId: 'model-1', settingField: 'apiKey' },
+      settingTarget: { kind: 'provider', providerId: 'test-provider', field: 'apiKey' },
     });
     services.agentInstance.getAgentRunStatus = vi.fn().mockResolvedValue({
       ...runStatus('failed'),

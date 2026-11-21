@@ -1,22 +1,9 @@
-import { Given, Then } from '@cucumber/cucumber';
+import { Then } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
-
-Given('I queue a two-step wiki search with a delayed final summary', function(this: ApplicationWorld) {
-  assert(this.mockOpenAIServer);
-  this.mockOpenAIServer.addRules([
-    {
-      response: 'PROCESS_GOAL: I will inspect two wiki entries.',
-      stream: false,
-      toolCall: { name: 'wiki-search', arguments: { workspaceName: 'wiki', filter: '[title[Index]]' } },
-    },
-    { stream: false, toolCall: { name: 'wiki-search', arguments: { workspaceName: 'wiki', filter: '[title[GettingStarted]]' } } },
-    { response: 'FINAL_TOOL_SUMMARY: Both searches are complete. This conclusion stays visible.', stream: false, delayMs: 6000 },
-  ]);
-});
 
 Then('live tool calls should be grouped while process commentary stays visible', async function(this: ApplicationWorld) {
   const page = this.currentWindow;

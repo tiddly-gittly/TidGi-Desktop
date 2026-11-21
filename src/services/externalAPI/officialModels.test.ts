@@ -72,14 +72,18 @@ describe('official model discovery', () => {
     }
   });
 
-  it('rejects API credentials sent over non-loopback HTTP', async () => {
+  it('discovers models from the configured HTTP provider endpoint', async () => {
     const account: ProviderAccountConfig = {
       providerId: 'custom',
       providerType: 'openai-compatible',
-      baseUrl: 'http://models.example.com/v1',
+      baseUrl: 'http://models.lan:11434/v1',
       models: [],
     };
-    await expect(discoverOfficialModelIds(account, 'secret')).rejects.toThrow('HTTPS');
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => jsonResponse({ data: [{ id: 'local-model' }] }));
+    await expect(discoverOfficialModelIds(account, 'secret', { fetch })).resolves.toEqual(['local-model']);
+    const [url, request] = fetch.mock.calls[0];
+    expect(url).toBe('http://models.lan:11434/v1/models');
+    expect(new Headers(request?.headers).get('authorization')).toBe('Bearer secret');
   });
 
   it('stops reading a chunked response after the aggregate size limit', async () => {

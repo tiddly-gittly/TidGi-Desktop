@@ -313,14 +313,11 @@ export async function clickElement(app: ElectronApplication, selector: string, p
  * Type text in element in browser view
  */
 export async function typeText(app: ElectronApplication, selector: string, text: string, page?: Page): Promise<void> {
-  const escapedSelector = selector.replace(/'/g, "\\'");
-  const escapedText = text.replace(/'/g, "\\'").replace(/\n/g, '\\n');
-
   const script = `
     (function() {
       try {
-        const selector = '${escapedSelector}';
-        const text = '${escapedText}';
+        const selector = ${JSON.stringify(selector)};
+        const text = ${JSON.stringify(text)};
         const elem = document.querySelector(selector);
         
         if (!elem) {
@@ -329,7 +326,10 @@ export async function typeText(app: ElectronApplication, selector: string, text:
         
         elem.focus();
         if (elem.tagName === 'TEXTAREA' || elem.tagName === 'INPUT') {
-          elem.value = text;
+          // React tracks the instance setter; use the native setter so the
+          // following input event reaches controlled inputs as well as wiki fields.
+          const prototype = elem.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+          Object.getOwnPropertyDescriptor(prototype, 'value').set.call(elem, text);
         } else {
           elem.textContent = text;
         }
@@ -434,33 +434,6 @@ export async function captureScreenshot(app: ElectronApplication, screenshotPath
       return Array.from(image.toPNG());
     },
     webContentsId,
-  );
-  if (!result) {
-    return false;
-  }
-  await fs.writeFile(screenshotPath, Buffer.from(result));
-  return true;
-}
-
-/**
- * Capture screenshot of a Playwright Page's underlying Electron window.
- * Uses Electron's native webContents.capturePage() which works even when
- * the window is hidden (unlike Playwright's page.screenshot()).
- * Awaits the file write; the calling step owns the deadline.
- */
-export async function captureWindowScreenshot(app: ElectronApplication, page: Page, screenshotPath: string): Promise<boolean> {
-  const result = await app.evaluate(
-    async ({ BrowserWindow }, pageUrl: string) => {
-      for (const win of BrowserWindow.getAllWindows()) {
-        if (win.isDestroyed()) continue;
-        if (win.webContents.getURL() === pageUrl) {
-          const image = await win.webContents.capturePage();
-          return Array.from(image.toPNG());
-        }
-      }
-      return null;
-    },
-    page.url(),
   );
   if (!result) {
     return false;

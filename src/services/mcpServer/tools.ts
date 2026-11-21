@@ -1,3 +1,14 @@
+import {
+  DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT,
+  DEFAULT_SNAPSHOT_MAX_BYTES,
+  MAX_SNAPSHOT_SUMMARY_CHILDREN,
+  RENDERER_COMMAND_TIMEOUT_MS,
+  SNAPSHOT_CACHE_TTL_MS,
+  SNAPSHOT_MAX_CANDIDATE_ELEMENTS,
+  SNAPSHOT_MAX_INTERACTIVE_ELEMENTS,
+  SNAPSHOT_MAX_TEXT_LENGTH,
+  UI_EVALUATE_TIMEOUT_MS,
+} from '@/constants/mcp';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
@@ -22,15 +33,6 @@ const TARGET_WINDOW_NAMES = new Map<WindowNames, string>(
 );
 
 const APP_WINDOW_NAMES = Object.values(WindowNames);
-const DEFAULT_SNAPSHOT_MAX_BYTES = 48 * 1024;
-const DEFAULT_SNAPSHOT_ARRAY_SLICE_COUNT = 50;
-const MAX_SNAPSHOT_SUMMARY_CHILDREN = 25;
-const RENDERER_COMMAND_TIMEOUT_MS = 10_000;
-const UI_EVALUATE_TIMEOUT_MS = 15_000;
-const SNAPSHOT_MAX_TEXT_LENGTH = 16 * 1024;
-const SNAPSHOT_MAX_INTERACTIVE_ELEMENTS = 200;
-const SNAPSHOT_MAX_CANDIDATE_ELEMENTS = SNAPSHOT_MAX_INTERACTIVE_ELEMENTS * 5;
-const SNAPSHOT_CACHE_TTL_MS = 15_000;
 
 type SnapshotPathSegment = string | number;
 
@@ -610,7 +612,7 @@ const SNAPSHOT_RENDERER_SCRIPT = String.raw`(() => {
     });
   }
 
-  // Keep the top-level nodes contract used by the former CDP result. The
+  // Keep the top-level nodes field used by the former CDP result. The
   // compact nodes are intentionally not a complete AX tree, but existing MCP
   // callers can continue to drill into nodes while newer callers can use
   // the clearer text/interactive fields below.

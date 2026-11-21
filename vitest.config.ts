@@ -20,19 +20,12 @@ export default defineConfig({
     // Test environment
     environment: 'jsdom',
 
-    // features/ tests (HTTP/Node.js integration) run in node environment
-    // @ts-expect-error — environmentMatchGlobs is supported in vitest 4
-    environmentMatchGlobs: [
-      ['features/**', 'node'],
-      ['scripts/**', 'node'],
-    ],
-
     // Setup files
     setupFiles: ['./src/__tests__/setup-vitest.ts'],
 
     server: {
       deps: {
-        inline: [/@memeloop\/react-ui/, /node_modules\/@memeloop\/react-ui/],
+        inline: [/@memeloop\/react-ui/],
       },
     },
 
@@ -78,7 +71,7 @@ export default defineConfig({
 
   resolve: {
     // Sibling-linked MemeLoop packages must share Desktop's React dispatcher,
-    // matching the packaged renderer contract in vite.renderer.aliases.ts.
+    // matching the packaged renderer aliases in vite.renderer.aliases.ts.
     dedupe: ['react', 'react-dom'],
     preserveSymlinks: true,
     alias: [

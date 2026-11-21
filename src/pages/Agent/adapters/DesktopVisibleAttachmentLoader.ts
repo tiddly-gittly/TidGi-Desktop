@@ -6,25 +6,17 @@ import {
   messageHydrationIdentity,
 } from '@memeloop/react-ui/chat';
 
-import {
-  assertDesktopMessageHydrationIdentity,
-  assertDesktopMessageIdentity,
-  canonicalMessageHydrationIdentity,
-  createDesktopMessageDetailViewModel,
-  type DesktopMessageDetailViewModel,
-} from './DesktopMessageDetailViewModel';
+import { assertDesktopMessageHydrationIdentity, assertDesktopMessageIdentity, canonicalMessageHydrationIdentity, loadDesktopCanonicalMessage } from './DesktopMessageContent';
 
 /**
  * Renderer-side bounded loader. Main process re-authorizes every range against
  * the exact conversation, so no bare content-hash read crosses IPC.
  */
-export function createDesktopVisibleAttachmentLoader(
-  viewModel: DesktopMessageDetailViewModel = createDesktopMessageDetailViewModel(),
-): MemeLoopVisibleAttachmentLoader {
+export function createDesktopVisibleAttachmentLoader(): MemeLoopVisibleAttachmentLoader {
   return async request => {
     request.signal.throwIfAborted();
     assertDesktopMessageHydrationIdentity(messageHydrationIdentity(request.message), request.identity);
-    const canonical = await viewModel.loadCanonicalMessage(
+    const canonical = await loadDesktopCanonicalMessage(
       request.message,
       request.signal,
       MEMELOOP_VISIBLE_ATTACHMENT_CHUNK_BYTES,
@@ -78,7 +70,7 @@ async function assertAttachmentContentHash(data: Uint8Array, expected: string, s
   if (!/^sha256:[0-9a-f]{64}$/u.test(expected)) throw new Error('invalid visible attachment content hash');
   // Web Crypto is available in the sandboxed renderer and keeps hashing
   // browser-portable. The input is already bounded by the 16 MiB hydration
-  // contract, so the non-streaming digest cannot grow without bound.
+  // limit, so the complete digest input fits in memory.
   const subtle = globalThis.crypto?.subtle;
   if (!subtle) throw new Error('visible attachment SHA-256 is unavailable');
   // DOM BufferSource deliberately excludes SharedArrayBuffer. Copy the bounded

@@ -1,5 +1,5 @@
 /**
- * AgentDefinition service IPC contract.
+ * AgentDefinition service IPC interface.
  * memeloop core manages the model, Desktop provides the storage layer.
  */
 import { AgentChannel } from '@/constants/channels';

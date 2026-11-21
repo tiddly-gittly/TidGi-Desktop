@@ -104,8 +104,8 @@ describe('git scoped operations for HTML wiki', () => {
   it('initScopedWikiGit throws when the scoped path is gitignored by the outer repo', async () => {
     // Reproduces the CI/e2e situation: a wiki is created inside an existing repo under a path that
     // the outer repo's .gitignore excludes (e.g. TidGi-Desktop's `/test-artifacts`). `git add` of an
-    // ignored path exits non-zero, so initScopedWikiGit throws — which is the contract the caller
-    // (initWikiGitTransaction) relies on to fall back to an independent repo.
+    // ignored path exits non-zero, so initScopedWikiGit throws and its caller
+    // (initWikiGitTransaction) creates an independent repo.
     const outerRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'tidgi-git-ignored-scope-'));
     try {
       await initRepo(outerRepo);

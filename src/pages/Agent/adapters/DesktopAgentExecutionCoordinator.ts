@@ -503,7 +503,7 @@ function createRemoteExecutionFailure(
     Object.defineProperty(error, 'agentRunError', {
       value: agentRunError,
       // The session controller serializes adapter failures before it builds its
-      // AgentRunFailure. Keep the public, bounded error contract visible there.
+      // AgentRunFailure. Preserve its structured error for the renderer.
       enumerable: true,
     });
   }

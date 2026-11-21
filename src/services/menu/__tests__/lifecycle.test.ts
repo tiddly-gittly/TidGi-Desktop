@@ -45,7 +45,8 @@ vi.mock('../contextMenu/rendererMenuItemProxy', () => ({
   mainMenuItemProxy: vi.fn((items: unknown) => items),
 }));
 
-import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS, isIpcSafeMenuItems, MenuService } from '..';
+import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS } from '@/constants/parameters';
+import { isIpcSafeMenuItems, MenuService } from '..';
 
 const createMenuService = (): MenuService =>
   new MenuService(

@@ -1,6 +1,6 @@
 /**
- * Meme Loop conversations are intentionally stored under a new database key.
- * The database has no compatibility contract with the abandoned Agent cache.
- * Current installations only create and clear this database.
+ * MemeLoop conversations use a separate database from the previous Agent cache.
  */
 export const MEME_LOOP_DATABASE_KEY = 'meme-loop';
+
+export const SETTINGS_FILE_MODE = 0o600;

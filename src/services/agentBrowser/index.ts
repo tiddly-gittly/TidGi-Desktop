@@ -435,7 +435,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           role: 'user',
         });
         if (!root) return false;
-        // Ack and draft cleanup share the root snapshot and tab-identity fence.
+        // Acknowledge the message and clear its draft in the same transaction.
         await manager.getRepository(ConversationEditDraftEntity).update({
           conversationId: source.conversationId,
           messageId: source.messageId,

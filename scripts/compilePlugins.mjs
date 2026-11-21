@@ -56,10 +56,6 @@ const nativeNodeModulesPlugin = {
     build.onResolve({ filter: /^\$:\// }, () => ({
       external: true,
     }));
-    // External typeorm optional drivers that are irrelevant in Electron context
-    build.onResolve({ filter: /^(expo-sqlite|react-native-sqlite-storage|sql\.js|oracledb|mongodb|redis|ioredis)$/ }, () => ({
-      external: true,
-    }));
   },
 };
 
@@ -175,7 +171,6 @@ async function buildEntryPoints(plugin, outDirs) {
       plugin.entryPoints.map(entryPoint =>
         esbuild.build({
           ...ESBUILD_CONFIG,
-          ...plugin.buildOptions,
           entryPoints: [path.join(sourcePath, entryPoint)],
           outdir: outDir,
           // Preserve subdirectory structure (e.g., Startup/) in output
@@ -224,14 +219,6 @@ async function buildPlugin(plugin) {
  */
 async function main() {
   console.log('Starting plugin compilation...\n');
-
-  // These reusable plugins are installed in template/wiki. Remove any output
-  // left by an older Desktop build so afterPack cannot ship a second copy.
-  // `memeloop-agent-ui` was a short-lived incorrect identity; keep cleaning it
-  // so upgrades cannot retain both it and the canonical tidgi-language-model.
-  for (const pluginName of ['tidgi-language-model', 'memeloop-agent-ui', 'tw-react']) {
-    await Promise.all(getPluginOutputDirs(pluginName).map(async outputDirectory => await rimraf(outputDirectory)));
-  }
 
   for (const plugin of PLUGINS) {
     await buildPlugin(plugin);

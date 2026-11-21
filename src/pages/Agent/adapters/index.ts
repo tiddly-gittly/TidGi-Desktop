@@ -2,7 +2,7 @@
  * Desktop adapters for headless agent-management interfaces.
  *
  * Each adapter wraps a Desktop-specific IPC or observable API into
- * the environment-neutral contracts defined in memeloop core.
+ * the shared interfaces defined in MemeLoop.
  *
  * Import these adapters when initializing AgentSessionController,
  * AgentDefinitionEditorController, AgentCreationController, or

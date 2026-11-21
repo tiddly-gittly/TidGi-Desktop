@@ -19,10 +19,10 @@ describe('createDesktopModelBindings', () => {
 
   it('registers exact logical/wire/API routes and forwards the canonical model config', async () => {
     const accounts: ProviderAccountConfig[] = [{
-      providerId: 'cpa',
+      providerId: 'test-provider',
       providerType: 'openai-compatible',
       baseUrl: 'https://models.example.test',
-      secretRef: 'ai-provider/cpa',
+      secretRef: 'ai-provider/test-provider',
       enabled: true,
       models: [
         { modelId: 'gpt-5.6-sol', wireModelId: 'gpt-5.6-sol', apiMode: 'responses' },
@@ -32,7 +32,7 @@ describe('createDesktopModelBindings', () => {
     vi.spyOn(externalAPIService, 'getProviderAccounts').mockResolvedValue(accounts);
     vi.spyOn(externalAPIService, 'getAIConfig').mockResolvedValue({
       default: {
-        providerId: 'cpa',
+        providerId: 'test-provider',
         modelId: 'gpt-5.6-sol',
         parameters: { temperature: 0.2, maxOutputTokens: 32_768, topP: 0.95, reasoningEffort: 'high' },
       },
@@ -41,26 +41,26 @@ describe('createDesktopModelBindings', () => {
     const bindings = await createDesktopModelBindings(externalAPIService);
 
     expect(bindings.defaultModelConfig).toEqual({
-      providerId: 'cpa',
+      providerId: 'test-provider',
       modelId: 'gpt-5.6-sol',
       parameters: { temperature: 0.2, maxOutputTokens: 32_768, topP: 0.95, reasoningEffort: 'high' },
     });
-    expect(bindings.registry.resolve('cpa', 'gpt-5.6-sol')).toMatchObject({
-      providerId: 'cpa',
+    expect(bindings.registry.resolve('test-provider', 'gpt-5.6-sol')).toMatchObject({
+      providerId: 'test-provider',
       modelId: 'gpt-5.6-sol',
       wireModelId: 'gpt-5.6-sol',
       apiMode: 'responses',
     });
-    expect(bindings.registry.resolve('cpa', 'deepseek/v4')).toMatchObject({
+    expect(bindings.registry.resolve('test-provider', 'deepseek/v4')).toMatchObject({
       wireModelId: 'deepseek/v4',
       apiMode: 'chat-completions',
     });
-    expect(bindings.fallbackProvider.name).toBe('cpa');
+    expect(bindings.fallbackProvider.name).toBe('test-provider');
     expect(bindings.defaultModelConfig).not.toHaveProperty('apiKey');
     expect(bindings.defaultModelConfig).not.toHaveProperty('baseURL');
   });
 
-  it('does not register disabled providers and leaves an unconfigured host fail-closed', async () => {
+  it('returns an empty registry when every configured provider is disabled', async () => {
     vi.spyOn(externalAPIService, 'getProviderAccounts').mockResolvedValue([{
       providerId: 'disabled-provider',
       providerType: 'openai-compatible',

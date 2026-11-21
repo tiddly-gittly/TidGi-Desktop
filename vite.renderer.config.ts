@@ -23,17 +23,6 @@ export default defineConfig({
   build: {
     // Output to .vite/renderer for consistency
     outDir: '.vite/renderer',
-    // Specify the HTML entry point
-    rollupOptions: {
-      input: path.resolve(__dirname, 'index.html'),
-      output: {
-        manualChunks(id: string) {
-          if (id.includes('monaco-editor')) {
-            return 'monaco-editor';
-          }
-        },
-      },
-    },
     commonjsOptions: {
       include: [/monaco-editor/, /node_modules/],
     },
@@ -42,6 +31,14 @@ export default defineConfig({
     // uses the better-sqlite3 driver, but Rolldown still tries to resolve those
     // optional driver packages while building the Desktop renderer bundle.
     rolldownOptions: {
+      input: path.resolve(__dirname, 'index.html'),
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('monaco-editor')) {
+            return 'monaco-editor';
+          }
+        },
+      },
       external: [
         'expo-sqlite',
         'react-native',

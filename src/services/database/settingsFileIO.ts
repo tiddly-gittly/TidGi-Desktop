@@ -1,8 +1,7 @@
+import { SETTINGS_FILE_MODE } from '@/constants/database';
 import { randomUUID } from 'node:crypto';
-import { chmod, mkdir, open, rename, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, open, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-
-const PRIVATE_FILE_MODE = 0o600;
 
 export class SettingsWriteQueue {
   private tail: Promise<void> = Promise.resolve();
@@ -35,15 +34,12 @@ export async function writeSettingsFile(
   );
   let handle: Awaited<ReturnType<typeof open>> | undefined;
   try {
-    handle = await open(temporaryPath, 'wx', PRIVATE_FILE_MODE);
+    handle = await open(temporaryPath, 'wx', SETTINGS_FILE_MODE);
     await handle.writeFile(serialized, { encoding: 'utf8' });
     await handle.sync();
     await handle.close();
     handle = undefined;
-    // An existing temp file or a permissive umask must never weaken secrets.
-    await chmod(temporaryPath, PRIVATE_FILE_MODE);
     await rename(temporaryPath, filePath);
-    await chmod(filePath, PRIVATE_FILE_MODE);
   } finally {
     await handle?.close().catch(() => undefined);
     await unlink(temporaryPath).catch(() => undefined);

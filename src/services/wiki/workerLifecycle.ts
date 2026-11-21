@@ -1,3 +1,5 @@
+import { WORKER_AVAILABILITY_TIMEOUT_MS } from '@/constants/wiki';
+
 export const WIKI_WORKER_LIFECYCLE_MESSAGE_TYPE = 'tidgi-wiki-worker-lifecycle';
 
 export type WikiWorkerLifecycleAction = 'subscriber-ready' | 'booted' | 'boot-error';
@@ -110,7 +112,7 @@ export class WikiWorkerLifecycleTracker {
 export async function releaseWorkerServicesAfterSubscriberReady(
   tracker: WikiWorkerLifecycleTracker,
   notifyServicesReady: () => Promise<void>,
-  subscriberTimeoutMs = 10_000,
+  subscriberTimeoutMs = WORKER_AVAILABILITY_TIMEOUT_MS,
 ): Promise<void> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {

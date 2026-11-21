@@ -173,27 +173,16 @@ Then(
   },
 );
 
-When('I load one earlier resident message page', async function(this: ApplicationWorld) {
-  const page = currentPage(this);
-  const state = fixture(this);
-  const before = state.initialFirstMessageId ?? (await messageIds(page))[0];
-  if (!before) throw new Error('The initial resident message window is empty');
-  const loadEarlier = page.locator('[data-testid="conversation-viewport"] > button').first();
-  await loadEarlier.click();
-  await retry(async () => {
-    const after = (await messageIds(page))[0];
-    if (!after || after === before) throw new Error('The resident window has not moved to an earlier page');
-  });
-});
-
 Then(
   'the resident message window should move earlier while remaining bounded at {int} messages',
   async function(this: ApplicationWorld, maximumMessages: number) {
     const state = fixture(this);
-    const ids = await assertResidentBound(currentPage(this), maximumMessages);
-    if (ids[0] === state.initialFirstMessageId) {
-      throw new Error('Loading earlier did not replace the resident window boundary');
-    }
+    await retry(async () => {
+      const ids = await assertResidentBound(currentPage(this), maximumMessages);
+      if (ids[0] === state.initialFirstMessageId) {
+        throw new Error('Loading earlier did not replace the resident window boundary');
+      }
+    });
   },
 );
 
@@ -222,16 +211,7 @@ When('I seek the conversation timeline to its first absolute entry', async funct
   await retry(async () => {
     if (await firstMarker.count() !== 1) throw new Error('Absolute timeline seek has not loaded entry zero');
   });
-  await retry(async () => {
-    await firstMarker.evaluate(
-      element => {
-        if (!(element instanceof HTMLButtonElement)) throw new Error('Absolute timeline entry zero is not a button');
-        element.click();
-      },
-      undefined,
-      { timeout: 1_000 },
-    );
-  });
+  await firstMarker.click({ timeout: CUCUMBER_GLOBAL_TIMEOUT });
   await waitForText(page.locator('[data-testid="conversation-viewport"]'), 'E2E long question 00000');
   await retry(async () => {
     const markerState = await page.locator('[data-timeline-entry-index]').evaluateAll(elements =>
@@ -261,48 +241,6 @@ Then(
   },
 );
 
-When('I open the generated model-request prompt audit', async function(this: ApplicationWorld) {
-  const page = currentPage(this);
-  // This toolbar button cannot navigate. On Windows, a still-settling Wiki
-  // navigation can otherwise make Playwright wait after the click even though
-  // the button event has completed. The dialog and every audit surface are
-  // asserted explicitly below, so navigation waiting would add no coverage.
-  await page.locator('[data-testid="prompt-preview-button"]').click({ noWaitAfter: true });
-  // Desktop preview is deliberately hosted by its own BrowserWindow. The
-  // toolbar remains in the wiki renderer, so continuing to query `page`
-  // leaves this step polling a window that can never contain the preview.
-  const promptPreviewPage = await this.getWindow('promptPreview');
-  if (!promptPreviewPage) throw new Error('Prompt preview window did not open');
-  this.currentWindow = promptPreviewPage;
-  const dialog = promptPreviewPage.getByRole('dialog');
-  await dialog.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
-  const tabs = dialog.getByRole('tab');
-  try {
-    // Building an execution-equivalent request reads durable history and
-    // compaction controls in the host. Give that real work a bounded budget
-    // instead of the short polling budget used for renderer-only assertions.
-    await tabs.nth(1).waitFor({
-      state: 'visible',
-      timeout: Math.min(60_000, CUCUMBER_GLOBAL_TIMEOUT - 1_000),
-    });
-  } catch (error) {
-    throw new Error(`Prompt preview tabs are not ready: ${(await dialog.innerText()).slice(0, 1_024)}`, { cause: error });
-  }
-  await dialog.getByRole('tab').nth(1).click();
-  await retry(async () => {
-    if (await dialog.locator('[data-testid="prompt-preview-execution-audit"]').count() !== 1) {
-      throw new Error('Generated model-request audit is not ready');
-    }
-  });
-  await dialog.locator('[data-testid="prompt-preview-model-request-detail"]').click();
-  await retry(async () => {
-    const detail = dialog.locator('[data-testid="prompt-preview-audit-detail"]');
-    if (await detail.getByRole('progressbar').count() > 0 || !(await detail.locator('pre').textContent())) {
-      throw new Error('Generated model-request detail is not ready');
-    }
-  });
-});
-
 Then(
   'the generated prompt should contain all repeated compaction summaries and the recent conversation tail',
   async function(this: ApplicationWorld) {
@@ -312,6 +250,11 @@ Then(
     const detail = dialog.locator('[data-testid="prompt-preview-audit-detail"]');
     let requestJson = '';
     for (let chunkIndex = 0; chunkIndex < 128; chunkIndex++) {
+      await retry(async () => {
+        if (await detail.getByRole('progressbar').count() > 0 || !(await detail.locator('pre').textContent())) {
+          throw new Error('Prompt audit request chunk is not ready');
+        }
+      });
       const chunk = await detail.locator('pre').textContent() ?? '';
       if (chunk.length === 0) throw new Error('Prompt audit returned an empty request chunk');
       requestJson += chunk;

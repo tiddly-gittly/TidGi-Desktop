@@ -2,10 +2,7 @@ import type { IWikiWorkspace } from '@services/workspaces/interface';
 import fs from 'fs';
 import path from 'path';
 import type { IFileInfo } from 'tiddlywiki';
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && typeof error.code === 'string';
-}
+import { isNodeError } from './utilities';
 
 /**
  * `startsWith()` cannot distinguish `/wiki/tiddlers` from

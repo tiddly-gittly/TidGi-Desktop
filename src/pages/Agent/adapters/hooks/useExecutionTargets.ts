@@ -99,7 +99,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
         try {
           ownedCoordinator.stopConversation(activeAgentId);
         } catch (error) {
-          // Disposal below is the final fence.
+          // Coordinator disposal below also releases the pending operations.
           void window.service.native.log('warn', 'useExecutionTargets: failed to stop conversation during disposal', {
             agentID: activeAgentId,
             error,
@@ -123,7 +123,7 @@ export function useExecutionTargets({ agent, orderedMessages }: UseExecutionTarg
       try {
         coordinator.stopConversation(agent.id);
       } catch (error) {
-        // A concurrent hook disposal may already own the final fence.
+        // The coordinator may have been disposed by the discovery effect.
         void window.service.native.log('warn', 'useExecutionTargets: failed to stop conversation during agent switch cleanup', {
           agentID: agent.id,
           error,

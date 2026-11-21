@@ -10,7 +10,7 @@ interface FolderAccessOptions {
 }
 
 /** Check directory access before timed startup; macOS may defer the read for human-paced consent. */
-export class MacFolderAccessGate {
+export class MacFolderAccess {
   private readonly granted = new Set<string>();
   private readonly pending = new Map<string, Promise<void>>();
 
@@ -54,7 +54,7 @@ export class MacFolderAccessGate {
   }
 }
 
-export const macFolderAccessGate = new MacFolderAccessGate({
+export const macFolderAccess = new MacFolderAccess({
   platform: process.platform,
   protectedFolders: () => [app.getPath('desktop'), app.getPath('documents'), app.getPath('downloads')],
   readDirectory: async (folder) => {
