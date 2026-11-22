@@ -166,7 +166,7 @@ describe('DesktopMessageDetailLoader', () => {
     );
   });
 
-  it('fences cancellation between main-process range reads', async () => {
+  it('stops reading message ranges when cancelled between calls', async () => {
     const canonical = fullMessage();
     const bytes = new TextEncoder().encode(JSON.stringify(canonical));
     const controller = new AbortController();

@@ -302,7 +302,7 @@ describe('DesktopAgentExecutionCoordinator', () => {
     await coordinator.dispose();
   });
 
-  it('aborts the exact accepted run and fences a late completion on target switch', async () => {
+  it('aborts the accepted run and ignores its late completion after switching targets', async () => {
     const services = createServices();
     let resolveStatus!: (status: unknown) => void;
     services.agentInstance.getAgentRunStatus = vi.fn(() =>

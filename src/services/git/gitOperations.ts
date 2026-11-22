@@ -244,8 +244,8 @@ export async function getGitLog(repoPath: string, options: IGitLogOptions = {}):
   const skip = page * pageSize;
   const scope = scopedPath ? { managedRelativePath: scopedPath } : undefined;
 
-  // Check for uncommitted changes (only in normal mode)
-  const statusArguments = appendGitPathSpec(['-c', 'core.quotePath=false', 'status', '--porcelain'], scope);
+  // History queries run concurrently with sync, whose writes own index.lock.
+  const statusArguments = appendGitPathSpec(['--no-optional-locks', '-c', 'core.quotePath=false', 'status', '--porcelain'], scope);
   const statusResult = await gitExec(statusArguments, repoPath);
   const hasUncommittedChanges = hasUncommittedChangesInScope(statusResult.stdout, scope) && searchMode === 'none';
 
@@ -401,7 +401,7 @@ export async function getCommitFiles(repoPath: string, commitHash: string, scope
   // Handle uncommitted changes
   if (!commitHash || commitHash === '') {
     const result = await gitExec(
-      appendGitPathSpec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-z', '-uall'], scope),
+      appendGitPathSpec(['--no-optional-locks', '-c', 'core.quotePath=false', 'status', '--porcelain', '-z', '-uall'], scope),
       repoPath,
     );
 
@@ -509,7 +509,7 @@ export async function getFileDiff(
   maxChars = 10000,
 ): Promise<import('./interface').IFileDiffResult> {
   if (!commitHash) {
-    const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '-z', '-uall', '--', filePath], repoPath);
+    const statusResult = await gitExec(['--no-optional-locks', '-c', 'core.quotePath=false', 'status', '--porcelain', '-z', '-uall', '--', filePath], repoPath);
 
     if (statusResult.exitCode !== 0) {
       throw new Error(`Failed to get status for working tree diff: ${statusResult.stderr}`);
@@ -549,10 +549,12 @@ export async function getFileDiff(
     // Check if file is deleted
     const isDeleted = fileStatus === 'deleted';
 
+    // Git diff refreshes the index even with --no-optional-locks; its separate
+    // setting keeps history previews read-only.
     if (isDeleted) {
       // For deleted files, show the deletion diff
       const result = await gitExec(
-        ['-c', 'core.quotePath=false', 'diff', 'HEAD', '--', filePath],
+        ['-c', 'core.quotePath=false', '-c', 'diff.autoRefreshIndex=false', 'diff', 'HEAD', '--', filePath],
         repoPath,
       );
 
@@ -581,7 +583,7 @@ export async function getFileDiff(
     }
 
     const result = await gitExec(
-      ['-c', 'core.quotePath=false', 'diff', 'HEAD', '--', filePath],
+      ['-c', 'core.quotePath=false', '-c', 'diff.autoRefreshIndex=false', 'diff', 'HEAD', '--', filePath],
       repoPath,
     );
 
@@ -883,7 +885,7 @@ export async function undoCommit(repoPath: string, commitHash: string): Promise<
  */
 export async function discardFileChanges(repoPath: string, filePath: string): Promise<void> {
   // First check the file status to determine if it's untracked (new file)
-  const statusResult = await gitExec(['-c', 'core.quotePath=false', 'status', '--porcelain', '--', filePath], repoPath);
+  const statusResult = await gitExec(['--no-optional-locks', '-c', 'core.quotePath=false', 'status', '--porcelain', '--', filePath], repoPath);
 
   if (statusResult.exitCode !== 0) {
     throw new Error(`Failed to check file status: ${statusResult.stderr}`);

@@ -339,6 +339,7 @@ export class View implements IViewService {
         contents.removeListener('did-fail-load', failed);
         contents.removeListener('did-stop-loading', stopped);
         contents.removeListener('destroyed', destroyed);
+        contents.removeListener('will-prevent-unload', prevented);
       };
       const finished = () => {
         cleanup();
@@ -357,10 +358,14 @@ export class View implements IViewService {
       const destroyed = () => {
         fail(new Error('Wiki view destroyed during reload'));
       };
+      const prevented = () => {
+        fail(new Error('Wiki reload cancelled by page unload handler'));
+      };
       contents.on('did-finish-load', finished);
       contents.on('did-fail-load', failed);
       contents.on('did-stop-loading', stopped);
       contents.on('destroyed', destroyed);
+      contents.on('will-prevent-unload', prevented);
       try {
         contents.reload();
       } catch (error) {

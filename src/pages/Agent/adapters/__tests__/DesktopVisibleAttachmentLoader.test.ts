@@ -123,7 +123,7 @@ describe('DesktopVisibleAttachmentLoader', () => {
       }),
     );
     // Canonical detail performs before/after checks and the completed byte read
-    // performs one more exact identity fence.
+    // checks the message identity again.
     expect(getAgentMessageIdentity).toHaveBeenCalledTimes(3);
   });
 

@@ -2,11 +2,11 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * E2E performance calibration — every timeout value comes from measurement.
+ * E2E performance calibration for scenario runs.
  *
- * Preflight runs smoke test 4×, extracts per-step durations from cucumber JSON,
- * classifies by operation type. Timeouts are set to the measured worst case
- * for each type. No hardcoded timeout values anywhere.
+ * Preflight runs the tagged scenarios, extracts per-step durations from Cucumber
+ * JSON, and classifies by operation type. Subsequent runs use the measured
+ * durations and spread for their timeouts.
  */
 
 const CALIBRATION_FILE = path.resolve(process.cwd(), '.calibration.json');

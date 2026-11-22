@@ -163,14 +163,14 @@ describe('wiki navigation lifecycle', () => {
     expect(contents.reload).toHaveBeenCalledOnce();
   });
 
-  it.each(['did-stop-loading', 'destroyed', 'did-fail-load'])('settles and cleans a document reload on %s', async event => {
+  it.each(['did-stop-loading', 'destroyed', 'did-fail-load', 'will-prevent-unload'])('settles and cleans a document reload on %s', async event => {
     const { service, contents } = fixture();
     contents.getURL.mockReturnValue('tidgi://wiki#current');
     contents.reload.mockImplementation(() => {
       contents.emit(event, {}, -2, 'ERR_FAILED', workspace.lastUrl, true);
     });
     await expect(service.reloadViewsWebContents('wiki')).rejects.toThrow();
-    for (const name of ['did-finish-load', 'did-stop-loading', 'destroyed', 'did-fail-load']) {
+    for (const name of ['did-finish-load', 'did-stop-loading', 'destroyed', 'did-fail-load', 'will-prevent-unload']) {
       expect(contents.listenerCount(name)).toBe(0);
     }
   });
