@@ -37,6 +37,18 @@ const model: ModelCatalogModel = {
 };
 
 describe('NewModelDialog', () => {
+  it('keeps the existing logical identity when the provider ID and display name change', () => {
+    const onSave = vi.fn();
+    render(<NewModelDialog open route={route} model={model} onClose={vi.fn()} onSave={onSave} />);
+    expect(screen.queryByLabelText('Preference.LogicalModelId')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Preference.WireModelId'), { target: { value: 'vendor/new-model' } });
+    fireEvent.change(screen.getByLabelText('Preference.ModelCaption'), { target: { value: 'New display name' } });
+    fireEvent.click(screen.getByTestId('save-new-model-button'));
+    expect(onSave).toHaveBeenCalledWith(
+      { ...route, wireModelId: 'vendor/new-model' },
+      { ...model, id: 'reasoning', name: 'New display name' },
+    );
+  });
   it('edits one exact logical-to-wire route with catalog metadata', () => {
     const onSave = vi.fn();
     render(
@@ -49,7 +61,8 @@ describe('NewModelDialog', () => {
       />,
     );
 
-    expect(screen.getByTestId('new-model-name-input')).toHaveValue('reasoning');
+    fireEvent.click(screen.getByTestId('model-advanced-toggle'));
+    expect(screen.getByTestId('new-model-name-input')).toHaveValue('vendor/gpt-5.6');
     expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('vendor/gpt-5.6');
     expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ResponsesAPIMode');
     expect(screen.getByLabelText('Preference.InputModalities')).toHaveValue('text, image');
@@ -71,19 +84,17 @@ describe('NewModelDialog', () => {
     expect(onSave).toHaveBeenCalledWith(route, model);
   });
 
-  it('saves newly entered logical and provider wire identifiers without exchanging them', async () => {
+  it('derives the internal identity from the provider ID without asking for a separate ID', async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
 
-    const logicalInput = screen.getByTestId('new-model-name-input');
-    await user.click(logicalInput);
-    await user.type(logicalInput, '模型2');
     await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型2:latest');
     await user.type(screen.getByLabelText('Preference.ModelCaption'), 'Private model');
+    await user.click(screen.getByTestId('model-advanced-toggle'));
     await user.click(screen.getByRole('checkbox', { name: 'Preference.Reasoning' }));
     await user.click(screen.getByRole('checkbox', { name: 'Preference.ToolCalling' }));
-    expect(screen.getByTestId('new-model-name-input')).toHaveValue('模型2');
+    expect(screen.getByTestId('new-model-name-input')).toHaveValue('供应商/模型2:latest');
     expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('供应商/模型2:latest');
     expect(screen.getByLabelText('Preference.ModelCaption')).toHaveValue('Private model');
     expect(screen.getByRole('checkbox', { name: 'Preference.Reasoning' })).toBeChecked();
@@ -91,8 +102,8 @@ describe('NewModelDialog', () => {
     fireEvent.click(screen.getByTestId('save-new-model-button'));
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith(
-        expect.objectContaining({ modelId: '模型2', wireModelId: '供应商/模型2:latest' }),
-        expect.objectContaining({ id: '模型2' }),
+        expect.objectContaining({ modelId: '供应商/模型2:latest', wireModelId: '供应商/模型2:latest' }),
+        expect.objectContaining({ id: '供应商/模型2:latest' }),
       );
     });
   });
@@ -101,6 +112,11 @@ describe('NewModelDialog', () => {
     render(<NewModelDialog open onClose={vi.fn()} onSave={vi.fn()} />);
     expect(screen.getByTestId('new-model-name-input')).toHaveValue('');
     expect(screen.getByLabelText('Preference.WireModelId')).toHaveValue('');
+    expect(screen.getByTestId('model-advanced-toggle').parentElement).not.toHaveAttribute('open');
+    expect(screen.getByLabelText('Preference.WireModelId')).toBeVisible();
+    expect(screen.getByLabelText('Preference.ModelCaption')).toBeVisible();
+    expect(screen.getByLabelText('Preference.APIMode')).not.toBeVisible();
+    fireEvent.click(screen.getByTestId('model-advanced-toggle'));
     expect(screen.getByLabelText('Preference.APIMode')).toHaveTextContent('Preference.ChatCompletionsAPIMode');
   });
 
@@ -110,6 +126,7 @@ describe('NewModelDialog', () => {
     render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
 
     await user.type(screen.getByTestId('new-model-name-input'), 'advanced-model');
+    await user.click(screen.getByTestId('model-advanced-toggle'));
     await user.type(screen.getByTestId('model-context-window-input'), '128000');
     await user.type(screen.getByTestId('model-max-input-input'), '120000');
     await user.type(screen.getByTestId('model-max-output-input'), '8192');
@@ -135,7 +152,7 @@ describe('NewModelDialog', () => {
     });
   });
 
-  it('shows a required error instead of silently ignoring an empty logical id', async () => {
+  it('shows a required error instead of silently ignoring an empty provider model ID', async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
@@ -143,7 +160,7 @@ describe('NewModelDialog', () => {
     await user.click(screen.getByTestId('save-new-model-button'));
 
     expect(onSave).not.toHaveBeenCalled();
-    expect(screen.getByText('Preference.ModelNameRequired')).toBeVisible();
+    expect(screen.getByText('Preference.ProviderModelIdRequired')).toBeVisible();
     expect(screen.getByTestId('new-model-name-input')).toHaveAttribute('aria-invalid', 'true');
   });
 
@@ -152,12 +169,34 @@ describe('NewModelDialog', () => {
     const onSave = vi.fn();
     render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
 
-    await user.type(screen.getByTestId('new-model-name-input'), '模型2');
     await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型 2');
     await user.click(screen.getByTestId('save-new-model-button'));
 
     expect(onSave).not.toHaveBeenCalled();
     expect(screen.getByText('Preference.ModelIdInvalid')).toBeVisible();
     expect(screen.getByLabelText('Preference.WireModelId')).toHaveAttribute('aria-invalid', 'true');
+  });
+  it('uses the provider default without requiring advanced settings and preserves explicit edit mode', () => {
+    const onSave = vi.fn();
+    const view = render(<NewModelDialog open defaultApiMode='responses' onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.change(screen.getByTestId('new-model-name-input'), { target: { value: 'private-model' } });
+    fireEvent.click(screen.getByTestId('save-new-model-button'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ apiMode: 'responses' }), expect.any(Object));
+    view.rerender(<NewModelDialog open defaultApiMode='responses' route={{ ...route, apiMode: 'chat-completions' }} model={model} onClose={vi.fn()} onSave={onSave} />);
+    fireEvent.click(screen.getByTestId('save-new-model-button'));
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ apiMode: 'chat-completions' }), expect.any(Object));
+  });
+  it('reveals invalid advanced settings when saving a collapsed form', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<NewModelDialog open onClose={vi.fn()} onSave={onSave} />);
+    await user.type(screen.getByTestId('new-model-name-input'), 'private-model');
+    await user.click(screen.getByTestId('model-advanced-toggle'));
+    await user.type(screen.getByTestId('model-context-window-input'), '-1');
+    await user.click(screen.getByTestId('model-advanced-toggle'));
+    expect(screen.getByTestId('model-context-window-input')).not.toBeVisible();
+    await user.click(screen.getByTestId('save-new-model-button'));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText('Preference.PositiveIntegerRequired')).toBeVisible();
   });
 });

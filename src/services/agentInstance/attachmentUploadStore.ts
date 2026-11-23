@@ -1,4 +1,4 @@
-import { DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/constants/agentAttachments';
+import { ATTACHMENT_SYNC_CHUNK_BYTES, DESKTOP_ATTACHMENT_UPLOAD_LIMITS } from '@/constants/agentAttachments';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access, type FileHandle, link, mkdir, open, opendir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
@@ -233,7 +233,7 @@ export class DesktopAttachmentUploadStore {
   }
 
   public async readSyncRange(contentHash: string, offset: number, maxBytes: number, options?: { signal?: AbortSignal }): Promise<Uint8Array | null> {
-    return this.readBoundedRange(contentHash, offset, maxBytes, 3 * 1024 * 1024, true, options);
+    return this.readBoundedRange(contentHash, offset, maxBytes, ATTACHMENT_SYNC_CHUNK_BYTES, true, options);
   }
 
   private async readBoundedRange(
@@ -274,7 +274,7 @@ export class DesktopAttachmentUploadStore {
     if (
       reference.size > DESKTOP_ATTACHMENT_UPLOAD_LIMITS.totalBytes ||
       !Number.isSafeInteger(offset) || offset < 0 || !(data instanceof Uint8Array) ||
-      data.byteLength > 3 * 1024 * 1024 || offset + data.byteLength > reference.size ||
+      data.byteLength > ATTACHMENT_SYNC_CHUNK_BYTES || offset + data.byteLength > reference.size ||
       (data.byteLength === 0 && reference.size !== 0)
     ) throw new Error('invalid_attachment_chunk');
     await this.initialize();

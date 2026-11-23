@@ -410,6 +410,7 @@
     "SearchPlaceholder": "Search for tabs or agents..."
   },
   "Preference": {
+    "ModelAdvanced": "Advanced API and model settings",
     "AIAgent": "AI Agent",
     "AIAgentDescription": "Manage AI Agent conversation records database",
     "AIAgentDescriptionDetail": "Here you can view and delete the size and location information of the AI Agent conversation records database",
@@ -481,7 +482,7 @@
     "ModelAddedSuccessfully": "Model added successfully",
     "ModelAlreadyExists": "Model already exists",
     "ModelCaption": "Model Display Name",
-    "ModelCaptionHelp": "A friendly name to display in the interface; if left blank, the model name will be used",
+    "ModelCaptionHelp": "Optional display name. Leave blank to use the provider model ID.",
     "ModelDetails": "Model Details",
     "ModelFeatures": "Model Features",
     "ModelName": "Model Name",
@@ -489,6 +490,7 @@
     "ModelIdInvalid": "Model ID must not contain surrounding whitespace or control characters and must be no more than {{maxBytes}} UTF-8 bytes.",
     "LogicalModelId": "Logical model ID",
     "WireModelId": "Provider model ID",
+    "ProviderModelIdRequired": "Provider model ID is required",
     "WireModelIdDescription": "The exact model identifier sent to the provider.",
     "EditModel": "Edit Model",
     "APIMode": "API mode",

@@ -5,6 +5,7 @@
 import { AgentChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { AgentDefinition, AgentLoopScriptPolicy, TiddlerFieldsForAgent } from 'memeloop';
+import type { Observable } from 'rxjs';
 
 export interface AgentTemplateTiddlerSource {
   tiddler: unknown;
@@ -14,6 +15,7 @@ export interface AgentTemplateTiddlerSource {
 export type AgentTemplateSource = () => Promise<AgentTemplateTiddlerSource[]>;
 
 export interface IAgentDefinitionService {
+  workflowChanged$: Observable<string>;
   initialize(): Promise<void>;
   configureTemplateSource(source: AgentTemplateSource): void;
   createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
@@ -31,6 +33,7 @@ export type { AgentDefinition, TiddlerFieldsForAgent };
 export const AgentDefinitionServiceIPCDescriptor = {
   channel: AgentChannel.definition,
   properties: {
+    workflowChanged$: ProxyPropertyType.Value$,
     createAgentDef: ProxyPropertyType.Function,
     updateAgentDef: ProxyPropertyType.Function,
     saveAgentLoopScript: ProxyPropertyType.Function,

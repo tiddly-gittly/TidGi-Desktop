@@ -406,7 +406,7 @@ async function uploadAttachmentToRemote(
   services: DesktopAgentExecutionCoordinatorServices,
   createId: () => string,
   signal: AbortSignal,
-): Promise<{ kind: 'committed'; reference: AttachmentReference }> {
+): Promise<void> {
   const begin = await client.beginAttachmentUpload({
     conversationId,
     filename: reference.filename,
@@ -447,7 +447,6 @@ async function uploadAttachmentToRemote(
     uploadId: begin.uploadId,
   }, { signal });
   if (!referencesEqual(committed.attachment, reference)) throw new Error('remote attachment commit diverged');
-  return { kind: 'committed', reference: committed.attachment };
 }
 
 async function waitForAcceptedRun(options: {

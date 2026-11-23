@@ -29,6 +29,7 @@ const REASONING_EFFORTS: readonly AgentReasoningEffort[] = [
 
 interface NewModelDialogProps {
   open: boolean;
+  defaultApiMode?: ProviderModelRoute['apiMode'];
   route?: ProviderModelRoute;
   model?: ModelCatalogModel;
   onClose: () => void;
@@ -37,13 +38,14 @@ interface NewModelDialogProps {
 
 export function NewModelDialog({
   open,
+  defaultApiMode = 'chat-completions',
   route,
   model,
   onClose,
   onSave,
 }: NewModelDialogProps) {
   const { t } = useTranslation('agent');
-  const [logicalModelId, setLogicalModelId] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [wireModelId, setWireModelId] = useState('');
   const [name, setName] = useState('');
   const [apiMode, setApiMode] = useState<ProviderModelRoute['apiMode']>('chat-completions');
@@ -61,8 +63,7 @@ export function NewModelDialog({
   const [inputModalities, setInputModalities] = useState('text');
   const [outputModalities, setOutputModalities] = useState('text');
   const [validationError, setValidationError] = useState<
-    | 'logical-required'
-    | 'logical-invalid'
+    | 'wire-required'
     | 'wire-invalid'
     | 'context-invalid'
     | 'input-invalid'
@@ -72,10 +73,10 @@ export function NewModelDialog({
 
   useEffect(() => {
     if (!open) return;
-    setLogicalModelId(route?.modelId ?? '');
     setWireModelId(route?.wireModelId ?? '');
     setName(model?.name ?? '');
-    setApiMode(route?.apiMode ?? 'chat-completions');
+    setApiMode(route?.apiMode ?? defaultApiMode);
+    setAdvancedOpen(false);
     setAttachment(model?.attachment ?? false);
     setReasoning(model?.reasoning ?? false);
     setToolCall(model?.toolCall ?? false);
@@ -90,35 +91,35 @@ export function NewModelDialog({
     setInputModalities((model?.modalities?.input ?? ['text']).join(', '));
     setOutputModalities((model?.modalities?.output ?? ['text']).join(', '));
     setValidationError(undefined);
-  }, [model, open, route]);
+  }, [defaultApiMode, model, open, route]);
 
   const save = () => {
-    const logicalId = logicalModelId.trim();
-    if (!logicalId) {
-      setValidationError('logical-required');
+    const wireId = wireModelId.trim();
+    if (!wireId) {
+      setValidationError('wire-required');
       return;
     }
-    if (!isValidModelIdentifier(logicalId)) {
-      setValidationError('logical-invalid');
-      return;
-    }
-    const wireId = wireModelId.trim() || logicalId;
     if (!isValidModelIdentifier(wireId)) {
       setValidationError('wire-invalid');
       return;
     }
+    // Existing conversations reference this identity; editing the provider ID must not rename it.
+    const logicalId = route?.modelId ?? wireId;
     const context = parseOptionalPositiveInteger(contextWindow);
     if (context === undefined && contextWindow.trim() !== '') {
+      setAdvancedOpen(true);
       setValidationError('context-invalid');
       return;
     }
     const input = parseOptionalPositiveInteger(maxInputTokens);
     if (input === undefined && maxInputTokens.trim() !== '') {
+      setAdvancedOpen(true);
       setValidationError('input-invalid');
       return;
     }
     const output = parseOptionalPositiveInteger(maxOutputTokens);
     if (output === undefined && maxOutputTokens.trim() !== '') {
+      setAdvancedOpen(true);
       setValidationError('output-invalid');
       return;
     }
@@ -138,7 +139,7 @@ export function NewModelDialog({
       {
         ...preservedMetadata,
         id: logicalId,
-        name: name.trim() || logicalId,
+        name: name.trim() || wireId,
         attachment,
         reasoning,
         toolCall,
@@ -171,37 +172,20 @@ export function NewModelDialog({
       </DialogTitle>
       <DialogContent sx={{ overflowX: 'hidden' }}>
         <TextField
+          fullWidth
+          margin='normal'
           autoFocus
-          fullWidth
-          margin='normal'
-          label={t('Preference.LogicalModelId')}
-          value={logicalModelId}
-          error={validationError === 'logical-required' ||
-            validationError === 'logical-invalid'}
-          helperText={validationError === 'logical-required'
-            ? t('Preference.ModelNameRequired')
-            : validationError === 'logical-invalid'
-            ? t('Preference.ModelIdInvalid', {
-              maxBytes: PROVIDER_MODEL_ID_MAX_UTF8_BYTES,
-            })
-            : undefined}
-          onChange={(event) => {
-            setLogicalModelId(event.target.value);
-            setValidationError(undefined);
-          }}
-          slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
-        />
-        <TextField
-          fullWidth
-          margin='normal'
           label={t('Preference.WireModelId')}
           value={wireModelId}
-          error={validationError === 'wire-invalid'}
+          slotProps={{ htmlInput: { 'data-testid': 'new-model-name-input' } }}
+          error={validationError === 'wire-required' || validationError === 'wire-invalid'}
           onChange={(event) => {
             setWireModelId(event.target.value);
             setValidationError(undefined);
           }}
-          helperText={validationError === 'wire-invalid'
+          helperText={validationError === 'wire-required'
+            ? t('Preference.ProviderModelIdRequired')
+            : validationError === 'wire-invalid'
             ? t('Preference.ModelIdInvalid', {
               maxBytes: PROVIDER_MODEL_ID_MAX_UTF8_BYTES,
             })
@@ -211,221 +195,232 @@ export function NewModelDialog({
           fullWidth
           margin='normal'
           label={t('Preference.ModelCaption')}
+          helperText={t('Preference.ModelCaptionHelp')}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
           }}
         />
-        <FormControl fullWidth margin='normal'>
-          <InputLabel id='model-api-mode-label'>
-            {t('Preference.APIMode')}
-          </InputLabel>
-          <Select
-            labelId='model-api-mode-label'
-            value={apiMode}
-            label={t('Preference.APIMode')}
-            onChange={(event) => {
-              const value = event.target.value;
-              if (value === 'chat-completions' || value === 'responses') {
-                setApiMode(value);
-              }
-            }}
-          >
-            <MenuItem value='chat-completions'>
-              {t('Preference.ChatCompletionsAPIMode')}
-            </MenuItem>
-            <MenuItem value='responses'>
-              {t('Preference.ResponsesAPIMode')}
-            </MenuItem>
-          </Select>
-        </FormControl>
         <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: 'minmax(0, 1fr)',
-              sm: 'repeat(2, minmax(0, 1fr))',
-            },
-            gap: { xs: 0, sm: 2 },
+          component='details'
+          open={advancedOpen}
+          onToggle={event => {
+            setAdvancedOpen(event.currentTarget.open);
           }}
+          sx={{ mt: 2 }}
         >
-          <TextField
-            fullWidth
-            margin='normal'
-            label={t('Preference.ContextWindow')}
-            type='number'
-            value={contextWindow}
-            error={validationError === 'context-invalid'}
-            helperText={validationError === 'context-invalid'
-              ? t('Preference.PositiveIntegerRequired')
-              : t('Preference.ContextWindowDescription')}
-            onChange={(event) => {
-              setContextWindow(event.target.value);
-              setValidationError(undefined);
-            }}
-            slotProps={{
-              htmlInput: {
-                min: 1,
-                step: 1,
-                'data-testid': 'model-context-window-input',
-              },
-            }}
-          />
-          <TextField
-            fullWidth
-            margin='normal'
-            label={t('Preference.MaxInputTokens')}
-            type='number'
-            value={maxInputTokens}
-            error={validationError === 'input-invalid'}
-            helperText={validationError === 'input-invalid'
-              ? t('Preference.PositiveIntegerRequired')
-              : t('Preference.MaxInputTokensDescription')}
-            onChange={(event) => {
-              setMaxInputTokens(event.target.value);
-              setValidationError(undefined);
-            }}
-            slotProps={{
-              htmlInput: {
-                min: 1,
-                step: 1,
-                'data-testid': 'model-max-input-input',
-              },
-            }}
-          />
-          <TextField
-            fullWidth
-            margin='normal'
-            label={t('Preference.MaxOutputTokens')}
-            type='number'
-            value={maxOutputTokens}
-            error={validationError === 'output-invalid'}
-            helperText={validationError === 'output-invalid'
-              ? t('Preference.PositiveIntegerRequired')
-              : t('Preference.MaxOutputTokensDescription')}
-            onChange={(event) => {
-              setMaxOutputTokens(event.target.value);
-              setValidationError(undefined);
-            }}
-            slotProps={{
-              htmlInput: {
-                min: 1,
-                step: 1,
-                'data-testid': 'model-max-output-input',
-              },
-            }}
-          />
-          <Box />
-          <TextField
-            fullWidth
-            margin='normal'
-            label={t('Preference.InputModalities')}
-            value={inputModalities}
-            onChange={(event) => {
-              setInputModalities(event.target.value);
-            }}
-            slotProps={{
-              htmlInput: { 'data-testid': 'model-input-modalities-input' },
-            }}
-          />
-          <TextField
-            fullWidth
-            margin='normal'
-            label={t('Preference.OutputModalities')}
-            value={outputModalities}
-            onChange={(event) => {
-              setOutputModalities(event.target.value);
-            }}
-            slotProps={{
-              htmlInput: { 'data-testid': 'model-output-modalities-input' },
-            }}
-          />
-        </Box>
-        <FormControl component='fieldset' fullWidth margin='normal'>
-          <FormHelperText
-            component='legend'
-            sx={{ m: 0, mb: 0.5, fontSize: 'inherit', color: 'text.primary' }}
-          >
-            {t('Preference.SupportedReasoningEffort')}
-          </FormHelperText>
-          <FormGroup row sx={{ columnGap: 1, flexWrap: 'wrap' }}>
-            {REASONING_EFFORTS.map((effort) => (
-              <FormControlLabel
-                key={effort}
-                control={
-                  <Checkbox
-                    checked={reasoningEfforts.includes(effort)}
-                    onChange={(event) => {
-                      setReasoningEfforts((current) =>
-                        event.target.checked
-                          ? [...current, effort]
-                          : current.filter((value) => value !== effort)
-                      );
-                    }}
-                  />
+          <Box component='summary' data-testid='model-advanced-toggle' sx={{ cursor: 'pointer', py: 1 }}>{t('Preference.ModelAdvanced')}</Box>
+          <FormControl fullWidth margin='normal'>
+            <InputLabel id='model-api-mode-label'>
+              {t('Preference.APIMode')}
+            </InputLabel>
+            <Select
+              labelId='model-api-mode-label'
+              value={apiMode}
+              label={t('Preference.APIMode')}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (value === 'chat-completions' || value === 'responses') {
+                  setApiMode(value);
                 }
-                label={t(`Preference.ReasoningEffort${capitalize(effort)}`)}
-              />
-            ))}
+              }}
+            >
+              <MenuItem value='chat-completions'>
+                {t('Preference.ChatCompletionsAPIMode')}
+              </MenuItem>
+              <MenuItem value='responses'>
+                {t('Preference.ResponsesAPIMode')}
+              </MenuItem>
+            </Select>
+          </FormControl>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'minmax(0, 1fr)',
+                sm: 'repeat(2, minmax(0, 1fr))',
+              },
+              gap: { xs: 0, sm: 2 },
+            }}
+          >
+            <TextField
+              fullWidth
+              margin='normal'
+              label={t('Preference.ContextWindow')}
+              type='number'
+              value={contextWindow}
+              error={validationError === 'context-invalid'}
+              helperText={validationError === 'context-invalid'
+                ? t('Preference.PositiveIntegerRequired')
+                : t('Preference.ContextWindowDescription')}
+              onChange={(event) => {
+                setContextWindow(event.target.value);
+                setValidationError(undefined);
+              }}
+              slotProps={{
+                htmlInput: {
+                  min: 1,
+                  step: 1,
+                  'data-testid': 'model-context-window-input',
+                },
+              }}
+            />
+            <TextField
+              fullWidth
+              margin='normal'
+              label={t('Preference.MaxInputTokens')}
+              type='number'
+              value={maxInputTokens}
+              error={validationError === 'input-invalid'}
+              helperText={validationError === 'input-invalid'
+                ? t('Preference.PositiveIntegerRequired')
+                : t('Preference.MaxInputTokensDescription')}
+              onChange={(event) => {
+                setMaxInputTokens(event.target.value);
+                setValidationError(undefined);
+              }}
+              slotProps={{
+                htmlInput: {
+                  min: 1,
+                  step: 1,
+                  'data-testid': 'model-max-input-input',
+                },
+              }}
+            />
+            <TextField
+              fullWidth
+              margin='normal'
+              label={t('Preference.MaxOutputTokens')}
+              type='number'
+              value={maxOutputTokens}
+              error={validationError === 'output-invalid'}
+              helperText={validationError === 'output-invalid'
+                ? t('Preference.PositiveIntegerRequired')
+                : t('Preference.MaxOutputTokensDescription')}
+              onChange={(event) => {
+                setMaxOutputTokens(event.target.value);
+                setValidationError(undefined);
+              }}
+              slotProps={{
+                htmlInput: {
+                  min: 1,
+                  step: 1,
+                  'data-testid': 'model-max-output-input',
+                },
+              }}
+            />
+            <Box />
+            <TextField
+              fullWidth
+              margin='normal'
+              label={t('Preference.InputModalities')}
+              value={inputModalities}
+              onChange={(event) => {
+                setInputModalities(event.target.value);
+              }}
+              slotProps={{
+                htmlInput: { 'data-testid': 'model-input-modalities-input' },
+              }}
+            />
+            <TextField
+              fullWidth
+              margin='normal'
+              label={t('Preference.OutputModalities')}
+              value={outputModalities}
+              onChange={(event) => {
+                setOutputModalities(event.target.value);
+              }}
+              slotProps={{
+                htmlInput: { 'data-testid': 'model-output-modalities-input' },
+              }}
+            />
+          </Box>
+          <FormControl component='fieldset' fullWidth margin='normal'>
+            <FormHelperText
+              component='legend'
+              sx={{ m: 0, mb: 0.5, fontSize: 'inherit', color: 'text.primary' }}
+            >
+              {t('Preference.SupportedReasoningEffort')}
+            </FormHelperText>
+            <FormGroup row sx={{ columnGap: 1, flexWrap: 'wrap' }}>
+              {REASONING_EFFORTS.map((effort) => (
+                <FormControlLabel
+                  key={effort}
+                  control={
+                    <Checkbox
+                      checked={reasoningEfforts.includes(effort)}
+                      onChange={(event) => {
+                        setReasoningEfforts((current) =>
+                          event.target.checked
+                            ? [...current, effort]
+                            : current.filter((value) => value !== effort)
+                        );
+                      }}
+                    />
+                  }
+                  label={t(`Preference.ReasoningEffort${capitalize(effort)}`)}
+                />
+              ))}
+            </FormGroup>
+          </FormControl>
+          <FormGroup row sx={{ columnGap: 1, flexWrap: 'wrap' }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={attachment}
+                  onChange={(event) => {
+                    setAttachment(event.target.checked);
+                  }}
+                />
+              }
+              label={t('Preference.Attachments')}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={reasoning}
+                  onChange={(event) => {
+                    setReasoning(event.target.checked);
+                  }}
+                />
+              }
+              label={t('Preference.Reasoning')}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={toolCall}
+                  onChange={(event) => {
+                    setToolCall(event.target.checked);
+                  }}
+                />
+              }
+              label={t('Preference.ToolCalling')}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={structuredOutput}
+                  onChange={(event) => {
+                    setStructuredOutput(event.target.checked);
+                  }}
+                />
+              }
+              label={t('Preference.StructuredOutput')}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={temperature}
+                  onChange={(event) => {
+                    setTemperature(event.target.checked);
+                  }}
+                />
+              }
+              label={t('Preference.TemperatureSupport')}
+            />
           </FormGroup>
-        </FormControl>
-        <FormGroup row sx={{ columnGap: 1, flexWrap: 'wrap' }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={attachment}
-                onChange={(event) => {
-                  setAttachment(event.target.checked);
-                }}
-              />
-            }
-            label={t('Preference.Attachments')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={reasoning}
-                onChange={(event) => {
-                  setReasoning(event.target.checked);
-                }}
-              />
-            }
-            label={t('Preference.Reasoning')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={toolCall}
-                onChange={(event) => {
-                  setToolCall(event.target.checked);
-                }}
-              />
-            }
-            label={t('Preference.ToolCalling')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={structuredOutput}
-                onChange={(event) => {
-                  setStructuredOutput(event.target.checked);
-                }}
-              />
-            }
-            label={t('Preference.StructuredOutput')}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={temperature}
-                onChange={(event) => {
-                  setTemperature(event.target.checked);
-                }}
-              />
-            }
-            label={t('Preference.TemperatureSupport')}
-          />
-        </FormGroup>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>

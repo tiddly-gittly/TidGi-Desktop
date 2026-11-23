@@ -1,3 +1,4 @@
+import { getDefaultAgentDefinitionId } from '@services/agentDefinition/defaults';
 // Compact dropdown for tab switching, placed in the chat header
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
@@ -113,7 +114,7 @@ export const TabListDropdown: React.FC = () => {
   }, [closeTab]);
 
   const handleNewTab = useCallback(async () => {
-    await addTab(TabType.NEW_TAB);
+    await addTab(TabType.CHAT, { agentDefId: getDefaultAgentDefinitionId() });
     handleClose();
   }, [addTab, handleClose]);
 
@@ -266,6 +267,15 @@ export const TabListDropdown: React.FC = () => {
             </List>
             <Divider />
             <Box sx={{ p: 0.5 }}>
+              <ListItemButton
+                onClick={() => {
+                  void addTab(TabType.NEW_TAB).then(handleClose);
+                }}
+                sx={{ borderRadius: 6, mx: 0.5 }}
+                data-testid='tab-list-agent-management'
+              >
+                <ListItemText primary={t('NewTab.QuickAccess')} slotProps={{ primary: { variant: 'body2' } }} />
+              </ListItemButton>
               <ListItemButton
                 onClick={() => {
                   void handleNewTab();

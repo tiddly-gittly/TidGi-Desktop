@@ -377,29 +377,33 @@ describe('all tools integration', () => {
     expect(agent.status.state).toBe('input-required');
   }, 30000);
 
-  // ── workspacesList ─────────────────────────────────────────
-
-  it('workspacesList: available workspaces appear in prompt', async () => {
+  it('sends the first turn as context in the second model request', async () => {
     mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(mockChunk('workspaces 已列出。'));
+      .mockReturnValueOnce(mockChunk('Paris is the capital.'))
+      .mockReturnValueOnce(mockChunk('You asked about France.'));
 
-    await executeMessage('列出工作区');
+    await executeMessage('What is the capital of France?');
+    await executeMessage('Which country did I ask about?');
 
-    expect(mockWorkspaceService.getWorkspacesAsList).toHaveBeenCalled();
-    const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
-    expect(assistant.length).toBeGreaterThanOrEqual(1);
-  }, 30000);
+    expect(mockExternalAPIService.generatePortableLlm).toHaveBeenCalledTimes(2);
+    const secondRequest = vi.mocked(mockExternalAPIService.generatePortableLlm).mock.calls[1]?.[0];
+    expect(secondRequest?.messages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'user', content: 'What is the capital of France?' }),
+      expect.objectContaining({ role: 'assistant', content: 'Paris is the capital.' }),
+      expect.objectContaining({ role: 'user', content: 'Which country did I ask about?' }),
+    ]));
 
-  // ── webFetch ───────────────────────────────────────────────
-
-  it('webFetch: agent fetches a URL', async () => {
-    mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(mockToolCall('web-fetch', { url: 'https://example.com' }))
-      .mockReturnValueOnce(mockChunk('已抓取。'));
-
-    await executeMessage('抓取 https://example.com');
-
-    const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
-    expect(assistant.length).toBeGreaterThanOrEqual(1);
+    const history = secondRequest?.messages.filter(message =>
+      typeof message.content === 'string' && [
+        'What is the capital of France?',
+        'Paris is the capital.',
+        'Which country did I ask about?',
+      ].includes(message.content)
+    );
+    expect(history?.map(message => message.content)).toEqual([
+      'What is the capital of France?',
+      'Paris is the capital.',
+      'Which country did I ask about?',
+    ]);
   }, 30000);
 });

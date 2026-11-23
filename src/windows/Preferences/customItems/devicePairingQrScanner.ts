@@ -1,13 +1,14 @@
+import {
+  MAX_PAIRING_QR_CAMERA_DIMENSION,
+  MAX_PAIRING_QR_CAMERA_PIXELS,
+  MAX_PAIRING_QR_FILE_BYTES,
+  MAX_PAIRING_QR_IMAGE_DIMENSION,
+  MAX_PAIRING_QR_IMAGE_PIXELS,
+  MAX_PAIRING_QR_SOURCE_DIMENSION,
+  MAX_PAIRING_QR_SOURCE_PIXELS,
+  PAIRING_QR_CAMERA_INTERVAL_MS,
+} from '@/constants/deviceNetwork';
 import jsQR from 'jsqr';
-
-export const MAX_PAIRING_QR_FILE_BYTES = 8 * 1024 * 1024;
-export const MAX_PAIRING_QR_SOURCE_DIMENSION = 8192;
-export const MAX_PAIRING_QR_SOURCE_PIXELS = 16 * 1024 * 1024;
-export const MAX_PAIRING_QR_IMAGE_DIMENSION = 2048;
-export const MAX_PAIRING_QR_IMAGE_PIXELS = 4 * 1024 * 1024;
-export const MAX_PAIRING_QR_CAMERA_DIMENSION = 1280;
-export const MAX_PAIRING_QR_CAMERA_PIXELS = 1_500_000;
-export const PAIRING_QR_CAMERA_INTERVAL_MS = 250;
 
 export type DevicePairingQrScannerErrorCode = 'image-too-large' | 'invalid-image' | 'not-found';
 
@@ -64,11 +65,6 @@ function checkedPixelCount(width: number, height: number): number {
   return pixels;
 }
 
-function checkedPositiveLimit(value: number): number {
-  if (!Number.isSafeInteger(value) || value <= 0) throw new DevicePairingQrScannerError('invalid-image');
-  return value;
-}
-
 export function boundedPairingQrRasterSize(
   width: number,
   height: number,
@@ -76,9 +72,7 @@ export function boundedPairingQrRasterSize(
   maxPixels: number,
 ): RasterSize {
   const pixels = checkedPixelCount(width, height);
-  const dimensionLimit = checkedPositiveLimit(maxDimension);
-  const pixelLimit = checkedPositiveLimit(maxPixels);
-  const scale = Math.min(1, dimensionLimit / width, dimensionLimit / height, Math.sqrt(pixelLimit / pixels));
+  const scale = Math.min(1, maxDimension / width, maxDimension / height, Math.sqrt(maxPixels / pixels));
   return {
     height: Math.max(1, Math.floor(height * scale)),
     width: Math.max(1, Math.floor(width * scale)),

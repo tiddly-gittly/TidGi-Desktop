@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 describe('ComfyUI image generation', () => {
-  it('fails closed without issuing an unsupported OpenAI-compatible request', async () => {
+  it('returns a ComfyUI plugin requirement error without sending a request', async () => {
     const fetch = vi.fn<typeof globalThis.fetch>();
     vi.stubGlobal('fetch', fetch);
 

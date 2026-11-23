@@ -216,7 +216,7 @@ describe('volatile Agent preview purge', () => {
     expect(await dataSource.getRepository(ConversationEventEntity).countBy({ conversationId: DURABLE_ID })).toBe(1);
   });
 
-  it('fails closed for durable instances and permanent definitions without changing either', async () => {
+  it('rejects purging durable instances and permanent definitions without changing either', async () => {
     await expect(discardVolatileAgentPreview(dataSource, { agentId: DURABLE_ID }))
       .rejects.toThrow(`Refusing to discard non-preview or non-volatile agent instance: ${DURABLE_ID}`);
     await expect(discardVolatileAgentPreview(dataSource, { temporaryDefinitionId: DURABLE_DEFINITION_ID }))

@@ -9,6 +9,7 @@ import type {
   BuiltinToolContext,
   ChatMessage,
   Device,
+  LoopScriptCapabilities,
   MemeLoopRuntime,
   PromptPreviewAuditDetailChunk,
   PromptPreviewAuditDetailRequest,
@@ -19,7 +20,15 @@ import type {
   PromptPreviewPrepareRequest,
   ToolApprovalResolution,
 } from 'memeloop';
-import { createAgentLoopRunner, createMemeLoopRuntime, materializeAgentInstanceModel, ProviderRegistry, registerBuiltinPromptPlugins, ToolApprovalBroker } from 'memeloop';
+import {
+  createAgentLoopRunner,
+  createMemeLoopRuntime,
+  materializeAgentInstanceModel,
+  ProviderRegistry,
+  registerBuiltinPromptPlugins,
+  resolveAgentLoopCapabilities,
+  ToolApprovalBroker,
+} from 'memeloop';
 
 import { disabledDesktopAgentToolIds, mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
@@ -131,6 +140,14 @@ export class MemeLoopDesktopRuntime {
     return pending;
   }
 
+  public getLoopCapabilities(conversationId: string, definitionId: string): Promise<LoopScriptCapabilities> {
+    return resolveAgentLoopCapabilities({
+      storage: this.storage,
+      loopScriptPolicy: this.options.loopScriptPolicy,
+      resolveAgentDefinition: this.definitionResolver(conversationId),
+    }, { conversationId, definitionId });
+  }
+
   public preparePromptPreviewExecutionModelRequest(
     input: PromptPreviewPrepareRequest,
   ): Promise<PromptPreviewPreparedExecution> {
@@ -227,10 +244,10 @@ export class MemeLoopDesktopRuntime {
     return {
       storage: this.storage,
       llmProvider: modelBindings.fallbackProvider,
-      modelProviderRegistry: modelBindings.registry,
-      ...(modelBindings.defaultModelConfig === undefined
-        ? {}
-        : { defaultModelConfig: modelBindings.defaultModelConfig }),
+      resolveModelBindings: async () => {
+        const { registry: modelProviderRegistry, defaultModelConfig } = await this.createModelBindings();
+        return { modelProviderRegistry, defaultModelConfig };
+      },
       tools: this.toolRegistry,
       toolApprovals: this.toolApprovals,
       syncAdapters: [],
@@ -271,16 +288,20 @@ export class MemeLoopDesktopRuntime {
         // another model request; a plugin's presence cannot disable Core.
         fallbackRegistryTools: true,
       },
-      resolveAgentDefinition: createDesktopAgentDefinitionResolver({
-        fallbackAgentId: agentId,
-        agentInstanceService: this.options.agentInstanceService,
-        agentDefinitionService: this.options.agentDefinitionService,
-      }),
+      resolveAgentDefinition: this.definitionResolver(agentId),
     };
   }
 
   private createModelBindings(): Promise<DesktopModelBindings> {
     return createDesktopModelBindings(this.options.externalAPIService);
+  }
+
+  private definitionResolver(conversationId: string): NonNullable<AgentFrameworkContext['resolveAgentDefinition']> {
+    return createDesktopAgentDefinitionResolver({
+      fallbackAgentId: conversationId,
+      agentInstanceService: this.options.agentInstanceService,
+      agentDefinitionService: this.options.agentDefinitionService,
+    });
   }
 }
 
@@ -294,7 +315,10 @@ export interface DesktopModelBindings {
 export async function createDesktopModelBindings(
   externalAPIService: IExternalAPIService,
 ): Promise<DesktopModelBindings> {
-  const accounts = await externalAPIService.getProviderAccounts();
+  const [accounts, globalConfig] = await Promise.all([
+    externalAPIService.getProviderAccounts(),
+    externalAPIService.getAIConfig(),
+  ]);
   const registry = new ProviderRegistry();
   const adapters = new Map<string, MemeLoopDesktopLLMProvider>();
   for (const account of accounts) {
@@ -316,7 +340,6 @@ export async function createDesktopModelBindings(
     adapters.set(account.providerId, adapter);
   }
 
-  const globalConfig = await externalAPIService.getAIConfig();
   const defaultModelConfig: AgentModelConfig | undefined = globalConfig.default &&
       adapters.has(globalConfig.default.providerId) &&
       accounts.find(account => account.providerId === globalConfig.default?.providerId)

@@ -8,6 +8,7 @@ import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import WebIcon from '@mui/icons-material/Web';
 import { ButtonBase, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { getDefaultAgentDefinitionId } from '@services/agentDefinition/defaults';
 import type { ScheduledTask } from 'memeloop';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -148,7 +149,7 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
   /** Handle tab click event - create new tab if new tab button, otherwise switch to tab */
   const handleClick = async () => {
     if (isNewTabButton) {
-      await addTab(TabType.NEW_TAB);
+      await addTab(TabType.CHAT, { agentDefId: getDefaultAgentDefinitionId() });
     } else {
       onClick();
     }

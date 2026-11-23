@@ -65,7 +65,7 @@ describe('AgentInstanceService volatile preview lifecycle', () => {
     }
   });
 
-  it('fails closed before runtime mutation for durable instances and definition mismatches', async () => {
+  it('rejects durable instances and definition mismatches before changing runtime state', async () => {
     findOne
       .mockResolvedValueOnce({ id: 'durable', agentDefId: 'durable-definition', volatile: false })
       .mockResolvedValueOnce({ id: 'preview', agentDefId: 'temp-a', volatile: true, preview: true });

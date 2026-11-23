@@ -27,3 +27,5 @@ export const DESKTOP_ATTACHMENT_UPLOAD_LIMITS = Object.freeze(
     mimeTypeBytes: 256,
   } as const,
 );
+
+export const ATTACHMENT_SYNC_CHUNK_BYTES = 3 * 1024 * 1024;

@@ -12,21 +12,31 @@ Feature: Bounded long-conversation renderer
       | element description | selector                        |
       | agent workspace     | [data-testid='workspace-agent'] |
       | new tab button      | [data-tab-id='new-tab-button']  |
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    And I click on an "agent suggestion" element with selector "[data-autocomplete-source-id='agentsSource'] [data-agent-definition-id='memeloop:general-assistant']"
     Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
     When I seed the active packaged agent with 2048 long-conversation turns and repeated compactions
-    Then the long-conversation renderer should keep its initial DOM bounded at 50 messages and 50 timeline markers
-    And hovering the latest user and assistant timeline markers should show their previews
+    Then I should see a "recent answer" element with selector "[data-testid='conversation-viewport']:has-text('E2E long answer 02047')"
+    And there should be between 1 and 50 elements matching "[data-testid='message-bubble']" with distinct "data-memeloop-message-id" attributes
+    And there should be between 1 and 50 elements matching "[data-testid='conversation-timeline'] [data-timeline-entry-index]" with distinct "data-timeline-entry-index" attributes
+    And I should see a "complete timeline size" element with selector "[data-testid='conversation-timeline'] [aria-setsize='4099']"
+    When I remember the text and "data-memeloop-message-id" attribute of elements with selector "[data-testid='message-bubble'] >> nth=0" as "initial resident boundary"
+    And I hover on a "latest user timeline marker" element with selector "[data-timeline-entry-index='4097']"
+    Then I should see a "latest question preview" element with selector "[role='tooltip']:has-text('E2E long question 02047')"
+    When I hover on a "latest assistant timeline marker" element with selector "[data-timeline-entry-index='4098']"
+    Then I should see a "latest answer preview" element with selector "[role='tooltip']:has-text('E2E long answer 02047')"
 
     When I click on an "earlier messages" element with selector "[data-testid='conversation-viewport'] > button >> nth=0"
-    Then the resident message window should move earlier while remaining bounded at 50 messages
+    Then the text and "data-memeloop-message-id" attribute of elements with selector "[data-testid='message-bubble'] >> nth=0" should not match "initial resident boundary"
+    And there should be between 1 and 50 elements matching "[data-testid='message-bubble']" with distinct "data-memeloop-message-id" attributes
 
-    When I seek the conversation timeline to its first absolute entry
-    Then the first long-conversation turn should be rendered in a bounded resident window
+    When I focus on a "timeline marker" element with selector "[data-testid='conversation-timeline'] [data-timeline-entry-index]"
+    And I press "Home" key
+    Then I should see a "first absolute timeline marker" element with selector "[data-timeline-entry-index='0'][aria-posinset='1']"
+    When I click on a "first absolute timeline marker" element with selector "[data-timeline-entry-index='0']"
+    Then I should see a "first durable question" element with selector "[data-testid='conversation-viewport']:has-text('E2E long question 00000')"
+    And I should see a "selected first timeline marker" element with selector "[data-timeline-entry-index='0'][aria-current='location']"
+    And I should see a "first durable message identity" element with selector "[data-testid='message-bubble'][data-memeloop-message-id$=':00000']"
+    And there should be between 1 and 50 elements matching "[data-testid='message-bubble']" with distinct "data-memeloop-message-id" attributes
 
     When I click on a "prompt preview" element with selector "[data-testid='prompt-preview-button']"
     And I switch to "promptPreview" window
@@ -34,4 +44,9 @@ Feature: Bounded long-conversation renderer
     When I click on a "message list tab" element with selector "[role='dialog'] [role='tab'] >> nth=1"
     Then I should see a "model request audit" element with selector "[data-testid='prompt-preview-execution-audit']"
     When I click on a "complete model request" element with selector "[data-testid='prompt-preview-model-request-detail']"
-    Then the generated prompt should contain all repeated compaction summaries and the recent conversation tail
+    Then the paginated JSON in "[data-testid='prompt-preview-audit-detail'] pre" with next button "[data-testid='prompt-preview-audit-detail-next']" should contain these texts and exclude "Schema.WikiSearch.":
+      | E2E durable compaction summary 1 |
+      | E2E durable compaction summary 2 |
+      | E2E durable compaction summary 3 |
+      | E2E long question 02047 |
+      | E2E long answer 02047 |

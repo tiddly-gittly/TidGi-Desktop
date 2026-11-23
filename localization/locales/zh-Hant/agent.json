@@ -410,6 +410,7 @@
     "SearchPlaceholder": "搜索標籤頁或智慧體..."
   },
   "Preference": {
+    "ModelAdvanced": "進階 API 與模型設定",
     "AIAgent": "智慧體",
     "AIAgentDescription": "管理智慧體對話記錄資料庫",
     "AIAgentDescriptionDetail": "這裡可以查看和刪除智慧體對話記錄資料庫的大小和位置資訊",
@@ -500,7 +501,7 @@
     "ModelAddedSuccessfully": "模型添加成功",
     "ModelAlreadyExists": "模型已存在",
     "ModelCaption": "模型顯示名稱",
-    "ModelCaptionHelp": "在界面上顯示的友好名稱，如不填則使用模型名稱",
+    "ModelCaptionHelp": "選填顯示名稱；留空時使用提供商模型 ID。",
     "ModelDetails": "模型詳細資訊",
     "ModelFeatures": "模型功能",
     "ModelName": "模型名稱",
@@ -508,6 +509,7 @@
     "ModelIdInvalid": "模型 ID 不能包含前後空白或控制字元，且不能超過 {{maxBytes}} 個 UTF-8 位元組。",
     "LogicalModelId": "邏輯模型 ID",
     "WireModelId": "提供商模型 ID",
+    "ProviderModelIdRequired": "請填寫提供商模型 ID",
     "WireModelIdDescription": "實際傳送給提供商的精確模型標識。",
     "EditModel": "編輯模型",
     "APIMode": "API 模式",

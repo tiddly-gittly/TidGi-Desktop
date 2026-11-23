@@ -406,7 +406,7 @@ describe('DesktopAgentRunStateStore atomic retry', () => {
     expect(await dataSource.getRepository(ConversationEventEntity).count()).toBe(2);
   });
 
-  it('fails closed when a replay has no durable peer/request row', async () => {
+  it('rejects a replay with no durable peer/request row without creating a run', async () => {
     const source = await appendSourceUserMessage(dataSource);
     const { expectedSourceMessage: _expectedSourceMessage, ...base } = createAtomicRetryInput(source);
 

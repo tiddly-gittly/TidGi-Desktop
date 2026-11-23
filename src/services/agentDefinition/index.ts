@@ -3,11 +3,12 @@
  * memeloop core manages the model, Desktop provides the storage layer.
  */
 import { inject, injectable } from 'inversify';
-import { pick } from 'lodash';
+import { isEqual, pick } from 'lodash';
 import type { AgentDefinition, AgentDefinitionToolConfig, AgentLoopScriptPolicy } from 'memeloop';
 import { digestNormalizedScript, getBuiltinLoopProfiles, normalizeScript, type TiddlerFieldsForAgent, tiddlerToAgentDefinition } from 'memeloop';
 
 import { nanoid } from 'nanoid';
+import { Subject } from 'rxjs';
 import { DataSource, Repository } from 'typeorm';
 
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
@@ -103,6 +104,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
   private readonly agentBrowserService!: IAgentBrowserService;
 
   private templateSource: AgentTemplateSource | undefined;
+  public readonly workflowChanged$ = new Subject<string>();
 
   private dataSource: DataSource | null = null;
   private agentDefRepository: Repository<AgentDefinitionEntity> | null = null;
@@ -194,6 +196,8 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     this.ensureRepositories();
     const existing = await this.agentDefRepository!.findOne({ where: { id: agent.id } });
     if (!existing) throw new Error(`Agent definition not found: ${agent.id}`);
+    const workflowChanged = (agent.loopId !== undefined && agent.loopId !== existing.loopId) ||
+      (agent.scriptReference !== undefined && !isEqual(agent.scriptReference, existing.scriptReference));
     if (agent.scriptReference !== undefined && existing.approvedScriptDigest) {
       const digest = agent.scriptReference.kind === 'source'
         ? await digestNormalizedScript(normalizeScript(agent.scriptReference.source))
@@ -223,6 +227,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     );
     existing.isCustomized = true;
     await this.agentDefRepository!.save(existing);
+    if (workflowChanged) this.workflowChanged$.next(existing.id);
     return projectAgentDefinition(existing);
   }
 
@@ -240,6 +245,7 @@ export class AgentDefinitionService implements IAgentDefinitionService {
     entity.approvedScriptDigest = await digestNormalizedScript(normalizeScript(input.source));
     entity.isCustomized = true;
     await this.agentDefRepository!.save(entity);
+    this.workflowChanged$.next(entity.id);
     return projectAgentDefinition(entity);
   }
 

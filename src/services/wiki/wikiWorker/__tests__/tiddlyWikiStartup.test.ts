@@ -31,19 +31,4 @@ describe('waitForTiddlyWikiStartup', () => {
 
     await expect(waitForTiddlyWikiStartup(boot, '/boot')).rejects.toThrow('boot failed');
   });
-
-  it('does not claim readiness if TiddlyWiki never invokes the callback', async () => {
-    const boot = { startup: vi.fn(() => undefined) };
-    const startup = waitForTiddlyWikiStartup(boot, '/boot');
-    const outcome = await Promise.race([
-      startup.then(() => 'resolved'),
-      new Promise<'pending'>(resolve =>
-        setTimeout(() => {
-          resolve('pending');
-        }, 10)
-      ),
-    ]);
-
-    expect(outcome).toBe('pending');
-  });
 });

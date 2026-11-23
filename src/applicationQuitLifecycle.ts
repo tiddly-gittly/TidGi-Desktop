@@ -1,3 +1,5 @@
+import { APPLICATION_QUIT_TIMEOUT_MS } from '@/constants/parameters';
+
 export interface QuitEventLike {
   preventDefault(): void;
 }
@@ -28,7 +30,7 @@ export interface ApplicationQuitLifecycleOptions {
 export function installApplicationQuitLifecycle(options: ApplicationQuitLifecycleOptions): void {
   const {
     app,
-    forceExitAfterMs = 15_000,
+    forceExitAfterMs = APPLICATION_QUIT_TIMEOUT_MS,
     logger,
   } = options;
   let cleanupPromise: Promise<void> | undefined;

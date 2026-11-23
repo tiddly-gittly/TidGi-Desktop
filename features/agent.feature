@@ -15,18 +15,42 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | element description | selector                        |
       | agent workspace     | [data-testid='workspace-agent'] |
       | new tab button      | [data-tab-id='new-tab-button']  |
+    Then I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
   @agent @mockOpenAI @modelParameters
   Scenario: Model parameters open for the current conversation
-    Given the test model advertises reasoning and temperature parameters
-    When I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
-    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
+    Given the test model has catalog metadata:
+      """
+      {"reasoning":true,"reasoningEfforts":["low","high"],"temperature":true,"limit":{"output":8192}}
+      """
     When I click on a "current model parameters button" element with selector "[data-testid='conversation-model-parameters']"
     Then I should see a "current conversation model parameters dialog" element with selector "[data-testid='conversation-model-parameters-dialog'] [role='dialog']"
     And I should see a "current model name" element with selector "[data-testid='conversation-model-parameters-dialog'] h2:has-text('test-model')"
-    And the selected model parameters should persist and reach the actual model request
+    When I click on a "reasoning selector" element with selector "[data-testid='conversation-model-parameters-dialog'] [role='combobox']"
+    Then I should see "supported reasoning options" elements with selectors:
+      | element description | selector |
+      | default | [role='option']:text-is('模型默认值') |
+      | low | [role='option']:text-is('low') |
+      | high | [role='option']:text-is('high') |
+    And I should not see an "unsupported fourth reasoning option" element with selector "[role='option'] >> nth=3"
+    When I click on a "high reasoning effort" element with selector "[role='option']:text-is('high')"
+    And I type "0.4" in "temperature" element with selector "[data-testid='conversation-model-parameters-dialog'] input[type='number'][max='2']"
+    And I capture the current window as "model-parameters.png"
+    And I click on a "save parameters" element with selector "[data-testid='conversation-model-parameters-dialog'] button:text-is('保存')"
+    Then I should not see a "parameters dialog" element with selector "[data-testid='conversation-model-parameters-dialog']"
+    When I click on a "reopen parameters" element with selector "[data-testid='conversation-model-parameters']"
+    Then I should see a "saved reasoning effort" element with selector "[data-testid='conversation-model-parameters-dialog'] [role='combobox']:text-is('high')"
+    And the "temperature" element with selector "[data-testid='conversation-model-parameters-dialog'] input[type='number'][max='2']" should have value "0.4"
+    When I press "Escape" key
+    Given I add mock OpenAI responses:
+      | response | stream |
+      | PARAMETER_ACCEPTANCE_COMPLETE | false |
+    When I type "Verify selected parameters" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then the last AI request should have parameters:
+      | reasoning_effort | "high" |
+      | temperature | 0.4 |
+      | top_p | 0.95 |
     Then I should see a "conversation message input" element with selector "[data-testid='agent-message-input']"
 
   @agent @mockOpenAI @promptExperience
@@ -35,17 +59,39 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | response                 | stream | embedding | toolName    | toolArguments                                    |
       |                          | false  |           | wiki-search | {"workspaceName":"wiki","filter":"[title[Index]]"} |
       | PROMPT_HISTORY_ASSISTANT  | false  |           |             |                                                  |
-    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
-    And I type "PROMPT_HISTORY_USER" in "chat input" element with selector "[data-testid='agent-message-input']"
+    When I type "PROMPT_HISTORY_USER" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see a "final assistant response" element with selector "[data-testid='message-bubble']:has-text('PROMPT_HISTORY_ASSISTANT')"
-    And the prompt tree and message list should show the same history tools and unsent input
+    And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
+    When I type "UNSENT_PREVIEW_INPUT" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I click on a "prompt preview" element with selector "[data-testid='prompt-preview-button']"
+    And I switch to "promptPreview" window
+    Then I should see "prompt entries" elements with selectors:
+      | element description | selector |
+      | user history | [data-testid='prompt-preview-tree'] [data-prompt-entry-id]:has-text('PROMPT_HISTORY_USER') |
+      | assistant history | [data-testid='prompt-preview-tree'] [data-prompt-entry-id]:has-text('PROMPT_HISTORY_ASSISTANT') |
+      | tool | [data-testid='prompt-preview-tree'] [data-prompt-entry-id]:has-text('wiki-search') |
+      | unsent input | [data-testid='prompt-preview-tree'] [data-prompt-entry-id]:has-text('UNSENT_PREVIEW_INPUT') |
+    And I should not see an "untranslated tool description" element with selector "[data-testid='prompt-preview-tree'] [data-prompt-entry-id]:has-text('Schema.WikiSearch.')"
+    When I remember the text and "data-prompt-entry-id" attribute of elements with selector "[data-testid='prompt-preview-tree'] [data-prompt-entry-id]" as "compiled prompt"
+    And I capture the current window as "prompt-tree.png"
+    And I hover on an "unsent prompt entry" element with selector "[data-testid='prompt-preview-tree'] [data-testid='prompt-preview-entry']:has-text('UNSENT_PREVIEW_INPUT')"
+    And I capture the current window as "prompt-tree-history.png"
+    And I click on a "flat message list tab" element with selector "[data-testid='prompt-execution-inspector'] [role='tab'] >> nth=1"
+    Then the text and "data-prompt-entry-id" attribute of elements with selector "[data-testid='prompt-preview-flat'] [data-prompt-entry-id]" should match "compiled prompt"
+    And I capture the current window as "prompt-flat.png"
     When I click on a "history message detail" element with selector "[data-testid='prompt-execution-inspector'] [data-testid='prompt-preview-entry']:has-text('PROMPT_HISTORY_ASSISTANT')"
     Then I should see a "history source" element with selector "[data-testid='prompt-preview-audit-detail'] pre:has-text('PROMPT_HISTORY_ASSISTANT')"
     When I press "Escape" key
     Then I should not see a "message detail" element with selector "[data-testid='prompt-preview-audit-detail']"
     And I should see a "prompt inspector" element with selector "[data-testid='prompt-execution-inspector']"
-    And the complete model request should include the unsent input and allow returning to the tree
+    When I click on a "complete model request" element with selector "[data-testid='prompt-preview-model-request-detail']"
+    Then the paginated JSON in "[data-testid='prompt-preview-audit-detail'] pre" with next button "[data-testid='prompt-preview-audit-detail-next']" should contain these texts and exclude "Schema.WikiSearch.":
+      | UNSENT_PREVIEW_INPUT |
+    And I capture the current window as "prompt-request.png"
+    When I click on a "return from request detail" element with selector "[data-testid='prompt-preview-detail-back']"
+    And I click on a "prompt tree tab" element with selector "[data-testid='prompt-execution-inspector'] [role='tab'] >> nth=0"
+    Then the text and "data-prompt-entry-id" attribute of elements with selector "[data-testid='prompt-preview-tree'] [data-prompt-entry-id]" should match "compiled prompt"
     When I click on an "editor toggle" element with selector "[role='switch'][aria-label='显示编辑']"
     Then I should see a "form editor tab" element with selector "[role='tab']:has-text('表单编辑')"
     And I capture the current window as "prompt-form.png"
@@ -53,7 +99,9 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see a "code editor" element with selector ".monaco-editor"
     And I capture the current window as "prompt-code.png"
     When I click on a "form editor tab" element with selector "[role='tab']:has-text('表单编辑')"
-    And closing prompt preview should preserve the chat input
+    And I close "promptPreview" window
+    And I switch to "main" window
+    Then the "unsent chat input" element with selector "[data-testid='agent-message-input']" should have value "UNSENT_PREVIEW_INPUT"
 
   @agent @mockOpenAI
   Scenario: Wiki-search tool usage
@@ -63,15 +111,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       |                                                                                                                                                                      | false  |           | wiki-search | {"workspaceName":"wiki","filter":"[title[Index]]"} |
       | 在 TiddlyWiki 中，Index 条目提供了编辑卡片的方法说明，点击右上角的编辑按钮可以开始对当前卡片进行编辑。此外，它还引导您访问中文教程页面和官方英文站点以获取更多信息。 | false  |           |          | |
     # Proceed with agent workflow in main window
-    # Step 1: Click new tab button
+    # Create another conversation directly from the tab bar.
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I should see a "search interface" element with selector ".aa-Autocomplete"
-    # Step 2: Click search box and wait for autocomplete
-    When I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    And I wait for 1 seconds for "agent suggestions to load"
-    # Step 3: Select agent from autocomplete (not new tab)
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Step 4: Send message to agent - using generic steps combination
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -95,13 +136,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | 已成功在工作区 wiki 中创建条目 "test"。                                                                                                                                                 | false  |           |          | |
     # Step 1: Start a fresh tab and run the two-round wiki operation flow
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I should see a "search interface" element with selector ".aa-Autocomplete"
-    # Step 2: Click search box and wait for autocomplete
-    When I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    And I wait for 1 seconds for "agent suggestions to load"
-    # Step 3: Select agent from autocomplete (not new tab)
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # First round: try create note using test-expected-to-fail workspace (expected to fail)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -116,27 +150,17 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | wiki workspace in last message | [data-testid='message-bubble']:has-text('wiki')               |
 
   @agent
-  Scenario: Create default agent from New Tab quick access
-    When I click on "new tab button and create default agent button" elements with selectors:
-      | element description         | selector                                    |
-      | new tab button              | [data-tab-id='new-tab-button']              |
-      | create default agent button | [data-testid='create-default-agent-button'] |
-    And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
-
-  @agent
   Scenario: Close all tabs then create default agent from fallback page
     # Ensure starting from black/fallback page with no open tabs
     # Open tab list dropdown and force-click all close buttons (they have opacity: 0)
     Given I click on a "tab list button" element with selector "[data-testid='tab-list-button']"
     And I should see a "tab list dropdown" element with selector "[data-testid='tab-list-dropdown']"
     When I click all "tab close button" elements matching selector "[data-testid^='tab-close-']"
-    # When there is no active tab, this is "fallback new tab", it has same thing as new tab.
+    # The welcome page remains available when every conversation is closed.
     And I should see "new tab button and Create Default Agent" elements with selectors:
       | element description     | selector                                    |
       | new tab button          | [data-tab-id='new-tab-button']              |
       | Create Default Agent    | [data-testid='create-default-agent-button'] |
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I should see a "Create Default Agent" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Open dropdown again and close all tabs
@@ -150,10 +174,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Given I add mock OpenAI responses:
       | response                                                                                               | stream |
       | partial_chunk_1<stream_split>partial_chunk_2<stream_split>partial_chunk_3<stream_split>partial_chunk_4 | true   |
-    And I click on "new tab button and create default agent button" elements with selectors:
-      | element description         | selector                                    |
-      | new tab button              | [data-tab-id='new-tab-button']              |
-      | create default agent button | [data-testid='create-default-agent-button'] |
+    When I click on a "new conversation" element with selector "[data-tab-id='new-tab-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "Start long streaming" in "chat input" element with selector "[data-testid='agent-message-input']"

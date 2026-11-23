@@ -26,7 +26,6 @@ Feature: Agent Tools - Ask-question variants and turn action bar
       |                                                                                                                                                                                                                                                                                                                                                                                                              | false  |           | ask-question | {"question":"What title should the new tiddler have?","inputType":"text","allowFreeform":true} |
       | 好的，我将创建标题为"My Custom Title"的tiddler。                                                                                                                                                                                                                                                                                                                                      | false  |           |          | |
     # Create agent
-    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # ── Part 1: single-select ──
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -79,7 +78,6 @@ Feature: Agent Tools - Ask-question variants and turn action bar
       | 这是重试后的回复。                       | false  |
       | 这是纯文本回复，没有工具调用。           | false  |
     # Create agent
-    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # ── Part 1: Delete ── (1 turn → 0 turns, selector unambiguous)
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
@@ -119,7 +117,6 @@ Feature: Agent Tools - Ask-question variants and turn action bar
       | Task Agent 模式的回复。            | false  |
       | Plan Agent 模式的回复。            | false  |
     # Create agent (default = Task Agent)
-    When I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Verify switcher shows current agent name
     Then I should see an "agent switcher" element with selector "[data-testid='agent-switcher-button']"

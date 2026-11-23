@@ -222,6 +222,7 @@ export class AgentInstanceService implements IAgentInstanceService {
         store: new DesktopGoalStore(this.dataSource!),
         executionNodeId,
         getRuntime: () => this.getDurableAgentRuntime(),
+        supportsGoal: ({ conversationId, definitionId }) => this.supportsConversationGoal(conversationId, definitionId),
         onError: error => logger.error('Goal continuation failed', { error }),
       });
       await this.initializeFrameworks();
@@ -765,9 +766,14 @@ export class AgentInstanceService implements IAgentInstanceService {
     return this.getGoalClient().get(...input);
   }
 
-  public async startGoal(input: Parameters<GoalClient['start']>[0]): ReturnType<GoalClient['start']> {
-    const conversation = await this.getAgentMetadata(input.conversationId);
-    if (!conversation || conversation.agentDefId !== input.definitionId) throw new Error('goal_conversation_definition_mismatch');
+  public async supportsConversationGoal(conversationId: string, definitionId?: string): Promise<boolean> {
+    const conversation = await this.getAgentMetadata(conversationId);
+    if (!conversation || (definitionId !== undefined && conversation.agentDefId !== definitionId)) return false;
+    const { goal } = await this.getMemeLoopRuntime().getLoopCapabilities(conversationId, conversation.agentDefId);
+    return goal === true;
+  }
+
+  public startGoal(input: Parameters<GoalClient['start']>[0]): ReturnType<GoalClient['start']> {
     return this.getGoalClient().start(input);
   }
 

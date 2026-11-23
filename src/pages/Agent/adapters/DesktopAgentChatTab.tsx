@@ -7,8 +7,6 @@ import {
   type AgentChatErrorPresentation,
   AgentChatShell,
   AgentSessionProvider,
-  getGoalPanelLabels,
-  GoalDialog,
   useAgentSession,
   useAgentSessionChatAdapter,
   type WikiAttachmentOption,
@@ -17,13 +15,14 @@ import { ConversationTimelineWindowController, type MemeLoopMessageLabels, Rende
 import { Alert, Box, Button, MenuItem, TextField, Typography } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import type { TFunction } from 'i18next';
-import { type ConversationMessageListProjection, extractAgentRunError, type GoalClient, type WikiTiddlerClickData } from 'memeloop';
+import { type ConversationMessageListProjection, extractAgentRunError, type WikiTiddlerClickData } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AgentSwitcher } from './components/AgentSwitcher';
 import { CompactModelSelector } from './components/CompactModelSelector';
+import { DesktopGoalControl } from './components/DesktopGoalControl';
 import { PromptPreviewButtonWithMenu } from './components/PromptPreviewButtonWithMenu';
 import { createSecureBrowserUuid } from './createSecureBrowserUuid';
 import { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
@@ -333,32 +332,8 @@ function DesktopAgentChatView({
     [i18n.language],
   );
   const activeAgentDefinitionId = snapshot.agent?.agentDefId ?? tab.agentDefId ?? tab.agentId;
-  const [goalOpen, setGoalOpen] = useState(false);
-  const goalLabels = getGoalPanelLabels(i18n.language);
-  const goalClient = useMemo<GoalClient>(() => ({
-    get: conversationId => window.service.agentInstance.getGoal(conversationId),
-    start: input => window.service.agentInstance.startGoal(input),
-    pause: input => window.service.agentInstance.pauseGoal(input),
-    resume: input => window.service.agentInstance.resumeGoal(input),
-    complete: input => window.service.agentInstance.completeGoal(input),
-  }), []);
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      {goalOpen && (
-        <GoalDialog
-          key={tab.agentId}
-          client={goalClient}
-          conversationId={tab.agentId}
-          definitionId={activeAgentDefinitionId}
-          labels={goalLabels}
-          resolveErrorPresentation={resolveErrorPresentation}
-          onErrorAction={handleDesktopAgentErrorAction}
-          onClose={() => {
-            setGoalOpen(false);
-          }}
-        />
-      )}
       {mainConversationError && (
         <Alert
           severity='error'
@@ -438,14 +413,12 @@ function DesktopAgentChatView({
                 agentId={tab.agentId}
                 agentDefinitionId={activeAgentDefinitionId}
               />
-              <Button
-                size='small'
-                onClick={() => {
-                  setGoalOpen(true);
-                }}
-              >
-                {goalLabels.title}
-              </Button>
+              <DesktopGoalControl
+                key={`${tab.agentId}:${activeAgentDefinitionId}`}
+                conversationId={tab.agentId}
+                definitionId={activeAgentDefinitionId}
+                resolveErrorPresentation={resolveErrorPresentation}
+              />
               <Button
                 size='small'
                 data-testid='use-as-main-conversation'

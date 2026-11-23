@@ -3,7 +3,7 @@ import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { writeSettingsFile } from '../settingsFileIO';
+import { SettingsWriteQueue, writeSettingsFile } from '../settingsFileIO';
 
 const temporaryDirectories: string[] = [];
 
@@ -28,17 +28,38 @@ describe('writeSettingsFile', () => {
     expect((await fs.readdir(directory)).filter(name => name.endsWith('.tmp'))).toEqual([]);
   });
 
-  it.runIf(process.platform !== 'win32')('keeps the final concurrent value private', async () => {
+  it('serializes overlapping writes and persists the newest complete settings', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'tidgi-settings-concurrent-'));
     temporaryDirectories.push(directory);
     const filePath = path.join(directory, 'settings.json');
 
-    // DatabaseService serializes these calls; emulate that queue while proving
-    // every atomic replacement retains the restrictive mode.
-    await writeSettingsFile(filePath, { revision: 1 }, process.platform);
-    await writeSettingsFile(filePath, { revision: 2, unknown: 'kept' }, process.platform);
+    const queue = new SettingsWriteQueue();
+    const settings = { preferences: { revision: 1 }, unknownFutureField: { preserve: true } };
+    const firstStarted = Promise.withResolvers<undefined>();
+    const releaseFirst = Promise.withResolvers<undefined>();
+    let secondStarted = false;
 
-    expect(JSON.parse(await readFile(filePath, 'utf8'))).toEqual({ revision: 2, unknown: 'kept' });
-    expect((await stat(filePath)).mode & 0o777).toBe(0o600);
+    const firstWrite = queue.enqueue(async () => {
+      const snapshot = structuredClone(settings);
+      firstStarted.resolve(undefined);
+      await releaseFirst.promise;
+      await writeSettingsFile(filePath, snapshot);
+    });
+    await firstStarted.promise;
+    settings.preferences.revision = 2;
+    const secondWrite = queue.enqueue(async () => {
+      secondStarted = true;
+      await writeSettingsFile(filePath, settings);
+    });
+
+    // Give an incorrectly concurrent queue a chance to start the newer write.
+    await Promise.resolve();
+    try {
+      expect(secondStarted).toBe(false);
+    } finally {
+      releaseFirst.resolve(undefined);
+      await Promise.all([firstWrite, secondWrite]);
+    }
+    expect(JSON.parse(await readFile(filePath, 'utf8'))).toEqual(settings);
   });
 });

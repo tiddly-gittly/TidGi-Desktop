@@ -1,6 +1,4 @@
-import { WORKER_AVAILABILITY_TIMEOUT_MS } from '@/constants/wiki';
-
-export const WIKI_WORKER_LIFECYCLE_MESSAGE_TYPE = 'tidgi-wiki-worker-lifecycle';
+import { WIKI_WORKER_LIFECYCLE_MESSAGE_TYPE, WORKER_AVAILABILITY_TIMEOUT_MS } from '@/constants/wiki';
 
 export type WikiWorkerLifecycleAction = 'subscriber-ready' | 'booted' | 'boot-error';
 

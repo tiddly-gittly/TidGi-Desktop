@@ -347,7 +347,7 @@ describe('DesktopScheduledTaskClient bounded aggregation', () => {
     expect(sendRpc).toHaveBeenCalledOnce();
   });
 
-  it('fails closed when a local source exceeds the requested page limit', async () => {
+  it('rejects a local response that exceeds the requested page limit', async () => {
     mutableService.agentInstance = createAgentInstanceService({
       listScheduledTasksForAgent: vi.fn().mockResolvedValue({
         items: [localWireTask, { ...localWireTask, id: 'task-local-2' }],

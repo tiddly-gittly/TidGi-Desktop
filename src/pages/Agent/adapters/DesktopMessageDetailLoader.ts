@@ -3,8 +3,6 @@ import { createAgentRunLogDetailLoader, getDisplayTruncation, type MessageDetail
 import { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
 import { loadDesktopMessageDetail } from './DesktopMessageContent';
 
-export { assertDesktopMessageHydrationIdentity, assertDesktopMessageIdentity, canonicalMessageHydrationIdentity, loadDesktopCanonicalMessage } from './DesktopMessageContent';
-
 export function createDesktopMessageDetailLoader(): MessageDetailLoader {
   const client = createDesktopAgentConversationClient();
   const runLogLoader = createAgentRunLogDetailLoader({

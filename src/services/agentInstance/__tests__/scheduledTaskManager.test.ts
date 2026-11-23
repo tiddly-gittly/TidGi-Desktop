@@ -182,7 +182,7 @@ describe('ScheduledTaskManager', () => {
       });
     });
 
-    it('fails closed when the stable local PeerId cannot be loaded', async () => {
+    it('rejects task creation when the stable local PeerId cannot be loaded', async () => {
       const repo = makeRepo();
       manager.initScheduledTaskManager(repo, makeAgentService(), async () => {
         throw new Error('keychain unavailable');
@@ -660,6 +660,40 @@ describe('ScheduledTaskManager', () => {
       expect(await manager.getActiveTasksForAgent('agent-7')).toHaveLength(1);
       expect(await manager.getActiveTasksForAgent('agent-8')).toHaveLength(1);
       expect(await manager.getActiveTasksForAgent('agent-8', { states: ['active'] })).toHaveLength(0);
+    });
+
+    it('preserves a future one-shot retry time when restoring an overdue schedule', async () => {
+      const now = new Date('2026-11-24T08:00:00.000Z');
+      vi.setSystemTime(now);
+      const wakeAtISO = new Date(now.getTime() - 60_000).toISOString();
+      const nextRetryAt = new Date(now.getTime() + 30_000);
+      const task = makeEntity({
+        scheduleKind: 'at',
+        schedule: { kind: 'at', wakeAtISO },
+        lastRunStatus: 'failed',
+        consecutiveFailures: 1,
+        nextRetryAt,
+        nextRunAt: nextRetryAt,
+      });
+      const repo = makeRepo([task]);
+      const sendMessage = vi.fn().mockResolvedValue(undefined);
+      manager.initScheduledTaskManager(repo, makeAgentService(sendMessage), localIdentity);
+
+      await manager.restoreScheduledTasks(repo, async () => false);
+      await vi.advanceTimersByTimeAsync(29_999);
+      expect(sendMessage).not.toHaveBeenCalled();
+      expect(await repo.findOneByOrFail({ id: task.id })).toMatchObject({
+        schedule: { kind: 'at', wakeAtISO },
+        nextRunAt: nextRetryAt,
+      });
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(await repo.findOneByOrFail({ id: task.id })).toMatchObject({
+        state: 'completed',
+        runCount: 1,
+        nextRetryAt: null,
+      });
     });
 
     it('skips volatile agent instances', async () => {

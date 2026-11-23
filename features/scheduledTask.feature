@@ -13,11 +13,10 @@ Feature: Scheduled Tasks Management
 
     # Create a durable conversation. Scheduled tasks cannot belong to a
     # volatile preview or to a definition without a conversation.
-    When I click on "agent workspace button and new tab button and create default agent button" elements with selectors:
+    When I click on "agent workspace button and new chat button" elements with selectors:
       | element description         | selector                                    |
       | agent workspace             | [data-testid='workspace-agent']             |
       | new tab button              | [data-tab-id='new-tab-button']              |
-      | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
 
     # --- Part A: Open the shared scheduled-task editor from preferences ---
@@ -45,10 +44,11 @@ Feature: Scheduled Tasks Management
 
     # --- Part C: Agent tab — the same shared schedule editor ---
     Then I switch to "main" window
-    When I click on "agent workspace button and new tab button" elements with selectors:
+    When I click on "agent workspace button" elements with selectors:
       | element description | selector                        |
       | agent workspace     | [data-testid='workspace-agent'] |
-      | new tab button      | [data-tab-id='new-tab-button']  |
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "edit definition menu item" element with selector "[data-testid='edit-definition-menu-item']"
     Then I should see a "schedule section" element with selector "[data-testid='edit-agent-schedule-section']"

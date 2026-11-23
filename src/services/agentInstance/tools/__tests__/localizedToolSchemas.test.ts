@@ -8,6 +8,7 @@ import chinese from '../../../../../localization/locales/zh-Hans/agent.json';
 import { desktopBuiltinToolDefinitions } from '../builtinToolDefinitions';
 import { defineDesktopTool } from '../defineToolDefinition';
 import { createNativeModelToolDefinitions } from '../nativeModelTools';
+import { wikiOperationDefinition } from '../wikiOperation';
 import { wikiSearchDefinition } from '../wikiSearch';
 
 const translations = createInstance();
@@ -77,6 +78,7 @@ describe('Desktop tool request localization', () => {
     expect(inputSchema).toMatchObject({
       title: 'unchanged-tool-name',
       description: chinese.Schema.WikiSearch.Tool.Description,
+      required: ['nested', 'union'],
       properties: {
         title: { const: key, default: key, description: chinese.Schema.WikiSearch.Tool.Description },
         nested: {
@@ -109,5 +111,31 @@ describe('Desktop tool request localization', () => {
     expect(projected).toHaveLength(1);
     expect(schemaToToolContent(projected[0])).toContain(english.Schema.WikiSearch.Tool.Description);
     expect(schemaToToolContent(projected[0])).toContain('explicit-tool');
+  });
+
+  it('registers wiki schemas for the native provider even without a prompt insertion target', async () => {
+    const registerModelTool = vi.fn();
+    await wikiSearchDefinition.onProcessPrompts?.({
+      config: { sourceType: 'wiki' },
+      toolConfig: { id: 'wiki-search' },
+      injectToolList: vi.fn(),
+      registerModelTool,
+    } as never);
+    await wikiOperationDefinition.onProcessPrompts?.({
+      config: {},
+      toolConfig: { id: 'wiki-operation' },
+      injectToolList: vi.fn(),
+      registerModelTool,
+    } as never);
+
+    expect(registerModelTool).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        name: 'wiki-search',
+        inputSchema: expect.objectContaining({ required: ['workspaceName'] }),
+      }),
+    );
+    expect(registerModelTool).toHaveBeenNthCalledWith(2, expect.objectContaining({ name: 'wiki-update-embeddings' }));
+    expect(registerModelTool).toHaveBeenNthCalledWith(3, expect.objectContaining({ name: 'wiki-operation' }));
   });
 });

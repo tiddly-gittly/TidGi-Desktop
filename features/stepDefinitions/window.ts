@@ -1,6 +1,22 @@
 import { When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
+import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
+
+When('I use the {string} application theme', async function(this: ApplicationWorld, theme: string) {
+  if (!this.currentWindow || (theme !== 'dark' && theme !== 'light')) throw new Error('Missing window or invalid theme');
+  await this.currentWindow.evaluate(async mode => {
+    if (mode === 'dark' || mode === 'light') await window.service.preference.set('themeSource', mode);
+  }, theme);
+  await this.currentWindow.waitForFunction(
+    mode => {
+      const foreground = Number(getComputedStyle(document.body).color.match(/[\d.]+/)?.[0]);
+      return mode === 'dark' ? foreground > 200 : foreground < 100;
+    },
+    theme,
+    { timeout: CUCUMBER_GLOBAL_TIMEOUT },
+  );
+});
 
 function isViewWithinBounds(
   view: { x: number; y: number; width: number; height: number },

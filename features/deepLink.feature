@@ -35,6 +35,6 @@ Feature: Deep Link
     Then I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     When I hide the main window as if closing with runOnBackground
     And I reopen the main window as second instance would
-    And I click on a "create default agent button" element with selector "[data-testid='create-default-agent-button']"
+    And I click on a "new chat button" element with selector "[data-tab-id='new-tab-button']"
     Then I should see a "chat input" element with selector "[data-testid='agent-message-input']"
     When I type "Foreground restore input test" in "chat input" element with selector "[data-testid='agent-message-input']"

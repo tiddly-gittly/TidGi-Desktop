@@ -51,7 +51,7 @@ describe('ScheduledWakeupEditor durable conversation binding', () => {
     vi.restoreAllMocks();
   });
 
-  it('fails closed when the secure device identity is unavailable', async () => {
+  it('shows an identity error without opening the scheduler when device identity is unavailable', async () => {
     mutableService.deviceNetwork = undefined;
     mutableService.agentInstance = {};
 

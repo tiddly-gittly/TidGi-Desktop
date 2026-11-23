@@ -4,6 +4,7 @@ import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { isEqual, omit } from 'lodash';
 import type { ProviderAccountConfig, ProviderAccountSettings } from 'memeloop';
+import assert from 'node:assert/strict';
 import path from 'path';
 import type { ISettingFile } from '../../src/services/database/interface';
 import { MockOpenAIServer } from '../supports/mockOpenAI';
@@ -12,6 +13,62 @@ import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/t
 import type { ApplicationWorld } from './application';
 
 type MockRule = Parameters<MockOpenAIServer['addRules']>[0][number];
+
+Then('there should be {int} open agent conversations', async function(this: ApplicationWorld, expected: number) {
+  assert(this.currentWindow);
+  await backOff(async () => {
+    const agents = await this.currentWindow!.evaluate(async () => window.service.agentInstance.getAgents(1, 100, { closed: false }));
+    assert.equal(agents.length, expected);
+  }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+});
+
+Then('the stored edit draft for message {string} should be {string}', async function(this: ApplicationWorld, selector: string, expected: string) {
+  assert(this.currentWindow);
+  await backOff(async () => {
+    const text = await this.currentWindow!.evaluate(async selector => {
+      const messageId = document.querySelector(selector)?.getAttribute('data-memeloop-message-id');
+      if (!messageId) throw new Error('Message identity is missing');
+      const message = await window.service.agentInstance.getAgentMessage(messageId);
+      if (!message) throw new Error('Stored message is missing');
+      return (await window.service.agentInstance.loadConversationEditSource(message.conversationId, messageId)).draft?.text;
+    }, selector);
+    assert.equal(text, expected, 'Edit draft has not been persisted');
+  }, { numOfAttempts: 30, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+});
+
+Then('the last AI request should not contain {string}', function(this: ApplicationWorld, unexpected: string) {
+  const request = this.mockOpenAIServer?.getLastRequest();
+  assert(request, 'No model request received');
+  assert(!JSON.stringify(request.messages).includes(unexpected), `Model context unexpectedly contains ${unexpected}`);
+});
+
+Given('the test model has catalog metadata:', async function(this: ApplicationWorld, metadata: string) {
+  assert(this.currentWindow);
+  const model = JSON.parse(metadata) as Record<string, unknown>;
+  await this.currentWindow.evaluate(async modelMetadata => {
+    const account = (await window.service.externalAPI.getProviderAccounts()).find(item => item.providerId === 'test-provider');
+    if (!account) throw new Error('Test provider missing');
+    await window.service.externalAPI.setProviderAccount({
+      ...account,
+      catalogProvider: {
+        id: 'test-provider',
+        name: 'Test provider',
+        env: [],
+        models: [{ id: 'test-model', name: 'test-model', attachment: false, reasoning: false, temperature: false, toolCall: true, ...modelMetadata }],
+      },
+    });
+  }, model);
+});
+
+Then('the last AI request should have parameters:', async function(this: ApplicationWorld, table: DataTable) {
+  await backOff(async () => {
+    const request = this.mockOpenAIServer?.getLastRequest();
+    assert(request, 'No model request received');
+    for (const [field, expected] of table.raw()) {
+      assert.deepEqual((request as unknown as Record<string, unknown>)[field], JSON.parse(expected), `Model request parameter ${field}`);
+    }
+  }, { numOfAttempts: 30, startingDelay: 100, maxDelay: 1000 });
+});
 
 function mockRulesFromTable(dataTable?: DataTable): MockRule[] {
   return (dataTable?.hashes() ?? []).map((row): MockRule => {

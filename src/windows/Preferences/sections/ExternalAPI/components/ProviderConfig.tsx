@@ -330,6 +330,7 @@ export function ProviderConfig({
         )}
       <NewModelDialog
         open={modelDialogOpen}
+        defaultApiMode={selectedAccount?.providerType === 'openai' ? 'responses' : 'chat-completions'}
         route={editedRoute}
         model={editedModel}
         onClose={() => {

@@ -1,4 +1,4 @@
-import { AGENT_TOOL_LOOP_ID } from 'memeloop';
+import { AGENT_TOOL_LOOP_ID, type AgentDefinitionToolConfig } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -7,6 +7,7 @@ import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { getDefaultAgentDefinitionId } from '../defaults';
+import { mergeDesktopGeneralAssistantTools } from '../index';
 import type { IAgentDefinitionService } from '../interface';
 
 describe('Desktop built-in general assistant integration', () => {
@@ -49,5 +50,21 @@ describe('Desktop built-in general assistant integration', () => {
       'wikiSearch',
       'wikiOperation',
     ]));
+  });
+
+  it('adds missing Desktop tools without replacing a configured tool', () => {
+    const configuredWikiSearch: AgentDefinitionToolConfig = {
+      toolId: 'wikiSearch',
+      parameters: { wikiSearchParam: { sourceType: 'custom-wiki' } },
+    };
+    const desktopTools: AgentDefinitionToolConfig[] = [
+      { toolId: 'workspacesList' },
+      { toolId: 'wikiSearch', parameters: { wikiSearchParam: { sourceType: 'desktop-wiki' } } },
+      { toolId: 'wikiOperation' },
+    ];
+    const result = mergeDesktopGeneralAssistantTools([configuredWikiSearch], desktopTools);
+
+    expect(result.map(tool => tool.toolId)).toEqual(['workspacesList', 'wikiSearch', 'wikiOperation']);
+    expect(result[1]).toBe(configuredWikiSearch);
   });
 });

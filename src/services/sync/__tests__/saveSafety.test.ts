@@ -54,7 +54,7 @@ describe('sync save safety', () => {
     expect(f.git.commitAndSync).toHaveBeenCalledOnce();
   });
 
-  it('fails closed if the draft probe never answers', async () => {
+  it('disallows sync and clears its timer when the draft probe does not answer', async () => {
     vi.useFakeTimers();
     const f = fixture();
     f.wiki.wikiOperationInServer.mockReturnValue(new Promise<never>(() => {}));

@@ -1,6 +1,7 @@
 /**
  * Web Fetch Tool — fetches external web content using Electron's net module.
  */
+import { DEFAULT_WEB_FETCH_CONTENT_CHARACTERS } from '@/constants/externalAPI';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { net } from 'electron';
@@ -15,7 +16,10 @@ export const WebFetchParameterSchema = z.object({
     position: z.enum(['before', 'after']).meta({ title: t('Schema.Common.ToolListPosition.PositionTitle'), description: t('Schema.Common.ToolListPosition.Position') }),
   }).optional().meta({ title: t('Schema.Common.ToolListPositionTitle'), description: t('Schema.Common.ToolListPosition.Description') }),
   toolResultDuration: z.number().optional().default(1).meta({ title: 'Tool result duration', description: 'Rounds this result stays in context' }),
-  maxContentLength: z.number().optional().default(50000).meta({ title: 'Max content length', description: 'Maximum characters to return from fetched content' }),
+  maxContentLength: z.number().optional().default(DEFAULT_WEB_FETCH_CONTENT_CHARACTERS).meta({
+    title: 'Max content length',
+    description: 'Maximum characters to return from fetched content',
+  }),
 }).meta({ title: 'Web Fetch Config', description: 'Configuration for web fetch tool' });
 
 export type WebFetchParameter = z.infer<typeof WebFetchParameterSchema>;
@@ -121,7 +125,7 @@ export const webFetchDefinition = defineDesktopTool({
   async onResponseComplete({ toolCall, executeToolCall, config, agentFrameworkContext }) {
     if (!toolCall || !toolCall.found || toolCall.toolId !== 'web-fetch') return;
     if (agentFrameworkContext.operationSignal?.aborted) return;
-    const maxLength = config?.maxContentLength ?? 50000;
+    const maxLength = config?.maxContentLength ?? DEFAULT_WEB_FETCH_CONTENT_CHARACTERS;
     await executeToolCall('web-fetch', (parameters) => executeWebFetch(parameters, maxLength));
   },
 });

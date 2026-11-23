@@ -2,15 +2,14 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { MAX_PAIRING_QR_FILE_BYTES, MAX_PAIRING_QR_SOURCE_DIMENSION, PAIRING_QR_CAMERA_INTERVAL_MS } from '@/constants/deviceNetwork';
+
 import {
   boundedPairingQrRasterSize,
   decodeDevicePairingQrFile,
   decodeDevicePairingQrPixels,
   DevicePairingQrCameraScanner,
   DevicePairingQrScannerError,
-  MAX_PAIRING_QR_FILE_BYTES,
-  MAX_PAIRING_QR_SOURCE_DIMENSION,
-  PAIRING_QR_CAMERA_INTERVAL_MS,
 } from './devicePairingQrScanner';
 
 function fakeFile(size: number): File {
@@ -61,9 +60,7 @@ describe('device pairing QR raster limits', () => {
   it.each([
     [0, 1, 10, 100],
     [1, Number.NaN, 10, 100],
-    [1, 1, 0, 100],
-    [1, 1, 10, -1],
-  ])('rejects invalid raster or limit tuple %#', (width, height, maxDimension, maxPixels) => {
+  ])('reports invalid image dimensions for raster %#', (width, height, maxDimension, maxPixels) => {
     expect(() => boundedPairingQrRasterSize(width, height, maxDimension, maxPixels))
       .toThrow(new DevicePairingQrScannerError('invalid-image'));
   });

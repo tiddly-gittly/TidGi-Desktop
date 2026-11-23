@@ -169,14 +169,11 @@ describe('ProviderConfig', () => {
     expect(setProviderAccount).not.toHaveBeenCalled();
   });
 
-  it('persists Unicode logical and wire model ids without exchanging them', async () => {
+  it('persists Unicode provider IDs with an internally derived identity', async () => {
     const user = userEvent.setup();
     renderProviderConfig([account], setAccounts);
     await user.click(screen.getByTestId('add-new-model-button'));
 
-    const logicalInput = await screen.findByTestId('new-model-name-input');
-    await user.click(logicalInput);
-    await user.type(logicalInput, '模型2');
     await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型2:latest');
     await user.type(screen.getByLabelText('Preference.ModelCaption'), '模型 2');
     await user.click(screen.getByTestId('save-new-model-button'));
@@ -185,7 +182,7 @@ describe('ProviderConfig', () => {
       expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
         providerId: 'openai-main',
         models: expect.arrayContaining([
-          { modelId: '模型2', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' },
+          { modelId: '供应商/模型2:latest', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' },
         ]),
       }));
     });
@@ -233,14 +230,13 @@ describe('ProviderConfig', () => {
     };
     renderProviderConfig([configuredAccount], setAccounts);
     await user.click(screen.getByTestId('add-new-model-button'));
-    await user.type(await screen.findByTestId('new-model-name-input'), '模型2');
     await user.type(screen.getByLabelText('Preference.WireModelId'), '供应商/模型2:latest');
     await user.click(screen.getByTestId('save-new-model-button'));
 
     await waitFor(() => {
       expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
         providerId,
-        models: [{ modelId: '模型2', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' }],
+        models: [{ modelId: '供应商/模型2:latest', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' }],
       }));
     });
   });

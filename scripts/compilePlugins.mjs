@@ -196,10 +196,9 @@ async function copyNonTsFiles(plugin, outDirs) {
 /**
  * Build a single plugin to all output directories
  */
-async function buildPlugin(plugin) {
+async function buildPlugin(plugin, outDirs) {
   console.log(`\nBuilding plugin: ${plugin.name}`);
 
-  const outDirs = getPluginOutputDirs(plugin.name);
   console.log(`  Output directories: ${outDirs.length}`);
 
   // Prepare output directories
@@ -217,18 +216,19 @@ async function buildPlugin(plugin) {
 /**
  * Main function to build all plugins
  */
-async function main() {
+export async function compilePlugins(outputDirectories = getPluginOutputDirs) {
   console.log('Starting plugin compilation...\n');
 
   for (const plugin of PLUGINS) {
-    await buildPlugin(plugin);
+    await buildPlugin(plugin, outputDirectories(plugin.name));
   }
 
   console.log('\n✓ All plugins compiled successfully!');
 }
 
-// Run main function
-main().catch((error) => {
-  console.error('Error compiling plugins:', error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  compilePlugins().catch((error) => {
+    console.error('Error compiling plugins:', error);
+    process.exit(1);
+  });
+}

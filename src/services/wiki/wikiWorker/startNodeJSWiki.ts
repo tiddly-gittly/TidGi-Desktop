@@ -22,7 +22,6 @@ import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided, loadTiddlyWikiModule } from './loadTiddlyWikiModule';
 import { createLoadWikiTiddlersWithSubWikis } from './loadWikiTiddlersWithSubWikis';
-import { getNodeWikiExtraPlugins } from './nodeWikiExtraPlugins';
 import { logForBestEffort } from './workerLogging';
 
 type BootContext = Pick<
@@ -113,10 +112,13 @@ async function bootWiki(
     );
   }
 
-  // TiddlyWiki's HTTP server requires both official plugins. Do not rely on a
-  // workspace's tiddlywiki.info to load filesystem implicitly: the canonical
-  // workspace template always includes the filesystem plugin declaration.
-  wikiInstance.boot.extraPlugins = getNodeWikiExtraPlugins(enableHTTPAPI, readOnlyMode);
+  // HTTP workspaces load both server plugins, including workspaces with a custom tiddlywiki.info.
+  wikiInstance.boot.extraPlugins = [
+    ...(readOnlyMode === true ? [] : ['plugins/linonetwo/watch-filesystem-adaptor']),
+    'plugins/linonetwo/tidgi-ipc-syncadaptor',
+    'plugins/linonetwo/tidgi-ipc-syncadaptor-ui',
+    ...(enableHTTPAPI ? ['plugins/tiddlywiki/filesystem', 'plugins/tiddlywiki/tiddlyweb'] : []),
+  ];
 
   const readonlyArguments = readOnlyMode === true
     ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`]

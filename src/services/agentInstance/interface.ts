@@ -122,6 +122,7 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   getGoalClient(): GoalClient;
   restoreGoals(): Promise<void>;
   getGoal: GoalClient['get'];
+  supportsConversationGoal(conversationId: string): Promise<boolean>;
   startGoal: GoalClient['start'];
   pauseGoal: GoalClient['pause'];
   resumeGoal: GoalClient['resume'];
@@ -415,6 +416,7 @@ export const AgentInstanceServiceIPCDescriptor = {
   channel: AgentChannel.instance,
   properties: {
     getGoal: ProxyPropertyType.Function,
+    supportsConversationGoal: ProxyPropertyType.Function,
     startGoal: ProxyPropertyType.Function,
     pauseGoal: ProxyPropertyType.Function,
     resumeGoal: ProxyPropertyType.Function,

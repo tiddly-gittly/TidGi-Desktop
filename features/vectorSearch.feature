@@ -30,10 +30,6 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open agent chat interface
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I should see a "search interface" element with selector ".aa-Autocomplete"
-    When I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] [data-agent-definition-id="memeloop:general-assistant"]'
     # Step 2: Create first note
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 AI Agent Guide 的笔记，内容是：智能体是一种可以执行任务的AI系统，它可以使用工具、搜索信息并与用户交互。" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -77,10 +73,9 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Create a test note via agent
-    When I click on "new tab button and create default agent button" elements with selectors:
+    When I click on "new chat button" elements with selectors:
       | element description        | selector                                    |
       | new tab button             | [data-tab-id='new-tab-button']              |
-      | create default agent button| [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"
     When I type "在 wiki 工作区创建一个名为 Machine Learning Basics 的笔记，内容是：机器学习是人工智能的一个分支，通过算法让计算机从数据中学习规律。" in "chat input" element with selector "[data-testid='agent-message-input']"
@@ -129,10 +124,9 @@ Feature: Vector Search - Embedding Generation and Semantic Search
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open agent chat interface
-    When I click on "new tab button and create default agent button" elements with selectors:
+    When I click on "new chat button" elements with selectors:
       | element description        | selector                                    |
       | new tab button             | [data-tab-id='new-tab-button']              |
-      | create default agent button| [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Step 2: Create first note about AI
     When I click on a "message input textarea" element with selector "[data-testid='agent-message-input']"

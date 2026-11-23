@@ -1,5 +1,6 @@
 import { DataTable, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
+import assert from 'node:assert/strict';
 import { parseDataTableRows } from '../supports/dataTable';
 import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
 import {
@@ -24,6 +25,72 @@ const BACKOFF_OPTIONS = {
 };
 
 const BROWSER_VIEW_RETRY_DELAY_MS = 100;
+
+When('I drag tiddler {string} from {string} to {string} in browser view', async function(this: ApplicationWorld, title: string, source: string, target: string) {
+  assert(this.app);
+  await backOff(async () => {
+    assert(await elementExists(this.app!, source, this.currentWindow), 'Drag source is not ready');
+    assert(await elementExists(this.app!, target, this.currentWindow), 'Drop target is not ready');
+  }, BACKOFF_OPTIONS);
+  const result = await executeTiddlyWikiCode<boolean>(
+    this.app,
+    `(function() {
+    const source = document.querySelector(${JSON.stringify(source)});
+    const target = document.querySelector(${JSON.stringify(target)});
+    if (!(source instanceof HTMLElement) || !(target instanceof HTMLElement) || source.offsetParent === null || target.offsetParent === null) throw new Error('Missing or hidden drag source or target');
+    const dataTransfer = new DataTransfer();
+    source.dispatchEvent(new DragEvent('dragstart', {bubbles:true, cancelable:true, dataTransfer}));
+    try {
+      const payload = dataTransfer.getData('text/vnd.tiddler');
+      if (!payload || JSON.parse(payload).title !== ${JSON.stringify(title)}) throw new Error('Drag source did not produce the expected canonical tiddler payload');
+      for (const type of ['dragenter', 'dragover', 'drop']) target.dispatchEvent(new DragEvent(type, {bubbles:true, cancelable:true, dataTransfer}));
+      return true;
+    } finally {
+      source.dispatchEvent(new DragEvent('dragend', {bubbles:true, cancelable:true, dataTransfer}));
+    }
+  })()`,
+    this.currentWindow,
+  );
+  assert.equal(result, true);
+});
+
+Then('there should be {int} elements in browser view matching {string}', async function(this: ApplicationWorld, expected: number, selector: string) {
+  assert(this.app);
+  await backOff(async () => {
+    const count = await executeTiddlyWikiCode<number>(this.app!, `document.querySelectorAll(${JSON.stringify(selector)}).length`, this.currentWindow);
+    assert.equal(count, expected, selector);
+  }, BACKOFF_OPTIONS);
+});
+
+Then(
+  'the browser view element {string} should have CSS property {string} equal to {string}',
+  async function(this: ApplicationWorld, selector: string, property: string, expected: string) {
+    assert(this.app);
+    await backOff(async () => {
+      const value = await executeTiddlyWikiCode<string>(
+        this.app!,
+        `getComputedStyle(document.querySelector(${JSON.stringify(selector)})).getPropertyValue(${JSON.stringify(property)})`,
+        this.currentWindow,
+      );
+      assert.equal(value, expected, `${selector}: ${property}`);
+    }, BACKOFF_OPTIONS);
+  },
+);
+
+Then(
+  'the browser view element {string} should be narrower than {string} and at most {int} pixels wide',
+  async function(this: ApplicationWorld, selector: string, reference: string, maximum: number) {
+    assert(this.app);
+    await backOff(async () => {
+      const widths = await executeTiddlyWikiCode<number[]>(
+        this.app!,
+        `[${JSON.stringify(selector)}, ${JSON.stringify(reference)}].map(selector => document.querySelector(selector).getBoundingClientRect().width)`,
+        this.currentWindow,
+      );
+      assert(widths && widths[0] > 0 && widths[0] <= maximum && widths[0] < widths[1], `Unexpected widths: ${JSON.stringify(widths)}`);
+    }, BACKOFF_OPTIONS);
+  },
+);
 
 type BrowserViewBackgroundMode = 'dark' | 'light';
 

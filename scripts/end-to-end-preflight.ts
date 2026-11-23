@@ -16,7 +16,7 @@ interface CalibrationSamples {
   elementMs: number[];
 }
 
-function runSmokeCalibration(): void {
+function runCalibration(): void {
   // Two complete calibration runs to capture CI machine variance without
   // excessive build time. A single run can hide a slow step on a cold cache.
   const CALIBRATION_RUNS = 2;
@@ -178,7 +178,7 @@ function isElementStep(name: string): boolean {
 }
 
 try {
-  runSmokeCalibration();
+  runCalibration();
 } catch (error) {
   console.error('[Cal] calibration preflight failed', error);
   process.exitCode = 1;

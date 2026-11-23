@@ -410,6 +410,7 @@
     "SearchPlaceholder": "タブまたはインテリジェントエージェントを検索..."
   },
   "Preference": {
+    "ModelAdvanced": "API とモデルの詳細設定",
     "AIAgent": "エージェント",
     "AIAgentDescription": "AI Agentの対話記録データベースを管理する",
     "AIAgentDescriptionDetail": "ここではAI Agentの会話記録データベースのサイズと位置情報を確認および削除できます。",
@@ -503,7 +504,7 @@
     "ModelAddedSuccessfully": "モデルが正常に追加されました",
     "ModelAlreadyExists": "モデルは既に存在します",
     "ModelCaption": "モデル表示名",
-    "ModelCaptionHelp": "インターフェースに表示するフレンドリーネーム。空白の場合はモデル名が使用されます",
+    "ModelCaptionHelp": "表示名は任意です。空欄の場合はプロバイダーモデル ID を表示します。",
     "ModelDetails": "モデルの詳細",
     "ModelFeatures": "モデル機能",
     "ModelName": "モデル名",
@@ -511,6 +512,7 @@
     "ModelIdInvalid": "モデル ID の前後に空白や制御文字を含めず、UTF-8 で {{maxBytes}} バイト以内にしてください。",
     "LogicalModelId": "論理モデル ID",
     "WireModelId": "プロバイダーモデル ID",
+    "ProviderModelIdRequired": "プロバイダーモデル ID を入力してください",
     "WireModelIdDescription": "プロバイダーへ送信する正確なモデル識別子です。",
     "EditModel": "モデルを編集",
     "APIMode": "API モード",

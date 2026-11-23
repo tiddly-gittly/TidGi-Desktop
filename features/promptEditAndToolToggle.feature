@@ -20,7 +20,8 @@ Feature: Agent Prompt Editing and Tool Toggle
       | response                               | stream |
       | 我是自定义提示词配置的助手，你好！     | false  |
     # Open edit agent definition page via right-click context menu on default agent
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "edit definition menu item" element with selector "[data-testid='edit-definition-menu-item']"
     # Verify edit interface loaded
@@ -50,7 +51,8 @@ Feature: Agent Prompt Editing and Tool Toggle
       | 第一次回复（工具启用时）                  | false  |
       | 第二次回复（工具禁用后）                  | false  |
     # Open edit agent definition page
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "edit definition menu item" element with selector "[data-testid='edit-definition-menu-item']"
     And I should see a "prompt config form" element with selector "[data-testid='edit-agent-prompt-form']"

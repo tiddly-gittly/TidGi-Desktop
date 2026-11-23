@@ -287,7 +287,7 @@ function scheduleEntry(task: ScheduledTaskEntity): void {
 
   if (schedule.kind === 'at') {
     const atSchedule = schedule;
-    const wakeAt = new Date(atSchedule.wakeAtISO);
+    const wakeAt = task.nextRetryAt ?? new Date(atSchedule.wakeAtISO);
     scheduleAtEntry(task, wakeAt, entry);
   } else if (schedule.kind === 'cron') {
     const cronSchedule = schedule;
@@ -394,18 +394,7 @@ export async function restoreScheduledTasks(
       continue;
     }
 
-    // For 'at' tasks that are in the past and not repeating, fire immediately
-    if (task.schedule.kind === 'at') {
-      const atSchedule = task.schedule;
-      const wakeAt = new Date(atSchedule.wakeAtISO);
-      if (wakeAt.getTime() <= Date.now()) {
-        scheduleEntry(Object.assign(new ScheduledTaskEntity(), task, { schedule: { ...atSchedule, wakeAtISO: new Date().toISOString() } }));
-      } else {
-        scheduleEntry(task);
-      }
-    } else {
-      scheduleEntry(task);
-    }
+    scheduleEntry(task);
     restored++;
   }
 

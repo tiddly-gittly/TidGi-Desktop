@@ -20,10 +20,9 @@ Feature: Create New Agent Workflow
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open new tab and navigate to CreateNewAgent
-    When I click on "new tab button and create new agent button" elements with selectors:
-      | element description     | selector                                |
-      | new tab button          | [data-tab-id='new-tab-button']          |
-      | create new agent button | [data-testid='create-new-agent-button'] |
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
+    And I click on a "create new agent button" element with selector "[data-testid='create-new-agent-button']"
     # Step 2: Verify first step content (Setup Agent: Name + Template)
     Then I should see "step title and search input and agent name input field" elements with selectors:
       | element description     | selector                               |
@@ -91,7 +90,8 @@ Feature: Create New Agent Workflow
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open new tab to access create default agent card
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     # Step 2: Right-click on create default agent card to open context menu
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     # Step 3: Click on edit definition option in context menu

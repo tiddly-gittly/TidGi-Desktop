@@ -38,14 +38,16 @@ Feature: TidGi Preference
       | add model button    | [data-testid='add-new-model-button']  |
     # Step 8: Output modality drives speech and image-generation assignments.
     When I type "test-speech-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
-    When I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
+    When I click on an "advanced model settings" element with selector "[data-testid='model-advanced-toggle']"
+    And I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
     And I type "audio" in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
     When I click on "save model button and add model button" elements with selectors:
       | element description | selector                              |
       | save model button   | [data-testid='save-new-model-button'] |
       | add model button    | [data-testid='add-new-model-button']  |
     When I type "test-image-model" in "model name input" element with selector "[data-testid='new-model-name-input']"
-    When I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
+    When I click on an "advanced model settings" element with selector "[data-testid='model-advanced-toggle']"
+    And I clear text in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
     And I type "image" in "output modalities input" element with selector "[data-testid='model-output-modalities-input']"
     When I click on a "save model button" element with selector "[data-testid='save-new-model-button']"
     # Step 9: Verify the default model selected for each capability.
@@ -65,11 +67,10 @@ Feature: TidGi Preference
 
     # --- Part B: Background tasks — create a recurring Cron wake-up ---
     Then I switch to "main" window
-    When I click on "agent workspace button and new tab button and create default agent button" elements with selectors:
+    When I click on "agent workspace button and new chat button" elements with selectors:
       | element description         | selector                                    |
       | agent workspace             | [data-testid='workspace-agent']             |
       | new tab button              | [data-tab-id='new-tab-button']              |
-      | create default agent button | [data-testid='create-default-agent-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I switch to "preferences" window

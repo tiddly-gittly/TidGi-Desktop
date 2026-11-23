@@ -410,6 +410,7 @@
     "SearchPlaceholder": "Rechercher un onglet ou un agent intelligent..."
   },
   "Preference": {
+    "ModelAdvanced": "Paramètres avancés de l’API et du modèle",
     "AIAgent": "agent intelligent",
     "AIAgentDescription": "Gérer la base de données des enregistrements de conversation des agents IA",
     "AIAgentDescriptionDetail": "Ici, vous pouvez consulter et supprimer les informations sur la taille et l'emplacement de la base de données des historiques de conversation avec l'Agent IA.",
@@ -502,7 +503,7 @@
     "ModelAddedSuccessfully": "Modèle ajouté avec succès",
     "ModelAlreadyExists": "Le modèle existe déjà",
     "ModelCaption": "Nom d'affichage du modèle",
-    "ModelCaptionHelp": "Un nom convivial à afficher dans l'interface ; si laissé vide, le nom du modèle sera utilisé",
+    "ModelCaptionHelp": "Nom d’affichage facultatif. Si vide, l’identifiant du modèle fournisseur sera utilisé.",
     "ModelDetails": "Détails du modèle",
     "ModelFeatures": "Fonctionnalités du modèle",
     "ModelName": "Nom du modèle",
@@ -510,6 +511,7 @@
     "ModelIdInvalid": "L’identifiant du modèle ne doit pas contenir d’espaces environnants ni de caractères de contrôle et ne doit pas dépasser {{maxBytes}} octets UTF-8.",
     "LogicalModelId": "Identifiant logique du modèle",
     "WireModelId": "Identifiant du modèle fournisseur",
+    "ProviderModelIdRequired": "L’identifiant du modèle fournisseur est requis",
     "WireModelIdDescription": "Identifiant exact du modèle envoyé au fournisseur.",
     "EditModel": "Modifier le modèle",
     "APIMode": "Mode API",

@@ -36,3 +36,15 @@ describe.each(['agent', 'translation'])('%s locale resources', namespace => {
     }
   });
 });
+
+it.each([
+  ['en', 'en'],
+  ['fr', 'fr'],
+  ['ja', 'ja'],
+  ['ru', 'ru'],
+  ['zh-Hans', 'zh_CN'],
+  ['zh-Hant', 'zh_TW'],
+])('%s maps scheduled task descriptions to the matching cron locale', (locale, descriptionLocale) => {
+  const resource = flattenValues(JSON.parse(fs.readFileSync(path.join(localesDirectory, locale, 'agent.json'), 'utf8')));
+  expect(resource['EditAgent.ScheduleCronLocale.cronDescriptionText']).toBe(descriptionLocale);
+});

@@ -243,7 +243,7 @@ describe('createAgentDeviceRpcPendingUserMessage wiki bounds', () => {
     expect(utf8ByteLength(pending.content ?? '')).toBeLessThanOrEqual(AGENT_USER_MESSAGE_LIMITS.contentBytes);
   });
 
-  it('fails closed with a stable code when a large identity cannot fit the canonical event', async () => {
+  it('reports ATTACHMENT_MESSAGE_BUDGET_EXCEEDED when a large identity cannot fit the canonical event', async () => {
     const largeTitle = 'T'.repeat(300_000);
     vi.spyOn(workspaceService, 'getWorkspacesAsList').mockResolvedValue([{ ...workspace, name: 'Large Wiki' }]);
     await expect(createAgentDeviceRpcPendingUserMessage({

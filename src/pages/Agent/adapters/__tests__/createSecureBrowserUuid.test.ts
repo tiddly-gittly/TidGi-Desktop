@@ -20,7 +20,7 @@ describe('createSecureBrowserUuid', () => {
     expect(getRandomValues).toHaveBeenCalledOnce();
   });
 
-  it('fails closed when no secure random source exists', () => {
+  it('throws when no secure random source exists', () => {
     expect(() => createSecureBrowserUuid({})).toThrow('secure_request_id_unavailable');
   });
 });

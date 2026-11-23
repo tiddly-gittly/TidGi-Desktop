@@ -644,7 +644,7 @@ describe('Desktop canonical conversation event store', () => {
       .toBe(1);
   });
 
-  it('fails closed on conflicting canonical bytes and rolls a remote batch back completely', async () => {
+  it('rejects conflicting canonical bytes and rolls back the complete remote batch', async () => {
     const draft: ConversationEventDraft = {
       kind: 'message',
       eventId: 'immutable',
@@ -1205,7 +1205,7 @@ describe('Desktop canonical conversation event store', () => {
     expect((await dataSource.getRepository(AgentInstanceEntity).findOneByOrFail({ id: 'conversation' })).name).toBe('high');
   });
 
-  it('fails closed without fabricating a compatibility definition during remote sync', async () => {
+  it('rejects remote messages with a missing definition without creating definition or event rows', async () => {
     const metadata: ConversationEvent = {
       kind: 'metadataPatch',
       eventId: 'remote-metadata',
