@@ -1,5 +1,20 @@
-import type { AgentDefinitionToolConfig, AgentFrameworkConfig } from 'memeloop';
+import type { AgentDefinition, AgentDefinitionToolConfig, AgentFrameworkConfig, LoopProfile } from 'memeloop';
 import { mergeAgentToolsIntoFrameworkConfig } from 'memeloop/tools';
+
+/** Keep Desktop's Wiki-backed todo as the only advertised todo capability. */
+export function adaptDesktopAgentDefinitionTools(
+  definition: AgentDefinition & Pick<LoopProfile, 'plugins'>,
+): AgentDefinition & Pick<LoopProfile, 'plugins'> {
+  return {
+    ...definition,
+    // The host prompt plugin keeps its persisted todoWrite configuration, but
+    // registers manage-todo. Core's native todoWrite requires a different store.
+    tools: definition.tools.filter(toolId => toolId !== 'todoWrite'),
+    ...(definition.plugins === undefined ? {} : {
+      plugins: definition.plugins.filter(plugin => plugin.id !== 'builtin:todo-write'),
+    }),
+  };
+}
 
 /**
  * Materialize Desktop-owned tool declarations without discarding an editor

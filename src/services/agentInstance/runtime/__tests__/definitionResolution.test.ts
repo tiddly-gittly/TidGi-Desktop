@@ -107,20 +107,28 @@ describe('resolveDesktopAgentDefinition', () => {
   });
 
   it('keeps an explicit persisted tool disablement in the effective next-turn configuration', async () => {
-    const definition: AgentDefinition = {
+    const definition = {
       id: 'definition-1',
       name: 'Assistant',
       description: 'Base definition',
       systemPrompt: '',
-      tools: [],
+      tools: ['todoWrite', 'mcpClient'],
+      plugins: [{ id: 'builtin:todo-write' }, { id: 'builtin:mcp-client' }],
       version: '1',
       agentFrameworkConfig: {
         prompts: [],
-        plugins: [{ id: 'wiki-search-editor', toolId: 'wikiSearch', enabled: false }],
+        plugins: [
+          { id: 'wiki-search-editor', toolId: 'wikiSearch', enabled: false },
+          { id: 'todo-editor', toolId: 'todoWrite', enabled: false, todoWriteParam: { todoInjectionTargetId: 'custom-plan' } },
+        ],
       },
-      agentTools: [{ toolId: 'wikiSearch', enabled: true, parameters: { wikiSearchParam: { sourceType: 'desktop' } } }],
+      agentTools: [
+        { toolId: 'wikiSearch', enabled: true, parameters: { wikiSearchParam: { sourceType: 'desktop' } } },
+        { toolId: 'todoWrite', enabled: true },
+      ],
     };
 
+    const savedDefinition = structuredClone(definition);
     const resolved = await resolveDesktopAgentDefinition({
       agentId: 'conversation-1',
       definitionId: definition.id,
@@ -136,7 +144,14 @@ describe('resolveDesktopAgentDefinition', () => {
       enabled: false,
       wikiSearchParam: { sourceType: 'desktop' },
     });
-    expect(resolved?.agentTools?.map(tool => tool.toolId)).not.toContain('wikiSearch');
+    expect(resolved?.agentTools).toEqual([]);
+    expect(resolved?.tools).toEqual(['mcpClient']);
+    expect(resolved).toMatchObject({ plugins: [{ id: 'builtin:mcp-client' }] });
+    expect(resolved?.agentFrameworkConfig?.plugins?.find(plugin => plugin.toolId === 'todoWrite')).toMatchObject({
+      enabled: false,
+      todoWriteParam: { todoInjectionTargetId: 'custom-plan' },
+    });
+    expect(definition).toEqual(savedDefinition);
   });
 
   it('uses the per-turn conversation identity supplied by a shared Core runtime', async () => {

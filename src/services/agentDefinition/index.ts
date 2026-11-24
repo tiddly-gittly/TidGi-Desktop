@@ -17,6 +17,7 @@ import type { IDatabaseService } from '@services/database/interface';
 import { AgentDefinitionEntity, AgentInstanceEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { adaptDesktopAgentDefinitionTools } from './frameworkConfig';
 import type { AgentTemplateSource, IAgentDefinitionService } from './interface';
 
 const GENERAL_ASSISTANT_ID = 'memeloop:general-assistant';
@@ -59,12 +60,14 @@ function createDesktopBuiltinAgentDefinitions(): AgentDefinition[] {
     ?.agentTools?.filter(tool => DESKTOP_GENERAL_ASSISTANT_TOOL_IDS.has(tool.toolId)) ?? [];
 
   return portableDefinitions.map(definition =>
-    definition.id === GENERAL_ASSISTANT_ID
-      ? {
-        ...definition,
-        agentTools: mergeDesktopGeneralAssistantTools(definition.agentTools, desktopWikiTools),
-      }
-      : definition
+    adaptDesktopAgentDefinitionTools(
+      definition.id === GENERAL_ASSISTANT_ID
+        ? {
+          ...definition,
+          agentTools: mergeDesktopGeneralAssistantTools(definition.agentTools, desktopWikiTools),
+        }
+        : definition,
+    )
   );
 }
 

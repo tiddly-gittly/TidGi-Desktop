@@ -30,7 +30,7 @@ import {
   ToolApprovalBroker,
 } from 'memeloop';
 
-import { disabledDesktopAgentToolIds, mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
+import { adaptDesktopAgentDefinitionTools, disabledDesktopAgentToolIds, mergeDesktopAgentToolsIntoFrameworkConfig } from '@services/agentDefinition/frameworkConfig';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
@@ -71,14 +71,14 @@ export async function resolveDesktopAgentDefinition(options: {
   const effectiveFrameworkConfig = mergeDesktopAgentToolsIntoFrameworkConfig(frameworkConfig, definition.agentTools);
   const disabledToolIds = disabledDesktopAgentToolIds(effectiveFrameworkConfig);
 
-  return {
+  return adaptDesktopAgentDefinitionTools({
     ...definition,
     agentFrameworkConfig: effectiveFrameworkConfig,
     ...(definition.agentTools === undefined ? {} : {
       agentTools: definition.agentTools.filter(tool => !disabledToolIds.has(tool.toolId)),
     }),
     ...(modelConfig === undefined ? {} : { modelConfig }),
-  };
+  });
 }
 
 /** Bind Desktop services while keeping Core's per-turn conversation identity authoritative. */

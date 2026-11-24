@@ -4,7 +4,7 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
-import type { AgentDefinition, AgentRuntimeView } from 'memeloop';
+import type { AgentDefinition, AgentRuntimeView, PortableLlmJsonValue, PortableLlmStreamPart } from 'memeloop';
 import path from 'node:path';
 
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
@@ -117,12 +117,16 @@ describe('all tools integration', () => {
     vi.restoreAllMocks();
   });
 
-  async function* mockChunk(content: string) {
+  async function* mockChunk(content: string): AsyncGenerator<PortableLlmStreamPart> {
     yield { type: 'text-delta' as const, id: 'r-' + Math.random().toString(36).slice(2, 8), text: content };
     yield { type: 'finish' as const, finishReason: 'stop' };
   }
 
-  async function* mockToolCall(toolName: string, input: Record<string, unknown>, toolCallId = `call-${nanoid()}`) {
+  async function* mockToolCall(
+    toolName: string,
+    input: Record<string, PortableLlmJsonValue>,
+    toolCallId = `call-${nanoid()}`,
+  ): AsyncGenerator<PortableLlmStreamPart> {
     yield { type: 'tool-call' as const, toolCallId, toolName, input };
     yield { type: 'finish' as const, finishReason: 'tool-calls' };
   }
@@ -284,13 +288,46 @@ describe('all tools integration', () => {
 
   // ── persistent goal / todo ─────────────────────────────────
 
-  it('manage-todo: persists a session goal as a Wiki tiddler', async () => {
+  it('manage-todo: advertises the Desktop schema and persists a plan from an inherited Core definition', async () => {
+    const definitions = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
+    const desktopDefinition = (await definitions.getAgentTemplates()).find(definition => definition.id === 'memeloop:general-assistant');
+    const portableProfile = getBuiltinLoopProfiles().find(profile => profile.id === 'memeloop:general-assistant');
+    const configuredDefinition = await definitions.getAgentDef(testAgentInstance.agentDefId);
+    if (!desktopDefinition || !portableProfile || !configuredDefinition) throw new Error('Missing general assistant definition');
+    expect(desktopDefinition.tools).not.toContain('todoWrite');
+    expect(desktopDefinition).toHaveProperty('plugins', expect.not.arrayContaining([{ id: 'builtin:todo-write' }]));
+
+    // Previously saved definitions can still carry the original Core declarations.
+    const persistedDefinition = {
+      ...desktopDefinition,
+      tools: [...(portableProfile.tools ?? [])],
+      plugins: portableProfile.plugins,
+      modelConfig: configuredDefinition.modelConfig,
+    };
+    const savedDefinition = structuredClone(persistedDefinition);
+    vi.mocked(definitions.getAgentDef).mockResolvedValue(persistedDefinition);
+    testAgentInstance = await agentInstanceService.createAgent(persistedDefinition.id, { id: nanoid() });
+
     const todoText = '- [ ] 列出工作区\n- [ ] 创建笔记\n- [ ] 核对正文';
-    mockExternalAPIService.generatePortableLlm = vi.fn()
-      .mockReturnValueOnce(
-        mockToolCall('manage-todo', { workspaceName: 'wiki', operation: 'write', text: todoText }),
-      )
+    const generatePortableLlm = vi.fn<IExternalAPIService['generatePortableLlm']>()
+      .mockImplementationOnce(request => {
+        expect(request.tools?.map(tool => tool.name)).not.toContain('todoWrite');
+        expect(request.tools?.filter(tool => tool.name === 'manage-todo')).toHaveLength(1);
+        expect(request.tools?.map(tool => tool.name)).toContain('mcpClient');
+        expect(request.tools).toContainEqual(expect.objectContaining({
+          name: 'manage-todo',
+          inputSchema: expect.objectContaining({
+            properties: expect.objectContaining({
+              workspaceName: expect.objectContaining({ type: 'string' }),
+              operation: expect.objectContaining({ enum: ['write', 'read'] }),
+              text: expect.objectContaining({ type: 'string' }),
+            }),
+          }),
+        }));
+        return mockToolCall('manage-todo', { workspaceName: 'wiki', operation: 'write', text: todoText }, 'call-desktop-todo');
+      })
       .mockReturnValueOnce(mockChunk('计划已保存。'));
+    mockExternalAPIService.generatePortableLlm = generatePortableLlm;
 
     mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
 
@@ -306,6 +343,17 @@ describe('all tools integration', () => {
         JSON.stringify({ withDate: true }),
       ],
     );
+    expect(generatePortableLlm).toHaveBeenCalledTimes(2);
+    expect(generatePortableLlm.mock.calls[1]?.[0].messages).toContainEqual({
+      role: 'tool',
+      content: [expect.objectContaining({
+        type: 'tool-result',
+        toolCallId: 'call-desktop-todo',
+        toolName: 'manage-todo',
+      })],
+    });
+    expect((await getPersistedMessages()).at(-1)?.content).toBe('计划已保存。');
+    expect(persistedDefinition).toEqual(savedDefinition);
   }, 30000);
 
   // ── wiki-operation set ─────────────────────────────────────

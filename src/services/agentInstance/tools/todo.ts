@@ -29,6 +29,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { type ChatMessage, isToolResultPart, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
+import { createNativeModelToolDefinitions } from './nativeModelTools';
 
 /* ------------------------------------------------------------------ */
 /*  Config schema                                                      */
@@ -183,7 +184,9 @@ export const todoDefinition = defineDesktopTool({
   configSchema: TodoParameterSchema,
   llmToolSchemas: { 'manage-todo': TodoToolSchema },
 
-  onProcessPrompts({ config, injectToolList, injectContent, agentFrameworkContext }) {
+  onProcessPrompts({ config, injectToolList, injectContent, registerModelTool, agentFrameworkContext }) {
+    for (const tool of createNativeModelToolDefinitions({ 'manage-todo': TodoToolSchema })) registerModelTool(tool);
+
     // 1. Inject tool description into the tool list area
     const pos = config.toolListPosition;
     if (pos?.targetId) {
