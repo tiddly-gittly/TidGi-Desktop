@@ -53,6 +53,36 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | top_p | 0.95 |
     Then I should see a "conversation message input" element with selector "[data-testid='agent-message-input']"
 
+  @agent @mockOpenAI @modelParameters
+  Scenario: A running chat uses the newly selected default model
+    Given I add mock OpenAI responses:
+      | response | stream |
+      | FIRST_MODEL_REPLY | false |
+      | SWITCHED_MODEL_REPLY | false |
+    When I type "Verify the first route" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see a "first reply" element with selector "[data-testid='message-bubble']:has-text('FIRST_MODEL_REPLY')"
+    And the last AI request should have parameters:
+      | model | "test-model" |
+    When I click on a "settings button" element with selector "#open-preferences-button"
+    And I switch to "preferences" window
+    And I click on an "external services section" element with selector "[data-testid='preference-section-externalAPI']"
+    And I click on an "add model button" element with selector "[data-testid='add-new-model-button']"
+    And I type "test-model-alternate" in "provider model ID" element with selector "[data-testid='new-model-name-input']"
+    And I type "Alternate test model" in "model display name" element with selector "[data-testid='new-model-display-name-input']"
+    And I click on a "save model button" element with selector "[data-testid='save-new-model-button']"
+    Then I should see an "added model" element with selector "[data-testid='model-chip-test-model-alternate']:has-text('Alternate test model')"
+    When I click on a "default model picker" element with selector "[data-testid='default-model-selector'] button[title='打开']"
+    And I click on an "alternate model" element with selector "[role='option']:has-text('Alternate test model')"
+    Then I should see a "selected default model" element with selector "[data-testid='default-model-selector'] input[value='Alternate test model']"
+    When I close "preferences" window
+    And I switch to "main" window
+    And I type "Verify the new route" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see a "second reply" element with selector "[data-testid='message-bubble']:has-text('SWITCHED_MODEL_REPLY')"
+    And the last AI request should have parameters:
+      | model | "test-model-alternate" |
+
   @agent @mockOpenAI @promptExperience
   Scenario: Prompt preview includes history tools and unsent input in both views
     Given I add mock OpenAI responses:

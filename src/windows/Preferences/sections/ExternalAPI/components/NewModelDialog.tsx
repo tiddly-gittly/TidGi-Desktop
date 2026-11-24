@@ -196,6 +196,7 @@ export function NewModelDialog({
           margin='normal'
           label={t('Preference.ModelCaption')}
           helperText={t('Preference.ModelCaptionHelp')}
+          slotProps={{ htmlInput: { 'data-testid': 'new-model-display-name-input' } }}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
