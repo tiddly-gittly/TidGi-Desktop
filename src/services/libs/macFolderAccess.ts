@@ -1,6 +1,6 @@
 import { app } from 'electron';
-import { opendir } from 'node:fs/promises';
 import path from 'node:path';
+import { deserializeError } from 'serialize-error';
 import { logger } from './log';
 
 interface FolderAccessOptions {
@@ -54,17 +54,48 @@ export class MacFolderAccess {
   }
 }
 
+const probeShutdown = new AbortController();
+
+export function stopMacFolderAccessChecks(): void {
+  probeShutdown.abort(new Error('Folder access check cancelled during application shutdown'));
+}
+
+export async function probeMacDirectory(folder: string, signal: AbortSignal): Promise<void> {
+  const { default: startProbe } = await import('./macFolderProbeWorker?utilityProcess');
+  signal.throwIfAborted();
+
+  // A macOS consent request can keep opendir blocked in an OS call. Keep it outside the main process's libuv pool.
+  const worker = startProbe({ serviceName: 'wiki-folder-access', env: { ...process.env, TIDGI_ACCESS_CHECK_DIRECTORY: folder } });
+  await new Promise<void>((resolve, reject) => {
+    const stop = () => {
+      worker.kill();
+      reject(new Error('Folder access check cancelled during application shutdown', { cause: signal.reason }));
+    };
+    signal.addEventListener('abort', stop, { once: true });
+    worker.once('spawn', () => {
+      if (signal.aborted) worker.kill();
+    });
+    worker.once('error', (type, location) => {
+      reject(new Error(`Folder access process failed: ${type} at ${location}`));
+    });
+    worker.once('message', (failure: unknown) => {
+      if (failure === null) resolve();
+      else reject(deserializeError(failure));
+    });
+    worker.once('exit', (code) => {
+      signal.removeEventListener('abort', stop);
+      reject(new Error(`Folder access process exited (${code})`));
+    });
+  });
+}
+
 export const macFolderAccess = new MacFolderAccess({
   platform: process.platform,
   protectedFolders: () => [app.getPath('desktop'), app.getPath('documents'), app.getPath('downloads')],
   readDirectory: async (folder) => {
     const startedAt = performance.now();
-    // Track both operations so a pending probe can be diagnosed without
-    // interpreting its waiting metadata as evidence of a macOS dialog.
     logger.debug('Workspace directory access check started', { folder });
-    const directory = await opendir(folder);
-    logger.debug('Workspace directory access check opened directory', { folder, elapsedMs: performance.now() - startedAt });
-    await directory.close();
+    await probeMacDirectory(folder, probeShutdown.signal);
     logger.debug('Workspace directory access check completed', { folder, elapsedMs: performance.now() - startedAt });
   },
 });

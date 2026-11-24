@@ -1,7 +1,10 @@
+import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MacFolderAccess } from '../macFolderAccess';
+import { MacFolderAccess, probeMacDirectory } from '../macFolderAccess';
 
 vi.mock('electron', () => ({ app: { getPath: vi.fn() } }));
+const startProbe = vi.hoisted(() => vi.fn());
+vi.mock('../macFolderProbeWorker?utilityProcess', () => ({ default: startProbe }));
 
 function deferred() {
   let resolve!: () => void;
@@ -78,5 +81,31 @@ describe('macOS folder access consent', () => {
     controller.abort(new Error('shutdown'));
     await expect(createAccess(read).waitForAccess('/Users/test/Desktop/wiki', controller.signal)).rejects.toThrow('shutdown');
     expect(read).not.toHaveBeenCalled();
+  });
+
+  it('preserves a denied folder error and terminates a pending utility process on quit', async () => {
+    const denial = Object.assign(new EventEmitter(), { kill: vi.fn() });
+    const pending = Object.assign(new EventEmitter(), { kill: vi.fn() });
+    startProbe.mockReset().mockReturnValueOnce(denial).mockReturnValueOnce(pending);
+    const shutdown = new AbortController();
+
+    const denied = expect(probeMacDirectory('/Users/test/Desktop', shutdown.signal)).rejects.toMatchObject({ code: 'EPERM' });
+    await vi.waitFor(() => {
+      expect(startProbe).toHaveBeenCalledTimes(1);
+    });
+    denial.emit('message', { name: 'Error', message: 'Operation not permitted', code: 'EPERM' });
+    denial.emit('exit', 0);
+    await denied;
+
+    const cancelled = expect(probeMacDirectory('/Users/test/Documents', shutdown.signal)).rejects.toThrow('application shutdown');
+    await vi.waitFor(() => {
+      expect(startProbe).toHaveBeenCalledTimes(2);
+    });
+    shutdown.abort();
+    await cancelled;
+    expect(pending.kill).toHaveBeenCalledOnce();
+    pending.emit('spawn');
+    expect(pending.kill).toHaveBeenCalledTimes(2);
+    pending.emit('exit', 0);
   });
 });

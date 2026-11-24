@@ -17,6 +17,7 @@ import { container } from '@services/container';
 import { setupUnhandled } from '@services/libs/electronUnhandledBridge';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 import { destroyLogger, logger } from '@services/libs/log';
+import { stopMacFolderAccessChecks } from '@services/libs/macFolderAccess';
 import { stopMcpServer } from '@services/mcpServer';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 import { createApplicationActivationHandler } from './applicationActivation';
@@ -135,8 +136,12 @@ const runBeforeQuitCleanup = async (): Promise<void> => {
     logger.info('App before-quit - all wiki workers stopped');
     await gitService.stopAllWorkers();
     logger.info('App before-quit - all git workers stopped');
-    await agentInstanceService.dispose();
-    logger.info('App before-quit - agent runtime registries disposed');
+    try {
+      await agentInstanceService.dispose();
+      logger.info('App before-quit - agent runtime registries disposed');
+    } catch (error) {
+      logger.error('Agent runtime cleanup failed during before-quit', { error });
+    }
     // Then do remaining cleanup in parallel
     await Promise.all([
       databaseService.closeAllDatabases(),
@@ -163,6 +168,7 @@ installApplicationQuitLifecycle({
     applicationStartupAbortController.abort(new ApplicationStartupCancelledError('Application startup cancelled because the app is quitting'));
     workspaceService.cancelPortableConfigHydration();
     workspaceViewService.cancelWorkspaceStartup();
+    stopMacFolderAccessChecks();
     logger.info('App before-quit - pending workspace startup cancelled');
   },
   app,
