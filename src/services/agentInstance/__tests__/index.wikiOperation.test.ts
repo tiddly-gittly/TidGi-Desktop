@@ -161,6 +161,7 @@ describe('AgentInstanceService Wiki Operation', () => {
       WikiChannel.addTiddler,
       'test-wiki-1',
       ['test', '这是测试内容', '{}', '{"withDate":true}'],
+      expect.any(AbortSignal),
     );
     expect(consoleError).toHaveBeenCalledExactlyOnceWith(
       '[memeloop.defineTool]',
