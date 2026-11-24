@@ -151,6 +151,14 @@ When('I focus on a(n) {string} element with selector {string}', async function(t
   await this.currentWindow.locator(selector).first().focus({ timeout: UI_ACTION_TIMEOUT });
 });
 
+When('I scroll a(n) {string} element with selector {string} to the top', async function(this: ApplicationWorld, _description: string, selector: string) {
+  assert(this.currentWindow);
+  await this.currentWindow.locator(selector).first().evaluate(element => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+});
+
 When(
   'I click on a(n) {string} element with selector {string} whose {string} matches the {string} of {string}',
   async function(this: ApplicationWorld, _description: string, selector: string, attribute: string, sourceAttribute: string, sourceSelector: string) {

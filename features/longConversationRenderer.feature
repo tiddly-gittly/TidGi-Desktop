@@ -29,8 +29,7 @@ Feature: Bounded long-conversation renderer
     Then the text and "data-memeloop-message-id" attribute of elements with selector "[data-testid='message-bubble'] >> nth=0" should not match "initial resident boundary"
     And there should be between 1 and 50 elements matching "[data-testid='message-bubble']" with distinct "data-memeloop-message-id" attributes
 
-    When I focus on a "timeline marker" element with selector "[data-testid='conversation-timeline'] [data-timeline-entry-index]"
-    And I press "Home" key
+    When I scroll a "conversation timeline" element with selector "[data-testid='conversation-timeline']" to the top
     Then I should see a "first absolute timeline marker" element with selector "[data-timeline-entry-index='0'][aria-posinset='1']"
     When I click on a "first absolute timeline marker" element with selector "[data-timeline-entry-index='0']"
     Then I should see a "first durable question" element with selector "[data-testid='conversation-viewport']:has-text('E2E long question 00000')"
