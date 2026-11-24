@@ -14,12 +14,14 @@ import {
   digestNormalizedScript,
   loadAgentAgentLoopScript,
   normalizeScript,
+  resolveAgentLoopCapabilities,
 } from 'memeloop';
 import { DataSource } from 'typeorm';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentInstanceService } from '@services/agentInstance';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
+import { getDefaultAgentDefinitionId } from '../defaults';
 import { AgentDefinitionService } from '../index';
 
 let database: DataSource;
@@ -53,6 +55,50 @@ describe('Desktop loop definition persistence and execution', () => {
       isCustomized: true,
     });
     expect(await definitions.getAgentDef('previous-customized')).toMatchObject({ loopId: 'agent-agent-loop' });
+  });
+
+  it('restores the bundled workflow for a customized legacy default assistant', async () => {
+    const id = getDefaultAgentDefinitionId();
+    const repository = database.getRepository(AgentDefinitionEntity);
+    await repository.save({
+      ...definition(id, {
+        name: 'My default assistant',
+        systemPrompt: 'Use my instructions',
+        modelConfig: { providerId: 'provider', modelId: 'model' },
+        agentFrameworkID: 'agent-tool-loop',
+      }),
+      isCustomized: true,
+    });
+    Object.assign(definitions, { databaseService: { initializeDatabase: async () => {}, getDatabase: async () => database } });
+    const storage = new AgentInstanceService();
+    const readCapabilities = () =>
+      resolveAgentLoopCapabilities({
+        storage,
+        resolveAgentDefinition: async definitionId => await definitions.getAgentDef(definitionId) ?? null,
+        loopScriptPolicy: definitions.getLoopScriptPolicy(),
+      }, { definitionId: id });
+
+    await definitions.initialize();
+    await expect(readCapabilities()).resolves.toEqual({ goal: true });
+    expect(await repository.findOneByOrFail({ id })).toMatchObject({
+      name: 'My default assistant',
+      systemPrompt: 'Use my instructions',
+      modelConfig: { providerId: 'provider', modelId: 'model' },
+      isCustomized: true,
+    });
+
+    await definitions.saveAgentLoopScript({
+      id,
+      loopId: 'agent-tool-loop',
+      source: "export default function run(ctx) { ctx.finish('My workflow'); }",
+    });
+    await definitions.initialize();
+    await expect(readCapabilities()).resolves.toEqual({});
+
+    await repository.update(id, { loopId: 'agent-agent-loop', scriptReference: () => 'NULL' });
+    await definitions.initialize();
+    expect(await definitions.getAgentDef(id)).toMatchObject({ loopId: 'agent-agent-loop' });
+    expect((await definitions.getAgentDef(id))?.scriptReference).toBeUndefined();
   });
 
   it('retains builtin loop family, script and metadata on save and reload', async () => {

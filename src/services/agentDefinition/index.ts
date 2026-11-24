@@ -140,6 +140,14 @@ export class AgentDefinitionService implements IAgentDefinitionService {
       for (const definition of defaultAgentsList) {
         const existing = existingById.get(definition.id);
         if (existing && !shouldRefreshBuiltinDefinition(existing)) {
+          if (
+            definition.id === GENERAL_ASSISTANT_ID &&
+            existing.scriptReference == null &&
+            (existing.loopId ?? existing.agentFrameworkID) === definition.loopId
+          ) {
+            existing.scriptReference = definition.scriptReference;
+            entitiesToSave.push(existing);
+          }
           continue;
         }
 

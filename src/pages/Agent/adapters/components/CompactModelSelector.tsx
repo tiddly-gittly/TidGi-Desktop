@@ -11,6 +11,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  ButtonBase,
   ClickAwayListener,
   Dialog,
   DialogActions,
@@ -28,22 +29,17 @@ import type { AgentModelConfig, AgentModelParameters, ProviderAccountConfig, Pro
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const SwitcherButton = styled(Box)<{ disabled?: boolean }>(({ theme, disabled }) => ({
+const SwitcherButton = styled(ButtonBase)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: 4,
   padding: '2px 10px 2px 6px',
   borderRadius: 12,
-  cursor: disabled ? 'default' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
+  '&.Mui-disabled': { opacity: 0.5 },
   backgroundColor: theme.palette.action.hover,
   transition: 'background-color 0.15s',
   whiteSpace: 'nowrap',
-  '&:hover': disabled
-    ? {}
-    : {
-      backgroundColor: theme.palette.action.selected,
-    },
+  '&:not(.Mui-disabled):hover, &.Mui-focusVisible': { backgroundColor: theme.palette.action.selected },
 }));
 
 const DropdownPaper = styled(Paper)(({ theme }) => ({
@@ -160,6 +156,8 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
     <>
       <SwitcherButton
         disabled={busy}
+        aria-expanded={open}
+        aria-haspopup='listbox'
         onClick={handleClick}
         data-testid='model-selector-button'
         title={displayName}
