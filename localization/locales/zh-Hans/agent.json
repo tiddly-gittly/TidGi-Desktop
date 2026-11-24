@@ -143,6 +143,7 @@
       "ThisDevice": "此设备"
     },
     "ConfigError": {
+      "AccessForbidden": "请检查 {{provider}} 的访问权限。",
       "AuthenticationError": "请在设置中检查 {{provider}} 的 API 密钥。",
       "AuthenticationFailed": "请在设置中检查 {{provider}} 的 API 密钥。",
       "GoToSettings": "前往设置",

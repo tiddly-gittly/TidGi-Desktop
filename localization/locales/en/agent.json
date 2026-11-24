@@ -143,6 +143,7 @@
       "ThisDevice": "This device"
     },
     "ConfigError": {
+      "AccessForbidden": "Check access permissions for {{provider}}.",
       "AuthenticationError": "Check the API key for {{provider}} in Settings.",
       "AuthenticationFailed": "Check the API key for {{provider}} in Settings.",
       "GoToSettings": "Go to Settings",

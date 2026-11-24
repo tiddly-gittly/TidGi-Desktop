@@ -7,7 +7,7 @@ describe('structured provider errors', () => {
   it.each(
     [
       [401, 'AUTHENTICATION_FAILED'],
-      [403, 'AUTHENTICATION_FAILED'],
+      [403, 'ACCESS_FORBIDDEN'],
       [404, 'MODEL_NOT_FOUND'],
       [429, 'RATE_LIMIT_EXCEEDED'],
     ] as const,

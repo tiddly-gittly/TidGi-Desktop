@@ -94,6 +94,8 @@ function providerRunFailure(
         localizedParams: { providerId, modelId, settingField: 'apiKey' },
         settingTarget: { kind: 'provider', providerId, field: 'apiKey' },
       }));
+    // Both responses mean the selected model is unavailable for this request.
+    case 'ACCESS_FORBIDDEN':
     case 'MODEL_NOT_FOUND':
       return new AgentRunFailure(createAgentRunError({
         code: 'MODEL_NOT_FOUND',

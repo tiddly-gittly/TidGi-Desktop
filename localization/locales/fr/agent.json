@@ -143,6 +143,7 @@
       "ThisDevice": "Cet appareil"
     },
     "ConfigError": {
+      "AccessForbidden": "Vérifiez les droits d’accès à {{provider}}.",
       "AuthenticationError": "Vérifiez la clé API de {{provider}} dans les paramètres.",
       "AuthenticationFailed": "Vérifiez la clé API de {{provider}} dans les paramètres.",
       "GoToSettings": "Aller aux paramètres",

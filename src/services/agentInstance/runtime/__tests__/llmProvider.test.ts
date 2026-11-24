@@ -111,6 +111,11 @@ describe('MemeLoopDesktopLLMProvider', () => {
       code: 'PROVIDER_AUTH_MISSING',
       settingTarget: { kind: 'provider', providerId: 'test-provider', field: 'apiKey' },
     },
+    {
+      createError: () => Object.assign(new Error('Forbidden'), { statusCode: 403 }),
+      code: 'MODEL_NOT_FOUND',
+      settingTarget: { kind: 'model', providerId: 'test-provider', modelId: 'logical-model' },
+    },
   ])('turns provider configuration failures into actionable $code run errors', async ({ createError, code, settingTarget }) => {
     const generatePortableLlm = vi.fn(async function*() {
       yield { type: 'text-delta' as const, id: 'partial', text: '' };

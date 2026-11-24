@@ -143,6 +143,7 @@
       "ThisDevice": "Это устройство"
     },
     "ConfigError": {
+      "AccessForbidden": "Проверьте права доступа к {{provider}}.",
       "AuthenticationError": "Проверьте API-ключ {{provider}} в настройках.",
       "AuthenticationFailed": "Проверьте API-ключ {{provider}} в настройках.",
       "GoToSettings": "Перейти к настройкам",

@@ -125,8 +125,11 @@ export function getProviderHttpStatus(error: unknown): number | undefined {
 export function parseProviderError(error: unknown, providerId: string): Error {
   if (isProviderConfigError(error)) return error;
   const status = getProviderHttpStatus(error);
-  if (status === 401 || status === 403) {
+  if (status === 401) {
     return new AuthenticationError(providerId);
+  }
+  if (status === 403) {
+    return new ProviderConfigError('Chat.ConfigError.AccessForbidden', 'ACCESS_FORBIDDEN', providerId);
   }
   if (status === 404) {
     return new ProviderConfigError('Chat.ConfigError.ModelNotFound', 'MODEL_NOT_FOUND', providerId);

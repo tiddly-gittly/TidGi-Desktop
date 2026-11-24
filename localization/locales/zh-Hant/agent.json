@@ -143,6 +143,7 @@
       "ThisDevice": "此裝置"
     },
     "ConfigError": {
+      "AccessForbidden": "請檢查 {{provider}} 的存取權限。",
       "AuthenticationError": "請在設定中檢查 {{provider}} 的 API 金鑰。",
       "AuthenticationFailed": "請在設定中檢查 {{provider}} 的 API 金鑰。",
       "GoToSettings": "前往設置",

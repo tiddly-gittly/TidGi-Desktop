@@ -143,6 +143,7 @@
       "ThisDevice": "このデバイス"
     },
     "ConfigError": {
+      "AccessForbidden": "{{provider}} のアクセス権限を確認してください。",
       "AuthenticationError": "設定で {{provider}} の API キーを確認してください。",
       "AuthenticationFailed": "設定で {{provider}} の API キーを確認してください。",
       "GoToSettings": "設定へ移動",
