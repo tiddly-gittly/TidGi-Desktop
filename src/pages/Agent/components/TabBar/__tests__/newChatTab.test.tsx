@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type TabItem as TabData, TabState, TabType } from '../../../types/tab';
-import { TabContextMenu } from '../TabContextMenu';
 import { TabItem } from '../TabItem';
 import { TabListDropdown } from '../TabListDropdown';
 
@@ -50,17 +49,13 @@ describe('new chat tab entry points', () => {
       expect(addTab).toHaveBeenCalledWith(TabType.NEW_TAB);
     });
   });
-  it('edits the selected chat definition from its context menu', async () => {
+  it('edits a chat definition from the compact tab dropdown', async () => {
     state.tabs = [{ id: 'chat', type: TabType.CHAT, title: 'Chat', agentDefId: 'custom-assistant', state: TabState.ACTIVE, isPinned: false, createdAt: 1, updatedAt: 1 }];
-    const view = render(
-      <TabContextMenu>
-        <TabItem tab={state.tabs[0]} isActive onClick={selectTab} />
-      </TabContextMenu>,
-    );
-    const chatTab = view.container.querySelector('[data-tab-id="chat"][data-tab-type="chat"]');
-    expect(chatTab).not.toBeNull();
-    fireEvent.contextMenu(chatTab!);
-    fireEvent.click(await screen.findByTestId('edit-definition-menu-item'));
+    render(<TabListDropdown />);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('tab-list-button'));
+    fireEvent.contextMenu(await screen.findByTestId('tab-list-item-chat'));
+    await user.click(await screen.findByTestId('edit-definition-menu-item'));
     await waitFor(() => {
       expect(addTab).toHaveBeenCalledWith(TabType.EDIT_AGENT_DEFINITION, { agentDefId: 'custom-assistant' });
     });

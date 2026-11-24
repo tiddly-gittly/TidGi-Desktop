@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useTabStore } from '../../store/tabStore';
 import { TabItem, TabType } from '../../types/tab';
 import { formatScheduledTaskWakeTime, getScheduledTaskWakeAt, groupScheduledTasksByAgentInstanceId, sortScheduledTasksByNextRun } from './scheduledTaskPresentation';
+import { TabContextMenu } from './TabContextMenu';
 
 const DropdownPaper = styled(Paper)(({ theme }) => ({
   minWidth: 260,
@@ -197,74 +198,78 @@ export const TabListDropdown: React.FC = () => {
         open={open}
         anchorEl={anchorElement}
         placement='bottom-start'
-        style={{ zIndex: 1500 }}
+        sx={{ zIndex: 'tooltip' }}
         modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
       >
         <ClickAwayListener onClickAway={handleClose}>
           <DropdownPaper data-testid='tab-list-dropdown'>
-            <List dense disablePadding sx={{ py: 0.5 }}>
-              {sortedTabs.map((tab: TabItem) => {
-                const tabTasks = getTasksForTab(tab);
-                const sortedTabTasks = sortScheduledTasksByNextRun(tabTasks);
-                const nearestTask = sortedTabTasks[0];
-                const formattedWakeTime = formatScheduledTaskWakeTime(
-                  nearestTask ? getScheduledTaskWakeAt(nearestTask) : undefined,
-                  i18n.resolvedLanguage ?? i18n.language,
-                  t('Tab.ScheduledTaskUnknownWake'),
-                );
-                const scheduleTooltip = nearestTask
-                  ? describeScheduledTask(nearestTask, tabTasks.length)
-                  : '';
-                const closeTooltip = tabTasks.length > 0
-                  ? t('Tab.ScheduledTaskCloseWarning', { wakeTime: formattedWakeTime })
-                  : t('Tab.Close');
+            <TabContextMenu>
+              <List dense disablePadding sx={{ py: 0.5 }}>
+                {sortedTabs.map((tab: TabItem) => {
+                  const tabTasks = getTasksForTab(tab);
+                  const sortedTabTasks = sortScheduledTasksByNextRun(tabTasks);
+                  const nearestTask = sortedTabTasks[0];
+                  const formattedWakeTime = formatScheduledTaskWakeTime(
+                    nearestTask ? getScheduledTaskWakeAt(nearestTask) : undefined,
+                    i18n.resolvedLanguage ?? i18n.language,
+                    t('Tab.ScheduledTaskUnknownWake'),
+                  );
+                  const scheduleTooltip = nearestTask
+                    ? describeScheduledTask(nearestTask, tabTasks.length)
+                    : '';
+                  const closeTooltip = tabTasks.length > 0
+                    ? t('Tab.ScheduledTaskCloseWarning', { wakeTime: formattedWakeTime })
+                    : t('Tab.Close');
 
-                return (
-                  <TabEntry
-                    key={tab.id}
-                    active={tab.id === activeTabId}
-                    onClick={() => {
-                      handleSelectTab(tab.id);
-                    }}
-                    data-testid={`tab-list-item-${tab.id}`}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      {getTabIcon(tab.type)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={tab.title}
-                      slotProps={{ primary: { noWrap: true, variant: 'body2' } }}
-                    />
-                    {tabTasks.length > 0 && (
-                      <Tooltip title={scheduleTooltip}>
+                  return (
+                    <TabEntry
+                      key={tab.id}
+                      active={tab.id === activeTabId}
+                      onClick={() => {
+                        handleSelectTab(tab.id);
+                      }}
+                      data-testid={`tab-list-item-${tab.id}`}
+                      data-tab-id={tab.id}
+                      data-tab-type={tab.type}
+                    >
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        {getTabIcon(tab.type)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={tab.title}
+                        slotProps={{ primary: { noWrap: true, variant: 'body2' } }}
+                      />
+                      {tabTasks.length > 0 && (
+                        <Tooltip title={scheduleTooltip}>
+                          <IconButton
+                            size='small'
+                            sx={{ ml: 0.25 }}
+                            data-testid={`tab-scheduled-task-indicator-${tab.id}`}
+                            aria-label={scheduleTooltip}
+                          >
+                            <AccessTimeIcon sx={{ fontSize: 14 }} color='warning' />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title={closeTooltip}>
                         <IconButton
                           size='small'
-                          sx={{ ml: 0.25 }}
-                          data-testid={`tab-scheduled-task-indicator-${tab.id}`}
-                          aria-label={scheduleTooltip}
+                          className='tab-close'
+                          sx={{ opacity: 0, transition: 'opacity 0.15s', ml: 0.5 }}
+                          onClick={(event) => {
+                            handleCloseTab(event, tab.id);
+                          }}
+                          data-testid={`tab-close-${tab.id}`}
+                          aria-label={closeTooltip}
                         >
-                          <AccessTimeIcon sx={{ fontSize: 14 }} color='warning' />
+                          <CloseIcon sx={{ fontSize: 14 }} />
                         </IconButton>
                       </Tooltip>
-                    )}
-                    <Tooltip title={closeTooltip}>
-                      <IconButton
-                        size='small'
-                        className='tab-close'
-                        sx={{ opacity: 0, transition: 'opacity 0.15s', ml: 0.5 }}
-                        onClick={(event) => {
-                          handleCloseTab(event, tab.id);
-                        }}
-                        data-testid={`tab-close-${tab.id}`}
-                        aria-label={closeTooltip}
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    </Tooltip>
-                  </TabEntry>
-                );
-              })}
-            </List>
+                    </TabEntry>
+                  );
+                })}
+              </List>
+            </TabContextMenu>
             <Divider />
             <Box sx={{ p: 0.5 }}>
               <ListItemButton

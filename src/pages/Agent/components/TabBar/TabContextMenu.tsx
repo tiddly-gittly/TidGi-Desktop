@@ -220,6 +220,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
 
       <Menu
         open={contextMenu.isOpen}
+        sx={{ zIndex: theme => theme.zIndex.tooltip + 1 }}
         onClose={handleClose}
         anchorReference='anchorPosition'
         anchorPosition={contextMenu.isOpen

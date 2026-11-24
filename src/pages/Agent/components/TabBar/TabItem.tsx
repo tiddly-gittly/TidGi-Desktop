@@ -180,7 +180,6 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
         $active={isActive}
         onClick={handleClick}
         data-tab-id={isNewTabButton ? 'new-tab-button' : tab.id}
-        data-tab-type={isNewTabButton ? undefined : tab.type}
         $pinned={!isNewTabButton && (tab as TabItemType).isPinned}
       >
         <TabIcon $active={isActive}>
