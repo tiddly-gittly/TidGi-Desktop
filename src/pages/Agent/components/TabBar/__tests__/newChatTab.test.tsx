@@ -52,12 +52,14 @@ describe('new chat tab entry points', () => {
   });
   it('edits the selected chat definition from its context menu', async () => {
     state.tabs = [{ id: 'chat', type: TabType.CHAT, title: 'Chat', agentDefId: 'custom-assistant', state: TabState.ACTIVE, isPinned: false, createdAt: 1, updatedAt: 1 }];
-    render(
+    const view = render(
       <TabContextMenu>
-        <button data-tab-id='chat'>Chat</button>
+        <TabItem tab={state.tabs[0]} isActive onClick={selectTab} />
       </TabContextMenu>,
     );
-    fireEvent.contextMenu(screen.getByText('Chat'));
+    const chatTab = view.container.querySelector('[data-tab-id="chat"][data-tab-type="chat"]');
+    expect(chatTab).not.toBeNull();
+    fireEvent.contextMenu(chatTab!);
     fireEvent.click(await screen.findByTestId('edit-definition-menu-item'));
     await waitFor(() => {
       expect(addTab).toHaveBeenCalledWith(TabType.EDIT_AGENT_DEFINITION, { agentDefId: 'custom-assistant' });
