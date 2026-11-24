@@ -215,16 +215,19 @@ describe('all tools integration', () => {
       WikiChannel.runFilter,
       'CJXwbR91GJmElyURHiGA1',
       ['[tag[test]]'],
+      expect.any(AbortSignal),
     );
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.getTiddlerText,
       'CJXwbR91GJmElyURHiGA1',
       ['TestNote1'],
+      expect.any(AbortSignal),
     );
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.getTiddlerText,
       'CJXwbR91GJmElyURHiGA1',
       ['TestNote2'],
+      expect.any(AbortSignal),
     );
 
     const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
@@ -280,6 +283,7 @@ describe('all tools integration', () => {
       WikiChannel.addTiddler,
       'CJXwbR91GJmElyURHiGA1',
       [testTitle, testText, '{}', JSON.stringify({ withDate: true })],
+      expect.any(AbortSignal),
     );
 
     const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
@@ -382,6 +386,7 @@ describe('all tools integration', () => {
       WikiChannel.setTiddlerText,
       'CJXwbR91GJmElyURHiGA1',
       [testTitle, updatedText],
+      expect.any(AbortSignal),
     );
   }, 30000);
 
@@ -405,6 +410,7 @@ describe('all tools integration', () => {
       WikiChannel.deleteTiddler,
       'CJXwbR91GJmElyURHiGA1',
       [testTitle],
+      expect.any(AbortSignal),
     );
   }, 30000);
 

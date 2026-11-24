@@ -1,5 +1,6 @@
 import { WikiChannel } from '@/constants/channels';
 import { EventEmitter } from 'node:events';
+import { setTimeout as wait } from 'node:timers/promises';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -177,6 +178,23 @@ describe('Wiki shutdown lifecycle', () => {
     getWorker.mockReturnValue({ wikiOperation: vi.fn().mockResolvedValue(['Loaded']) } as unknown as WikiWorker);
     grant();
     await expect(pending).resolves.toEqual(['Loaded']);
+  });
+
+  it.each(['tool', 'shutdown'] as const)('cancels a Wiki tool waiting for folder access on %s cancellation', async (source) => {
+    vi.useFakeTimers();
+    mocks.ensureWikiFolderAccess.mockImplementation((_workspace: unknown, signal?: AbortSignal) => wait(120_000, undefined, { signal }));
+    const wiki = createWikiService();
+    const run = new AbortController();
+    const pending = wiki.wikiOperationInServer(WikiChannel.runFilter, 'pending', ['[all[tiddlers]]'], run.signal);
+    const cancelled = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mocks.ensureWikiFolderAccess).toHaveBeenCalledOnce();
+
+    if (source === 'tool') run.abort();
+    else await wiki.stopAllWiki();
+
+    await cancelled;
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('cancels a pending boot before terminating and skips beforeExit for an unbooted worker', async () => {

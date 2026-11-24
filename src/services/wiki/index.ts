@@ -150,7 +150,11 @@ export class Wiki implements IWikiService {
   // startWiki to settle before calling stopWiki, avoiding a race where stopWiki
   // terminates a worker that is still booting.
   private startWikiPromises: Partial<Record<string, Promise<void>>> = {};
-  private stoppingAllWiki = false;
+  private readonly workerShutdown = new AbortController();
+
+  private get stoppingAllWiki(): boolean {
+    return this.workerShutdown.signal.aborted;
+  }
 
   public getWorker(id: string): WikiWorker | undefined {
     return this.wikiWorkers[id]?.proxy;
@@ -242,7 +246,7 @@ export class Wiki implements IWikiService {
       logger.debug('skip startWiki for HTML wiki workspace', { workspaceID });
       return;
     }
-    await workspaceService.ensureWikiFolderAccess(workspace);
+    await workspaceService.ensureWikiFolderAccess(workspace, this.workerShutdown.signal);
     if (this.stoppingAllWiki) {
       throw new Error(`Wiki ${workspaceID} startup cancelled because the application is shutting down`);
     }
@@ -655,32 +659,43 @@ export class Wiki implements IWikiService {
    * Wait briefly for an in-flight startup, never forever after a failed boot.
    * @param workspaceID
    */
-  private async getWorkerEnsure(workspaceID: string): Promise<WikiWorker> {
+  private async getWorkerEnsure(workspaceID: string, operationSignal?: AbortSignal): Promise<WikiWorker> {
+    const shutdown = this.workerShutdown.signal;
+    const signal = operationSignal === undefined ? shutdown : AbortSignal.any([shutdown, operationSignal]);
+    signal.throwIfAborted();
     let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
       const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
       const workspace = await workspaceService.get(workspaceID);
       if (workspace !== undefined && isWikiWorkspace(workspace) && !isHtmlWikiWorkspace(workspace)) {
-        await workspaceService.ensureWikiFolderAccess(workspace);
+        await workspaceService.ensureWikiFolderAccess(workspace, signal);
       }
+      signal.throwIfAborted();
       // A worker may have started while the user was granting access.
       worker = this.getWorker(workspaceID);
     }
     if (worker === undefined) {
-      // wait for wiki worker started
       await new Promise<void>((resolve, reject) => {
         const eventName = wikiWorkerStartedEventName(workspaceID);
-        const onStarted = () => {
+        const cleanup = () => {
           clearTimeout(timer);
+          this.wikiWorkerStartedEventTarget.removeEventListener(eventName, onStarted);
+          signal.removeEventListener('abort', onAbort);
+        };
+        const onStarted = () => {
+          cleanup();
           resolve();
         };
+        const onAbort = () => {
+          cleanup();
+          reject(signal.reason instanceof Error ? signal.reason : new Error('Wiki worker wait cancelled', { cause: signal.reason }));
+        };
         const timer = setTimeout(() => {
-          this.wikiWorkerStartedEventTarget.removeEventListener(eventName, onStarted);
+          cleanup();
           reject(new Error(`Wiki worker unavailable for workspace ${workspaceID}`));
         }, WORKER_AVAILABILITY_TIMEOUT_MS);
-        this.wikiWorkerStartedEventTarget.addEventListener(eventName, onStarted, {
-          once: true,
-        });
+        this.wikiWorkerStartedEventTarget.addEventListener(eventName, onStarted);
+        signal.addEventListener('abort', onAbort, { once: true });
       });
     } else {
       return worker;
@@ -939,7 +954,7 @@ export class Wiki implements IWikiService {
     logger.debug('stopAllWiki', {
       function: 'stopAllWiki',
     });
-    this.stoppingAllWiki = true;
+    this.workerShutdown.abort(new Error('Wiki service is shutting down'));
     const wikiIds = Object.keys(this.wikiWorkers);
     logger.info(`Stopping ${wikiIds.length} wiki workers`, { wikiIds });
 
@@ -1354,10 +1369,12 @@ export class Wiki implements IWikiService {
     operationType: OP,
     workspaceID: string,
     arguments_: Parameters<IWorkerWikiOperations[OP]>,
+    signal?: AbortSignal,
   ) {
     logger.debug(`Get ${operationType}`, { workspaceID, method: 'wikiOperationInServer' });
-    // This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
-    const worker = await this.getWorkerEnsure(workspaceID);
+    const worker = await this.getWorkerEnsure(workspaceID, signal);
+    signal?.throwIfAborted();
+    this.workerShutdown.signal.throwIfAborted();
 
     logger.debug(`Get worker ${operationType}`, { workspaceID, hasWorker: worker !== undefined, method: 'wikiOperationInServer', arguments_ });
     const result = await worker.wikiOperation(operationType, ...arguments_);

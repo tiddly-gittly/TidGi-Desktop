@@ -97,7 +97,7 @@ type WikiOperationToolParameters = z.infer<typeof WikiOperationToolSchema>;
 /**
  * Execute wiki operation
  */
-export async function executeWikiOperation(parameters: WikiOperationToolParameters): Promise<ToolExecutionResult> {
+export async function executeWikiOperation(parameters: WikiOperationToolParameters, signal?: AbortSignal): Promise<ToolExecutionResult> {
   const { workspaceName, operation, title, text, extraMeta, options: optionsString, variables } = parameters;
 
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -138,7 +138,7 @@ export async function executeWikiOperation(parameters: WikiOperationToolParamete
         text || '',
         extraMeta || '{}',
         JSON.stringify({ withDate: true, ...options }),
-      ]);
+      ], signal);
       result = i18n.t('Tool.WikiOperation.Success.Added', { title, workspaceName });
       break;
     }
@@ -147,7 +147,7 @@ export async function executeWikiOperation(parameters: WikiOperationToolParamete
       if (!title) {
         throw new Error('title is required for deleteTiddler operation');
       }
-      await wikiService.wikiOperationInServer(WikiChannel.deleteTiddler, workspaceID, [title]);
+      await wikiService.wikiOperationInServer(WikiChannel.deleteTiddler, workspaceID, [title], signal);
       result = i18n.t('Tool.WikiOperation.Success.Deleted', { title, workspaceName });
       break;
     }
@@ -156,7 +156,7 @@ export async function executeWikiOperation(parameters: WikiOperationToolParamete
       if (!title) {
         throw new Error('title is required for setTiddlerText operation');
       }
-      await wikiService.wikiOperationInServer(WikiChannel.setTiddlerText, workspaceID, [title, text || '']);
+      await wikiService.wikiOperationInServer(WikiChannel.setTiddlerText, workspaceID, [title, text || ''], signal);
       result = i18n.t('Tool.WikiOperation.Success.Updated', { title, workspaceName });
       break;
     }
@@ -172,7 +172,7 @@ export async function executeWikiOperation(parameters: WikiOperationToolParamete
           ? parsedVariables as Record<string, unknown>
           : {};
       }
-      await wikiService.wikiOperationInServer('invokeActionString', workspaceID, [title, variablePayload]);
+      await wikiService.wikiOperationInServer('invokeActionString', workspaceID, [title, variablePayload], signal);
       result = i18n.t('Tool.WikiOperation.Success.ActionInvoked', { actionTitle: title, workspaceName });
       break;
     }
@@ -234,6 +234,6 @@ export const wikiOperationDefinition = defineDesktopTool({
       return;
     }
 
-    await executeToolCall('wiki-operation', executeWikiOperation);
+    await executeToolCall('wiki-operation', (parameters) => executeWikiOperation(parameters, agentFrameworkContext.operationSignal));
   },
 });

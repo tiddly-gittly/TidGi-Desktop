@@ -128,6 +128,7 @@ type WikiUpdateEmbeddingsToolParameters = z.infer<typeof WikiUpdateEmbeddingsToo
 export async function executeWikiSearch(
   parameters: WikiSearchToolParameters,
   aiConfig?: ModelAssignments,
+  signal?: AbortSignal,
 ): Promise<ToolExecutionResult> {
   const { workspaceName, searchType, filter, query, limit, threshold } = parameters;
 
@@ -184,19 +185,21 @@ export async function executeWikiSearch(
         // Get full content for results
         for (const vr of vectorResults) {
           try {
-            const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [vr.record.tiddlerTitle]);
+            const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [vr.record.tiddlerTitle], signal);
             results.push({
               title: vr.record.tiddlerTitle,
               text,
               similarity: vr.similarity,
             });
           } catch {
+            signal?.throwIfAborted();
             results.push({ title: vr.record.tiddlerTitle, similarity: vr.similarity });
           }
         }
 
         searchMetadata = { ...searchMetadata, query, limit, threshold, resultCount: results.length };
       } catch (error) {
+        signal?.throwIfAborted();
         return {
           success: false,
           error: i18n.t('Tool.WikiSearch.Error.VectorSearchFailed', {
@@ -210,7 +213,7 @@ export async function executeWikiSearch(
         return { success: false, error: i18n.t('Tool.WikiSearch.Error.FilterSearchRequiresFilter') };
       }
 
-      const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter]);
+      const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter], signal);
       const filterErrorTitle = tiddlerTitles.find(isWikiFilterErrorTitle);
       if (filterErrorTitle) {
         return {
@@ -231,9 +234,10 @@ export async function executeWikiSearch(
 
       for (const title of tiddlerTitles) {
         try {
-          const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [title]);
+          const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [title], signal);
           results.push({ title, text });
         } catch {
+          signal?.throwIfAborted();
           results.push({ title });
         }
       }
@@ -257,6 +261,7 @@ export async function executeWikiSearch(
 
     return { success: true, data: content, metadata: searchMetadata };
   } catch (error) {
+    signal?.throwIfAborted();
     logger.error('Wiki search failed', { error, params: parameters });
     return {
       success: false,
@@ -378,7 +383,7 @@ export const wikiSearchDefinition = defineDesktopTool({
     const aiConfig = await container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI).getAIConfig();
 
     if (toolCall.toolId === 'wiki-search') {
-      await executeToolCall('wiki-search', (parameters) => executeWikiSearch(parameters, aiConfig));
+      await executeToolCall('wiki-search', (parameters) => executeWikiSearch(parameters, aiConfig, agentFrameworkContext.operationSignal));
     } else if (toolCall.toolId === 'wiki-update-embeddings') {
       await executeToolCall('wiki-update-embeddings', (parameters) => executeWikiUpdateEmbeddings(parameters, aiConfig));
     }
