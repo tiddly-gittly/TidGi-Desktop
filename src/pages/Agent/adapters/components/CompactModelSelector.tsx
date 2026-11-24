@@ -2,7 +2,7 @@
 // Uses MUI Popper so the menu automatically flips when bottom space is insufficient.
 
 import { useAIConfigManagement } from '@/windows/Preferences/sections/ExternalAPI/useAIConfigManagement';
-import { ModelParameterFields } from '@memeloop/react-ui/agent';
+import { getReasoningEffortLabels, ModelParameterFields } from '@memeloop/react-ui/agent';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import SwitchCameraIcon from '@mui/icons-material/SwitchCamera';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -81,7 +81,7 @@ function catalogModel(account: ProviderAccountConfig | undefined, modelId: strin
 }
 
 export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, agentDefId, showParameters, disabled }) => {
-  const { t } = useTranslation('agent');
+  const { t, i18n } = useTranslation('agent');
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorElement);
   const searchInputReference = useRef<HTMLInputElement>(null);
@@ -184,6 +184,9 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
         <ClickAwayListener onClickAway={handleClose}>
           <DropdownPaper data-testid='model-selector-dropdown'>
             <Autocomplete<ModelOption, false, true>
+              noOptionsText={t('Agent.Attachment.NoOptions')}
+              openText={t('translation:Open')}
+              closeText={t('ContextMenu.Close')}
               open
               autoHighlight
               size='small'
@@ -282,6 +285,7 @@ export const CompactModelSelector: React.FC<ModelSelectorProps> = ({ agentId, ag
                   value={parameters}
                   onChange={setParameters}
                   disabled={busy}
+                  reasoningEffortLabels={getReasoningEffortLabels(i18n.language)}
                   labels={{
                     reasoningEffort: t('Preference.ReasoningEffort'),
                     temperature: t('Preference.Temperature'),

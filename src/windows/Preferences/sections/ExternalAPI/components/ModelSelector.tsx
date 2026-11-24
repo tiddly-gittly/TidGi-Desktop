@@ -31,6 +31,10 @@ export function ModelSelector({ testId, selectedModel, modelOptions, onChange, o
   return (
     <Autocomplete
       data-testid={testId}
+      noOptionsText={t('Agent.Attachment.NoOptions')}
+      clearText={t('translation:KeyboardShortcut.Clear')}
+      openText={t('translation:Open')}
+      closeText={t('ContextMenu.Close')}
       value={selectedValue}
       onChange={(_, value) => {
         if (value) {

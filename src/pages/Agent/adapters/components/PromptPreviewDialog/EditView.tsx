@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { PromptConfigForm } from '@memeloop/react-ui/agent/prompts';
 import type { AgentFrameworkConfig, PromptPreviewController, PromptPreviewDialogState } from 'memeloop';
+import { getPromptEditorLabels } from '../../../promptEditorLabels';
 
 // Lazy load Monaco Editor only when needed
 const MonacoEditor = lazy(async () => await import('@monaco-editor/react'));
@@ -143,6 +144,7 @@ export const EditView: FC<EditViewProps> = ({
             onChange={handleInputChange}
             loading={agentFrameworkConfigLoading}
             formFieldsToScrollTo={formFieldsToScrollTo}
+            promptEditorLabels={getPromptEditorLabels(t)}
             onFieldReveal={() => {
               controller.setFormFieldsToScrollTo([]);
             }}

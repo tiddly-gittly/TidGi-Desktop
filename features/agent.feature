@@ -30,16 +30,16 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see "supported reasoning options" elements with selectors:
       | element description | selector |
       | default | [role='option']:text-is('模型默认值') |
-      | low | [role='option']:text-is('low') |
-      | high | [role='option']:text-is('high') |
+      | low | [role='option']:text-is('低') |
+      | high | [role='option']:text-is('高') |
     And I should not see an "unsupported fourth reasoning option" element with selector "[role='option'] >> nth=3"
-    When I click on a "high reasoning effort" element with selector "[role='option']:text-is('high')"
+    When I click on a "high reasoning effort" element with selector "[role='option']:text-is('高')"
     And I type "0.4" in "temperature" element with selector "[data-testid='conversation-model-parameters-dialog'] input[type='number'][max='2']"
     And I capture the current window as "model-parameters.png"
     And I click on a "save parameters" element with selector "[data-testid='conversation-model-parameters-dialog'] button:text-is('保存')"
     Then I should not see a "parameters dialog" element with selector "[data-testid='conversation-model-parameters-dialog']"
     When I click on a "reopen parameters" element with selector "[data-testid='conversation-model-parameters']"
-    Then I should see a "saved reasoning effort" element with selector "[data-testid='conversation-model-parameters-dialog'] [role='combobox']:text-is('high')"
+    Then I should see a "saved reasoning effort" element with selector "[data-testid='conversation-model-parameters-dialog'] [role='combobox']:text-is('高')"
     And the "temperature" element with selector "[data-testid='conversation-model-parameters-dialog'] input[type='number'][max='2']" should have value "0.4"
     When I press "Escape" key
     Given I add mock OpenAI responses:

@@ -169,7 +169,7 @@ describe('ProviderConfig', () => {
     expect(setProviderAccount).not.toHaveBeenCalled();
   });
 
-  it('persists Unicode provider IDs with an internally derived identity', async () => {
+  it('persists a Unicode model ID with the OpenAI Responses API default', async () => {
     const user = userEvent.setup();
     renderProviderConfig([account], setAccounts);
     await user.click(screen.getByTestId('add-new-model-button'));
@@ -182,7 +182,7 @@ describe('ProviderConfig', () => {
       expect(setProviderAccount).toHaveBeenCalledWith(expect.objectContaining({
         providerId: 'openai-main',
         models: expect.arrayContaining([
-          { modelId: '供应商/模型2:latest', wireModelId: '供应商/模型2:latest', apiMode: 'chat-completions' },
+          { modelId: '供应商/模型2:latest', wireModelId: '供应商/模型2:latest', apiMode: 'responses' },
         ]),
       }));
     });
@@ -194,6 +194,7 @@ describe('ProviderConfig', () => {
     await user.click(screen.getByTestId('add-new-model-button'));
 
     await user.type(await screen.findByTestId('new-model-name-input'), 'advanced-model');
+    await user.click(screen.getByTestId('model-advanced-toggle'));
     await user.type(screen.getByTestId('model-context-window-input'), '128000');
     await user.type(screen.getByTestId('model-max-input-input'), '120000');
     await user.type(screen.getByTestId('model-max-output-input'), '8192');
