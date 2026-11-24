@@ -489,7 +489,6 @@
     "ModelName": "模型名称",
     "ModelNameRequired": "模型名称为必填项",
     "ModelIdInvalid": "模型 ID 不能包含首尾空白或控制字符，且不能超过 {{maxBytes}} 个 UTF-8 字节。",
-    "LogicalModelId": "逻辑模型 ID",
     "WireModelId": "提供商模型 ID",
     "ProviderModelIdRequired": "请填写提供商模型 ID",
     "WireModelIdDescription": "实际发送给提供商的精确模型标识。",

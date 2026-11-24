@@ -40,7 +40,6 @@ describe('NewModelDialog', () => {
   it('keeps the existing logical identity when the provider ID and display name change', () => {
     const onSave = vi.fn();
     render(<NewModelDialog open route={route} model={model} onClose={vi.fn()} onSave={onSave} />);
-    expect(screen.queryByLabelText('Preference.LogicalModelId')).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Preference.WireModelId'), { target: { value: 'vendor/new-model' } });
     fireEvent.change(screen.getByLabelText('Preference.ModelCaption'), { target: { value: 'New display name' } });
     fireEvent.click(screen.getByTestId('save-new-model-button'));

@@ -507,7 +507,6 @@
     "ModelName": "模型名稱",
     "ModelNameRequired": "模型名稱為必填項",
     "ModelIdInvalid": "模型 ID 不能包含前後空白或控制字元，且不能超過 {{maxBytes}} 個 UTF-8 位元組。",
-    "LogicalModelId": "邏輯模型 ID",
     "WireModelId": "提供商模型 ID",
     "ProviderModelIdRequired": "請填寫提供商模型 ID",
     "WireModelIdDescription": "實際傳送給提供商的精確模型標識。",

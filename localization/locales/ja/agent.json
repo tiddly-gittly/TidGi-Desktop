@@ -510,7 +510,6 @@
     "ModelName": "モデル名",
     "ModelNameRequired": "モデル名は必須です",
     "ModelIdInvalid": "モデル ID の前後に空白や制御文字を含めず、UTF-8 で {{maxBytes}} バイト以内にしてください。",
-    "LogicalModelId": "論理モデル ID",
     "WireModelId": "プロバイダーモデル ID",
     "ProviderModelIdRequired": "プロバイダーモデル ID を入力してください",
     "WireModelIdDescription": "プロバイダーへ送信する正確なモデル識別子です。",

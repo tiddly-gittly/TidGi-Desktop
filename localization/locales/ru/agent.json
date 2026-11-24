@@ -510,7 +510,6 @@
     "ModelName": "Имя модели",
     "ModelNameRequired": "Имя модели обязательно",
     "ModelIdInvalid": "Идентификатор модели не должен содержать пробелы по краям или управляющие символы и не должен превышать {{maxBytes}} байт UTF-8.",
-    "LogicalModelId": "Логический ID модели",
     "WireModelId": "ID модели поставщика",
     "ProviderModelIdRequired": "Укажите ID модели поставщика",
     "WireModelIdDescription": "Точный идентификатор модели, отправляемый поставщику.",

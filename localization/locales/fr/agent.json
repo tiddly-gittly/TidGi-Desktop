@@ -509,7 +509,6 @@
     "ModelName": "Nom du modèle",
     "ModelNameRequired": "Le nom du modèle est requis",
     "ModelIdInvalid": "L’identifiant du modèle ne doit pas contenir d’espaces environnants ni de caractères de contrôle et ne doit pas dépasser {{maxBytes}} octets UTF-8.",
-    "LogicalModelId": "Identifiant logique du modèle",
     "WireModelId": "Identifiant du modèle fournisseur",
     "ProviderModelIdRequired": "L’identifiant du modèle fournisseur est requis",
     "WireModelIdDescription": "Identifiant exact du modèle envoyé au fournisseur.",

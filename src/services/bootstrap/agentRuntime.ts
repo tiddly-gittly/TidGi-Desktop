@@ -53,6 +53,9 @@ export async function initializeAgentServices(options: InitializeAgentServicesOp
     storage: agentInstanceService,
     conversationEditing: agentInstanceService,
     goals: agentInstanceService.getGoalClient(),
+    conversationWorkflowCapabilities: {
+      get: async conversationId => ({ goal: await agentInstanceService.supportsConversationGoal(conversationId) }),
+    },
     conversationModelParameters: createDesktopConversationModelParameters({
       agentInstanceService,
       agentDefinitionService,

@@ -488,7 +488,6 @@
     "ModelName": "Model Name",
     "ModelNameRequired": "Model name is required",
     "ModelIdInvalid": "Model ID must not contain surrounding whitespace or control characters and must be no more than {{maxBytes}} UTF-8 bytes.",
-    "LogicalModelId": "Logical model ID",
     "WireModelId": "Provider model ID",
     "ProviderModelIdRequired": "Provider model ID is required",
     "WireModelIdDescription": "The exact model identifier sent to the provider.",

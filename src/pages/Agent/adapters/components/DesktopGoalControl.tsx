@@ -29,9 +29,8 @@ export function DesktopGoalControl({ conversationId, definitionId, resolveErrorP
       startWith(definitionId),
       switchMap(() =>
         from(window.service.agentInstance.supportsConversationGoal(conversationId)).pipe(
-          startWith(false),
           catchError((error: unknown) => {
-            void window.service.native.log('warn', 'Could not read workflow capabilities', { conversationId, error });
+            void window.service.native.log('warn', 'Workflow capability lookup failed', { conversationId, error });
             return of(false);
           }),
         )
