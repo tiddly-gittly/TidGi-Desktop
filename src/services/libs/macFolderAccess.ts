@@ -18,10 +18,14 @@ export class MacFolderAccess {
 
   public folderNeedingAccess(wikiFolder: string): string | undefined {
     if (this.options.platform !== 'darwin') return undefined;
-    return this.options.protectedFolders().find((folder) => {
-      const relative = path.relative(folder, wikiFolder);
-      return !this.granted.has(folder) && (relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative)));
+    const workspaceFolder = path.resolve(wikiFolder);
+    if (this.granted.has(workspaceFolder)) return undefined;
+    const isProtected = this.options.protectedFolders().some((folder) => {
+      const relative = path.relative(folder, workspaceFolder);
+      return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
     });
+    // A readable workspace does not imply access to its siblings or parent directory.
+    return isProtected ? workspaceFolder : undefined;
   }
 
   public async waitForAccess(wikiFolder: string, signal?: AbortSignal): Promise<void> {

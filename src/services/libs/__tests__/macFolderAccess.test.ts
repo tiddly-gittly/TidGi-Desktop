@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MacFolderAccess, probeMacDirectory } from '../macFolderAccess';
 
@@ -32,7 +33,7 @@ describe('macOS folder access consent', () => {
     expect(read).not.toHaveBeenCalled();
   });
 
-  it('waits beyond boot deadlines and shares one consent request per protected folder', async () => {
+  it('shares a pending request for the same workspace and checks other workspaces separately', async () => {
     vi.useFakeTimers();
     const consent = deferred();
     const read = vi.fn(() => consent.promise);
@@ -41,16 +42,17 @@ describe('macOS folder access consent', () => {
     const first = access.waitForAccess('/Users/test/Desktop/wiki').then(() => {
       completed = true;
     });
-    const second = access.waitForAccess('/Users/test/Desktop/calendar');
+    const second = access.waitForAccess('/Users/test/Desktop/wiki/.');
     await vi.advanceTimersByTimeAsync(120_000);
     expect(completed).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
-    expect(read).toHaveBeenCalledTimes(1);
+    expect(read.mock.calls).toEqual([[path.resolve('/Users/test/Desktop/wiki')]]);
     consent.resolve();
     await Promise.all([first, second]);
-    await access.waitForAccess('/Users/test/Desktop/another-wiki');
+    await access.waitForAccess('/Users/test/Desktop/wiki');
+    await access.waitForAccess('/Users/test/Desktop/calendar');
     expect(completed).toBe(true);
-    expect(read).toHaveBeenCalledTimes(1);
+    expect(read.mock.calls).toEqual([[path.resolve('/Users/test/Desktop/wiki')], [path.resolve('/Users/test/Desktop/calendar')]]);
   });
 
   it('allows a denied request to be retried after settings change', async () => {
