@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { pick } from 'lodash';
 
-import { DataSource, Equal, Not, Repository } from 'typeorm';
+import { DataSource, Equal, In, Not, Repository } from 'typeorm';
 
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { getTiddlerTitleFromUrl } from '@/constants/urls';
@@ -10,6 +10,7 @@ import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
 import type { IChatTab, ISplitViewTab, IWikiEmbedTab } from '@/pages/Agent/types/tab';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
@@ -18,7 +19,7 @@ import { BehaviorSubject } from 'rxjs';
 import type { ITab, TabItem } from '../../pages/Agent/types/tab';
 import { TabState, TabType } from '../../pages/Agent/types/tab';
 import type { IDatabaseService } from '../database/interface';
-import { AgentInstanceMessageEntity } from '../database/schema/agent';
+import { AgentInstanceEntity, AgentInstanceMessageEntity } from '../database/schema/agent';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
 import { ConversationEditDraftEntity } from '../database/schema/conversationEditing';
 import type { IAgentBrowserService } from './interface';
@@ -241,8 +242,18 @@ export class AgentBrowserService implements IAgentBrowserService {
         order: { position: 'ASC' },
       });
 
-      // Convert entities to TabItems
-      return entities.map(entity => this.entityToTabItem(entity));
+      const tabs = entities.map(entity => this.entityToTabItem(entity));
+      const chats = tabs.flatMap(tab => tab.type === TabType.SPLIT_VIEW ? tab.childTabs : [tab])
+        .filter((tab): tab is IChatTab & { agentId: string } => tab.type === TabType.CHAT && tab.agentId !== undefined);
+      if (chats.length > 0) {
+        const agents = await this.dataSource!.getRepository(AgentInstanceEntity).find({
+          where: { id: In(chats.map(tab => tab.agentId)) },
+          select: { id: true, name: true },
+        });
+        const titles = new Map(agents.map(({ id, name }) => [id, name]));
+        for (const tab of chats) tab.title = titles.get(tab.agentId) ?? tab.title;
+      }
+      return tabs;
     } catch (error) {
       logger.error('Failed to get tabs', {
         function: 'getAllTabs',
@@ -425,7 +436,7 @@ export class AgentBrowserService implements IAgentBrowserService {
 
   public async acknowledgeInitialMessage(tabId: string, agentId: string, expectedMessage: string): Promise<boolean> {
     this.ensureRepositories();
-    const acknowledged = await this.dataSource!.transaction(async manager => {
+    const acknowledged = await withAgentTransaction(this.dataSource!, async manager => {
       const repository = manager.getRepository(AgentBrowserTabEntity);
       const confirmEditedRoot = async (source: IChatTab['initialEditSource']) => {
         if (!source) return true;

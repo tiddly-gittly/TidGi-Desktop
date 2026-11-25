@@ -7,6 +7,7 @@ export async function waitForAIStreamResult(
   prompt: string,
   aiConfig: Awaited<ReturnType<IExternalAPIService['getAIConfig']>>,
   externalAPIService: IExternalAPIService,
+  options?: { requestTimeoutMs?: number },
 ): Promise<string | undefined> {
   try {
     const selection = aiConfig.free;
@@ -32,7 +33,7 @@ export async function waitForAIStreamResult(
         : { topP: selection.parameters.topP }),
     };
     const result = await collectPortableLlmTextResponse(
-      externalAPIService.generatePortableLlm(request),
+      externalAPIService.generatePortableLlm(request, options),
     );
     return result.trim() || undefined;
   } catch (error) {

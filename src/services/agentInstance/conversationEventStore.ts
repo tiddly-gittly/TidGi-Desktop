@@ -1,5 +1,6 @@
 /** Atomic event append, merge, and projection rebuild. Transaction ownership stays here or with the caller-supplied manager. */
 import { LARGE_REMOTE_PROJECTION_BATCH, REMOTE_PROJECTION_CHUNK_SIZE } from '@/constants/agentStorage';
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import { AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import {
   AgentLoopCheckpointEntity,
@@ -358,7 +359,7 @@ export async function appendLocalConversationEventsAtomic(
   if (drafts.length > 256) {
     throw eventStoreError('VALIDATION_ERROR', 'local event batch accepts at most 256 drafts');
   }
-  return dataSource.transaction(manager => appendLocalConversationEventsWithManager(manager, drafts));
+  return withAgentTransaction(dataSource, manager => appendLocalConversationEventsWithManager(manager, drafts));
 }
 
 function validateTurnControlRequest(input: {
@@ -380,7 +381,7 @@ export async function appendDeleteTurnTombstoneAtomic(
 ): Promise<ConversationTombstoneEvent> {
   validateTurnControlRequest(request);
   const eventId = `delete-turn:${request.requestId}`;
-  return dataSource.transaction(async manager => {
+  return withAgentTransaction(dataSource, async manager => {
     const existingRow = await manager.getRepository(ConversationEventEntity).findOne({ where: { eventId } });
     if (existingRow) {
       const existing = parseStoredConversationEvent(existingRow.eventJson);
@@ -420,7 +421,7 @@ export async function insertConversationEventsIfAbsent(
   events: readonly ConversationEvent[],
 ): Promise<void> {
   assertCanonicalConversationEvents(events);
-  await dataSource.transaction(async manager => {
+  await withAgentTransaction(dataSource, async manager => {
     const inserted = await insertRawConversationEventsBatch(manager, events);
     if (inserted.length === 0) return;
     // Metadata creates the owning conversation; tombstones are projected
@@ -457,7 +458,7 @@ export async function insertConversationEventsIfAbsent(
 
 /** Maintenance/test hook: raw events remain untouched; derived rows are replayed deterministically. */
 export async function rebuildConversationEventProjection(dataSource: DataSource, conversationId: string): Promise<void> {
-  await dataSource.transaction(async manager => {
+  await withAgentTransaction(dataSource, async manager => {
     await manager.getRepository(AgentInstanceMessageEntity).delete({ conversationId });
     await manager.getRepository(ConversationMessageDetailEntity).delete({ conversationId });
     await manager.getRepository(ConversationTurnTombstoneEntity).delete({ conversationId });

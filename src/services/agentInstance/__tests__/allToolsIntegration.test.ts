@@ -14,7 +14,7 @@ import type { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { getBuiltinLoopProfiles } from 'memeloop';
 import { nanoid } from 'nanoid';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,7 +28,7 @@ function toAgentDefinition(profile: ReturnType<typeof getBuiltinLoopProfiles>[nu
   };
 }
 
-function testWorkspace(): IWorkspace {
+function testWorkspace() {
   return {
     id: 'CJXwbR91GJmElyURHiGA1',
     name: 'wiki',
@@ -98,6 +98,7 @@ describe('all tools integration', () => {
 
     vi.spyOn(definition, 'getAgentDef').mockResolvedValue(defaultAgent);
     testAgentInstance = await agentInstanceService.createAgent(defaultAgent.id, { id: nanoid() });
+    await agentInstanceService.updateAgent(testAgentInstance.id, { name: 'Tool integration fixture' });
 
     mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({
       default: { providerId: 'mock', modelId: 'mock-model', parameters: { temperature: 0.7 } },
@@ -192,10 +193,13 @@ describe('all tools integration', () => {
 
   // ── wiki-search ────────────────────────────────────────────
 
-  it('wiki-search: agent calls wikiSearch and receives tiddler results', async () => {
+  it.each(['wiki', 'Calendar'])('wiki-search: scopes results to requested workspace %s', async (workspaceName) => {
+    const mainWorkspace = testWorkspace();
+    const calendarWorkspace = { ...mainWorkspace, id: 'calendar-child', name: 'Calendar', isSubWiki: true, mainWikiID: mainWorkspace.id, tagNames: ['Calendar'] };
+    mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([mainWorkspace, calendarWorkspace]);
     mockExternalAPIService.generatePortableLlm = vi.fn()
       .mockReturnValueOnce(mockToolCall('wiki-search', {
-        workspaceName: 'wiki',
+        workspaceName,
         searchType: 'filter',
         filter: '[tag[test]]',
         limit: 10,
@@ -213,23 +217,33 @@ describe('all tools integration', () => {
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.runFilter,
-      'CJXwbR91GJmElyURHiGA1',
-      ['[tag[test]]'],
+      mainWorkspace.id,
+      workspaceName === 'Calendar'
+        ? ['[tag[test]]', { wikiFolderLocation: calendarWorkspace.wikiFolderLocation, excludedWikiFolderLocations: [] }]
+        : ['[tag[test]]'],
       expect.any(AbortSignal),
     );
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.getTiddlerText,
-      'CJXwbR91GJmElyURHiGA1',
+      mainWorkspace.id,
       ['TestNote1'],
       expect.any(AbortSignal),
     );
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.getTiddlerText,
-      'CJXwbR91GJmElyURHiGA1',
+      mainWorkspace.id,
       ['TestNote2'],
       expect.any(AbortSignal),
     );
 
+    expect(mockWikiService.wikiOperationInServer).not.toHaveBeenCalledWith(
+      WikiChannel.getTiddlerText,
+      expect.any(String),
+      ['SiblingNote'],
+      expect.any(AbortSignal),
+    );
+    const persisted = await getPersistedMessages();
+    expect(persisted.find(message => message.role === 'tool')?.content).not.toContain('SiblingNote');
     const assistant = (await getPersistedMessages()).filter(m => m.role === 'assistant');
     expect(assistant[assistant.length - 1].content).toBe('搜索完成：找到了 2 条笔记。');
   }, 30000);
@@ -292,7 +306,10 @@ describe('all tools integration', () => {
 
   // ── persistent goal / todo ─────────────────────────────────
 
-  it('manage-todo: advertises the Desktop schema and persists a plan from an inherited Core definition', async () => {
+  it.each(['wiki', 'Calendar'])('manage-todo: advertises the Desktop schema and persists a plan in %s', async (workspaceName) => {
+    const mainWorkspace = testWorkspace();
+    const calendarWorkspace = { ...mainWorkspace, id: 'calendar-child', name: 'Calendar', isSubWiki: true, mainWikiID: mainWorkspace.id, tagNames: ['Calendar'] };
+    mockWorkspaceService.getWorkspacesAsList = vi.fn().mockResolvedValue([mainWorkspace, calendarWorkspace]);
     const definitions = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
     const desktopDefinition = (await definitions.getAgentTemplates()).find(definition => definition.id === 'memeloop:general-assistant');
     const portableProfile = getBuiltinLoopProfiles().find(profile => profile.id === 'memeloop:general-assistant');
@@ -311,6 +328,7 @@ describe('all tools integration', () => {
     const savedDefinition = structuredClone(persistedDefinition);
     vi.mocked(definitions.getAgentDef).mockResolvedValue(persistedDefinition);
     testAgentInstance = await agentInstanceService.createAgent(persistedDefinition.id, { id: nanoid() });
+    await agentInstanceService.updateAgent(testAgentInstance.id, { name: 'Todo integration fixture' });
 
     const todoText = '- [ ] 列出工作区\n- [ ] 创建笔记\n- [ ] 核对正文';
     const generatePortableLlm = vi.fn<IExternalAPIService['generatePortableLlm']>()
@@ -328,26 +346,34 @@ describe('all tools integration', () => {
             }),
           }),
         }));
-        return mockToolCall('manage-todo', { workspaceName: 'wiki', operation: 'write', text: todoText }, 'call-desktop-todo');
+        return mockToolCall('manage-todo', { workspaceName, operation: 'write', text: todoText }, 'call-desktop-todo');
       })
+      .mockReturnValueOnce(mockToolCall('manage-todo', { workspaceName, operation: 'read' }, 'call-read-todo'))
       .mockReturnValueOnce(mockChunk('计划已保存。'));
     mockExternalAPIService.generatePortableLlm = generatePortableLlm;
 
-    mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValue(undefined);
+    mockWikiService.wikiOperationInServer = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce(todoText);
 
     await executeMessage('为这个三步目标建立计划');
 
     expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
       WikiChannel.addTiddler,
-      'CJXwbR91GJmElyURHiGA1',
+      mainWorkspace.id,
       [
         `$:/ai/todo/${testAgentInstance.id}`,
         todoText,
         JSON.stringify({ type: 'text/vnd.tiddlywiki', tags: '$:/tags/AI/Todo' }),
         JSON.stringify({ withDate: true }),
       ],
+      expect.any(AbortSignal),
     );
-    expect(generatePortableLlm).toHaveBeenCalledTimes(2);
+    expect(mockWikiService.wikiOperationInServer).toHaveBeenCalledWith(
+      WikiChannel.getTiddlerText,
+      mainWorkspace.id,
+      [`$:/ai/todo/${testAgentInstance.id}`],
+      expect.any(AbortSignal),
+    );
+    expect(generatePortableLlm).toHaveBeenCalledTimes(3);
     expect(generatePortableLlm.mock.calls[1]?.[0].messages).toContainEqual({
       role: 'tool',
       content: [expect.objectContaining({

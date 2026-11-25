@@ -25,7 +25,7 @@ import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import { type ChatMessage, isToolResultPart, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
 import { defineDesktopTool } from './defineToolDefinition';
@@ -129,7 +129,8 @@ async function resolveWorkspace(workspaceName: string) {
 /*  Executor                                                           */
 /* ------------------------------------------------------------------ */
 
-async function executeTodo(parameters: TodoToolParameters, agentId: string): Promise<ToolExecutionResult> {
+async function executeTodo(parameters: TodoToolParameters, agentId: string, signal?: AbortSignal): Promise<ToolExecutionResult> {
+  signal?.throwIfAborted();
   const { workspaceName, operation, text } = parameters;
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const target = await resolveWorkspace(workspaceName);
@@ -137,10 +138,13 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
     return { success: false, error: `Workspace "${workspaceName}" not found.` };
   }
 
+  // A session plan is a shared system tiddler in the parent wiki, not a child document.
+  const workerWorkspaceID = isWikiWorkspace(target) && target.isSubWiki ? target.mainWikiID : target.id;
+  if (!workerWorkspaceID) return { success: false, error: `Sub-wiki "${workspaceName}" has no parent workspace.` };
   const tiddlerTitle = todoTiddlerTitle(agentId);
 
   if (operation === 'read') {
-    const current = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, target.id, [tiddlerTitle]) as string | undefined;
+    const current = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workerWorkspaceID, [tiddlerTitle], signal) as string | undefined;
     if (!current) {
       return { success: true, data: '(No todo list exists yet for this session.)' };
     }
@@ -153,12 +157,12 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
   }
 
   // Upsert the tiddler (addTiddler creates or overwrites)
-  await wikiService.wikiOperationInServer(WikiChannel.addTiddler, target.id, [
+  await wikiService.wikiOperationInServer(WikiChannel.addTiddler, workerWorkspaceID, [
     tiddlerTitle,
     text,
     JSON.stringify({ type: 'text/vnd.tiddlywiki', tags: '$:/tags/AI/Todo' }),
     JSON.stringify({ withDate: true }),
-  ]);
+  ], signal);
 
   // Return structured JSON so the TodoListRenderer can render it
   const resultData = JSON.stringify({
@@ -222,7 +226,7 @@ export const todoDefinition = defineDesktopTool({
 
     const agentId = agentFrameworkContext.agent.id;
     await executeToolCall('manage-todo', async (parameters) => {
-      return executeTodo(parameters, agentId);
+      return executeTodo(parameters, agentId, agentFrameworkContext.operationSignal);
     });
   },
 });

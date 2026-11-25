@@ -11,8 +11,8 @@ import { randomUUID } from 'node:crypto';
 import type { DataSource } from 'typeorm';
 
 import { AgentLoopCheckpointEntity, AgentLoopCheckpointExecutionLeaseEntity } from '@/services/database/schema/conversationEvent';
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import { appendLocalConversationEventsInTransaction } from '../conversationEventStore';
-import { withDesktopAgentRuntimeTransaction } from './agentRunStateStore';
 
 /** Conversation-event-backed implementation of Core's script-checkpoint port. */
 export class DesktopLoopCheckpointStore implements LoopScriptCheckpointStore {
@@ -46,7 +46,7 @@ export class DesktopLoopCheckpointStore implements LoopScriptCheckpointStore {
     await this.withMutationLock(`${conversationId}:${namespacedKey}`, async () => {
       const originNodeId = await this.getLocalNodeId();
       const checkpointResult = structuredClone(result);
-      await withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+      await withAgentTransaction(this.dataSource, async manager => {
         if (options.scope?.runId !== undefined && options.leasePrecondition === undefined) {
           throw staleFenceError(key, 'run-scoped checkpoint writes require an execution lease');
         }
@@ -146,7 +146,7 @@ export class DesktopLoopCheckpointStore implements LoopScriptCheckpointStore {
     assertLeaseIdentifier(holder, 'holder');
     assertLeaseDuration(ttlMs);
     const name = checkpointExecutionLeaseName(runId);
-    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    return withAgentTransaction(this.dataSource, async manager => {
       const repository = manager.getRepository(AgentLoopCheckpointExecutionLeaseEntity);
       const existing = await repository.findOneBy({ name });
       const now = Date.now();
@@ -181,7 +181,7 @@ export class DesktopLoopCheckpointStore implements LoopScriptCheckpointStore {
   ): Promise<ControlLeaseIdentity> {
     assertCheckpointFence(fence);
     assertLeaseDuration(ttlMs);
-    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    return withAgentTransaction(this.dataSource, async manager => {
       const repository = manager.getRepository(AgentLoopCheckpointExecutionLeaseEntity);
       const existing = await repository.findOneBy({ name: fence.name });
       const now = Date.now();
@@ -207,7 +207,7 @@ export class DesktopLoopCheckpointStore implements LoopScriptCheckpointStore {
 
   private async releaseCheckpointFence(fence: ControlLeaseIdentity): Promise<void> {
     assertCheckpointFence(fence);
-    await withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    await withAgentTransaction(this.dataSource, async manager => {
       await manager.getRepository(AgentLoopCheckpointExecutionLeaseEntity).update(
         {
           name: fence.name,

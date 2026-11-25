@@ -64,6 +64,10 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see a "first reply" element with selector "[data-testid='message-bubble']:has-text('FIRST_MODEL_REPLY')"
     And the last AI request should have parameters:
       | model | "test-model" |
+    When I click on a "chat list" element with selector "[data-testid='tab-list-button']"
+    Then I should see an "opening message used as the chat title" element with selector "[data-testid='tab-list-dropdown'] [data-tab-type='chat']:has-text('Verify the first route')"
+    And I capture the current window as "chat-title.png"
+    When I click on a "named chat" element with selector "[data-testid='tab-list-dropdown'] [data-tab-type='chat']:has-text('Verify the first route')"
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
     And I click on an "external services section" element with selector "[data-testid='preference-section-externalAPI']"

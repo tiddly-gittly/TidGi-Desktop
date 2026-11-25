@@ -227,6 +227,7 @@ export async function createAgentDeviceRpcPendingUserMessage(input: {
         (tiddler) => `[Wiki Entry from ${tiddler.workspaceName}: ${tiddler.tiddlerTitle}]\n${tiddler.renderedContent}\n[End Wiki Entry]`,
       ).join('\n\n');
       messageContent = `${wikiContent}\n\n${messageContent}`;
+      metadata.wikiContextPrefixLength = wikiContent.length + '\n\n'.length;
     }
   }
   assertWikiTiddlerMessageBudget({

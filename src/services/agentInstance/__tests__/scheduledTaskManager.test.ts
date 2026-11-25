@@ -105,7 +105,9 @@ function makeRepo(entities: ScheduledTaskEntity[] = []): Repository<ScheduledTas
   Object.defineProperty(repository, 'manager', {
     value: {
       getRepository: () => repository,
-      transaction: async (operation: (manager: { getRepository: () => Repository<ScheduledTaskEntity> }) => Promise<unknown>) => operation({ getRepository: () => repository }),
+      dataSource: {
+        transaction: async (operation: (manager: { getRepository: () => Repository<ScheduledTaskEntity> }) => Promise<unknown>) => operation({ getRepository: () => repository }),
+      },
     },
   });
   return repository;

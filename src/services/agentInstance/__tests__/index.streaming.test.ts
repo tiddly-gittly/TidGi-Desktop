@@ -5,7 +5,10 @@
  * partials cross the bounded conversation-projection channel, while completed
  * immutable messages are read through durable paging.
  */
+import { TabState, TabType } from '@/pages/Agent/types/tab';
+import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import type { AgentInstanceService } from '@services/agentInstance';
 import type { IAgentInstanceService } from '@services/agentInstance/interface';
 import { container } from '@services/container';
 import type { IDatabaseService } from '@services/database/interface';
@@ -97,6 +100,85 @@ describe('AgentInstanceService Streaming Behavior', () => {
       message: text,
     }, { signal });
   }
+
+  it('names the open chat with the free model and keeps a manual rename during generation', async () => {
+    const browser = container.get<IAgentBrowserService>(serviceIdentifier.AgentBrowser);
+    await browser.initialize();
+    const addChatTab = () =>
+      browser.addTab({
+        id: nanoid(),
+        type: TabType.CHAT,
+        title: 'Default assistant',
+        agentId: testAgentInstance.id,
+        state: TabState.ACTIVE,
+        isPinned: false,
+        createdAt: 0,
+        updatedAt: 0,
+      });
+    const tab = await addChatTab();
+    const tabSubscription = browser.tabs$.subscribe();
+    const opening = '整理明天的日程';
+    const title = '明天的日程安排';
+    const heldTitle = Promise.withResolvers<undefined>();
+    let nameRequestCount = 0;
+    const generate = vi.fn(async function*(request: Parameters<IExternalAPIService['generatePortableLlm']>[0]) {
+      const isTitleRequest = request.logicalModelId === 'title-model';
+      if (isTitleRequest && ++nameRequestCount === 2) await heldTitle.promise;
+      yield { type: 'text-delta' as const, id: 'reply', text: isTitleRequest ? title : '可以。' };
+      yield { type: 'finish' as const, finishReason: 'stop' };
+    });
+    mockExternalAPIService.getAIConfig = vi.fn().mockResolvedValue({ free: { providerId: 'mock', modelId: 'title-model' } });
+    mockExternalAPIService.getProviderAccounts = vi.fn().mockResolvedValue([{
+      providerId: 'mock',
+      providerType: 'openai-compatible',
+      enabled: true,
+      secretRef: 'test://mock/api-key',
+      models: ['mock-model', 'title-model'].map(modelId => ({ modelId, wireModelId: modelId, apiMode: 'chat-completions' })),
+    }]);
+    mockExternalAPIService.generatePortableLlm = generate;
+
+    try {
+      await executeMessage(opening);
+      await vi.waitFor(() => {
+        expect(browser.tabs$.value.find(candidate => candidate.id === tab.id)?.title).toBe(title);
+      });
+      expect((await agentInstanceService.getConversationMeta(testAgentInstance.id))?.title).toBe(title);
+      expect(generate.mock.calls.find(([request]) => request.logicalModelId === 'title-model')?.[0].messages).toEqual([
+        { role: 'user', content: expect.stringContaining(opening) },
+      ]);
+      await executeMessage('继续');
+      expect(nameRequestCount).toBe(1);
+
+      testAgentInstance = await agentInstanceService.createAgent(testAgentInstance.agentDefId);
+      const secondTab = await addChatTab();
+      await executeMessage('新的聊天');
+      await vi.waitFor(() => {
+        expect(nameRequestCount).toBe(2);
+      });
+      await agentInstanceService.updateAgent(testAgentInstance.id, { name: '我的标题' });
+      heldTitle.resolve(undefined);
+      await vi.waitFor(() => {
+        expect((agentInstanceService as AgentInstanceService)['conversationsBeingNamed'].has(testAgentInstance.id)).toBe(false);
+      });
+      expect(browser.tabs$.value.find(candidate => candidate.id === secondTab.id)?.title).toBe('我的标题');
+      expect((await agentInstanceService.getConversationMeta(testAgentInstance.id))?.title).toBe('我的标题');
+
+      testAgentInstance = await agentInstanceService.createAgent(testAgentInstance.agentDefId);
+      const fallbackTab = await addChatTab();
+      generate.mockImplementation(async function*(request) {
+        if (request.logicalModelId === 'title-model') throw new Error('The free model returned HTTP 403');
+        yield { type: 'text-delta' as const, id: 'reply', text: '可以。' };
+        yield { type: 'finish' as const, finishReason: 'stop' };
+      });
+      await executeMessage('为本周排个计划');
+      await vi.waitFor(() => {
+        expect(browser.tabs$.value.find(candidate => candidate.id === fallbackTab.id)?.title).toBe('为本周排个计划');
+      });
+    } finally {
+      heldTitle.resolve(undefined);
+      tabSubscription.unsubscribe();
+    }
+  });
 
   it('publishes bounded streaming projections and persists only the completed response', async () => {
     const expectedUserMessage = '你好，请回答一个简单的问题。';

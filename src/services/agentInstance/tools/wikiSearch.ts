@@ -10,8 +10,9 @@ import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkerWikiOperations } from '@services/wiki/wikiOperations/executor/wikiOperationInServer';
 import type { IWikiEmbeddingService } from '@services/wikiEmbedding/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
 import type { ModelAssignments, ToolExecutionResult } from 'memeloop';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { z } from 'zod/v4';
@@ -151,6 +152,9 @@ export async function executeWikiSearch(
     }
 
     const workspaceID = targetWorkspace.id;
+    const childWorkspace = isWikiWorkspace(targetWorkspace) && targetWorkspace.isSubWiki ? targetWorkspace : undefined;
+    const workerWorkspaceID = childWorkspace ? childWorkspace.mainWikiID : workspaceID;
+    if (!workerWorkspaceID) return { success: false, error: `Sub-wiki "${workspaceName}" has no parent workspace.` };
 
     if (!(await workspaceService.exists(workspaceID))) {
       return { success: false, error: i18n.t('Tool.WikiSearch.Error.WorkspaceNotExist', { workspaceID }) };
@@ -185,7 +189,7 @@ export async function executeWikiSearch(
         // Get full content for results
         for (const vr of vectorResults) {
           try {
-            const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [vr.record.tiddlerTitle], signal);
+            const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workerWorkspaceID, [vr.record.tiddlerTitle], signal);
             results.push({
               title: vr.record.tiddlerTitle,
               text,
@@ -213,7 +217,15 @@ export async function executeWikiSearch(
         return { success: false, error: i18n.t('Tool.WikiSearch.Error.FilterSearchRequiresFilter') };
       }
 
-      const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, [filter], signal);
+      const filterArguments: Parameters<IWorkerWikiOperations[WikiChannel.runFilter]> = childWorkspace
+        ? [filter, {
+          wikiFolderLocation: childWorkspace.wikiFolderLocation,
+          excludedWikiFolderLocations: workspaces.filter(isWikiWorkspace)
+            .filter(workspace => workspace.isSubWiki && workspace.mainWikiID === workerWorkspaceID && workspace.id !== workspaceID)
+            .map(workspace => workspace.wikiFolderLocation),
+        }]
+        : [filter];
+      const tiddlerTitles = await wikiService.wikiOperationInServer(WikiChannel.runFilter, workerWorkspaceID, filterArguments, signal);
       const filterErrorTitle = tiddlerTitles.find(isWikiFilterErrorTitle);
       if (filterErrorTitle) {
         return {
@@ -234,7 +246,7 @@ export async function executeWikiSearch(
 
       for (const title of tiddlerTitles) {
         try {
-          const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [title], signal);
+          const text = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workerWorkspaceID, [title], signal);
           results.push({ title, text });
         } catch {
           signal?.throwIfAborted();

@@ -6,9 +6,11 @@ import { DataSource, Repository } from 'typeorm';
 import { USER_DATA_FOLDER } from '@/constants/appPaths';
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
 import { isTest } from '@/constants/environment';
+import type { IAgentBrowserService } from '@services/agentBrowser/interface';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import type { IDatabaseService } from '@services/database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import { ConversationForkEntity, ConversationWorkspaceChoiceEntity } from '@services/database/schema/conversationEditing';
@@ -129,6 +131,7 @@ import * as conversationListQueries from './conversationListQueries';
 import * as conversationMessageQueries from './conversationMessageQueries';
 import * as conversationMessageWindowQueries from './conversationMessageWindowQueries';
 import * as conversationTimelineQueries from './conversationTimelineQueries';
+import { titleConversationFromOpeningMessage, writeConversationTitle } from './conversationTitle';
 import type { IAgentInstanceService, RendererAgentRunResult } from './interface';
 import { createLongConversationEvents } from './longConversationFixture';
 import { MemeLoopDesktopRuntime } from './runtime/runtime';
@@ -184,6 +187,9 @@ export class AgentInstanceService implements IAgentInstanceService {
   @inject(serviceIdentifier.AgentDefinition)
   private readonly agentDefinitionService!: IAgentDefinitionService;
 
+  @inject(serviceIdentifier.AgentBrowser)
+  private readonly agentBrowserService!: IAgentBrowserService;
+
   @inject(serviceIdentifier.ExternalAPI)
   private readonly externalAPIService!: IExternalAPIService;
 
@@ -213,6 +219,7 @@ export class AgentInstanceService implements IAgentInstanceService {
   private goalCoordinator: GoalCoordinator | undefined;
   private activeDurableRunIds = new Map<string, Set<string>>();
   private durableErrorPersistence = new Map<string, Promise<void>>();
+  private conversationsBeingNamed = new Set<string>();
 
   public async initialize(): Promise<void> {
     try {
@@ -1160,7 +1167,31 @@ export class AgentInstanceService implements IAgentInstanceService {
         await this.publishConversationInvalidation(event.conversationId, previousState, 'tombstone');
       }
     }
+    if (event.kind === 'message' && event.message.role === 'user' && !event.message.hidden) {
+      this.scheduleConversationTitle(event.conversationId, event.originNodeId);
+    } else if (event.kind === 'metadataPatch' && typeof event.patch.title === 'string' && event.eventId !== `metadata:create:${event.conversationId}`) {
+      await this.publishConversationTitles([event.conversationId]);
+    }
     return event;
+  }
+
+  private scheduleConversationTitle(conversationId: string, originNodeId: string): void {
+    if (this.conversationsBeingNamed.has(conversationId)) return;
+    this.conversationsBeingNamed.add(conversationId);
+    void titleConversationFromOpeningMessage(this.dataSource!, this.externalAPIService, conversationId, originNodeId)
+      .then(changed => changed ? this.publishConversationTitles([conversationId]) : undefined)
+      .catch((error: unknown) => logger.warn('Failed to name conversation', { conversationId, error }))
+      .finally(() => this.conversationsBeingNamed.delete(conversationId));
+  }
+
+  private async publishConversationTitles(conversationIds: readonly string[]): Promise<void> {
+    if (conversationIds.length === 0) return;
+    for (const id of conversationIds) {
+      if (!this.agentInstanceSubjects.has(id)) continue;
+      const agent = await this.getAgentMetadata(id);
+      if (agent) this.notifyAgentUpdate(id, agent);
+    }
+    if (this.agentBrowserService.tabs$.observed) await this.agentBrowserService.updateTabsObservable();
   }
 
   public async appendLocalConversationEventsAtomic(drafts: readonly ConversationEventDraft[]): Promise<ConversationEvent[]> {
@@ -1203,6 +1234,9 @@ export class AgentInstanceService implements IAgentInstanceService {
         appendOnly ? 'append' : 'reset',
       );
     }));
+    await this.publishConversationTitles([
+      ...new Set(events.flatMap(event => event.kind === 'metadataPatch' && typeof event.patch.title === 'string' ? [event.conversationId] : [])),
+    ]);
   }
 
   public async getConversationEventPage(
@@ -1237,7 +1271,23 @@ export class AgentInstanceService implements IAgentInstanceService {
   public async updateAgent(agentId: string, data: AgentInstanceMetadataUpdate): Promise<AgentRuntimeView> {
     this.ensureRepositories();
     try {
-      const updatedAgent = await repo.updateAgent(this.agentInstanceRepository!, this.agentMessageRepository!, agentId, data);
+      const { name, ...changes } = data;
+      let updatedAgent: AgentRuntimeView;
+      if (name === undefined) {
+        updatedAgent = await withAgentTransaction(
+          this.dataSource!,
+          manager => repo.updateAgent(manager.getRepository(AgentInstanceEntity), manager.getRepository(AgentInstanceMessageEntity), agentId, changes),
+        );
+      } else {
+        const originNodeId = await this.getLocalNodeId();
+        updatedAgent = await withAgentTransaction(this.dataSource!, async manager => {
+          const agents = manager.getRepository(AgentInstanceEntity);
+          await repo.updateAgent(agents, manager.getRepository(AgentInstanceMessageEntity), agentId, changes);
+          await writeConversationTitle(manager, agentId, originNodeId, name);
+          return (await repo.getAgentMetadata(agents, agentId))!;
+        });
+        if (this.agentBrowserService.tabs$.observed) await this.agentBrowserService.updateTabsObservable();
+      }
       this.notifyAgentUpdate(agentId, updatedAgent);
       return updatedAgent;
     } catch (error) {
@@ -1698,7 +1748,7 @@ export class AgentInstanceService implements IAgentInstanceService {
     });
     if (fork) {
       if (request.message !== fork.replacementText) throw new Error('conversation_fork_content_mismatch');
-      const { beforeCommitMap: _beforeCommitMap, ...sourceMetadata } = fork.source.metadata ?? {};
+      const { beforeCommitMap: _beforeCommitMap, wikiContextPrefixLength: _wikiContextPrefixLength, ...sourceMetadata } = fork.source.metadata ?? {};
       userMessage.parts = [
         { type: 'text', text: request.message },
         ...fork.source.parts.filter(part => part.type === 'attachment'),

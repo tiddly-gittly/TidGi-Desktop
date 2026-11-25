@@ -14,6 +14,12 @@ export const TIMELINE_STORED_PREVIEW_LENGTH = 240;
 
 export const TIMELINE_ACTOR_LENGTH = 160;
 
+export const CONVERSATION_TITLE_LENGTH = 48;
+
+export const CONVERSATION_TITLE_INPUT_LENGTH = 1200;
+
+export const CONVERSATION_TITLE_REQUEST_TIMEOUT_MS = 10_000;
+
 export const LARGE_REMOTE_PROJECTION_BATCH = 256;
 
 /** Seven detail columns per row keep each insert within SQLite's parameter limit. */

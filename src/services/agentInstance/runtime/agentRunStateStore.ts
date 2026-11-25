@@ -24,6 +24,7 @@ import type { DataSource, EntityManager, Repository } from 'typeorm';
 import { In, LessThan } from 'typeorm';
 
 import { appendLocalConversationEventsInTransaction } from '@/services/agentInstance/conversationEventStore';
+import { withAgentTransaction } from '@/services/database/agentTransaction';
 import { AgentRunExecutionLeaseEntity, AgentRunStateEntity, ConversationEventEntity } from '@/services/database/schema/conversationEvent';
 
 const ACTIVE_STATES: readonly AgentRunState[] = ['accepted', 'queued', 'running'];
@@ -33,27 +34,6 @@ const LEGAL_NEXT: Readonly<Record<'accepted' | 'queued' | 'running', readonly Ag
   queued: ['running', 'failed', 'cancelled'],
   running: ['completed', 'failed', 'cancelled'],
 };
-const runtimeTransactionTails = new WeakMap<DataSource, Promise<void>>();
-
-/** better-sqlite3 has one connection, so runtime-owned transactions must not overlap. */
-export async function withDesktopAgentRuntimeTransaction<T>(
-  dataSource: DataSource,
-  operation: (manager: EntityManager) => Promise<T>,
-): Promise<T> {
-  const previous = runtimeTransactionTails.get(dataSource);
-  let release!: () => void;
-  const current = new Promise<void>(resolve => {
-    release = resolve;
-  });
-  runtimeTransactionTails.set(dataSource, current);
-  if (previous) await previous;
-  try {
-    return await dataSource.transaction(operation);
-  } finally {
-    release();
-    if (runtimeTransactionTails.get(dataSource) === current) runtimeTransactionTails.delete(dataSource);
-  }
-}
 
 /** TypeORM/SQLite implementation of Core's durable run idempotency port. */
 export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
@@ -61,7 +41,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
 
   public async createOrGet(input: AgentRunRecord): Promise<AgentRunRecord> {
     const record = normalizeRecord(input);
-    return withDesktopAgentRuntimeTransaction(
+    return withAgentTransaction(
       this.dataSource,
       async manager => (await createOrGetWithManager(manager, record)).run,
     );
@@ -104,7 +84,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
   public async retryTurnAtomic(input: AtomicAgentRetryInput): Promise<AtomicAgentRetryResult> {
     const candidateRun = normalizeAtomicRetryCandidate(input);
     const originNodeId = assertIdentifier(input.originNodeId, 'originNodeId');
-    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    return withAgentTransaction(this.dataSource, async manager => {
       const existingEntity = await findRequestOrRun(manager, candidateRun);
       if (existingEntity) {
         const run = assertMatchingRequest(existingEntity, candidateRun);
@@ -156,7 +136,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
     }
     const next = normalizeRecord(input);
     if (next.runId !== runId) throw new Error('agent_run_immutable_identity_changed');
-    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    return withAgentTransaction(this.dataSource, async manager => {
       const repository = manager.getRepository(AgentRunStateEntity);
       const existing = await repository.findOneBy({ runId });
       if (!existing || !expectedStates.includes(existing.state)) return false;
@@ -191,7 +171,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
     assertIdentifier(runId, 'runId');
     assertIdentifier(ownerId, 'executionOwnerId');
     assertLeaseTime(now, leaseMs);
-    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    return withAgentTransaction(this.dataSource, async manager => {
       const run = await manager.getRepository(AgentRunStateEntity).findOneBy({ runId });
       if (!run || !ACTIVE_STATES.includes(run.state)) return undefined;
       const repository = manager.getRepository(AgentRunExecutionLeaseEntity);
@@ -218,7 +198,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
   ): Promise<AgentRunExecutionLease | undefined> {
     assertExecutionLease(lease);
     assertLeaseTime(now, leaseMs);
-    return withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    return withAgentTransaction(this.dataSource, async manager => {
       const run = await manager.getRepository(AgentRunStateEntity).findOneBy({ runId: lease.runId });
       if (!run || !ACTIVE_STATES.includes(run.state)) return undefined;
       const repository = manager.getRepository(AgentRunExecutionLeaseEntity);
@@ -240,7 +220,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
 
   public async releaseExecution(lease: AgentRunExecutionLease): Promise<void> {
     assertExecutionLease(lease);
-    await withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    await withAgentTransaction(this.dataSource, async manager => {
       await manager.getRepository(AgentRunExecutionLeaseEntity).update(
         {
           runId: lease.runId,
@@ -269,7 +249,7 @@ export class DesktopAgentRunStateStore implements AtomicAgentRetryStore {
     if (!Number.isSafeInteger(options.maxRecords) || options.maxRecords < 1 || options.maxRecords > 100_000) {
       throw new TypeError('invalid agent run prune record limit');
     }
-    await withDesktopAgentRuntimeTransaction(this.dataSource, async manager => {
+    await withAgentTransaction(this.dataSource, async manager => {
       const repository = manager.getRepository(AgentRunStateEntity);
       await repository.delete({ finishedAt: LessThan(options.finishedBefore) });
       for (;;) {

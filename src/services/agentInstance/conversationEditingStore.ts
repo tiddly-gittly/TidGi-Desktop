@@ -1,4 +1,5 @@
 import { type IChatTab, type TabItem, TabType } from '@/pages/Agent/types/tab';
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { AgentBrowserTabEntity } from '@services/database/schema/agentBrowser';
 import { ConversationBranchEntity, ConversationEditDraftEntity, ConversationForkEntity, ConversationWorkspaceChoiceEntity } from '@services/database/schema/conversationEditing';
@@ -90,7 +91,7 @@ export async function forkConversation(database: DataSource, input: Conversation
     if (!value || value.length > 512) throw new Error('conversation_fork_identity_invalid');
   }
   const payloadDigest = digest(input);
-  return database.transaction(async manager => {
+  return withAgentTransaction(database, async manager => {
     const forks = manager.getRepository(ConversationForkEntity);
     const existing = await forks.findOne({ where: { requestId: input.requestId } });
     if (existing) {

@@ -1,5 +1,6 @@
 /** Agent instance lifecycle and metadata persistence. */
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import { AgentDefinitionEntity, AgentInstanceEntity, AgentInstanceMessageEntity, ScheduledTaskEntity } from '@services/database/schema/agent';
 import {
   AgentLoopCheckpointEntity,
@@ -183,7 +184,7 @@ export async function discardVolatileAgentPreview(
     throw new Error(`Refusing to discard non-temporary agent definition: ${temporaryDefinitionId}`);
   }
 
-  await dataSource.transaction(async manager => {
+  await withAgentTransaction(dataSource, async manager => {
     const instanceRepository = manager.getRepository(AgentInstanceEntity);
     const definitionRepository = manager.getRepository(AgentDefinitionEntity);
     const instance = agentId ? await instanceRepository.findOne({ where: { id: agentId } }) : null;

@@ -4,7 +4,9 @@
  */
 
 import { WikiChannel } from '@/constants/channels';
+import path from 'node:path';
 import type { ITiddlerFields, ITiddlyWiki, Tiddler } from 'tiddlywiki';
+import { resolveFolderTiddlerStoragePath } from '../../wikiWorker/folderTiddlerLoader';
 import { wikiOperationScripts } from './scripts/common';
 
 export type IWorkerWikiOperations = typeof wikiOperationsInWikiWorker.wikiOperationsInServer;
@@ -77,7 +79,33 @@ export class WikiOperationsInWikiWorker {
       const tiddler: Tiddler = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddler](title)) as Promise<Tiddler>);
       return tiddler;
     },
-    [WikiChannel.runFilter]: async (filter: string) => {
+    [WikiChannel.runFilter]: async (filter: string, scope?: { wikiFolderLocation: string; excludedWikiFolderLocations: string[] }) => {
+      if (scope) {
+        await this.waitForWikiOperationsInWikiWorkerAvailable();
+        const storagePath = resolveFolderTiddlerStoragePath(scope.wikiFolderLocation);
+        const excludedPaths = scope.excludedWikiFolderLocations.map(resolveFolderTiddlerStoragePath);
+        const isInside = (folder: string, file: string): boolean => {
+          const relative = path.relative(folder, file);
+          return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+        };
+        const titles: string[] = [];
+        const scopedWiki = new this.wikiInstance.Wiki({ enableIndexers: [] });
+        for (const [title, info] of Object.entries(this.wikiInstance.boot.files)) {
+          const filePath = info.filepath;
+          if (!isInside(storagePath, filePath) || excludedPaths.some(folder => isInside(storagePath, folder) && isInside(folder, filePath))) continue;
+          const tiddler = this.wikiInstance.wiki.getTiddler(title);
+          if (tiddler) {
+            titles.push(title);
+            scopedWiki.addTiddler(tiddler);
+          }
+        }
+        // Limit and sort operate on the mounted child's source. A scoped Wiki also
+        // keeps source-resetting operators such as all[tiddlers] within that child.
+        const results = scopedWiki.filterTiddlers(filter, undefined, scopedWiki.makeTiddlerIterator(titles));
+        const allowed = new Set(titles);
+        const filterErrorPrefix = `${this.wikiInstance.language.getString('Error/Filter', { variables: { title: '' } })}:`;
+        return results.filter(title => allowed.has(title) || title.startsWith(filterErrorPrefix));
+      }
       const filterResult: string[] = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.runFilter](filter)) as Promise<string[]>);
       return filterResult;
     },

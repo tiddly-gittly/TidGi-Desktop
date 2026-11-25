@@ -26,6 +26,7 @@ import { nanoid } from 'nanoid';
 import { In, Repository } from 'typeorm';
 
 import { MAX_TIMER_DELAY_MS, SCHEDULE_RETRY_BASE_MS, SCHEDULE_RETRY_MAX_MS } from '@/constants/agent';
+import { withAgentTransaction } from '@services/database/agentTransaction';
 import { ScheduledTaskEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import type { IAgentInstanceService } from '../interface';
@@ -446,7 +447,7 @@ export async function addTask(input: CreateScheduledTaskInput, options: AgentMan
 
   validateSchedule(entity);
 
-  const saved = await scheduledTaskRepo.manager.transaction(async manager => {
+  const saved = await withAgentTransaction(scheduledTaskRepo.manager.dataSource, async manager => {
     options.signal?.throwIfAborted();
     const result = await manager.getRepository(ScheduledTaskEntity).save(entity);
     options.signal?.throwIfAborted();
@@ -507,7 +508,7 @@ export async function updateTaskScoped(
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   options.signal?.throwIfAborted();
   assertScopedUpdateIdentity(scope, patch);
-  const entity = await scheduledTaskRepo.manager.transaction(async manager => {
+  const entity = await withAgentTransaction(scheduledTaskRepo.manager.dataSource, async manager => {
     const repository = manager.getRepository(ScheduledTaskEntity);
     const where = scopeWhere(scope);
     const persisted = await repository.findOne({ where });
@@ -561,7 +562,7 @@ export async function removeTaskScoped(
 ): Promise<void> {
   if (!scheduledTaskRepo) throw new Error('ScheduledTaskManager not initialized');
   options.signal?.throwIfAborted();
-  await scheduledTaskRepo.manager.transaction(async manager => {
+  await withAgentTransaction(scheduledTaskRepo.manager.dataSource, async manager => {
     const where = scopeWhere(scope);
     const result = await manager.getRepository(ScheduledTaskEntity).createQueryBuilder()
       .update(ScheduledTaskEntity)
@@ -805,7 +806,7 @@ async function getDurableScheduledTasksPageForAgent(
 
   await ensureScheduledTaskRevisionSchema(scheduledTaskRepo);
   input.signal?.throwIfAborted();
-  return scheduledTaskRepo.manager.transaction(async manager => {
+  return withAgentTransaction(scheduledTaskRepo.manager.dataSource, async manager => {
     input.signal?.throwIfAborted();
     const repository = manager.getRepository(ScheduledTaskEntity);
     const revisionRows = await manager.query<Array<{ revision?: number | string }>>(
