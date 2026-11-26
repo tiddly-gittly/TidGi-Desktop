@@ -10,6 +10,7 @@ import { createInitialDeviceCloudConnectionStatus } from '@services/deviceNetwor
 import { ExternalAPIService } from '@services/externalAPI';
 import type { IGitService, IGitStateChange, IGitSyncProgressEvent } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
+import { defaultPreferences } from '@services/preferences/defaultPreferences';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
@@ -106,6 +107,7 @@ export const serviceInstances: {
     const store: Record<string, unknown> = {};
     return {
       get: vi.fn(async (key: string) => store[key]),
+      getPreferences: vi.fn(() => ({ ...defaultPreferences, ...store })),
       set: vi.fn(async (key: string, value: unknown) => {
         store[key] = value;
       }),

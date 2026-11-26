@@ -18,6 +18,7 @@ import { ConversationTimelineStateEntity } from '@services/database/schema/conve
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import type { IGitService } from '@services/git/interface';
 import { logger } from '@services/libs/log';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isWikiWorkspace } from '@services/workspaces/interface';
@@ -182,7 +183,7 @@ function projectAgentRuntimeView(agent: AgentRuntimeView): AgentRuntimeView {
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
   @inject(serviceIdentifier.Preference)
-  private readonly preferenceService!: import('@services/preferences/interface').IPreferenceService;
+  private readonly preferenceService!: IPreferenceService;
 
   @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
