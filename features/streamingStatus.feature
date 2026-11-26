@@ -56,3 +56,22 @@ Feature: Message Streaming Status
     # Final verification
     And I should see a "send button icon" element with selector "[data-testid='send-icon']"
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
+    When I click on a "third turn" element with selector "[data-testid='conversation-timeline'] [aria-posinset='3']"
+    Then I should see a "selected third turn" element with selector "[data-testid='conversation-timeline'] [aria-posinset='3'][aria-current='location']"
+    And the element with selector "[data-memeloop-turn-anchor='true']:focus:has-text('Third message')" should lie inside viewport "[data-testid='conversation-viewport']"
+
+  @agent @mockOpenAI @markdownStreaming
+  Scenario: A Markdown table stays rendered while rows arrive
+    Given I add mock OpenAI responses:
+      | responseFile            | stream |
+      | chat-streaming-table.md | true   |
+    When I type "Show the review table" in "chat input" element with selector "[data-testid='agent-message-input']"
+    Then there should be between 1 and 1 elements matching "button[data-testid='agent-send-button']:has([data-testid='send-icon'])" with distinct "data-testid" attributes
+    When I press "Enter" key
+    Then I should see a "streaming table header" element with selector "[data-testid='assistant-streaming-text'] table th:text-is('Task')"
+    And there should be between 1 and 1 elements matching "button[data-testid='agent-send-button']" with distinct "data-testid" attributes
+    And I should see a "stop action" element with selector "button[data-testid='agent-send-button'] [data-testid='cancel-icon']"
+    And I should see a "new rendered row" element with selector "[data-testid='assistant-streaming-text'] table td:text-is('Write summary')"
+    And I should see a "finished Markdown table" element with selector "[data-testid='assistant-message'] table td strong:text-is('Ready')"
+    And I should see a "restored send action" element with selector "button[data-testid='agent-send-button'] [data-testid='send-icon']"
+    And there should be between 1 and 1 elements matching "button[data-testid='agent-send-button']" with distinct "data-testid" attributes

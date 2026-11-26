@@ -23,6 +23,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { AgentSwitcher } from './components/AgentSwitcher';
 import { CompactModelSelector } from './components/CompactModelSelector';
 import { DesktopGoalControl } from './components/DesktopGoalControl';
+import { GenerateConversationTitleButton } from './components/GenerateConversationTitleButton';
 import { PromptPreviewButtonWithMenu } from './components/PromptPreviewButtonWithMenu';
 import { createSecureBrowserUuid } from './createSecureBrowserUuid';
 import { createDesktopAgentConversationClient } from './DesktopAgentConversationClient';
@@ -374,6 +375,13 @@ function DesktopAgentChatView({
         header={{
           title: snapshot.agent?.name || tab.title,
           navigation: isSplitView ? undefined : <TabListDropdown />,
+          actions: (
+            <GenerateConversationTitleButton
+              key={tab.agentId}
+              conversationId={tab.agentId}
+              disabled={!((baseAdapter.timeline?.totalTurns ?? 0) > 0 || snapshot.messages.some(message => message.role === 'user'))}
+            />
+          ),
           editTitleLabel: t('Agent.EditTitle'),
           onTitleChange: async name => {
             await instanceClient.updateAgent(tab.agentId, { name });
@@ -448,9 +456,10 @@ function DesktopAgentChatView({
           },
         }}
         resolveErrorPresentation={resolveErrorPresentation}
-        renderMessageContent={message => (
+        renderMessageContent={(message, _isUser, isStreaming) => (
           <RenderedMessageContent
             message={message}
+            isStreaming={isStreaming}
             renderHtml={conversationWorkspace.renderHtml}
             messageLabels={createDesktopMessageLabels(t)}
             onRenderError={error => {
@@ -489,6 +498,7 @@ function DesktopAgentChatView({
         operationErrorMessage={t('Chat.OperationError')}
         timelineLabels={{
           navigation: t('Chat.Timeline.Navigation'),
+          turn: (index, total) => t('Chat.Timeline.Turn', { index, total }),
           message: (index, total, role) =>
             t('Chat.Timeline.Message', {
               index,

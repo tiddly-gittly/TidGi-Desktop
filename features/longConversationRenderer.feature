@@ -18,12 +18,11 @@ Feature: Bounded long-conversation renderer
     Then I should see a "recent answer" element with selector "[data-testid='conversation-viewport']:has-text('E2E long answer 02047')"
     And there should be between 1 and 50 elements matching "[data-testid='message-bubble']" with distinct "data-memeloop-message-id" attributes
     And there should be between 1 and 50 elements matching "[data-testid='conversation-timeline'] [data-timeline-entry-index]" with distinct "data-timeline-entry-index" attributes
-    And I should see a "complete timeline size" element with selector "[data-testid='conversation-timeline'] [aria-setsize='4099']"
+    And I should see a "complete turn count" element with selector "[data-testid='conversation-timeline'] [aria-setsize='2048']"
     When I remember the text and "data-memeloop-message-id" attribute of elements with selector "[data-testid='message-bubble'] >> nth=0" as "initial resident boundary"
     And I hover on a "latest user timeline marker" element with selector "[data-timeline-entry-index='4097']"
     Then I should see a "latest question preview" element with selector "[role='tooltip']:has-text('E2E long question 02047')"
-    When I hover on a "latest assistant timeline marker" element with selector "[data-timeline-entry-index='4098']"
-    Then I should see a "latest answer preview" element with selector "[role='tooltip']:has-text('E2E long answer 02047')"
+    And I should not see a "second marker for the same turn" element with selector "[data-timeline-entry-index='4098']"
 
     When I click on an "earlier messages" element with selector "[data-testid='conversation-viewport'] > button >> nth=0"
     Then the text and "data-memeloop-message-id" attribute of elements with selector "[data-testid='message-bubble'] >> nth=0" should not match "initial resident boundary"
@@ -35,6 +34,8 @@ Feature: Bounded long-conversation renderer
     Then I should see a "first durable question" element with selector "[data-testid='conversation-viewport']:has-text('E2E long question 00000')"
     And I should see a "selected first timeline marker" element with selector "[data-timeline-entry-index='0'][aria-current='location']"
     And I should see a "first durable message identity" element with selector "[data-testid='message-bubble'][data-memeloop-message-id$=':00000']"
+    And I should see a "focused question at the selected turn" element with selector "[data-memeloop-turn-anchor='true'][data-memeloop-message-id$=':00000']:focus"
+    And the element with selector "[data-memeloop-turn-anchor='true'][data-memeloop-message-id$=':00000']" should lie inside viewport "[data-testid='conversation-viewport']"
     And there should be between 1 and 50 elements matching "[data-testid='message-bubble']" with distinct "data-memeloop-message-id" attributes
 
     When I click on a "prompt preview" element with selector "[data-testid='prompt-preview-button']"

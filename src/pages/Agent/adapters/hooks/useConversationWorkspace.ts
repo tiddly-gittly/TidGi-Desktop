@@ -53,18 +53,17 @@ export function useConversationWorkspace(conversationId: string) {
     });
     await write;
   }, [conversationId]);
+  const selectedWorkspace = workspaces.find(workspace => workspaceId === null ? workspace.active : workspace.id === workspaceId);
+  const renderWorkspaceId = selectedWorkspace?.hibernated ? undefined : selectedWorkspace?.id;
   const renderHtml = useCallback(async (text: string, signal: AbortSignal): Promise<string | undefined> => {
     signal.throwIfAborted();
-    const selected = workspaceId ?? (await window.service.workspace.getActiveWorkspace())?.id;
-    if (!selected) return undefined;
-    const workspace = await window.service.workspace.get(selected);
-    if (!workspace || !isWikiWorkspace(workspace) || workspace.hibernated) return undefined;
+    if (!renderWorkspaceId) return undefined;
     const workers = await window.service.wiki.getWorkersInfo();
     signal.throwIfAborted();
-    if (!workers.some(worker => worker.workspaceID === selected && worker.isRunning)) return undefined;
-    const rendered = await window.service.wiki.wikiOperationInServer(WikiChannel.renderWikiText, selected, [text]);
+    if (!workers.some(worker => worker.workspaceID === renderWorkspaceId && worker.isRunning)) return undefined;
+    const rendered = await window.service.wiki.wikiOperationInServer(WikiChannel.renderWikiText, renderWorkspaceId, [text]);
     signal.throwIfAborted();
     return rendered;
-  }, [workspaceId, workspaces]);
+  }, [renderWorkspaceId]);
   return { workspaceId, workspaces, loading, select, renderHtml };
 }

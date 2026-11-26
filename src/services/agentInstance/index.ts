@@ -131,7 +131,7 @@ import * as conversationListQueries from './conversationListQueries';
 import * as conversationMessageQueries from './conversationMessageQueries';
 import * as conversationMessageWindowQueries from './conversationMessageWindowQueries';
 import * as conversationTimelineQueries from './conversationTimelineQueries';
-import { titleConversationFromOpeningMessage, writeConversationTitle } from './conversationTitle';
+import { generateConversationTitle, writeConversationTitle } from './conversationTitle';
 import type { IAgentInstanceService, RendererAgentRunResult } from './interface';
 import { createLongConversationEvents } from './longConversationFixture';
 import { MemeLoopDesktopRuntime } from './runtime/runtime';
@@ -1178,10 +1178,18 @@ export class AgentInstanceService implements IAgentInstanceService {
   private scheduleConversationTitle(conversationId: string, originNodeId: string): void {
     if (this.conversationsBeingNamed.has(conversationId)) return;
     this.conversationsBeingNamed.add(conversationId);
-    void titleConversationFromOpeningMessage(this.dataSource!, this.externalAPIService, conversationId, originNodeId)
+    void generateConversationTitle(this.dataSource!, this.externalAPIService, conversationId, originNodeId, 'initial')
       .then(changed => changed ? this.publishConversationTitles([conversationId]) : undefined)
       .catch((error: unknown) => logger.warn('Failed to name conversation', { conversationId, error }))
       .finally(() => this.conversationsBeingNamed.delete(conversationId));
+  }
+
+  public async regenerateConversationTitle(conversationId: string): Promise<void> {
+    this.ensureRepositories();
+    const originNodeId = await this.getLocalNodeId();
+    if (await generateConversationTitle(this.dataSource!, this.externalAPIService, conversationId, originNodeId, 'regenerate')) {
+      await this.publishConversationTitles([conversationId]);
+    }
   }
 
   private async publishConversationTitles(conversationIds: readonly string[]): Promise<void> {

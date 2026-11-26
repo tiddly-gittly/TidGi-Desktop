@@ -66,8 +66,8 @@ importers:
         specifier: 0.3.5
         version: 0.3.5(memeloop@0.3.16(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
       '@memeloop/react-ui':
-        specifier: 0.2.15
-        version: 0.2.15(819a0dec6544a77f8d2a7ccbbb6eb5f9)
+        specifier: 0.2.16
+        version: 0.2.16(819a0dec6544a77f8d2a7ccbbb6eb5f9)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(supports-color@10.2.2)(zod@4.4.3)
@@ -2181,8 +2181,8 @@ packages:
     peerDependencies:
       memeloop: ^0.3.5
 
-  '@memeloop/react-ui@0.2.15':
-    resolution: {integrity: sha512-BFyzBzVMg2MCuNbFsLtVZIUjCu5ed3+d18CU4hHDOJroEv+aX0H/J22OdS6iYq9DCPppbudweiJyh003QDBHdA==}
+  '@memeloop/react-ui@0.2.16':
+    resolution: {integrity: sha512-dO8E0UfUEPIehTLm693IWOjioZLhFBMD7jRR5xkoxlmmC5cApjbS5A4bNwQ5alYnEMPtOC3+q4Xejq3aWLp7Ag==}
     peerDependencies:
       '@assistant-ui/react': ^0.15.16
       '@emotion/react': '>=11.0.0 <12.0.0'
@@ -6943,6 +6943,24 @@ packages:
   make-fetch-happen@14.0.0:
     resolution: {integrity: sha512-/0z4kjybWroAwWuQJJgkA5yUKw/WGepJhjPdj6YW8+pn7lWs75zA9khVgvID/OMYAwRjq2MsLexKxttjIcfD4w==}
     engines: {node: ^18.17.0 || >=20.5.0}
+
+  markdown-to-jsx@9.8.2:
+    resolution: {integrity: sha512-rWUuxKB5NsuJmSfUOuXkQ0O5qk0J/Lr3Lk6dzxKoKQI/jeHYlsVfz3zJdMLAhI46hHoXDYERWhtBOiqtWDZ4LA==}
+    engines: {node: '>= 18'}
+    peerDependencies:
+      react: '>= 16.0.0'
+      react-native: '*'
+      solid-js: '>=1.0.0'
+      vue: '>=3.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-native:
+        optional: true
+      solid-js:
+        optional: true
+      vue:
+        optional: true
 
   markdown-to-jsx@9.9.0:
     resolution: {integrity: sha512-3YRQuriODgdMr9EeY//Ya/104p978bY0nOwmc85IGxHixqOlhNDgq7IJTsLOdmFxjMFKJ6bVzUav30wWVJZOJQ==}
@@ -11753,13 +11771,14 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@memeloop/react-ui@0.2.15(819a0dec6544a77f8d2a7ccbbb6eb5f9)':
+  '@memeloop/react-ui@0.2.16(819a0dec6544a77f8d2a7ccbbb6eb5f9)':
     dependencies:
       '@assistant-ui/react': 0.15.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(immer@11.1.15)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@emotion/react': 11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)
       '@mui/icons-material': 9.2.0(@mui/material@9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.17)(react@19.2.8)
       '@mui/material': 9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      markdown-to-jsx: 9.8.2(react@19.2.8)
       memeloop: 0.3.16(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
       react: 19.2.8
     optionalDependencies:
@@ -16960,6 +16979,10 @@ snapshots:
       ssri: 12.0.0
     transitivePeerDependencies:
       - supports-color
+
+  markdown-to-jsx@9.8.2(react@19.2.8):
+    optionalDependencies:
+      react: 19.2.8
 
   markdown-to-jsx@9.9.0(react@19.2.8):
     optionalDependencies:

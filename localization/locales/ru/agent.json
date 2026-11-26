@@ -63,7 +63,9 @@
       "SearchPlaceholder": "Поиск...",
       "SelectAttachment": "Выбрать вложение"
     },
-    "EditTitle": "редактировать имя интеллектуального агента",
+    "EditTitle": "Изменить заголовок чата",
+    "GenerateTitle": "Создать заголовок",
+    "GenerateTitleError": "Попробуйте создать заголовок ещё раз.",
     "InvalidTabType": "Неверный тип вкладки. Требуется вкладка чата.",
     "LoadingChat": "Загрузка диалога...",
     "SearchAgents": "Искать агентов…",
@@ -207,6 +209,7 @@
     },
     "Timeline": {
       "Navigation": "Хронология разговора",
+      "Turn": "Ход {{index}} из {{total}}",
       "Message": "Сообщение {{index}} из {{total}} · {{role}}",
       "Compacted": "Сжато предыдущих сообщений: {{count}}",
       "LoadEarlier": "Загрузить предыдущие сообщения",

@@ -63,7 +63,9 @@
       "SearchPlaceholder": "搜索...",
       "SelectAttachment": "选择附件"
     },
-    "EditTitle": "编辑智能体名字",
+    "EditTitle": "编辑对话标题",
+    "GenerateTitle": "生成标题",
+    "GenerateTitleError": "请稍后再生成标题。",
     "InvalidTabType": "无效的标签页类型。需要聊天标签页。",
     "LoadingChat": "正在加载对话...",
     "SearchAgents": "搜索智能体…",
@@ -208,6 +210,7 @@
     },
     "Timeline": {
       "Navigation": "对话时间轴",
+      "Turn": "第 {{index}} / {{total}} 轮对话",
       "Message": "第 {{index}} / {{total}} 条消息 · {{role}}",
       "Compacted": "已压缩前面的 {{count}} 条消息",
       "LoadEarlier": "加载更早消息",

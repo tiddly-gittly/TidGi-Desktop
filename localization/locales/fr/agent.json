@@ -63,7 +63,9 @@
       "SearchPlaceholder": "Rechercher...",
       "SelectAttachment": "Sélectionner une pièce jointe"
     },
-    "EditTitle": "Modifier le nom de l'agent intelligent",
+    "EditTitle": "Modifier le titre de la conversation",
+    "GenerateTitle": "Générer un titre",
+    "GenerateTitleError": "Réessayez de générer le titre.",
     "InvalidTabType": "Type d'onglet non valide. Un onglet de chat est requis.",
     "LoadingChat": "Chargement de la conversation en cours...",
     "SearchAgents": "Rechercher des agents…",
@@ -207,6 +209,7 @@
     },
     "Timeline": {
       "Navigation": "Chronologie de la conversation",
+      "Turn": "Tour {{index}} sur {{total}}",
       "Message": "Message {{index}} sur {{total}} · {{role}}",
       "Compacted": "{{count}} messages précédents compactés",
       "LoadEarlier": "Charger les messages précédents",

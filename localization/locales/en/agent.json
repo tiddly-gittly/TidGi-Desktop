@@ -63,7 +63,9 @@
       "SearchPlaceholder": "Search...",
       "SelectAttachment": "Select attachment"
     },
-    "EditTitle": "Edit agent name",
+    "EditTitle": "Edit conversation title",
+    "GenerateTitle": "Generate title",
+    "GenerateTitleError": "Try generating the title again.",
     "InvalidTabType": "Invalid tab type. A chat tab is required.",
     "LoadingChat": "Loading conversation...",
     "SearchAgents": "Search agents…",
@@ -207,6 +209,7 @@
     },
     "Timeline": {
       "Navigation": "Conversation timeline",
+      "Turn": "Turn {{index}} of {{total}}",
       "Message": "{{role}} message {{index}} of {{total}}",
       "Compacted": "{{count}} earlier messages compacted",
       "LoadEarlier": "Load earlier messages",

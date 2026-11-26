@@ -64,10 +64,6 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see a "first reply" element with selector "[data-testid='message-bubble']:has-text('FIRST_MODEL_REPLY')"
     And the last AI request should have parameters:
       | model | "test-model" |
-    When I click on a "chat list" element with selector "[data-testid='tab-list-button']"
-    Then I should see an "opening message used as the chat title" element with selector "[data-testid='tab-list-dropdown'] [data-tab-type='chat']:has-text('Verify the first route')"
-    And I capture the current window as "chat-title.png"
-    When I click on a "named chat" element with selector "[data-testid='tab-list-dropdown'] [data-tab-type='chat']:has-text('Verify the first route')"
     When I click on a "settings button" element with selector "#open-preferences-button"
     And I switch to "preferences" window
     And I click on an "external services section" element with selector "[data-testid='preference-section-externalAPI']"
@@ -86,6 +82,28 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see a "second reply" element with selector "[data-testid='message-bubble']:has-text('SWITCHED_MODEL_REPLY')"
     And the last AI request should have parameters:
       | model | "test-model-alternate" |
+
+  @agent @mockOpenAI @conversationTitle
+  Scenario: Generate a new title without editing the conversation
+    Given I add mock OpenAI responses:
+      | response | stream |
+      | OPENING_TITLE_REPLY | false |
+      | UPDATED_TOPIC_REPLY | false |
+    When I type "Plan the weekly review" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see a "first reply" element with selector "[data-testid='message-bubble']:has-text('OPENING_TITLE_REPLY')"
+    When I click on a "generated opening title" element with selector "h6:text-is('Plan the weekly review')"
+    And I clear text in "editable title" element with selector "input[aria-label='编辑对话标题']"
+    And I type "Weekly review" in "editable title" element with selector "input[aria-label='编辑对话标题']"
+    And I press "Enter" key
+    When I type "Schedule the follow-up" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see a "second reply" element with selector "[data-testid='message-bubble']:has-text('UPDATED_TOPIC_REPLY')"
+    And I should see a "title saved by the user" element with selector "h6:text-is('Weekly review')"
+    When I click on a "generate title" element with selector "button[aria-label='生成标题']"
+    Then I should see a "title from the latest topic" element with selector "h6:text-is('Schedule the follow-up')"
+    When I click on a "chat list" element with selector "[data-testid='tab-list-button']"
+    Then I should see an "updated title in the chat list" element with selector "[data-testid='tab-list-dropdown'] [data-tab-type='chat']:has-text('Schedule the follow-up')"
 
   @agent @mockOpenAI @promptExperience
   Scenario: Prompt preview includes history tools and unsent input in both views

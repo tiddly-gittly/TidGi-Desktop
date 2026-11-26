@@ -279,6 +279,7 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
    * @param data Updated data
    */
   updateAgent(agentId: string, data: AgentInstanceMetadataUpdate): Promise<AgentRuntimeView>;
+  regenerateConversationTitle(conversationId: string): Promise<void>;
 
   /**
    * Delete agent instance and all its messages
@@ -432,6 +433,7 @@ export const AgentInstanceServiceIPCDescriptor = {
     discardVolatileAgentPreview: ProxyPropertyType.Function,
     commitAgentAttachmentUpload: ProxyPropertyType.Function,
     getAgentMetadata: ProxyPropertyType.Function,
+    regenerateConversationTitle: ProxyPropertyType.Function,
     getAgentRunStatus: ProxyPropertyType.Function,
     getAgentMessagePage: ProxyPropertyType.Function,
     getAgentMessageIdentity: ProxyPropertyType.Function,

@@ -63,7 +63,9 @@
       "SearchPlaceholder": "搜尋...",
       "SelectAttachment": "選擇附件"
     },
-    "EditTitle": "編輯智慧體名字",
+    "EditTitle": "編輯對話標題",
+    "GenerateTitle": "產生標題",
+    "GenerateTitleError": "請稍後再產生標題。",
     "InvalidTabType": "無效的標籤頁類型。需要聊天標籤頁。",
     "LoadingChat": "正在載入對話...",
     "SearchAgents": "搜尋智慧體…",
@@ -207,6 +209,7 @@
     },
     "Timeline": {
       "Navigation": "對話時間軸",
+      "Turn": "第 {{index}} / {{total}} 輪對話",
       "Message": "第 {{index}} / {{total}} 則訊息 · {{role}}",
       "Compacted": "已壓縮前面的 {{count}} 條訊息",
       "LoadEarlier": "載入更早訊息",
