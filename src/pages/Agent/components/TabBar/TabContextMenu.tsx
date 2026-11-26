@@ -9,6 +9,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import { Collapse, Divider, List, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
+import { getDefaultAgentDefinitionId } from '@services/agentDefinition/defaults';
 import { PropsWithChildren, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -136,7 +137,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
   const handleNewTabBelow = useCallback(async () => {
     if (targetTab) {
       const currentTabIndex = getTabIndex(targetTab.id);
-      await addTab(TabType.NEW_TAB, { insertPosition: currentTabIndex + 1 });
+      await addTab(TabType.CHAT, { agentDefId: getDefaultAgentDefinitionId(), insertPosition: currentTabIndex + 1 });
       handleClose();
     }
   }, [targetTab, getTabIndex, addTab, handleClose]);
@@ -219,6 +220,7 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
 
       <Menu
         open={contextMenu.isOpen}
+        sx={{ zIndex: theme => theme.zIndex.tooltip + 1 }}
         onClose={handleClose}
         anchorReference='anchorPosition'
         anchorPosition={contextMenu.isOpen
@@ -233,6 +235,18 @@ export const TabContextMenu = ({ children }: PropsWithChildren) => {
             {targetTab.isPinned ? t('ContextMenu.Unpin') : t('ContextMenu.Pin')}
           </ListItemText>
         </MenuItem>
+
+        {targetTab.type === TabType.CHAT && (
+          <MenuItem
+            data-testid='edit-definition-menu-item'
+            onClick={() => {
+              void addTab(TabType.EDIT_AGENT_DEFINITION, { agentDefId: targetTab.agentDefId ?? getDefaultAgentDefinitionId() });
+              handleClose();
+            }}
+          >
+            <ListItemText>{t('NewTab.EditDefinition')}</ListItemText>
+          </MenuItem>
+        )}
 
         <MenuItem onClick={handleNewTabBelow}>
           <ListItemIcon>

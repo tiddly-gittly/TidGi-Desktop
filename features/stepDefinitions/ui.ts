@@ -1,9 +1,357 @@
-import { DataTable, Then, When } from '@cucumber/cucumber';
+import { After, DataTable, Given, Then, When } from '@cucumber/cucumber';
 import { backOff } from 'exponential-backoff';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import type { CDPSession, Locator } from 'playwright';
 import { parseDataTableRows } from '../supports/dataTable';
 import { getWikiTestRootPath } from '../supports/paths';
-import { CUCUMBER_GLOBAL_TIMEOUT } from '../supports/timeouts';
+import { CUCUMBER_GLOBAL_TIMEOUT, PLAYWRIGHT_SHORT_TIMEOUT } from '../supports/timeouts';
 import type { ApplicationWorld } from './application';
+
+const UI_ACTION_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 1000);
+const UI_ASSERT_TIMEOUT = Math.max(1000, CUCUMBER_GLOBAL_TIMEOUT - 5000);
+
+const elementSnapshots = new WeakMap<ApplicationWorld, Map<string, { text: string | null; attribute: string | null }[]>>();
+const originalClipboards = new WeakMap<ApplicationWorld, string>();
+const touchSessions = new WeakMap<ApplicationWorld, CDPSession>();
+
+Then(
+  'the window property {string} should be unset in the host and frame {string} after rendering {string}',
+  async function(this: ApplicationWorld, property: string, selector: string, contentSelector: string) {
+    assert(this.currentWindow);
+    const snapshot = await this.currentWindow.waitForFunction(
+      ({ property, selector, contentSelector }) => {
+        const frame = document.querySelector<HTMLIFrameElement>(selector);
+        if (!frame?.contentWindow || !frame.contentDocument?.querySelector(contentSelector)) return false;
+        return { hostUnset: Reflect.get(window, property) === undefined, frameUnset: Reflect.get(frame.contentWindow, property) === undefined };
+      },
+      { property, selector, contentSelector },
+      { timeout: CUCUMBER_GLOBAL_TIMEOUT },
+    );
+    try {
+      assert.deepEqual(await snapshot.jsonValue(), { hostUnset: true, frameUnset: true });
+    } finally {
+      await snapshot.dispose();
+    }
+  },
+);
+
+Then(/^I should (see|no longer see) "([^"]+)" text in "([^"]+)" or its frames$/, async function(
+  this: ApplicationWorld,
+  expectation: string,
+  text: string,
+  selector: string,
+) {
+  assert(this.currentWindow);
+  const roots = this.currentWindow.locator(selector);
+  const expected = expectation === 'see';
+  await backOff(async () => {
+    const hostVisible = await roots.filter({ hasText: text }).first().isVisible();
+    const frameVisible = hostVisible || await roots.locator('iframe').evaluateAll((frames, value) =>
+      frames.some(frame => {
+        if (!(frame instanceof HTMLIFrameElement)) return false;
+        const box = frame.getBoundingClientRect();
+        return box.width > 0 && box.height > 0 && frame.contentDocument?.body?.innerText.includes(value);
+      }), text);
+    assert.equal(frameVisible, expected, `Expected to ${expectation} “${text}” in ${selector}`);
+  }, { numOfAttempts: Math.ceil(UI_ASSERT_TIMEOUT / 100), startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+});
+
+Given('I clear the clipboard', async function(this: ApplicationWorld) {
+  assert(this.app);
+  if (!originalClipboards.has(this)) originalClipboards.set(this, await this.app.evaluate(({ clipboard }) => clipboard.readText()));
+  await this.app.evaluate(({ clipboard }) => {
+    clipboard.clear();
+  });
+});
+
+Then('the clipboard should contain exactly {string}', async function(this: ApplicationWorld, expected: string) {
+  assert(this.app);
+  await backOff(async () => {
+    const actual = await this.app!.evaluate(({ clipboard }) => clipboard.readText());
+    assert(actual === expected, `Clipboard differs from expected text; actual length=${actual.length}`);
+  }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+});
+
+When('I use a touch viewport of {int} by {int}', async function(this: ApplicationWorld, width: number, height: number) {
+  assert(this.currentWindow);
+  const session = await this.currentWindow.context().newCDPSession(this.currentWindow);
+  touchSessions.set(this, session);
+  await session.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+  await session.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+  await this.currentWindow.waitForFunction(() => window.matchMedia('(hover: none)').matches, undefined, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+});
+
+When('I tap on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, _description: string, selector: string) {
+  assert(this.currentWindow);
+  const session = touchSessions.get(this);
+  assert(session, 'Enable a touch viewport before tapping');
+  const element = this.currentWindow.locator(selector).first();
+  await element.scrollIntoViewIfNeeded();
+  const box = await element.boundingBox();
+  assert(box);
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+});
+
+After(async function(this: ApplicationWorld) {
+  const session = touchSessions.get(this);
+  try {
+    if (session) {
+      await session.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+      await session.send('Emulation.clearDeviceMetricsOverride');
+      await session.detach();
+    }
+  } finally {
+    const original = originalClipboards.get(this);
+    if (original !== undefined && this.app) {
+      await this.app.evaluate(({ clipboard }, text) => {
+        clipboard.writeText(text);
+      }, original);
+    }
+  }
+});
+
+async function assertComputedStyle(element: Locator, property: string, expected: string): Promise<void> {
+  await element.waitFor({ state: 'visible', timeout: UI_ASSERT_TIMEOUT });
+  await backOff(async () => {
+    assert.equal(await element.evaluate((node, name) => getComputedStyle(node).getPropertyValue(name), property), expected, property);
+  }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+}
+
+Then('the element with selector {string} should be at most {int} pixels high', async function(this: ApplicationWorld, selector: string, maximum: number) {
+  assert(this.currentWindow);
+  await backOff(async () => {
+    const box = await this.currentWindow!.locator(selector).first().boundingBox();
+    assert(box && box.height <= maximum, 'Element exceeds its height bound');
+  }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+});
+
+Then('the element with selector {string} should lie inside viewport {string}', async function(this: ApplicationWorld, selector: string, viewport: string) {
+  assert(this.currentWindow);
+  await backOff(async () => {
+    const box = await this.currentWindow!.locator(selector).first().boundingBox();
+    const bounds = await this.currentWindow!.locator(viewport).first().boundingBox();
+    assert(box && bounds && box.y >= bounds.y - 2 && box.y < bounds.y + bounds.height, 'Element is outside its viewport');
+  }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+});
+
+Then(
+  'the {string} pseudo-element of {string} should have {string} matching the {string} of {string}',
+  async function(this: ApplicationWorld, pseudo: string, selector: string, property: string, referenceProperty: string, reference: string) {
+    assert(this.currentWindow);
+    await backOff(async () => {
+      const actual = await this.currentWindow!.locator(selector).first().evaluate((node, { pseudo, property }) => getComputedStyle(node, pseudo).getPropertyValue(property), {
+        pseudo,
+        property,
+      });
+      const expected = await this.currentWindow!.locator(reference).first().evaluate((node, property) => getComputedStyle(node).getPropertyValue(property), referenceProperty);
+      assert.equal(actual, expected);
+    }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+  },
+);
+
+When('I focus on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, _description: string, selector: string) {
+  assert(this.currentWindow);
+  await this.currentWindow.locator(selector).first().focus({ timeout: UI_ACTION_TIMEOUT });
+});
+
+When('I scroll a(n) {string} element with selector {string} to the top', async function(this: ApplicationWorld, _description: string, selector: string) {
+  assert(this.currentWindow);
+  await this.currentWindow.locator(selector).first().evaluate(element => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+});
+
+When(
+  'I remember the text and {string} attribute of elements with selector {string} as {string}',
+  async function(this: ApplicationWorld, attribute: string, selector: string, name: string) {
+    assert(this.currentWindow);
+    const elements = this.currentWindow.locator(selector);
+    await elements.first().waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    const snapshots = elementSnapshots.get(this) ?? new Map<string, { text: string | null; attribute: string | null }[]>();
+    snapshots.set(
+      name,
+      await elements.evaluateAll((nodes, attributeName) => nodes.map(node => ({ text: node.textContent, attribute: node.getAttribute(attributeName) })), attribute),
+    );
+    elementSnapshots.set(this, snapshots);
+  },
+);
+
+Then(
+  'the text and {string} attribute of elements with selector {string} should match {string}',
+  async function(this: ApplicationWorld, attribute: string, selector: string, name: string) {
+    assert(this.currentWindow);
+    const expected = elementSnapshots.get(this)?.get(name);
+    assert(expected, `No saved element snapshot named ${name}`);
+    await backOff(async () => {
+      const actual = await this.currentWindow!.locator(selector).evaluateAll(
+        (nodes, attributeName) => nodes.map(node => ({ text: node.textContent, attribute: node.getAttribute(attributeName) })),
+        attribute,
+      );
+      assert.deepEqual(actual, expected);
+    }, { numOfAttempts: 30, startingDelay: 100, maxDelay: 1000 });
+  },
+);
+
+Then(
+  'the paginated JSON in {string} with next button {string} should contain these texts and exclude {string}:',
+  async function(this: ApplicationWorld, selector: string, nextSelector: string, excluded: string, expectedTexts: DataTable) {
+    assert(this.currentWindow);
+    const page = this.currentWindow;
+    let content = '';
+    const seen = new Set<string>();
+    while (true) {
+      const text = page.locator(selector);
+      await text.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+      const chunk = await text.textContent();
+      assert(chunk, 'JSON page is empty');
+      assert(!seen.has(chunk), 'Pagination repeated a page');
+      seen.add(chunk);
+      content += chunk;
+      const next = page.locator(nextSelector);
+      if (await next.count() === 0) break;
+      assert(seen.size < 128, 'JSON detail exceeded its bounded 128-page ceiling');
+      await next.click({ timeout: UI_ACTION_TIMEOUT });
+      await backOff(async () => {
+        const nextChunk = await text.textContent();
+        assert(nextChunk && nextChunk !== chunk, 'The next page has not loaded');
+      }, { numOfAttempts: 30, startingDelay: 100, maxDelay: 1000 });
+    }
+    JSON.parse(content);
+    for (const [expected] of expectedTexts.raw()) assert(content.includes(expected), `JSON does not contain ${expected}`);
+    assert(!content.includes(excluded), `JSON unexpectedly contains ${excluded}`);
+  },
+);
+
+Then(
+  'there should be between {int} and {int} elements matching {string} with distinct {string} attributes',
+  async function(this: ApplicationWorld, minimum: number, maximum: number, selector: string, attribute: string) {
+    assert(this.currentWindow);
+    await backOff(async () => {
+      const values = await this.currentWindow!.locator(selector).evaluateAll((nodes, name) => nodes.map(node => node.getAttribute(name)), attribute);
+      assert(values.length >= minimum && values.length <= maximum, `${selector}: expected ${minimum}-${maximum} elements, received ${values.length}`);
+      assert(values.every(value => value), `${attribute}: missing element identity`);
+      assert.equal(new Set(values).size, values.length, `${attribute}: duplicated element identities`);
+    }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+  },
+);
+
+Then(
+  'the text and {string} attribute of elements with selector {string} should not match {string}',
+  async function(this: ApplicationWorld, attribute: string, selector: string, name: string) {
+    assert(this.currentWindow);
+    const expected = elementSnapshots.get(this)?.get(name);
+    assert(expected, `No saved element snapshot named ${name}`);
+    await backOff(async () => {
+      const actual = await this.currentWindow!.locator(selector).evaluateAll(
+        (nodes, name) => nodes.map(node => ({ text: node.textContent, attribute: node.getAttribute(name) })),
+        attribute,
+      );
+      assert(actual.length > 0, 'The replacement elements have not rendered');
+      assert.notDeepEqual(actual, expected);
+    }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+  },
+);
+
+Then('I capture the current window as {string}', async function(this: ApplicationWorld, name: string) {
+  if (!this.app || !this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.screenshot({ path: path.resolve('test-artifacts', this.scenarioSlug, name) });
+});
+
+When('I hover on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, _description: string, selector: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.locator(selector).first().hover({ timeout: UI_ACTION_TIMEOUT });
+});
+
+When('I reload the current window', async function(this: ApplicationWorld) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.reload({ timeout: UI_ACTION_TIMEOUT });
+});
+
+When('I type fixture {string} in {string} element with selector {string}', async function(this: ApplicationWorld, file: string, _description: string, selector: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.locator(selector).fill(await readFile(path.resolve('features/fixtures', file), 'utf8'), { timeout: UI_ACTION_TIMEOUT });
+});
+
+Then('the {string} element with selector {string} should have value {string}', async function(this: ApplicationWorld, description: string, selector: string, expected: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  try {
+    await this.currentWindow.waitForFunction(
+      ({ selector, expected }) => document.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)?.value === expected,
+      { selector, expected },
+      { timeout: CUCUMBER_GLOBAL_TIMEOUT },
+    );
+  } catch (error) {
+    throw new Error(`${description}: expected value ${JSON.stringify(expected)}`, { cause: error });
+  }
+});
+
+Then('I should see a(n) {string} element with selector {string} in frame {string}', async function(this: ApplicationWorld, _description: string, selector: string, frame: string) {
+  if (!this.currentWindow) throw new Error('No current window is available');
+  await this.currentWindow.frameLocator(frame).locator(selector).first().waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+});
+
+Then(
+  'I should see a(n) {string} element with selector {string} with CSS property {string} equal to {string}',
+  async function(this: ApplicationWorld, _description: string, selector: string, property: string, expected: string) {
+    assert(this.currentWindow);
+    await assertComputedStyle(this.currentWindow.locator(selector).first(), property, expected);
+  },
+);
+
+Then(
+  'I should see a(n) {string} element with selector {string} in frame {string} with CSS property {string} equal to {string}',
+  async function(this: ApplicationWorld, _description: string, selector: string, frame: string, property: string, expected: string) {
+    assert(this.currentWindow);
+    await assertComputedStyle(this.currentWindow.frameLocator(frame).locator(selector).first(), property, expected);
+  },
+);
+
+async function getWindowSummary(page: NonNullable<ApplicationWorld['currentWindow']>): Promise<string> {
+  try {
+    const [title, meta] = await Promise.all([
+      page.title(),
+      page.evaluate(() => window.meta?.()),
+    ]);
+    return JSON.stringify({ url: page.url(), title, meta });
+  } catch (error) {
+    return JSON.stringify({ url: page.url(), diagnosticError: String(error) });
+  }
+}
+
+async function getControlSummaryForSelectorFailure(
+  page: NonNullable<ApplicationWorld['currentWindow']>,
+  selector: string,
+): Promise<string> {
+  const containerMatch = selector.match(/^(?<container>\[data-testid='[^']+'\])/);
+  const containerSelector = containerMatch?.groups?.container ?? 'body';
+
+  try {
+    return await page.evaluate((rootSelector) => {
+      const root = document.querySelector(rootSelector) ?? document.body;
+      const controls = Array.from(root.querySelectorAll('input, textarea, button, [role="tab"], [role="tabpanel"]')).slice(0, 80);
+      return controls.map((element) => {
+        const htmlElement = element as HTMLElement;
+        const inputElement = element as HTMLInputElement | HTMLTextAreaElement;
+        return [
+          element.tagName.toLowerCase(),
+          htmlElement.getAttribute('role') ? `role=${htmlElement.getAttribute('role')}` : '',
+          htmlElement.id ? `id=${htmlElement.id}` : '',
+          htmlElement.getAttribute('data-testid') ? `testid=${htmlElement.getAttribute('data-testid')}` : '',
+          htmlElement.getAttribute('aria-label') ? `aria=${htmlElement.getAttribute('aria-label')}` : '',
+          inputElement.type ? `type=${inputElement.type}` : '',
+          inputElement.name ? `name=${inputElement.name}` : '',
+          htmlElement.textContent?.trim() ? `text=${htmlElement.textContent.trim().slice(0, 40)}` : '',
+        ].filter(Boolean).join(' ');
+      }).join('\n');
+    }, containerSelector);
+  } catch (error) {
+    return `Could not summarize controls: ${error as Error}`;
+  }
+}
 
 When('I wait for {float} seconds', async function(seconds: number) {
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
@@ -57,13 +405,10 @@ Then('I should see a(n) {string} element with selector {string}', async function
   }
 
   try {
-    await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
-    const isVisible = await currentWindow.isVisible(selector);
-    if (!isVisible) {
-      throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
-    }
+    await currentWindow.locator(selector).first().waitFor({ state: 'visible', timeout: UI_ASSERT_TIMEOUT });
   } catch (error) {
-    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}`);
+    const controlSummary = await getControlSummaryForSelectorFailure(currentWindow, selector);
+    throw new Error(`Failed to find ${elementComment} with selector "${selector}": ${error as Error}\nVisible controls near target:\n${controlSummary}`);
   }
 });
 
@@ -78,13 +423,22 @@ Then('the {string} element with selector {string} should be aligned near the top
   await element.waitFor({ state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
 
   await backOff(async () => {
-    const offsetFromViewportTop = await element.evaluate((node) => {
-      const scrollViewport = node.closest('[role="list"]');
+    const alignment = await element.evaluate((node) => {
+      const scrollViewport = node.closest('[data-settings-scroll-viewport], [role="list"]');
       if (!scrollViewport) throw new Error('Settings scroll viewport was not found');
-      return node.getBoundingClientRect().top - scrollViewport.getBoundingClientRect().top;
+      const nodeRectangle = node.getBoundingClientRect();
+      const viewportRectangle = scrollViewport.getBoundingClientRect();
+      return {
+        offsetFromViewportTop: nodeRectangle.top - viewportRectangle.top,
+        scrollTop: scrollViewport.scrollTop,
+        viewportHeight: viewportRectangle.height,
+      };
     });
-    if (Math.abs(offsetFromViewportTop) > 32) {
-      throw new Error(`${elementComment} is ${offsetFromViewportTop}px from the viewport top`);
+    if (Math.abs(alignment.offsetFromViewportTop) > 32) {
+      throw new Error(
+        `${elementComment} is ${alignment.offsetFromViewportTop}px from the viewport top ` +
+          `(viewport height ${alignment.viewportHeight}px, scrollTop ${alignment.scrollTop}px)`,
+      );
     }
   }, {
     delayFirstAttempt: true,
@@ -105,7 +459,6 @@ Then('I should see {string} elements with selectors:', async function(this: Appl
   const rows = dataTable.raw();
   const dataRows = parseDataTableRows(rows, 2);
   const errors: string[] = [];
-
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
@@ -153,7 +506,7 @@ Then('I should not see a(n) {string} element with selector {string}', async func
           `Parent element HTML:\n${parentHtml}`,
       );
     }
-    // Other errors (element not in DOM at all) are expected — pass
+    throw error;
   }
 });
 
@@ -170,35 +523,13 @@ Then('I should not see {string} elements with selectors:', async function(this: 
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
   }
 
-  // Retry to allow UI time to update after state changes
-  await backOff(
-    async () => {
-      const errors: string[] = [];
-      for (const [elementComment, selector] of dataRows) {
-        try {
-          const element = currentWindow.locator(selector).first();
-          const count = await element.count();
-          if (count > 0) {
-            const isVisible = await element.isVisible();
-            if (isVisible) {
-              errors.push(`Element "${elementComment}" with selector "${selector}" should not be visible but was found`);
-            }
-          }
-        } catch {
-          // Element not found is expected
-        }
-      }
-      if (errors.length > 0) {
-        throw new Error(`Failed to verify elements are not visible:\n${errors.join('\n')}`);
-      }
-    },
-    {
-      numOfAttempts: 10,
-      startingDelay: 300,
-      timeMultiple: 1,
-      maxDelay: 300,
-    },
-  );
+  await Promise.all(dataRows.map(async ([elementComment, selector]) => {
+    try {
+      await currentWindow.locator(selector).first().waitFor({ state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    } catch (error) {
+      throw new Error(`Failed to verify "${elementComment}" with selector "${selector}" is hidden`, { cause: error });
+    }
+  }));
 });
 
 When('I click on a(n) {string} element with selector {string}', async function(this: ApplicationWorld, elementComment: string, selector: string) {
@@ -209,14 +540,17 @@ When('I click on a(n) {string} element with selector {string}', async function(t
   }
 
   try {
-    await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await targetWindow.waitForSelector(selector, { timeout: UI_ACTION_TIMEOUT });
     const isVisible = await targetWindow.isVisible(selector);
     if (!isVisible) {
       throw new Error(`Element "${elementComment}" with selector "${selector}" is not visible`);
     }
     await targetWindow.click(selector);
   } catch (error) {
-    throw new Error(`Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}`);
+    const controlSummary = await getControlSummaryForSelectorFailure(targetWindow, selector);
+    throw new Error(
+      `Failed to find and click ${elementComment} with selector "${selector}" in current window: ${error as Error}\nVisible controls near target:\n${controlSummary}`,
+    );
   }
 });
 
@@ -248,7 +582,6 @@ When('I click on {string} elements with selectors:', async function(this: Applic
 
   const rows = dataTable.raw();
   const dataRows = parseDataTableRows(rows, 2);
-  const errors: string[] = [];
 
   if (dataRows[0]?.length !== 2) {
     throw new Error('Table must have exactly 2 columns: | element description | selector |');
@@ -257,20 +590,22 @@ When('I click on {string} elements with selectors:', async function(this: Applic
   // Click elements sequentially (not in parallel) to maintain order and avoid race conditions
   for (const [elementComment, selector] of dataRows) {
     try {
-      await targetWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+      await targetWindow.waitForSelector(selector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
       const isVisible = await targetWindow.isVisible(selector);
       if (!isVisible) {
-        errors.push(`Element "${elementComment}" with selector "${selector}" is not visible`);
-        continue;
+        throw new Error(`Element is not visible`);
       }
       await targetWindow.click(selector);
     } catch (error) {
-      errors.push(`Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}`);
+      const [windowSummary, controlSummary] = await Promise.all([
+        getWindowSummary(targetWindow),
+        getControlSummaryForSelectorFailure(targetWindow, selector),
+      ]);
+      throw new Error(
+        `Failed to find and click "${elementComment}" with selector "${selector}": ${error as Error}\n` +
+          `Current window: ${windowSummary}\nVisible controls near target:\n${controlSummary}`,
+      );
     }
-  }
-
-  if (errors.length > 0) {
-    throw new Error(`Failed to click elements:\n${errors.join('\n')}`);
   }
 });
 
@@ -347,7 +682,12 @@ When('I type {string} in {string} element with selector {string}', async functio
 
   try {
     await currentWindow.waitForSelector(selector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
-    await currentWindow.locator(selector).fill(actualText);
+    const element = currentWindow.locator(selector);
+    await element.fill(actualText);
+    const value = await element.inputValue();
+    if (value !== actualText) {
+      throw new Error(`Expected value "${actualText}" after fill, got "${value}"`);
+    }
   } catch (error) {
     throw new Error(`Failed to type in ${elementComment} element with selector "${selector}": ${error as Error}`);
   }
@@ -426,6 +766,14 @@ When('I press {string} key', async function(this: ApplicationWorld, key: string)
   const currentWindow = this.currentWindow;
   if (!currentWindow) {
     throw new Error('No current window is available');
+  }
+
+  // Dispatch to the focused control when possible. This preserves the generic
+  // step's semantics without coupling it to a specific component library.
+  const focusedControl = currentWindow.locator(':focus').first();
+  if (await focusedControl.count() > 0) {
+    await focusedControl.press(key);
+    return;
   }
 
   await currentWindow.keyboard.press(key);
@@ -534,7 +882,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     // Try input first, then fall back to wrapper
     const hasDirectInput = await currentWindow.locator(directInputSelector).count() > 0;
     const containerSelector = hasDirectInput ? directInputSelector : wrapperSelector;
-    await currentWindow.waitForSelector(containerSelector, { timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector(containerSelector, { timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     // Click the combobox to open the dropdown
     const clicked = await currentWindow.evaluate((testId) => {
@@ -570,7 +918,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     }
 
     // Wait for the menu to appear
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'visible', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'visible', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
 
     // Try to click on the option with the specified value (data-value attribute)
     // If not found, try to find by text content
@@ -611,7 +959,7 @@ When('I select {string} from MUI Select with test id {string}', async function(t
     }
 
     // Wait for the menu to close
-    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: CUCUMBER_GLOBAL_TIMEOUT });
+    await currentWindow.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: PLAYWRIGHT_SHORT_TIMEOUT });
   } catch (error) {
     throw new Error(`Failed to select option "${optionValue}" from MUI Select with test id "${testId}": ${String(error)}`);
   }

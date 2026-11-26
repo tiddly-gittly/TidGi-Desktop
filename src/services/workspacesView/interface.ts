@@ -23,17 +23,22 @@ export interface IInitializeWorkspaceOptions {
  */
 export interface IWorkspaceViewService {
   addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
+  /** Cancel queued startup work before application shutdown. */
+  cancelWorkspaceStartup(): void;
   /**
    * Hide WebContentsView, so page below it will show up.
    */
   clearActiveWorkspaceView(): Promise<void>;
   clearBrowsingData(): Promise<void>;
   clearBrowsingDataWithConfirm(): Promise<void>;
+  getActiveWikiWorkspaceId(): Promise<string | undefined>;
   hibernateWorkspaceView(id: string): Promise<void>;
   /**
    * Prepare All workspaces on startup
    */
   initializeAllWorkspaceView(): Promise<void>;
+  /** Register main-process menu contributions after Electron and the database are ready. */
+  initializeMenu(): Promise<void>;
   /**
    * prepare view and wiki for a workspace, work for both public and private wiki, call by `initializeAllWorkspaceView()` for all workspaces.
    */
@@ -91,6 +96,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     addViewForAllBrowserViews: ProxyPropertyType.Function,
     clearBrowsingData: ProxyPropertyType.Function,
     clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
+    getActiveWikiWorkspaceId: ProxyPropertyType.Function,
     hibernateWorkspaceView: ProxyPropertyType.Function,
     initializeWorkspaceView: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,

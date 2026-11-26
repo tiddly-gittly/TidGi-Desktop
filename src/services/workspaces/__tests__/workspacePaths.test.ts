@@ -26,7 +26,7 @@ describe('workspacePaths', () => {
     expect(isHtmlWikiWorkspace(workspace)).toBe(true);
   });
 
-  it('defaults legacy workspaces to folder type', () => {
+  it('rejects a workspace without its canonical type', () => {
     const workspace = {
       id: 'w1',
       name: 'demo',
@@ -35,7 +35,7 @@ describe('workspacePaths', () => {
       picturePath: null,
       wikiFolderLocation: '/tmp/wiki',
     };
-    expect(getWorkspaceType(workspace)).toBe(WorkspaceType.folder);
+    expect(() => getWorkspaceType(workspace)).toThrow('workspace_invalid_workspace_type');
   });
 
   it('normalizes html workspace paths', () => {
@@ -64,7 +64,7 @@ describe('workspacePaths', () => {
     });
   });
 
-  it('uses the wiki folder as the repo when gitRepoPath is unset (backward compatible)', () => {
+  it('uses the wiki folder as the repo when gitRepoPath is unset', () => {
     const workspace = {
       id: 'w1',
       name: 'demo',
@@ -72,6 +72,7 @@ describe('workspacePaths', () => {
       order: 0,
       picturePath: null,
       wikiFolderLocation: 'C:\\projects\\game\\wiki',
+      workspaceType: WorkspaceType.folder,
       gitRepoPath: null,
       gitManagedRelativePath: null,
     };
@@ -88,6 +89,7 @@ describe('workspacePaths', () => {
       order: 0,
       picturePath: null,
       wikiFolderLocation: wikiFolder,
+      workspaceType: WorkspaceType.folder,
       gitRepoPath: '..',
       gitManagedRelativePath: 'wiki',
     };
@@ -105,6 +107,7 @@ describe('workspacePaths', () => {
       order: 0,
       picturePath: null,
       wikiFolderLocation: mywikiFolder,
+      workspaceType: WorkspaceType.folder,
       gitRepoPath: '..',
     };
     const scope = getWorkspaceGitScope(workspace);
@@ -132,6 +135,7 @@ describe('workspacePaths', () => {
       order: 0,
       picturePath: null,
       wikiFolderLocation: 'C:\\projects\\game\\wiki',
+      workspaceType: WorkspaceType.folder,
       gitRepoPath: '..',
       gitManagedRelativePath: 'wiki',
     };

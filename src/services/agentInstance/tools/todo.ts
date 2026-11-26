@@ -25,9 +25,11 @@ import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import { isWikiWorkspace, type IWorkspaceService } from '@services/workspaces/interface';
+import { type ChatMessage, isToolResultPart, type ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
+import { createNativeModelToolDefinitions } from './nativeModelTools';
 
 /* ------------------------------------------------------------------ */
 /*  Config schema                                                      */
@@ -96,6 +98,27 @@ function todoTiddlerTitle(agentId: string): string {
   return `$:/ai/todo/${agentId}`;
 }
 
+export function extractLatestTodoText(messages: ChatMessage[]): string | undefined {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message.role !== 'tool' || !message.parts) continue;
+    for (let partIndex = message.parts.length - 1; partIndex >= 0; partIndex--) {
+      const part = message.parts[partIndex];
+      if (!isToolResultPart(part) || part.toolName !== 'manage-todo') continue;
+      const payload = part.payload;
+      if (
+        payload !== null && typeof payload === 'object' && !Array.isArray(payload) &&
+        (payload as { type?: unknown }).type === 'todo-update' &&
+        typeof (payload as { text?: unknown }).text === 'string' &&
+        (payload as { text: string }).text.length > 0
+      ) {
+        return (payload as { text: string }).text;
+      }
+    }
+  }
+  return undefined;
+}
+
 async function resolveWorkspace(workspaceName: string) {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const list = await workspaceService.getWorkspacesAsList();
@@ -106,7 +129,8 @@ async function resolveWorkspace(workspaceName: string) {
 /*  Executor                                                           */
 /* ------------------------------------------------------------------ */
 
-async function executeTodo(parameters: TodoToolParameters, agentId: string): Promise<ToolExecutionResult> {
+async function executeTodo(parameters: TodoToolParameters, agentId: string, signal?: AbortSignal): Promise<ToolExecutionResult> {
+  signal?.throwIfAborted();
   const { workspaceName, operation, text } = parameters;
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const target = await resolveWorkspace(workspaceName);
@@ -114,10 +138,13 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
     return { success: false, error: `Workspace "${workspaceName}" not found.` };
   }
 
+  // A session plan is a shared system tiddler in the parent wiki, not a child document.
+  const workerWorkspaceID = isWikiWorkspace(target) && target.isSubWiki ? target.mainWikiID : target.id;
+  if (!workerWorkspaceID) return { success: false, error: `Sub-wiki "${workspaceName}" has no parent workspace.` };
   const tiddlerTitle = todoTiddlerTitle(agentId);
 
   if (operation === 'read') {
-    const current = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, target.id, [tiddlerTitle]) as string | undefined;
+    const current = await wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workerWorkspaceID, [tiddlerTitle], signal) as string | undefined;
     if (!current) {
       return { success: true, data: '(No todo list exists yet for this session.)' };
     }
@@ -130,12 +157,12 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
   }
 
   // Upsert the tiddler (addTiddler creates or overwrites)
-  await wikiService.wikiOperationInServer(WikiChannel.addTiddler, target.id, [
+  await wikiService.wikiOperationInServer(WikiChannel.addTiddler, workerWorkspaceID, [
     tiddlerTitle,
     text,
     JSON.stringify({ type: 'text/vnd.tiddlywiki', tags: '$:/tags/AI/Todo' }),
     JSON.stringify({ withDate: true }),
-  ]);
+  ], signal);
 
   // Return structured JSON so the TodoListRenderer can render it
   const resultData = JSON.stringify({
@@ -154,14 +181,16 @@ async function executeTodo(parameters: TodoToolParameters, agentId: string): Pro
 /*  Registration                                                       */
 /* ------------------------------------------------------------------ */
 
-const todoDefinition = registerToolDefinition({
-  toolId: 'todo',
+export const todoDefinition = defineDesktopTool({
+  toolId: 'todoWrite',
   displayName: 'Todo / Plan List',
   description: 'Persistent todo list that the agent uses to track progress — auto-injected into every prompt',
   configSchema: TodoParameterSchema,
   llmToolSchemas: { 'manage-todo': TodoToolSchema },
 
-  onProcessPrompts({ config, injectToolList, injectContent, agentFrameworkContext }) {
+  onProcessPrompts({ config, injectToolList, injectContent, registerModelTool, agentFrameworkContext }) {
+    for (const tool of createNativeModelToolDefinitions({ 'manage-todo': TodoToolSchema })) registerModelTool(tool);
+
     // 1. Inject tool description into the tool list area
     const pos = config.toolListPosition;
     if (pos?.targetId) {
@@ -175,25 +204,7 @@ const todoDefinition = registerToolDefinition({
 
     // Read the todo tiddler synchronously from the last-known messages (avoid async in processPrompts)
     // We look for the most recent tool result that contains a todo-update JSON
-    const messages = agentFrameworkContext.agent.messages;
-    let latestTodoText: string | undefined;
-    for (let index = messages.length - 1; index >= 0; index--) {
-      const message = messages[index];
-      if (message.role === 'tool' && message.content.includes('"type":"todo-update"')) {
-        try {
-          const match = /Result:\s*(.+?)\s*(?:<\/functions_result>|$)/s.exec(message.content);
-          if (match) {
-            const parsed = JSON.parse(match[1]) as { type: string; text?: string };
-            if (parsed.type === 'todo-update' && parsed.text) {
-              latestTodoText = parsed.text;
-              break;
-            }
-          }
-        } catch {
-          // ignore parse errors
-        }
-      }
-    }
+    const latestTodoText = extractLatestTodoText(agentFrameworkContext.agent.messages);
 
     if (latestTodoText) {
       injectContent({
@@ -210,14 +221,12 @@ const todoDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'manage-todo') return;
-    if (agentFrameworkContext.isCancelled()) return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'manage-todo') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
 
     const agentId = agentFrameworkContext.agent.id;
     await executeToolCall('manage-todo', async (parameters) => {
-      return executeTodo(parameters, agentId);
+      return executeTodo(parameters, agentId, agentFrameworkContext.operationSignal);
     });
   },
 });
-
-export const todoTool = todoDefinition.tool;

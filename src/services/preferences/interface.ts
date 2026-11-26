@@ -30,6 +30,8 @@ export interface INetworkProxyPreferences {
  * The Zod schema in definitions/registry.ts validates against this at runtime.
  */
 export interface IPreferences {
+  agentMessageFormat: 'wikitext' | 'markdown';
+  mainAgentConversationId: string;
   aiGenerateBackupTitle: boolean;
   aiGenerateBackupTitleTimeout: number;
   allowPrerelease: boolean;
@@ -115,15 +117,20 @@ export interface IPreferenceService {
   preference$: BehaviorSubject<IPreferences | undefined>;
   reset(): Promise<void>;
   resetWithConfirm(): Promise<void>;
+  setResetWithConfirmHandler(handler: IPreferenceResetWithConfirmHandler): void;
   /**
    * Update preferences, update cache and observable
    */
   set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
+  setReactionHandler(handler: IPreferenceReactionHandler): void;
   /**
    * Manually refresh the observable's content, that will be received by react component.
    */
   updatePreferenceSubject(): void;
 }
+
+export type IPreferenceReactionHandler = <K extends keyof IPreferences>(key: K, value: IPreferences[K]) => Promise<void>;
+export type IPreferenceResetWithConfirmHandler = () => Promise<void>;
 export const PreferenceServiceIPCDescriptor = {
   channel: PreferenceChannel.name,
   properties: {

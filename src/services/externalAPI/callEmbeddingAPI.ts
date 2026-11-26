@@ -1,8 +1,9 @@
 import { logger } from '@services/libs/log';
+import type { ModelAssignments, ProviderAccountConfig } from 'memeloop';
 
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
+import { resolveProviderModelRoute } from './callProviderAPI';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError } from './errors';
-import type { AIEmbeddingResponse, AIProviderConfig } from './interface';
+import type { AIEmbeddingResponse } from './interface';
 
 interface EmbeddingAPIResponse {
   data?: Array<{ embedding: number[] }>;
@@ -25,9 +26,10 @@ interface EmbeddingOptions {
  */
 export async function generateEmbeddingsFromProvider(
   inputs: string[],
-  config: AiAPIConfig,
+  config: ModelAssignments,
   signal: AbortSignal,
-  providerConfig?: AIProviderConfig,
+  account: ProviderAccountConfig,
+  apiKey: string,
   options: EmbeddingOptions = {},
 ): Promise<AIEmbeddingResponse> {
   // Extract provider and model from config
@@ -36,75 +38,73 @@ export async function generateEmbeddingsFromProvider(
   if (!embeddingConfig) {
     throw new Error('No embedding model or default model configured');
   }
-  const provider = embeddingConfig.provider;
-  const model = embeddingConfig.model;
+  const providerId = embeddingConfig.providerId;
+  const logicalModelId = embeddingConfig.modelId;
+  const route = resolveProviderModelRoute(account, embeddingConfig.modelId);
+  const wireModelId = route.wireModelId;
 
-  logger.info(`Using AI embedding provider: ${provider}, model: ${model}`);
+  logger.info(`Using AI embedding provider: ${providerId}, logical model: ${logicalModelId}`);
 
   try {
     // Check if API key is required
-    const isOllama = providerConfig?.providerClass === 'ollama';
-    const isLocalOpenAICompatible = providerConfig?.providerClass === 'openAICompatible' &&
-      providerConfig?.baseURL &&
-      (providerConfig.baseURL.includes('localhost') || providerConfig.baseURL.includes('127.0.0.1'));
+    const isOllama = account.providerType === 'ollama';
+    const isLocalOpenAICompatible = account.providerType === 'openai-compatible' &&
+      account.baseUrl !== undefined && new URL(account.baseUrl).protocol === 'http:';
 
-    if (!providerConfig?.apiKey && !isOllama && !isLocalOpenAICompatible) {
-      throw new MissingAPIKeyError(provider);
+    if (!apiKey && !isOllama && !isLocalOpenAICompatible) {
+      throw new MissingAPIKeyError(providerId);
     }
 
     // Get base URL and prepare headers
-    let baseURL = providerConfig?.baseURL || '';
+    let baseUrl = account.baseUrl || '';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
     // Set up provider-specific configuration
-    switch (providerConfig?.providerClass || provider) {
+    switch (account.providerType) {
       case 'openai':
-        baseURL = 'https://api.openai.com/v1';
-        headers['Authorization'] = `Bearer ${providerConfig?.apiKey}`;
+        baseUrl ||= 'https://api.openai.com/v1';
+        headers['Authorization'] = `Bearer ${apiKey}`;
         break;
-      case 'openAICompatible':
-        if (!providerConfig?.baseURL) {
-          throw new MissingBaseURLError(provider);
+      case 'openai-compatible':
+        if (!account.baseUrl) {
+          throw new MissingBaseURLError(providerId);
         }
-        baseURL = providerConfig.baseURL;
-        if (providerConfig.apiKey) {
-          headers['Authorization'] = `Bearer ${providerConfig.apiKey}`;
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
         }
         break;
       case 'deepseek':
-        baseURL = 'https://api.deepseek.com/v1';
-        headers['Authorization'] = `Bearer ${providerConfig?.apiKey}`;
+        baseUrl ||= 'https://api.deepseek.com/v1';
+        headers['Authorization'] = `Bearer ${apiKey}`;
         break;
       case 'anthropic':
         throw new Error(`Anthropic provider does not support embeddings`);
       case 'ollama':
-        if (!providerConfig?.baseURL) {
-          throw new MissingBaseURLError(provider);
+        if (!account.baseUrl) {
+          throw new MissingBaseURLError(providerId);
         }
-        baseURL = providerConfig.baseURL;
         break;
       default:
         // For silicon flow and other openai-compatible providers
-        if (!providerConfig?.baseURL) {
-          throw new MissingBaseURLError(provider);
+        if (!account.baseUrl) {
+          throw new MissingBaseURLError(providerId);
         }
-        baseURL = providerConfig.baseURL;
-        if (providerConfig.apiKey) {
-          headers['Authorization'] = `Bearer ${providerConfig.apiKey}`;
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
         }
         break;
     }
 
     // Prepare request body
     const requestBody: Record<string, unknown> = {
-      model,
+      model: wireModelId,
       input: inputs,
     };
 
     // Add optional parameters based on provider support
-    if (options.dimensions && (providerConfig?.providerClass === 'openAICompatible' || provider === 'siliconflow')) {
+    if (options.dimensions && (account.providerType === 'openai-compatible' || providerId === 'siliconflow')) {
       requestBody.dimensions = options.dimensions;
     }
 
@@ -113,7 +113,7 @@ export async function generateEmbeddingsFromProvider(
     }
 
     // Make the API call
-    const response = await fetch(`${baseURL}/embeddings`, {
+    const response = await fetch(`${baseUrl}/embeddings`, {
       method: 'POST',
       headers,
       body: JSON.stringify(requestBody),
@@ -129,13 +129,13 @@ export async function generateEmbeddingsFromProvider(
       });
 
       if (response.status === 401) {
-        throw new AuthenticationError(provider);
+        throw new AuthenticationError(providerId);
       } else if (response.status === 404) {
-        throw new Error(`${provider} error: Model "${model}" not found`);
+        throw new Error(`${providerId} error: Model "${wireModelId}" not found`);
       } else if (response.status === 429) {
-        throw new Error(`${provider} too many requests: Reduce request frequency or check API limits`);
+        throw new Error(`${providerId} too many requests: Reduce request frequency or check API limits`);
       } else {
-        throw new Error(`${provider} embedding error: ${errorText}`);
+        throw new Error(`${providerId} embedding error: ${errorText}`);
       }
     }
 
@@ -147,13 +147,14 @@ export async function generateEmbeddingsFromProvider(
     return {
       requestId: crypto.randomUUID(),
       embeddings,
-      model,
+      logicalModelId,
+      wireModelId,
       object: data.object || 'list',
       usage: data.usage,
       status: 'done' as const,
     };
   } catch (error) {
-    logger.error(`${provider} embedding error:`, error);
+    logger.error(`${providerId} embedding error:`, error);
 
     if (error instanceof Error && error.name === 'AbortError') {
       throw error;
@@ -163,13 +164,14 @@ export async function generateEmbeddingsFromProvider(
     return {
       requestId: crypto.randomUUID(),
       embeddings: [],
-      model,
+      logicalModelId,
+      wireModelId,
       object: 'error',
       status: 'error' as const,
       errorDetail: {
         name: error instanceof Error ? error.name : 'UnknownError',
         code: 'EMBEDDING_FAILED',
-        provider,
+        providerId,
         message: error instanceof Error ? error.message : String(error),
       },
     };

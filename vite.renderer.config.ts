@@ -3,6 +3,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import { analyzer } from 'vite-bundle-analyzer';
 import monacoEditorPlugin from 'vite-plugin-monaco-editor';
+import { rendererAliases, rendererDedupe } from './vite.renderer.aliases';
 
 export default defineConfig({
   plugins: [
@@ -13,10 +14,8 @@ export default defineConfig({
     monacoEditorPlugin({}),
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@services': path.resolve(__dirname, './src/services'),
-    },
+    alias: rendererAliases,
+    dedupe: rendererDedupe,
   },
   optimizeDeps: {
     include: ['monaco-editor'],
@@ -24,8 +23,14 @@ export default defineConfig({
   build: {
     // Output to .vite/renderer for consistency
     outDir: '.vite/renderer',
-    // Specify the HTML entry point
-    rollupOptions: {
+    commonjsOptions: {
+      include: [/monaco-editor/, /node_modules/],
+    },
+    // TypeORM's browser entry statically reaches optional platform drivers so
+    // Expo/React Native bundlers can discover their storage providers. TidGi only
+    // uses the better-sqlite3 driver, but Rolldown still tries to resolve those
+    // optional driver packages while building the Desktop renderer bundle.
+    rolldownOptions: {
       input: path.resolve(__dirname, 'index.html'),
       output: {
         manualChunks(id: string) {
@@ -34,9 +39,11 @@ export default defineConfig({
           }
         },
       },
-    },
-    commonjsOptions: {
-      include: [/monaco-editor/, /node_modules/],
+      external: [
+        'expo-sqlite',
+        'react-native',
+        'react-native-paper',
+      ],
     },
   },
   server: {

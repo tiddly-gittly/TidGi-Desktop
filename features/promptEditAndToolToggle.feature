@@ -20,7 +20,8 @@ Feature: Agent Prompt Editing and Tool Toggle
       | response                               | stream |
       | 我是自定义提示词配置的助手，你好！     | false  |
     # Open edit agent definition page via right-click context menu on default agent
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "edit definition menu item" element with selector "[data-testid='edit-definition-menu-item']"
     # Verify edit interface loaded
@@ -50,7 +51,8 @@ Feature: Agent Prompt Editing and Tool Toggle
       | 第一次回复（工具启用时）                  | false  |
       | 第二次回复（工具禁用后）                  | false  |
     # Open edit agent definition page
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     When I click on a "edit definition menu item" element with selector "[data-testid='edit-definition-menu-item']"
     And I should see a "prompt config form" element with selector "[data-testid='edit-agent-prompt-form']"
@@ -63,11 +65,11 @@ Feature: Agent Prompt Editing and Tool Toggle
     And the last AI request should contain system prompt "wiki-search"
     # Now navigate to plugins tab (2nd tab due to ui:order, id=config-tab-1) and disable the wiki search tool
     When I click on a "plugins tab" element with selector "[data-testid='edit-agent-prompt-form'] #config-tab-1"
-    # Wait for plugins array items to render after tab switch
-    And I should see a "third plugin item checkbox" element with selector "[data-testid='array-item-enabled-2']"
-    # Wiki search is at index 2 in the plugins array (0=fullReplacement/history, 1=workspacesList, 2=wikiSearch)
+    # Wiki search is at index 2 after the canonical agent tools are merged.
+    When I click on a "third plugin expand button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[aria-label='展开'] >> nth=2"
+    And I should see a "third plugin enabled checkbox" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) input[id$='_plugins_2_enabled']"
     # Click the enabled checkbox to uncheck/disable the wiki search tool
-    When I click on a "wiki search tool enabled checkbox" element with selector "[data-testid='array-item-enabled-2']"
+    When I click on a "wiki search tool enabled checkbox" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) input[id$='_plugins_2_enabled']"
     # Wait for the preview agent to be recreated (form change triggers recreation with 500ms debounce)
     And I wait for 1.5 seconds for "preview agent recreation after form change"
     # Send another message and verify wiki-search is now absent from prompt

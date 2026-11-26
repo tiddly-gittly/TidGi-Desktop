@@ -28,7 +28,7 @@ import { tryInterceptHtmlWikiDownload } from './htmlWikiDownloadIntercept';
 import { handleViewFileContentLoading } from './setupViewFileProtocol';
 
 export interface IViewContext {
-  loadInitialUrlWithCatch: () => Promise<void>;
+  loadInitialUrlWithCatch: (isCurrent?: () => boolean) => Promise<void>;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
   shouldPauseNotifications: boolean;
   windowName: WindowNames;
@@ -57,6 +57,35 @@ export default function setupViewEventHandlers(
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
+
+  let navigationGeneration = 0;
+  let navigationRetry: ReturnType<typeof setTimeout> | undefined;
+  const invalidateRetry = () => {
+    navigationGeneration += 1;
+    clearTimeout(navigationRetry);
+    navigationRetry = undefined;
+  };
+  view.webContents.on('did-start-navigation', (_event, _url, isInPlace, isMainFrame) => {
+    if (isMainFrame && !isInPlace) invalidateRetry();
+  });
+  view.webContents.on('did-finish-load', invalidateRetry);
+  view.webContents.on('destroyed', invalidateRetry);
+  view.webContents.on('preload-error', (_event, preloadPath, error) => {
+    logger.error('Wiki preload failed', { error, preloadPath, workspaceID: workspace.id });
+  });
+  const scheduleNavigationRetry = (generation: number, delay: number) => {
+    clearTimeout(navigationRetry);
+    const isCurrent = () =>
+      generation === navigationGeneration && view.webContents != null &&
+      !view.webContents.isDestroyed() && !view.webContents.isLoadingMainFrame();
+    navigationRetry = setTimeout(() => {
+      navigationRetry = undefined;
+      if (!isCurrent()) return;
+      void loadInitialUrlWithCatch(isCurrent).catch((error: unknown) => {
+        logger.warn('Wiki navigation retry failed', { error, workspaceID: workspace.id });
+      });
+    }, delay);
+  };
 
   handleViewFileContentLoading(view);
   logger.info('Wiki view created', {
@@ -174,6 +203,7 @@ export default function setupViewEventHandlers(
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
+    const failedGeneration = navigationGeneration;
     const [workspaceObject, workspaceDidFailLoad] = await Promise.all([
       workspaceService.get(workspace.id),
       workspaceService.workspaceDidFailLoad(workspace.id),
@@ -181,7 +211,7 @@ export default function setupViewEventHandlers(
     // this event might be triggered
     // even after the workspace obj and WebContentsView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
-    if (workspaceObject === undefined) {
+    if (workspaceObject === undefined || failedGeneration !== navigationGeneration) {
       return;
     }
     if (workspaceDidFailLoad) {
@@ -195,18 +225,13 @@ export default function setupViewEventHandlers(
     // The restart flow will re-load the URL, so we retry here as a safety net
     // to recover from cases where the second load doesn't happen automatically.
     if (isMainFrame && errorCode === -3 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('tidgi://')) {
-      setTimeout(async () => {
-        if (view.webContents == null || view.webContents.isDestroyed()) return;
-        await loadInitialUrlWithCatch();
-      }, 500);
+      scheduleNavigationRetry(failedGeneration, 500);
       return;
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
       if (errorCode === -102 && view.webContents.getURL().length > 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {
-        setTimeout(async () => {
-          await loadInitialUrlWithCatch();
-        }, 1000);
+        scheduleNavigationRetry(failedGeneration, 1000);
         return;
       }
       await workspaceService.updateMetaData(workspace.id, {
@@ -221,9 +246,7 @@ export default function setupViewEventHandlers(
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
     if (errorCode === -300 && view.webContents.getURL().length === 0 && isWikiWorkspace(workspaceObject) && workspaceObject.homeUrl.startsWith('http')) {
-      setTimeout(async () => {
-        await loadInitialUrlWithCatch();
-      }, 1000);
+      scheduleNavigationRetry(failedGeneration, 1000);
     }
   });
   view.webContents.on('did-navigate', async (_event, url) => {

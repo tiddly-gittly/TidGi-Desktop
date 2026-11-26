@@ -114,9 +114,9 @@ export default function EditWorkspace(): React.JSX.Element {
   const workspaceStore = useMemo(
     () => (wikiWorkspace
       ? createRecordSchemaStore(
-        wikiWorkspace as unknown as Record<string, unknown>,
+        Object.fromEntries(Object.entries(wikiWorkspace)),
         (next, needsRestart) => {
-          workspaceSetter({ ...wikiWorkspace, ...next }, needsRestart);
+          workspaceSetter(Object.assign({}, wikiWorkspace, next), needsRestart);
         },
       )
       : undefined),

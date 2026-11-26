@@ -227,13 +227,13 @@ describe('FileSystemAdaptor - Delete Operations', () => {
         cb(null, fileInfo);
       });
 
-      await expect(adaptor.deleteTiddler('TestTiddler')).resolves.toBeUndefined();
+      await expect(adaptor.deleteTiddler('TestTiddler', vi.fn())).resolves.toBeUndefined();
       // @ts-expect-error - TiddlyWiki global
       expect(global.$tw.boot.files['TestTiddler']).toBeUndefined();
     });
 
     it('should resolve immediately for non-existent tiddler', async () => {
-      await expect(adaptor.deleteTiddler('NonExistent')).resolves.toBeUndefined();
+      await expect(adaptor.deleteTiddler('NonExistent', vi.fn())).resolves.toBeUndefined();
       expect(mockUtils.deleteTiddlerFile).not.toHaveBeenCalled();
     });
 
@@ -251,7 +251,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
         cb(new Error('IO error'));
       });
 
-      await expect(adaptor.deleteTiddler('TestTiddler')).rejects.toThrow('IO error');
+      await expect(adaptor.deleteTiddler('TestTiddler', vi.fn())).rejects.toThrow('IO error');
     });
 
     it('should handle permission errors gracefully even without callback', async () => {
@@ -273,7 +273,7 @@ describe('FileSystemAdaptor - Delete Operations', () => {
       });
 
       // Should not throw
-      await expect(adaptor.deleteTiddler('TestTiddler')).resolves.toBeUndefined();
+      await expect(adaptor.deleteTiddler('TestTiddler', vi.fn())).resolves.toBeUndefined();
       expect(mockLogger.alert).toHaveBeenCalled();
     });
   });

@@ -1,11 +1,14 @@
 /**
  * Web Fetch Tool — fetches external web content using Electron's net module.
  */
+import { DEFAULT_WEB_FETCH_CONTENT_CHARACTERS } from '@/constants/externalAPI';
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { net } from 'electron';
+import { convert } from 'html-to-text';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const WebFetchParameterSchema = z.object({
   toolListPosition: z.object({
@@ -13,7 +16,10 @@ export const WebFetchParameterSchema = z.object({
     position: z.enum(['before', 'after']).meta({ title: t('Schema.Common.ToolListPosition.PositionTitle'), description: t('Schema.Common.ToolListPosition.Position') }),
   }).optional().meta({ title: t('Schema.Common.ToolListPositionTitle'), description: t('Schema.Common.ToolListPosition.Description') }),
   toolResultDuration: z.number().optional().default(1).meta({ title: 'Tool result duration', description: 'Rounds this result stays in context' }),
-  maxContentLength: z.number().optional().default(50000).meta({ title: 'Max content length', description: 'Maximum characters to return from fetched content' }),
+  maxContentLength: z.number().optional().default(DEFAULT_WEB_FETCH_CONTENT_CHARACTERS).meta({
+    title: 'Max content length',
+    description: 'Maximum characters to return from fetched content',
+  }),
 }).meta({ title: 'Web Fetch Config', description: 'Configuration for web fetch tool' });
 
 export type WebFetchParameter = z.infer<typeof WebFetchParameterSchema>;
@@ -33,36 +39,22 @@ const WebFetchToolSchema = z.object({
 });
 
 /**
- * Robust HTML to text conversion — removes all tags and decodes entities safely.
- * Applies tag removal in a loop to handle encoded or nested tags that reappear after entity decoding.
+ * Parse HTML rather than filtering it with regular expressions. The parser handles
+ * malformed markup without allowing nested or unusual closing tags to bypass the
+ * script/style exclusion rules.
  */
-function htmlToText(html: string): string {
-  let text = html
-    // Remove script and style blocks (tolerant of whitespace in closing tags)
-    .replace(/<script\b[^>]*>[\s\S]*?<\/\s*script\s*>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/\s*style\s*>/gi, '')
-    // Convert block elements to newlines
-    .replace(/<\/?(p|div|h[1-6]|br|li|tr|td|th|blockquote|pre|hr)\b[^>]*>/gi, '\n')
-    // Remove remaining tags
-    .replace(/<[^>]+>/g, '');
-
-  // Decode entities that are safe (won't reintroduce HTML structure)
-  text = text
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    // Decode &amp; last so sequences like &amp;lt; don't double-unescape
-    .replace(/&amp;/g, '&');
-  // Intentionally do NOT decode &lt; / &gt; — keeping them as literal text
-  // prevents reintroduction of HTML tags from doubly-encoded content.
-
-  // Defense-in-depth: strip any tags that may have been reintroduced by entity decoding
-  text = text
-    .replace(/<script\b[^>]*>[\s\S]*?<\/\s*script\s*>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/\s*style\s*>/gi, '')
-    .replace(/<[^>]+>/g, '');
-
-  return text
+export function htmlToText(html: string): string {
+  return convert(html, {
+    wordwrap: false,
+    selectors: [
+      { selector: 'script', format: 'skip' },
+      { selector: 'style', format: 'skip' },
+    ],
+  })
+    // Keep decoded angle brackets inert if this plain-text result is later embedded
+    // into HTML or Markdown by an agent consumer.
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -117,7 +109,7 @@ async function executeWebFetch(parameters: z.infer<typeof WebFetchToolSchema>, m
   }
 }
 
-const webFetchDefinition = registerToolDefinition({
+export const webFetchDefinition = defineDesktopTool({
   toolId: 'webFetch',
   displayName: 'Web Fetch',
   description: 'Fetch content from a URL for external reference',
@@ -131,11 +123,9 @@ const webFetchDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, config, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'web-fetch') return;
-    if (agentFrameworkContext.isCancelled()) return;
-    const maxLength = config?.maxContentLength ?? 50000;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'web-fetch') return;
+    if (agentFrameworkContext.operationSignal?.aborted) return;
+    const maxLength = config?.maxContentLength ?? DEFAULT_WEB_FETCH_CONTENT_CHARACTERS;
     await executeToolCall('web-fetch', (parameters) => executeWebFetch(parameters, maxLength));
   },
 });
-
-export const webFetchTool = webFetchDefinition.tool;

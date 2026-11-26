@@ -47,4 +47,20 @@ describe('createAgentDefinitionSaveQueue', () => {
     await expect(queue.save(definition('newer'))).resolves.toMatchObject({ name: 'newer' });
     expect(saveAgentDefinition).toHaveBeenCalledTimes(2);
   });
+
+  it('serializes explicit script application with ordinary autosaves', async () => {
+    const order: string[] = [];
+    const queue = createAgentDefinitionSaveQueue(async value => {
+      order.push(value.name);
+      return value;
+    });
+    const before = queue.save(definition('before'));
+    const apply = queue.save(definition('script'), async value => {
+      order.push('apply');
+      return value;
+    });
+    const after = queue.save(definition('after'));
+    await Promise.all([before, apply, after]);
+    expect(order).toEqual(['before', 'apply', 'after']);
+  });
 });

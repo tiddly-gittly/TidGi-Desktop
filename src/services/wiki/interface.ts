@@ -32,7 +32,6 @@ export interface IWikiService {
    * create sub wiki in a parent folder, and link to a main wiki, and set tagName to filesystemPath.tid
    * @param parentFolderLocation
    * @param folderName
-   * @param mainWikiToLink
    * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
    */
   createSubWiki(parentFolderLocation: string, folderName: string, onlyLink?: boolean): Promise<void>;
@@ -57,6 +56,8 @@ export interface IWikiService {
    * @param workspaceID You can get this from active workspace
    */
   getWorker(workspaceID: string): WikiWorker | undefined;
+  /** Wait for all live renderers and the filesystem syncer to finish saving. */
+  waitForPendingSaves(workspaceID: string): Promise<void>;
   /**
    * Get info about all wiki workers for the debug panel.
    */
@@ -89,13 +90,13 @@ export interface IWikiService {
   ): Promise<ReturnType<ISendWikiOperationsToBrowser[OP]>>;
   /**
    * Runs wiki related JS script in nodejs server side.
-   *
-   * This will never await if workspaceID isn't exist in user's workspace list. So prefer to check workspace existence before use this method.
+   * Main process callers can cancel while waiting for a worker to become available.
    */
   wikiOperationInServer<OP extends keyof IWorkerWikiOperations>(
     operationType: OP,
     workspaceID: string,
     arguments_: Parameters<IWorkerWikiOperations[OP]>,
+    signal?: AbortSignal,
   ): Promise<ReturnType<IWorkerWikiOperations[OP]>>;
   /** handle startup and sync for wiki workspaces with workers */
   wikiStartup(workspace: IWorkspace): Promise<void>;

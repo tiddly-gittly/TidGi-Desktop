@@ -59,6 +59,46 @@ const SearchSectionLabel = styled(Typography)`
 // cannot silently discard user input.
 const PreferenceDraftContext = React.createContext<Map<string, string> | undefined>(undefined);
 
+type PreferenceRecord = Record<string, Record<string, unknown>>;
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Key/value-tab preferences are supplied by serializable definitions, so the
+ * nested value must be treated as unknown until it crosses the preference
+ * schema boundary. Invalid nested entries are ignored instead of being
+ * rendered as fields or spread into a new preference value.
+ */
+function toPreferenceRecord(value: unknown): PreferenceRecord {
+  if (!isObjectRecord(value)) {
+    return {};
+  }
+
+  const entries: Array<readonly [string, Record<string, unknown>]> = [];
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (isObjectRecord(nestedValue)) {
+      entries.push([key, nestedValue]);
+    }
+  }
+  return Object.fromEntries(entries);
+}
+
+/** Validate dynamic keyed values before invoking the generic preference API. */
+async function setKeyedPreferenceValue(item: IKeyedValueTabsPreferenceItem, value: PreferenceRecord): Promise<void> {
+  const parsed = item.zod.safeParse(value);
+  if (!parsed.success) {
+    throw new TypeError(`Invalid value for preference ${item.key}: ${parsed.error.message}`);
+  }
+
+  // The item key and schema are runtime data from the preference registry. The
+  // schema validation above is what safely correlates the dynamic value with
+  // the generic preference setter; Reflect.apply avoids an unchecked cast at
+  // this dynamic boundary.
+  await Reflect.apply(window.service.preference.set, window.service.preference, [item.key, parsed.data]);
+}
+
 // ─── Item renderers ──────────────────────────────────────────────────
 
 function BooleanItem({
@@ -107,7 +147,7 @@ function BooleanItem({
   );
 }
 
-function EnumItem({
+export function EnumItem({
   item,
   preference,
   onNeedsRestart,
@@ -124,38 +164,35 @@ function EnumItem({
   const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
   return (
-    <ListItem
-      secondaryAction={
-        <TextField
-          select
-          size='small'
-          value={value}
-          onChange={async (event) => {
-            const newValue = event.target.value;
-            await window.service.preference.set(item.key, newValue);
-            if (item.sideEffectId) {
-              const sideEffect = getSideEffect(item.sideEffectId);
-              if (sideEffect) {
-                await sideEffect(newValue, { ...preference, [item.key]: newValue as IPreferences[typeof item.key] });
-              }
-            }
-            if (item.needsRestart) {
-              onNeedsRestart();
-            }
-          }}
-          slotProps={{
-            select: { native: true },
-          }}
-          sx={{ minWidth: 120 }}
-        >
-          {item.enumValues.map((value_, index) => <option key={value_} value={value_}>{t(item.enumNames[index])}</option>)}
-        </TextField>
-      }
-    >
+    <ListItem sx={{ gap: 2 }}>
       <ListItemText
         primary={<HighlightText text={primaryText} query={query} />}
         secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
       />
+      <TextField
+        select
+        size='small'
+        value={value}
+        onChange={async (event) => {
+          const newValue = event.target.value;
+          await window.service.preference.set(item.key, newValue);
+          if (item.sideEffectId) {
+            const sideEffect = getSideEffect(item.sideEffectId);
+            if (sideEffect) {
+              await sideEffect(newValue, { ...preference, [item.key]: newValue as IPreferences[typeof item.key] });
+            }
+          }
+          if (item.needsRestart) {
+            onNeedsRestart();
+          }
+        }}
+        slotProps={{
+          select: { native: true, inputProps: { 'aria-label': primaryText } },
+        }}
+        sx={{ minWidth: 120, flexShrink: 0 }}
+      >
+        {item.enumValues.map((value_, index) => <option key={value_} value={value_}>{t(item.enumNames[index], item.ns ? { ns: item.ns } : undefined)}</option>)}
+      </TextField>
     </ListItem>
   );
 }
@@ -235,6 +272,7 @@ function StringItem({
           }
         }}
         sx={{ minWidth: 150 }}
+        slotProps={{ htmlInput: { 'data-testid': `preference-${item.key}` } }}
       />
     </ListItem>
   );
@@ -339,21 +377,21 @@ function KeyedValueTabsItem({
   query?: string;
 }): React.JSX.Element {
   const { t } = useTranslation(['translation', 'agent']);
-  const record = (preference[item.key] ?? {}) as unknown as Record<string, Record<string, unknown>>;
+  const record = toPreferenceRecord(preference[item.key]);
   const primaryText = t(item.titleKey, item.ns ? { ns: item.ns } : undefined);
   const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
   const updateField = async (tabKey: string, fieldKey: string, value: unknown) => {
     const latestPreferenceValue = await window.service.preference.get(item.key);
-    const latestRecord = (latestPreferenceValue ?? {}) as unknown as Record<string, Record<string, unknown>>;
-    const nextValue = {
+    const latestRecord = toPreferenceRecord(latestPreferenceValue);
+    const nextValue: PreferenceRecord = {
       ...latestRecord,
       [tabKey]: {
         ...(latestRecord[tabKey] ?? {}),
         [fieldKey]: value,
       },
-    } as unknown as IPreferences[typeof item.key];
-    await window.service.preference.set(item.key, nextValue);
+    };
+    await setKeyedPreferenceValue(item, nextValue);
     if (item.needsRestart) {
       onNeedsRestart();
     }
@@ -693,6 +731,7 @@ export function AllSectionsRenderer({
         <VirtualizedSettingsList
           entries={searchEntries}
           defaultRowHeight={100}
+          virtualize={!isTest}
           renderEntry={(entry) => (
             <>
               <SearchSectionLabel>
@@ -726,6 +765,7 @@ export function AllSectionsRenderer({
         navigationRequest={navigationRequest}
         onNavigationComplete={onNavigationComplete}
         renderEntry={renderSectionEntry}
+        virtualize={!isTest}
       />
     </PreferenceDraftContext.Provider>
   );

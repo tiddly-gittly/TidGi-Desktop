@@ -5,7 +5,7 @@
 import { t } from '@services/libs/i18n/placeholder';
 import { logger } from '@services/libs/log';
 import { z } from 'zod/v4';
-import { registerToolDefinition } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
 
 export const SummaryParameterSchema = z.object({
   toolListPosition: z.object({
@@ -19,15 +19,14 @@ export type SummaryParameter = z.infer<typeof SummaryParameterSchema>;
 const SummaryToolSchema = z.object({
   text: z.string().meta({
     title: 'Summary text',
-    description: 'The final summary or answer to present to the user. Use wikitext format.',
+    description: 'The final answer, written in the chat’s reply format.',
   }),
 }).meta({
   title: 'summary',
-  description: 'Call this tool when your task is fully complete. Provide a final summary in wikitext format. This will end the agent loop and present the answer to the user.',
-  examples: [{ text: '!! Task Complete\n\nI have created the tiddler "My Note" with the requested content.' }],
+  description: 'Call this tool when your task is fully complete. This ends the agent loop and presents the answer to the user.',
 });
 
-const summaryDefinition = registerToolDefinition({
+export const summaryDefinition = defineDesktopTool({
   toolId: 'summary',
   displayName: 'Summary (Finish)',
   description: 'Terminates the agent loop and presents a final summary to the user',
@@ -41,7 +40,7 @@ const summaryDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, addToolResult }) {
-    if (!toolCall || toolCall.toolId !== 'summary') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'summary') return;
 
     const parameters = toolCall.parameters as z.infer<typeof SummaryToolSchema>;
     logger.debug('Summary tool called — agent loop will terminate', { textLength: parameters.text.length });
@@ -56,5 +55,3 @@ const summaryDefinition = registerToolDefinition({
     // Do NOT yieldToSelf — let the loop end naturally, yielding 'completed' status
   },
 });
-
-export const summaryTool = summaryDefinition.tool;

@@ -11,8 +11,10 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { ToolExecutionResult } from 'memeloop';
 import { z } from 'zod/v4';
-import { registerToolDefinition, type ToolExecutionResult } from './defineTool';
+import { defineDesktopTool } from './defineToolDefinition';
+import { createNativeModelToolDefinitions } from './nativeModelTools';
 
 /**
  * Wiki Operation Config Schema (user-configurable in UI)
@@ -80,11 +82,12 @@ const WikiOperationToolSchema = z.object({
   }),
 }).meta({
   title: 'wiki-operation',
-  description: 'Perform operations on wiki workspaces (create, update, delete tiddlers, or invoke action tiddlers)',
+  description:
+    'Perform operations on wiki workspaces (create, update, delete tiddlers, or invoke action tiddlers). Omit optional extraMeta, options, and variables unless they are needed.',
   examples: [
-    { workspaceName: 'My Wiki', operation: WikiChannel.addTiddler, title: 'Example Note', text: 'Example content', extraMeta: '{}', options: '{}' },
-    { workspaceName: 'My Wiki', operation: WikiChannel.setTiddlerText, title: 'Existing Note', text: 'Updated content', extraMeta: '{}', options: '{}' },
-    { workspaceName: 'My Wiki', operation: WikiChannel.deleteTiddler, title: 'Note to Delete', extraMeta: '{}', options: '{}' },
+    { workspaceName: 'My Wiki', operation: WikiChannel.addTiddler, title: 'Example Note', text: 'Example content' },
+    { workspaceName: 'My Wiki', operation: WikiChannel.setTiddlerText, title: 'Existing Note', text: 'Updated content' },
+    { workspaceName: 'My Wiki', operation: WikiChannel.deleteTiddler, title: 'Note to Delete' },
     { workspaceName: 'My Wiki', operation: 'invokeActionString', title: 'SomeActionTiddler', variables: '{"result": "value", "status": "success"}' },
   ],
 });
@@ -94,7 +97,7 @@ type WikiOperationToolParameters = z.infer<typeof WikiOperationToolSchema>;
 /**
  * Execute wiki operation
  */
-async function executeWikiOperation(parameters: WikiOperationToolParameters): Promise<ToolExecutionResult> {
+export async function executeWikiOperation(parameters: WikiOperationToolParameters, signal?: AbortSignal): Promise<ToolExecutionResult> {
   const { workspaceName, operation, title, text, extraMeta, options: optionsString, variables } = parameters;
 
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -135,7 +138,7 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
         text || '',
         extraMeta || '{}',
         JSON.stringify({ withDate: true, ...options }),
-      ]);
+      ], signal);
       result = i18n.t('Tool.WikiOperation.Success.Added', { title, workspaceName });
       break;
     }
@@ -144,7 +147,7 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
       if (!title) {
         throw new Error('title is required for deleteTiddler operation');
       }
-      await wikiService.wikiOperationInServer(WikiChannel.deleteTiddler, workspaceID, [title]);
+      await wikiService.wikiOperationInServer(WikiChannel.deleteTiddler, workspaceID, [title], signal);
       result = i18n.t('Tool.WikiOperation.Success.Deleted', { title, workspaceName });
       break;
     }
@@ -153,7 +156,7 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
       if (!title) {
         throw new Error('title is required for setTiddlerText operation');
       }
-      await wikiService.wikiOperationInServer(WikiChannel.setTiddlerText, workspaceID, [title, text || '']);
+      await wikiService.wikiOperationInServer(WikiChannel.setTiddlerText, workspaceID, [title, text || ''], signal);
       result = i18n.t('Tool.WikiOperation.Success.Updated', { title, workspaceName });
       break;
     }
@@ -169,7 +172,7 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
           ? parsedVariables as Record<string, unknown>
           : {};
       }
-      await wikiService.wikiOperationInServer('invokeActionString', workspaceID, [title, variablePayload]);
+      await wikiService.wikiOperationInServer('invokeActionString', workspaceID, [title, variablePayload], signal);
       result = i18n.t('Tool.WikiOperation.Success.ActionInvoked', { actionTitle: title, workspaceName });
       break;
     }
@@ -190,7 +193,7 @@ async function executeWikiOperation(parameters: WikiOperationToolParameters): Pr
 /**
  * Wiki Operation Tool Definition
  */
-const wikiOperationDefinition = registerToolDefinition({
+export const wikiOperationDefinition = defineDesktopTool({
   toolId: 'wikiOperation',
   displayName: t('Schema.WikiOperation.Title'),
   description: t('Schema.WikiOperation.Description'),
@@ -199,7 +202,13 @@ const wikiOperationDefinition = registerToolDefinition({
     'wiki-operation': WikiOperationToolSchema,
   },
 
-  onProcessPrompts({ config, toolConfig, injectToolList }) {
+  onProcessPrompts({ config, toolConfig, injectToolList, registerModelTool }) {
+    for (
+      const tool of createNativeModelToolDefinitions({
+        'wiki-operation': WikiOperationToolSchema,
+      })
+    ) registerModelTool(tool);
+
     const toolListPosition = config.toolListPosition;
     if (!toolListPosition?.targetId) return;
 
@@ -217,16 +226,14 @@ const wikiOperationDefinition = registerToolDefinition({
   },
 
   async onResponseComplete({ toolCall, executeToolCall, agentFrameworkContext }) {
-    if (!toolCall || toolCall.toolId !== 'wiki-operation') return;
+    if (!toolCall || !toolCall.found || toolCall.toolId !== 'wiki-operation') return;
 
     // Check cancellation
-    if (agentFrameworkContext.isCancelled()) {
+    if (agentFrameworkContext.operationSignal?.aborted) {
       logger.debug('Wiki operation cancelled', { agentId: agentFrameworkContext.agent.id });
       return;
     }
 
-    await executeToolCall('wiki-operation', executeWikiOperation);
+    await executeToolCall('wiki-operation', (parameters) => executeWikiOperation(parameters, agentFrameworkContext.operationSignal));
   },
 });
-
-export const wikiOperationTool = wikiOperationDefinition.tool;

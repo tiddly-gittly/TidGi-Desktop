@@ -49,7 +49,7 @@ const SidebarTop = styled('div')`
   flex: 1;
   width: 100%;
   padding-top: 30px;
-  &[data-titleBar] {
+  &[data-titlebar] {
     padding-top: 0;
   }
 `;
@@ -90,7 +90,7 @@ export function SideBar(): React.JSX.Element {
   return (
     <>
       <SidebarContainer data-testid='main-sidebar'>
-        <SidebarTop data-titleBar={titleBar ? '' : undefined}>
+        <SidebarTop data-titlebar={titleBar ? '' : undefined}>
           {workspacesList === undefined
             ? <div>{t('Loading')}</div>
             : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}

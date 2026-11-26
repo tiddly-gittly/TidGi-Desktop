@@ -1,8 +1,12 @@
 import type { Logger } from '$:/core/modules/utils/logger.js';
+import { WIKI_SAVE_TIMEOUT_MS } from '@/constants/wiki';
 import type { ITidGiChangedTiddlers, IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { isWikiWorkspace } from '@services/workspaces/interface';
 import debounce from 'lodash/debounce';
 import type { ITiddlerFields, Syncer, Tiddler, Wiki } from 'tiddlywiki';
+import { withWikiDeadline } from '../../requestDeadline';
+import type { IpcServerRouteMethods, IpcServerRouteNames } from '../../wikiWorker/ipcServerRoutes';
 
 type ISyncAdaptorGetStatusCallback = (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void;
 type ISyncAdaptorGetTiddlersJSONCallback = (error: Error | null, tiddler?: Array<Omit<ITiddlerFields, 'text'>>) => void;
@@ -30,7 +34,7 @@ function getTidGiService(): typeof $tw.tidgi.service {
   return serviceFromTw;
 }
 
-class TidGiIPCSyncAdaptor {
+export class TidGiIPCSyncAdaptor {
   name = 'tidgi-ipc';
   supportsLazyLoading = true;
   wiki: Wiki;
@@ -59,11 +63,6 @@ class TidGiIPCSyncAdaptor {
    * Used to ignore stale SSE echoes after an IPC save has already succeeded.
    */
   private readonly lastSavedRevisions = new Map<string, number>();
-  /**
-   * Serializes save/delete requests per title so older IPC operations cannot
-   * clear save state while a newer request for the same tiddler is still active.
-   */
-  private readonly pendingSaveOperations = new Map<string, Promise<void>>();
   private readonly activeSaveCounts = new Map<string, number>();
   /**
    * Titles currently being loaded from the server (loadTiddler).
@@ -93,7 +92,7 @@ class TidGiIPCSyncAdaptor {
     }
     this.workspaceID = workspaceID;
     const metaWorkspace = (typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace;
-    this.isSubWiki = Boolean(metaWorkspace && (metaWorkspace as unknown as { isSubWiki?: boolean }).isSubWiki);
+    this.isSubWiki = metaWorkspace !== undefined && isWikiWorkspace(metaWorkspace) && metaWorkspace.isSubWiki;
     if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
       // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
       this.setupSSE();
@@ -124,11 +123,9 @@ class TidGiIPCSyncAdaptor {
         // Large batch (e.g. git checkout): defer to idle callback to avoid blocking UI
         requestIdleCallback(() => {
           syncer.syncFromServer();
-          this.clearUpdatedTiddlers();
         }, { timeout: 2000 });
       } else {
         syncer.syncFromServer();
-        this.clearUpdatedTiddlers();
       }
     }, 500);
     this.sseSubscribed = true;
@@ -149,6 +146,13 @@ class TidGiIPCSyncAdaptor {
         // This prevents echo: our putTiddler fires a change event in the worker
         // which is broadcast back to us via SSE.
         if (this.titlesBeingSaved.has(title)) {
+          return;
+        }
+        // A failed IPC save leaves the local revision dirty for the core retry.
+        // Do not replace it with an incoming worker/git version in the meantime.
+        const savedInfo = ($tw.syncer as (Syncer & { tiddlerInfo: Record<string, { changeCount: number } | undefined> }) | undefined)?.tiddlerInfo[title];
+        const exists = this.wiki.tiddlerExists(title);
+        if ((exists && (!savedInfo || this.wiki.getChangeCount(title) > savedInfo.changeCount)) || (!exists && savedInfo)) {
           return;
         }
 
@@ -197,18 +201,9 @@ class TidGiIPCSyncAdaptor {
     this.titlesBeingSaved.delete(title);
   }
 
-  private queueSaveOperation(title: string, operation: () => Promise<void>) {
-    const previousOperation = this.pendingSaveOperations.get(title) ?? Promise.resolve();
-    const queuedOperation = previousOperation
-      .catch(() => undefined)
-      .then(operation);
-    const trackedOperation = queuedOperation.finally(() => {
-      if (this.pendingSaveOperations.get(title) === trackedOperation) {
-        this.pendingSaveOperations.delete(title);
-      }
-    });
-    this.pendingSaveOperations.set(title, trackedOperation);
-    return trackedOperation;
+  private async callWikiRoute<NAME extends IpcServerRouteNames>(route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
+    const deadline = Date.now() + WIKI_SAVE_TIMEOUT_MS;
+    return await withWikiDeadline(this.wikiService.callWikiIpcServerRoute(this.workspaceID, route, ...arguments_), deadline);
   }
 
   private rememberRevision(title: string, revision: string | number | undefined) {
@@ -231,7 +226,11 @@ class TidGiIPCSyncAdaptor {
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
-    callback(null, this.updatedTiddlers);
+    // syncFromServer may only schedule a read while a save is in progress.
+    // Consume the batch when the core actually asks for it, not at scheduling.
+    const changes = this.updatedTiddlers;
+    this.clearUpdatedTiddlers();
+    callback(null, changes);
   }
 
   setLoggerSaveBuffer(loggerForSaving: Logger) {
@@ -262,7 +261,7 @@ class TidGiIPCSyncAdaptor {
     try {
       const workspace = await this.workspaceService.get(this.workspaceID);
       const userName = workspace === undefined ? '' : await this.authService.getUserName(workspace);
-      const statusResponse = await this.wikiService.callWikiIpcServerRoute(this.workspaceID, 'getStatus', userName);
+      const statusResponse = await this.callWikiRoute('getStatus', userName);
       const status = statusResponse?.data as IWikiServerStatusObject;
       if (status === undefined) {
         throw new Error('No status returned from callWikiIpcServerRoute getStatus');
@@ -291,8 +290,7 @@ class TidGiIPCSyncAdaptor {
       /**
        * This by default omit the text field.
        */
-      const tiddlersJSONResponse = await this.wikiService.callWikiIpcServerRoute(
-        this.workspaceID,
+      const tiddlersJSONResponse = await this.callWikiRoute(
         'getTiddlersJSON',
         '[all[tiddlers]] -[[$:/isEncrypted]] -[prefix[$:/temp/]] -[prefix[$:/status/]] -[[$:/boot/boot.js]] -[[$:/boot/bootprefix.js]] -[[$:/library/sjcl.js]] -[[$:/core]]',
       );
@@ -337,47 +335,48 @@ class TidGiIPCSyncAdaptor {
         callback(null);
         return;
       }
-      await this.queueSaveOperation(title, async () => {
-        // Mark as saving BEFORE the IPC call so that any SSE echo arriving
-        // during the call is ignored by our change handler.
-        this.markSaveStart(title);
-        try {
-          const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-            this.workspaceID,
-            'putTiddler',
-            title,
-            tiddler.fields,
-          );
-          if (putTiddlerResponse === undefined) {
-            throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
-          }
-          // Save the details of the new revision of the tiddler
-          const etag = putTiddlerResponse.headers?.Etag;
-          if (etag === undefined) {
-            callback(new Error('Response from server is missing required `etag` header'));
-            return;
-          }
-          const etagInfo = this.parseEtag(etag);
-          if (etagInfo === undefined) {
-            const error = new Error('Failed to parse `etag` header from server response');
-            this.logger.log(error);
-            callback(error);
-            return;
-          }
-          this.rememberRevision(title, etagInfo.revision);
-          if (shouldTrackCreatedUserTiddler) {
-            void this.analyticsService.track('tiddler.created', {
-              storage: 'filesystem',
-              isSubWiki: this.isSubWiki,
-            });
-          }
-          callback(null, {
-            bag: etagInfo.bag,
-          }, etagInfo.revision);
-        } finally {
-          this.markSaveFinish(title);
+      // Mark as saving BEFORE the IPC call so that any SSE echo arriving
+      // during the call is ignored by our change handler.
+      this.markSaveStart(title);
+      try {
+        const putTiddlerResponse = await this.callWikiRoute(
+          'putTiddler',
+          title,
+          tiddler.fields,
+          Date.now() + WIKI_SAVE_TIMEOUT_MS,
+        );
+        if (putTiddlerResponse === undefined) {
+          throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
         }
-      });
+        if (putTiddlerResponse.headers?.['X-TidGi-Persistence'] === 'excluded') {
+          this.logger.log(`Server save filter keeps ${title} in memory only`);
+        }
+        // Save the details of the new revision of the tiddler
+        const etag = putTiddlerResponse.headers?.Etag;
+        if (etag === undefined) {
+          callback(new Error('Response from server is missing required `etag` header'));
+          return;
+        }
+        const etagInfo = this.parseEtag(etag);
+        if (etagInfo === undefined) {
+          const error = new Error('Failed to parse `etag` header from server response');
+          this.logger.log(error);
+          callback(error);
+          return;
+        }
+        this.rememberRevision(title, etagInfo.revision);
+        if (shouldTrackCreatedUserTiddler) {
+          void this.analyticsService.track('tiddler.created', {
+            storage: 'filesystem',
+            isSubWiki: this.isSubWiki,
+          });
+        }
+        callback(null, {
+          bag: etagInfo.bag,
+        }, etagInfo.revision);
+      } finally {
+        this.markSaveFinish(title);
+      }
     } catch (error) {
       console.error(error);
       callback(error as Error);
@@ -390,8 +389,7 @@ class TidGiIPCSyncAdaptor {
   async loadTiddler(title: string, callback?: ISyncAdaptorLoadTiddlerCallback) {
     this.logger.log(`loadTiddler ${title}`);
     try {
-      const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-        this.workspaceID,
+      const getTiddlerResponse = await this.callWikiRoute(
         'getTiddler',
         title,
       );
@@ -433,23 +431,21 @@ class TidGiIPCSyncAdaptor {
     }
     this.logger.log('deleteTiddler');
     try {
-      await this.queueSaveOperation(title, async () => {
-        this.markSaveStart(title);
-        try {
-          const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
-            this.workspaceID,
-            'deleteTiddler',
-            title,
-          );
-          if (getTiddlerResponse?.data === undefined) {
-            throw new Error('deleteTiddler returned undefined from callWikiIpcServerRoute in deleteTiddler');
-          }
-          this.lastSavedRevisions.delete(title);
-          callback(null, null);
-        } finally {
-          this.markSaveFinish(title);
+      this.markSaveStart(title);
+      try {
+        const getTiddlerResponse = await this.callWikiRoute(
+          'deleteTiddler',
+          title,
+          Date.now() + WIKI_SAVE_TIMEOUT_MS,
+        );
+        if (getTiddlerResponse?.data === undefined) {
+          throw new Error('deleteTiddler returned undefined from callWikiIpcServerRoute in deleteTiddler');
         }
-      });
+        this.lastSavedRevisions.delete(title);
+        callback(null, null);
+      } finally {
+        this.markSaveFinish(title);
+      }
     } catch (error) {
       callback(error as Error);
     }
@@ -484,11 +480,12 @@ class TidGiIPCSyncAdaptor {
   }
 }
 
+export let adaptorClass: typeof TidGiIPCSyncAdaptor | undefined;
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document.location.protocol.startsWith('tidgi');
   const servicesExposed = Boolean(window.service?.wiki);
   const hasWorkspaceIDinMeta = Boolean((typeof window.meta === 'function' ? window.meta() as WindowMeta[WindowNames.view] : undefined)?.workspace?.id);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
-    exports.adaptorClass = TidGiIPCSyncAdaptor;
+    adaptorClass = TidGiIPCSyncAdaptor;
   }
 }

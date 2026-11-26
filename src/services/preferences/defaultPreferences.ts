@@ -28,6 +28,7 @@ function getAnalyticsEnvironmentOverrides(): { analyticsEnabled: boolean; analyt
 const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
 
 export const defaultPreferences: IPreferences = {
+  agentMessageFormat: 'wikitext',
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   alwaysOnTop: false,
   analyticsEnabled: analyticsEnvironment.analyticsEnabled,
@@ -74,6 +75,7 @@ export const defaultPreferences: IPreferences = {
   syncDebounceInterval: 1000 * 60 * 30,
   syncOnlyWhenNoDraft: true,
   aiGenerateBackupTitle: true,
+  mainAgentConversationId: '',
   aiGenerateBackupTitleTimeout: 1500,
   themeSource: 'system',
   tidgiMiniWindow: false,

@@ -1,5 +1,5 @@
-import { execFileSync } from 'child_process';
 import fs from 'fs';
+import { execFileSync } from 'node:child_process';
 import path from 'path';
 import { writeCalibrationResult } from '../features/supports/calibration';
 
@@ -16,7 +16,7 @@ interface CalibrationSamples {
   elementMs: number[];
 }
 
-function runSmokeCalibration(): void {
+function runCalibration(): void {
   // Two complete calibration runs to capture CI machine variance without
   // excessive build time. A single run can hide a slow step on a cold cache.
   const CALIBRATION_RUNS = 2;
@@ -40,7 +40,6 @@ function runSmokeCalibration(): void {
 
     fs.rmSync(outputFile, { force: true });
 
-    let cucumberExitOk = false;
     try {
       execFileSync(
         process.execPath,
@@ -51,19 +50,13 @@ function runSmokeCalibration(): void {
           env: { ...process.env, NODE_ENV: 'test', TIDGI_E2E_IS_CALIBRATION: 'true' },
         },
       );
-      cucumberExitOk = true;
-    } catch {
-      // Non-zero exit means at least one @calibrate scenario failed.
-      // We still try to extract timings from the JSON — cucumber writes
-      // per-scenario results as they complete, so partial data is valid.
-      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS} had non-zero exit — extracting partial timings`);
+    } catch (error) {
+      throw new Error(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS} failed; raw report: ${outputFile}`, { cause: error });
     }
 
     const steps = extractStepTimings(outputFile);
     if (steps.length === 0) {
-      const reason = cucumberExitOk ? 'cucumber exited zero but no step timings found' : 'no recoverable step timings in partial output';
-      console.warn(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS}: ${reason} — skipping`);
-      continue;
+      throw new Error(`[Cal] run ${runIndex + 1}/${CALIBRATION_RUNS} returned no step timings; raw report: ${outputFile}`);
     }
 
     const totalMs = Date.now() - startedAt;
@@ -96,14 +89,6 @@ function runSmokeCalibration(): void {
     samples.elementMs.push(runMaxElementStepMs);
 
     console.log(`[Cal] #${runIndex + 1}/${CALIBRATION_RUNS}: T=${totalMs} S=${runMaxStepMs} L=${runMaxLaunchStepMs} W=${runMaxWaitStepMs} E=${runMaxElementStepMs}`);
-  }
-
-  // Partial calibration is unsafe for downstream shards and local debugging alike.
-  if (samples.totalMs.length === 0) {
-    throw new Error(
-      '[Cal] FATAL: All calibration runs failed. ' +
-        'Downstream scenarios cannot use calibration — fix the @calibrate scenarios and re-run.',
-    );
   }
 
   const observed = {
@@ -148,8 +133,8 @@ function deriveMeasuredTimeoutBudget(samples: number[]): number | null {
 
   const observedMax = Math.max(...validSamples);
   const observedMin = Math.min(...validSamples);
-  // The spread between runs is the primary error signal — CI jitter, cold-cache
-  // variance, and background noise all manifest as inter-run differences. Exceeding spread means error on logic. Don't use hardcoded timeout or multiplyer to hide the underlying problem, it will only waste more time. Only look at log and code tounderstand the true problem. Don't be lazy.
+  // The measured spread accounts for cold-cache and runner-load differences
+  // while keeping the budget tied to observed calibration runs.
   const spread = observedMax - observedMin;
 
   return Math.ceil(observedMax + spread);
@@ -192,4 +177,9 @@ function isElementStep(name: string): boolean {
   return /click|type|check/i.test(name);
 }
 
-runSmokeCalibration();
+try {
+  runCalibration();
+} catch (error) {
+  console.error('[Cal] calibration preflight failed', error);
+  process.exitCode = 1;
+}

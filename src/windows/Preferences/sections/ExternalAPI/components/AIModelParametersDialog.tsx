@@ -1,7 +1,5 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField } from '@mui/material';
-import { AiAPIConfig } from '@services/agentInstance/promptConcat/promptConcatSchema';
-import { ModelParameters } from '@services/agentInstance/promptConcat/promptConcatSchema/modelParameters';
-import { cloneDeep } from 'lodash';
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, FormHelperText, InputAdornment, Slider, TextField, Typography } from '@mui/material';
+import type { AgentModelParameters, ModelAssignments } from 'memeloop';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,8 +9,8 @@ import { useTranslation } from 'react-i18next';
 interface AIModelParametersDialogProps {
   open: boolean;
   onClose: () => void;
-  config: AiAPIConfig | null;
-  onSave: (newConfig: AiAPIConfig) => Promise<void>;
+  config: ModelAssignments | null;
+  onSave: (newConfig: ModelAssignments) => Promise<void>;
 }
 
 /**
@@ -21,35 +19,55 @@ interface AIModelParametersDialogProps {
  */
 export function AIModelParametersDialog({ open, onClose, config, onSave }: AIModelParametersDialogProps) {
   const { t } = useTranslation(['translation', 'agent']);
-  const [parameters, setParameters] = useState<ModelParameters>({
+  const [parameters, setParameters] = useState<AgentModelParameters>({
     temperature: 0.7,
-    maxTokens: 1000,
+    maxOutputTokens: 1000,
     topP: 0.95,
   });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   // Update local state when config changes
   useEffect(() => {
-    if (config?.modelParameters) {
+    if (!open) {
+      setSaveError(false);
+      setSaving(false);
+    }
+    if (config?.default) {
       setParameters({
-        temperature: config.modelParameters.temperature ?? 0.7,
-        maxTokens: config.modelParameters.maxTokens ?? 1000,
-        topP: config.modelParameters.topP ?? 0.95,
+        temperature: config.default.parameters?.temperature ?? 0.7,
+        maxOutputTokens: config.default.parameters?.maxOutputTokens ?? 1000,
+        topP: config.default.parameters?.topP ?? 0.95,
+        ...(config.default.parameters?.reasoningEffort === undefined
+          ? {}
+          : { reasoningEffort: config.default.parameters.reasoningEffort }),
       });
     }
-  }, [config]);
+  }, [config, open]);
 
   // Handle save action
   const handleSave = async () => {
-    if (!config) return;
+    if (!config?.default) {
+      setSaveError(true);
+      return;
+    }
 
+    setSaveError(false);
+    setSaving(true);
     try {
-      // Create a deep copy of the config to avoid mutating the original
-      const newConfig = cloneDeep(config);
-      newConfig.modelParameters = parameters;
+      const newConfig: ModelAssignments = {
+        ...config,
+        default: {
+          ...config.default,
+          parameters,
+        },
+      };
       await onSave(newConfig);
       onClose();
-    } catch (error) {
-      void window.service.native.log('error', 'Failed to save model parameters', { function: 'AIModelParametersDialog.handleSave', error });
+    } catch {
+      setSaveError(true);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -75,7 +93,7 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     if (!isNaN(value)) {
       setParameters((previous) => ({
         ...previous,
-        maxTokens: value,
+        maxOutputTokens: value,
       }));
     }
   };
@@ -84,6 +102,12 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>{t('Preference.ModelParameters', { ns: 'agent' })}</DialogTitle>
       <DialogContent>
+        {saveError && <Alert severity='error' sx={{ mb: 2 }}>{t('Preference.FailedToSaveModelParameters', { ns: 'agent' })}</Alert>}
+        {config?.default && (
+          <Typography variant='subtitle2' color='text.secondary' sx={{ mb: 2 }}>
+            {config.default.providerId} - {config.default.modelId}
+          </Typography>
+        )}
         <FormControl fullWidth sx={{ mt: 2 }}>
           <FormHelperText>
             {t('Preference.Temperature', { ns: 'agent' })}: {parameters.temperature?.toFixed(2)}
@@ -123,12 +147,12 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
         <FormControl fullWidth sx={{ mt: 3 }}>
           <TextField
             label={t('Preference.MaxTokens', { ns: 'agent' })}
-            value={parameters.maxTokens}
+            value={parameters.maxOutputTokens}
             onChange={handleMaxTokensChange}
             type='number'
             slotProps={{
               input: {
-                endAdornment: <InputAdornment position='end'>tokens</InputAdornment>,
+                endAdornment: <InputAdornment position='end'>{t('Preference.TokensUnit', { ns: 'agent' })}</InputAdornment>,
               },
             }}
             helperText={t('Preference.MaxTokensDescription', { ns: 'agent' })}
@@ -136,8 +160,15 @@ export function AIModelParametersDialog({ open, onClose, config, onSave }: AIMod
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>{t('Cancel')}</Button>
-        <Button onClick={handleSave} variant='contained' color='primary'>
+        <Button onClick={onClose} disabled={saving}>{t('Cancel')}</Button>
+        <Button
+          onClick={() => {
+            void handleSave();
+          }}
+          variant='contained'
+          color='primary'
+          disabled={saving || !config?.default}
+        >
           {t('Save')}
         </Button>
       </DialogActions>

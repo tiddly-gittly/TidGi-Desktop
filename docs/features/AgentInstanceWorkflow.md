@@ -171,16 +171,7 @@ The handler uses a `while` loop instead of recursive generator calls. This preve
 
 ### Parallel tool execution
 
-When the LLM wraps multiple `<tool_use>` calls inside `<parallel_tool_calls>`, the framework executes them concurrently using a custom `executeToolCallsParallel()` utility:
-
-- Does NOT use `Promise.all` (which would reject on first failure).
-- Each tool gets its own timeout (configurable per-tool or using the global default).
-- Results are collected for all tools (success, failure, and timeout), similar to `Promise.allSettled`.
-
-Related code:
-
-- [parallelExecution.ts](../../src/services/agentInstance/tools/parallelExecution.ts)
-- [matchAllToolCallings](../../src/services/agentDefinition/responsePatternUtility.ts)
+Desktop registers its [builtin tool definitions](../../src/services/agentInstance/tools/builtinToolDefinitions.ts) with MemeLoop Core. Core's `defineTool` handler executes matching calls through its shared parallel or sequential executor, propagates the parent cancellation signal, and writes each tool result into the conversation.
 
 ### Tool approval mechanism
 

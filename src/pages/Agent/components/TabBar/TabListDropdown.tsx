@@ -1,3 +1,4 @@
+import { getDefaultAgentDefinitionId } from '@services/agentDefinition/defaults';
 // Compact dropdown for tab switching, placed in the chat header
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import AddIcon from '@mui/icons-material/Add';
@@ -8,22 +9,14 @@ import TabIcon from '@mui/icons-material/Tab';
 import WebIcon from '@mui/icons-material/Web';
 import { Box, ClickAwayListener, Divider, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Paper, Popper, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import type { ScheduledTask } from 'memeloop';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useTabStore } from '../../store/tabStore';
 import { TabItem, TabType } from '../../types/tab';
-
-interface TabBackgroundTask {
-  agentId: string;
-  agentName?: string;
-  type: 'heartbeat' | 'alarm';
-  intervalSeconds?: number;
-  wakeAtISO?: string;
-  nextWakeAtISO?: string;
-  message?: string;
-  repeatIntervalMinutes?: number;
-}
+import { formatScheduledTaskWakeTime, getScheduledTaskWakeAt, groupScheduledTasksByAgentInstanceId, sortScheduledTasksByNextRun } from './scheduledTaskPresentation';
+import { TabContextMenu } from './TabContextMenu';
 
 const DropdownPaper = styled(Paper)(({ theme }) => ({
   minWidth: 260,
@@ -56,82 +49,52 @@ function getTabIcon(type: TabType) {
   }
 }
 
-const formatWakeTime = (iso?: string): string => {
-  if (!iso) return 'Unknown';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
-const normalizeBackgroundTasks = (raw: unknown): TabBackgroundTask[] => {
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((item) => {
-    if (!item || typeof item !== 'object') return [];
-    const record = item as Record<string, unknown>;
-    const agentId = record.agentId;
-    if (typeof agentId !== 'string') return [];
-    return [{
-      agentId,
-      agentName: typeof record.agentName === 'string' ? record.agentName : undefined,
-      type: record.type === 'alarm' ? 'alarm' : 'heartbeat',
-      intervalSeconds: typeof record.intervalSeconds === 'number' ? record.intervalSeconds : undefined,
-      wakeAtISO: typeof record.wakeAtISO === 'string' ? record.wakeAtISO : undefined,
-      nextWakeAtISO: typeof record.nextWakeAtISO === 'string' ? record.nextWakeAtISO : undefined,
-      message: typeof record.message === 'string' ? record.message : undefined,
-      repeatIntervalMinutes: typeof record.repeatIntervalMinutes === 'number' ? record.repeatIntervalMinutes : undefined,
-    }];
-  });
-};
-
 export const TabListDropdown: React.FC = () => {
-  const { t } = useTranslation('agent');
+  const { i18n, t } = useTranslation('agent');
   const { tabs, activeTabId, setActiveTab, closeTab, addTab } = useTabStore();
   const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null);
-  const [backgroundTasks, setBackgroundTasks] = useState<TabBackgroundTask[]>([]);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
   const open = Boolean(anchorElement);
 
-  const refreshBackgroundTasks = useCallback(async () => {
+  const refreshScheduledTasks = useCallback(async () => {
     try {
-      const agentInstanceService = window.service.agentInstance as {
-        getBackgroundTasks: () => Promise<unknown>;
-      };
-      const rawTasks = await agentInstanceService.getBackgroundTasks();
-      setBackgroundTasks(normalizeBackgroundTasks(rawTasks));
-    } catch {
-      // Ignore transient IPC errors during startup.
+      const tasks = await window.service.agentInstance.listScheduledTasks({ states: ['active', 'paused'] });
+      setScheduledTasks(tasks);
+    } catch (error) {
+      // Scheduled-task indicators are best effort, but failures remain observable for diagnostics.
+      void window.service.native.log('warn', 'TabListDropdown: failed to refresh scheduled tasks', { error });
     }
   }, []);
 
   useEffect(() => {
-    void refreshBackgroundTasks();
+    void refreshScheduledTasks();
     const timer = window.setInterval(() => {
-      void refreshBackgroundTasks();
+      void refreshScheduledTasks();
     }, 1_500);
     return () => {
       window.clearInterval(timer);
     };
-  }, [refreshBackgroundTasks]);
+  }, [refreshScheduledTasks]);
 
-  const backgroundTasksByAgent = useMemo(() => {
-    const map = new Map<string, TabBackgroundTask[]>();
-    for (const task of backgroundTasks) {
-      const existing = map.get(task.agentId) ?? [];
-      existing.push(task);
-      map.set(task.agentId, existing);
-    }
-    return map;
-  }, [backgroundTasks]);
+  const scheduledTasksByAgent = useMemo(
+    () => groupScheduledTasksByAgentInstanceId(scheduledTasks),
+    [scheduledTasks],
+  );
 
-  const getTasksForTab = useCallback((tab: TabItem): TabBackgroundTask[] => {
+  const getTasksForTab = useCallback((tab: TabItem): readonly ScheduledTask[] => {
     if (tab.type !== TabType.CHAT) return [];
     if (!tab.agentId) return [];
-    return backgroundTasksByAgent.get(tab.agentId) ?? [];
-  }, [backgroundTasksByAgent]);
+    return scheduledTasksByAgent.get(tab.agentId) ?? [];
+  }, [scheduledTasksByAgent]);
+
+  const describeScheduledTask = useCallback((task: Readonly<ScheduledTask>, taskCount: number): string => {
+    const wakeTime = formatScheduledTaskWakeTime(
+      getScheduledTaskWakeAt(task),
+      i18n.resolvedLanguage ?? i18n.language,
+      t('Tab.ScheduledTaskUnknownWake'),
+    );
+    return `${t('Tab.ScheduledTaskNextWake', { wakeTime })}${taskCount > 1 ? ` ${t('Tab.ScheduledTaskMore', { count: taskCount - 1 })}` : ''}`;
+  }, [i18n.language, i18n.resolvedLanguage, t]);
 
   const handleToggle = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorElement((previous) => (previous ? null : event.currentTarget));
@@ -152,7 +115,7 @@ export const TabListDropdown: React.FC = () => {
   }, [closeTab]);
 
   const handleNewTab = useCallback(async () => {
-    await addTab(TabType.NEW_TAB);
+    await addTab(TabType.CHAT, { agentDefId: getDefaultAgentDefinitionId() });
     handleClose();
   }, [addTab, handleClose]);
 
@@ -165,16 +128,10 @@ export const TabListDropdown: React.FC = () => {
 
   const activeTab = tabs.find(tab => tab.id === activeTabId);
   const activeTabTasks = activeTab ? getTasksForTab(activeTab) : [];
-  const sortedActiveTasks = [...activeTabTasks].sort((a, b) => {
-    const aWake = a.nextWakeAtISO ?? a.wakeAtISO;
-    const bWake = b.nextWakeAtISO ?? b.wakeAtISO;
-    const aTime = aWake ? new Date(aWake).getTime() : Number.MAX_SAFE_INTEGER;
-    const bTime = bWake ? new Date(bWake).getTime() : Number.MAX_SAFE_INTEGER;
-    return aTime - bTime;
-  });
+  const sortedActiveTasks = sortScheduledTasksByNextRun(activeTabTasks);
   const nearestActiveTask = sortedActiveTasks[0];
   const activeTaskTooltip = nearestActiveTask
-    ? `Next wake: ${formatWakeTime(nearestActiveTask.nextWakeAtISO ?? nearestActiveTask.wakeAtISO)}${activeTabTasks.length > 1 ? ` (+${activeTabTasks.length - 1} more)` : ''}`
+    ? describeScheduledTask(nearestActiveTask, activeTabTasks.length)
     : '';
 
   return (
@@ -223,7 +180,7 @@ export const TabListDropdown: React.FC = () => {
           </IconButton>
         </Tooltip>
       )}
-      {/* Standalone new-tab button — keeps backward-compatible test selector */}
+      {/* Standalone new-tab button with the stable selector used by tab tests. */}
       <Tooltip title={t('NewTab.NewTab')}>
         <IconButton
           size='small'
@@ -241,78 +198,89 @@ export const TabListDropdown: React.FC = () => {
         open={open}
         anchorEl={anchorElement}
         placement='bottom-start'
-        style={{ zIndex: 1500 }}
+        sx={{ zIndex: 'tooltip' }}
         modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
       >
         <ClickAwayListener onClickAway={handleClose}>
           <DropdownPaper data-testid='tab-list-dropdown'>
-            <List dense disablePadding sx={{ py: 0.5 }}>
-              {sortedTabs.map((tab: TabItem) => {
-                const tabTasks = getTasksForTab(tab);
-                const sortedTabTasks = [...tabTasks].sort((a, b) => {
-                  const aWake = a.nextWakeAtISO ?? a.wakeAtISO;
-                  const bWake = b.nextWakeAtISO ?? b.wakeAtISO;
-                  const aTime = aWake ? new Date(aWake).getTime() : Number.MAX_SAFE_INTEGER;
-                  const bTime = bWake ? new Date(bWake).getTime() : Number.MAX_SAFE_INTEGER;
-                  return aTime - bTime;
-                });
-                const nearestTask = sortedTabTasks[0];
-                const nearestWake = nearestTask?.nextWakeAtISO ?? nearestTask?.wakeAtISO;
-                const scheduleTooltip = tabTasks.length > 0
-                  ? `Next wake: ${formatWakeTime(nearestWake)}${tabTasks.length > 1 ? ` (+${tabTasks.length - 1} more)` : ''}`
-                  : '';
-                const closeTooltip = tabTasks.length > 0
-                  ? `This agent has active scheduled tasks. Next wake: ${formatWakeTime(nearestWake)}. Closing this tab will not stop background wake-ups.`
-                  : 'Close tab';
+            <TabContextMenu>
+              <List dense disablePadding sx={{ py: 0.5 }}>
+                {sortedTabs.map((tab: TabItem) => {
+                  const tabTasks = getTasksForTab(tab);
+                  const sortedTabTasks = sortScheduledTasksByNextRun(tabTasks);
+                  const nearestTask = sortedTabTasks[0];
+                  const formattedWakeTime = formatScheduledTaskWakeTime(
+                    nearestTask ? getScheduledTaskWakeAt(nearestTask) : undefined,
+                    i18n.resolvedLanguage ?? i18n.language,
+                    t('Tab.ScheduledTaskUnknownWake'),
+                  );
+                  const scheduleTooltip = nearestTask
+                    ? describeScheduledTask(nearestTask, tabTasks.length)
+                    : '';
+                  const closeTooltip = tabTasks.length > 0
+                    ? t('Tab.ScheduledTaskCloseWarning', { wakeTime: formattedWakeTime })
+                    : t('Tab.Close');
 
-                return (
-                  <TabEntry
-                    key={tab.id}
-                    active={tab.id === activeTabId}
-                    onClick={() => {
-                      handleSelectTab(tab.id);
-                    }}
-                    data-testid={`tab-list-item-${tab.id}`}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      {getTabIcon(tab.type)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={tab.title}
-                      slotProps={{ primary: { noWrap: true, variant: 'body2' } }}
-                    />
-                    {tabTasks.length > 0 && (
-                      <Tooltip title={scheduleTooltip}>
+                  return (
+                    <TabEntry
+                      key={tab.id}
+                      active={tab.id === activeTabId}
+                      onClick={() => {
+                        handleSelectTab(tab.id);
+                      }}
+                      data-testid={`tab-list-item-${tab.id}`}
+                      data-tab-id={tab.id}
+                      data-tab-type={tab.type}
+                    >
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        {getTabIcon(tab.type)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={tab.title}
+                        slotProps={{ primary: { noWrap: true, variant: 'body2' } }}
+                      />
+                      {tabTasks.length > 0 && (
+                        <Tooltip title={scheduleTooltip}>
+                          <IconButton
+                            size='small'
+                            sx={{ ml: 0.25 }}
+                            data-testid={`tab-scheduled-task-indicator-${tab.id}`}
+                            aria-label={scheduleTooltip}
+                          >
+                            <AccessTimeIcon sx={{ fontSize: 14 }} color='warning' />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title={closeTooltip}>
                         <IconButton
                           size='small'
-                          sx={{ ml: 0.25 }}
-                          data-testid={`tab-scheduled-task-indicator-${tab.id}`}
-                          aria-label={scheduleTooltip}
+                          className='tab-close'
+                          sx={{ opacity: 0, transition: 'opacity 0.15s', ml: 0.5 }}
+                          onClick={(event) => {
+                            handleCloseTab(event, tab.id);
+                          }}
+                          data-testid={`tab-close-${tab.id}`}
+                          aria-label={closeTooltip}
                         >
-                          <AccessTimeIcon sx={{ fontSize: 14 }} color='warning' />
+                          <CloseIcon sx={{ fontSize: 14 }} />
                         </IconButton>
                       </Tooltip>
-                    )}
-                    <Tooltip title={closeTooltip}>
-                      <IconButton
-                        size='small'
-                        className='tab-close'
-                        sx={{ opacity: 0, transition: 'opacity 0.15s', ml: 0.5 }}
-                        onClick={(event) => {
-                          handleCloseTab(event, tab.id);
-                        }}
-                        data-testid={`tab-close-${tab.id}`}
-                        aria-label={closeTooltip}
-                      >
-                        <CloseIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    </Tooltip>
-                  </TabEntry>
-                );
-              })}
-            </List>
+                    </TabEntry>
+                  );
+                })}
+              </List>
+            </TabContextMenu>
             <Divider />
             <Box sx={{ p: 0.5 }}>
+              <ListItemButton
+                onClick={() => {
+                  void addTab(TabType.NEW_TAB).then(handleClose);
+                }}
+                sx={{ borderRadius: 6, mx: 0.5 }}
+                data-testid='tab-list-agent-management'
+              >
+                <ListItemText primary={t('NewTab.QuickAccess')} slotProps={{ primary: { variant: 'body2' } }} />
+              </ListItemButton>
               <ListItemButton
                 onClick={() => {
                   void handleNewTab();

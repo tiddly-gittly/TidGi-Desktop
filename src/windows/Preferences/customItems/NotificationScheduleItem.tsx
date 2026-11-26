@@ -19,7 +19,7 @@ export function NotificationScheduleItem(): React.JSX.Element | null {
       <ListItemText primary={t('Preference.NotificationsDisableSchedule')} />
       <TimePickerContainer>
         <TimePicker
-          label='from'
+          label={t('Preference.TimeFrom')}
           value={new Date(preference.pauseNotificationsByScheduleFrom)}
           onChange={async (d) => {
             if (d !== null && d instanceof Date) {
@@ -39,7 +39,7 @@ export function NotificationScheduleItem(): React.JSX.Element | null {
           }}
         />
         <TimePicker
-          label='to'
+          label={t('Preference.TimeTo')}
           value={new Date(preference.pauseNotificationsByScheduleTo)}
           onChange={async (d) => {
             if (d !== null && d instanceof Date) {

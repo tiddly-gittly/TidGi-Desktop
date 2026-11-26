@@ -27,6 +27,7 @@ class TestResizeObserver {
 describe('VirtualizedSettingsList', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
   const originalScrollTo = HTMLElement.prototype.scrollTo;
+  const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
 
   beforeEach(() => {
     globalThis.ResizeObserver = TestResizeObserver;
@@ -37,6 +38,10 @@ describe('VirtualizedSettingsList', () => {
         this.dispatchEvent(new Event('scroll'));
       },
     });
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
   });
 
   afterEach(() => {
@@ -44,6 +49,10 @@ describe('VirtualizedSettingsList', () => {
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
       configurable: true,
       value: originalScrollTo,
+    });
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: originalScrollIntoView,
     });
   });
 
@@ -71,6 +80,27 @@ describe('VirtualizedSettingsList', () => {
       expect(screen.getByText('section-150')).toBeInTheDocument();
       expect(onNavigationComplete).toHaveBeenCalledWith(7);
     });
+    expect(document.querySelector('[data-settings-scroll-viewport]')).toBeInTheDocument();
     expect(screen.queryByText('section-20')).not.toBeInTheDocument();
+  });
+
+  it('uses the same owned scroll viewport when virtualization is disabled', async () => {
+    const onNavigationComplete = vi.fn();
+    render(
+      <VirtualizedSettingsList
+        entries={[{ id: 'external-api' }]}
+        navigationRequest={{ behavior: 'auto', requestId: 9, sectionId: 'external-api' }}
+        onNavigationComplete={onNavigationComplete}
+        renderEntry={(entry) => <div>{entry.id}</div>}
+        virtualize={false}
+      />,
+    );
+
+    const entry = screen.getByText('external-api').closest('[data-settings-entry-id]');
+    expect(entry?.closest('[data-settings-scroll-viewport]')).toBeInTheDocument();
+    expect(HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(onNavigationComplete).toHaveBeenCalledWith(9);
+    });
   });
 });

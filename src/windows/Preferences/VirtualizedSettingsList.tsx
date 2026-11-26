@@ -29,6 +29,10 @@ const Viewport = styled('div')`
   width: 100%;
 `;
 
+const FallbackViewport = styled(Viewport)`
+  overflow-y: auto;
+`;
+
 function SettingsRow<TEntry extends IVirtualizedSettingsEntry>({
   entries,
   index,
@@ -94,14 +98,24 @@ export function VirtualizedSettingsList<TEntry extends IVirtualizedSettingsEntry
       return;
     }
     if (!canVirtualize) {
-      const target = Array.from(fallbackContainer.current?.children ?? []).find(
-        (element) => (element as HTMLElement).dataset.settingsEntryId === navigationRequest.sectionId,
-      );
-      (target as HTMLElement | undefined)?.scrollIntoView({
-        behavior: navigationRequest.behavior,
-        block: 'start',
-      });
-      onNavigationComplete?.(navigationRequest.requestId);
+      const alignFallbackTarget = (attempt: number) => {
+        const target = Array.from(fallbackContainer.current?.children ?? []).find(
+          (element) => (element as HTMLElement).dataset.settingsEntryId === navigationRequest.sectionId,
+        );
+        const scrollViewport = fallbackContainer.current?.parentElement;
+        if (target && scrollViewport) {
+          const offset = target.getBoundingClientRect().top - scrollViewport.getBoundingClientRect().top;
+          scrollViewport.scrollTop += offset;
+        }
+        if (attempt < 5) {
+          settleFrame.current = requestAnimationFrame(() => {
+            alignFallbackTarget(attempt + 1);
+          });
+        } else {
+          onNavigationComplete?.(navigationRequest.requestId);
+        }
+      };
+      alignFallbackTarget(0);
       return;
     }
     list?.scrollToRow({
@@ -130,19 +144,22 @@ export function VirtualizedSettingsList<TEntry extends IVirtualizedSettingsEntry
 
   if (!canVirtualize) {
     return (
-      <div ref={fallbackContainer}>
-        {entries.map((entry) => (
-          <div key={entry.id} data-settings-entry-id={entry.id}>
-            {renderEntry(entry)}
-          </div>
-        ))}
-      </div>
+      <FallbackViewport data-settings-scroll-viewport='true'>
+        <div ref={fallbackContainer}>
+          {entries.map((entry) => (
+            <div key={entry.id} data-settings-entry-id={entry.id}>
+              {renderEntry(entry)}
+            </div>
+          ))}
+        </div>
+      </FallbackViewport>
     );
   }
 
   return (
     <Viewport>
       <List
+        data-settings-scroll-viewport='true'
         defaultHeight={800}
         listRef={setList}
         rowComponent={SettingsRow<TEntry>}

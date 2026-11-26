@@ -11,6 +11,19 @@ export const safeModeHash = '#:safe';
 export const getDefaultHTTPServerIP = (port: number) => `http://${defaultServerIP}:${port}`;
 export const getDefaultTidGiUrl = (workspaceID: string) => `tidgi://${workspaceID}`;
 export const getTiddlerTidGiUrl = (workspaceID: string, tiddlerTitle: string) => `${getDefaultTidGiUrl(workspaceID)}/${tiddlerTitle}`;
+
+/** Compare URL hosts using browser semantics without changing opaque workspace IDs. */
+export function isTidGiUrlForWorkspace(url: string | URL, workspaceID: string): boolean {
+  try {
+    const parsed = typeof url === 'string' ? new URL(url) : url;
+    return parsed.protocol === 'tidgi:' &&
+      parsed.host.toLowerCase() === workspaceID.toLowerCase() &&
+      parsed.username === '' && parsed.password === '';
+  } catch {
+    return false;
+  }
+}
+
 const tidGiUrlRegex = /^tidgi:\/\/([\da-f-]+)\/([\da-f-]+)$/i;
 export const getInfoFromTidGiUrl = (tidGiUrl: string) => {
   const match = tidGiUrl.match(tidGiUrlRegex);
@@ -21,23 +34,6 @@ export const getInfoFromTidGiUrl = (tidGiUrl: string) => {
   }
   return { workspaceID: '', tiddlerTitle: '' };
 };
-
-/**
- * Extract workspace ID from tidgi:// protocol URL (used in WebContents)
- * @param url The URL to extract workspace ID from
- * @returns The workspace ID or undefined if not a valid tidgi:// URL
- * @example
- * ```ts
- * getWorkspaceIdFromUrl('tidgi://workspace-123') // 'workspace-123'
- * getWorkspaceIdFromUrl('tidgi://workspace-123/SomeTiddler') // 'workspace-123'
- * getWorkspaceIdFromUrl('http://localhost:3000/wiki/123/') // undefined
- * ```
- */
-export function getWorkspaceIdFromUrl(url: string): string | undefined {
-  // Match tidgi://workspace-id or tidgi://workspace-id/path
-  const match = url.match(/^tidgi:\/\/([^/]+)/);
-  return match?.[1];
-}
 
 /**
  * Extract tiddler title from tidgi:// protocol URL with hash

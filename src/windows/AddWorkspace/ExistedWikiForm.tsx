@@ -24,7 +24,7 @@ export function ExistedWikiForm({
   const [autoFillNote, setAutoFillNote] = useState<string | undefined>();
 
   // Fetch all tags from main wiki for autocomplete suggestions
-  const availableTags = useAvailableTags(form.mainWikiToLink.id, !isCreateMainWorkspace);
+  const availableTags = useAvailableTags(form.mainWikiSelection.id, !isCreateMainWorkspace);
 
   const tagHelperText = tagInputValue.trim().length > 0
     ? t('AddWorkspace.TagNameInputWarning')
@@ -37,10 +37,10 @@ export function ExistedWikiForm({
     wikiFolderNameSetter,
     parentFolderLocation,
     parentFolderLocationSetter,
-    mainWikiToLink,
+    mainWikiSelection,
     wikiFolderName,
-    mainWikiToLinkIndex,
-    mainWikiToLinkSetter,
+    mainWikiSelectionIndex,
+    mainWikiSelectionSetter,
     mainWorkspaceList,
     tagNames,
     tagNamesSetter,
@@ -83,7 +83,7 @@ export function ExistedWikiForm({
               ws => isWikiWorkspace(ws) && ws.id === config.mainWikiID,
             );
             if (match !== undefined && isWikiWorkspace(match)) {
-              mainWikiToLinkSetter({ wikiFolderLocation: match.wikiFolderLocation, port: match.port, id: match.id });
+              mainWikiSelectionSetter({ wikiFolderLocation: match.wikiFolderLocation, port: match.port, id: match.id });
             }
           }
           setAutoFillNote(t('AddWorkspace.FilledFromTidgiConfig'));
@@ -94,7 +94,7 @@ export function ExistedWikiForm({
         setAutoFillNote(undefined);
       }
     },
-    [useTidgiConfig, wikiFolderNameSetter, parentFolderLocationSetter, isCreateMainWorkspaceSetter, tagNamesSetter, mainWikiToLinkSetter, mainWorkspaceList, t],
+    [useTidgiConfig, wikiFolderNameSetter, parentFolderLocationSetter, isCreateMainWorkspaceSetter, tagNamesSetter, mainWikiSelectionSetter, mainWorkspaceList, t],
   );
   return (
     <CreateContainer elevation={2} square>
@@ -149,17 +149,17 @@ export function ExistedWikiForm({
         <>
           <SoftLinkToMainWikiSelect
             select
-            error={errorInWhichComponent.mainWikiToLink}
+            error={errorInWhichComponent.mainWikiSelection}
             label={t('AddWorkspace.MainWorkspaceLocation')}
-            helperText={mainWikiToLink.wikiFolderLocation &&
+            helperText={mainWikiSelection.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${mainWikiToLink.wikiFolderLocation}`}
-            value={mainWikiToLinkIndex}
+                    ${mainWikiSelection.wikiFolderLocation}`}
+            value={mainWikiSelectionIndex}
             onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = Number(event.target.value);
               const selectedWorkspace = mainWorkspaceList[index];
               if (selectedWorkspace && isWikiWorkspace(selectedWorkspace)) {
-                mainWikiToLinkSetter({
+                mainWikiSelectionSetter({
                   wikiFolderLocation: selectedWorkspace.wikiFolderLocation,
                   port: selectedWorkspace.port,
                   id: selectedWorkspace.id,

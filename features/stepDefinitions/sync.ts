@@ -80,7 +80,13 @@ When('I create a bare git repository at {string}', async function(this: Applicat
 
   // Create bare repository with main as default branch (matching TidGi's default)
   await fs.ensureDir(actualPath);
-  await gitExec(['init', '--bare', '--initial-branch=main'], actualPath);
+  const initialized = await gitExec(['init', '--bare', '--initial-branch=main'], actualPath);
+  if (initialized.exitCode !== 0) throw new Error(`Failed to initialize test remote: ${initialized.stderr}`);
+  if (process.platform === 'win32') {
+    // receive-pack creates long quarantine/pack paths beneath this isolated fixture.
+    const configured = await gitExec(['config', 'core.longpaths', 'true'], actualPath);
+    if (configured.exitCode !== 0) throw new Error(`Failed to configure test remote paths: ${configured.stderr}`);
+  }
 });
 
 /**

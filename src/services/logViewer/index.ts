@@ -5,6 +5,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ILogEntryReference, ILogEntrySummary, ILogPage, ILogPageCursor, ILogSource, ILogViewerService } from './interface';
 
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error && typeof error.code === 'string';
+}
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const FILE_PATTERN = /^(.*?)(?:\.(\d+))?\.log$/;
 const READ_BLOCK_SIZE = 64 * 1024;
@@ -65,8 +69,10 @@ export class LogViewerService implements ILogViewerService {
         .filter(entry => entry.isDirectory() && DATE_PATTERN.test(entry.name))
         .map(entry => entry.name)
         .sort((left, right) => right.localeCompare(left));
-    } catch {
-      return [];
+    } catch (error: unknown) {
+      const code = isNodeError(error) ? error.code : undefined;
+      if (code !== undefined && ['ENOENT', 'ENOTDIR'].includes(code)) return [];
+      throw error;
     }
   }
 
@@ -77,8 +83,10 @@ export class LogViewerService implements ILogViewerService {
       let files: string[];
       try {
         files = await fs.readdir(directory);
-      } catch {
-        return;
+      } catch (error: unknown) {
+        const code = isNodeError(error) ? error.code : undefined;
+        if (code !== undefined && ['ENOENT', 'ENOTDIR'].includes(code)) return;
+        throw error;
       }
       const components = new Set(files.map(file => FILE_PATTERN.exec(file)?.[1]).filter((value): value is string => value !== undefined));
       for (const component of components) {
@@ -98,8 +106,9 @@ export class LogViewerService implements ILogViewerService {
     let workspaceDirectories: string[] = [];
     try {
       workspaceDirectories = (await fs.readdir(workspaceRoot, { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => entry.name);
-    } catch {
-      // No workspace logs for this date.
+    } catch (error: unknown) {
+      const code = isNodeError(error) ? error.code : undefined;
+      if (code === undefined || !['ENOENT', 'ENOTDIR'].includes(code)) throw error;
     }
     await Promise.all(workspaceDirectories.map(async workspaceID => {
       await addDirectory(path.join(workspaceRoot, workspaceID), { kind: 'workspace', workspaceID });

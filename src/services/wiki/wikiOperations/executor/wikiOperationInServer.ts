@@ -4,10 +4,24 @@
  */
 
 import { WikiChannel } from '@/constants/channels';
+import path from 'node:path';
 import type { ITiddlerFields, ITiddlyWiki, Tiddler } from 'tiddlywiki';
+import { resolveFolderTiddlerStoragePath } from '../../wikiWorker/folderTiddlerLoader';
 import { wikiOperationScripts } from './scripts/common';
 
 export type IWorkerWikiOperations = typeof wikiOperationsInWikiWorker.wikiOperationsInServer;
+
+type WikiOperationFunction = (...arguments_: never[]) => unknown;
+
+function invokeWikiOperation<Operation extends WikiOperationFunction>(
+  operation: Operation,
+  arguments_: Parameters<Operation>,
+): ReturnType<Operation> {
+  // Reflect.apply is the only runtime operation that can invoke a function
+  // selected from a heterogeneous, validated operation map. Its generic
+  // return is tied to the same Operation type used for Parameters above.
+  return Reflect.apply(operation, undefined, arguments_) as ReturnType<Operation>;
+}
 
 /**
  * Similar to src/preload/wikiOperation.ts , but runs on the server side.
@@ -65,7 +79,33 @@ export class WikiOperationsInWikiWorker {
       const tiddler: Tiddler = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddler](title)) as Promise<Tiddler>);
       return tiddler;
     },
-    [WikiChannel.runFilter]: async (filter: string) => {
+    [WikiChannel.runFilter]: async (filter: string, scope?: { wikiFolderLocation: string; excludedWikiFolderLocations: string[] }) => {
+      if (scope) {
+        await this.waitForWikiOperationsInWikiWorkerAvailable();
+        const storagePath = resolveFolderTiddlerStoragePath(scope.wikiFolderLocation);
+        const excludedPaths = scope.excludedWikiFolderLocations.map(resolveFolderTiddlerStoragePath);
+        const isInside = (folder: string, file: string): boolean => {
+          const relative = path.relative(folder, file);
+          return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+        };
+        const titles: string[] = [];
+        const scopedWiki = new this.wikiInstance.Wiki({ enableIndexers: [] });
+        for (const [title, info] of Object.entries(this.wikiInstance.boot.files)) {
+          const filePath = info.filepath;
+          if (!isInside(storagePath, filePath) || excludedPaths.some(folder => isInside(storagePath, folder) && isInside(folder, filePath))) continue;
+          const tiddler = this.wikiInstance.wiki.getTiddler(title);
+          if (tiddler) {
+            titles.push(title);
+            scopedWiki.addTiddler(tiddler);
+          }
+        }
+        // Limit and sort operate on the mounted child's source. A scoped Wiki also
+        // keeps source-resetting operators such as all[tiddlers] within that child.
+        const results = scopedWiki.filterTiddlers(filter, undefined, scopedWiki.makeTiddlerIterator(titles));
+        const allowed = new Set(titles);
+        const filterErrorPrefix = `${this.wikiInstance.language.getString('Error/Filter', { variables: { title: '' } })}:`;
+        return results.filter(title => allowed.has(title) || title.startsWith(filterErrorPrefix));
+      }
       const filterResult: string[] = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.runFilter](filter)) as Promise<string[]>);
       return filterResult;
     },
@@ -104,16 +144,15 @@ export class WikiOperationsInWikiWorker {
   public wikiOperation<OP extends keyof typeof this.wikiOperationsInServer>(
     operationType: OP,
     ...arguments_: Parameters<IWorkerWikiOperations[OP]>
-  ): undefined | ReturnType<IWorkerWikiOperations[OP]> {
+  ): ReturnType<IWorkerWikiOperations[OP]> {
     if (typeof this.wikiOperationsInServer[operationType] !== 'function') {
       throw new TypeError(`${operationType} gets no useful handler`);
     }
     if (!Array.isArray(arguments_)) {
       throw new TypeError(`${JSON.stringify((arguments_ as unknown) ?? '')} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
-    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-
-    return this.wikiOperationsInServer[operationType]<T>(...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>;
+    const operation = this.wikiOperationsInServer[operationType];
+    return invokeWikiOperation(operation, arguments_);
   }
 }
 

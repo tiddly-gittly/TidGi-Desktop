@@ -1,9 +1,9 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { AgentChannel } from '@/constants/channels';
-import { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
-import { BehaviorSubject } from 'rxjs';
-import { TabItem } from '../../pages/Agent/types/tab';
+import type { TabCloseDirection } from '@/pages/Agent/store/tabStore/types';
+import type { BehaviorSubject } from 'rxjs';
+import type { TabItem } from '../../pages/Agent/types/tab';
 
 /**
  * Agent Browser Service interface
@@ -48,6 +48,8 @@ export interface IAgentBrowserService {
    * @param data Partial tab data to update
    */
   updateTab(tabId: string, data: Partial<TabItem>): Promise<void>;
+  /** Atomically clear one still-matching pending initial chat payload. */
+  acknowledgeInitialMessage(tabId: string, agentId: string, expectedMessage: string): Promise<boolean>;
 
   /**
    * Close tab by ID
@@ -107,6 +109,7 @@ export const AgentBrowserServiceIPCDescriptor = {
     setActiveTab: ProxyPropertyType.Function,
     addTab: ProxyPropertyType.Function,
     updateTab: ProxyPropertyType.Function,
+    acknowledgeInitialMessage: ProxyPropertyType.Function,
     closeTab: ProxyPropertyType.Function,
     closeTabs: ProxyPropertyType.Function,
     pinTab: ProxyPropertyType.Function,

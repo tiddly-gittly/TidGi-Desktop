@@ -4,7 +4,7 @@ import { configure } from '@testing-library/dom';
 import './__mocks__/window';
 
 // DOM-specific setup – only runs in jsdom environment (when document is available).
-// In node environment (e.g. features/**/*.test.ts with environmentMatchGlobs), these are skipped.
+// Files declaring @vitest-environment node skip this DOM setup.
 if (typeof document !== 'undefined') {
   configure({ computedStyleSupportsPseudoElements: false });
 
@@ -24,6 +24,16 @@ if (typeof document !== 'undefined') {
     (window as unknown as Record<string, unknown>).cancelIdleCallback = (id: number) => {
       window.clearTimeout(id);
     };
+  }
+
+  // @assistant-ui/react uses ResizeObserver — provide a stub for jsdom
+  if (typeof window.ResizeObserver === 'undefined') {
+    class ResizeObserverStub {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    window.ResizeObserver = ResizeObserverStub;
   }
 }
 
@@ -102,6 +112,11 @@ vi.mock('electron', () => {
     // Also provide named export `app` to satisfy `import { app } from 'electron'`
     app: mockApp,
     net: { fetch: vi.fn() },
+    safeStorage: {
+      isEncryptionAvailable: () => true,
+      encryptString: (value: string) => Buffer.from(`encrypted:${value}`, 'utf8'),
+      decryptString: (value: Buffer) => value.toString('utf8').replace(/^encrypted:/, ''),
+    },
   };
 });
 

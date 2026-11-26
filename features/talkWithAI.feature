@@ -47,11 +47,10 @@ Feature: Talk with AI from Wiki Selection
     
     # Part 3: Create new tab when starting from regular chat
     When I click on a "agent workspace button" element with selector "[data-testid='workspace-agent']"
-    When I click on "new tab button and search input and agent suggestion" elements with selectors:
+    When I click on "new chat button" elements with selectors:
       | element description | selector                                                      |
       | new tab button      | [data-tab-id='new-tab-button']                                |
-      | search input        | .aa-Input                                                     |
-      | agent suggestion    | [data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper |
+    Then I should see a "chat input" element with selector "[data-testid='agent-message-input']"
     When I send ask AI with selection message with text "First question" and workspace "wiki"
     Then I should see a "split view container" element with selector "[data-testid='split-view-container']"
     # Should see only 2 messages (new tab was created, not reused)
@@ -60,8 +59,6 @@ Feature: Talk with AI from Wiki Selection
     # Part 4: Verify split view doesn't interfere with regular chat
     # Create another regular chat tab (split into individual clicks for CI reliability)
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I click on a "search input" element with selector ".aa-Input"
-    And I click on an "agent suggestion" element with selector "[data-autocomplete-source-id='agentsSource'] .aa-ItemWrapper"
     # Now in regular chat tab - split view and browser view should not be visible
     Then I should not see a "split view container" element with selector "[data-testid='split-view-container']"
     And I confirm the "main" window browser view is not positioned within visible window bounds
@@ -87,10 +84,10 @@ Feature: Talk with AI from Wiki Selection
     # Create a new tiddler with wikitext syntax
     When I execute TiddlyWiki code in browser view: "$tw.wiki.addTiddler(new $tw.Tiddler({title: 'TestAttachmentTiddler', text: '!!WikiTestHeader\\n\\nThis is a test with WikiTestContentMarker123', type: 'text/vnd.tiddlywiki'}))"
     # Navigate to agent workspace and create agent
-    When I click on "agent workspace button and create default agent button" elements with selectors:
+    When I click on "agent workspace button and new chat button" elements with selectors:
       | element description         | selector                                    |
       | agent workspace button      | [data-testid='workspace-agent']             |
-      | create default agent button | [data-testid='create-default-agent-button'] |
+      | new chat button | [data-tab-id='new-tab-button'] |
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     # Click attachment button to open autocomplete
     When I click on a "attach button" element with selector "[data-testid='agent-attach-button']"
@@ -127,10 +124,6 @@ Feature: Talk with AI from Wiki Selection
     # Navigate to agent workspace and open agent chat
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
-    And I should see a "search interface" element with selector ".aa-Autocomplete"
-    When I click on a "search input box" element with selector ".aa-Input"
-    And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    When I click on an "agent suggestion" element with selector '[data-autocomplete-source-id="agentsSource"] .aa-ItemWrapper'
     And I should see a "message input box" element with selector "[data-testid='agent-message-input']"
     
     # Click attachment button to open autocomplete

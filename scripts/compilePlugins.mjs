@@ -17,21 +17,29 @@ const __dirname = path.dirname(__filename);
 
 /**
  * esbuild plugin to handle native .node files and their parent packages
- * Rewrites require() calls for .node files to use absolute paths from node_modules
+ * Rewrites require() calls for .node files to use an absolute path supplied by
+ * the main process.
  */
 const nativeNodeModulesPlugin = {
   name: 'native-node-modules',
   setup(build) {
-    // Rewrite nsfw's require() to use node_modules path
+    // Rewrite nsfw's require() to use the main-process binary path
     build.onLoad({ filter: /nsfw[/\\]js[/\\]src[/\\]index\.js$/ }, async (args) => {
       let contents = await fs.readFile(args.path, 'utf8');
 
-      // Replace relative path with require from node_modules
-      // Original: require('../../build/Release/nsfw.node')
-      // New: require('nsfw/build/Release/nsfw.node')
+      // The wiki worker may boot a wiki-local TiddlyWiki installation.  A bare
+      // `require('nsfw/...')` from the bundled plugin then resolves against that
+      // installation instead of TidGi's packaged dependency tree.  Resolve the
+      // native module from the absolute path supplied by the main process.
       contents = contents.replace(
-        /require\(['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\)/g,
-        "require('nsfw/build/Release/nsfw.node')",
+        /require\(\s*['"]\.\.\/\.\.\/build\/Release\/nsfw\.node['"]\s*\)/g,
+        `(() => {
+          const binaryPath = process.env['TIDGI_NSFW_BINARY_PATH'];
+          if (!binaryPath || !path.isAbsolute(binaryPath)) {
+            throw new Error('TIDGI_NSFW_BINARY_PATH must be an absolute path to nsfw.node');
+          }
+          return require(binaryPath);
+        })()`,
       );
 
       return {
@@ -88,6 +96,11 @@ const PLUGINS = [
 const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const ESBUILD_CONFIG = {
   logLevel: 'info',
+  logOverride: {
+    // Locale resources are bundled as JSON. Duplicate keys silently shadow
+    // earlier translations at runtime, so treat them as a build failure.
+    'duplicate-object-key': 'error',
+  },
   bundle: true,
   platform: 'node', // Use node so we have `exports`, otherwise `module.adaptorClass` will be undefined
   minify: process.env.NODE_ENV === 'production',
@@ -99,7 +112,7 @@ const ESBUILD_CONFIG = {
 /**
  * Filter function to exclude TypeScript files when copying
  */
-const filterNonTsFiles = (src) => !src.endsWith('.ts');
+const filterNonTsFiles = (src) => !/\.tsx?$/.test(src);
 
 /**
  * Get all possible output directories for a plugin
@@ -183,10 +196,9 @@ async function copyNonTsFiles(plugin, outDirs) {
 /**
  * Build a single plugin to all output directories
  */
-async function buildPlugin(plugin) {
+async function buildPlugin(plugin, outDirs) {
   console.log(`\nBuilding plugin: ${plugin.name}`);
 
-  const outDirs = getPluginOutputDirs(plugin.name);
   console.log(`  Output directories: ${outDirs.length}`);
 
   // Prepare output directories
@@ -204,18 +216,19 @@ async function buildPlugin(plugin) {
 /**
  * Main function to build all plugins
  */
-async function main() {
+export async function compilePlugins(outputDirectories = getPluginOutputDirs) {
   console.log('Starting plugin compilation...\n');
 
   for (const plugin of PLUGINS) {
-    await buildPlugin(plugin);
+    await buildPlugin(plugin, outputDirectories(plugin.name));
   }
 
   console.log('\n✓ All plugins compiled successfully!');
 }
 
-// Run main function
-main().catch((error) => {
-  console.error('Error compiling plugins:', error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  compilePlugins().catch((error) => {
+    console.error('Error compiling plugins:', error);
+    process.exit(1);
+  });
+}

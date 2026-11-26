@@ -20,10 +20,9 @@ Feature: Create New Agent Workflow
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open new tab and navigate to CreateNewAgent
-    When I click on "new tab button and create new agent button" elements with selectors:
-      | element description     | selector                                |
-      | new tab button          | [data-tab-id='new-tab-button']          |
-      | create new agent button | [data-testid='create-new-agent-button'] |
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
+    And I click on a "create new agent button" element with selector "[data-testid='create-new-agent-button']"
     # Step 2: Verify first step content (Setup Agent: Name + Template)
     Then I should see "step title and search input and agent name input field" elements with selectors:
       | element description     | selector                               |
@@ -34,8 +33,8 @@ Feature: Create New Agent Workflow
     When I click on a "search input" element with selector ".aa-Input"
     # Wait for autocomplete panel to load with templates (async operation in CI)
     And I should see an "autocomplete panel" element with selector ".aa-Panel"
-    # Using description text to select specific agent, more precise than just name
-    When I click on a "Example Agent template" element with selector '.aa-Item[role="option"]:has-text("General-purpose TiddlyWiki AI assistant")'
+    # Scope the selection to the template source and use the canonical builtin profile name.
+    When I click on a "General assistant template" element with selector '[data-autocomplete-source-id="templateAgentsSource"] .aa-ItemWrapper:has-text("通用助手")'
     # Fill in agent name while still in step 1
     When I clear text in "agent name input" element with selector "[data-testid='agent-name-input-field']"
     When I type "我的代码助手" in "agent name input" element with selector "[data-testid='agent-name-input-field']"
@@ -53,13 +52,11 @@ Feature: Create New Agent Workflow
     When I click on a "first config tab" element with selector "[data-testid='prompt-config-form'] .MuiTab-root:first-of-type"
     And I should see a "visible tab panel" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
-    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
-    # The editable system prompt is the first child of the main prompt group
-    When I click on a "expand main prompt child button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
-    # Click the system prompt text field to focus it for editing
-    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id*='_prompts_0_children_0_text']:not([readonly])"
-    When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id*='_prompts_0_children_0_text']:not([readonly])"
-    When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id*='_prompts_0_children_0_text']:not([readonly])"
+    When I click on a "expand array item button" element with selector "[data-testid='prompt-config-form'] [role='tabpanel']:not([hidden]) [data-testid='prompt-array-item-toggle-0']"
+    # The canonical builtin profile stores its editable system prompt directly on prompts[0].
+    When I click on a "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
+    When I clear text in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
+    When I type "你是一个专业的代码助手，请用中文回答编程问题。" in "system prompt text field" element with selector "[data-testid='prompt-config-form'] textarea[id$='_prompts_0_text']:not([readonly])"
     # Step 5: Advance to step 3 (Immediate Use)
     When I click on a "next button" element with selector "[data-testid='next-button']"
     # Step 6: Verify third step content (Immediate Use with chat interface)
@@ -69,10 +66,8 @@ Feature: Create New Agent Workflow
     When I type "帮我写个 Hello World" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Verify the agent responds in the preview interface
-    Then I should see "user message and assistant message" elements with selectors:
-      | element description | selector                           |
-      | user message        | *:has-text('帮我写个 Hello World') |
-      | assistant message   | *:has-text('作为代码助手')         |
+    Then I should see "帮我写个 Hello World" text in "[data-memeloop-turn-anchor='true']" or its frames
+    And I should see "作为代码助手" text in "[data-testid='assistant-message']" or its frames
     And the last AI request should contain system prompt "你是一个专业的代码助手，请用中文回答编程问题。"
     # Step 8: Save and start using (after testing in step 3)
     When I click on a "save and use button" element with selector "button:has-text('保存并使用智能体')"
@@ -93,7 +88,8 @@ Feature: Create New Agent Workflow
     When I click on an "agent workspace button" element with selector "[data-testid='workspace-agent']"
     And I should see a "new tab button" element with selector "[data-tab-id='new-tab-button']"
     # Step 1: Open new tab to access create default agent card
-    When I click on a "new tab button" element with selector "[data-tab-id='new-tab-button']"
+    When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
+    And I click on an "agent quick access" element with selector "[data-testid='tab-list-agent-management']"
     # Step 2: Right-click on create default agent card to open context menu
     When I right-click on a "create default agent card" element with selector "[data-testid='create-default-agent-button']"
     # Step 3: Click on edit definition option in context menu
@@ -119,7 +115,7 @@ Feature: Create New Agent Workflow
     When I click on a "first config tab" element with selector "[data-testid='edit-agent-prompt-form'] .MuiTab-root:first-of-type"
     And I should see a "visible tab panel" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden])"
     # Expand array item to show the system prompt text field
-    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button[title*='展开'], [data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) button svg[data-testid='ExpandMoreIcon']"
+    When I click on a "expand array item button" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) [data-testid='prompt-array-item-toggle-0']"
     # Click the system prompt text field to focus it for editing
     When I click on a "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
     When I clear text in "system prompt text field" element with selector "[data-testid='edit-agent-prompt-form'] [role='tabpanel']:not([hidden]) textarea[id*='_text']:not([readonly])"
@@ -132,10 +128,8 @@ Feature: Create New Agent Workflow
     When I type "你好，请介绍一下自己" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Verify the agent responds in the embedded chat
-    Then I should see "user message and assistant message" elements with selectors:
-      | element description | selector                               |
-      | user message        | *:has-text('你好，请介绍一下自己') |
-      | assistant message   | *:has-text('已编辑的代码助手')     |
+    Then I should see "你好，请介绍一下自己" text in "[data-memeloop-turn-anchor='true']" or its frames
+    And I should see "已编辑的代码助手" text in "[data-testid='assistant-message']" or its frames
     # Verify that the server received the request with the modified system prompt
     And the last AI request should contain system prompt "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。"
     # Step 8: Save the edited agent definition
