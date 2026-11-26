@@ -166,16 +166,6 @@ When('I scroll a(n) {string} element with selector {string} to the top', async f
 });
 
 When(
-  'I click on a(n) {string} element with selector {string} whose {string} matches the {string} of {string}',
-  async function(this: ApplicationWorld, _description: string, selector: string, attribute: string, sourceAttribute: string, sourceSelector: string) {
-    assert(this.currentWindow);
-    const value = await this.currentWindow.locator(sourceSelector).first().getAttribute(sourceAttribute);
-    assert(value, `Missing ${sourceAttribute} on ${sourceSelector}`);
-    await this.currentWindow.locator(`${selector}[${attribute}=${JSON.stringify(value)}]`).click({ timeout: UI_ACTION_TIMEOUT });
-  },
-);
-
-When(
   'I remember the text and {string} attribute of elements with selector {string} as {string}',
   async function(this: ApplicationWorld, attribute: string, selector: string, name: string) {
     assert(this.currentWindow);

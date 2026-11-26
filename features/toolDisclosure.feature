@@ -50,14 +50,11 @@ Feature: Nested tool work disclosure
     When I click on a "tool group summary" element with selector "[data-testid='tool-group-disclosure'] > summary"
     Then I should see a "second restored tool command" element with selector "[data-testid='tool-group-disclosure'] [data-testid='tool-disclosure'] >> nth=1"
     When I click on a "collapse completed work" element with selector "[data-testid='work-disclosure'] > summary"
-    And I click on a "tool timeline marker" element with selector "[data-timeline-message-id]" whose "data-timeline-message-id" matches the "data-memeloop-message-id" of "[data-testid='tool-group-disclosure'] [data-testid='message-bubble']:has([data-testid='assistant-message'])"
-    Then I should see "revealed disclosure levels" elements with selectors:
-      | element description | selector |
-      | work | [data-testid='work-disclosure'][open] |
-      | group | [data-testid='tool-group-disclosure'][open] |
-      | command | [data-testid='tool-group-disclosure'] [data-testid='message-bubble']:focus [data-testid='tool-disclosure'][open] |
-    And the element with selector "[data-testid='tool-group-disclosure'] [data-testid='message-bubble']:focus" should lie inside viewport "[data-testid='conversation-viewport']"
-    And I capture the current window as "tools-<theme>-timeline-reveal.png"
+    Then there should be between 1 and 1 elements matching "[data-testid='conversation-timeline'] [aria-posinset]" with distinct "aria-posinset" attributes
+    When I click on a "turn marker" element with selector "[data-testid='conversation-timeline'] [aria-posinset='1']"
+    Then I should see a "selected turn marker" element with selector "[data-testid='conversation-timeline'] [aria-posinset='1'][aria-current='location']"
+    And the element with selector "[data-memeloop-turn-anchor='true']:focus" should lie inside viewport "[data-testid='conversation-viewport']"
+    And I should see a "collapsed completed work" element with selector "[data-testid='work-disclosure']:not([open])"
 
     Examples:
       | theme |
