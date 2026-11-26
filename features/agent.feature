@@ -9,7 +9,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I have started the mock OpenAI server without rules
     Then I launch the TidGi application
     And I wait for the page to load completely
-    And I should see a "page body" element with selector "body"
+    And I wait for "workspace initialization" log marker "[test-id-ALL_WORKSPACE_VIEW_INITIALIZED]"
     # Navigate to agent workspace for all scenarios
     And I click on "agent workspace button and new tab button" elements with selectors:
       | element description | selector                        |
