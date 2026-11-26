@@ -66,10 +66,8 @@ Feature: Create New Agent Workflow
     When I type "帮我写个 Hello World" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Verify the agent responds in the preview interface
-    Then I should see "user message and assistant message" elements with selectors:
-      | element description | selector                           |
-      | user message        | *:has-text('帮我写个 Hello World') |
-      | assistant message   | *:has-text('作为代码助手')         |
+    Then I should see "帮我写个 Hello World" text in "[data-memeloop-turn-anchor='true']" or its frames
+    And I should see "作为代码助手" text in "[data-testid='assistant-message']" or its frames
     And the last AI request should contain system prompt "你是一个专业的代码助手，请用中文回答编程问题。"
     # Step 8: Save and start using (after testing in step 3)
     When I click on a "save and use button" element with selector "button:has-text('保存并使用智能体')"
@@ -130,10 +128,8 @@ Feature: Create New Agent Workflow
     When I type "你好，请介绍一下自己" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Verify the agent responds in the embedded chat
-    Then I should see "user message and assistant message" elements with selectors:
-      | element description | selector                               |
-      | user message        | *:has-text('你好，请介绍一下自己') |
-      | assistant message   | *:has-text('已编辑的代码助手')     |
+    Then I should see "你好，请介绍一下自己" text in "[data-memeloop-turn-anchor='true']" or its frames
+    And I should see "已编辑的代码助手" text in "[data-testid='assistant-message']" or its frames
     # Verify that the server received the request with the modified system prompt
     And the last AI request should contain system prompt "你是一个经过编辑的专业代码助手，请用中文详细回答编程问题。"
     # Step 8: Save the edited agent definition
