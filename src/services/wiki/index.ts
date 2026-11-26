@@ -793,8 +793,7 @@ export class Wiki implements IWikiService {
     return new Observable((observer) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorkerEnsure(workspaceID);
-        const observable = worker.getWikiChangeObserver();
-        observable.subscribe(observer);
+        if (!observer.closed) worker.getWikiChangeObserver().subscribe(observer);
       };
       void getWikiChangeObserverIIFE().catch((error: unknown) => {
         observer.error(error);

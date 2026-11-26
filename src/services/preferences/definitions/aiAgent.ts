@@ -1,5 +1,19 @@
 import StorageIcon from '@mui/icons-material/Storage';
+import { z } from 'zod';
 import type { ISectionDefinition } from './types';
+
+const agentMessageFormatSchema = z.enum(['wikitext', 'markdown']);
+
+export const agentMessageFormatItem = {
+  type: 'preference-enum',
+  key: 'agentMessageFormat',
+  titleKey: 'Preference.AgentMessageFormat',
+  descriptionKey: 'Preference.AgentMessageFormatDescription',
+  ns: 'agent',
+  enumValues: agentMessageFormatSchema.options,
+  enumNames: ['Preference.FormatWikiText', 'Preference.FormatMarkdown'],
+  zod: agentMessageFormatSchema,
+} satisfies ISectionDefinition['items'][number];
 
 export const aiAgentSection: ISectionDefinition = {
   id: 'aiAgent',
@@ -7,6 +21,7 @@ export const aiAgentSection: ISectionDefinition = {
   ns: 'agent',
   Icon: StorageIcon,
   items: [
+    agentMessageFormatItem,
     {
       type: 'action',
       titleKey: 'Preference.AIAgentManage',

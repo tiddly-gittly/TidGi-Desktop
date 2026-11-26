@@ -415,6 +415,10 @@
   },
   "Preference": {
     "ModelAdvanced": "進階 API 與模型設定",
+    "AgentMessageFormat": "對話渲染格式",
+    "AgentMessageFormatDescription": "選擇訊息的顯示方式，並用於後續助理回覆。",
+    "FormatWikiText": "WikiText",
+    "FormatMarkdown": "Markdown",
     "AIAgent": "智慧體",
     "AIAgentDescription": "管理智慧體對話記錄資料庫",
     "AIAgentDescriptionDetail": "這裡可以查看和刪除智慧體對話記錄資料庫的大小和位置資訊",

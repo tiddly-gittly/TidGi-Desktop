@@ -37,19 +37,25 @@ Then(
   },
 );
 
-Then('I should see {string} text in {string} or its frames', async function(this: ApplicationWorld, text: string, selector: string) {
+Then(/^I should (see|no longer see) "([^"]+)" text in "([^"]+)" or its frames$/, async function(
+  this: ApplicationWorld,
+  expectation: string,
+  text: string,
+  selector: string,
+) {
   assert(this.currentWindow);
+  const roots = this.currentWindow.locator(selector);
+  const expected = expectation === 'see';
   await backOff(async () => {
-    const roots = this.currentWindow!.locator(selector);
     const hostVisible = await roots.filter({ hasText: text }).first().isVisible();
-    const frameVisible = await roots.locator('iframe').evaluateAll((frames, expected) =>
+    const frameVisible = hostVisible || await roots.locator('iframe').evaluateAll((frames, value) =>
       frames.some(frame => {
         if (!(frame instanceof HTMLIFrameElement)) return false;
         const box = frame.getBoundingClientRect();
-        return box.width > 0 && box.height > 0 && frame.contentDocument?.body.textContent?.includes(expected);
+        return box.width > 0 && box.height > 0 && frame.contentDocument?.body?.innerText.includes(value);
       }), text);
-    assert(hostVisible || frameVisible, `Visible text not found: ${text}`);
-  }, { numOfAttempts: 20, startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
+    assert.equal(frameVisible, expected, `Expected to ${expectation} “${text}” in ${selector}`);
+  }, { numOfAttempts: Math.ceil(UI_ASSERT_TIMEOUT / 100), startingDelay: 100, timeMultiple: 1, maxDelay: 100 });
 });
 
 Given('I clear the clipboard', async function(this: ApplicationWorld) {

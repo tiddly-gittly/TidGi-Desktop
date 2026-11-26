@@ -5,8 +5,11 @@ import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { MEME_LOOP_DATABASE_KEY } from '@/constants/database';
+import { agentMessageFormatItem } from '@services/preferences/definitions/aiAgent';
 import type { ICustomSectionProps } from '@services/preferences/definitions/types';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 import { Paper, SectionTitle } from '../PreferenceComponents';
+import { EnumItem } from '../SchemaRenderer';
 import { ScheduledTasksPreferences } from './components/ScheduledTasksPreferences';
 
 interface AgentDatabaseRecoveryService {
@@ -23,6 +26,7 @@ export async function clearAgentDatabase(
 
 export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
   const { t } = useTranslation('agent');
+  const preference = usePreferenceObservable();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [agentInfo, setAgentInfo] = useState<{ exists: boolean; size?: number; path?: string }>({ exists: false });
   useEffect(() => {
@@ -50,6 +54,7 @@ export function AIAgent(props: ICustomSectionProps): React.JSX.Element {
       <SectionTitle ref={props.sectionRef}>{t('Preference.AIAgent')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
+          {preference && <EnumItem item={agentMessageFormatItem} preference={preference} onNeedsRestart={props.onNeedsRestart} />}
           <ListItem>
             <ListItemText
               primary={t('Preference.AIAgentDescription')}

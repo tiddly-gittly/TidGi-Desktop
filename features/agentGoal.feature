@@ -21,8 +21,8 @@ Feature: Persistent agent goals
     Then I should see a "completed goal" element with selector "[role='dialog'] .MuiChip-label:has-text('已完成')"
     And I should see a "completion evidence" element with selector "[role='dialog'] p:has-text('GOAL_VERIFIED_TWO_ROUNDS')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
-    Then I should see a "first goal reply" element with selector "[data-testid='message-bubble']:has-text('GOAL_FIRST_ROUND_PROGRESS')"
-    And I should see a "final goal reply" element with selector "[data-testid='message-bubble']:has-text('GOAL_FINAL_RESULT')"
+    Then I should see "GOAL_FIRST_ROUND_PROGRESS" text in "[data-testid='message-bubble']" or its frames
+    And I should see "GOAL_FINAL_RESULT" text in "[data-testid='message-bubble']" or its frames
     When I reload the current window
     And I click on a "goal button" element with selector "button:has-text('目标')"
     Then I should see a "restored completion evidence" element with selector "[role='dialog'] p:has-text('GOAL_VERIFIED_TWO_ROUNDS')"
@@ -41,7 +41,7 @@ Feature: Persistent agent goals
     And I click on a "conversation tab" element with selector "[data-tab-id][data-tab-type='chat']"
     And I type "Run this workflow." in "message input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see a "workflow reply" element with selector "[data-testid='message-bubble']:has-text('MJS_CHAT_RESULT')"
+    Then I should see "MJS_CHAT_RESULT" text in "[data-testid='message-bubble']" or its frames
     And I should not see a "goal button" element with selector "button:has-text('目标')"
     When I click on a "tab list" element with selector "[data-testid='tab-list-button']"
     And I right-click on a "conversation tab" element with selector "[data-tab-id][data-tab-type='chat']"
@@ -57,9 +57,9 @@ Feature: Persistent agent goals
     And I click on a "start goal" element with selector "[role='dialog'] button:has-text('开始目标')"
     Then I should see a "script completion evidence" element with selector "[role='dialog'] p:has-text('MJS_GOAL_EVIDENCE')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
-    Then I should see a "script final reply" element with selector "[data-testid='message-bubble']:has-text('MJS_GOAL_RESULT')"
+    Then I should see "MJS_GOAL_RESULT" text in "[data-testid='message-bubble']" or its frames
     When I reload the current window
-    Then I should see a "restored script final reply" element with selector "[data-testid='message-bubble']:has-text('MJS_GOAL_RESULT')"
+    Then I should see "MJS_GOAL_RESULT" text in "[data-testid='message-bubble']" or its frames
 
   @agent @mockOpenAI @agentGoal
   Scenario: A streaming goal stays paused after reload and resumes to completion
@@ -71,7 +71,7 @@ Feature: Persistent agent goals
     When I click on a "goal button" element with selector "button:has-text('目标')"
     And I type "Verify pause and resume." in "goal objective" element with selector "[role='dialog'] textarea:not([readonly])"
     And I click on a "start goal" element with selector "[role='dialog'] button:has-text('开始目标')"
-    Then I should see a "streaming goal reply" element with selector "[data-testid='message-bubble']:has-text('GOAL_PAUSE_PROGRESS')"
+    Then I should see "GOAL_PAUSE_PROGRESS" text in "[data-testid='message-bubble']" or its frames
     When I click on a "pause goal" element with selector "[role='dialog'] button:has-text('暂停')"
     Then I should see a "paused goal" element with selector "[role='dialog'] .MuiChip-label:has-text('已暂停')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
@@ -81,7 +81,7 @@ Feature: Persistent agent goals
     When I click on a "resume goal" element with selector "[role='dialog'] button:has-text('继续')"
     Then I should see a "resumed completion evidence" element with selector "[role='dialog'] p:has-text('GOAL_RESUMED_EVIDENCE')"
     When I click on a "return to conversation" element with selector "[role='dialog'] button:has-text('返回')"
-    Then I should see a "resumed final reply" element with selector "[data-testid='message-bubble']:has-text('GOAL_RESUMED_RESULT')"
+    Then I should see "GOAL_RESUMED_RESULT" text in "[data-testid='message-bubble']" or its frames
 
   @agent @mockOpenAI @agentGoal @scheduled-execution
   Scenario: A scheduled message executes through the durable model runtime
@@ -89,7 +89,7 @@ Feature: Persistent agent goals
       | response | stream | embedding | toolName | toolArguments |
       | SCHEDULE_ACCEPTANCE_RESULT | false | | | |
     When I schedule a one-shot message for the current test conversation
-    Then I should see a "scheduled user message" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_REQUEST')"
-    And I should see a "scheduled final reply" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_RESULT')"
+    Then I should see "SCHEDULE_ACCEPTANCE_REQUEST" text in "[data-testid='message-bubble']" or its frames
+    And I should see "SCHEDULE_ACCEPTANCE_RESULT" text in "[data-testid='message-bubble']" or its frames
     When I reload the current window
-    Then I should see a "restored scheduled result" element with selector "[data-testid='message-bubble']:has-text('SCHEDULE_ACCEPTANCE_RESULT')"
+    Then I should see "SCHEDULE_ACCEPTANCE_RESULT" text in "[data-testid='message-bubble']" or its frames

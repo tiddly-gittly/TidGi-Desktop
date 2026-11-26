@@ -415,6 +415,10 @@
   },
   "Preference": {
     "ModelAdvanced": "API とモデルの詳細設定",
+    "AgentMessageFormat": "会話の表示形式",
+    "AgentMessageFormatDescription": "メッセージの表示と、アシスタントの返信に使う形式を選びます。",
+    "FormatWikiText": "WikiText",
+    "FormatMarkdown": "Markdown",
     "AIAgent": "エージェント",
     "AIAgentDescription": "AI Agentの対話記録データベースを管理する",
     "AIAgentDescriptionDetail": "ここではAI Agentの会話記録データベースのサイズと位置情報を確認および削除できます。",

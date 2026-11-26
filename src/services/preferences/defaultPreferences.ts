@@ -28,6 +28,7 @@ function getAnalyticsEnvironmentOverrides(): { analyticsEnabled: boolean; analyt
 const analyticsEnvironment = getAnalyticsEnvironmentOverrides();
 
 export const defaultPreferences: IPreferences = {
+  agentMessageFormat: 'wikitext',
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   alwaysOnTop: false,
   analyticsEnabled: analyticsEnvironment.analyticsEnabled,

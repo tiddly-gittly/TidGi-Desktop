@@ -415,6 +415,10 @@
   },
   "Preference": {
     "ModelAdvanced": "Дополнительные настройки API и модели",
+    "AgentMessageFormat": "Формат сообщений",
+    "AgentMessageFormatDescription": "Выберите формат отображения сообщений и оформления ответов ассистента.",
+    "FormatWikiText": "WikiText",
+    "FormatMarkdown": "Markdown",
     "AIAgent": "агент",
     "AIAgentDescription": "Управление базой данных записей диалогов AI Agent",
     "AIAgentDescriptionDetail": "Здесь можно просмотреть и удалить информацию о размере и местоположении базы данных записей диалогов AI Agent.",

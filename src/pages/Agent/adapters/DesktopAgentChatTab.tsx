@@ -460,17 +460,19 @@ function DesktopAgentChatView({
           <RenderedMessageContent
             message={message}
             isStreaming={isStreaming}
+            preferredFormat={preferences?.agentMessageFormat ?? 'wikitext'}
             renderHtml={conversationWorkspace.renderHtml}
+            wikiRevision={conversationWorkspace.wikiRevision}
             messageLabels={createDesktopMessageLabels(t)}
             onRenderError={error => {
-              void window.service.native.log('warn', 'Message rendering fell back to source', { error });
+              void window.service.native.log('warn', 'Chat message render error', { error });
             }}
             labels={{
               document: t('Chat.Rendering.Document'),
             }}
             onInternalLink={title => {
               void (async () => {
-                const workspaceId = conversationWorkspace.workspaceId ?? (await window.service.workspace.getActiveWorkspace())?.id;
+                const workspaceId = conversationWorkspace.renderWorkspaceId;
                 if (workspaceId) await window.service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, workspaceId, [title]);
               })();
             }}

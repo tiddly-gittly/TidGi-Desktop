@@ -181,6 +181,9 @@ function projectAgentRuntimeView(agent: AgentRuntimeView): AgentRuntimeView {
 
 @injectable()
 export class AgentInstanceService implements IAgentInstanceService {
+  @inject(serviceIdentifier.Preference)
+  private readonly preferenceService!: import('@services/preferences/interface').IPreferenceService;
+
   @inject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
@@ -742,6 +745,7 @@ export class AgentInstanceService implements IAgentInstanceService {
       this.memeLoopRuntime = new MemeLoopDesktopRuntime({
         agentInstanceService: this,
         agentDefinitionService: this.agentDefinitionService,
+        getMessageFormat: () => this.preferenceService.getPreferences().agentMessageFormat,
         externalAPIService: this.externalAPIService,
         deviceNetworkService: this.deviceNetworkService,
         notifyTransientMessage: (message) => this.publishConversationMessage(message, true),

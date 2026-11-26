@@ -508,6 +508,16 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
+  public async getActiveWikiWorkspaceId(): Promise<string | undefined> {
+    const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+    const active = await workspaceService.getActiveWorkspace();
+    if (active && isWikiWorkspace(active)) return active.isSubWiki ? active.mainWikiID ?? undefined : active.id;
+    if (this.lastNonPageWorkspaceID) return this.lastNonPageWorkspaceID;
+    const workspaces = await workspaceService.getWorkspacesAsList();
+    const wikis = workspaces.filter(workspace => isWikiWorkspace(workspace) && !workspace.isSubWiki && !workspace.hibernated);
+    if (wikis.length === 1) return wikis[0].id;
+  }
+
   public async setActiveWorkspaceView(nextWorkspaceID: string): Promise<void> {
     logger.debug('setActiveWorkspaceView', { nextWorkspaceID });
     const [oldActiveWorkspace, newWorkspace] = await Promise.all([
@@ -528,14 +538,11 @@ export class WorkspaceView implements IWorkspaceViewService {
     // Handle page workspace - only update workspace state, no view management needed
     if (newWorkspace.pageType) {
       logger.debug(`${nextWorkspaceID} is a page workspace, only updating workspace state.`);
+      // Keep the underlying wiki available to the agent while visiting page workspaces.
+      const previousWikiId = oldActiveWorkspace && isWikiWorkspace(oldActiveWorkspace) ? oldActiveWorkspace.id : undefined;
+      if (previousWikiId) this.lastNonPageWorkspaceID = previousWikiId;
       await container.get<IWorkspaceService>(serviceIdentifier.Workspace).setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
-      // Hide the previous real wiki's view (it must stay alive because the agent's webview needs the server).
-      // Record its ID so we can hibernate it when the user eventually switches to a different real wiki.
-      if (oldActiveWorkspace !== undefined && !oldActiveWorkspace.pageType && oldActiveWorkspace.id !== nextWorkspaceID) {
-        await this.hideWorkspaceView(oldActiveWorkspace.id);
-        this.lastNonPageWorkspaceID = oldActiveWorkspace.id;
-      }
-      // If we're chaining page→page, leave lastNonPageWorkspaceID unchanged (the deferred wiki is still pending).
+      if (previousWikiId) await this.hideWorkspaceView(previousWikiId);
       return;
     }
 

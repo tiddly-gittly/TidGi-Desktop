@@ -61,7 +61,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | SWITCHED_MODEL_REPLY | false |
     When I type "Verify the first route" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see a "first reply" element with selector "[data-testid='message-bubble']:has-text('FIRST_MODEL_REPLY')"
+    Then I should see "FIRST_MODEL_REPLY" text in "[data-testid='message-bubble']" or its frames
     And the last AI request should have parameters:
       | model | "test-model" |
     When I click on a "settings button" element with selector "#open-preferences-button"
@@ -79,7 +79,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I switch to "main" window
     And I type "Verify the new route" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see a "second reply" element with selector "[data-testid='message-bubble']:has-text('SWITCHED_MODEL_REPLY')"
+    Then I should see "SWITCHED_MODEL_REPLY" text in "[data-testid='message-bubble']" or its frames
     And the last AI request should have parameters:
       | model | "test-model-alternate" |
 
@@ -91,14 +91,14 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | UPDATED_TOPIC_REPLY | false |
     When I type "Plan the weekly review" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see a "first reply" element with selector "[data-testid='message-bubble']:has-text('OPENING_TITLE_REPLY')"
+    Then I should see "OPENING_TITLE_REPLY" text in "[data-testid='message-bubble']" or its frames
     When I click on a "generated opening title" element with selector "h6:text-is('Plan the weekly review')"
     And I clear text in "editable title" element with selector "input[aria-label='编辑对话标题']"
     And I type "Weekly review" in "editable title" element with selector "input[aria-label='编辑对话标题']"
     And I press "Enter" key
     When I type "Schedule the follow-up" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see a "second reply" element with selector "[data-testid='message-bubble']:has-text('UPDATED_TOPIC_REPLY')"
+    Then I should see "UPDATED_TOPIC_REPLY" text in "[data-testid='message-bubble']" or its frames
     And I should see a "title saved by the user" element with selector "h6:text-is('Weekly review')"
     When I click on a "generate title" element with selector "button[aria-label='生成标题']"
     Then I should see a "title from the latest topic" element with selector "h6:text-is('Schedule the follow-up')"
@@ -113,7 +113,7 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | PROMPT_HISTORY_ASSISTANT  | false  |           |             |                                                  |
     When I type "PROMPT_HISTORY_USER" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
-    Then I should see a "final assistant response" element with selector "[data-testid='message-bubble']:has-text('PROMPT_HISTORY_ASSISTANT')"
+    Then I should see "PROMPT_HISTORY_ASSISTANT" text in "[data-testid='message-bubble']" or its frames
     And I should not see a "pending run" element with selector "[data-testid='assistant-run-status']"
     When I type "UNSENT_PREVIEW_INPUT" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I click on a "prompt preview" element with selector "[data-testid='prompt-preview-button']"
@@ -173,10 +173,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     Then I should see 4 messages in chat history
     And the last AI request tool message should contain "Index"
     # Verify the last message contains the AI explanation about Index
-    And I should see "explanation in last message and explanation about edit" elements with selectors:
-      | element description         | selector                                                    |
-      | explanation in last message | [data-testid='message-bubble']:has-text('Index') |
-      | explanation about edit      | [data-testid='message-bubble']:has-text('编辑')  |
+    And I should see "Index" text in "[data-testid='assistant-message']:not([data-testid='work-disclosure'] *)" or its frames
+    And I should see "编辑" text in "[data-testid='assistant-message']:not([data-testid='work-disclosure'] *)" or its frames
 
   @agent @mockOpenAI
   Scenario: Wiki operation
@@ -195,11 +193,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     And I press "Enter" key
     Then I should see 6 messages in chat history
     # Verify error and success messages
-    And I should see "workspace not exist error and success in last message and wiki workspace in last message" elements with selectors:
-      | element description            | selector                                                                 |
-      | workspace not exist error      | [data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在') |
-      | success in last message        | [data-testid='message-bubble']:has-text('已成功')             |
-      | wiki workspace in last message | [data-testid='message-bubble']:has-text('wiki')               |
+    And I should see a "workspace not exist error" element with selector "[data-testid='message-bubble']:has-text('test-expected-to-fail'):has-text('不存在')"
+    And I should see "已成功在工作区 wiki 中创建条目" text in "[data-testid='assistant-message']:not([data-testid='work-disclosure'] *)" or its frames
 
   @agent
   Scenario: Close all tabs then create default agent from fallback page
@@ -232,11 +227,8 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
     When I type "Start long streaming" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     # Wait for streaming container to appear and contain the first chunk
-    Then I should see "assistant streaming container and partial assistant text and cancel icon" elements with selectors:
-      | element description           | selector                                 |
-      | assistant streaming container | [data-testid='assistant-streaming-text'] |
-      | partial assistant text        | *:has-text('partial_chunk_1')            |
-      | cancel icon                   | [data-testid='cancel-icon']              |
+    Then I should see "partial_chunk_1" text in "[data-testid='assistant-streaming-text']" or its frames
+    And I should see a "cancel icon" element with selector "[data-testid='cancel-icon']"
     # Click cancel button mid-stream
     When I click on a "cancel button" element with selector "[data-testid='agent-send-button']"
     # Verify send button returned and stream stopped (no further chunks)
@@ -244,4 +236,4 @@ Feature: Agent Workflow - Tool Usage and Multi-Round Conversation
       | element description | selector                         |
       | send icon           | [data-testid='send-icon']        |
       | send button         | [data-testid='agent-send-button']|
-    And I should not see a "partial chunk 4 text" element with selector "text='partial_chunk_4'"
+    And I should no longer see "partial_chunk_4" text in "[data-testid='assistant-message']" or its frames

@@ -416,6 +416,10 @@
   },
   "Preference": {
     "ModelAdvanced": "高级 API 与模型设置",
+    "AgentMessageFormat": "对话渲染格式",
+    "AgentMessageFormatDescription": "选择消息的显示方式，并用于后续助手回复。",
+    "FormatWikiText": "WikiText",
+    "FormatMarkdown": "Markdown",
     "AIAgent": "智能体",
     "AIAgentDescription": "管理智能体对话记录数据库",
     "AIAgentDescriptionDetail": "这里可以查看和删除智能体对话记录数据库的大小和位置信息",

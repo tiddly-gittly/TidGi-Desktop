@@ -58,10 +58,21 @@ Feature: Message Streaming Status
     And I should not see a "cancel button icon" element with selector "[data-testid='cancel-icon']"
     When I click on a "third turn" element with selector "[data-testid='conversation-timeline'] [aria-posinset='3']"
     Then I should see a "selected third turn" element with selector "[data-testid='conversation-timeline'] [aria-posinset='3'][aria-current='location']"
-    And the element with selector "[data-memeloop-turn-anchor='true']:focus:has-text('Third message')" should lie inside viewport "[data-testid='conversation-viewport']"
+    And the element with selector "[data-memeloop-turn-anchor='true']:focus" should lie inside viewport "[data-testid='conversation-viewport']"
+    And I should see "Third message" text in "[data-memeloop-turn-anchor='true']:focus" or its frames
 
   @agent @mockOpenAI @markdownStreaming
   Scenario: A Markdown table stays rendered while rows arrive
+    When I click on a "settings button" element with selector "#open-preferences-button"
+    And I switch to "preferences" window
+    And I click on an "agent settings section" element with selector "[data-testid='preference-section-aiAgent']"
+    Then I should see a "default WikiText format" element with selector "select[aria-label='对话渲染格式']:has(option[value='wikitext']:checked)"
+    When I focus on a "message format" element with selector "select[aria-label='对话渲染格式']"
+    And I press "ArrowDown" key
+    And I press "Enter" key
+    Then I should see a "Markdown format" element with selector "select[aria-label='对话渲染格式']:has(option[value='markdown']:checked)"
+    When I close "preferences" window
+    And I switch to "main" window
     Given I add mock OpenAI responses:
       | responseFile            | stream |
       | chat-streaming-table.md | true   |
@@ -75,3 +86,18 @@ Feature: Message Streaming Status
     And I should see a "finished Markdown table" element with selector "[data-testid='assistant-message'] table td strong:text-is('Ready')"
     And I should see a "restored send action" element with selector "button[data-testid='agent-send-button'] [data-testid='send-icon']"
     And there should be between 1 and 1 elements matching "button[data-testid='agent-send-button']" with distinct "data-testid" attributes
+
+  @agent @mockOpenAI @wikitextStreaming
+  Scenario: WikiText tables stay rendered as new rows and macro calls arrive
+    Given I add mock OpenAI responses:
+      | responseFile             | stream |
+      | chat-streaming-table.tid | true   |
+    When I click on a "conversation workspace" element with selector "[data-testid='conversation-workspace-select'] [role='combobox']"
+    And I click on a "wiki option" element with selector "[role='option']:text-is('wiki')"
+    And I type "Show the WikiText review table" in "chat input" element with selector "[data-testid='agent-message-input']"
+    And I press "Enter" key
+    Then I should see a "streaming table header" element with selector "table th:text-is('Task')" in frame "[data-testid='assistant-streaming-text'] iframe[data-testid='rendered-message']"
+    And I should see a "streaming macro expansion" element with selector "table td strong:text-is('Ready')" in frame "[data-testid='assistant-streaming-text'] iframe[data-testid='rendered-message']"
+    And I should see a "finished added row" element with selector "table td:text-is('Write summary')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"
+    And I should see a "restored send action" element with selector "button[data-testid='agent-send-button'] [data-testid='send-icon']"
+    And I should see a "finished macro expansion" element with selector "table td strong:text-is('Ready')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"

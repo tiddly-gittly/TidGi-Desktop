@@ -47,7 +47,7 @@ Feature: Shared conversation editing, status and wiki rendering
     Then the "message editor" element with selector "[data-testid='message-edit-input']" should have value "EDITED_QUESTION"
     When I click on a "send edited message" element with selector "[data-testid='message-edit-send']"
     Then I should see 2 messages in chat history
-    And I should see a "new branch reply" element with selector "[data-testid='assistant-message']:has-text('EDITED_BRANCH_REPLY')"
+    And I should see "EDITED_BRANCH_REPLY" text in "[data-testid='assistant-message']" or its frames
     And the last AI request user message should contain "EDITED_QUESTION"
     And the last AI request should not contain "ORIGINAL_QUESTION"
     And the last AI request should not contain "ORIGINAL_LATER_QUESTION"
@@ -59,11 +59,11 @@ Feature: Shared conversation editing, status and wiki rendering
     When I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on a "previous history" element with selector "[data-testid='message-branch-previous']"
     Then I should see 4 messages in chat history
-    And I should see an "original continuation" element with selector "[data-testid='assistant-message']:has-text('ORIGINAL_LATER_REPLY')"
+    And I should see "ORIGINAL_LATER_REPLY" text in "[data-testid='assistant-message']" or its frames
     When I hover on a "first user message" element with selector "[data-memeloop-turn-anchor='true']"
     And I click on a "next history" element with selector "[data-testid='message-branch-next']"
     Then I should see 2 messages in chat history
-    And I should see an "edited continuation" element with selector "[data-testid='assistant-message']:has-text('EDITED_BRANCH_REPLY')"
+    And I should see "EDITED_BRANCH_REPLY" text in "[data-testid='assistant-message']" or its frames
 
   @agent @mockOpenAI @conversationEditing
   Scenario: The assistant shows status before a delayed failure and settles afterwards
@@ -85,7 +85,7 @@ Feature: Shared conversation editing, status and wiki rendering
     When I type "Check pending success" in "chat input" element with selector "[data-testid='agent-message-input']"
     And I press "Enter" key
     Then I should see a "pending assistant bubble" element with selector "[data-testid='assistant-run-status']"
-    And I should see an "assistant reply" element with selector "[data-testid='assistant-message']:has-text('DELAYED_REPLY')"
+    And I should see "DELAYED_REPLY" text in "[data-testid='assistant-message']" or its frames
     And I should not see a "pending assistant bubble" element with selector "[data-testid='assistant-run-status']"
 
   @agent @mockOpenAI @conversationEditing

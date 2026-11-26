@@ -147,7 +147,7 @@ function BooleanItem({
   );
 }
 
-function EnumItem({
+export function EnumItem({
   item,
   preference,
   onNeedsRestart,
@@ -164,38 +164,35 @@ function EnumItem({
   const secondaryText = item.descriptionKey ? t(item.descriptionKey, item.ns ? { ns: item.ns } : undefined) : undefined;
 
   return (
-    <ListItem
-      secondaryAction={
-        <TextField
-          select
-          size='small'
-          value={value}
-          onChange={async (event) => {
-            const newValue = event.target.value;
-            await window.service.preference.set(item.key, newValue);
-            if (item.sideEffectId) {
-              const sideEffect = getSideEffect(item.sideEffectId);
-              if (sideEffect) {
-                await sideEffect(newValue, { ...preference, [item.key]: newValue as IPreferences[typeof item.key] });
-              }
-            }
-            if (item.needsRestart) {
-              onNeedsRestart();
-            }
-          }}
-          slotProps={{
-            select: { native: true },
-          }}
-          sx={{ minWidth: 120 }}
-        >
-          {item.enumValues.map((value_, index) => <option key={value_} value={value_}>{t(item.enumNames[index])}</option>)}
-        </TextField>
-      }
-    >
+    <ListItem sx={{ gap: 2 }}>
       <ListItemText
         primary={<HighlightText text={primaryText} query={query} />}
         secondary={secondaryText ? <HighlightText text={secondaryText} query={query} /> : undefined}
       />
+      <TextField
+        select
+        size='small'
+        value={value}
+        onChange={async (event) => {
+          const newValue = event.target.value;
+          await window.service.preference.set(item.key, newValue);
+          if (item.sideEffectId) {
+            const sideEffect = getSideEffect(item.sideEffectId);
+            if (sideEffect) {
+              await sideEffect(newValue, { ...preference, [item.key]: newValue as IPreferences[typeof item.key] });
+            }
+          }
+          if (item.needsRestart) {
+            onNeedsRestart();
+          }
+        }}
+        slotProps={{
+          select: { native: true, inputProps: { 'aria-label': primaryText } },
+        }}
+        sx={{ minWidth: 120, flexShrink: 0 }}
+      >
+        {item.enumValues.map((value_, index) => <option key={value_} value={value_}>{t(item.enumNames[index], item.ns ? { ns: item.ns } : undefined)}</option>)}
+      </TextField>
     </ListItem>
   );
 }

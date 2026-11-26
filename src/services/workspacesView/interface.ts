@@ -31,6 +31,7 @@ export interface IWorkspaceViewService {
   clearActiveWorkspaceView(): Promise<void>;
   clearBrowsingData(): Promise<void>;
   clearBrowsingDataWithConfirm(): Promise<void>;
+  getActiveWikiWorkspaceId(): Promise<string | undefined>;
   hibernateWorkspaceView(id: string): Promise<void>;
   /**
    * Prepare All workspaces on startup
@@ -95,6 +96,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     addViewForAllBrowserViews: ProxyPropertyType.Function,
     clearBrowsingData: ProxyPropertyType.Function,
     clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
+    getActiveWikiWorkspaceId: ProxyPropertyType.Function,
     hibernateWorkspaceView: ProxyPropertyType.Function,
     initializeWorkspaceView: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,

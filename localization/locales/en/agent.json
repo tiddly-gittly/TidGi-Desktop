@@ -415,6 +415,10 @@
   },
   "Preference": {
     "ModelAdvanced": "Advanced API and model settings",
+    "AgentMessageFormat": "Message rendering",
+    "AgentMessageFormatDescription": "Choose how chat messages are displayed and how the assistant formats its replies.",
+    "FormatWikiText": "WikiText",
+    "FormatMarkdown": "Markdown",
     "AIAgent": "AI Agent",
     "AIAgentDescription": "Manage AI Agent conversation records database",
     "AIAgentDescriptionDetail": "Here you can view and delete the size and location information of the AI Agent conversation records database",

@@ -415,6 +415,10 @@
   },
   "Preference": {
     "ModelAdvanced": "Paramètres avancés de l’API et du modèle",
+    "AgentMessageFormat": "Rendu des messages",
+    "AgentMessageFormatDescription": "Choisissez le rendu des messages et le format des réponses de l’assistant.",
+    "FormatWikiText": "WikiText",
+    "FormatMarkdown": "Markdown",
     "AIAgent": "agent intelligent",
     "AIAgentDescription": "Gérer la base de données des enregistrements de conversation des agents IA",
     "AIAgentDescriptionDetail": "Ici, vous pouvez consulter et supprimer les informations sur la taille et l'emplacement de la base de données des historiques de conversation avec l'Agent IA.",

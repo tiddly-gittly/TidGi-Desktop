@@ -66,8 +66,8 @@ importers:
         specifier: 0.3.5
         version: 0.3.5(memeloop@0.3.16(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3)))
       '@memeloop/react-ui':
-        specifier: 0.2.16
-        version: 0.2.16(819a0dec6544a77f8d2a7ccbbb6eb5f9)
+        specifier: 0.2.17
+        version: 0.2.17(819a0dec6544a77f8d2a7ccbbb6eb5f9)
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(supports-color@10.2.2)(zod@4.4.3)
@@ -2181,8 +2181,8 @@ packages:
     peerDependencies:
       memeloop: ^0.3.5
 
-  '@memeloop/react-ui@0.2.16':
-    resolution: {integrity: sha512-dO8E0UfUEPIehTLm693IWOjioZLhFBMD7jRR5xkoxlmmC5cApjbS5A4bNwQ5alYnEMPtOC3+q4Xejq3aWLp7Ag==}
+  '@memeloop/react-ui@0.2.17':
+    resolution: {integrity: sha512-q9QrrzWPy1C6E89vtBHIfelwK1axJZ6v5eEZooN1RNLB7uFF99Jtzt+X0qcS+wJuLRmFqx1mVFIyPquwz7ANaw==}
     peerDependencies:
       '@assistant-ui/react': ^0.15.16
       '@emotion/react': '>=11.0.0 <12.0.0'
@@ -7214,6 +7214,9 @@ packages:
   monaco-editor@0.56.0:
     resolution: {integrity: sha512-sXboRm3BeBeLm938eaiyLMe0OxzfXIlZvbv4ir/jVgQy1zDhWjgmny0WoN45fuDKhCCQsYMbBJrv/A6jd8aCUg==}
 
+  morphdom@2.7.7:
+    resolution: {integrity: sha512-04GmsiBcalrSCNmzfo+UjU8tt3PhZJKzcOy+r1FlGA7/zri8wre3I1WkYN9PT3sIeIKfW9bpyElA+VzOg2E24g==}
+
   mortice@3.3.1:
     resolution: {integrity: sha512-t3oESfijIPGsmsdLEKjF+grHfrbnKSXflJtgb1wY14cjxZpS6GnhHRXTxxzCAoCCnq1YYfpEPwY3gjiCPhOufQ==}
 
@@ -11771,7 +11774,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@memeloop/react-ui@0.2.16(819a0dec6544a77f8d2a7ccbbb6eb5f9)':
+  '@memeloop/react-ui@0.2.17(819a0dec6544a77f8d2a7ccbbb6eb5f9)':
     dependencies:
       '@assistant-ui/react': 0.15.16(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(immer@11.1.15)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
       '@emotion/react': 11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2)
@@ -11780,6 +11783,7 @@ snapshots:
       '@mui/material': 9.2.0(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react@19.2.8)(supports-color@10.2.2))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       markdown-to-jsx: 9.8.2(react@19.2.8)
       memeloop: 0.3.16(@ai-sdk/anthropic@4.0.21(zod@4.4.3))(@ai-sdk/deepseek@3.0.13(zod@4.4.3))(@ai-sdk/openai-compatible@3.0.14(zod@4.4.3))(@ai-sdk/openai@4.0.20(zod@4.4.3))(ollama-ai-provider-v2@4.0.1(ai@7.0.37(zod@4.4.3))(zod@4.4.3))
+      morphdom: 2.7.7
       react: 19.2.8
     optionalDependencies:
       '@rjsf/core': 6.7.0(@rjsf/utils@6.7.0(react@19.2.8))(react@19.2.8)
@@ -17181,6 +17185,8 @@ snapshots:
     dependencies:
       dompurify: 3.4.8
       marked: 14.0.0
+
+  morphdom@2.7.7: {}
 
   mortice@3.3.1:
     dependencies:

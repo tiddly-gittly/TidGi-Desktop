@@ -36,6 +36,7 @@ import type { IDeviceNetworkService } from '@services/deviceNetwork/interface';
 import type { IExternalAPIService } from '@services/externalAPI/interface';
 import { hasUsableProviderCredentialReference } from '@services/externalAPI/providerCredentials';
 import { logger } from '@services/libs/log';
+import type { IPreferences } from '@services/preferences/interface';
 import type { DataSource } from 'typeorm';
 import type { IAgentInstanceService } from '../interface';
 import { DesktopPromptPreviewService } from '../promptPreview';
@@ -57,6 +58,7 @@ export async function resolveDesktopAgentDefinition(options: {
   definitionId: string;
   agentInstanceService: IAgentInstanceService;
   agentDefinitionService: IAgentDefinitionService;
+  messageFormat?: IPreferences['agentMessageFormat'];
 }): Promise<AgentDefinition | null> {
   const definition = await options.agentDefinitionService.getAgentDef(options.definitionId);
   if (!definition) return null;
@@ -69,6 +71,21 @@ export async function resolveDesktopAgentDefinition(options: {
     ? instance.modelConfig ?? definition.modelConfig
     : definition.modelConfig;
   const effectiveFrameworkConfig = mergeDesktopAgentToolsIntoFrameworkConfig(frameworkConfig, definition.agentTools);
+  if (options.messageFormat) {
+    const existing = effectiveFrameworkConfig.prompts.length > 0 || !definition.systemPrompt.trim()
+      ? effectiveFrameworkConfig.prompts
+      : [{ id: 'system', role: 'system' as const, text: definition.systemPrompt }];
+    effectiveFrameworkConfig.prompts = [
+      ...existing,
+      {
+        id: 'tidgi-message-format',
+        role: 'system',
+        text: options.messageFormat === 'wikitext'
+          ? 'Write chat replies in TiddlyWiki WikiText. Use !! Heading for headings, two single quotes for bold, and |! Heading |! Heading |h for table headers. Write each table row as | cell | cell |.'
+          : 'Write chat replies in Markdown. Use Markdown headings, emphasis, and Markdown table syntax.',
+      },
+    ];
+  }
   const disabledToolIds = disabledDesktopAgentToolIds(effectiveFrameworkConfig);
 
   return adaptDesktopAgentDefinitionTools({
@@ -86,6 +103,7 @@ export function createDesktopAgentDefinitionResolver(options: {
   fallbackAgentId: string;
   agentInstanceService: IAgentInstanceService;
   agentDefinitionService: IAgentDefinitionService;
+  getMessageFormat?: () => IPreferences['agentMessageFormat'];
 }): NonNullable<AgentFrameworkContext['resolveAgentDefinition']> {
   return (definitionId, resolutionOptions) =>
     resolveDesktopAgentDefinition({
@@ -93,6 +111,7 @@ export function createDesktopAgentDefinitionResolver(options: {
       definitionId,
       agentInstanceService: options.agentInstanceService,
       agentDefinitionService: options.agentDefinitionService,
+      messageFormat: options.getMessageFormat?.(),
     });
 }
 
@@ -107,6 +126,7 @@ export class MemeLoopDesktopRuntime {
     private readonly options: {
       agentInstanceService: IAgentInstanceService;
       agentDefinitionService: IAgentDefinitionService;
+      getMessageFormat: () => IPreferences['agentMessageFormat'];
       externalAPIService: IExternalAPIService;
       deviceNetworkService: IDeviceNetworkService;
       notifyTransientMessage: (message: ChatMessage) => void | Promise<void>;
@@ -301,6 +321,7 @@ export class MemeLoopDesktopRuntime {
       fallbackAgentId: conversationId,
       agentInstanceService: this.options.agentInstanceService,
       agentDefinitionService: this.options.agentDefinitionService,
+      getMessageFormat: this.options.getMessageFormat,
     });
   }
 }
