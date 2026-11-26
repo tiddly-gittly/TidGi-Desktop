@@ -7,19 +7,6 @@ import { createHash } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { canonicalJson, eventStoreError } from './conversationStorageUtilities';
 
-export interface ConversationListProjectionScope {
-  allowedConversationIds?: readonly string[];
-  allowedDefinitionIds?: readonly string[];
-  scopeKey: string;
-}
-
-function conversationListQueryDigest(
-  query: GetConversationListPageOptions['query'],
-  scope?: ConversationListProjectionScope,
-): string {
-  return createHash('sha256').update(canonicalJson({ query: query ?? {}, scopeKey: scope?.scopeKey ?? 'local' }), 'utf8').digest('base64url');
-}
-
 interface ConversationListRow {
   conversationId: string | null;
   title: string | null;
@@ -113,7 +100,6 @@ export async function getConversationListPage(
   dataSource: DataSource,
   localNodeId: string,
   options: GetConversationListPageOptions,
-  scope?: ConversationListProjectionScope,
 ): Promise<ConversationListPage> {
   if (
     !Number.isSafeInteger(options.limit) || options.limit < 1 || options.limit > 100 ||
@@ -128,7 +114,6 @@ export async function getConversationListPage(
     throw eventStoreError('VALIDATION_ERROR', 'conversation list cursor requires revision');
   }
   const query = options.query ?? {};
-  if (scope) assertConversationListProjectionScope(scope);
   if (
     query.definitionId !== undefined && (query.definitionId.length === 0 || Buffer.byteLength(query.definitionId, 'utf8') > 512) ||
     query.sourceChannelId !== undefined && (query.sourceChannelId.length === 0 || Buffer.byteLength(query.sourceChannelId, 'utf8') > 512) ||
@@ -146,7 +131,7 @@ export async function getConversationListPage(
     return page;
   };
   if (options.expectedRevision !== undefined && options.expectedRevision !== revision) return reset();
-  const queryDigest = conversationListQueryDigest(query, scope);
+  const queryDigest = createHash('sha256').update(canonicalJson(query), 'utf8').digest('base64url');
   const encodedCursor = options.beforeCursor ?? options.afterCursor;
   let cursor: ConversationListProjectionCursor | undefined;
   if (encodedCursor !== undefined) {
@@ -165,13 +150,13 @@ export async function getConversationListPage(
 
   const filters = ['instance.volatile = 0', 'instance.closed = 0'];
   const parameters: Array<string | number> = [];
-  if (scope?.allowedConversationIds) {
-    filters.push(`instance.id IN (${scope.allowedConversationIds.map(() => '?').join(', ')})`);
-    parameters.push(...scope.allowedConversationIds);
+  if (query.conversationIds !== undefined) {
+    filters.push('instance.id IN (SELECT value FROM json_each(?))');
+    parameters.push(JSON.stringify(query.conversationIds));
   }
-  if (scope?.allowedDefinitionIds) {
-    filters.push(`instance.agentDefId IN (${scope.allowedDefinitionIds.map(() => '?').join(', ')})`);
-    parameters.push(...scope.allowedDefinitionIds);
+  if (query.definitionIds !== undefined) {
+    filters.push('instance.agentDefId IN (SELECT value FROM json_each(?))');
+    parameters.push(JSON.stringify(query.definitionIds));
   }
   if (query.definitionId !== undefined) {
     filters.push('instance.agentDefId = ?');
@@ -252,6 +237,7 @@ export async function getConversationListPage(
   const hasExtra = availableRows.length > options.limit;
   let ordered = descending ? availableRows.slice(0, options.limit) : availableRows.slice(0, options.limit).reverse();
   let items = ordered.map(row => conversationMetaFromRow(row, localNodeId));
+  let byteTrimmed = false;
   const cursorFor = (row: ConversationListConcreteRow) =>
     encodeConversationProjectionCursor({
       version: 1,
@@ -262,23 +248,25 @@ export async function getConversationListPage(
       conversationId: row.conversationId,
     });
   const buildPage = (): ConversationListPage => {
-    const firstIndex = items.length === 0 ? -1 : ordered.length - items.length;
-    const pageRows = firstIndex <= 0 ? ordered : ordered.slice(firstIndex);
-    const first = pageRows[0];
-    const last = pageRows.at(-1);
+    const first = ordered[0];
+    const last = ordered.at(-1);
     return {
       reset: false,
       items,
       revision,
       total,
-      hasMoreBefore: options.afterCursor !== undefined || hasExtra,
-      hasMoreAfter: options.afterCursor !== undefined ? hasExtra : options.beforeCursor !== undefined,
+      hasMoreBefore: ordered.length > 0 && (!descending || hasExtra || byteTrimmed),
+      hasMoreAfter: ordered.length > 0 && (descending ? options.beforeCursor !== undefined : hasExtra || byteTrimmed),
       ...(first ? { startCursor: cursorFor(first) } : {}),
       ...(last ? { endCursor: cursorFor(last) } : {}),
     };
   };
-  while (Buffer.byteLength(canonicalJson(buildPage()), 'utf8') > options.maxBytes) {
+  for (;;) {
+    const page = buildPage();
+    if (Buffer.byteLength(canonicalJson(page), 'utf8') <= options.maxBytes) return page;
     if (items.length === 0) throw new Error('conversation_list_page_exceeds_byte_budget');
+    if (items.length === 1) throw new Error('conversation_list_item_exceeds_byte_budget');
+    byteTrimmed = true;
     if (options.afterCursor !== undefined) {
       items = items.slice(1);
       ordered = ordered.slice(1);
@@ -286,21 +274,5 @@ export async function getConversationListPage(
       items = items.slice(0, -1);
       ordered = ordered.slice(0, -1);
     }
-  }
-  return buildPage();
-}
-
-function assertConversationListProjectionScope(scope: ConversationListProjectionScope): void {
-  const assertIds = (ids: readonly string[] | undefined, field: string): void => {
-    if (ids === undefined) return;
-    if (
-      ids.length < 1 || ids.length > 256 || new Set(ids).size !== ids.length ||
-      ids.some(id => id.length < 1 || Buffer.byteLength(id, 'utf8') > 512)
-    ) throw eventStoreError('VALIDATION_ERROR', `invalid conversation list ${field} scope`);
-  };
-  assertIds(scope.allowedConversationIds, 'conversation');
-  assertIds(scope.allowedDefinitionIds, 'definition');
-  if (!scope.scopeKey || Buffer.byteLength(scope.scopeKey, 'utf8') > 16 * 1024) {
-    throw eventStoreError('VALIDATION_ERROR', 'invalid conversation list scope key');
   }
 }

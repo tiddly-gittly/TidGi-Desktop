@@ -1,11 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { useExecutionTargets } from '../useExecutionTargets';
 
 const coordinatorHarness = vi.hoisted(() => {
   let listener: ((snapshot: Record<string, unknown>) => void) | undefined;
+  const snapshots = new Map<string, Record<string, unknown>>();
   let factoryOptions: { onRunAccepted?: (provenance: Record<string, string>, handle: Record<string, string>) => void | Promise<void> } | undefined;
   let id = 0;
   const coordinator = {
@@ -13,7 +12,7 @@ const coordinatorHarness = vi.hoisted(() => {
     delete: vi.fn(async () => ({ ok: true })),
     dispose: vi.fn(async () => undefined),
     execute: vi.fn(async (_request?: { provenance: Record<string, string> }) => ({ runId: 'run-1' })),
-    getSnapshot: vi.fn((conversationId: string) => ({ conversationId, generation: 0, status: 'idle', updatedAt: 1 })),
+    getSnapshot: vi.fn<(conversationId: string) => Record<string, unknown>>(),
     prepareProvenance: vi.fn((input: { conversationId: string; definitionId: string; turnId?: string; requestId?: string }) => ({
       conversationId: input.conversationId,
       definitionId: input.definitionId,
@@ -31,6 +30,7 @@ const coordinatorHarness = vi.hoisted(() => {
   return {
     coordinator,
     emit(snapshot: Record<string, unknown>) {
+      snapshots.set(String(snapshot.conversationId), snapshot);
       listener?.(snapshot);
     },
     accept: async (provenance: Record<string, string>) =>
@@ -47,6 +47,7 @@ const coordinatorHarness = vi.hoisted(() => {
     }),
     reset() {
       listener = undefined;
+      snapshots.clear();
       factoryOptions = undefined;
       id = 0;
       for (const value of Object.values(coordinator)) {
@@ -56,7 +57,7 @@ const coordinatorHarness = vi.hoisted(() => {
       coordinator.delete.mockResolvedValue({ ok: true });
       coordinator.dispose.mockResolvedValue(undefined);
       coordinator.execute.mockResolvedValue({ runId: 'run-1' });
-      coordinator.getSnapshot.mockImplementation((conversationId: string) => ({ conversationId, generation: 0, status: 'idle', updatedAt: 1 }));
+      coordinator.getSnapshot.mockImplementation(conversationId => snapshots.get(conversationId) ?? { conversationId, generation: 0, status: 'idle', updatedAt: 1 });
       coordinator.prepareProvenance.mockImplementation((input: { conversationId: string; definitionId: string; turnId?: string; requestId?: string }) => ({
         conversationId: input.conversationId,
         definitionId: input.definitionId,
@@ -66,10 +67,14 @@ const coordinatorHarness = vi.hoisted(() => {
       coordinator.retry.mockResolvedValue({ runId: 'retry-run' });
       coordinator.subscribe.mockImplementation((next: (snapshot: Record<string, unknown>) => void) => {
         listener = next;
-        return vi.fn();
+        return vi.fn(() => {
+          listener = undefined;
+        });
       });
       coordinator.stopConversation.mockImplementation(() => undefined);
-      coordinator.switchTarget.mockImplementation(() => undefined);
+      coordinator.switchTarget.mockImplementation((conversationId: string, target: unknown) => {
+        coordinatorHarness.emit({ conversationId, target, generation: 1, status: 'idle', updatedAt: 1 });
+      });
       coordinatorHarness.factory.mockClear();
     },
   };
@@ -90,17 +95,18 @@ describe('useExecutionTargets', () => {
   const mutableObservables = window.observables as unknown as Record<string, unknown>;
   let originalDeviceNetworkService: unknown;
   let originalDeviceNetworkObservable: unknown;
-  let devices$: Subject<unknown[]>;
+  let devices$: BehaviorSubject<unknown[]>;
+  let useExecutionTargets: typeof import('../useExecutionTargets').useExecutionTargets;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules();
+    ({ useExecutionTargets } = await import('../useExecutionTargets'));
     coordinatorHarness.reset();
     originalDeviceNetworkService = mutableService.deviceNetwork;
     originalDeviceNetworkObservable = mutableObservables.deviceNetwork;
-    devices$ = new Subject<unknown[]>();
+    devices$ = new BehaviorSubject<unknown[]>([remoteDevice()]);
     mutableService.deviceNetwork = {
-      getLocalDevice: vi.fn().mockResolvedValue({ peerId: 'peer-local' }),
-      listDevices: vi.fn().mockResolvedValue([remoteDevice()]),
-      start: vi.fn().mockResolvedValue(undefined),
+      getLocalIdentity: vi.fn().mockResolvedValue({ peerId: 'peer-local' }),
     };
     mutableObservables.deviceNetwork = { devices$ };
   });
@@ -112,12 +118,7 @@ describe('useExecutionTargets', () => {
   });
 
   it('discovers targets and submits exact provenance plus portable attachment to Core', async () => {
-    const { result, unmount } = renderHook(() =>
-      useExecutionTargets({
-        agent: agent(),
-        orderedMessages: [],
-      })
-    );
+    const { result, unmount } = renderHook(() => useExecutionTargets(agent()));
     await waitFor(() => {
       expect(result.current.executionTargets).toHaveLength(2);
     });
@@ -150,7 +151,7 @@ describe('useExecutionTargets', () => {
   });
 
   it('derives running, error, and provenance only from the typed coordinator snapshot', async () => {
-    const { result, unmount } = renderHook(() => useExecutionTargets({ agent: agent(), orderedMessages: [] }));
+    const { result, unmount } = renderHook(() => useExecutionTargets(agent()));
     await waitFor(() => {
       expect(coordinatorHarness.coordinator.subscribe).toHaveBeenCalledOnce();
     });
@@ -187,7 +188,7 @@ describe('useExecutionTargets', () => {
       await coordinatorHarness.accept(request.provenance);
       return { runId: 'run-1' };
     });
-    const { result, unmount } = renderHook(() => useExecutionTargets({ agent: agent(), orderedMessages: [] }));
+    const { result, unmount } = renderHook(() => useExecutionTargets(agent()));
     await waitFor(() => {
       expect(result.current.isReady).toBe(true);
     });
@@ -210,49 +211,58 @@ describe('useExecutionTargets', () => {
     unmount();
   });
 
-  it('restarts on a new target through atomic retry without delete-and-resend', async () => {
-    coordinatorHarness.coordinator.getSnapshot.mockReturnValue({
-      conversationId: 'agent-1',
-      generation: 1,
-      status: 'running',
-      updatedAt: 1,
-      provenance: { conversationId: 'agent-1', definitionId: 'definition-1', turnId: 'old-turn', requestId: 'old-request' },
-    } as never);
-    const { result, unmount } = renderHook(() =>
-      useExecutionTargets({
-        agent: agent(),
-        orderedMessages: [{ role: 'user', turnId: 'source-turn', content: 'old prompt' }] as never,
-      })
-    );
+  it('keeps the current device if a turn starts before a device click is handled', async () => {
+    const { result } = renderHook(() => useExecutionTargets(agent()));
     await waitFor(() => {
       expect(result.current.executionTargets).toHaveLength(2);
     });
-    const remoteTarget = result.current.executionTargets[1]?.value;
-    expect(remoteTarget).toEqual({ kind: 'remote', peerId: 'peer-remote' });
-    if (!remoteTarget) throw new Error('remote target not discovered');
-    await act(async () => result.current.setExecutionTarget(remoteTarget, { restartCurrentTurn: true }));
+    coordinatorHarness.coordinator.getSnapshot.mockReturnValue({ conversationId: 'agent-1', status: 'running' });
 
-    expect(coordinatorHarness.coordinator.cancel).toHaveBeenCalledWith(expect.objectContaining({
-      target: { kind: 'local' },
-      provenance: expect.objectContaining({ turnId: 'old-turn' }),
-    }));
-    expect(coordinatorHarness.coordinator.retry).toHaveBeenCalledWith(expect.objectContaining({
-      target: { kind: 'remote', peerId: 'peer-remote' },
-      sourceTurnId: 'source-turn',
-    }));
-    expect(coordinatorHarness.coordinator.delete).not.toHaveBeenCalled();
-    expect(coordinatorHarness.coordinator.execute).not.toHaveBeenCalled();
-    unmount();
+    await act(async () => result.current.setExecutionTarget({ kind: 'remote', peerId: 'peer-remote' }));
+
+    expect(coordinatorHarness.coordinator.switchTarget).not.toHaveBeenCalled();
   });
 
-  it('fences the conversation and disposes the coordinator on unmount', async () => {
-    const { unmount } = renderHook(() => useExecutionTargets({ agent: agent(), orderedMessages: [] }));
+  it('resumes observing the same remote run after leaving and reopening its tab', async () => {
+    const { unmount } = renderHook(() => useExecutionTargets(agent()));
     await waitFor(() => {
       expect(coordinatorHarness.factory).toHaveBeenCalledOnce();
     });
+    act(() => {
+      coordinatorHarness.emit({
+        conversationId: 'agent-1',
+        target: { kind: 'remote', peerId: 'peer-remote' },
+        status: 'running',
+        provenance: { conversationId: 'agent-1', turnId: 'running-turn' },
+      });
+    });
     unmount();
-    expect(coordinatorHarness.coordinator.stopConversation).toHaveBeenCalledWith('agent-1');
-    expect(coordinatorHarness.coordinator.dispose).toHaveBeenCalledOnce();
+    const reopened = renderHook(() => useExecutionTargets(agent()));
+    await waitFor(() => {
+      expect(reopened.result.current.isRunning).toBe(true);
+    });
+    expect(reopened.result.current.activeExecutionTarget).toEqual({ kind: 'remote', peerId: 'peer-remote' });
+    expect(coordinatorHarness.factory).toHaveBeenCalledOnce();
+    expect(coordinatorHarness.coordinator.stopConversation).not.toHaveBeenCalled();
+    expect(coordinatorHarness.coordinator.dispose).not.toHaveBeenCalled();
+    await act(async () => reopened.result.current.cancelSelectedTarget());
+    expect(coordinatorHarness.coordinator.cancel).toHaveBeenCalledWith(expect.objectContaining({
+      target: { kind: 'remote', peerId: 'peer-remote' },
+      provenance: expect.objectContaining({ turnId: 'running-turn' }),
+    }));
+  });
+
+  it('submits on the local device when pairing discovery has no devices', async () => {
+    devices$.next([]);
+    const { result } = renderHook(() => useExecutionTargets(agent()));
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+    await act(async () => result.current.sendMessage('local message'));
+    expect(coordinatorHarness.coordinator.execute).toHaveBeenCalledWith(expect.objectContaining({
+      target: { kind: 'local' },
+      message: 'local message',
+    }));
   });
 });
 

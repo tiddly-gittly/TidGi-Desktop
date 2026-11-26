@@ -46,6 +46,9 @@ vi.mock('../contextMenu/rendererMenuItemProxy', () => ({
 }));
 
 import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS } from '@/constants/parameters';
+import { container } from '@services/container';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import { isIpcSafeMenuItems, MenuService } from '..';
 
 const createMenuService = (): MenuService =>
@@ -127,5 +130,20 @@ describe('MenuService application lifecycle', () => {
     expect(isIpcSafeMenuItems([{ click: 'safe', submenu: [{ click: 'nested' }] }])).toBe(true);
     expect(isIpcSafeMenuItems([{ click: 'safe', submenu: [{ click: 42 }] }])).toBe(false);
     expect(isIpcSafeMenuItems([{ click: 'safe' }, { label: 'missing callback' }])).toBe(false);
+  });
+
+  it('uses the attached workspace ID when Chromium lowercases its host', async () => {
+    const menu = createMenuService();
+    vi.spyOn(menu, 'buildContextMenuAndPopup').mockResolvedValue(undefined);
+    const lookup = vi.spyOn(container.get<IWorkspaceService>(serviceIdentifier.Workspace), 'get').mockResolvedValue(undefined);
+    const contents = { on: vi.fn(), getURL: vi.fn(() => 'tidgi://example-wiki/Index') };
+    await menu.initContextMenuForWindowWebContents(contents as never, 'Example-Wiki');
+    const handle = contents.on.mock.calls[0][1] as (event: object, parameters: object) => Promise<void>;
+    await handle({}, {});
+    expect(lookup).toHaveBeenCalledExactlyOnceWith('Example-Wiki');
+    contents.getURL.mockReturnValue('tidgi://different-wiki/Index');
+    await handle({}, {});
+    expect(lookup).toHaveBeenCalledTimes(1);
+    lookup.mockRestore();
   });
 });

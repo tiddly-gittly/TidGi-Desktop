@@ -97,10 +97,6 @@ export function createDesktopMessageLabels(t: TFunction<'agent'>): MemeLoopMessa
   };
 }
 
-function dataIsTiddlerArray(value: unknown): value is Array<{ title?: string }> {
-  return Array.isArray(value);
-}
-
 async function loadWikiAttachmentOptions(signal: AbortSignal): Promise<readonly WikiAttachmentOption[]> {
   signal.throwIfAborted();
   const workspaces = await window.service.workspace.getWorkspacesAsList();
@@ -109,23 +105,17 @@ async function loadWikiAttachmentOptions(signal: AbortSignal): Promise<readonly 
   for (const workspace of workspaces) {
     signal.throwIfAborted();
     if (!('wikiFolderLocation' in workspace) || workspace.hibernated) continue;
-    const response = await window.service.wiki.callWikiIpcServerRoute(
-      workspace.id,
-      'getTiddlersJSON',
-      '[!is[system]sort[title]limit[200]]',
-      ['text'],
-    ).catch(() => undefined);
+    const titles = await window.service.wiki.wikiOperationInServer(WikiChannel.runFilter, workspace.id, ['[!is[system]sort[title]]'])
+      .catch(() => undefined);
     signal.throwIfAborted();
-    if (response?.statusCode !== 200 || !dataIsTiddlerArray(response.data)) continue;
-    for (const tiddler of response.data) {
-      if (typeof tiddler.title !== 'string' || tiddler.title.length === 0) continue;
+    if (!Array.isArray(titles)) continue;
+    for (const title of titles) {
       options.push({
-        id: `${workspace.id}:${tiddler.title}`,
+        id: `${workspace.id}:${title}`,
         workspaceId: workspace.id,
         workspaceName: workspace.name,
-        tiddlerTitle: tiddler.title,
+        tiddlerTitle: title,
       });
-      if (options.length >= 200) return options;
     }
   }
   return options;
@@ -213,10 +203,7 @@ function DesktopAgentChatView({
     clearAttachments,
   } = useMessageHandling();
 
-  const targets = useExecutionTargets({
-    agent: snapshot.agent,
-    orderedMessages: snapshot.messages,
-  });
+  const targets = useExecutionTargets(snapshot.agent);
   const editing = useConversationEditing(tab, snapshot.messages, baseAdapter.timeline, snapshot.revision, targets.isRunning || baseAdapter.isRunning);
   const conversationWorkspace = useConversationWorkspace(tab.agentId);
   const acknowledgeInitialMessage = useTabStore(useShallow(state => state.acknowledgeInitialMessage));
@@ -226,7 +213,7 @@ function DesktopAgentChatView({
   const [initialAttempt, setInitialAttempt] = useState(0);
 
   useEffect(() => {
-    if (!targets.isReady || !tab.initialMessage) return;
+    if (!targets.isReady || targets.isRunning || !tab.initialMessage) return;
     const identity = `${tab.id}:${tab.agentId}`;
     if (submittedInitialMessageReference.current === identity) return;
     submittedInitialMessageReference.current = identity;
@@ -251,7 +238,7 @@ function DesktopAgentChatView({
         error,
       });
     });
-  }, [acknowledgeInitialMessage, initialAttempt, tab.agentId, tab.id, tab.initialMessage, tab.initialWikiTiddlers, targets.isReady, targets.sendMessage]);
+  }, [acknowledgeInitialMessage, initialAttempt, tab.agentId, tab.id, tab.initialMessage, tab.initialWikiTiddlers, targets.isReady, targets.isRunning, targets.sendMessage]);
 
   useEffect(() => {
     if (!tab.initialMessage || !snapshot.messages.some(message => message.messageId === `initial:${tab.id}:${tab.agentId}:turn`)) return;
@@ -493,7 +480,7 @@ function DesktopAgentChatView({
         onRemoveWikiTiddler={handleRemoveWikiTiddler}
         resolveDroppedWikiTiddlers={resolveDroppedWikiTiddlers}
         onWikiTiddlerClick={handleWikiTiddlerClick}
-        disabled={!snapshot.agent || adapter.isRunning}
+        disabled={!targets.isReady || adapter.isRunning}
         placeholder={t('Agent.StartConversation')}
         loadingMessage={t('Agent.LoadingChat')}
         emptyMessage={t('Agent.StartConversation')}

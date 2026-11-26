@@ -168,7 +168,7 @@ export function handleNewWindow(
       windowWithBrowserViewState.manage(childWindow);
       const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
       childWindow.webContents.once('dom-ready', async () => {
-        await menuService.initContextMenuForWindowWebContents(childWindow.webContents).then((unregisterContextMenu) => {
+        await menuService.initContextMenuForWindowWebContents(childWindow.webContents, workspace.id).then((unregisterContextMenu) => {
           childWindow.webContents.on('destroyed', () => {
             unregisterContextMenu();
           });

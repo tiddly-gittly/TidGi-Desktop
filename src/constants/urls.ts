@@ -36,23 +36,6 @@ export const getInfoFromTidGiUrl = (tidGiUrl: string) => {
 };
 
 /**
- * Extract workspace ID from tidgi:// protocol URL (used in WebContents)
- * @param url The URL to extract workspace ID from
- * @returns The workspace ID or undefined if not a valid tidgi:// URL
- * @example
- * ```ts
- * getWorkspaceIdFromUrl('tidgi://workspace-123') // 'workspace-123'
- * getWorkspaceIdFromUrl('tidgi://workspace-123/SomeTiddler') // 'workspace-123'
- * getWorkspaceIdFromUrl('http://localhost:3000/wiki/123/') // undefined
- * ```
- */
-export function getWorkspaceIdFromUrl(url: string): string | undefined {
-  // Match tidgi://workspace-id or tidgi://workspace-id/path
-  const match = url.match(/^tidgi:\/\/([^/]+)/);
-  return match?.[1];
-}
-
-/**
  * Extract tiddler title from tidgi:// protocol URL with hash
  * @param url The URL to extract tiddler title from
  * @returns The tiddler title or undefined if not present

@@ -1,4 +1,5 @@
-import { type IChatTab, type TabItem, TabType } from '@/pages/Agent/types/tab';
+import { TabType } from '@/pages/Agent/types/tab';
+import { findSplitChatTab } from '@services/agentBrowser/findSplitChatTab';
 import { withAgentTransaction } from '@services/database/agentTransaction';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '@services/database/schema/agent';
 import { AgentBrowserTabEntity } from '@services/database/schema/agentBrowser';
@@ -219,18 +220,10 @@ export async function forkConversation(database: DataSource, input: Conversation
         tab.data = { ...tab.data, ...patch };
         await tabs.save(tab);
       } else {
-        let updated = false;
-        for (const split of await tabs.findBy({ tabType: TabType.SPLIT_VIEW, opened: true })) {
-          const children = Array.isArray(split.data?.childTabs) ? split.data.childTabs as TabItem[] : [];
-          const index = children.findIndex(child => child.id === input.navigation!.tabId && child.type === TabType.CHAT);
-          if (index < 0 || (children[index] as IChatTab).agentId !== input.conversationId) continue;
-          children[index] = { ...children[index], ...patch };
-          split.data = { ...split.data, childTabs: children };
-          await tabs.save(split);
-          updated = true;
-          break;
-        }
-        if (!updated) throw new Error('conversation_edit_tab_changed');
+        const nested = await findSplitChatTab(tabs, input.navigation.tabId);
+        if (nested?.chat.agentId !== input.conversationId) throw new Error('conversation_edit_tab_changed');
+        Object.assign(nested.chat, patch);
+        await tabs.save(nested.parent);
       }
     }
     return input.targetConversationId;

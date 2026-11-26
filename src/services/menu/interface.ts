@@ -45,7 +45,7 @@ export interface IOnContextMenuInfo {
 export interface IMenuService {
   buildContextMenuAndPopup(template: MenuItemConstructorOptions[] | IpcSafeMenuItem[], info: IOnContextMenuInfo, windowName?: WindowNames): Promise<void>;
   buildMenu(): Promise<void>;
-  initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void>;
+  initContextMenuForWindowWebContents(webContents: WebContents, workspaceId?: string): Promise<() => void>;
   insertMenu(
     menuID: string,
     menuItems: DeferredMenuItemConstructorOptions[],

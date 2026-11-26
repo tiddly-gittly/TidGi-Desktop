@@ -159,4 +159,33 @@ describe('revisioned conversation directory paging', () => {
       query: { definitionId: 'different' },
     })).resolves.toEqual({ reset: true, revision: '7' });
   });
+
+  it('continues in both directions when byte limits cut a page shorter than the row limit', async () => {
+    const query = { conversationIds: ['conversation-09997', 'conversation-09998', 'conversation-09999'], definitionIds: ['definition'] };
+    const options = { limit: 10, maxBytes: 64 * 1024, query };
+    const page = await getConversationListPage(dataSource, 'desktop-node', options);
+    if (page.reset) throw new Error('unexpected reset');
+    const one = await getConversationListPage(dataSource, 'desktop-node', { ...options, limit: 1 });
+    const maxBytes = Buffer.byteLength(JSON.stringify(one)) + 8;
+    const older = await getConversationListPage(dataSource, 'desktop-node', { ...options, maxBytes });
+    expect(older).toMatchObject({ items: [{ conversationId: 'conversation-09999' }], total: 3, hasMoreBefore: true });
+    const newer = await getConversationListPage(dataSource, 'desktop-node', {
+      ...options,
+      maxBytes,
+      afterCursor: page.endCursor,
+      expectedRevision: page.revision,
+    });
+    expect(newer).toMatchObject({ items: [{ conversationId: 'conversation-09998' }], hasMoreAfter: true });
+    await expect(getConversationListPage(dataSource, 'desktop-node', {
+      ...options,
+      beforeCursor: page.endCursor,
+      expectedRevision: page.revision,
+    })).resolves.toMatchObject({ items: [], total: 3, hasMoreBefore: false, hasMoreAfter: false });
+    for (const excluded of [{ definitionIds: ['other-definition'] }, { definitionIds: [] }, { conversationIds: [] }]) {
+      await expect(getConversationListPage(dataSource, 'desktop-node', { ...options, query: { ...query, ...excluded } }))
+        .resolves.toMatchObject({ items: [], total: 0, hasMoreBefore: false, hasMoreAfter: false });
+    }
+    await expect(getConversationListPage(dataSource, 'desktop-node', { ...options, maxBytes: 128 }))
+      .rejects.toThrow('conversation_list_item_exceeds_byte_budget');
+  });
 });

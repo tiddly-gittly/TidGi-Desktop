@@ -75,7 +75,6 @@ import type {
   ReadDesktopAgentAttachmentChunkInput,
   WriteDesktopAttachmentChunkInput,
 } from './attachmentUploadProtocol';
-import type { ConversationListProjectionScope } from './conversationListQueries';
 
 /** Clone-safe renderer IPC outcome for a typed agent submission failure. */
 export type RendererAgentRunResult<T> =
@@ -229,12 +228,6 @@ export interface IAgentInstanceService extends AgentRuntimeRpcStorage {
   ): Promise<import('memeloop').ConversationMessageWindowResult>;
   getAgentConversationListPage(localNodeId: string, options: GetConversationListPageOptions): Promise<ConversationListPage>;
   getAgentConversationMeta(localNodeId: string, conversationId: string): Promise<ConversationMeta | null>;
-  /** Main-process-only grant-scoped collection query used by Device RPC. */
-  getAgentConversationListPageScoped(
-    localNodeId: string,
-    options: GetConversationListPageOptions,
-    scope: ConversationListProjectionScope,
-  ): Promise<ConversationListPage>;
 
   /** Bounded absolute-index page for long-conversation timeline navigation. */
   getAgentConversationTimelinePage(agentId: string, options: GetConversationTimelinePageOptions): Promise<ConversationTimelinePage>;

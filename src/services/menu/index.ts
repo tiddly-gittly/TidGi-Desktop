@@ -1,6 +1,6 @@
 import { isTest } from '@/constants/environment';
 import { DEFERRED_MENU_PROPERTY_TIMEOUT_MS } from '@/constants/parameters';
-import { getWorkspaceIdFromUrl } from '@/constants/urls';
+import { isTidGiUrlForWorkspace } from '@/constants/urls';
 import type { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -241,15 +241,11 @@ export class MenuService implements IMainMenuService {
   }
 
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
-  public async initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void> {
+  public async initContextMenuForWindowWebContents(webContents: WebContents, workspaceId?: string): Promise<() => void> {
     const openContextMenuForWindow = async (_event: Electron.Event, parameters: ContextMenuParams): Promise<void> => {
       const template: MenuItemConstructorOptions[] = [];
 
-      // Try to get workspace ID from URL
-      const url = webContents.getURL();
-      const workspaceId = getWorkspaceIdFromUrl(url);
-
-      if (workspaceId) {
+      if (workspaceId && isTidGiUrlForWorkspace(webContents.getURL(), workspaceId)) {
         const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
         const workspace = await workspaceService.get(workspaceId);
 

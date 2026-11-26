@@ -1013,15 +1013,6 @@ export class AgentInstanceService implements IAgentInstanceService {
     return conversationListQueries.getConversationMeta(this.dataSource!, localNodeId, conversationId);
   }
 
-  public async getAgentConversationListPageScoped(
-    localNodeId: string,
-    options: GetConversationListPageOptions,
-    scope: conversationListQueries.ConversationListProjectionScope,
-  ): Promise<ConversationListPage> {
-    this.ensureRepositories();
-    return conversationListQueries.getConversationListPage(this.dataSource!, localNodeId, options, scope);
-  }
-
   public async getAgentConversationTimelinePage(
     agentId: string,
     options: GetConversationTimelinePageOptions,

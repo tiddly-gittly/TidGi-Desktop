@@ -294,7 +294,7 @@ export class View implements IViewService {
       }
       if (view.webContents.isDestroyed() || (isCurrent && !isCurrent())) return;
       await this.navigateView(view, urlToLoad, isCurrent);
-      const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
+      const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents, workspace.id);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
       });

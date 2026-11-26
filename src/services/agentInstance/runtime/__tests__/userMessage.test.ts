@@ -109,6 +109,15 @@ describe('createAgentDeviceRpcPendingUserMessage wiki bounds', () => {
     });
   });
 
+  it('requires a distinct wiki name when an attachment could refer to either of two workspaces', async () => {
+    vi.mocked(workspaceService.getWorkspacesAsList).mockResolvedValue([workspace, { ...workspace, id: 'workspace-2' }]);
+
+    await expect(createAgentDeviceRpcPendingUserMessage({
+      request: requestFor([{ workspaceName: 'Wiki', tiddlerTitle: 'Calendar' }]),
+    })).rejects.toThrow('distinct names');
+    expect(mutableWikiService.callWikiIpcServerRoute).not.toHaveBeenCalled();
+  });
+
   it('truncates HTML at max plus one with a machine-readable marker', async () => {
     const prefix = `${'x'.repeat(WIKI_TIDDLER_CONTENT_LIMITS.perAttachmentBytes - 3)}界`;
     const source = `${prefix}z`;

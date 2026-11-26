@@ -264,7 +264,11 @@ async function loadWikiTiddlerAttachments(
   }>;
   for (let index = 0; index < wikiTiddlers.length && index < REMOTE_AGENT_EXECUTION_LIMITS.wikiTiddlers; index += 1) {
     const tiddler = wikiTiddlers[index];
-    const workspace = workspaces.find(item => item.name === tiddler.workspaceName);
+    const matchingWorkspaces = workspaces.filter(item => item.name === tiddler.workspaceName);
+    if (matchingWorkspaces.length > 1) {
+      throw new Error(`Give the wiki workspaces named ${JSON.stringify(tiddler.workspaceName)} distinct names before attaching this entry.`);
+    }
+    const [workspace] = matchingWorkspaces;
     if (!workspace) {
       logger.warn('Workspace not found for MemeLoop wiki attachment', { workspaceName: tiddler.workspaceName, messageId });
       continue;

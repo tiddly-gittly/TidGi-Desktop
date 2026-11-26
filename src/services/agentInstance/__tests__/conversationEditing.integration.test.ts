@@ -243,5 +243,12 @@ describe('durable conversation editing', () => {
     expect(await service.acknowledgeInitialMessage('tab', 'child', 'edited')).toBe(true);
     expect((await loadConversationEditSource(database, 'parent', 'u2')).draft).toEqual({ text: null, revision: revision + 1 });
     expect(await service.acknowledgeInitialMessage('tab', 'child', 'edited')).toBe(false);
+    await service.updateTab('tab', { agentId: 'parent', agentDefId: 'definition' });
+    await database.getRepository(AgentInstanceEntity).update('parent', { name: 'Opening question' });
+    const [open] = await service.getAllTabs();
+    expect(open.type === TabType.SPLIT_VIEW ? open.childTabs[0] : open).toMatchObject({ id: 'tab', agentId: 'parent', title: 'Opening question' });
+    await service.closeTab(open.id);
+    const [closed] = await service.getClosedTabs();
+    expect(closed.type === TabType.SPLIT_VIEW ? closed.childTabs[0] : closed).toMatchObject({ id: 'tab', agentId: 'parent', title: 'Opening question' });
   });
 });

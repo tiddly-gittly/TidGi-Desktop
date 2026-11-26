@@ -22,9 +22,11 @@ import type { IDatabaseService } from '../database/interface';
 import { AgentInstanceEntity, AgentInstanceMessageEntity } from '../database/schema/agent';
 import { AgentBrowserTabEntity } from '../database/schema/agentBrowser';
 import { ConversationEditDraftEntity } from '../database/schema/conversationEditing';
+import { findSplitChatTab } from './findSplitChatTab';
 import type { IAgentBrowserService } from './interface';
 
 const MAX_CLOSED_TABS = 10;
+const chatDataFields = ['agentId', 'agentDefId', 'initialMessage', 'initialWikiTiddlers', 'initialEditSource'] as const;
 
 @injectable()
 export class AgentBrowserService implements IAgentBrowserService {
@@ -229,9 +231,22 @@ export class AgentBrowserService implements IAgentBrowserService {
     return entity;
   }
 
-  /**
-   * Get all open tabs
-   */
+  private async tabsWithConversationTitles(entities: AgentBrowserTabEntity[]): Promise<TabItem[]> {
+    const tabs = entities.map(entity => this.entityToTabItem(entity));
+    const chats = tabs.flatMap(tab => tab.type === TabType.SPLIT_VIEW ? tab.childTabs : [tab])
+      .filter((tab): tab is IChatTab & { agentId: string } => tab.type === TabType.CHAT && tab.agentId !== undefined);
+    if (chats.length) {
+      const agents = await this.dataSource!.getRepository(AgentInstanceEntity).find({
+        where: { id: In(chats.map(tab => tab.agentId)) },
+        select: { id: true, name: true },
+      });
+      const titles = new Map(agents.map(({ id, name }) => [id, name]));
+      for (const tab of chats) tab.title = titles.get(tab.agentId) ?? tab.title;
+    }
+    return tabs;
+  }
+
+  /** Get all open tabs. */
   public async getAllTabs(): Promise<TabItem[]> {
     this.ensureRepositories();
 
@@ -242,18 +257,7 @@ export class AgentBrowserService implements IAgentBrowserService {
         order: { position: 'ASC' },
       });
 
-      const tabs = entities.map(entity => this.entityToTabItem(entity));
-      const chats = tabs.flatMap(tab => tab.type === TabType.SPLIT_VIEW ? tab.childTabs : [tab])
-        .filter((tab): tab is IChatTab & { agentId: string } => tab.type === TabType.CHAT && tab.agentId !== undefined);
-      if (chats.length > 0) {
-        const agents = await this.dataSource!.getRepository(AgentInstanceEntity).find({
-          where: { id: In(chats.map(tab => tab.agentId)) },
-          select: { id: true, name: true },
-        });
-        const titles = new Map(agents.map(({ id, name }) => [id, name]));
-        for (const tab of chats) tab.title = titles.get(tab.agentId) ?? tab.title;
-      }
-      return tabs;
+      return await this.tabsWithConversationTitles(entities);
     } catch (error) {
       logger.error('Failed to get tabs', {
         function: 'getAllTabs',
@@ -376,7 +380,15 @@ export class AgentBrowserService implements IAgentBrowserService {
       });
 
       if (!existingTab) {
-        throw new Error(`Tab not found: ${tabId}`);
+        await withAgentTransaction(this.dataSource!, async manager => {
+          const repository = manager.getRepository(AgentBrowserTabEntity);
+          const nested = await findSplitChatTab(repository, tabId);
+          if (!nested) throw new Error(`Tab not found: ${tabId}`);
+          Object.assign(nested.chat, pick(data, ['title', 'state', 'isPinned', ...chatDataFields]));
+          await repository.save(nested.parent);
+        });
+        await this.updateTabsObservable();
+        return;
       }
 
       // Handle changing state to active
@@ -400,7 +412,7 @@ export class AgentBrowserService implements IAgentBrowserService {
           break;
         }
         case TabType.CHAT: {
-          const chatData = pick(data, ['agentId', 'agentDefId', 'initialMessage', 'initialWikiTiddlers', 'initialEditSource']);
+          const chatData = pick(data, chatDataFields);
           Object.assign(existingTab.data, chatData);
           break;
         }
@@ -467,25 +479,14 @@ export class AgentBrowserService implements IAgentBrowserService {
         return true;
       }
 
-      const splitTabs = await repository.find({ where: { tabType: TabType.SPLIT_VIEW, opened: true } });
-      for (const split of splitTabs) {
-        const childTabs = Array.isArray(split.data?.childTabs) ? split.data.childTabs as TabItem[] : [];
-        const childIndex = childTabs.findIndex(child => child.id === tabId && child.type === TabType.CHAT);
-        if (childIndex < 0) continue;
-        const child = childTabs[childIndex] as IChatTab;
-        if (child.agentId !== agentId || child.initialMessage !== expectedMessage) return false;
-        if (!await confirmEditedRoot(child.initialEditSource)) return false;
-        const nextChild = { ...child };
-        delete nextChild.initialMessage;
-        delete nextChild.initialEditSource;
-        delete nextChild.initialWikiTiddlers;
-        const nextChildren = [...childTabs];
-        nextChildren[childIndex] = nextChild;
-        split.data = { ...(split.data ?? {}), childTabs: nextChildren };
-        await repository.save(split);
-        return true;
-      }
-      return false;
+      const nested = await findSplitChatTab(repository, tabId);
+      if (!nested || nested.chat.agentId !== agentId || nested.chat.initialMessage !== expectedMessage) return false;
+      if (!await confirmEditedRoot(nested.chat.initialEditSource)) return false;
+      delete nested.chat.initialMessage;
+      delete nested.chat.initialEditSource;
+      delete nested.chat.initialWikiTiddlers;
+      await repository.save(nested.parent);
+      return true;
     });
     if (acknowledged) await this.updateTabsObservable();
     return acknowledged;
@@ -650,7 +651,7 @@ export class AgentBrowserService implements IAgentBrowserService {
         take: limit,
       });
 
-      return closedTabs.map(entity => this.entityToTabItem(entity));
+      return await this.tabsWithConversationTitles(closedTabs);
     } catch (error) {
       logger.error('Failed to get closed tabs', {
         function: 'getClosedTabs',

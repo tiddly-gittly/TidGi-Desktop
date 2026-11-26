@@ -98,6 +98,10 @@ Feature: Message Streaming Status
     And I press "Enter" key
     Then I should see a "streaming table header" element with selector "table th:text-is('Task')" in frame "[data-testid='assistant-streaming-text'] iframe[data-testid='rendered-message']"
     And I should see a "streaming macro expansion" element with selector "table td strong:text-is('Ready')" in frame "[data-testid='assistant-streaming-text'] iframe[data-testid='rendered-message']"
+    When I click on a "new chat tab" element with selector "[data-testid='new-tab-button']"
+    Then I should not see an "existing response" element with selector "[data-testid='assistant-message']"
+    When I click on a "chat list" element with selector "[data-testid='tab-list-button']"
+    And I click on a "previous chat" element with selector ":nth-match([data-testid='tab-list-dropdown'] [data-tab-type='chat'], 2)"
     And I should see a "finished added row" element with selector "table td:text-is('Write summary')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"
     And I should see a "restored send action" element with selector "button[data-testid='agent-send-button'] [data-testid='send-icon']"
     And I should see a "finished macro expansion" element with selector "table td strong:text-is('Ready')" in frame "[data-testid='assistant-message'] iframe[data-testid='rendered-message']"
