@@ -74,8 +74,8 @@ Feature: Message Streaming Status
     When I close "preferences" window
     And I switch to "main" window
     Given I add mock OpenAI responses:
-      | responseFile            | stream |
-      | chat-streaming-table.md | true   |
+      | responseFile                      | stream |
+      | chat-streaming-markdown-table.txt | true   |
     When I type "Show the review table" in "chat input" element with selector "[data-testid='agent-message-input']"
     Then there should be between 1 and 1 elements matching "button[data-testid='agent-send-button']:has([data-testid='send-icon'])" with distinct "data-testid" attributes
     When I press "Enter" key
